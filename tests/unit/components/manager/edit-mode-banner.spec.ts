@@ -71,4 +71,36 @@ describe('GrowspaceEditModeBanner', () => {
 
         document.body.removeChild(element);
     });
+
+    it('should dispatch water-selected event', async () => {
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('water-selected', listener);
+
+        const buttons = element.shadowRoot?.querySelectorAll('button');
+        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Water'));
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
+
+    it('should dispatch training-selected event', async () => {
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('training-selected', listener);
+
+        const buttons = element.shadowRoot?.querySelectorAll('button');
+        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Log Training'));
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
 });

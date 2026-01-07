@@ -1378,6 +1378,163 @@ describe('GrowspaceEnvChart', () => {
             // So this will throw when accessing closest.value - this documents current behavior
             expect(() => (element as any)._handleGraphHover(mockEvent, seriesWithEmptyPoints, new Date(0), 2000)).toThrow();
         });
+
+        it('should optimize willUpdate when oldHist exists but is identical', async () => {
+            // This covers lines 402-405 (oldHist branch)
+            const now = Date.now();
+            const history = { 'temp': [{ state: '20', last_changed: new Date(now).toISOString() }] as any };
+
+            element.metricKey = 'temp';
+            element.sensorHistory = history;
+            await element.updateComplete;
+
+            const spy = vi.spyOn(element as any, '_computeGraphSeries');
+
+            // Update with SAME reference (oldHist will exist and be identical)
+            element.sensorHistory = history;
+            await element.updateComplete;
+
+            // Should not recompute since oldHist exists and is identical
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should NOT render icon in no-data state when icon is NOT provided', async () => {
+            // This covers line 441 (else branch of ternary: this.icon ? ... : '')
+            element.icon = ''; // No icon
+            element.title = 'Test Metric';
+            element.sensorHistory = {}; // No data
+            await element.updateComplete;
+
+            const header = element.shadowRoot?.querySelector('.gs-env-graph-header');
+            expect(header).toBeTruthy();
+            expect(header?.textContent).toContain('Test Metric');
+            expect(header?.textContent).toContain('No Data');
+
+            // Verify icon is NOT rendered
+            const iconElement = element.shadowRoot?.querySelector('ha-icon');
+            expect(iconElement).toBeFalsy();
+        });
+
+        it('should handle _onMouseLeave when tooltipRafId is null', () => {
+            // This covers line 503 (else branch: when _tooltipRafId is falsy)
+            const cancelSpy = vi.spyOn(globalThis, 'cancelAnimationFrame');
+            (element as any)._tooltipRafId = null; // No RAF id
+            (element as any)._activeTooltip = { id: 'test' };
+            (element as any)._hoverTime = 12345;
+
+            (element as any)._onMouseLeave();
+
+            // Should not call cancelAnimationFrame
+            expect(cancelSpy).not.toHaveBeenCalled();
+            // But should still clear tooltip state
+            expect((element as any)._activeTooltip).toBeNull();
+            expect((element as any)._hoverTime).toBeNull();
+            cancelSpy.mockRestore();
+        });
+
+        it('should handle VPD with empty dataPoints (line 357 else branch)', async () => {
+            // This covers line 357 (else branch: when dataPoints.length === 0)
+            // Create a scenario where VPD has no valid data points
+            element.metricKey = 'vpd';
+            element.sensorHistory = {
+                'vpd': [
+                    // Invalid state that won't parse
+                    { state: 'invalid', last_changed: new Date().toISOString() }
+                ] as any
+            };
+            await element.updateComplete;
+
+            // Should not crash and should render empty state
+            const card = element.shadowRoot?.querySelector('.gs-env-graph-card');
+            expect(card).toBeTruthy();
+        });
+
+        it('should skip update when oldHist exists and references are identical (lines 402-405)', async () => {
+            // This covers lines 402-405 (when oldHist exists)
+            const now = Date.now();
+            const tempData = [{ state: '20', last_changed: new Date(now).toISOString() }] as any;
+            const history = { 'temp': tempData };
+
+            element.metricKey = 'temp';
+            element.sensorHistory = history;
+            await element.updateComplete;
+
+            const spy = vi.spyOn(element as any, '_computeGraphSeries');
+
+            // Update with same reference for 'temp' key (oldHist will exist and be identical)
+            element.sensorHistory = { 'temp': tempData }; // Same array reference
+            await element.updateComplete;
+
+            // Should NOT recompute because oldHist exists and references are identical
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should handle VPD with no valid dataPoints after filtering (line 357 else)', async () => {
+            // Line 357: if (dataPoints.length > 0) - test the ELSE (when length is 0)
+            // VPD processing might result in empty dataPoints if all values are invalid
+            const now = Date.now();
+            element.metricKey = 'vpd';
+            element.sensorHistory = {
+                'vpd': [
+                    // State that will be normalized but might result in undefined values
+                    { state: '', last_changed: new Date(now - 3600000).toISOString() },
+                    { state: '', last_changed: new Date(now).toISOString() }
+                ] as any,
+                'light': [
+                    { state: 'on', last_changed: new Date(now).toISOString() }
+                ] as any
+            };
+            await element.updateComplete;
+
+            // Should render without crashing
+            const card = element.shadowRoot?.querySelector('.gs-env-graph-card');
+            expect(card).toBeTruthy();
+        });
+
+        it('should update when oldHist is undefined on first property change (lines 402-405 else)', async () => {
+            // Lines 402-405: if (oldHist) - test the ELSE (when oldHist is undefined)
+            // This happens on the very first update when sensorHistory is set
+            const freshElement = await fixture(html`
+                <div>
+                    <growspace-env-chart .device=${mockDevice}></growspace-env-chart>
+                </div>
+            `) as HTMLElement;
+            const el = freshElement.querySelector('growspace-env-chart') as GrowspaceEnvChart;
+            new ContextProvider(freshElement, hassContext, hassMock);
+
+            const spy = vi.spyOn(el as any, '_computeGraphSeries');
+
+            // First time setting sensorHistory - oldHist will be undefined
+            const now = Date.now();
+            el.metricKey = 'temp';
+            el.sensorHistory = { 'temp': [{ state: '20', last_changed: new Date(now).toISOString() }] as any };
+            await el.updateComplete;
+
+            // Should compute because it's the first update (oldHist is undefined)
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle VPD edge case with light history but empty VPD dataPoints', async () => {
+            // Comprehensive test for line 357 and VPD color determination
+            const now = Date.now();
+            element.metricKey = 'vpd';
+            element.sensorHistory = {
+                'vpd': [
+                    // All invalid/empty states that won't create valid dataPoints
+                    { state: null, last_changed: new Date(now - 3600000).toISOString() },
+                    { state: undefined, last_changed: new Date(now).toISOString() }
+                ] as any,
+                'light': [
+                    { state: 'off', last_changed: new Date(now - 3600000).toISOString() },
+                    { state: 'on', last_changed: new Date(now).toISOString() }
+                ] as any
+            };
+            await element.updateComplete;
+
+            // Should handle gracefully
+            const card = element.shadowRoot?.querySelector('.gs-env-graph-card');
+            expect(card).toBeTruthy();
+        });
     });
 });
 

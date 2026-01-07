@@ -1115,4 +1115,129 @@ describe('DataService', () => {
         const res = await service.fetchStrainLibrary();
         expect(res).toEqual([]);
     });
+
+    describe('Watering Services', () => {
+        it('should call waterPlant with basic parameters', async () => {
+            await service.waterPlant('plant1', 500);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'plant1',
+                amount: 500
+            });
+        });
+
+        it('should call waterPlant with nutrients', async () => {
+            const nutrients = { CalMag: 2, Bloom: 3 };
+            await service.waterPlant('plant1', 500, nutrients);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'plant1',
+                amount: 500,
+                nutrients
+            });
+        });
+
+        it('should call waterPlant with preset_id', async () => {
+            await service.waterPlant('plant1', 500, undefined, 'preset1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'plant1',
+                amount: 500,
+                preset_id: 'preset1'
+            });
+        });
+
+        it('should call waterPlant with nutrients and preset_id', async () => {
+            const nutrients = { N: 1 };
+            await service.waterPlant('plant1', 500, nutrients, 'preset1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'plant1',
+                amount: 500,
+                nutrients,
+                preset_id: 'preset1'
+            });
+        });
+
+        it('should not include nutrients if empty object', async () => {
+            await service.waterPlant('plant1', 500, {});
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'plant1',
+                amount: 500
+            });
+        });
+
+        it('should handle error in waterPlant', async () => {
+            callServiceMock.mockRejectedValue(new Error('Water failed'));
+            await expect(service.waterPlant('p1', 100)).rejects.toThrow('Water failed');
+        });
+
+        it('should call waterGrowspace with basic parameters', async () => {
+            await service.waterGrowspace('gs1', 300);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
+                growspace_id: 'gs1',
+                amount_per_plant: 300
+            });
+        });
+
+        it('should call waterGrowspace with nutrients', async () => {
+            const nutrients = { Base: 2 };
+            await service.waterGrowspace('gs1', 300, nutrients);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
+                growspace_id: 'gs1',
+                amount_per_plant: 300,
+                nutrients
+            });
+        });
+
+        it('should call waterGrowspace with preset_id', async () => {
+            await service.waterGrowspace('gs1', 300, undefined, 'preset2');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
+                growspace_id: 'gs1',
+                amount_per_plant: 300,
+                preset_id: 'preset2'
+            });
+        });
+
+        it('should handle error in waterGrowspace', async () => {
+            callServiceMock.mockRejectedValue(new Error('GS Water failed'));
+            await expect(service.waterGrowspace('gs1', 100)).rejects.toThrow('GS Water failed');
+        });
+    });
+
+    describe('Nutrient Presets', () => {
+        it('should save nutrient preset', async () => {
+            const params = {
+                name: 'Veg Week 1',
+                nutrients: [{ name: 'Base', dose_ml_l: 2 }],
+                stage: 'veg',
+                min_days_in_stage: 7
+            };
+            await service.saveNutrientPreset(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'save_nutrient_preset', params);
+        });
+
+        it('should save nutrient preset with preset_id for update', async () => {
+            const params = {
+                preset_id: 'existing1',
+                name: 'Updated Preset',
+                nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
+            };
+            await service.saveNutrientPreset(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'save_nutrient_preset', params);
+        });
+
+        it('should handle error in saveNutrientPreset', async () => {
+            callServiceMock.mockRejectedValue(new Error('Save preset failed'));
+            await expect(service.saveNutrientPreset({ name: 'X', nutrients: [] })).rejects.toThrow('Save preset failed');
+        });
+
+        it('should remove nutrient preset', async () => {
+            await service.removeNutrientPreset('preset123');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_nutrient_preset', {
+                preset_id: 'preset123'
+            });
+        });
+
+        it('should handle error in removeNutrientPreset', async () => {
+            callServiceMock.mockRejectedValue(new Error('Remove preset failed'));
+            await expect(service.removeNutrientPreset('p1')).rejects.toThrow('Remove preset failed');
+        });
+    });
 });

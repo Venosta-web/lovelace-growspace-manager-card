@@ -81,6 +81,8 @@ vi.mock('../../src/store/growspace-store', () => ({
         toggleHeaderExpansion() { }
         selectAllPlants() { }
         clearPlantSelection() { this.ui.clearPlantSelection(); }
+        openBatchWateringDialog = vi.fn();
+        openBatchTrainingDialog = vi.fn();
     }
 }));
 
@@ -416,6 +418,76 @@ describe('GrowspaceManagerCard', () => {
                 panel.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
                 expect(spy).toHaveBeenCalled();
             }
+        });
+
+        it('should handle water selected', () => {
+            const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
+            (element as any)._handleWaterSelected();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should trigger batch watering dialog on water-selected event', async () => {
+            const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
+
+            // Set up controllers
+            (element as any)._isLoadingController = { value: false };
+            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
+            (element as any)._selectedDeviceController = { value: 'gs1' };
+            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
+            (element as any)._growspaceOptionsController = { value: {} };
+            (element as any)._viewModeController = { value: 'standard' };
+            (element as any)._isCompactController = { value: false };
+            (element as any)._isEditModeController = { value: false };
+            (element as any)._focusedPlantIndexController = { value: -1 };
+            (element as any)._selectedPlantsController = { value: new Set() };
+            (element as any)._notificationController = { value: null };
+
+            document.body.appendChild(element);
+            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
+
+            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
+            if (panel) {
+                panel.dispatchEvent(new CustomEvent('water-selected', { bubbles: true, composed: true }));
+                expect(spy).toHaveBeenCalled();
+            }
+        });
+
+        it('should trigger batch training dialog on training-selected event', async () => {
+            const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
+
+            // Set up controllers
+            (element as any)._isLoadingController = { value: false };
+            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
+            (element as any)._selectedDeviceController = { value: 'gs1' };
+            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
+            (element as any)._growspaceOptionsController = { value: {} };
+            (element as any)._viewModeController = { value: 'standard' };
+            (element as any)._isCompactController = { value: false };
+            (element as any)._isEditModeController = { value: false };
+            (element as any)._focusedPlantIndexController = { value: -1 };
+            (element as any)._selectedPlantsController = { value: new Set() };
+            (element as any)._notificationController = { value: null };
+
+            document.body.appendChild(element);
+            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
+
+            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
+            if (panel) {
+                panel.dispatchEvent(new CustomEvent('training-selected', { bubbles: true, composed: true }));
+                expect(spy).toHaveBeenCalled();
+            }
+        });
+
+        it('should handle toggle expansion directly', () => {
+            const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
+            (element as any)._handleToggleExpansion();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle training selected directly', () => {
+            const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
+            (element as any)._handleTrainingSelected();
+            expect(spy).toHaveBeenCalled();
         });
     });
 });

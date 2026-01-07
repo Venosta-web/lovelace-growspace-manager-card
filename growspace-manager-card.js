@@ -31323,11 +31323,29 @@ class GrowspaceStore {
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
             const devices = this.data.$devices.get();
-            for (const device of devices) {
-                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === selectedIds[0])) {
-                    growspaceId = device.device_id;
+            let commonGrowspaceId;
+            let mixed = false;
+            for (const plantId of selectedIds) {
+                // Find device for this plant
+                let plantGrowspaceId;
+                for (const device of devices) {
+                    if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
+                        plantGrowspaceId = device.device_id;
+                        break;
+                    }
+                }
+                if (!plantGrowspaceId)
+                    continue; // Should not happen in valid state
+                if (commonGrowspaceId === undefined) {
+                    commonGrowspaceId = plantGrowspaceId;
+                }
+                else if (commonGrowspaceId !== plantGrowspaceId) {
+                    mixed = true;
                     break;
                 }
+            }
+            if (!mixed) {
+                growspaceId = commonGrowspaceId;
             }
         }
         this.ui.setActiveDialog({

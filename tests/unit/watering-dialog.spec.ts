@@ -1,222 +1,517 @@
-import { describe, it, expect, vi } from 'vitest';
-import type { WateringDialogState, NutrientEntry } from '../../src/types';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { WateringDialog } from '../../src/dialogs/watering-dialog';
+import type { WateringDialogState, NutrientEntry, GrowspaceData, NutrientPreset } from '../../src/types';
 import type { HomeAssistant } from 'custom-card-helpers';
+import type { GrowspaceStore } from '../../src/store/growspace-store';
 
-// Import to register the custom element
-import '../../src/dialogs/watering-dialog';
+// Mock dependencies
+vi.mock('../../src/components/ui/md3-text-input', () => ({
+    Md3TextInput: class extends HTMLElement {
+        get value() { return this.getAttribute('value') || ''; }
+        set value(v) { this.setAttribute('value', v); }
+        set suggestions(s: any) { }
+    }
+}));
+vi.mock('../../src/components/ui/md3-number-input', () => ({
+    Md3NumberInput: class extends HTMLElement {
+        get value() { return this.getAttribute('value') || ''; }
+        set value(v) { this.setAttribute('value', v); }
+    }
+}));
 
-// Mock HomeAssistant
-const createMockHass = (): Partial<HomeAssistant> => ({
-    callService: vi.fn().mockResolvedValue(undefined),
-    connection: {
-        sendMessagePromise: vi.fn().mockResolvedValue({}),
-    } as any,
-    states: {},
-    user: { id: 'test-user', name: 'Test User', is_admin: true },
+// Mock DataService
+const mockWaterPlant = vi.fn();
+const mockWaterGrowspace = vi.fn();
+
+vi.mock('../../src/data-service', () => {
+    return {
+        DataService: class {
+            waterPlant = mockWaterPlant;
+            waterGrowspace = mockWaterGrowspace;
+        }
+    };
 });
 
-// Mock GrowspaceStore
-const createMockStore = () => ({
-    ui: {
-        $selectedPlants: { get: () => new Set() },
-        $activeDialog: { set: vi.fn() },
-        closeDialog: vi.fn(),
-    },
-    refreshData: vi.fn().mockResolvedValue(undefined),
-    showToast: vi.fn(),
-    dataService: {
-        waterPlant: vi.fn().mockResolvedValue(undefined),
-        waterGrowspace: vi.fn().mockResolvedValue(undefined),
-    },
-});
+// Mock ha-dialog & icons
+class HaDialogMock extends HTMLElement {
+    open = false;
+}
+customElements.define('ha-dialog', HaDialogMock);
 
-describe('watering-dialog', () => {
-    describe('nutrient calculation', () => {
-        it('should calculate total ml correctly: volume × concentration', () => {
-            // Test the calculation logic
-            const volume = 10; // Liters
-            const concentration = 2; // ml/L
-            const expectedTotal = volume * concentration; // 20 ml
+class HaSvgIconMock extends HTMLElement {
+    path = '';
+}
+customElements.define('ha-svg-icon', HaSvgIconMock);
 
-            expect(expectedTotal).toBe(20);
-        });
+describe('WateringDialog', () => {
+    let element: WateringDialog;
+    let mockStore: any;
+    let mockHass: any;
 
-        it('should sum multiple nutrients correctly', () => {
-            const volume = 5; // Liters
-            const nutrients: NutrientEntry[] = [
-                { name: 'Nutrient A', concentration: 2 },
-                { name: 'Nutrient B', concentration: 3 },
-                { name: 'Nutrient C', concentration: 1 },
-            ];
+    const mockPreset: NutrientPreset = {
+        id: 'veg1',
+        name: 'Veg Week 1',
+        stage: 'veg',
+        nutrients: [
+            { name: 'Base A', dose_ml_l: 2 },
+            { name: 'Base B', dose_ml_l: 2 }
+        ]
+    };
 
-            const totalMl = nutrients.reduce(
-                (sum, n) => sum + volume * n.concentration,
-                0
-            );
-
-            expect(totalMl).toBe(30); // 5L × (2 + 3 + 1) = 30ml
-        });
-
-        it('should handle zero concentration', () => {
-            const volume = 10;
-            const concentration = 0;
-            expect(volume * concentration).toBe(0);
-        });
-
-        it('should handle fractional volumes and concentrations', () => {
-            const volume = 2.5;
-            const concentration = 1.6;
-            expect(volume * concentration).toBeCloseTo(4.0, 1);
-        });
-    });
-
-    describe('dialog state', () => {
-        it('should identify plant mode when plantIds are present', () => {
-            const dialogState: WateringDialogState = {
-                plantIds: ['plant-1', 'plant-2'],
-                growspaceId: 'growspace-1',
-                mode: 'plant',
-            };
-
-            expect(dialogState.mode).toBe('plant');
-            expect(dialogState.plantIds?.length).toBe(2);
-        });
-
-        it('should identify growspace mode when no plantIds', () => {
-            const dialogState: WateringDialogState = {
-                growspaceId: 'growspace-1',
-                mode: 'growspace',
-            };
-
-            expect(dialogState.mode).toBe('growspace');
-            expect(dialogState.plantIds).toBeUndefined();
-        });
-    });
-
-    describe('service call payload', () => {
-        it('should construct water_plant payload correctly', () => {
-            const plantId = 'test-plant-123';
-            const amount = 1.5;
-            const nutrients: Record<string, number> = {
-                'Calmag': 2.5,
-                'Bloom A': 3.0,
-            };
-
-            const payload: Record<string, any> = {
-                plant_id: plantId,
-                amount,
-            };
-            if (nutrients && Object.keys(nutrients).length > 0) {
-                payload.nutrients = nutrients;
+    const mockDevice: Partial<GrowspaceData> = {
+        device_id: 'gs1',
+        name: 'Tent 1',
+        nutrient_presets: {
+            'veg1': mockPreset
+        },
+        plants: [
+            {
+                entity_id: 'sensor.plant1',
+                attributes: { plant_id: 'p1', stage: 'veg', days_in_stage: 10 } as any,
+                state: 'ok',
+                last_updated: ''
             }
+        ]
+    };
 
-            expect(payload.plant_id).toBe('test-plant-123');
-            expect(payload.amount).toBe(1.5);
-            expect(payload.nutrients).toEqual({
-                'Calmag': 2.5,
-                'Bloom A': 3.0,
-            });
-        });
+    beforeEach(async () => {
+        vi.clearAllMocks();
 
-        it('should construct water_growspace payload correctly', () => {
-            const growspaceId = 'test-growspace';
-            const amountPerPlant = 0.8;
-            const nutrients: Record<string, number> = {};
+        mockHass = {
+            callService: vi.fn(),
+            states: {}
+        } as any;
 
-            const payload: Record<string, any> = {
-                growspace_id: growspaceId,
-                amount_per_plant: amountPerPlant,
-            };
-            if (nutrients && Object.keys(nutrients).length > 0) {
-                payload.nutrients = nutrients;
-            }
-
-            expect(payload.growspace_id).toBe('test-growspace');
-            expect(payload.amount_per_plant).toBe(0.8);
-            expect(payload.nutrients).toBeUndefined();
-        });
-
-        it('should omit nutrients when empty', () => {
-            const nutrients: Record<string, number> = {};
-            const payload: Record<string, any> = { plant_id: 'test', amount: 1 };
-
-            if (nutrients && Object.keys(nutrients).length > 0) {
-                payload.nutrients = nutrients;
-            }
-
-            expect('nutrients' in payload).toBe(false);
-        });
-    });
-
-    describe('NutrientEntry interface', () => {
-        it('should properly type nutrient entries', () => {
-            const entry: NutrientEntry = {
-                name: 'Cal-Mag',
-                concentration: 2.5,
-            };
-
-            expect(typeof entry.name).toBe('string');
-            expect(typeof entry.concentration).toBe('number');
-        });
-
-        it('should convert array of NutrientEntry to Record', () => {
-            const nutrients: NutrientEntry[] = [
-                { name: 'Calmag', concentration: 2.5 },
-                { name: 'Bloom A', concentration: 3.0 },
-                { name: '', concentration: 0 }, // Should be filtered
-            ];
-
-            const record: Record<string, number> = {};
-            for (const n of nutrients) {
-                if (n.name && n.concentration > 0) {
-                    record[n.name] = n.concentration;
+        mockStore = {
+            data: {
+                $devices: {
+                    get: () => [mockDevice]
                 }
-            }
+            },
+            showToast: vi.fn(),
+            refreshData: vi.fn()
+        };
 
-            expect(Object.keys(record).length).toBe(2);
-            expect(record['Calmag']).toBe(2.5);
-            expect(record['Bloom A']).toBe(3.0);
+        element = new WateringDialog();
+        element.hass = mockHass;
+        element.store = mockStore as GrowspaceStore;
+
+        document.body.appendChild(element);
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        if (element.isConnected) document.body.removeChild(element);
+    });
+
+    it('should render nothing when closed', async () => {
+        element.open = false;
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeNull();
+    });
+
+    it('should render when open', async () => {
+        element.open = true;
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
+    });
+
+    it('should reset form on open', async () => {
+        // Dirty the state
+        (element as any)._volume = 99;
+        (element as any)._nutrients = [{ name: 'dirty', concentration: 99 }];
+
+        // Close and reopen
+        element.open = false;
+        await element.updateComplete;
+        element.open = true;
+        await element.updateComplete;
+
+        const volInput = element.shadowRoot?.querySelector('md3-number-input[label="Volume (Liters)"]') as any;
+        expect(String(volInput.value)).toBe('1');
+        expect((element as any)._nutrients.length).toBe(0);
+    });
+
+    it('should handle volume changes', async () => {
+        element.open = true;
+        await element.updateComplete;
+
+        const volInput = element.shadowRoot?.querySelector('md3-number-input[label="Volume (Liters)"]') as any;
+        volInput.dispatchEvent(new CustomEvent('change', { detail: '5.5' }));
+        await element.updateComplete;
+
+        expect((element as any)._volume).toBe(5.5);
+    });
+
+    it('should add and remove nutrients manually', async () => {
+        element.open = true;
+        await element.updateComplete;
+
+        const addBtn = element.shadowRoot?.querySelector('.add-nutrient-btn') as HTMLElement;
+        addBtn.click();
+        await element.updateComplete;
+
+        expect((element as any)._nutrients.length).toBe(1);
+
+        const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Nutrient Name"]') as any;
+        const concInput = element.shadowRoot?.querySelector('md3-number-input[label="ml/L"]') as any;
+
+        nameInput.dispatchEvent(new CustomEvent('change', { detail: 'CalMag' }));
+        concInput.dispatchEvent(new CustomEvent('change', { detail: '1.5' }));
+        await element.updateComplete;
+
+        expect((element as any)._nutrients[0]).toEqual({ name: 'CalMag', concentration: 1.5 });
+
+        // Remove
+        const removeBtn = element.shadowRoot?.querySelector('button.icon') as HTMLElement;
+        removeBtn.click();
+        await element.updateComplete;
+
+        expect((element as any)._nutrients.length).toBe(0);
+    });
+
+    it('should populate nutrients from preset', async () => {
+        element.open = true;
+        element.growspaceName = 'Tent 1';
+        element.dialogState = {
+            growspaceId: 'gs1',
+            mode: 'growspace'
+        };
+        await element.updateComplete;
+
+        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+        select.value = 'veg1';
+        select.dispatchEvent(new Event('change'));
+        await element.updateComplete;
+
+        expect((element as any)._nutrients.length).toBe(2);
+        expect((element as any)._nutrients[0].name).toBe('Base A');
+        expect((element as any)._nutrients[0].concentration).toBe(2);
+        expect((element as any)._selectedPresetId).toBe('veg1');
+    });
+
+    it('should clear nutrients when preset deselected', async () => {
+        element.open = true;
+        element.dialogState = { growspaceId: 'gs1', mode: 'growspace' };
+        await element.updateComplete;
+
+        // Select first
+        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+        select.value = 'veg1';
+        select.dispatchEvent(new Event('change'));
+        await element.updateComplete;
+        expect((element as any)._nutrients.length).toBe(2);
+
+        // Deselect
+        select.value = '';
+        select.dispatchEvent(new Event('change'));
+        await element.updateComplete;
+        expect((element as any)._nutrients.length).toBe(0);
+    });
+
+    it('should show calculations', async () => {
+        element.open = true;
+        await element.updateComplete;
+
+        (element as any)._volume = 10;
+        (element as any)._nutrients = [{ name: 'A', concentration: 2 }];
+        await element.updateComplete;
+
+        const preview = element.shadowRoot?.querySelector('.calculation-preview');
+        expect(preview).toBeTruthy();
+        expect(preview?.textContent).toContain('20.0 ml'); // 10 * 2
+    });
+
+    describe('Submission Logic', () => {
+        it('should submit for single plant', async () => {
+            element.open = true;
+            await element.updateComplete;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1']
+            };
+            await element.updateComplete;
+
+            (element as any)._volume = 2;
+            (element as any)._nutrients = [{ name: 'A', concentration: 1 }];
+            await element.updateComplete;
+
+            const submitBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            submitBtn.click();
+
+            // Wait for async submit
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mockWaterPlant).toHaveBeenCalledWith(
+                'p1',
+                2,
+                { 'A': 1 },
+                undefined
+            );
+            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Watered 1 plant'), 'success');
+            expect(mockStore.refreshData).toHaveBeenCalled();
         });
-        describe('nutrient presets', () => {
-            it('should construct payload with preset_id when selected', () => {
-                const presetId = 'veg-week-1';
-                const plantId = 'test-plant';
-                const amount = 2.0;
 
-                const payload: Record<string, any> = {
-                    plant_id: plantId,
-                    amount,
-                    preset_id: presetId
-                };
+        it('should submit for growspace', async () => {
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'growspace'
+            };
+            await element.updateComplete;
 
-                expect(payload.preset_id).toBe('veg-week-1');
-            });
+            (element as any)._volume = 100;
+            await element.updateComplete;
 
-            it('should recommend presets matching current stage', () => {
-                const plantStage = 'veg';
-                const preset = { id: 'p1', name: 'Veg Mix', stage: 'veg' };
+            const submitBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            submitBtn.click();
 
-                const isRecommended = preset.stage === plantStage;
-                expect(isRecommended).toBe(true);
-            });
+            await new Promise(r => setTimeout(r, 0));
 
-            it('should recommend presets matching stage and min days', () => {
-                const plantStage = 'veg';
-                const daysInStage = 15;
-                const preset = { id: 'p1', name: 'Late Veg', stage: 'veg', min_days_in_stage: 14 };
+            expect(mockWaterGrowspace).toHaveBeenCalledWith(
+                'gs1',
+                100,
+                undefined,
+                undefined
+            );
+        });
 
-                const isRecommended = preset.stage === plantStage && daysInStage >= preset.min_days_in_stage;
-                expect(isRecommended).toBe(true);
-            });
+        it('should handle submission errors', async () => {
+            element.open = true;
+            element.dialogState = { growspaceId: 'gs1', mode: 'growspace' };
+            mockWaterGrowspace.mockRejectedValue(new Error('Network Fail'));
 
-            it('should not recommend presets matching stage but not min days', () => {
-                const plantStage = 'veg';
-                const daysInStage = 5;
-                const preset = { id: 'p1', name: 'Late Veg', stage: 'veg', min_days_in_stage: 14 };
+            await element.updateComplete;
+            const submitBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            submitBtn.click();
 
-                const isRecommended = preset.stage === plantStage && daysInStage >= (preset.min_days_in_stage || 0);
-                expect(isRecommended).toBe(false);
-            });
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mockStore.showToast).toHaveBeenCalledWith('Error: Network Fail', 'error');
+            expect((element as any)._isSubmitting).toBe(false);
+        });
+
+        it('should dispatch close on cancel', async () => {
+            element.open = true;
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('close', listener);
+
+            const cancelBtn = element.shadowRoot?.querySelector('button.tonal') as HTMLElement;
+            cancelBtn.click();
+
+            expect(listener).toHaveBeenCalled();
+        });
+    });
+
+    describe('Recommendations', () => {
+        it('should mark preset as recommended if stage matches', async () => {
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1'] // matches veg stage of preset
+            };
+            await element.updateComplete;
+
+            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(option?.textContent).toContain('⭐ (Recommended)');
+        });
+
+        it('should not recommend if stage mismatch', async () => {
+            // Change plant stage
+            mockDevice.plants![0].attributes.stage = 'flower';
+
+            // Refresh mock
+            mockStore.data.$devices.get = () => [mockDevice];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1']
+            };
+            await element.requestUpdate(); // Force re-render with new data
+            await element.updateComplete;
+
+            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(option?.textContent).not.toContain('⭐');
+
+            // Reset for other tests
+            mockDevice.plants![0].attributes.stage = 'veg';
+        });
+    });
+
+    it('should generate nutrient suggestions', () => {
+        const suggestions = (element as any)._getNutrientSuggestions();
+        expect(suggestions).toContain('Base A');
+        expect(suggestions).toContain('Base B');
+    });
+
+    describe('Branch Coverage', () => {
+        it('should submit without nutrients if all have empty names or zero concentration', async () => {
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1']
+            };
+            await element.updateComplete;
+
+            (element as any)._volume = 2;
+            (element as any)._nutrients = [
+                { name: '', concentration: 1 },
+                { name: 'Valid', concentration: 0 }
+            ];
+            await element.updateComplete;
+
+            const submitBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            submitBtn.click();
+            await new Promise(r => setTimeout(r, 0));
+
+            // Should have been called with undefined nutrients since all are invalid
+            expect(mockWaterPlant).toHaveBeenCalledWith('p1', 2, undefined, undefined);
+        });
+
+        it('should handle batch watering of multiple plants', async () => {
+            // Add a second plant to the mock device
+            const originalPlants = mockDevice.plants;
+            mockDevice.plants = [
+                ...(originalPlants || []),
+                {
+                    entity_id: 'sensor.plant2',
+                    attributes: { plant_id: 'p2', stage: 'veg', days_in_stage: 5 } as any,
+                    state: 'ok',
+                    last_updated: ''
+                }
+            ];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1', 'p2']
+            };
+            await element.updateComplete;
+
+            (element as any)._volume = 1.5;
+            await element.updateComplete;
+
+            const submitBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            submitBtn.click();
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mockWaterPlant).toHaveBeenCalledTimes(2);
+            expect(mockWaterPlant).toHaveBeenCalledWith('p1', 1.5, undefined, undefined);
+            expect(mockWaterPlant).toHaveBeenCalledWith('p2', 1.5, undefined, undefined);
+            expect(mockStore.showToast).toHaveBeenCalledWith('Watered 2 plant(s)', 'success');
+
+            // Restore
+            mockDevice.plants = originalPlants;
+        });
+
+        it('should not show recommendations for heterogeneous plant stages', async () => {
+            // Add a second plant with different stage
+            const originalPlants = mockDevice.plants;
+            mockDevice.plants = [
+                {
+                    entity_id: 'sensor.plant1',
+                    attributes: { plant_id: 'p1', stage: 'veg', days_in_stage: 10 } as any,
+                    state: 'ok',
+                    last_updated: ''
+                },
+                {
+                    entity_id: 'sensor.plant2',
+                    attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 5 } as any,
+                    state: 'ok',
+                    last_updated: ''
+                }
+            ];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1', 'p2']
+            };
+            await element.updateComplete;
+
+            // When stages are mixed, no preset should be marked as recommended
+            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(option?.textContent).not.toContain('⭐');
+
+            // Restore
+            mockDevice.plants = originalPlants;
+        });
+
+        it('should handle preset with min_days_in_stage requirement', async () => {
+            // Add a preset with min_days_in_stage
+            const originalPresets = mockDevice.nutrient_presets;
+            mockDevice.nutrient_presets = {
+                'veg1': mockPreset,
+                'late-veg': {
+                    id: 'late-veg',
+                    name: 'Late Veg',
+                    stage: 'veg',
+                    nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
+                    target_ec: 1.5,
+                    min_days_in_stage: 20
+                }
+            };
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1'] // days_in_stage is 10
+            };
+            await element.updateComplete;
+
+            // veg1 has no min_days requirement, should be recommended
+            const veg1Option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(veg1Option?.textContent).toContain('⭐');
+
+            // late-veg requires 20 days, plant has 10, should NOT be recommended
+            const lateVegOption = element.shadowRoot?.querySelector('option[value="late-veg"]');
+            expect(lateVegOption?.textContent).not.toContain('⭐');
+
+            // Restore
+            mockDevice.nutrient_presets = originalPresets;
+        });
+
+        it('should handle preset lookup when growspaceId is missing', async () => {
+            element.open = true;
+            element.dialogState = {
+                growspaceId: undefined as any,
+                mode: 'growspace'
+            };
+            await element.updateComplete;
+
+            // Should not crash, preset select should still render
+            const select = element.shadowRoot?.querySelector('select');
+            expect(select).toBeTruthy();
+        });
+
+        it('should handle empty plants array in device', async () => {
+            const originalPlants = mockDevice.plants;
+            mockDevice.plants = [];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['nonexistent']
+            };
+            await element.updateComplete;
+
+            // Should not crash
+            const select = element.shadowRoot?.querySelector('select');
+            expect(select).toBeTruthy();
+
+            // Restore
+            mockDevice.plants = originalPlants;
         });
     });
 });

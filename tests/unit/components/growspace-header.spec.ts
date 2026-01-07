@@ -212,7 +212,8 @@ describe('GrowspaceHeader', () => {
             setEditMode: vi.fn(),
             setViewMode: vi.fn(),
             fetchStrainLibrary: vi.fn(),
-            openLogbookDialog: vi.fn()
+            openLogbookDialog: vi.fn(),
+            openNutrientPresetsDialog: vi.fn()
         };
 
         // Initialize Atoms based on mock state
@@ -263,10 +264,11 @@ describe('GrowspaceHeader', () => {
             setEditMode: vi.fn(),
             setViewMode: vi.fn(),
             fetchStrainLibrary: vi.fn(),
-            openLogbookDialog: vi.fn()
+            openLogbookDialog: vi.fn(),
+            openNutrientPresetsDialog: vi.fn()
         };
 
-        mockHass = { states: {} };
+        mockHass = { states: {}, callService: vi.fn() };
 
         deviceMock = {
             device_id: 'd1',
@@ -555,6 +557,48 @@ describe('GrowspaceHeader', () => {
             (element as any)._triggerAction('control_dehumidifier');
             expect((element as any)._menuOpen).toBe(false);
         });
+
+        it('should handle water action with no plants selected', () => {
+            $selectedPlants.set(new Set());
+            (element as any)._triggerAction('water');
+            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'WATERING',
+                payload: expect.objectContaining({
+                    mode: 'growspace',
+                    plantIds: undefined
+                })
+            }));
+        });
+
+        it('should handle control_dehumidifier action with overview_entity_id', () => {
+            element.device = { ...deviceMock, overview_entity_id: 'sensor.gs1' } as any;
+            (element as any)._envAttrs = { dehumidifier_control_enabled: false };
+            (element as any)._triggerAction('control_dehumidifier');
+            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'update_environment_config', expect.objectContaining({
+                dehumidifier_control_enabled: true
+            }));
+        });
+
+        it('should handle nutrient_presets action', () => {
+            const spy = vi.spyOn(mockStore, 'openNutrientPresetsDialog');
+            (element as any)._triggerAction('nutrient_presets');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle ai action with no selected device', () => {
+            $selectedDevice.set(null);
+            (element as any)._triggerAction('ai');
+            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'GROW_MASTER',
+                payload: expect.objectContaining({ growspaceId: '' })
+            }));
+        });
+
+        it('should handle irrigation action with no selected device', () => {
+            $selectedDevice.set(null);
+            (element as any)._triggerAction('irrigation');
+            expect($activeDialog.set).not.toHaveBeenCalled();
+        });
     });
 
     describe('Render Methods Coverage', () => {
@@ -608,6 +652,40 @@ describe('GrowspaceHeader', () => {
             const result = (element as any)._renderHeroCard(chip);
             expect(result).toBeDefined();
         });
+
+        it('should handle _renderHeroCard with no value', () => {
+            const chip = { key: 'temp', value: undefined, label: 'Temp' };
+            const result = (element as any)._renderHeroCard(chip);
+            expect(JSON.stringify(result)).toContain('hero-value');
+        });
+
+        it('should handle _renderHeroCard with non-numeric value', () => {
+            const chip = { key: 'status', value: 'Ready', label: 'Status' };
+            const result = (element as any)._renderHeroCard(chip);
+            expect(JSON.stringify(result)).toContain('Ready');
+        });
+
+        it('should render "Water Growspace" label when no plants selected', async () => {
+            $selectedPlants.set(new Set());
+            (element as any)._menuOpen = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
+            const waterItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
+            expect(waterItem.textContent).toContain('Water Growspace');
+        });
+
+        it('should render "Water Selected" label when plants are selected', async () => {
+            $selectedPlants.set(new Set(['p1']));
+            (element as any)._menuOpen = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
+            const waterItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
+            expect(waterItem.textContent).toContain('Water Selected');
+        });
     });
 
     describe('Unlink Graphs', () => {
@@ -641,6 +719,12 @@ describe('GrowspaceHeader', () => {
             // Mock store.history.activeEnvGraphs to return null/empty
             (mockHistory.$activeEnvGraphs.get as any).mockReturnValue(undefined);
             expect(element.activeEnvGraphs).toEqual(new Set());
+        });
+
+        it('should handle _computeMetrics with missing linkedGraphGroupsController', () => {
+            (element as any)._linkedGraphGroupsController = undefined;
+            const result = (element as any)._computeMetrics();
+            expect(result).toBeDefined();
         });
     });
 
@@ -811,6 +895,14 @@ describe('GrowspaceHeader', () => {
                 // 8. Logbook (Index 7)
                 clickItem(7, 'logbook');
                 expect(triggerSpy).toHaveBeenCalledWith('logbook');
+
+                // 9. Nutrient Presets (Index 8)
+                clickItem(8, 'nutrient_presets');
+                expect(triggerSpy).toHaveBeenCalledWith('nutrient_presets');
+
+                // 10. Water (Index 9)
+                clickItem(9, 'water');
+                expect(triggerSpy).toHaveBeenCalledWith('water');
             });
         });
 
@@ -1431,6 +1523,40 @@ describe('GrowspaceHeader', () => {
             const svg = element.shadowRoot?.querySelector('.hero-sparkline');
             expect(svg).toBeTruthy();
             expect(svg?.innerHTML).toContain('path');
+            // Check that it rendered paths from segments
+            expect(svg?.querySelectorAll('path').length).toBeGreaterThan(0);
+        });
+
+        it('should handle VPD with no segments (fall back to standard sparkline)', async () => {
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [{ key: 'vpd', value: '1.0 kPa', status: 'ok' }],
+                deviceChips: [],
+                dominant: null,
+                envAttrs: {}
+            });
+
+            vi.spyOn(ChartUtils, 'generateVpdSparklineSegments').mockReturnValue([]);
+            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M0,0 L20,20');
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
+            expect(svg).toBeTruthy();
+            expect(svg?.innerHTML).toContain('linearGradient'); // Standard sparkline has gradient
+        });
+
+        it('should handle hero card branch coverage (status/overview)', async () => {
+            // Test missing status
+            const chipNoStatus = { key: 'temp', value: '25', label: 'T' };
+            const result1 = (element as any)._renderHeroCard(chipNoStatus);
+            expect(JSON.stringify(result1)).not.toContain('status-');
+
+            // Test missing overview_entity_id for VPD
+            element.device = { ...deviceMock, overview_entity_id: undefined } as any;
+            const vpdChip = { key: 'vpd', value: '1.2', label: 'VPD' };
+            const result2 = (element as any)._renderHeroCard(vpdChip);
+            expect(result2).toBeDefined();
         });
 
         it('should handle non-VPD sparkline with history', async () => {

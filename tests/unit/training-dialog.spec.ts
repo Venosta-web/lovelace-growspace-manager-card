@@ -166,4 +166,123 @@ describe('TrainingDialog', () => {
 
         expect(mockStore.ui.showToast).toHaveBeenCalledWith('Failed to log training', 'error');
     });
+
+    describe('Branch Coverage', () => {
+        it('should not save if technique is empty', async () => {
+            // Don't set any technique
+            const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
+            saveButton.click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should not have called the service
+            expect(mockHass.callService).not.toHaveBeenCalled();
+        });
+
+        it('should render nothing if dialog type is not TRAINING', async () => {
+            vi.spyOn(mockStore.ui.$activeDialog, 'get').mockReturnValue({
+                type: 'WATERING',
+                payload: {}
+            });
+
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            // Should not render the dialog
+            const dialog = element.shadowRoot?.querySelector('ha-dialog');
+            expect(dialog).toBeNull();
+        });
+
+        it('should handle empty plantIds array', async () => {
+            vi.spyOn(mockStore.ui.$activeDialog, 'get').mockReturnValue({
+                type: 'TRAINING',
+                payload: {
+                    growspaceId: 'gs_1',
+                    plantIds: []
+                }
+            });
+
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            // Set technique
+            const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
+            techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
+                detail: { value: 'LST' }
+            }));
+
+            const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
+            saveButton.click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // plantIds should be undefined when empty
+            expect(mockHass.callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'log_training_event',
+                {
+                    technique: 'LST',
+                    notes: undefined,
+                    growspace_id: 'gs_1',
+                    plant_id: undefined
+                }
+            );
+        });
+
+        it('should handle undefined plantIds', async () => {
+            vi.spyOn(mockStore.ui.$activeDialog, 'get').mockReturnValue({
+                type: 'TRAINING',
+                payload: {
+                    growspaceId: 'gs_1',
+                    plantIds: undefined
+                }
+            });
+
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            // Title should be 'Log Training' (without plant count)
+            const dialog = element.shadowRoot?.querySelector('ha-dialog');
+            expect(dialog?.getAttribute('heading') || (dialog as any)?.heading).toBe('Log Training');
+        });
+
+        it('should show singular plant in title for single plant', async () => {
+            vi.spyOn(mockStore.ui.$activeDialog, 'get').mockReturnValue({
+                type: 'TRAINING',
+                payload: {
+                    growspaceId: 'gs_1',
+                    plantIds: ['p1']
+                }
+            });
+
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('ha-dialog');
+            // Should say "1 plant" not "1 plants"
+            expect(dialog?.getAttribute('heading') || (dialog as any)?.heading).toBe('Log Training (1 plant)');
+        });
+
+        it('should save with notes as undefined when empty', async () => {
+            const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
+            techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
+                detail: { value: 'defoliation' }
+            }));
+
+            // Don't set any notes
+            const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
+            saveButton.click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockHass.callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'log_training_event',
+                expect.objectContaining({
+                    technique: 'defoliation',
+                    notes: undefined
+                })
+            );
+        });
+    });
 });

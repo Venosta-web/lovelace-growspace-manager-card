@@ -198,6 +198,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.ui.setEditMode(false);
   }
 
+  private _handleToggleExpansion() {
+    this.store.toggleHeaderExpansion();
+  }
+
+  private _handleTrainingSelected() {
+    this.store.openBatchTrainingDialog();
+  }
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -239,11 +247,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @keydown=${this._handleKeyboardNav}
             @view-mode-changed=${this._handleViewModeChanged}
             @growspace-changed=${this._handleGrowspaceChanged}
-            @toggle-expansion=${() => this.store.toggleHeaderExpansion()}
+            @toggle-expansion=${this._handleToggleExpansion}
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
-            @training-selected=${() => this.store.openBatchTrainingDialog()}
+            @training-selected=${this._handleTrainingSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

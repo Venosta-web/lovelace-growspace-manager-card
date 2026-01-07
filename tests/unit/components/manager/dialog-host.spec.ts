@@ -638,5 +638,97 @@ describe('DialogHost', () => {
         expect((element as any)._renderStrainRecommendationDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
         expect((element as any)._renderIrrigationDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
         expect((element as any)._renderLogbookDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
+        expect((element as any)._renderWateringDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
+        expect((element as any)._renderNutrientPresetsDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
+        expect((element as any)._renderTrainingDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
+    });
+
+    it('should render WATERING dialog', async () => {
+        $devices.set([{ device_id: 'g1', name: 'Grow 1' } as any]);
+        $selectedDevice.set('g1');
+        $activeDialog.set({
+            type: 'WATERING',
+            payload: {
+                growspaceId: 'g1',
+                mode: 'growspace'
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('watering-dialog');
+        expect(dialog).toBeTruthy();
+        expect((dialog as any).growspaceName).toBe('Grow 1');
+    });
+
+    it('should handle close event on WATERING dialog', async () => {
+        $activeDialog.set({
+            type: 'WATERING',
+            payload: { growspaceId: 'g1', mode: 'growspace' }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('watering-dialog');
+        dialog?.dispatchEvent(new CustomEvent('close'));
+
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should handle data-changed event on WATERING dialog', async () => {
+        $activeDialog.set({
+            type: 'WATERING',
+            payload: { growspaceId: 'g1', mode: 'growspace' }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('watering-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+
+        expect(mockStore.refreshData).toHaveBeenCalled();
+    });
+
+    it('should render NUTRIENT_PRESETS dialog', async () => {
+        $devices.set([{
+            device_id: 'g1',
+            name: 'Grow 1',
+            nutrient_presets: { 'p1': { id: 'p1', name: 'Preset 1', nutrients: [] } }
+        } as any]);
+        $selectedDevice.set('g1');
+        $activeDialog.set({
+            type: 'NUTRIENT_PRESETS',
+            payload: {}
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-presets-editor');
+        expect(dialog).toBeTruthy();
+    });
+
+    it('should handle data-changed event on NUTRIENT_PRESETS dialog', async () => {
+        $devices.set([{ device_id: 'g1', name: 'Grow 1', nutrient_presets: {} } as any]);
+        $selectedDevice.set('g1');
+        $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-presets-editor');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+
+        expect(mockStore.refreshData).toHaveBeenCalled();
+    });
+
+    it('should render TRAINING dialog', async () => {
+        $activeDialog.set({
+            type: 'TRAINING',
+            payload: { plantIds: ['p1'], growspaceId: 'g1' }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('training-dialog');
+        expect(dialog).toBeTruthy();
     });
 });

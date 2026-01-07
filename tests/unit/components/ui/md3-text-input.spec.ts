@@ -62,4 +62,60 @@ describe('Md3TextInput', () => {
             detail: 'New Value'
         }));
     });
+
+    describe('Suggestions', () => {
+        it('should not render datalist when suggestions is empty', async () => {
+            element.suggestions = [];
+            await element.updateComplete;
+
+            const datalist = element.shadowRoot?.querySelector('datalist');
+            expect(datalist).toBeNull();
+        });
+
+        it('should render datalist when suggestions has items', async () => {
+            element.suggestions = ['apple', 'banana', 'cherry'];
+            await element.updateComplete;
+
+            const datalist = element.shadowRoot?.querySelector('datalist');
+            expect(datalist).toBeTruthy();
+
+            const options = datalist?.querySelectorAll('option');
+            expect(options?.length).toBe(3);
+            expect(options?.[0].value).toBe('apple');
+            expect(options?.[1].value).toBe('banana');
+            expect(options?.[2].value).toBe('cherry');
+        });
+
+        it('should set input list attribute to datalist id when suggestions exist', async () => {
+            element.suggestions = ['option1', 'option2'];
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('input');
+            const datalist = element.shadowRoot?.querySelector('datalist');
+
+            expect(input?.getAttribute('list')).toBe(datalist?.id);
+        });
+
+        it('should use list property when suggestions is empty', async () => {
+            element.suggestions = [];
+            element.list = 'external-datalist';
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('input');
+            expect(input?.getAttribute('list')).toBe('external-datalist');
+        });
+
+        it('should prefer internal datalist over list property when suggestions exist', async () => {
+            element.suggestions = ['a', 'b'];
+            element.list = 'external-datalist';
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('input');
+            const datalist = element.shadowRoot?.querySelector('datalist');
+
+            // Should use internal datalist id, not external list
+            expect(input?.getAttribute('list')).toBe(datalist?.id);
+            expect(input?.getAttribute('list')).not.toBe('external-datalist');
+        });
+    });
 });
