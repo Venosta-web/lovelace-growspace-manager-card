@@ -9,6 +9,10 @@ import {
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
   mdiBottleTonicPlus,
+  mdiWater,
+  mdiContentCut,
+  mdiAlertCircle,
+  mdiStar,
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
@@ -74,6 +78,16 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
     return Object.values(device.nutrient_presets).some(p =>
       p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage)
     );
+  }
+
+  // Placeholder for watering status, assuming it will be implemented elsewhere
+  get _isRecentlyWatered(): boolean {
+    // Example logic: check if last watered within the last 24 hours
+    const lastWatered = this.plant.attributes.last_watered;
+    if (!lastWatered) return false;
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    return new Date(lastWatered) > twentyFourHoursAgo;
   }
 
 
@@ -171,24 +185,34 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
               </div>
             `
         : nothing}
+        <div class="status-icons">
+            ${this.plant.attributes.last_training_technique ? html`
+              <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
+                <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
+              </div>
+            ` : nothing}
 
+            ${this._isRecentlyWatered ? html`
+              <div class="status-icon watering" title="Recently watered">
+                <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
+              </div>
+            ` : nothing}
+
+            ${this.plant.attributes.problem ? html`
+              <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
+                <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+              </div>
+            ` : nothing}
+          </div>
         <div class="plant-card-content">
-          ${this.plant.attributes.last_training_technique ? html`
-            <div class="status-icon training" title="Last trained: ${this.plant.attributes.last_training_technique}">
-              <md-icon>content_cut</md-icon>
-            </div>
-          ` : ''}
-          ${this.plant.attributes.problem ? html`
-            <div class="status-icon problem">
-              <md-icon>warning</md-icon>
-            </div>
-          ` : ''}
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
                ${this._hasRecommendedPreset ? html`
+                 <ha-svg-icon
+                    .path=${mdiStar}
                     style="--mdc-icon-size: 14px; color: var(--primary-color);" 
                     title="Nutrient Preset Recommended"
                  ></ha-svg-icon>

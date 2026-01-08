@@ -557,33 +557,7 @@ export class GrowspaceStore {
 
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            const devices = this.data.$devices.get();
-            let commonGrowspaceId: string | undefined;
-            let mixed = false;
-
-            for (const plantId of selectedIds) {
-                // Find device for this plant
-                let plantGrowspaceId: string | undefined;
-                for (const device of devices) {
-                    if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
-                        plantGrowspaceId = device.device_id;
-                        break;
-                    }
-                }
-
-                if (!plantGrowspaceId) continue; // Should not happen in valid state
-
-                if (commonGrowspaceId === undefined) {
-                    commonGrowspaceId = plantGrowspaceId;
-                } else if (commonGrowspaceId !== plantGrowspaceId) {
-                    mixed = true;
-                    break;
-                }
-            }
-
-            if (!mixed) {
-                growspaceId = commonGrowspaceId;
-            }
+            growspaceId = this._getCommonGrowspaceId(selectedIds);
         }
 
         this.ui.setActiveDialog({
@@ -600,6 +574,11 @@ export class GrowspaceStore {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
         if (selectedIds.length === 0 && !growspaceId) return;
 
+        // Determine context if not provided
+        if (!growspaceId && selectedIds.length > 0) {
+            growspaceId = this._getCommonGrowspaceId(selectedIds);
+        }
+
         this.ui.setActiveDialog({
             type: 'TRAINING',
             payload: {
@@ -608,6 +587,33 @@ export class GrowspaceStore {
                 growspaceId: growspaceId
             }
         });
+    }
+
+    private _getCommonGrowspaceId(plantIds: string[]): string | undefined {
+        const devices = this.data.$devices.get();
+        let commonGrowspaceId: string | undefined;
+        let mixed = false;
+
+        for (const plantId of plantIds) {
+            let plantGrowspaceId: string | undefined;
+            for (const device of devices) {
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
+                    plantGrowspaceId = device.device_id;
+                    break;
+                }
+            }
+
+            if (!plantGrowspaceId) continue;
+
+            if (commonGrowspaceId === undefined) {
+                commonGrowspaceId = plantGrowspaceId;
+            } else if (commonGrowspaceId !== plantGrowspaceId) {
+                mixed = true;
+                break;
+            }
+        }
+
+        return mixed ? undefined : commonGrowspaceId;
     }
 
     openAddPlantDialog(row?: number, col?: number) {

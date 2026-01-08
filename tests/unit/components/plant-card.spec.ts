@@ -557,4 +557,71 @@ describe('PlantCard', () => {
             expect(element._hasRecommendedPreset).toBe(false);  // 0 < 1
         });
     });
+
+    describe('Status Indicators', () => {
+        it('should return true for _isRecentlyWatered if last_watered is within 24h', () => {
+            const recentDate = new Date();
+            recentDate.setHours(recentDate.getHours() - 2);
+            element.plant = { attributes: { last_watered: recentDate.toISOString() } } as any;
+            expect(element._isRecentlyWatered).toBe(true);
+        });
+
+        it('should return false for _isRecentlyWatered if last_watered is older than 24h', () => {
+            const oldDate = new Date();
+            oldDate.setHours(oldDate.getHours() - 30);
+            element.plant = { attributes: { last_watered: oldDate.toISOString() } } as any;
+            expect(element._isRecentlyWatered).toBe(false);
+        });
+
+        it('should return false for _isRecentlyWatered if last_watered is missing', () => {
+            element.plant = { attributes: {} } as any;
+            expect(element._isRecentlyWatered).toBe(false);
+        });
+
+        it('should render training icon when last_training_technique is present', async () => {
+            element.plant = { attributes: { last_training_technique: 'Topping' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.training');
+            expect(icon).toBeTruthy();
+            expect(icon?.getAttribute('title')).toContain('Topping');
+        });
+
+        it('should render watering icon when _isRecentlyWatered is true', async () => {
+            const recentDate = new Date();
+            recentDate.setHours(recentDate.getHours() - 1);
+            element.plant = { attributes: { last_watered: recentDate.toISOString() } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.watering');
+            expect(icon).toBeTruthy();
+        });
+
+        it('should render problem icon when problem is present', async () => {
+            element.plant = { attributes: { problem: 'Yellow leaves' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.problem');
+            expect(icon).toBeTruthy();
+            expect(icon?.getAttribute('title')).toContain('Yellow leaves');
+        });
+
+        it('should render star icon when _hasRecommendedPreset is true', async () => {
+            const $devices = atom<any[]>([{
+                device_id: 'gs1',
+                nutrient_presets: { 'p1': { id: 'p1', stage: 'veg', nutrients: [] } }
+            }]);
+            mockStore.data.$devices = $devices;
+            element.plant = { attributes: { growspace_id: 'gs1', stage: 'veg' } } as any;
+
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const starIcon = element.shadowRoot?.querySelector('ha-svg-icon[title="Nutrient Preset Recommended"]');
+            expect(starIcon).toBeTruthy();
+        });
+    });
 });

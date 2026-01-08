@@ -142,6 +142,58 @@ export const plantCardStyles = css`
     text-transform: capitalize;
   }
 
+  .status-icons {
+    position: relative;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    z-index: 5;
+    padding: 6px 12px
+    right: 16px;
+    justify-content: space-between;
+  }
+
+  .status-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .status-icon:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+
+  .status-icon.training {
+    color: #ff9800; /* Orange for training */
+  }
+
+  .status-icon.watering {
+    color: #2196f3; /* Blue for watering */
+  }
+
+  .status-icon.problem {
+    color: #f44336; /* Red for problem */
+  }
+
+  .status-icon.preset-recommended {
+    color: var(--primary-color);
+  }
+
+  .status-icon ha-svg-icon,
+  .status-icon md-icon {
+    --mdc-icon-size: 16px;
+  }
 
   .plant-card-rich.dragging {
     opacity: 0.5;

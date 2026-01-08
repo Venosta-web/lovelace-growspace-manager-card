@@ -3,6 +3,7 @@ var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.1
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
 var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
+var mdiAlertCircle = "M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
@@ -23,6 +24,7 @@ var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 1
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
 var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
+var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
 var mdiContentSave = "M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z";
 var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z";
 var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
@@ -46,6 +48,7 @@ var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
+var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
@@ -14988,7 +14991,7 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _TrainingDialog_hass_accessor_storage, _TrainingDialog_store_accessor_storage, _TrainingDialog__technique_accessor_storage, _TrainingDialog__notes_accessor_storage, _TrainingDialog__submitting_accessor_storage;
+    var _TrainingDialog_hass_accessor_storage, _TrainingDialog_open_accessor_storage, _TrainingDialog_store_accessor_storage, _TrainingDialog__technique_accessor_storage, _TrainingDialog__notes_accessor_storage, _TrainingDialog__submitting_accessor_storage;
     let _classDecorators = [t$2('training-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -14997,6 +15000,9 @@ class GrowspaceLogbookController {
     let _hass_decorators;
     let _hass_initializers = [];
     let _hass_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
     let _store_decorators;
     let _store_initializers = [];
     let _store_extraInitializers = [];
@@ -15012,6 +15018,8 @@ class GrowspaceLogbookController {
     _classThis = class extends _classSuper {
         get hass() { return __classPrivateFieldGet(this, _TrainingDialog_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _TrainingDialog_hass_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _TrainingDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _TrainingDialog_open_accessor_storage, value, "f"); }
         get store() { return __classPrivateFieldGet(this, _TrainingDialog_store_accessor_storage, "f"); }
         set store(value) { __classPrivateFieldSet(this, _TrainingDialog_store_accessor_storage, value, "f"); }
         get _technique() { return __classPrivateFieldGet(this, _TrainingDialog__technique_accessor_storage, "f"); }
@@ -15066,7 +15074,8 @@ class GrowspaceLogbookController {
                 : 'Log Training';
             return x `
             <ha-dialog
-                open
+                .open=${this.open}
+                @closed=${this._handleClose}
                 .heading=${title}
             >
                 <div class="content">
@@ -15101,7 +15110,8 @@ class GrowspaceLogbookController {
         constructor() {
             super(...arguments);
             _TrainingDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _TrainingDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _TrainingDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _TrainingDialog_store_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
             _TrainingDialog__technique_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, __technique_initializers, '')));
             _TrainingDialog__notes_accessor_storage.set(this, (__runInitializers(this, __technique_extraInitializers), __runInitializers(this, __notes_initializers, '')));
             _TrainingDialog__submitting_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __submitting_initializers, false)));
@@ -15109,6 +15119,7 @@ class GrowspaceLogbookController {
         }
     };
     _TrainingDialog_hass_accessor_storage = new WeakMap();
+    _TrainingDialog_open_accessor_storage = new WeakMap();
     _TrainingDialog_store_accessor_storage = new WeakMap();
     _TrainingDialog__technique_accessor_storage = new WeakMap();
     _TrainingDialog__notes_accessor_storage = new WeakMap();
@@ -15117,11 +15128,13 @@ class GrowspaceLogbookController {
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
         _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _open_decorators = [n$5({ type: Boolean })];
         _store_decorators = [n$5({ attribute: false })];
         __technique_decorators = [r$2()];
         __notes_decorators = [r$2()];
         __submitting_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
         __esDecorate(_classThis, null, __technique_decorators, { kind: "accessor", name: "_technique", static: false, private: false, access: { has: obj => "_technique" in obj, get: obj => obj._technique, set: (obj, value) => { obj._technique = value; } }, metadata: _metadata }, __technique_initializers, __technique_extraInitializers);
         __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
@@ -15869,6 +15882,7 @@ class GrowspaceLogbookController {
             .hass=${this.hass}
             .dataService=${this.store.dataService}
             .presets=${selectedDeviceData?.nutrient_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></nutrient-presets-editor>
         `;
@@ -15878,7 +15892,9 @@ class GrowspaceLogbookController {
                 return x ``;
             return x `
         <training-dialog
+            .open=${true}
             .store=${this.store}
+            @close=${() => this.store.ui.closeDialog()}
         ></training-dialog>
         `;
         }
@@ -16522,6 +16538,55 @@ const plantCardStyles = i$6 `
     text-transform: capitalize;
   }
 
+  .status-icons {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 5;
+  }
+
+  .status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+  }
+
+  .status-icon:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+
+  .status-icon.training {
+    color: #ff9800; /* Orange for training */
+  }
+
+  .status-icon.watering {
+    color: #2196f3; /* Blue for watering */
+  }
+
+  .status-icon.problem {
+    color: #f44336; /* Red for problem */
+  }
+
+  .status-icon.preset-recommended {
+    color: var(--primary-color);
+  }
+
+  .status-icon ha-svg-icon,
+  .status-icon md-icon {
+    --mdc-icon-size: 20px;
+  }
 
   .plant-card-rich.dragging {
     opacity: 0.5;
@@ -16630,6 +16695,16 @@ const plantCardStyles = i$6 `
             const daysInStage = this.plant.attributes.days_in_stage || 0;
             return Object.values(device.nutrient_presets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
         }
+        // Placeholder for watering status, assuming it will be implemented elsewhere
+        get _isRecentlyWatered() {
+            // Example logic: check if last watered within the last 24 hours
+            const lastWatered = this.plant.attributes.last_watered;
+            if (!lastWatered)
+                return false;
+            const twentyFourHoursAgo = new Date();
+            twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+            return new Date(lastWatered) > twentyFourHoursAgo;
+        }
         // --- Click Handlers ---
         focus(options) {
             const card = this.shadowRoot?.querySelector('.plant-card-rich');
@@ -16710,24 +16785,34 @@ const plantCardStyles = i$6 `
               </div>
             `
                 : E}
+        <div class="status-icons">
+            ${this.plant.attributes.last_training_technique ? x `
+              <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
+                <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
+              </div>
+            ` : E}
 
+            ${this._isRecentlyWatered ? x `
+              <div class="status-icon watering" title="Recently watered">
+                <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
+              </div>
+            ` : E}
+
+            ${this.plant.attributes.problem ? x `
+              <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
+                <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+              </div>
+            ` : E}
+          </div>
         <div class="plant-card-content">
-          ${this.plant.attributes.last_training_technique ? x `
-            <div class="status-icon training" title="Last trained: ${this.plant.attributes.last_training_technique}">
-              <md-icon>content_cut</md-icon>
-            </div>
-          ` : ''}
-          ${this.plant.attributes.problem ? x `
-            <div class="status-icon problem">
-              <md-icon>warning</md-icon>
-            </div>
-          ` : ''}
           <div class="pc-info">
             <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
                ${this._hasRecommendedPreset ? x `
+                 <ha-svg-icon
+                    .path=${mdiStar}
                     style="--mdc-icon-size: 14px; color: var(--primary-color);" 
                     title="Nutrient Preset Recommended"
                  ></ha-svg-icon>
@@ -31322,31 +31407,7 @@ class GrowspaceStore {
             return;
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            const devices = this.data.$devices.get();
-            let commonGrowspaceId;
-            let mixed = false;
-            for (const plantId of selectedIds) {
-                // Find device for this plant
-                let plantGrowspaceId;
-                for (const device of devices) {
-                    if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
-                        plantGrowspaceId = device.device_id;
-                        break;
-                    }
-                }
-                if (!plantGrowspaceId)
-                    continue; // Should not happen in valid state
-                if (commonGrowspaceId === undefined) {
-                    commonGrowspaceId = plantGrowspaceId;
-                }
-                else if (commonGrowspaceId !== plantGrowspaceId) {
-                    mixed = true;
-                    break;
-                }
-            }
-            if (!mixed) {
-                growspaceId = commonGrowspaceId;
-            }
+            growspaceId = this._getCommonGrowspaceId(selectedIds);
         }
         this.ui.setActiveDialog({
             type: 'WATERING',
@@ -31361,6 +31422,10 @@ class GrowspaceStore {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
         if (selectedIds.length === 0 && !growspaceId)
             return;
+        // Determine context if not provided
+        if (!growspaceId && selectedIds.length > 0) {
+            growspaceId = this._getCommonGrowspaceId(selectedIds);
+        }
         this.ui.setActiveDialog({
             type: 'TRAINING',
             payload: {
@@ -31369,6 +31434,30 @@ class GrowspaceStore {
                 growspaceId: growspaceId
             }
         });
+    }
+    _getCommonGrowspaceId(plantIds) {
+        const devices = this.data.$devices.get();
+        let commonGrowspaceId;
+        let mixed = false;
+        for (const plantId of plantIds) {
+            let plantGrowspaceId;
+            for (const device of devices) {
+                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
+                    plantGrowspaceId = device.device_id;
+                    break;
+                }
+            }
+            if (!plantGrowspaceId)
+                continue;
+            if (commonGrowspaceId === undefined) {
+                commonGrowspaceId = plantGrowspaceId;
+            }
+            else if (commonGrowspaceId !== plantGrowspaceId) {
+                mixed = true;
+                break;
+            }
+        }
+        return mixed ? undefined : commonGrowspaceId;
     }
     openAddPlantDialog(row, col) {
         if (row !== undefined && col !== undefined) {
@@ -31761,6 +31850,12 @@ let GrowspaceManagerCard = (() => {
         _handleExitEditMode() {
             this.store.ui.setEditMode(false);
         }
+        _handleToggleExpansion() {
+            this.store.toggleHeaderExpansion();
+        }
+        _handleTrainingSelected() {
+            this.store.openBatchTrainingDialog();
+        }
         render() {
             if (!this.hass) {
                 return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -31796,11 +31891,11 @@ let GrowspaceManagerCard = (() => {
             @keydown=${this._handleKeyboardNav}
             @view-mode-changed=${this._handleViewModeChanged}
             @growspace-changed=${this._handleGrowspaceChanged}
-            @toggle-expansion=${() => this.store.toggleHeaderExpansion()}
+            @toggle-expansion=${this._handleToggleExpansion}
             @select-all=${this._handleSelectAll}
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
-            @training-selected=${() => this.store.openBatchTrainingDialog()}
+            @training-selected=${this._handleTrainingSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

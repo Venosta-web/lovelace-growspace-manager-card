@@ -16,6 +16,7 @@ export class TrainingDialog extends LitElement {
     @consume({ context: hassContext, subscribe: true })
     public accessor hass!: HomeAssistant;
 
+    @property({ type: Boolean }) public accessor open = false;
     @property({ attribute: false }) public accessor store!: GrowspaceStore;
 
     @state() private accessor _technique: string = '';
@@ -93,7 +94,8 @@ export class TrainingDialog extends LitElement {
 
         return html`
             <ha-dialog
-                open
+                .open=${this.open}
+                @closed=${this._handleClose}
                 .heading=${title}
             >
                 <div class="content">

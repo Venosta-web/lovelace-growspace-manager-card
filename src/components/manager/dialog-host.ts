@@ -371,6 +371,7 @@ export class DialogHost extends LitElement {
             .hass=${this.hass}
             .dataService=${this.store.dataService}
             .presets=${selectedDeviceData?.nutrient_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
             @data-changed=${() => this.store.refreshData()}
         ></nutrient-presets-editor>
         `;
@@ -380,7 +381,9 @@ export class DialogHost extends LitElement {
         if (active.type !== 'TRAINING') return html``;
         return html`
         <training-dialog
+            .open=${true}
             .store=${this.store}
+            @close=${() => this.store.ui.closeDialog()}
         ></training-dialog>
         `;
     }
