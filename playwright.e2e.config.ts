@@ -14,9 +14,9 @@ export default defineConfig({
     /* Opt out of parallel tests on CI. */
     workers: 1, // Limit workers to avoid race conditions on single HA instance
     /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-    reporter: 'html',
+    reporter: [['html', { open: 'never' }]],
 
-    timeout: 60000,
+    timeout: 15000,
     expect: {
         timeout: 10000,
     },
@@ -40,20 +40,21 @@ export default defineConfig({
         {
             name: 'chromium',
             use: {
-                ...devices['Desktop Chrome'],
-                storageState: 'playwright/.auth/user.json',
+                // ...devices['Desktop Chrome'],
+                storageState: '.auth/user.json',
             },
             dependencies: ['setup'],
         },
     ],
 
     /* Run your local dev server before starting the tests */
-    webServer: {
-        command: 'docker compose -f tests/e2e/docker-compose.test.yml up',
-        url: 'http://127.0.0.1:8123',
-        reuseExistingServer: !process.env.CI,
-        timeout: 0, // Infinite wait for docker
-        stdout: 'pipe',
-        stderr: 'pipe',
-    },
+    /* Run your local dev server before starting the tests */
+    // webServer: {
+    //    command: 'docker compose -f tests/e2e/docker-compose.test.yml up',
+    //    url: 'http://127.0.0.1:8123',
+    //    reuseExistingServer: !process.env.CI,
+    //    timeout: 0, // Infinite wait for docker
+    //    stdout: 'pipe',
+    //    stderr: 'pipe',
+    // },
 });

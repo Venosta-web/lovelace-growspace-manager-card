@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../coverage-helper';
 
 test.describe('Growspace Strains View', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
         page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
         // Ensure we are logged in before each test
@@ -9,16 +9,16 @@ test.describe('Growspace Strains View', () => {
         await expect(page.locator('home-assistant-main')).toBeVisible();
     });
 
-    test('Verify "No strains found" message with Lit artifact', async ({ page }) => {
+    test('Verify "No strains found" message with Lit artifact', async ({ coveragePage: page }) => {
         // 1. Navigate to default view
         await page.goto('/lovelace/default_view');
 
         // 2. Wait for the card to be visible
-        const card = page.locator('growspace-manager-card');
+        const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
 
         // 3. Click the menu button in the card header
-        await card.locator('.menu-button').click();
+        await card.locator('.menu-container .icon-button').click();
 
         // 4. Click 'Strains' in the opened menu
         await page.getByText('Strains').click();
@@ -40,16 +40,16 @@ test.describe('Growspace Strains View', () => {
         expect(textContent?.toLowerCase()).toContain('nonexistentstrainxyz');
     });
 
-    test('Create new Strain', async ({ page }) => {
+    test('Create new Strain', async ({ coveragePage: page }) => {
         // 1. Navigate to default view
         await page.goto('/lovelace/default_view');
 
         // 2. Wait for the card to be visible
-        const card = page.locator('growspace-manager-card');
+        const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
 
         // 3. Click the menu button in the card header
-        await card.locator('.menu-button').click();
+        await card.locator('.menu-container .icon-button').click();
 
         // 4. Click 'Strains' in the opened menu
         await page.getByText('Strains').click();
@@ -88,12 +88,12 @@ test.describe('Growspace Strains View', () => {
         await expect(strainCard).toBeVisible({ timeout: 10000 });
     });
 
-    test('Delete Strain', async ({ page }) => {
+    test('Delete Strain', async ({ coveragePage: page }) => {
         // 1. Navigate and open library
         await page.goto('/lovelace/default_view');
-        const card = page.locator('growspace-manager-card');
+        const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
-        await card.locator('.menu-button').click();
+        await card.locator('.menu-container .icon-button').click();
         await page.getByText('Strains').click();
 
         // 2. Wait for dialog
@@ -132,12 +132,12 @@ test.describe('Growspace Strains View', () => {
         await expect(strainCard).toBeHidden({ timeout: 10000 });
     });
 
-    test('Delete Strain via Editor', async ({ page }) => {
+    test('Delete Strain via Editor', async ({ coveragePage: page }) => {
         // 1. Navigate and open library
         await page.goto('/lovelace/default_view');
-        const card = page.locator('growspace-manager-card');
+        const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
-        await card.locator('.menu-button').click();
+        await card.locator('.menu-container .icon-button').click();
         await page.getByText('Strains').click();
 
         // 2. Wait for dialog

@@ -1,15 +1,18 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup, expect } from '../coverage-helper';
 import fs from 'fs';
 import path from 'path';
 
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const authFile = path.join(__dirname, '../../.auth/user.json');
 
-setup('authenticate', async ({ page }) => {
+setup('authenticate', async ({ coveragePage: page }) => {
     // 1. Navigate
-    await page.goto('http://127.0.0.1:8123');
-
-    // 2. Intelligent Wait: Race between Login and Onboarding
-    console.log('Waiting for Login or Onboarding...');
+    console.log('Navigating to Home Assistant...');
+    await page.goto('http://127.0.0.1:8123', { waitUntil: 'domcontentloaded', timeout: 10000 });
+    console.log('Navigation complete. Checking page state...');
+    console.log(`URL: ${page.url()}`);
     // We wait for EITHER the username input OR the onboarding header/buttons
     const loginInput = page.locator('input[name="username"]');
     const createHomeBtn = page.getByRole('button', { name: 'Create my smart home' });

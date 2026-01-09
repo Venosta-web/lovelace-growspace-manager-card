@@ -14761,6 +14761,8 @@ class GrowspaceLogbookController {
     `;
         }
         _renderPresetOptions() {
+            if (!this.store || !this.store.data)
+                return E;
             const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
             if (!device || !device.nutrient_presets)
                 return E;
@@ -14800,6 +14802,8 @@ class GrowspaceLogbookController {
         }
         _getNutrientSuggestions() {
             const nutrients = new Set();
+            if (!this.store || !this.store.data)
+                return [];
             const devices = this.store.data.$devices.get();
             devices.forEach(device => {
                 if (device.nutrient_presets) {
@@ -16539,18 +16543,21 @@ const plantCardStyles = i$6 `
   }
 
   .status-icons {
-    position: absolute;
-    top: 12px;
-    left: 12px;
+    position: relative;
+    top: 16px;
+    left: 16px;
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: row;
+    gap: 16px;
     z-index: 5;
+    padding: 6px 12px
+    right: 16px;
+    justify-content: space-between;
   }
 
   .status-icon {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -16585,7 +16592,7 @@ const plantCardStyles = i$6 `
 
   .status-icon ha-svg-icon,
   .status-icon md-icon {
-    --mdc-icon-size: 20px;
+    --mdc-icon-size: 16px;
   }
 
   .plant-card-rich.dragging {
@@ -31255,6 +31262,7 @@ class GrowspaceStore {
             });
             await Promise.all(updatePromises);
             this.ui.closeDialog();
+            await this.refreshData();
             if (this.ui.$isEditMode.get()) {
                 this.ui.clearPlantSelection();
                 this.ui.setEditMode(false);

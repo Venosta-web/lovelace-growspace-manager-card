@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../coverage-helper';
 
 test.describe('Growspace Configuration', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ coveragePage: page }) => {
         page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
         page.on('pageerror', err => console.log(`BROWSER ERROR: ${err}`));
         console.log('Navigating to root...');
@@ -9,8 +9,8 @@ test.describe('Growspace Configuration', () => {
         await expect(page.locator('home-assistant-main')).toBeVisible();
     });
 
-    test('should open environment config and show new fields', async ({ page }) => {
-        const card = page.locator('growspace-manager-card');
+    test('should open environment config and show new fields', async ({ coveragePage: page }) => {
+        const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
 
         const menuButton = card.locator('.menu-button'); // Uses class binding in source? 
@@ -53,18 +53,18 @@ test.describe('Growspace Configuration', () => {
 
         // 6. Verify new sections/fields presence
         console.log('Verifying new fields...');
-        await expect(configDialog.locator('h3').filter({ hasText: 'Climate Devices' })).toBeVisible();
+        await expect(configDialog.locator('h3').filter({ hasText: 'Climate Control' })).toBeVisible();
 
         // Verify Labels
         await expect(configDialog.locator('label').filter({ hasText: 'Light Source / Sensor' })).toBeVisible();
         await expect(configDialog.locator('label').filter({ hasText: 'Exhaust Fan / Switch' })).toBeVisible();
-        await expect(configDialog.locator('label').filter({ hasText: 'Humidifier' })).toBeVisible();
-        await expect(configDialog.locator('label').filter({ hasText: 'Dehumidifier' })).toBeVisible();
+        await expect(configDialog.locator('label').filter({ hasText: /^Humidifier$/ })).toBeVisible();
+        await expect(configDialog.locator('label').filter({ hasText: /^Dehumidifier$/ })).toBeVisible();
         await expect(configDialog.locator('label').filter({ hasText: 'Control Dehumidifier' })).toBeVisible();
 
         // 7. Test Submission (without changing much, just save defaults/empty)
         console.log('Clicking Save Sensors...');
-        const saveButton = configDialog.locator('button.md3-button.primary').filter({ hasText: 'Save Sensors' });
+        const saveButton = configDialog.locator('button.md3-button.primary').filter({ hasText: 'Save Configuration' });
         await expect(saveButton).toBeVisible();
         await saveButton.click();
 

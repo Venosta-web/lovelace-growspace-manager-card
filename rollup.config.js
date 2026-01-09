@@ -30,7 +30,7 @@ if (isProduction && !isCoverage) {
 export default {
   input: 'src/index.ts',
   output: {
-    file: isCoverage ? 'dist/growspace-manager-card.instrumented.js' : 'dist/growspace-manager-card.js',
+    file: 'dist/growspace-manager-card.js',
     format: 'es',
     sourcemap: !isProduction || isCoverage,
     inlineDynamicImports: true,

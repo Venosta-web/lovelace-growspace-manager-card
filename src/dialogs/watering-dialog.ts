@@ -450,6 +450,7 @@ export class WateringDialog extends LitElement {
     `;
   }
   private _renderPresetOptions() {
+    if (!this.store || !this.store.data) return nothing;
     const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
     if (!device || !device.nutrient_presets) return nothing;
 
@@ -498,6 +499,7 @@ export class WateringDialog extends LitElement {
 
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
+    if (!this.store || !this.store.data) return [];
     const devices = this.store.data.$devices.get();
 
     devices.forEach(device => {

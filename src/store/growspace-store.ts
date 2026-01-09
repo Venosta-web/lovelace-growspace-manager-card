@@ -342,6 +342,7 @@ export class GrowspaceStore {
             await Promise.all(updatePromises);
 
             this.ui.closeDialog();
+            await this.refreshData();
 
             if (this.ui.$isEditMode.get()) {
                 this.ui.clearPlantSelection();
