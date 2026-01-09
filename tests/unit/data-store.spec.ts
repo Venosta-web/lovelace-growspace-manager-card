@@ -76,8 +76,8 @@ describe('DataStore', () => {
             });
 
             const updated = store.$wsDataCache.get();
-            expect(updated.gs1.grid['1-1'].plant_id).toBe('p1-updated');
-            expect(updated.gs1.grid['1-2'].plant_id).toBe('p2');
+            expect(updated!.gs1.grid['1-1']!.plant_id).toBe('p1-updated');
+            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
 
             // Immutability check
             expect(updated).not.toBe(initialCache);
@@ -116,9 +116,9 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1', 'gs1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated.gs1.grid['1-1']).toBeNull();
-            expect(updated.gs1.grid['1-2'].plant_id).toBe('p2');
-            expect(updated.gs2.grid['1-1'].plant_id).toBe('p1'); // Should check only gs1
+            expect(updated!.gs1.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
+            expect(updated!.gs2.grid['1-1']!.plant_id).toBe('p1'); // Should check only gs1
         });
 
         it('should remove plant from ws cache (all growspaces)', () => {
@@ -135,8 +135,8 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated.gs1.grid['1-1']).toBeNull();
-            expect(updated.gs1.grid['1-2'].plant_id).toBe('p2');
+            expect(updated!.gs1.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
             expect(updated.gs2.grid['1-1']).toBeNull(); // Matched by entity_id suffix logic in store
         });
 
@@ -149,6 +149,108 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1');
 
             expect(store.$wsDataCache.get()).toBe(initialCache); // strict equality check for no change
+        });
+    });
+
+    describe('addPlantEvent', () => {
+        it('should add event to plant by plant_id', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': { plant_id: 'p1', events: [] }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'action', action: 'water', date: '2023-01-05', label: 'Watered' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated?.gs1?.grid['1-1']?.events).toHaveLength(1);
+            expect(updated?.gs1?.grid['1-1']?.events?.[0]).toEqual(event);
+        });
+
+        it('should add event to plant by entity_id suffix', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': { entity_id: 'sensor.plant_p1', events: [] }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'milestone', label: 'Flowering' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs1.grid['1-1']!.events).toHaveLength(1);
+        });
+
+        it('should create events array if not present', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': { plant_id: 'p1' } // No events array
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'action', action: 'train' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs1.grid['1-1']!.events).toHaveLength(1);
+        });
+
+        it('should not modify cache if plant not found', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': { plant_id: 'p2' }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            store.addPlantEvent('p1', { type: 'action' } as any);
+
+            expect(store.$wsDataCache.get()).toBe(initialCache);
+        });
+
+        it('should skip growspaces with no grid', () => {
+            const initialCache = {
+                gs1: { grid: null },
+                gs2: { grid: { '1-1': { plant_id: 'p1' } } }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'action', action: 'water' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs2.grid['1-1']!.events).toHaveLength(1);
+        });
+
+        it('should skip null plant entries in grid', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': null,
+                        '1-2': { plant_id: 'p1' }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'action', action: 'water' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs1.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid['1-2']!.events).toHaveLength(1);
         });
     });
 });

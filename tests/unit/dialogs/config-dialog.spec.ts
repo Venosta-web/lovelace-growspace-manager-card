@@ -1056,4 +1056,94 @@ describe('ConfigDialog', () => {
             expect((element as any).edit_plants_per_row).toBe(4);
         });
     });
+
+    describe('Ultimate Branch Coverage', () => {
+        it('should return early in _submitEditGrowspace if no id selected', () => {
+            const listener = vi.fn();
+            element.addEventListener('edit-growspace-submit', listener);
+            (element as any).edit_selectedId = '';
+            (element as any)._submitEditGrowspace();
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('should return early in _submitDeleteGrowspace if no id selected', () => {
+            (element as any).edit_selectedId = '';
+            (element as any)._showDeleteConfirm = false;
+            (element as any)._submitDeleteGrowspace();
+            expect((element as any)._showDeleteConfirm).toBe(false);
+        });
+
+        it('should handle device not found in _populateEditFields', () => {
+            (element as any).edit_name = 'Original';
+            // Passing ID that doesn't exist in element.devices
+            (element as any)._populateEditFields('missing_id');
+            expect((element as any).edit_selectedId).toBe('missing_id');
+            // edit_name should NOT change
+            expect((element as any).edit_name).toBe('Original');
+        });
+
+        it('should fallback to defaults in _populateEditFields if device properties missing', () => {
+            element.devices = [
+                {
+                    device_id: 'incomplete',
+                    name: 'Incomplete Device'
+                    // missing rows, plants_per_row, notification_target
+                } as any
+            ];
+
+            (element as any)._populateEditFields('incomplete');
+
+            expect((element as any).edit_name).toBe('Incomplete Device');
+            expect((element as any).edit_rows).toBe(4); // Default
+            expect((element as any).edit_plants_per_row).toBe(4); // Default
+            expect((element as any).edit_notification_service).toBe(''); // Default
+        });
+
+        it('should handle missing environment_attributes in _handleEnvGrowspaceChange', async () => {
+            element.currentTab = 'environment';
+            element.devices = [
+                {
+                    device_id: 'no_env',
+                    name: 'No Env',
+                    environment_attributes: undefined
+                } as any
+            ];
+            await element.updateComplete;
+
+            // Pre-set some values, expecting them to be reset
+            (element as any).env_temp_sensor = 'old_sensor';
+
+            const event = { target: { value: 'no_env' } } as any;
+            (element as any)._handleEnvGrowspaceChange(event);
+
+            expect((element as any).env_selectedGrowspaceId).toBe('no_env');
+            expect((element as any).env_temp_sensor).toBe('');
+        });
+
+        it('should fallback to defaults for environment attributes in _handleEnvGrowspaceChange', async () => {
+            element.currentTab = 'environment';
+            element.devices = [
+                {
+                    device_id: 'partial_env',
+                    name: 'Partial Env',
+                    environment_attributes: {
+                        // Empty object, should trigger all || '' fallbacks
+                    }
+                } as any
+            ];
+            await element.updateComplete;
+
+            // Pre-set to something else to verify reset
+            (element as any).env_temp_sensor = 'old';
+            (element as any).env_control_dehumidifier = true;
+
+            const event = { target: { value: 'partial_env' } } as any;
+            (element as any)._handleEnvGrowspaceChange(event);
+
+            expect((element as any).env_temp_sensor).toBe('');
+            expect((element as any).env_control_dehumidifier).toBe(false);
+            expect((element as any).env_dehumidifier_thresholds).toEqual({});
+        });
+    });
 });
+

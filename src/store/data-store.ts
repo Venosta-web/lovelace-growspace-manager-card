@@ -108,4 +108,34 @@ export class GrowspaceDataStore {
             this.$wsDataCache.set(newCache);
         }
     }
+
+    public addPlantEvent(plantId: string, event: import('../types').PlantTimelineEvent) {
+        const currentCache = this.$wsDataCache.get();
+        const newCache = { ...currentCache };
+        let changed = false;
+
+        Object.keys(newCache).forEach(gsId => {
+            const grid = newCache[gsId].grid;
+            if (!grid) return;
+
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    // Create a deep copy of the plant data to avoid mutation
+                    const updatedPlant = { ...plant, events: [...(plant['events'] || []), event] };
+                    newCache[gsId] = {
+                        ...newCache[gsId],
+                        grid: {
+                            ...newCache[gsId].grid,
+                            [key]: updatedPlant
+                        }
+                    };
+                    changed = true;
+                }
+            });
+        });
+
+        if (changed) {
+            this.$wsDataCache.set(newCache);
+        }
+    }
 }

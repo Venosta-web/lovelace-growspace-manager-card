@@ -9,6 +9,8 @@ import {
   mdiDelete,
   mdiCannabis,
   mdiArrowRight,
+  mdiCalendarClock,
+  mdiViewDashboard,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -23,6 +25,7 @@ import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/md3-date-input';
+import '../components/plant/plant-timeline';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -34,11 +37,15 @@ import {
   TakeCloneEvent,
   MoveCloneEvent,
 } from '../events';
+import { GrowspaceLogbookController } from '../controllers/growspace-logbook-controller';
+import { GrowspaceEvent, PlantTimelineEvent } from '../types';
 
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   accessor hass!: HomeAssistant;
+
+  private _logbookController = new GrowspaceLogbookController();
 
   @property({ type: Boolean, reflect: true }) accessor open = false;
   @property({ attribute: false }) accessor dialog: PlantOverviewDialogState | undefined;
@@ -50,6 +57,8 @@ export class PlantOverviewDialog extends LitElement {
   @state() private accessor showAllDates = false;
   @state() private accessor cloneTargetId = '';
   @state() private accessor _showDeleteConfirmation = false;
+  @state() private accessor _activeTab: 'dashboard' | 'timeline' = 'dashboard';
+  @state() private accessor _logbookEvents: GrowspaceEvent[] = [];
 
   willUpdate(changedProps: Map<string, any>) {
     // Handle dialog state object if passed (legacy/alternative usage)
@@ -57,6 +66,11 @@ export class PlantOverviewDialog extends LitElement {
       this.plant = this.dialog.plant;
       this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
       this.cloneTargetId = '';
+      if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
+        this._activeTab = this.dialog.activeTab;
+      }
+      // Fetch logbook when dialog is set
+      this._fetchLogbook();
     }
 
     // Handle direct prop injection (DialogHost usage)
@@ -64,6 +78,16 @@ export class PlantOverviewDialog extends LitElement {
     if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
       this.editedAttributes = this._getAttributesFromPlant();
     }
+
+    // Fetch logbook when plant changes (direct prop usage)
+    if (changedProps.has('plant') && this.plant) {
+      this._fetchLogbook();
+    }
+  }
+
+  private async _fetchLogbook() {
+    if (!this.plant?.attributes?.growspace_id || !this.hass) return;
+    this._logbookEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
   }
 
   private _getAttributesFromPlant(): PlantOverviewEditedAttributes {
@@ -206,6 +230,48 @@ export class PlantOverviewDialog extends LitElement {
         .dialog-header {
           padding: 12px 16px;
         }
+      }
+
+      .tabs-container {
+        display: flex;
+        padding: 0 24px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        padding: 12px 16px;
+        color: var(--secondary-text-color, #aaa);
+        font-family: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+      }
+      .tab-btn:hover {
+        color: var(--primary-text-color, #fff);
+      }
+      .tab-btn.active {
+        color: var(--primary-color, #4caf50);
+        font-weight: 500;
+      }
+      .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary-color, #4caf50);
+      }
+      .tab-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
       }
     `,
   ];
@@ -419,7 +485,112 @@ export class PlantOverviewDialog extends LitElement {
             </button>
           </div>
 
+          <!-- TABS -->
+          <div class="tabs-container">
+            <button 
+                class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'dashboard'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+                Overview
+            </button>
+            <button 
+                class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'timeline'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
+                Timeline
+            </button>
+          </div>
+
           <div class="overview-grid">
+            ${this._activeTab === 'dashboard' ? this._renderDashboard(attributes) : this._renderTimeline()}
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
+             <div class="standard-actions" style="display:flex; gap:12px;">
+                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiDelete}"></path>
+                   </svg>
+                   Delete
+                 </button>
+             </div>
+
+             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+                 ${(this.plant.state || '').toLowerCase() === 'mother' ? html`
+                    <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
+                       <md3-number-input
+                        id="clone-count-input"
+                        .value=${1}
+                        .min=${1}
+                        .max=${10}
+                        style="width: 80px;"
+                      ></md3-number-input>
+                      <button class="md3-button primary"
+                        @click=${(e: MouseEvent) => {
+          const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
+          const input = container?.querySelector('#clone-count-input') as any;
+          const val = input ? parseInt(input.value, 10) : 1;
+          const numClones = isNaN(val) ? 1 : val;
+          this._takeClone(this.plant!, numClones);
+        }}
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                        Take Clone
+                      </button>
+                    </div>
+                 ` : nothing}
+                 ${(this.plant.state || '').toLowerCase() === 'flower' ? html`
+                   <button class="md3-button primary" @click=${() => this._harvest(this.plant!)}>
+                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                     Harvest
+                   </button>
+                 ` : nothing}
+    
+                 ${(this.plant.state || '').toLowerCase() === 'dry' ? html`
+                   <button class="md3-button primary" @click=${() => this._finishDrying(this.plant!)}>
+                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                     Finish Drying
+                   </button>
+                 ` : nothing}
+    
+                 ${(this.plant.state || '').toLowerCase() === 'clone' ? html`
+                    <div style="display:flex; align-items:center; gap:8px;">
+                       <md3-select
+                         label="Target Growspace"
+                         .value=${this.cloneTargetId}
+                         .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                         style="width: 200px;"
+                         @change=${(e: CustomEvent) => this.cloneTargetId = e.detail}
+                       ></md3-select>
+                      <button class="md3-button primary"
+                        @click=${() => this._moveClone(this.plant!)}
+                        style="margin-top: 24px;"
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                        Move
+                      </button>
+                    </div>
+                 ` : nothing}
+
+                <button class="md3-button tonal" @click=${() => this._update()}>
+                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                  Save Changes
+                </button>
+             </div>
+          </div>
+
+      </ha-dialog>
+    `;
+  }
+
+  private _renderDashboard(attributes: PlantOverviewEditedAttributes): TemplateResult {
+    return html`
             <!-- IDENTITY & LOCATION CARD -->
             <div class="detail-card">
               <h3>Identity & Location</h3>
@@ -452,33 +623,33 @@ export class PlantOverviewDialog extends LitElement {
         : html`
                     <div class="stat-grid">
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.strain}</span>
+                        <span class="stat-value">${this.plant!.attributes?.strain}</span>
                         <span class="stat-label">Strain</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
+                        <span class="stat-value">${this.plant!.attributes?.phenotype || 'N/A'}</span>
                         <span class="stat-label">Phenotype</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
+                        <span class="stat-value">${this.plant!.attributes?.row ?? '-'}</span>
                         <span class="stat-label">Row</span>
                       </div>
                       <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
+                        <span class="stat-value">${this.plant!.attributes?.col ?? '-'}</span>
                         <span class="stat-label">Col</span>
                       </div>
                     </div>
                   `}
             </div>
             <!-- STATS CARD -->
-            ${this._renderPlantStats(this.plant)}
+            ${this._renderPlantStats(this.plant!)}
 
-            <!-- TIMELINE CARD -->
+            <!-- TIMELINE CARD (RENAMED TO LIFECYCLE DATES) -->
             <div class="detail-card">
               <div
                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
               >
-                <h3 style="margin: 0;">Timeline</h3>
+                <h3 style="margin: 0;">Lifecycle Dates</h3>
                 <button
                   class="md3-button text"
                   style="min-width: auto; padding: 4px;"
@@ -607,104 +778,97 @@ export class PlantOverviewDialog extends LitElement {
             : nothing}
                   `}
             </div>
-          </div>
+    `;
+  }
 
-          <!-- ACTION BUTTONS -->
-          <div class="button-group" style="padding: 16px 24px;">
-            <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
+  private _renderTimeline(): TemplateResult | typeof nothing {
+    if (!this.plant) return nothing;
 
-            <button class="md3-button tonal" @click=${() => this._update()}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiCheck}"></path>
-              </svg>
-              Save
-            </button>
+    const recordedEvents = this.plant.attributes?.events || [];
 
-            <!-- DYNAMIC ACTIONS -->
-            ${(this.plant.state || '').toLowerCase() === PlantStage.MOTHER
-        ? html`
-                  <div
-                    class="take-clone-container"
-                    style="display:contents;"
-                    data-plant-id="${this.plant.entity_id}"
-                  >
-                    <md3-number-input
-                      .min=${1}
-                      .max=${10}
-                      .value=${1}
-                      id="clone-count-input"
-                      style="width: 80px;"
-                    ></md3-number-input>
-                    <button
-                      class="md3-button primary"
-                      @click=${(e: MouseEvent) => {
-            const btn = e.currentTarget as HTMLElement;
-            const container = btn.parentElement;
-            const inputEl = container?.querySelector('md3-number-input') as any;
-            const numClones = inputEl ? Number(inputEl.value) : 1;
-            this._takeClone(this.plant!, numClones);
-          }}
-                    >
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiContentCopy}"></path>
-                      </svg>
-                      Take Clone
-                    </button>
-                  </div>
-                `
-        : nothing}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.FLOWER
-        ? html`
-                  <button class="md3-button primary" @click=${() => this._harvest(this.plant!)}>
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiFlower}"></path>
-                    </svg>
-                    Harvest
-                  </button>
-                `
-        : nothing}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.DRY
-        ? html`
-                  <button
-                    class="md3-button primary"
-                    @click=${() => this._finishDrying(this.plant!)}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiCannabis}"></path>
-                    </svg>
-                    Finish Drying
-                  </button>
-                `
-        : nothing}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.CLONE
-        ? html`
-                  <div style="display:contents; display:flex; gap: 8px; align-items: center;">
-                    <md3-select
-                      .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
-          label: name,
-          value: id,
-        }))}
-                      .value=${this.cloneTargetId}
-                      @change=${(e: CustomEvent) => (this.cloneTargetId = e.detail)}
-                      style="min-width: 150px;"
-                    ></md3-select>
-                    <button class="md3-button primary" @click=${() => this._moveClone(this.plant!)}>
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiArrowRight}"></path>
-                      </svg>
-                      Move
-                    </button>
-                  </div>
-                `
-        : nothing}
-          </div>
+    // 1. Extract Milestones
+    const milestones: PlantTimelineEvent[] = [];
+    const milestoneFields = [
+      { key: 'planted_date', label: 'Planted' },
+      { key: 'seedling_start', label: 'Seedling' },
+      { key: 'mother_start', label: 'Mother' },
+      { key: 'clone_start', label: 'Clone' },
+      { key: 'veg_start', label: 'Vegetative' },
+      { key: 'flower_start', label: 'Flowering' },
+      { key: 'dry_start', label: 'Drying' },
+      { key: 'cure_start', label: 'Curing' },
+      { key: 'harvest_date', label: 'Harvested' }
+    ];
+
+    milestoneFields.forEach(field => {
+      const date = (this.plant?.attributes as any)?.[field.key];
+      if (date) {
+        milestones.push({
+          type: 'milestone',
+          date: String(date),
+          label: field.label
+        });
+      }
+    });
+
+    // 2. Add Logbook Events (Watering, Training)
+    const normalize = (s?: string) => s?.toLowerCase().trim() || '';
+    const plantId = (this.plant?.attributes as any)?.plant_id || this.plant.entity_id?.split('.')[1] || '';
+    const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+
+    const logbookEvents: PlantTimelineEvent[] = this._logbookEvents
+      .filter(e => {
+        const cat = normalize(e.category);
+        const type = normalize(e.sensor_type);
+        const reasons = (e.reasons || []);
+
+        // 1. Check if it's a watering/irrigation event
+        const isWatering = cat === 'irrigation' ||
+          (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+          ['irrigation', 'drain', 'water'].includes(type) ||
+          type.includes('water');
+
+        // 2. Check if it's a training event
+        const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
+
+        if (!isWatering && !isTraining) return false;
+
+        // 3. Filter by plant_id - only include events that mention THIS plant
+        // OR if it's an automated irrigation event (growspace-wide)
+        if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
+          return true;
+        }
+
+        // Backend format: "plant_id:uuid-here"
+        const mentionsThisPlant = reasons.some(r => {
+          const rLower = r.toLowerCase();
+          if (rLower.startsWith('plant_id:')) {
+            const eventPlantId = rLower.replace('plant_id:', '').trim();
+            return eventPlantId === plantId.toLowerCase();
+          }
+          return false;
+        });
+
+        return mentionsThisPlant;
+      })
+      .map(e => ({
+        type: 'action',
+        date: e.start_time,
+        action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+        // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
+        details: e.reasons?.filter(r => {
+          const rLower = r.toLowerCase();
+          return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+        }).join(', ') || ''
+      }));
+
+    // Combine all
+    const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
+
+    return html`
+        <div style="grid-column: 1 / -1;">
+            <plant-timeline .events=${allEvents}></plant-timeline>
         </div>
-      </ha-dialog>
     `;
   }
 }

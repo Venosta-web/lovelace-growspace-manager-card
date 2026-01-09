@@ -49,6 +49,7 @@ describe('GrowspaceGrid', () => {
     let $focusedPlantIndex: any;
     let $notification: any;
     let $activeDialog: any;
+    let $gridOverlayMode: any;
 
     beforeEach(async () => {
         // Initialize atoms
@@ -60,6 +61,7 @@ describe('GrowspaceGrid', () => {
         $focusedPlantIndex = atom(-1);
         $notification = atom(null);
         $activeDialog = atom({ type: 'NONE', payload: null });
+        $gridOverlayMode = atom('none');
 
         mockStore = {
             ui: {
@@ -71,6 +73,7 @@ describe('GrowspaceGrid', () => {
                 $focusedPlantIndex,
                 $notification,
                 $activeDialog,
+                $gridOverlayMode,
                 setEditMode: vi.fn(),
                 setViewMode: vi.fn(),
                 togglePlantSelection: vi.fn(),
@@ -511,6 +514,138 @@ describe('GrowspaceGrid', () => {
 
             const cards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
             expect(cards?.length).toBe(1);
+        });
+    });
+
+    describe('Grid Overlay getOverlayColor', () => {
+        let $devices: any;
+
+        beforeEach(() => {
+            $devices = atom([]);
+            mockStore.data = { $devices };
+        });
+
+        it('should return transparent when mode is none', async () => {
+            $gridOverlayMode.set('none');
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            // No overlay should be rendered when mode is none
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeNull();
+        });
+
+        it('should return transparent when growspaceId is missing', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1' } // No growspace_id
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            if (overlay) {
+                expect((overlay as HTMLElement).style.backgroundColor).toBe('transparent');
+            }
+        });
+
+        it('should return transparent when device not found', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([]); // No devices
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs-not-found' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            if (overlay) {
+                expect((overlay as HTMLElement).style.backgroundColor).toBe('transparent');
+            }
+        });
+
+        it('should return green overlay for vpd status ok', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            // Green color for ok status
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('76');
+        });
+
+        it('should return orange overlay for vpd status warning', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'warning' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            // Orange color for warning status
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('255');
+        });
+
+        it('should return red overlay for vpd status danger', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'danger' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            // Red color for danger status
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('244');
+        });
+
+        it('should return transparent for unknown vpd status', async () => {
+            $gridOverlayMode.set('vpd');
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'unknown' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            if (overlay) {
+                expect((overlay as HTMLElement).style.backgroundColor).toBe('transparent');
+            }
         });
     });
 });

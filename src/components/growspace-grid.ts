@@ -5,13 +5,36 @@ import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { StoreController } from '@nanostores/lit';
-import { PlantEntity, StrainEntry } from '../types';
+import { PlantEntity, StrainEntry, GridOverlayMode } from '../types';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
 // Global imports removed
 import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
+
+// Helper to determine overlay color
+function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: GrowspaceStore): string {
+  if (mode === 'none') return 'transparent';
+
+  const growspaceId = plant.attributes.growspace_id;
+  if (!growspaceId) return 'transparent';
+
+  const device = store.data.$devices.get().find(d => d.device_id === growspaceId);
+  if (!device) return 'transparent';
+
+  if (mode === 'vpd') {
+    const status = device.biological_metrics.vpd_status;
+    if (status === 'ok') return 'rgba(76, 175, 80, 0.15)'; // Green
+    if (status === 'warning') return 'rgba(255, 152, 0, 0.15)'; // Orange
+    if (status === 'danger') return 'rgba(244, 67, 54, 0.15)'; // Red
+  }
+
+  // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
+  // For now, we only implement VPD visualization as it's the most "calculated" metric available
+
+  return 'transparent';
+}
 
 @customElement('growspace-grid')
 export class GrowspaceGrid extends LitElement {
@@ -35,8 +58,11 @@ export class GrowspaceGrid extends LitElement {
       this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
       this._isCompactController = new StoreController(this, this.store.ui.$isCompactView);
       this._isLoadingController = new StoreController(this, this.store.ui.$isLoading);
+      this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
     }
   }
+
+  private _overlayModeController!: StoreController<GridOverlayMode>;
 
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
@@ -111,9 +137,24 @@ export class GrowspaceGrid extends LitElement {
     .plant-card-empty:hover {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      color: var(--primary-color);
       background: rgba(255, 255, 255, 0.08);
       transform: translateY(-2px);
+    }
+    
+    .grid-item-wrapper {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      contain: layout;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--border-radius-lg, 16px);
+      pointer-events: none;
+      z-index: 2;
+      transition: background-color 0.3s ease;
     }
 
     .plant-card-rich,
@@ -451,7 +492,11 @@ export class GrowspaceGrid extends LitElement {
               return this.renderEmptySlot(row, col);
             }
 
+            const overlayMode = this._overlayModeController?.value || 'none';
+            const overlayColor = getOverlayColor(overlayMode, plant, this.store);
+
             return html`
+                <div class="grid-item-wrapper">
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
@@ -462,6 +507,8 @@ export class GrowspaceGrid extends LitElement {
                 this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
+                  ${overlayMode !== 'none' ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
+                </div>
                 `;
           }
         )

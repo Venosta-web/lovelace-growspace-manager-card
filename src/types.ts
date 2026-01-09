@@ -14,6 +14,8 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
 
 export type GrowspaceViewMode = 'standard' | 'compact' | 'header';
 
+export type GridOverlayMode = 'none' | 'temperature' | 'humidity' | 'vpd';
+
 // --- Enums ---
 
 export enum PlantStage {
@@ -124,6 +126,13 @@ export interface SerializedStats {
   total_plants: number;
 }
 
+export type PlantTimelineEvent =
+  | { type: 'stage_change'; date: string; from: string; to: string }
+  | { type: 'action'; date: string; action: string; details?: string }
+  | { type: 'alert'; date: string; severity: 'low' | 'medium' | 'high'; message: string }
+  | { type: 'note'; date: string; text: string }
+  | { type: 'milestone'; date: string; label: string };
+
 export interface RawPlantData {
   plant_id: string;
   entity_id: string;
@@ -157,6 +166,7 @@ export interface RawPlantData {
   last_trained?: string | null;
   last_training_technique?: string | null;
   days_since_last_watering: number | null;
+  events?: PlantTimelineEvent[];
 }
 
 // The exact structure returned by GrowspaceSerializer.serialize_growspace
@@ -214,6 +224,12 @@ export enum TrainingTechnique {
 export interface PlantAttributes extends RawPlantData {
   friendly_name?: string;
   growspace_id?: string;
+  planted_date?: string;
+  germination_date?: string;
+  flower_start_date?: string;
+  harvest_date?: string;
+  location?: string;
+  events?: PlantTimelineEvent[];
 }
 
 export interface PlantEntity extends HassEntity {
@@ -289,6 +305,10 @@ export interface StrainEntry {
   key: string;
   breeder?: string;
   type?: string;
+  flowering_days?: number;
+  phenotype_target_days?: number;
+  yield_potential?: string;
+  notes?: string;
   flowering_days_min?: number;
   flowering_days_max?: number;
   lineage?: string;
@@ -302,7 +322,7 @@ export interface StrainEntry {
   indica_percentage?: number;
 }
 
-export type PlantAttributeValue = string | number | undefined | null;
+export type PlantAttributeValue = string | number | undefined | null | PlantTimelineEvent[];
 
 export interface PlantOverviewEditedAttributes {
   [key: string]: PlantAttributeValue;

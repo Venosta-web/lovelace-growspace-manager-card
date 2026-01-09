@@ -173,18 +173,18 @@ export class GrowspaceLogbook extends LitElement {
   }
 
   private _initController() {
-    if (this.hass && !this._controller) {
-      this._controller = new GrowspaceLogbookController(this.hass);
+    if (!this._controller) {
+      this._controller = new GrowspaceLogbookController();
       this._fetchEvents();
     }
   }
 
   private async _fetchEvents() {
-    if (!this._controller || !this.growspaceId) return;
+    if (!this._controller || !this.growspaceId || !this.hass) return;
 
     this._isLoading = true;
     try {
-      this._events = await this._controller.fetchEventLog(this.growspaceId);
+      this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
     } catch (e) {
       console.error('Error fetching logbook events:', e);
       this._events = [];

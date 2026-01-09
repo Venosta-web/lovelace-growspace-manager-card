@@ -57,7 +57,7 @@ describe('keyboard-actions', () => {
                 last_changed: '',
                 last_updated: '',
                 context: { id: '1', parent_id: null, user_id: null },
-                attributes: { plant_id: 'p1', strain: 'OG Kush', phenotype: 'default', stage: 'flower', row: 0, col: 0, entity_id: 'sensor.plant_1', position: '0', seedling_days: 0, mother_days: 0, clone_days: 0, veg_days: 0, flower_days: 0, dry_days: 0, cure_days: 0, seedling_start: null, mother_start: null, clone_start: null, veg_start: null, flower_start: null, dry_start: null, cure_start: null, friendly_name: '' },
+                attributes: { plant_id: 'p1', strain: 'OG Kush', phenotype: 'default', stage: 'flower', row: 0, col: 0, entity_id: 'sensor.plant_1', position: '0', seedling_days: 0, mother_days: 0, clone_days: 0, veg_days: 0, flower_days: 0, dry_days: 0, cure_days: 0, seedling_start: null, mother_start: null, clone_start: null, veg_start: null, flower_start: null, dry_start: null, cure_start: null, friendly_name: '', days_since_last_watering: 0 },
             },
             {
                 entity_id: 'sensor.plant_2',
@@ -65,7 +65,7 @@ describe('keyboard-actions', () => {
                 last_changed: '',
                 last_updated: '',
                 context: { id: '2', parent_id: null, user_id: null },
-                attributes: { plant_id: 'p2', strain: 'Blue Dream', phenotype: 'default', stage: 'flower', row: 0, col: 1, entity_id: 'sensor.plant_2', position: '1', seedling_days: 0, mother_days: 0, clone_days: 0, veg_days: 0, flower_days: 0, dry_days: 0, cure_days: 0, seedling_start: null, mother_start: null, clone_start: null, veg_start: null, flower_start: null, dry_start: null, cure_start: null, friendly_name: '' },
+                attributes: { plant_id: 'p2', strain: 'Blue Dream', phenotype: 'default', stage: 'flower', row: 0, col: 1, entity_id: 'sensor.plant_2', position: '1', seedling_days: 0, mother_days: 0, clone_days: 0, veg_days: 0, flower_days: 0, dry_days: 0, cure_days: 0, seedling_start: null, mother_start: null, clone_start: null, veg_start: null, flower_start: null, dry_start: null, cure_start: null, friendly_name: '', days_since_last_watering: 0 },
             },
         ];
 
@@ -168,6 +168,15 @@ describe('keyboard-actions', () => {
             keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
 
             expect(mockContext.handleDeletePlant).toHaveBeenCalledWith(['p1', 'p2']);
+        });
+
+        it('should do nothing on Delete when no plant focused and no selection', () => {
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1);
+            vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set());
+
+            keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
+
+            expect(mockContext.handleDeletePlant).not.toHaveBeenCalled();
         });
 
         it('should do nothing when no device is selected', () => {

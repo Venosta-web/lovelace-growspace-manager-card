@@ -5,7 +5,7 @@ const PlantSlotSchema = z.object({
     plant_id: z.string().optional().default(''),
     stage: z.string().optional().default('unknown'),
     strain: z.string().optional().default(''),
-    phenotype: z.string().optional().default(''),
+    phenotype: z.union([z.string(), z.any()]).optional().default(''),
     row: z.number().optional().default(0),
     col: z.number().optional().default(0),
     position: z.string().optional().default(''),
@@ -33,7 +33,7 @@ export const GrowspaceAPIResponseSchema = z.object({
     // Root Identity
     growspace_id: z.string(),
     name: z.string(),
-    type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure']),
+    type: z.enum(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
     rows: z.number(),
     plants_per_row: z.number(),
     total_plants: z.number().optional().default(0),
@@ -51,7 +51,7 @@ export const GrowspaceAPIResponseSchema = z.object({
         irrigation_times: z.array(z.any()).optional(),
         drain_times: z.array(z.any()).optional(),
         veg_day_hours: z.number().optional(),
-    }).optional().default({}),
+    }).passthrough().optional().default({}),
     irrigation_strategy: z.any().nullable().default(null),
 
     // Flattened Environment Config (Root Level)
@@ -94,10 +94,10 @@ export const GrowspaceAPIResponseSchema = z.object({
             name: z.string(),
             dose_ml_l: z.number(),
         })),
-        stage: z.string().optional(),
-        min_days_in_stage: z.number().optional(),
-    })).optional().default({}),
-}).catchall(z.any()); // Allow extra fields to pass through without error
+        stage: z.string().nullable().optional(),
+        min_days_in_stage: z.number().nullable().optional(),
+    }).passthrough()).optional().default({}),
+}).passthrough(); // Allow extra fields at root
 
 export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
 

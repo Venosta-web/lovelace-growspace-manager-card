@@ -22,6 +22,7 @@ import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-toast';
+import './components/manager/batch-action-bar';
 import { LibraryExportReadyEvent } from './events';
 import './components/growspace-view-switcher';
 import { sharedStyles } from './styles/shared.styles';
@@ -267,6 +268,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             .isLoading=${this._isLoadingController.value}
             .focusedPlantIndex=${this._focusedPlantIndexController.value}
           ></growspace-view-switcher>
+          
+          <batch-action-bar></batch-action-bar>
         </div>
       </ha-card>
 

@@ -268,12 +268,7 @@ export class GrowspaceHistoryStore {
             // but usually main data is split into metrics. 
             // The controller logic mapped overview_entity_id to 'main' in some places, 
             // let's follow that pattern if consistent.
-            if (device.overview_entity_id) {
-                // Note: Controller used 'main' key for overview entity data storage sometimes.
-                // We will check if we need to store it explicitly.
-                // For now, let's just fetch it.
-                entitiesToFetch.add(device.overview_entity_id);
-            }
+
         }
 
         // 2. Identify Metric Entities
@@ -296,13 +291,7 @@ export class GrowspaceHistoryStore {
         );
 
         // Overview/Main
-        if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
-            const data = batchResults[device.overview_entity_id];
-            // 'main' was used in controller logic for basic stats or fallback? 
-            // In store types, we don't have 'main' in SensorHistories, but we have strict keys.
-            // However, $historyCache is Record<string, ...> so we can store 'main'.
-            // Ideally we map overview entity content to specific metrics if valuable.
-        }
+
 
         // Metrics
         const formattedUpdates: Record<string, HistorySensorState[]> = {};

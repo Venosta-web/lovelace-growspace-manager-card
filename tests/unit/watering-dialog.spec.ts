@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
-import type { WateringDialogState, NutrientEntry, GrowspaceData, NutrientPreset } from '../../src/types';
-import type { HomeAssistant } from 'custom-card-helpers';
+import type { WateringDialogState, NutrientEntry, GrowspaceDevice, NutrientPreset } from '../../src/types';
 import type { GrowspaceStore } from '../../src/store/growspace-store';
 
 // Mock dependencies
@@ -58,7 +57,7 @@ describe('WateringDialog', () => {
         ]
     };
 
-    const mockDevice: Partial<GrowspaceData> = {
+    const mockDevice: Partial<GrowspaceDevice> = {
         device_id: 'gs1',
         name: 'Tent 1',
         nutrient_presets: {
@@ -69,7 +68,9 @@ describe('WateringDialog', () => {
                 entity_id: 'sensor.plant1',
                 attributes: { plant_id: 'p1', stage: 'veg', days_in_stage: 10 } as any,
                 state: 'ok',
-                last_updated: ''
+                last_updated: '',
+                last_changed: '',
+                context: { id: '1', parent_id: null, user_id: null }
             }
         ]
     };
@@ -384,7 +385,9 @@ describe('WateringDialog', () => {
                     entity_id: 'sensor.plant2',
                     attributes: { plant_id: 'p2', stage: 'veg', days_in_stage: 5 } as any,
                     state: 'ok',
-                    last_updated: ''
+                    last_updated: '',
+                    last_changed: '',
+                    context: { id: '2', parent_id: null, user_id: null }
                 }
             ];
 
@@ -420,13 +423,17 @@ describe('WateringDialog', () => {
                     entity_id: 'sensor.plant1',
                     attributes: { plant_id: 'p1', stage: 'veg', days_in_stage: 10 } as any,
                     state: 'ok',
-                    last_updated: ''
+                    last_updated: '',
+                    last_changed: '',
+                    context: { id: '3', parent_id: null, user_id: null }
                 },
                 {
                     entity_id: 'sensor.plant2',
                     attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 5 } as any,
                     state: 'ok',
-                    last_updated: ''
+                    last_updated: '',
+                    last_changed: '',
+                    context: { id: '4', parent_id: null, user_id: null }
                 }
             ];
 
@@ -456,7 +463,7 @@ describe('WateringDialog', () => {
                     name: 'Late Veg',
                     stage: 'veg',
                     nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
-                    target_ec: 1.5,
+                    // target_ec removed as it is not in NutrientPreset interface
                     min_days_in_stage: 20
                 }
             };
@@ -512,6 +519,149 @@ describe('WateringDialog', () => {
 
             // Restore
             mockDevice.plants = originalPlants;
+        });
+
+        it('should handle plant_id fallback to entity_id in recommendations', async () => {
+            // Mock plant without plant_id but with entity_id
+            const originalPlants = mockDevice.plants;
+            mockDevice.plants = [
+                {
+                    entity_id: 'sensor.p1_entity',
+                    attributes: { stage: 'veg', days_in_stage: 10 } as any,
+                    state: 'ok',
+                    last_updated: '',
+                    last_changed: '',
+                    context: { id: '5', parent_id: null, user_id: null }
+                }
+            ];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1_entity'] // should match entity_id.replace('sensor.', '')
+            };
+            await element.updateComplete;
+
+            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(option?.textContent).toContain('⭐');
+
+            // Restore
+            mockDevice.plants = originalPlants;
+        });
+
+        it('should handle missing days_in_stage in recommendations', async () => {
+            const originalPlants = mockDevice.plants;
+            mockDevice.plants = [
+                {
+                    entity_id: 'sensor.plant1',
+                    attributes: { plant_id: 'p1', stage: 'veg' } as any, // missing days_in_stage
+                    state: 'ok',
+                    last_updated: '',
+                    last_changed: '',
+                    context: { id: '6', parent_id: null, user_id: null }
+                }
+            ];
+
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1']
+            };
+            await element.updateComplete;
+
+            // Should use 0 as fallback for days_in_stage
+            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
+            expect(option?.textContent).toContain('⭐');
+
+            // Restore
+            mockDevice.plants = originalPlants;
+        });
+    });
+
+    describe('Nutrient Suggestions Edge Cases', () => {
+        it('should return empty suggestions if store is missing', () => {
+            (element as any).store = undefined;
+            const suggestions = (element as any)._getNutrientSuggestions();
+            expect(suggestions).toEqual([]);
+        });
+
+        it('should return empty suggestions if store data is missing', () => {
+            (element as any).store.data = undefined;
+            const suggestions = (element as any)._getNutrientSuggestions();
+            expect(suggestions).toEqual([]);
+        });
+
+        it('should skip devices without nutrient presets', () => {
+            const originalPresets = mockDevice.nutrient_presets;
+            mockDevice.nutrient_presets = undefined;
+
+            const suggestions = (element as any)._getNutrientSuggestions();
+            expect(suggestions).toEqual([]);
+
+            mockDevice.nutrient_presets = originalPresets;
+        });
+
+        it('should skip nutrients without names', () => {
+            const originalPresets = mockDevice.nutrient_presets;
+            mockDevice.nutrient_presets = {
+                'bad-preset': {
+                    nutrients: [{ name: '', dose_ml_l: 5 }]
+                }
+            } as any;
+
+            const suggestions = (element as any)._getNutrientSuggestions();
+            expect(suggestions).toEqual([]);
+
+            mockDevice.nutrient_presets = originalPresets;
+        });
+    });
+
+    describe('Ultimate Branch Coverage', () => {
+        it('should return early in _submit if dataService or dialogState missing', async () => {
+            (element as any)._dataService = null;
+            await (element as any)._submit();
+            expect(mockWaterPlant).not.toHaveBeenCalled();
+
+            (element as any)._dataService = { waterPlant: mockWaterPlant };
+            element.dialogState = undefined;
+            await (element as any)._submit();
+            expect(mockWaterPlant).not.toHaveBeenCalled();
+        });
+
+        it('should fallback to 0 for invalid volume', async () => {
+            element.open = true;
+            await element.updateComplete;
+            const volInput = element.shadowRoot?.querySelector('md3-number-input[label="Volume (Liters)"]') as any;
+
+            volInput.dispatchEvent(new CustomEvent('change', { detail: 'invalid' }));
+            expect((element as any)._volume).toBe(0);
+        });
+
+        it('should fallback to 0 for invalid nutrient concentration', async () => {
+            element.open = true;
+            await element.updateComplete;
+            (element as any)._addNutrient();
+            await element.updateComplete;
+
+            const concInput = element.shadowRoot?.querySelector('md3-number-input[label="ml/L"]') as any;
+            concInput.dispatchEvent(new CustomEvent('change', { detail: 'invalid' }));
+            expect((element as any)._nutrients[0].concentration).toBe(0);
+        });
+
+        it('should handle name change with target value fallback', async () => {
+            element.open = true;
+            await element.updateComplete;
+            (element as any)._addNutrient();
+            await element.updateComplete;
+
+            const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Nutrient Name"]') as any;
+            // Mock target.value
+            Object.defineProperty(nameInput, 'value', { value: 'TargetVal' });
+
+            nameInput.dispatchEvent(new CustomEvent('change', { detail: '' }));
+            expect((element as any)._nutrients[0].name).toBe('TargetVal');
         });
     });
 });

@@ -510,6 +510,56 @@ describe('DragDropController', () => {
                 expect((controller as any)._isDraggingMobile).toBe(false);
                 expect(mockCard.classList.contains('dragging-mobile')).toBe(false);
             });
+
+            it('should handle _startMobileDrag gracefully when card element is missing', () => {
+                const e = new TouchEvent('touchstart');
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+
+                (controller as any)._startMobileDrag(e);
+
+                expect((controller as any)._isDraggingMobile).toBe(true);
+                expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'mobile-drag-start' })
+                );
+            });
+
+            it('should handle _endMobileDrag gracefully when card element is missing', () => {
+                (controller as any)._isDraggingMobile = true;
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+
+                const e = new TouchEvent('touchend', {
+                    changedTouches: [{ clientX: 10, clientY: 10 }] as any
+                });
+
+                (controller as any)._endMobileDrag(e);
+
+                expect((controller as any)._isDraggingMobile).toBe(false);
+                expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'mobile-drop' })
+                );
+            });
+
+            it('should handle wrapperAddClass with target lacking classList', () => {
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+                const e = new DragEvent('dragstart');
+                // Target defined but no classList
+                Object.defineProperty(e, 'target', { value: { tagName: 'FOO' } });
+
+                controller.handleDragStart(e);
+                // Should not throw
+                expect(mockHost.dispatchEvent).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'plant-drag-start' })
+                );
+            });
+
+            it('should handle wrapperRemoveClass with target lacking classList', () => {
+                (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
+                const e = new DragEvent('dragend');
+                Object.defineProperty(e, 'target', { value: { tagName: 'FOO' } });
+
+                controller.handleDragEnd(e);
+                // Should not throw
+            });
         });
     });
 });

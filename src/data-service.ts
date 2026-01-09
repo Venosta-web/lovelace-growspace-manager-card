@@ -65,9 +65,18 @@ export class DataService {
         // Expect Collection (Record<string, GrowspaceAPIResponse>)
         const parsed = GrowspaceAPICollectionSchema.safeParse(result);
         if (!parsed.success) {
-          console.error('[DataService] API Validation Failed for Collection (All Data):', parsed.error.format());
-          // If collection validation fails, it might be due to one invalid item.
-          // We can try to cast, or filtered?
+          console.error('[DataService] API Validation Failed for Collection (All Data):', JSON.stringify(parsed.error.format(), null, 2));
+
+          // Log which growspace ID failed if we can find it
+          if (typeof result === 'object' && result !== null) {
+            for (const [gid, gdata] of Object.entries(result)) {
+              const itemParsed = GrowspaceAPIResponseSchema.safeParse(gdata);
+              if (!itemParsed.success) {
+                console.error(`[DataService] -> Found problematic item: ${gid}`, JSON.stringify(itemParsed.error.format(), null, 2));
+              }
+            }
+          }
+
           // For resilience, return as collection.
           return result as GrowspaceAPICollection;
         }

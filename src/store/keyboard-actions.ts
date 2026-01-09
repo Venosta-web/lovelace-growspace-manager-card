@@ -71,9 +71,7 @@ export function handleKeyboardNavigation(
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                if (focusedPlant) {
-                    ctx.handleDeletePlant(focusedPlant.entity_id);
-                }
+                ctx.handleDeletePlant(focusedPlant.entity_id);
             } else if (uiStore.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
                 ctx.handleDeletePlant(Array.from(uiStore.$selectedPlants.get()));

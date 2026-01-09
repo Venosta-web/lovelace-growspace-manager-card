@@ -1,5 +1,5 @@
 import { atom, computed, WritableAtom, ReadableAtom } from 'nanostores';
-import { GrowspaceViewMode } from '../types';
+import { GrowspaceViewMode, GridOverlayMode } from '../types';
 import { ActiveDialogState } from '../ui-state';
 
 export class GrowspaceUIStore {
@@ -14,6 +14,7 @@ export class GrowspaceUIStore {
     public readonly $notification: WritableAtom<{ message: string; type: 'info' | 'error' | 'success' } | null>;
     public readonly $error: WritableAtom<string | null>;
     public readonly $defaultApplied: WritableAtom<boolean>;
+    public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
 
     // Computed stores
     public readonly $isCompactView: ReadableAtom<boolean>;
@@ -29,6 +30,7 @@ export class GrowspaceUIStore {
         this.$notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
         this.$error = atom<string | null>(null);
         this.$defaultApplied = atom<boolean>(false);
+        this.$gridOverlayMode = atom<GridOverlayMode>('none');
 
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === 'compact');
     }
@@ -36,6 +38,10 @@ export class GrowspaceUIStore {
     // Actions
     public setViewMode(mode: GrowspaceViewMode) {
         this.$viewMode.set(mode);
+    }
+
+    public setGridOverlayMode(mode: GridOverlayMode) {
+        this.$gridOverlayMode.set(mode);
     }
 
     public setIsLoading(loading: boolean) {

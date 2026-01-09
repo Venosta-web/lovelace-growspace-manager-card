@@ -10,11 +10,12 @@ describe('GrowspaceLogbookController', () => {
         mockHass = {
             callWS: vi.fn()
         };
-        controller = new GrowspaceLogbookController(mockHass);
+        controller = new GrowspaceLogbookController();
     });
 
-    it('should initialize with hass', () => {
-        expect((controller as any).hass).toBe(mockHass);
+    it('should initialize without hass (hass is passed to methods)', () => {
+        // Controller no longer stores hass - it's passed to fetchEventLog
+        expect(controller).toBeDefined();
     });
 
     describe('fetchEventLog', () => {
@@ -28,8 +29,7 @@ describe('GrowspaceLogbookController', () => {
         });
 
         it('should return empty array if hass is missing', async () => {
-            const ctrl = new GrowspaceLogbookController(undefined as any);
-            const res = await ctrl.fetchEventLog('d1');
+            const res = await controller.fetchEventLog(undefined as any, 'd1');
             expect(res).toEqual([]);
         });
 
@@ -37,7 +37,7 @@ describe('GrowspaceLogbookController', () => {
             const events = [{ message: 'Event 1' }];
             mockHass.callWS.mockResolvedValue({ 'd1': events });
 
-            const res = await controller.fetchEventLog('d1');
+            const res = await controller.fetchEventLog(mockHass, 'd1');
 
             expect(mockHass.callWS).toHaveBeenCalledWith({
                 type: 'growspace_manager/get_log',
@@ -49,7 +49,7 @@ describe('GrowspaceLogbookController', () => {
         it('should return empty array when response lacks requested growspaceId', async () => {
             mockHass.callWS.mockResolvedValue({ 'other_id': [{ message: 'Event' }] });
 
-            const res = await controller.fetchEventLog('d1');
+            const res = await controller.fetchEventLog(mockHass, 'd1');
 
             expect(res).toEqual([]);
         });
@@ -58,7 +58,7 @@ describe('GrowspaceLogbookController', () => {
             mockHass.callWS.mockRejectedValue(new Error('WS Error'));
 
             // Should catch and return empty array
-            const res = await controller.fetchEventLog('d1');
+            const res = await controller.fetchEventLog(mockHass, 'd1');
 
             expect(res).toEqual([]);
         });

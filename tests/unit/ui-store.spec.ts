@@ -20,6 +20,7 @@ describe('UI Store', () => {
             expect(store.$menuOpen.get()).toBe(false);
             expect(store.$notification.get()).toBeNull();
             expect(store.$defaultApplied.get()).toBe(false);
+            expect(store.$gridOverlayMode.get()).toBe('none');
         });
 
         it('should compute $isCompactView correctly', () => {
@@ -43,6 +44,19 @@ describe('UI Store', () => {
 
             store.setViewMode('standard');
             expect(store.$viewMode.get()).toBe('standard');
+        });
+    });
+
+    describe('setGridOverlayMode', () => {
+        it('should update $gridOverlayMode', () => {
+            store.setGridOverlayMode('vpd');
+            expect(store.$gridOverlayMode.get()).toBe('vpd');
+
+            store.setGridOverlayMode('temperature');
+            expect(store.$gridOverlayMode.get()).toBe('temperature');
+
+            store.setGridOverlayMode('none');
+            expect(store.$gridOverlayMode.get()).toBe('none');
         });
     });
 

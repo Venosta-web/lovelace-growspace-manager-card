@@ -624,4 +624,41 @@ describe('PlantCard', () => {
             expect(starIcon).toBeTruthy();
         });
     });
+
+    describe('Growth Deviation Indicators', () => {
+        it('should render nothing when growthDeviation is 0', async () => {
+            vi.spyOn(element, 'growthDeviation', 'get').mockReturnValue(0);
+            element.plant = { attributes: { strain: 'OG' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.deviation');
+            expect(icon).toBeNull();
+        });
+
+        it('should render ahead indicator when growthDeviation > 0', async () => {
+            vi.spyOn(element, 'growthDeviation', 'get').mockReturnValue(15);
+            element.plant = { attributes: { strain: 'OG' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.deviation.ahead');
+            expect(icon).toBeTruthy();
+            expect(icon?.getAttribute('title')).toContain('15%');
+
+            const haIcon = icon?.querySelector('ha-svg-icon');
+            expect((haIcon as any).path).toBeDefined(); // Use defined paths from MDI
+        });
+
+        it('should render behind indicator when growthDeviation < 0', async () => {
+            vi.spyOn(element, 'growthDeviation', 'get').mockReturnValue(-20);
+            element.plant = { attributes: { strain: 'OG' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.deviation.behind');
+            expect(icon).toBeTruthy();
+            expect(icon?.getAttribute('title')).toContain('-20%');
+        });
+    });
 });

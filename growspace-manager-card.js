@@ -9,6 +9,7 @@ var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
+var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
@@ -43,6 +44,7 @@ var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
+var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
@@ -50,6 +52,8 @@ var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
+var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
+var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
 var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
@@ -4745,7 +4749,7 @@ const PlantSlotSchema = objectType({
     plant_id: stringType().optional().default(''),
     stage: stringType().optional().default('unknown'),
     strain: stringType().optional().default(''),
-    phenotype: stringType().optional().default(''),
+    phenotype: unionType([stringType(), anyType()]).optional().default(''),
     row: numberType().optional().default(0),
     col: numberType().optional().default(0),
     position: stringType().optional().default(''),
@@ -4770,7 +4774,7 @@ const GrowspaceAPIResponseSchema = objectType({
     // Root Identity
     growspace_id: stringType(),
     name: stringType(),
-    type: enumType(['normal', 'mother', 'clone', 'dry', 'cure']),
+    type: enumType(['normal', 'mother', 'clone', 'dry', 'cure', 'flower', 'veg']),
     rows: numberType(),
     plants_per_row: numberType(),
     total_plants: numberType().optional().default(0),
@@ -4786,7 +4790,7 @@ const GrowspaceAPIResponseSchema = objectType({
         irrigation_times: arrayType(anyType()).optional(),
         drain_times: arrayType(anyType()).optional(),
         veg_day_hours: numberType().optional(),
-    }).optional().default({}),
+    }).passthrough().optional().default({}),
     irrigation_strategy: anyType().nullable().default(null),
     // Flattened Environment Config (Root Level)
     temperature_sensor: stringType().optional(),
@@ -4826,10 +4830,10 @@ const GrowspaceAPIResponseSchema = objectType({
             name: stringType(),
             dose_ml_l: numberType(),
         })),
-        stage: stringType().optional(),
-        min_days_in_stage: numberType().optional(),
-    })).optional().default({}),
-}).catchall(anyType()); // Allow extra fields to pass through without error
+        stage: stringType().nullable().optional(),
+        min_days_in_stage: numberType().nullable().optional(),
+    }).passthrough()).optional().default({}),
+}).passthrough(); // Allow extra fields at root
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 const StrainPhenotypeSchema = objectType({
     description: stringType().optional(),
@@ -4888,9 +4892,16 @@ class DataService {
                 // Expect Collection (Record<string, GrowspaceAPIResponse>)
                 const parsed = GrowspaceAPICollectionSchema.safeParse(result);
                 if (!parsed.success) {
-                    console.error('[DataService] API Validation Failed for Collection (All Data):', parsed.error.format());
-                    // If collection validation fails, it might be due to one invalid item.
-                    // We can try to cast, or filtered?
+                    console.error('[DataService] API Validation Failed for Collection (All Data):', JSON.stringify(parsed.error.format(), null, 2));
+                    // Log which growspace ID failed if we can find it
+                    if (typeof result === 'object' && result !== null) {
+                        for (const [gid, gdata] of Object.entries(result)) {
+                            const itemParsed = GrowspaceAPIResponseSchema.safeParse(gdata);
+                            if (!itemParsed.success) {
+                                console.error(`[DataService] -> Found problematic item: ${gid}`, JSON.stringify(itemParsed.error.format(), null, 2));
+                            }
+                        }
+                    }
                     // For resilience, return as collection.
                     return result;
                 }
@@ -8830,6 +8841,284 @@ const dialogStyles = [
     return _classThis;
 })();
 
+(() => {
+    var _PlantTimeline_events_accessor_storage;
+    let _classDecorators = [t$2('plant-timeline')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _events_decorators;
+    let _events_initializers = [];
+    let _events_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get events() { return __classPrivateFieldGet(this, _PlantTimeline_events_accessor_storage, "f"); }
+        set events(value) { __classPrivateFieldSet(this, _PlantTimeline_events_accessor_storage, value, "f"); }
+        _getIcon(type, action) {
+            switch (type) {
+                case 'stage_change': return mdiSprout;
+                case 'alert': return mdiAlertCircle;
+                case 'note': return mdiNoteText;
+                case 'milestone': return mdiSprout;
+                case 'action':
+                    if (action === 'water' || action === 'watering')
+                        return mdiWater;
+                    return mdiLeaf;
+                default: return mdiLeaf;
+            }
+        }
+        _formatDate(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    throw new Error();
+                return date.toLocaleString();
+            }
+            catch {
+                return dateStr;
+            }
+        }
+        _formatDayHeader(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    throw new Error();
+                const today = new Date();
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                if (date.toDateString() === today.toDateString()) {
+                    return 'Today';
+                }
+                else if (date.toDateString() === yesterday.toDateString()) {
+                    return 'Yesterday';
+                }
+                return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+            }
+            catch {
+                return dateStr;
+            }
+        }
+        _formatTime(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    throw new Error();
+                return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            }
+            catch {
+                return dateStr;
+            }
+        }
+        _getDateKey(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    throw new Error();
+                return date.toDateString();
+            }
+            catch {
+                return dateStr;
+            }
+        }
+        render() {
+            if (!this.events || this.events.length === 0) {
+                return x `
+            <div class="glass-surface glass-panel" style="text-align: center; color: var(--secondary-text-color);">
+                No events recorded.
+            </div>
+        `;
+            }
+            // Sort events descending
+            const sortedEvents = [...this.events]
+                .filter(e => e.date)
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            // Group by day
+            const groupedByDay = new Map();
+            for (const event of sortedEvents) {
+                const dayKey = this._getDateKey(event.date);
+                if (!groupedByDay.has(dayKey)) {
+                    groupedByDay.set(dayKey, []);
+                }
+                groupedByDay.get(dayKey).push(event);
+            }
+            return x `
+      <div class="timeline">
+        ${Array.from(groupedByDay.entries()).map(([dayKey, events]) => x `
+          <div class="day-group">
+            <div class="day-header">${this._formatDayHeader(events[0].date)}</div>
+            ${events.map(event => x `
+              <div class="event type-${event.type} glass-surface">
+                <div class="icon-wrapper">
+                  <svg viewBox="0 0 24 24">
+                    <path d="${this._getIcon(event.type, event.action)}" />
+                  </svg>
+                </div>
+                <div class="date">${this._formatTime(event.date)}</div>
+                ${this._renderEventContent(event)}
+              </div>
+            `)}
+          </div>
+        `)}
+      </div>
+    `;
+        }
+        _renderEventContent(event) {
+            switch (event.type) {
+                case 'stage_change':
+                    return x `
+            <div class="content">Stage Changed</div>
+            <div class="details">Changed from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
+        `;
+                case 'milestone':
+                    return x `
+            <div class="content">${event.label} Started</div>
+            <div class="details">Milestone reached on ${this._formatDate(event.date)}</div>
+        `;
+                case 'action':
+                    const actionLabel = event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action';
+                    return x `
+            <div class="content">${actionLabel}</div>
+            ${event.details ? x `<div class="details">${event.details}</div>` : E}
+        `;
+                case 'alert':
+                    return x `
+            <div class="content" style="color: var(--error-color, #f44336)">Alert: ${event.message}</div>
+            <div class="details">Severity: ${event.severity}</div>
+        `;
+                case 'note':
+                    return x `
+            <div class="content">Note</div>
+            <div class="details">${event.text}</div>
+        `;
+            }
+        }
+        constructor() {
+            super(...arguments);
+            _PlantTimeline_events_accessor_storage.set(this, __runInitializers(this, _events_initializers, []));
+            __runInitializers(this, _events_extraInitializers);
+        }
+    };
+    _PlantTimeline_events_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "PlantTimeline");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _events_decorators = [n$5({ type: Array })];
+        __esDecorate(_classThis, null, _events_decorators, { kind: "accessor", name: "events", static: false, private: false, access: { has: obj => "events" in obj, get: obj => obj.events, set: (obj, value) => { obj.events = value; } }, metadata: _metadata }, _events_initializers, _events_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            i$6 `
+      :host {
+        display: block;
+        padding: var(--spacing-md, 16px);
+      }
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .timeline::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .event {
+        position: relative;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+      }
+      .icon-wrapper {
+        position: absolute;
+        left: -37px; /* 24px padding + 13px center align */
+        top: 12px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--card-background-color, #202020);
+        border: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+      }
+      .icon-wrapper svg {
+        width: 16px;
+        height: 16px;
+        fill: var(--secondary-text-color, #aaa);
+      }
+      .date {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, #aaa);
+        margin-bottom: 4px;
+      }
+      .content {
+        font-size: 0.9rem;
+        color: var(--primary-text-color, #fff);
+        font-weight: 500;
+      }
+      .details {
+        margin-top: 4px;
+        font-size: 0.85rem;
+        color: var(--secondary-text-color, #ccc);
+        line-height: 1.4;
+      }
+      
+      /* Type specific styling */
+      .type-alert .icon-wrapper { border-color: var(--error-color, #f44336); }
+      .type-alert .icon-wrapper svg { fill: var(--error-color, #f44336); }
+      
+      .type-action .icon-wrapper { border-color: var(--primary-color, #03a9f4); }
+      .type-action .icon-wrapper svg { fill: var(--primary-color, #03a9f4); }
+
+      .type-stage_change .icon-wrapper { border-color: var(--success-color, #4caf50); }
+      .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
+      
+      .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
+      .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
+
+      /* Day grouping */
+      .day-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .day-header {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--primary-color, #03a9f4);
+        padding: 8px 0;
+        margin-left: -24px;
+        padding-left: 24px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        position: sticky;
+        top: 0;
+        background: var(--card-background-color, #1c1c1c);
+        z-index: 2;
+      }
+    `
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
 class UpdatePlantEvent extends CustomEvent {
     constructor(updates) {
         super(UpdatePlantEvent.TYPE, {
@@ -8936,8 +9225,29 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
     value: 'library-export-ready'
 });
 
+class GrowspaceLogbookController {
+    async fetchEventLog(hass, growspaceId, limit) {
+        if (!hass) {
+            console.warn('Home Assistant instance not available');
+            return [];
+        }
+        try {
+            const response = await hass.callWS({
+                type: 'growspace_manager/get_log',
+                growspace_id: growspaceId,
+                limit,
+            });
+            return response[growspaceId] || [];
+        }
+        catch (e) {
+            console.error('Error fetching event log:', e);
+            return [];
+        }
+    }
+}
+
 (() => {
-    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage;
+    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, _PlantOverviewDialog__activeTab_accessor_storage, _PlantOverviewDialog__logbookEvents_accessor_storage;
     let _classDecorators = [t$2('plant-overview-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -8973,6 +9283,12 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
     let __showDeleteConfirmation_decorators;
     let __showDeleteConfirmation_initializers = [];
     let __showDeleteConfirmation_extraInitializers = [];
+    let __activeTab_decorators;
+    let __activeTab_initializers = [];
+    let __activeTab_extraInitializers = [];
+    let __logbookEvents_decorators;
+    let __logbookEvents_initializers = [];
+    let __logbookEvents_extraInitializers = [];
     _classThis = class extends _classSuper {
         get hass() { return __classPrivateFieldGet(this, _PlantOverviewDialog_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_hass_accessor_storage, value, "f"); }
@@ -8994,18 +9310,36 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         set cloneTargetId(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_cloneTargetId_accessor_storage, value, "f"); }
         get _showDeleteConfirmation() { return __classPrivateFieldGet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, "f"); }
         set _showDeleteConfirmation(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, value, "f"); }
+        get _activeTab() { return __classPrivateFieldGet(this, _PlantOverviewDialog__activeTab_accessor_storage, "f"); }
+        set _activeTab(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__activeTab_accessor_storage, value, "f"); }
+        get _logbookEvents() { return __classPrivateFieldGet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, "f"); }
+        set _logbookEvents(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, value, "f"); }
         willUpdate(changedProps) {
             // Handle dialog state object if passed (legacy/alternative usage)
             if (changedProps.has('dialog') && this.dialog) {
                 this.plant = this.dialog.plant;
                 this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
                 this.cloneTargetId = '';
+                if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
+                    this._activeTab = this.dialog.activeTab;
+                }
+                // Fetch logbook when dialog is set
+                this._fetchLogbook();
             }
             // Handle direct prop injection (DialogHost usage)
             // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
             if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
                 this.editedAttributes = this._getAttributesFromPlant();
             }
+            // Fetch logbook when plant changes (direct prop usage)
+            if (changedProps.has('plant') && this.plant) {
+                this._fetchLogbook();
+            }
+        }
+        async _fetchLogbook() {
+            if (!this.plant?.attributes?.growspace_id || !this.hass)
+                return;
+            this._logbookEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
         }
         _getAttributesFromPlant() {
             if (!this.plant)
@@ -9221,7 +9555,111 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             </button>
           </div>
 
+          <!-- TABS -->
+          <div class="tabs-container">
+            <button 
+                class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'dashboard'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+                Overview
+            </button>
+            <button 
+                class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'timeline'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
+                Timeline
+            </button>
+          </div>
+
           <div class="overview-grid">
+            ${this._activeTab === 'dashboard' ? this._renderDashboard(attributes) : this._renderTimeline()}
+          </div>
+
+          <!-- ACTIONS -->
+          <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
+             <div class="standard-actions" style="display:flex; gap:12px;">
+                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiDelete}"></path>
+                   </svg>
+                   Delete
+                 </button>
+             </div>
+
+             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+                 ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
+                    <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
+                       <md3-number-input
+                        id="clone-count-input"
+                        .value=${1}
+                        .min=${1}
+                        .max=${10}
+                        style="width: 80px;"
+                      ></md3-number-input>
+                      <button class="md3-button primary"
+                        @click=${(e) => {
+                const container = e.currentTarget.closest('.take-clone-container');
+                const input = container?.querySelector('#clone-count-input');
+                const val = input ? parseInt(input.value, 10) : 1;
+                const numClones = isNaN(val) ? 1 : val;
+                this._takeClone(this.plant, numClones);
+            }}
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                        Take Clone
+                      </button>
+                    </div>
+                 ` : E}
+                 ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
+                   <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                     Harvest
+                   </button>
+                 ` : E}
+    
+                 ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
+                   <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
+                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                     Finish Drying
+                   </button>
+                 ` : E}
+    
+                 ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                       <md3-select
+                         label="Target Growspace"
+                         .value=${this.cloneTargetId}
+                         .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                         style="width: 200px;"
+                         @change=${(e) => this.cloneTargetId = e.detail}
+                       ></md3-select>
+                      <button class="md3-button primary"
+                        @click=${() => this._moveClone(this.plant)}
+                        style="margin-top: 24px;"
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                        Move
+                      </button>
+                    </div>
+                 ` : E}
+
+                <button class="md3-button tonal" @click=${() => this._update()}>
+                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                  Save Changes
+                </button>
+             </div>
+          </div>
+
+      </ha-dialog>
+    `;
+        }
+        _renderDashboard(attributes) {
+            return x `
             <!-- IDENTITY & LOCATION CARD -->
             <div class="detail-card">
               <h3>Identity & Location</h3>
@@ -9275,12 +9713,12 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             <!-- STATS CARD -->
             ${this._renderPlantStats(this.plant)}
 
-            <!-- TIMELINE CARD -->
+            <!-- TIMELINE CARD (RENAMED TO LIFECYCLE DATES) -->
             <div class="detail-card">
               <div
                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
               >
-                <h3 style="margin: 0;">Timeline</h3>
+                <h3 style="margin: 0;">Lifecycle Dates</h3>
                 <button
                   class="md3-button text"
                   style="min-width: auto; padding: 4px;"
@@ -9402,110 +9840,97 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
                     : E}
                   `}
             </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group" style="padding: 16px 24px;">
-            <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-
-            <button class="md3-button tonal" @click=${() => this._update()}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiCheck}"></path>
-              </svg>
-              Save
-            </button>
-
-            <!-- DYNAMIC ACTIONS -->
-            ${(this.plant.state || '').toLowerCase() === PlantStage.MOTHER
-                ? x `
-                  <div
-                    class="take-clone-container"
-                    style="display:contents;"
-                    data-plant-id="${this.plant.entity_id}"
-                  >
-                    <md3-number-input
-                      .min=${1}
-                      .max=${10}
-                      .value=${1}
-                      id="clone-count-input"
-                      style="width: 80px;"
-                    ></md3-number-input>
-                    <button
-                      class="md3-button primary"
-                      @click=${(e) => {
-                    const btn = e.currentTarget;
-                    const container = btn.parentElement;
-                    const inputEl = container?.querySelector('md3-number-input');
-                    const numClones = inputEl ? Number(inputEl.value) : 1;
-                    this._takeClone(this.plant, numClones);
-                }}
-                    >
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiContentCopy}"></path>
-                      </svg>
-                      Take Clone
-                    </button>
-                  </div>
-                `
-                : E}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.FLOWER
-                ? x `
-                  <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiFlower}"></path>
-                    </svg>
-                    Harvest
-                  </button>
-                `
-                : E}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.DRY
-                ? x `
-                  <button
-                    class="md3-button primary"
-                    @click=${() => this._finishDrying(this.plant)}
-                  >
-                    <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiCannabis}"></path>
-                    </svg>
-                    Finish Drying
-                  </button>
-                `
-                : E}
-            ${(this.plant.state || '').toLowerCase() === PlantStage.CLONE
-                ? x `
-                  <div style="display:contents; display:flex; gap: 8px; align-items: center;">
-                    <md3-select
-                      .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
-                    label: name,
-                    value: id,
-                }))}
-                      .value=${this.cloneTargetId}
-                      @change=${(e) => (this.cloneTargetId = e.detail)}
-                      style="min-width: 150px;"
-                    ></md3-select>
-                    <button class="md3-button primary" @click=${() => this._moveClone(this.plant)}>
-                      <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiArrowRight}"></path>
-                      </svg>
-                      Move
-                    </button>
-                  </div>
-                `
-                : E}
-          </div>
+    `;
+        }
+        _renderTimeline() {
+            if (!this.plant)
+                return E;
+            const recordedEvents = this.plant.attributes?.events || [];
+            // 1. Extract Milestones
+            const milestones = [];
+            const milestoneFields = [
+                { key: 'planted_date', label: 'Planted' },
+                { key: 'seedling_start', label: 'Seedling' },
+                { key: 'mother_start', label: 'Mother' },
+                { key: 'clone_start', label: 'Clone' },
+                { key: 'veg_start', label: 'Vegetative' },
+                { key: 'flower_start', label: 'Flowering' },
+                { key: 'dry_start', label: 'Drying' },
+                { key: 'cure_start', label: 'Curing' },
+                { key: 'harvest_date', label: 'Harvested' }
+            ];
+            milestoneFields.forEach(field => {
+                const date = this.plant?.attributes?.[field.key];
+                if (date) {
+                    milestones.push({
+                        type: 'milestone',
+                        date: String(date),
+                        label: field.label
+                    });
+                }
+            });
+            // 2. Add Logbook Events (Watering, Training)
+            const normalize = (s) => s?.toLowerCase().trim() || '';
+            const plantId = this.plant?.attributes?.plant_id || this.plant.entity_id?.split('.')[1] || '';
+            const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+            const logbookEvents = this._logbookEvents
+                .filter(e => {
+                const cat = normalize(e.category);
+                const type = normalize(e.sensor_type);
+                const reasons = (e.reasons || []);
+                // 1. Check if it's a watering/irrigation event
+                const isWatering = cat === 'irrigation' ||
+                    (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+                    ['irrigation', 'drain', 'water'].includes(type) ||
+                    type.includes('water');
+                // 2. Check if it's a training event
+                const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
+                if (!isWatering && !isTraining)
+                    return false;
+                // 3. Filter by plant_id - only include events that mention THIS plant
+                // OR if it's an automated irrigation event (growspace-wide)
+                if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
+                    return true;
+                }
+                // Backend format: "plant_id:uuid-here"
+                const mentionsThisPlant = reasons.some(r => {
+                    const rLower = r.toLowerCase();
+                    if (rLower.startsWith('plant_id:')) {
+                        const eventPlantId = rLower.replace('plant_id:', '').trim();
+                        return eventPlantId === plantId.toLowerCase();
+                    }
+                    return false;
+                });
+                return mentionsThisPlant;
+            })
+                .map(e => ({
+                type: 'action',
+                date: e.start_time,
+                action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+                // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
+                details: e.reasons?.filter(r => {
+                    const rLower = r.toLowerCase();
+                    return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+                }).join(', ') || ''
+            }));
+            // Combine all
+            const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
+            return x `
+        <div style="grid-column: 1 / -1;">
+            <plant-timeline .events=${allEvents}></plant-timeline>
         </div>
-      </ha-dialog>
     `;
         }
         constructor() {
             super(...arguments);
             _PlantOverviewDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _PlantOverviewDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            Object.defineProperty(this, "_logbookController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _hass_extraInitializers), new GrowspaceLogbookController())
+            });
+            _PlantOverviewDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
             _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
             _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
             _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
@@ -9514,7 +9939,9 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
             _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
             _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));
             _PlantOverviewDialog__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, _cloneTargetId_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
-            __runInitializers(this, __showDeleteConfirmation_extraInitializers);
+            _PlantOverviewDialog__activeTab_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __activeTab_initializers, 'dashboard')));
+            _PlantOverviewDialog__logbookEvents_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __logbookEvents_initializers, [])));
+            __runInitializers(this, __logbookEvents_extraInitializers);
         }
     };
     _PlantOverviewDialog_hass_accessor_storage = new WeakMap();
@@ -9527,6 +9954,8 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
     _PlantOverviewDialog_showAllDates_accessor_storage = new WeakMap();
     _PlantOverviewDialog_cloneTargetId_accessor_storage = new WeakMap();
     _PlantOverviewDialog__showDeleteConfirmation_accessor_storage = new WeakMap();
+    _PlantOverviewDialog__activeTab_accessor_storage = new WeakMap();
+    _PlantOverviewDialog__logbookEvents_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "PlantOverviewDialog");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -9540,6 +9969,8 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         _showAllDates_decorators = [r$2()];
         _cloneTargetId_decorators = [r$2()];
         __showDeleteConfirmation_decorators = [r$2()];
+        __activeTab_decorators = [r$2()];
+        __logbookEvents_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _dialog_decorators, { kind: "accessor", name: "dialog", static: false, private: false, access: { has: obj => "dialog" in obj, get: obj => obj.dialog, set: (obj, value) => { obj.dialog = value; } }, metadata: _metadata }, _dialog_initializers, _dialog_extraInitializers);
@@ -9550,6 +9981,8 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         __esDecorate(_classThis, null, _showAllDates_decorators, { kind: "accessor", name: "showAllDates", static: false, private: false, access: { has: obj => "showAllDates" in obj, get: obj => obj.showAllDates, set: (obj, value) => { obj.showAllDates = value; } }, metadata: _metadata }, _showAllDates_initializers, _showAllDates_extraInitializers);
         __esDecorate(_classThis, null, _cloneTargetId_decorators, { kind: "accessor", name: "cloneTargetId", static: false, private: false, access: { has: obj => "cloneTargetId" in obj, get: obj => obj.cloneTargetId, set: (obj, value) => { obj.cloneTargetId = value; } }, metadata: _metadata }, _cloneTargetId_initializers, _cloneTargetId_extraInitializers);
         __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
+        __esDecorate(_classThis, null, __activeTab_decorators, { kind: "accessor", name: "_activeTab", static: false, private: false, access: { has: obj => "_activeTab" in obj, get: obj => obj._activeTab, set: (obj, value) => { obj._activeTab = value; } }, metadata: _metadata }, __activeTab_initializers, __activeTab_extraInitializers);
+        __esDecorate(_classThis, null, __logbookEvents_decorators, { kind: "accessor", name: "_logbookEvents", static: false, private: false, access: { has: obj => "_logbookEvents" in obj, get: obj => obj._logbookEvents, set: (obj, value) => { obj._logbookEvents = value; } }, metadata: _metadata }, __logbookEvents_initializers, __logbookEvents_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -9680,6 +10113,48 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
         .dialog-header {
           padding: 12px 16px;
         }
+      }
+
+      .tabs-container {
+        display: flex;
+        padding: 0 24px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .tab-btn {
+        background: none;
+        border: none;
+        padding: 12px 16px;
+        color: var(--secondary-text-color, #aaa);
+        font-family: inherit;
+        font-size: 0.95rem;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.2s;
+      }
+      .tab-btn:hover {
+        color: var(--primary-text-color, #fff);
+      }
+      .tab-btn.active {
+        color: var(--primary-color, #4caf50);
+        font-weight: 500;
+      }
+      .tab-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary-color, #4caf50);
+      }
+      .tab-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
       }
     `,
         ]
@@ -13889,35 +14364,6 @@ Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
     return _classThis;
 })();
 
-class GrowspaceLogbookController {
-    constructor(hass) {
-        Object.defineProperty(this, "hass", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        this.hass = hass;
-    }
-    async fetchEventLog(growspaceId) {
-        if (!this.hass) {
-            console.warn('Home Assistant instance not available');
-            return [];
-        }
-        try {
-            const response = await this.hass.callWS({
-                type: 'growspace_manager/get_log',
-                growspace_id: growspaceId,
-            });
-            return response[growspaceId] || [];
-        }
-        catch (e) {
-            console.error('Error fetching event log:', e);
-            return [];
-        }
-    }
-}
-
 (() => {
     var _GrowspaceLogbook_hass_accessor_storage, _GrowspaceLogbook_growspaceId_accessor_storage, _GrowspaceLogbook__events_accessor_storage, _GrowspaceLogbook__isLoading_accessor_storage, _GrowspaceLogbook__activeFilter_accessor_storage;
     let _classDecorators = [t$2('growspace-logbook')];
@@ -13992,17 +14438,17 @@ class GrowspaceLogbookController {
             }
         }
         _initController() {
-            if (this.hass && !this._controller) {
-                this._controller = new GrowspaceLogbookController(this.hass);
+            if (!this._controller) {
+                this._controller = new GrowspaceLogbookController();
                 this._fetchEvents();
             }
         }
         async _fetchEvents() {
-            if (!this._controller || !this.growspaceId)
+            if (!this._controller || !this.growspaceId || !this.hass)
                 return;
             this._isLoading = true;
             try {
-                this._events = await this._controller.fetchEventLog(this.growspaceId);
+                this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
             }
             catch (e) {
                 console.error('Error fetching logbook events:', e);
@@ -16062,6 +16508,47 @@ class GrowspaceLogbookController {
     return _classThis;
 })();
 
+/**
+ * Calculates the growth deviation (performance score) of a plant relative to its strain's genetic potential.
+ *
+ * @param plant The plant entity to analyze
+ * @param strain The strain entry containing genetic metadata
+ * @returns A number representing deviation percentage (negative = behind/slow, positive = ahead/fast, 0 = on track).
+ *          Returns 0 if not applicable (e.g. not in flowering or missing data).
+ */
+function calculateGrowthDeviation(plant, strain) {
+    if (!strain || !plant.attributes)
+        return 0;
+    const stage = (plant.state || '').toLowerCase();
+    // Only analyzing flowering stage for now as it has the most concrete "days to harvest" data
+    if (stage !== PlantStage.FLOWER) {
+        return 0;
+    }
+    const currentDays = plant.attributes.flower_days || 0;
+    const targetDays = strain.phenotype_target_days || strain.flowering_days || 63; // Default to 9 weeks if unknown
+    // Simple heuristic: 
+    // This is tricky because "days in stage" is just time passed, not quality/speed.
+    // However, if we assume "growth deviation" implies "estimated maturation vs actual time", 
+    // without visual analysis, we can't truly know speed.
+    // 
+    // ALTERNATIVE INTERPRETATION based on "Genetic Drift & Phenotype Analytics":
+    // Perhaps we want to know how far along we are vs the "ideal".
+    // Or, if we have "height" or "yield" data, we could compare that.
+    //
+    // For this initial implementation based on available data (days), 
+    // we will return the % progress towards target harvest date.
+    // This isn't "deviation" per se, but "progress".
+    // 
+    // IF the user meant "Genetic Drift", this usually implies keeping a mother plant for too long.
+    // But the task says "calculateGrowthDeviation".
+    //
+    // Let's implement a "Progress Ratio" for now, and if we add sensor data (like height sensors), 
+    // we can compare "height at day X" vs "strain avg height at day X".
+    if (targetDays <= 0)
+        return 0;
+    return (currentDays / targetDays) * 100;
+}
+
 class DragDropController {
     constructor(host) {
         Object.defineProperty(this, "host", {
@@ -16685,6 +17172,10 @@ const plantCardStyles = i$6 `
             const plantId = this.plant?.attributes?.plant_id;
             return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
         }
+        get growthDeviation() {
+            const strain = this.strainLibrary.find((s) => s.strain === this.plant.attributes.strain);
+            return calculateGrowthDeviation(this.plant, strain);
+        }
         // Computed display data
         get displayData() {
             if (!this.plant)
@@ -16809,6 +17300,16 @@ const plantCardStyles = i$6 `
               <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
                 <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
               </div>
+            ` : E}
+
+            ${this.growthDeviation !== 0 ? x `
+                <div
+                    class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
+                    title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+                    style="background: ${this.growthDeviation > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'};"
+                >
+                    <ha-svg-icon .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown} style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"></ha-svg-icon>
+                </div>
             ` : E}
           </div>
         <div class="plant-card-content">
@@ -26957,6 +27458,206 @@ class ResizeController {
     return _classThis;
 })();
 
+(() => {
+    var _BatchActionBar_store_accessor_storage;
+    let _classDecorators = [t$2('batch-action-bar')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _BatchActionBar_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, void 0));
+            Object.defineProperty(this, "_selectedPlantsController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: __runInitializers(this, _store_extraInitializers)
+            });
+        }
+        get store() { return __classPrivateFieldGet(this, _BatchActionBar_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _BatchActionBar_store_accessor_storage, value, "f"); }
+        connectedCallback() {
+            super.connectedCallback();
+            if (this.store) {
+                this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+            }
+        }
+        _handleWater() {
+            this.store.openBatchWateringDialog();
+        }
+        _handleStage() {
+            this.store.openBatchTrainingDialog();
+        }
+        _handleClear() {
+            this.store.clearPlantSelection();
+            this.store.ui.setEditMode(false);
+        }
+        render() {
+            const selectedCount = this._selectedPlantsController?.value.size || 0;
+            // Toggle host attribute for CSS transition
+            if (selectedCount > 0) {
+                this.setAttribute('visible', '');
+            }
+            else {
+                this.removeAttribute('visible');
+            }
+            if (selectedCount === 0)
+                return E;
+            return x `
+      <div class="batch-bar">
+        <div class="count-badge">${selectedCount} Selected</div>
+        
+        <div class="actions">
+          <button class="action-btn primary" @click=${this._handleWater}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            Water
+          </button>
+          
+          <button class="action-btn" @click=${this._handleStage}>
+            <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+            Log Training
+          </button>
+        </div>
+
+        <button class="close-btn" @click=${this._handleClear} title="Clear Selection">
+          <svg style="width:20px;height:20px" viewBox="0 0 24 24">
+            <path d="${mdiClose}"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+        }
+    };
+    _BatchActionBar_store_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "BatchActionBar");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _store_decorators = [c$2({ context: storeContext })];
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            sharedStyles,
+            i$6 `
+      :host {
+        display: block;
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(150%);
+        z-index: 100;
+        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        width: auto;
+        max-width: 90%;
+      }
+
+      :host([visible]) {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .batch-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 24px;
+        border-radius: 32px;
+        background: rgba(30, 30, 30, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      }
+
+      .count-badge {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        padding-left: 16px;
+      }
+
+      .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.05);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .action-btn svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+      
+      .action-btn.primary {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+      }
+
+      .action-btn.primary:hover {
+        filter: brightness(1.1);
+        background: var(--primary-color);
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin-left: 8px;
+      }
+
+      .close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--primary-text-color);
+      }
+    `
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
 /**
  * @license
  * Copyright 2017 Google LLC
@@ -27065,6 +27766,29 @@ const variables = i$6 `
   }
 `;
 
+// Helper to determine overlay color
+function getOverlayColor(mode, plant, store) {
+    if (mode === 'none')
+        return 'transparent';
+    const growspaceId = plant.attributes.growspace_id;
+    if (!growspaceId)
+        return 'transparent';
+    const device = store.data.$devices.get().find(d => d.device_id === growspaceId);
+    if (!device)
+        return 'transparent';
+    if (mode === 'vpd') {
+        const status = device.biological_metrics.vpd_status;
+        if (status === 'ok')
+            return 'rgba(76, 175, 80, 0.15)'; // Green
+        if (status === 'warning')
+            return 'rgba(255, 152, 0, 0.15)'; // Orange
+        if (status === 'danger')
+            return 'rgba(244, 67, 54, 0.15)'; // Red
+    }
+    // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
+    // For now, we only implement VPD visualization as it's the most "calculated" metric available
+    return 'transparent';
+}
 (() => {
     var _GrowspaceGrid_store_accessor_storage, _GrowspaceGrid_plants_accessor_storage, _GrowspaceGrid_rows_accessor_storage, _GrowspaceGrid_cols_accessor_storage;
     let _classDecorators = [t$2('growspace-grid')];
@@ -27116,6 +27840,12 @@ const variables = i$6 `
                 writable: true,
                 value: void 0
             });
+            Object.defineProperty(this, "_overlayModeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
             Object.defineProperty(this, "_draggedPlant", {
                 enumerable: true,
                 configurable: true,
@@ -27144,6 +27874,7 @@ const variables = i$6 `
                 this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
                 this._isCompactController = new libExports.StoreController(this, this.store.ui.$isCompactView);
                 this._isLoadingController = new libExports.StoreController(this, this.store.ui.$isLoading);
+                this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
             }
         }
         focusPlant(index) {
@@ -27255,7 +27986,10 @@ const variables = i$6 `
                     if (!plant) {
                         return this.renderEmptySlot(row, col);
                     }
+                    const overlayMode = this._overlayModeController?.value || 'none';
+                    const overlayColor = getOverlayColor(overlayMode, plant, this.store);
                     return x `
+                <div class="grid-item-wrapper">
                   <growspace-plant-card
                     .plant=${plant}
                     .row=${row}
@@ -27265,6 +27999,8 @@ const variables = i$6 `
                     @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
+                  ${overlayMode !== 'none' ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
+                </div>
                 `;
                 })
                 : ''}
@@ -27387,9 +28123,24 @@ const variables = i$6 `
     .plant-card-empty:hover {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      color: var(--primary-color);
       background: rgba(255, 255, 255, 0.08);
       transform: translateY(-2px);
+    }
+    
+    .grid-item-wrapper {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      contain: layout;
+    }
+
+    .grid-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--border-radius-lg, 16px);
+      pointer-events: none;
+      z-index: 2;
+      transition: background-color 0.3s ease;
     }
 
     .plant-card-rich,
@@ -29854,6 +30605,33 @@ class GrowspaceDataStore {
             this.$wsDataCache.set(newCache);
         }
     }
+    addPlantEvent(plantId, event) {
+        const currentCache = this.$wsDataCache.get();
+        const newCache = { ...currentCache };
+        let changed = false;
+        Object.keys(newCache).forEach(gsId => {
+            const grid = newCache[gsId].grid;
+            if (!grid)
+                return;
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    // Create a deep copy of the plant data to avoid mutation
+                    const updatedPlant = { ...plant, events: [...(plant['events'] || []), event] };
+                    newCache[gsId] = {
+                        ...newCache[gsId],
+                        grid: {
+                            ...newCache[gsId].grid,
+                            [key]: updatedPlant
+                        }
+                    };
+                    changed = true;
+                }
+            });
+        });
+        if (changed) {
+            this.$wsDataCache.set(newCache);
+        }
+    }
 }
 
 class GrowspaceUIStore {
@@ -29919,6 +30697,12 @@ class GrowspaceUIStore {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "$gridOverlayMode", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         // Computed stores
         Object.defineProperty(this, "$isCompactView", {
             enumerable: true,
@@ -29936,11 +30720,15 @@ class GrowspaceUIStore {
         this.$notification = atom(null);
         this.$error = atom(null);
         this.$defaultApplied = atom(false);
+        this.$gridOverlayMode = atom('none');
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === 'compact');
     }
     // Actions
     setViewMode(mode) {
         this.$viewMode.set(mode);
+    }
+    setGridOverlayMode(mode) {
+        this.$gridOverlayMode.set(mode);
     }
     setIsLoading(loading) {
         this.$isLoading.set(loading);
@@ -30300,12 +31088,6 @@ class GrowspaceHistoryStore {
             // but usually main data is split into metrics. 
             // The controller logic mapped overview_entity_id to 'main' in some places, 
             // let's follow that pattern if consistent.
-            if (device.overview_entity_id) {
-                // Note: Controller used 'main' key for overview entity data storage sometimes.
-                // We will check if we need to store it explicitly.
-                // For now, let's just fetch it.
-                entitiesToFetch.add(device.overview_entity_id);
-            }
         }
         // 2. Identify Metric Entities
         for (const metric of metricsToFetch) {
@@ -30319,13 +31101,6 @@ class GrowspaceHistoryStore {
             return;
         const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
         // Overview/Main
-        if (device.overview_entity_id && batchResults[device.overview_entity_id]) {
-            batchResults[device.overview_entity_id];
-            // 'main' was used in controller logic for basic stats or fallback? 
-            // In store types, we don't have 'main' in SensorHistories, but we have strict keys.
-            // However, $historyCache is Record<string, ...> so we can store 'main'.
-            // Ideally we map overview entity content to specific metrics if valuable.
-        }
         // Metrics
         const formattedUpdates = {};
         for (const metric of metricsToFetch) {
@@ -30926,9 +31701,7 @@ function handleKeyboardNavigation(ctx, key, uiStore, dataStore) {
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                if (focusedPlant) {
-                    ctx.handleDeletePlant(focusedPlant.entity_id);
-                }
+                ctx.handleDeletePlant(focusedPlant.entity_id);
             }
             else if (uiStore.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
@@ -31919,6 +32692,8 @@ let GrowspaceManagerCard = (() => {
             .isLoading=${this._isLoadingController.value}
             .focusedPlantIndex=${this._focusedPlantIndexController.value}
           ></growspace-view-switcher>
+          
+          <batch-action-bar></batch-action-bar>
         </div>
       </ha-card>
 

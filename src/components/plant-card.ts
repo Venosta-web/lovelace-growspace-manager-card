@@ -5,6 +5,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { StoreController } from '@nanostores/lit';
 import { strainLibraryContext, storeContext } from '../context';
+import { calculateGrowthDeviation } from '../utils/analytics-utils';
 import {
   mdiCheckboxMarked,
   mdiCheckboxBlankOutline,
@@ -13,6 +14,9 @@ import {
   mdiContentCut,
   mdiAlertCircle,
   mdiStar,
+  mdiTrendingUp,
+  mdiTrendingDown,
+  mdiMinus,
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
@@ -59,6 +63,11 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
 
   // Instantiate controller
   private dragController = new DragDropController(this);
+
+  get growthDeviation(): number {
+    const strain = this.strainLibrary.find((s) => s.strain === this.plant.attributes.strain);
+    return calculateGrowthDeviation(this.plant, strain);
+  }
 
   // Computed display data
   get displayData(): PlantDisplayData | null {
@@ -202,6 +211,16 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
               <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
                 <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
               </div>
+            ` : nothing}
+
+            ${this.growthDeviation !== 0 ? html`
+                <div
+                    class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
+                    title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+                    style="background: ${this.growthDeviation > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'};"
+                >
+                    <ha-svg-icon .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown} style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"></ha-svg-icon>
+                </div>
             ` : nothing}
           </div>
         <div class="plant-card-content">

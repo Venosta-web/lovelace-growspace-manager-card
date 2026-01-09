@@ -226,8 +226,8 @@ describe('DataService', () => {
         });
 
         it('should set irrigation strategy', async () => {
-            await service.setIrrigationStrategy('g1', { strategy: 'daily' });
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', { growspace_id: 'g1', strategy: 'daily' });
+            await service.setIrrigationStrategy('g1', { enabled: true });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', { growspace_id: 'g1', enabled: true });
         });
     });
 
@@ -368,7 +368,7 @@ describe('DataService', () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             const result = await service.fetchGrowspaceData();
 
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Failed'), expect.any(Object));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed'), expect.any(String));
             // Should still return data per fallback logic
             expect(result).toEqual(badData);
         });
@@ -1238,6 +1238,75 @@ describe('DataService', () => {
         it('should handle error in removeNutrientPreset', async () => {
             callServiceMock.mockRejectedValue(new Error('Remove preset failed'));
             await expect(service.removeNutrientPreset('p1')).rejects.toThrow('Remove preset failed');
+        });
+    });
+
+    describe('Ultimate Branch Coverage', () => {
+        it('fetchGrowspaceData should return null if hass is missing', async () => {
+            (service as any).hass = null;
+            expect(await service.fetchGrowspaceData()).toBeNull();
+        });
+
+        it('fetchGrowspaceData should log problematic items in collection failure', async () => {
+            const result = {
+                gs1: { name: 'missing_id' }, // Invalid
+                gs2: { growspace_id: 'gs2', name: 'GS2', type: 'normal', rows: 1, plants_per_row: 1, grid: {} } // Valid
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(result);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchGrowspaceData();
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Found problematic item: gs1'), expect.anything());
+            expect(res).toBe(result);
+        });
+
+        it('getStrainLibrary sorting with null/undefined phenotypes', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'A': { phenotypes: { 'p2': {} } },
+                                'B': { phenotypes: { 'p1': {} } }
+                            }
+                        }
+                    }
+                }
+            } as any;
+
+            // To hit line 161 (phenotype compare), we need matching strain names
+            service.hass.states['sensor.strains'].attributes.strains = {
+                'Kush': { phenotypes: { '1': {}, '0': {} } }
+            };
+
+            const res = service.getStrainLibrary();
+            expect(res[0].phenotype).toBe('0');
+            expect(res[1].phenotype).toBe('1');
+        });
+
+        it('fetchStrainLibrary should handle extra "response" key if it somehow persists', async () => {
+            // Note: Line 186 deletes 'response' from rawResponse.
+            // But we verify the loop logic works for Kush.
+            const serviceResponse = {
+                response: {
+                    'Kush': { phenotypes: { 'default': {} } }
+                }
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(serviceResponse);
+
+            const res = await service.fetchStrainLibrary();
+            expect(res).toHaveLength(1);
+            expect(res[0].strain).toBe('Kush');
+        });
+
+        it('getHistoryStats fallback should log fallback params', async () => {
+            (mockHass.callWS as any).mockRejectedValue(new Error('WS Fail'));
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            vi.spyOn(service, 'getBatchHistory').mockResolvedValue({});
+
+            await service.getHistoryStats(['s1'], new Date());
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Fallback params:'));
         });
     });
 });

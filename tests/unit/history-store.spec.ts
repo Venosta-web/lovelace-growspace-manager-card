@@ -633,5 +633,62 @@ describe('history-store', () => {
             expect(spy).not.toHaveBeenCalled();
             spy.mockRestore();
         });
+
+        it('should handle optimal cache branch in combinedHistory', () => {
+            store.setHistoryData('optimal', mockHistoryData);
+            const combined = store.$combinedHistory.get();
+            expect(combined.optimal).toEqual(mockHistoryData);
+        });
+
+        it('should return early in _fetchHistory if no entities to fetch', async () => {
+            dataStore.setDevices([{
+                device_id: 'd1',
+                name: 'D1'
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
+            vi.spyOn(store as any, 'getEntityIdForMetric').mockReturnValue(null);
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+
+            await (store as any)._fetchHistory();
+
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('should handle deltaData branch in _fetchHistoryDelta', async () => {
+            // Setup device
+            dataStore.setDevices([{
+                device_id: 'd1',
+                name: 'D1',
+                environment_attributes: { temperature_sensor: 'sensor.temp' }
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
+            // Seed data so timestamps exist
+            store.setHistoryData('temperature', mockHistoryData);
+            store.updateLastTimestamp('temperature', mockHistoryData);
+
+            // Mock getHistoryStats returning data for the entity
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({
+                'sensor.temp': [{ ...mockHistoryData[0], last_changed: '2024-01-01T03:00:00Z' }]
+            });
+
+            const mergeSpy = vi.spyOn(store as any, '_mergeDeltaData');
+            await (store as any)._fetchHistoryDelta();
+
+            expect(mergeSpy).toHaveBeenCalled();
+            mergeSpy.mockRestore();
+        });
+        it('should return early in _fetchHistory if device not found', async () => {
+            // Select a device that doesn't exist
+            dataStore.setSelectedDevice('nonexistent');
+
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+            await (store as any)._fetchHistory();
+
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
     });
 });

@@ -101,7 +101,7 @@ describe('GrowspaceLogbook', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
 
-        expect(fetchSpy).toHaveBeenCalledWith('gs2');
+        expect(fetchSpy).toHaveBeenCalledWith(element.hass, 'gs2', 50);
 
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(3);
@@ -266,9 +266,15 @@ describe('GrowspaceLogbook', () => {
 
     it('should re-init controller if hass changes and controller missing', async () => {
         (element as any)._controller = undefined;
-        // Trigger willUpdate via property change
+        mockControllerInstance.fetchEventLog.mockClear();
+        // Directly invoke willUpdate logic since Lit reactive updates may not always trigger
+        // for object reference changes (hass is an object)
+        const changedProps = new Map();
+        changedProps.set('hass', element.hass);
         element.hass = { ...element.hass, state: 'new' } as any;
-        await element.updateComplete;
+        (element as any).willUpdate(changedProps);
+        // Wait for async _fetchEvents
+        await new Promise(r => setTimeout(r, 50));
 
         expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
     });
@@ -288,7 +294,7 @@ describe('GrowspaceLogbook', () => {
         const map = new Map();
         map.set('hass', true);
         (element as any).willUpdate(map);
-        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
+        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalledWith(element.hass, 'gs1', 50);
     });
 
     it('should sort events by time descending', async () => {

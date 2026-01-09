@@ -24,6 +24,12 @@ vi.mock('../../../src/components/ui/md3-date-input', () => ({
     Md3DateInput: class extends HTMLElement { }
 }));
 
+vi.mock('../../../src/controllers/growspace-logbook-controller', () => ({
+    GrowspaceLogbookController: class {
+        fetchEventLog = vi.fn().mockResolvedValue([]);
+    }
+}));
+
 // Mock ha-dialog
 class HaDialogMock extends HTMLElement {
     open = false;
@@ -58,6 +64,7 @@ describe('PlantOverviewDialog', () => {
             clone_start: null,
             dry_start: null,
             cure_start: null,
+            days_since_last_watering: null,
             growspace_id: 'gs1'
         },
         context: { id: '1', parent_id: null, user_id: null },
@@ -844,4 +851,321 @@ describe('PlantOverviewDialog', () => {
         expect(cloneEvent.numClones).toBe(1);
         document.body.removeChild(element);
     });
+    it('should generate milestones for the timeline', async () => {
+        const milestonePlant = {
+            ...mockPlant,
+            attributes: {
+                ...mockPlant.attributes,
+                veg_start: '2023-01-01',
+                flower_start: '2023-02-01'
+            }
+        };
+        element.plant = milestonePlant;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        expect(timeline).toBeTruthy();
+        const events = (timeline as any).events;
+
+        const vegMilestone = events.find((e: any) => e.type === 'milestone' && e.label === 'Vegetative');
+        const flowerMilestone = events.find((e: any) => e.type === 'milestone' && e.label === 'Flowering');
+
+        expect(vegMilestone).toBeTruthy();
+        expect(flowerMilestone).toBeTruthy();
+        expect(vegMilestone.date).toBe('2023-01-01');
+
+        document.body.removeChild(element);
+    });
+    it('should filter logbook events by plant_id', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'environmental',
+                sensor_type: 'irrigation',
+                start_time: '2023-01-05T10:00:00Z',
+                reasons: ['plant_id:plant_1', 'Plant: Blue Dream (Original)', 'Watered with 1.0L']
+            },
+            {
+                growspace_id: 'gs1',
+                category: 'environmental',
+                sensor_type: 'irrigation',
+                start_time: '2023-01-05T11:00:00Z',
+                reasons: ['plant_id:plant_2', 'Plant: Other Strain', 'Watered with 2.0L']
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        // Should find plant_1 event, but NOT plant_2 event
+        const plant1Event = events.find((e: any) => e.date === '2023-01-05T10:00:00Z');
+        const plant2Event = events.find((e: any) => e.date === '2023-01-05T11:00:00Z');
+
+        expect(plant1Event).toBeTruthy();
+        expect(plant1Event.action).toBe('environmental'); // category is 'environmental', not 'irrigation'
+        expect(plant2Event).toBeFalsy();
+
+        document.body.removeChild(element);
+    });
+
+    it('should filter out plant_id and Plants: from event details', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'training',
+                sensor_type: 'lst',
+                start_time: '2023-01-05T12:00:00Z',
+                reasons: ['plant_id:plant_1', 'Technique: LST', 'Plants: Blue Dream, Other Plant', 'Notes: Bent main cola']
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        const trainingEvent = events.find((e: any) => e.date === '2023-01-05T12:00:00Z');
+        expect(trainingEvent).toBeTruthy();
+        // Details should NOT contain plant_id: or Plants: prefixes
+        expect(trainingEvent.details).not.toContain('plant_id:');
+        expect(trainingEvent.details).not.toContain('Plants:');
+        // But should contain the technique and notes
+        expect(trainingEvent.details).toContain('Technique: LST');
+        expect(trainingEvent.details).toContain('Notes: Bent main cola');
+
+        document.body.removeChild(element);
+    });
+
+    it('should not show events without matching plant_id', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'environmental',
+                sensor_type: 'irrigation',
+                start_time: '2023-01-05T10:00:00Z',
+                reasons: ['plant_id:other_plant', 'Plant: Other Strain', 'Watered with 1.0L']
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        // Filter out milestone events
+        const actionEvents = events.filter((e: any) => e.type === 'action');
+        expect(actionEvents.length).toBe(0);
+
+        document.body.removeChild(element);
+    });
+
+    it('should switch tabs when clicking tab buttons', async () => {
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        // Initially dashboard
+        expect((element as any)._activeTab).toBe('dashboard');
+
+        // Click timeline
+        const buttons = element.shadowRoot?.querySelectorAll('.tab-btn');
+        const timelineBtn = Array.from(buttons || []).find(b => b.textContent?.includes('Timeline'));
+        (timelineBtn as HTMLElement).click();
+        await element.updateComplete;
+
+        expect((element as any)._activeTab).toBe('timeline');
+        expect(timelineBtn?.classList.contains('active')).toBe(true);
+
+        // Click overview (dashboard)
+        const dashboardBtn = Array.from(buttons || []).find(b => b.textContent?.includes('Overview'));
+        (dashboardBtn as HTMLElement).click();
+        await element.updateComplete;
+
+        expect((element as any)._activeTab).toBe('dashboard');
+        expect(dashboardBtn?.classList.contains('active')).toBe(true);
+
+        document.body.removeChild(element);
+    });
+
+    describe('Ultimate Branch Coverage', () => {
+        it('should cover all action mapping branches in _renderTimeline', () => {
+            element.plant = {
+                entity_id: 'sensor.p1',
+                attributes: { plant_id: 'p1' }
+            } as any;
+            (element as any)._logbookEvents = [
+                {
+                    category: 'watering',
+                    reasons: ['plant_id:p1'],
+                    start_time: '2024-01-01T10:00:00Z'
+                },
+                {
+                    category: 'irrigation',
+                    reasons: ['plant_id:p1'],
+                    start_time: '2024-01-01T11:00:00Z'
+                },
+                {
+                    category: 'training',
+                    sensor_type: 'topping',
+                    reasons: ['plant_id:p1', 'Some detail'],
+                    start_time: '2024-01-01T12:00:00Z'
+                },
+                {
+                    category: undefined,
+                    sensor_type: 'water',
+                    reasons: ['plant_id:p1', 'ext'],
+                    start_time: '2024-01-01T13:00:00Z'
+                },
+                {
+                    category: 'training',
+                    sensor_type: 'topping',
+                    reasons: undefined, // cover line 823 fallback
+                    start_time: '2024-01-01T14:00:00Z'
+                }
+            ];
+
+            const result = (element as any)._renderTimeline();
+            expect(result).toBeDefined();
+
+            // Cover plant_id fallback in 816
+            element.plant = { entity_id: 'sensor.p1_test' } as any;
+            (element as any)._renderTimeline();
+        });
+
+        it('should handle missing plant attributes in _renderTimeline', () => {
+            // Case 1: plant is undefined
+            element.plant = undefined as any;
+            let result = (element as any)._renderTimeline();
+            expect(typeof result).toBe('symbol'); // nothing
+
+            // Case 2: plant is defined but attributes is missing
+            element.plant = { entity_id: 'sensor.p1', attributes: undefined as any } as any;
+            result = (element as any)._renderTimeline();
+            expect(typeof result).toBe('object'); // TemplateResult
+        });
+
+        it('should cover null coalescing branches in render', async () => {
+            element.plant = { ...mockPlant, state: 'veg' };
+            element.editedAttributes = {
+                strain: 'Blue Dream',
+                stage: 'veg',
+                veg_start: undefined as any
+            };
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // This covers line 738 (veg_start ?? '')
+            const input = element.shadowRoot?.querySelector('md3-date-input[label="Vegetative Start"]');
+            expect(input).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should cover _fetchLogbook early return', async () => {
+            element.plant = { attributes: {} } as any;
+            await (element as any)._fetchLogbook();
+            expect((element as any)._logbookEvents).toEqual([]);
+        });
+
+        it('should cover phenotype, row, col fallback branches', async () => {
+            (element as any).isEditing = false; // Trigger stat-grid render
+            element.plant = {
+                ...mockPlant,
+                attributes: {
+                    ...mockPlant.attributes,
+                    phenotype: undefined as any,
+                    row: undefined as any,
+                    col: undefined as any
+                }
+            };
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const stats = element.shadowRoot?.querySelectorAll('.stat-value');
+            expect(stats?.length).toBeGreaterThan(0);
+
+            // Check for N/A or - fallbacks if possible, but just rendering them covers the branch
+            document.body.removeChild(element);
+        });
+
+        it('should cover showAllDates null coalescing branches', async () => {
+            (element as any).showAllDates = true;
+            element.plant = {
+                ...mockPlant,
+                attributes: {
+                    ...mockPlant.attributes,
+                    seedling_start: undefined as any,
+                    mother_start: undefined as any,
+                    veg_start: undefined as any,
+                    flower_start: undefined as any,
+                    dry_start: undefined as any,
+                    cure_start: undefined as any
+                }
+            };
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const inputs = element.shadowRoot?.querySelectorAll('md3-date-input');
+            expect(inputs?.length).toBeGreaterThan(0);
+
+            document.body.removeChild(element);
+        });
+    });
+
+    it('should cover stage-specific action branches (flower, dry, clone)', async () => {
+        const stages: Array<'flower' | 'dry' | 'clone'> = ['flower', 'dry', 'clone'];
+        for (const stage of stages) {
+            element.plant = { ...mockPlant, state: stage };
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            if (stage === 'flower') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Harvest');
+            if (stage === 'dry') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Finish Drying');
+            if (stage === 'clone') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Move');
+
+            document.body.removeChild(element);
+        }
+    });
+
+    it('should cover plant_id fallback with missing parts', () => {
+        element.plant = { entity_id: 'noparts' } as any;
+        (element as any)._renderTimeline();
+
+        element.plant = { entity_id: undefined } as any;
+        (element as any)._renderTimeline();
+    });
 });
+
