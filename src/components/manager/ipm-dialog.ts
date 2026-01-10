@@ -132,11 +132,21 @@ export class IPMDialog extends LitElement {
   private async _apply() {
     if (!this._selectedPresetId) return;
 
+    // Validate: at least one of growspaceId or plantIds must be provided
+    const hasPlants = this.plantIds && this.plantIds.length > 0;
+    const hasGrowspace = !!this.growspaceId;
+
+    if (!hasPlants && !hasGrowspace) {
+      this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
+      console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
+      return;
+    }
+
     try {
       await this.dataService.applyIPM({
         preset_id: this._selectedPresetId,
-        growspace_id: (!this.plantIds || this.plantIds.length === 0) ? this.growspaceId : undefined,
-        plant_ids: (this.plantIds && this.plantIds.length > 0) ? this.plantIds : undefined,
+        growspace_id: !hasPlants ? this.growspaceId : undefined,
+        plant_ids: hasPlants ? this.plantIds : undefined,
         notes: this._notes
       });
       this._close();

@@ -86,6 +86,12 @@ export class GrowspaceUIStore {
         this.$selectedPlants.set(new Set());
     }
 
+    public deselectPlants(plantIds: string[]) {
+        const current = new Set(this.$selectedPlants.get());
+        plantIds.forEach(id => current.delete(id));
+        this.$selectedPlants.set(current);
+    }
+
     public setFocusedPlantIndex(index: number) {
         this.$focusedPlantIndex.set(index);
     }

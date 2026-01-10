@@ -50,6 +50,7 @@ var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
+var mdiSickle = "M19.3 7.2C17.5 4.7 14.9 3 12 2C26.2 10.5 15.4 22.9 8.5 15.5L5.9 16L2.5 19.4C1.9 20 1.9 21 2.5 21.5C3.1 22.1 4.1 22.1 4.6 21.5L7.8 18.3C15.3 24.3 25 15 19.3 7.2Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
@@ -4890,6 +4891,13 @@ class DataService {
     updateHass(hass) {
         this.hass = hass;
     }
+    /**
+     * Generic service call wrapper. Useful for batch actions and other dynamic calls.
+     */
+    async callService(domain, service, serviceData) {
+        console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
+        await this.hass.callService(domain, service, serviceData);
+    }
     async fetchGrowspaceData(growspaceId) {
         if (!this.hass)
             return null;
@@ -4998,22 +5006,16 @@ class DataService {
         return [];
     }
     async fetchStrainLibrary() {
-        console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
+        console.log('[DataService:fetchStrainLibrary] Fetching strain library via WebSocket API');
         try {
-            // @ts-ignore - return_response is valid in modern HA but types might lag
-            const serviceResponse = await this.hass.connection.sendMessagePromise({
-                type: 'call_service',
-                domain: DOMAIN,
-                service: SERVICES.GET_STRAIN_LIBRARY,
-                service_data: {},
-                return_response: true,
+            // Use WebSocket API to bypass the 16KB attribute limit of state machine
+            const rawResponse = await this.hass.connection.sendMessagePromise({
+                type: 'growspace_manager/get_strain_library',
             });
-            // Handle common response wrapping patterns in HA services
-            let rawResponse = serviceResponse?.response ?? serviceResponse ?? {};
-            // Sanitize: some HA custom components might include a 'response' metadata key inside the payload
-            // which allows our Zod Record schema to fail if it's not a strain object.
-            if (rawResponse && typeof rawResponse === 'object') {
-                rawResponse = { ...rawResponse };
+            // The WS API returns the analytics object directly
+            // Schema validation will happen next
+            // Remove legacy or wrapper 'response' key if present to pass validation
+            if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
                 delete rawResponse['response'];
             }
             const parsed = StrainLibrarySchema.safeParse(rawResponse);
@@ -16168,11 +16170,19 @@ class GrowspaceLogbookController {
         async _apply() {
             if (!this._selectedPresetId)
                 return;
+            // Validate: at least one of growspaceId or plantIds must be provided
+            const hasPlants = this.plantIds && this.plantIds.length > 0;
+            const hasGrowspace = !!this.growspaceId;
+            if (!hasPlants && !hasGrowspace) {
+                this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
+                console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
+                return;
+            }
             try {
                 await this.dataService.applyIPM({
                     preset_id: this._selectedPresetId,
-                    growspace_id: (!this.plantIds || this.plantIds.length === 0) ? this.growspaceId : undefined,
-                    plant_ids: (this.plantIds && this.plantIds.length > 0) ? this.plantIds : undefined,
+                    growspace_id: !hasPlants ? this.growspaceId : undefined,
+                    plant_ids: hasPlants ? this.plantIds : undefined,
                     notes: this._notes
                 });
                 this._close();
@@ -28205,6 +28215,20 @@ class ResizeController {
         _handleIPM() {
             this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
         }
+        _handleDelete() {
+            const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+            if (selectedIds.length === 0)
+                return;
+            if (confirm(`Delete ${selectedIds.length} plant(s)? This cannot be undone.`)) {
+                this.store.batchAction('remove', selectedIds);
+            }
+        }
+        _handleHarvest() {
+            const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+            if (selectedIds.length === 0)
+                return;
+            this.store.batchAction('harvest', selectedIds);
+        }
         _handleClear() {
             this.store.clearPlantSelection();
             this.store.ui.setEditMode(false);
@@ -28238,6 +28262,16 @@ class ResizeController {
           <button class="action-btn" @click=${this._handleIPM}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             Log IPM
+          </button>
+
+          <button class="action-btn" @click=${this._handleHarvest}>
+            <svg viewBox="0 0 24 24"><path d="${mdiSickle}"></path></svg>
+            Harvest
+          </button>
+
+          <button class="action-btn danger" @click=${this._handleDelete}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            Delete
           </button>
         </div>
 
@@ -28347,6 +28381,15 @@ class ResizeController {
       .action-btn.primary:hover {
         filter: brightness(1.1);
         background: var(--primary-color);
+      }
+
+      .action-btn.danger {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+
+      .action-btn.danger:hover {
+        background: rgba(244, 67, 54, 0.3);
       }
 
       .close-btn {
@@ -31542,6 +31585,11 @@ class GrowspaceUIStore {
     clearPlantSelection() {
         this.$selectedPlants.set(new Set());
     }
+    deselectPlants(plantIds) {
+        const current = new Set(this.$selectedPlants.get());
+        plantIds.forEach(id => current.delete(id));
+        this.$selectedPlants.set(current);
+    }
     setFocusedPlantIndex(index) {
         this.$focusedPlantIndex.set(index);
     }
@@ -33012,7 +33060,7 @@ class GrowspaceStore {
                     await this.handleDeletePlant(ids);
                 }
             });
-            ids.forEach((id) => this.ui.togglePlantSelection(id));
+            this.ui.deselectPlants(ids);
             if (this.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
                 this.ui.closeDialog();
             }
@@ -33335,10 +33383,13 @@ class GrowspaceStore {
         });
     }
     openIPMDialog(context) {
+        // Fallback to selected device when no specific growspaceId or plantIds provided
+        const growspaceId = context?.growspaceId ||
+            (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);
         this.ui.setActiveDialog({
             type: 'IPM',
             payload: {
-                growspaceId: context?.growspaceId,
+                growspaceId,
                 plantIds: context?.plantIds
             }
         });
@@ -33389,6 +33440,40 @@ class GrowspaceStore {
         catch (e) {
             console.error('Import failed', e);
             this.showToast('Import failed: ' + e.message, 'error');
+        }
+    }
+    /**
+     * Batch Action: perform an action on multiple plants
+     * Supports 'remove', 'transition', 'harvest' actions.
+     * Applies optimistic UI updates and calls backend service.
+     */
+    async batchAction(action, entityIds, data) {
+        if (entityIds.length === 0)
+            return;
+        // Optimistic UI: for 'remove', mark them as deleted immediately
+        if (action === 'remove') {
+            entityIds.forEach(id => this.data.addOptimisticDeletedPlantId(id));
+        }
+        try {
+            await this.dataService.callService('growspace_manager', 'batch_action', {
+                entity_ids: entityIds,
+                action,
+                data: data || {}
+            });
+            this.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+            // Clear selection and exit edit mode
+            this.ui.clearPlantSelection();
+            this.ui.setEditMode(false);
+            // Refresh data to get server-confirmed state
+            await this.refreshData();
+        }
+        catch (err) {
+            console.error(`Batch ${action} failed:`, err);
+            this.showToast(`Batch ${action} failed: ${err.message || 'Unknown error'}`, 'error');
+            // Rollback optimistic updates on error
+            if (action === 'remove') {
+                entityIds.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
+            }
         }
     }
 }

@@ -141,6 +141,29 @@ describe('UI Store', () => {
         });
     });
 
+    describe('deselectPlants', () => {
+        it('should remove specific plants from selection', () => {
+            store.$selectedPlants.set(new Set(['p1', 'p2', 'p3']));
+
+            store.deselectPlants(['p1', 'p3']);
+
+            const selected = store.$selectedPlants.get();
+            expect(selected.size).toBe(1);
+            expect(selected.has('p2')).toBe(true);
+            expect(selected.has('p1')).toBe(false);
+            expect(selected.has('p3')).toBe(false);
+        });
+
+        it('should handle IDs not in selection', () => {
+            store.$selectedPlants.set(new Set(['p1']));
+
+            store.deselectPlants(['p2']);
+
+            expect(store.$selectedPlants.get().size).toBe(1);
+            expect(store.$selectedPlants.get().has('p1')).toBe(true);
+        });
+    });
+
     describe('selectAllPlants', () => {
         it('should set all provided plant IDs as selected', () => {
             store.selectAllPlants(['plant1', 'plant2', 'plant3']);

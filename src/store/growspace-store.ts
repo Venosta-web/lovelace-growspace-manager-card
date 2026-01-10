@@ -506,7 +506,7 @@ export class GrowspaceStore {
                 }
             });
 
-            ids.forEach((id) => this.ui.togglePlantSelection(id));
+            this.ui.deselectPlants(ids);
             if (this.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
                 this.ui.closeDialog();
             }
@@ -902,10 +902,14 @@ export class GrowspaceStore {
     }
 
     openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }) {
+        // Fallback to selected device when no specific growspaceId or plantIds provided
+        const growspaceId = context?.growspaceId ||
+            (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);
+
         this.ui.setActiveDialog({
             type: 'IPM',
             payload: {
-                growspaceId: context?.growspaceId,
+                growspaceId,
                 plantIds: context?.plantIds
             }
         });
@@ -959,6 +963,45 @@ export class GrowspaceStore {
         } catch (e: any) {
             console.error('Import failed', e);
             this.showToast('Import failed: ' + e.message, 'error');
+        }
+    }
+
+    /**
+     * Batch Action: perform an action on multiple plants
+     * Supports 'remove', 'transition', 'harvest' actions.
+     * Applies optimistic UI updates and calls backend service.
+     */
+    async batchAction(action: 'remove' | 'transition' | 'harvest', entityIds: string[], data?: Record<string, any>): Promise<void> {
+        if (entityIds.length === 0) return;
+
+        // Optimistic UI: for 'remove', mark them as deleted immediately
+        if (action === 'remove') {
+            entityIds.forEach(id => this.data.addOptimisticDeletedPlantId(id));
+        }
+
+        try {
+            await this.dataService.callService('growspace_manager', 'batch_action', {
+                entity_ids: entityIds,
+                action,
+                data: data || {}
+            });
+
+            this.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+
+            // Clear selection and exit edit mode
+            this.ui.clearPlantSelection();
+            this.ui.setEditMode(false);
+
+            // Refresh data to get server-confirmed state
+            await this.refreshData();
+        } catch (err: any) {
+            console.error(`Batch ${action} failed:`, err);
+            this.showToast(`Batch ${action} failed: ${err.message || 'Unknown error'}`, 'error');
+
+            // Rollback optimistic updates on error
+            if (action === 'remove') {
+                entityIds.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
+            }
         }
     }
 }

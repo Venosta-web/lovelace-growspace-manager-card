@@ -42,6 +42,14 @@ export class DataService {
     this.hass = hass;
   }
 
+  /**
+   * Generic service call wrapper. Useful for batch actions and other dynamic calls.
+   */
+  async callService(domain: string, service: string, serviceData: Record<string, any>): Promise<void> {
+    console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
+    await this.hass.callService(domain, service, serviceData);
+  }
+
 
 
   async fetchGrowspaceData(growspaceId?: string): Promise<GrowspaceAPIResponse | GrowspaceAPICollection | null> {
@@ -166,23 +174,18 @@ export class DataService {
   }
 
   async fetchStrainLibrary(): Promise<StrainEntry[]> {
-    console.log('[DataService:fetchStrainLibrary] Fetching strain library via API');
+    console.log('[DataService:fetchStrainLibrary] Fetching strain library via WebSocket API');
     try {
-      // @ts-ignore - return_response is valid in modern HA but types might lag
-      const serviceResponse: any = await this.hass.connection.sendMessagePromise({
-        type: 'call_service',
-        domain: DOMAIN,
-        service: SERVICES.GET_STRAIN_LIBRARY,
-        service_data: {},
-        return_response: true,
+      // Use WebSocket API to bypass the 16KB attribute limit of state machine
+      const rawResponse: any = await this.hass.connection.sendMessagePromise({
+        type: 'growspace_manager/get_strain_library',
       });
 
-      // Handle common response wrapping patterns in HA services
-      let rawResponse = (serviceResponse as any)?.response ?? serviceResponse ?? {};
-      // Sanitize: some HA custom components might include a 'response' metadata key inside the payload
-      // which allows our Zod Record schema to fail if it's not a strain object.
-      if (rawResponse && typeof rawResponse === 'object') {
-        rawResponse = { ...rawResponse };
+      // The WS API returns the analytics object directly
+      // Schema validation will happen next
+
+      // Remove legacy or wrapper 'response' key if present to pass validation
+      if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
         delete rawResponse['response'];
       }
 

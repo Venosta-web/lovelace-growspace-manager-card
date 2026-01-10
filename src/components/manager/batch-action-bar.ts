@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { mdiWater, mdiSprout, mdiBug, mdiClose } from '@mdi/js';
+import { mdiWater, mdiSprout, mdiBug, mdiClose, mdiDelete, mdiSickle } from '@mdi/js';
 import { storeContext } from '../../context';
 import type { GrowspaceStore } from '../../store/growspace-store';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -106,6 +106,15 @@ export class BatchActionBar extends LitElement {
         background: var(--primary-color);
       }
 
+      .action-btn.danger {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+
+      .action-btn.danger:hover {
+        background: rgba(244, 67, 54, 0.3);
+      }
+
       .close-btn {
         background: transparent;
         border: none;
@@ -136,6 +145,20 @@ export class BatchActionBar extends LitElement {
 
   private _handleIPM() {
     this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
+  }
+
+  private _handleDelete() {
+    const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+    if (selectedIds.length === 0) return;
+    if (confirm(`Delete ${selectedIds.length} plant(s)? This cannot be undone.`)) {
+      this.store.batchAction('remove', selectedIds);
+    }
+  }
+
+  private _handleHarvest() {
+    const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+    if (selectedIds.length === 0) return;
+    this.store.batchAction('harvest', selectedIds);
   }
 
   private _handleClear() {
@@ -173,6 +196,16 @@ export class BatchActionBar extends LitElement {
           <button class="action-btn" @click=${this._handleIPM}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             Log IPM
+          </button>
+
+          <button class="action-btn" @click=${this._handleHarvest}>
+            <svg viewBox="0 0 24 24"><path d="${mdiSickle}"></path></svg>
+            Harvest
+          </button>
+
+          <button class="action-btn danger" @click=${this._handleDelete}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+            Delete
           </button>
         </div>
 

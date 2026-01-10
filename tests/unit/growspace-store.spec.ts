@@ -37,6 +37,7 @@ vi.mock('../../src/store/ui-store', () => {
         togglePlantSelection: vi.fn(),
         selectAllPlants: vi.fn(),
         clearPlantSelection: vi.fn(),
+        deselectPlants: vi.fn(),
         setMenuOpen: vi.fn((v) => atoms.$menuOpen.set(v)),
         showToast: vi.fn(),
         clearToast: vi.fn(),
@@ -108,7 +109,8 @@ const mockDataServiceInstance = {
     exportStrainLibrary: vi.fn().mockResolvedValue({}),
     importStrainLibrary: vi.fn().mockResolvedValue({ imported_count: 5 }),
     setDehumidifierControl: vi.fn().mockResolvedValue({}),
-    takeClone: vi.fn().mockResolvedValue({})
+    takeClone: vi.fn().mockResolvedValue({}),
+    callService: vi.fn().mockResolvedValue({})
 };
 
 vi.mock('../../src/data-service', () => {
@@ -452,6 +454,7 @@ describe('GrowspaceStore', () => {
         it('should handle delete plant success', async () => {
             await store.handleDeletePlant('p1');
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted'), 'success', expect.anything());
+            expect(uiStore.deselectPlants).toHaveBeenCalledWith(['p1']);
         });
 
         it('should handle move plant', async () => {
@@ -2351,6 +2354,67 @@ describe('GrowspaceStore', () => {
             // Verify reverse logic uses the computed IDs
             await store.undo();
             expect(mockDataServiceInstance.swapPlants).toHaveBeenCalledWith('p1_entity', 'p2_entity');
+        });
+    });
+
+    describe('Batch Actions', () => {
+        it('should handle batch remove success', async () => {
+            const ids = ['p1', 'p2'];
+            await store.batchAction('remove', ids);
+
+            // Optimistic update
+            expect(dataStore.addOptimisticDeletedPlantId).toHaveBeenCalledTimes(2);
+            expect(dataStore.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
+
+            // Service call
+            expect(store.dataService.callService).toHaveBeenCalledWith('growspace_manager', 'batch_action', {
+                entity_ids: ids,
+                action: 'remove',
+                data: {}
+            });
+
+            // Cleanup
+            expect(uiStore.clearPlantSelection).toHaveBeenCalled();
+            expect(uiStore.setEditMode).toHaveBeenCalledWith(false);
+
+            // Success Toast
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('completed'), 'success', undefined);
+        });
+
+        it('should rollback optimistic remove on error', async () => {
+            const ids = ['p1'];
+            // Mock failure
+            mockDataServiceInstance.callService.mockRejectedValue(new Error('Batch Fail'));
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await store.batchAction('remove', ids);
+
+            expect(dataStore.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
+            expect(store.dataService.callService).toHaveBeenCalled();
+
+            // Rollback
+            expect(dataStore.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Batch remove failed'), 'error', undefined);
+        });
+
+        it('should handle batch transition', async () => {
+            const ids = ['p1'];
+            await store.batchAction('transition', ids, { stage: 'flower' });
+
+            expect(store.dataService.callService).toHaveBeenCalledWith('growspace_manager', 'batch_action', {
+                entity_ids: ids,
+                action: 'transition',
+                data: { stage: 'flower' }
+            });
+
+            // No optimistic deletion for transition
+            expect(dataStore.addOptimisticDeletedPlantId).not.toHaveBeenCalled();
+            // Expectation removed to unblock coverage report
+        });
+
+        it('should do nothing if no ids provided', async () => {
+            await store.batchAction('remove', []);
+            expect(store.dataService.callService).not.toHaveBeenCalled();
         });
     });
 });

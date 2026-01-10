@@ -81,6 +81,7 @@ describe('IPMDialog', () => {
     it('should cover apply logic and branches', async () => {
         // Entire Growspace branch
         element.plantIds = [];
+        element.growspaceId = 'gs1';
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('.apply-target')?.textContent).toBe('Entire Growspace');
 

@@ -110,12 +110,10 @@ describe('DataService', () => {
     describe('Strain Library', () => {
         it('should fetch strain library via service', async () => {
             const mockResponse = {
-                response: {
-                    'Kush': {
-                        meta: { breeder: 'Me' },
-                        phenotypes: {
-                            'default': { description: 'Good' }
-                        }
+                'Kush': {
+                    meta: { breeder: 'Me' },
+                    phenotypes: {
+                        'default': { description: 'Good' }
                     }
                 }
             };
@@ -494,10 +492,8 @@ describe('DataService', () => {
 
         it('should skip "response" key in strain library fetch', async () => {
             const mockResponse = {
-                response: {
-                    response: 'meta', // Should be skipped
-                    'Kush': { phenotypes: { 'default': {} } }
-                }
+                response: 'meta', // Should be skipped (deleted before validation)
+                'Kush': { phenotypes: { 'default': {} } }
             };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockResponse);
             const res = await service.fetchStrainLibrary();
@@ -974,7 +970,7 @@ describe('DataService', () => {
         });
 
         it('fetchStrainLibrary should log warning on validation error', async () => {
-            const badData = { response: { 'Kush': { meta: 'invalid_meta_structure' } } }; // Invalid meta type
+            const badData = { 'Kush': 'invalid_string_instead_of_object' }; // Invalid strain type
             // Mock console.warn to check for validation warning
             const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
@@ -1326,9 +1322,8 @@ describe('DataService', () => {
             // Note: Line 186 deletes 'response' from rawResponse.
             // But we verify the loop logic works for Kush.
             const serviceResponse = {
-                response: {
-                    'Kush': { phenotypes: { 'default': {} } }
-                }
+                response: 'should be deleted',
+                'Kush': { phenotypes: { 'default': {} } }
             };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(serviceResponse);
 

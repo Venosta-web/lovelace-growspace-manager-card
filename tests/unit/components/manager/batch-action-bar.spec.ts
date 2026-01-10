@@ -23,6 +23,7 @@ describe('BatchActionBar', () => {
             openBatchTrainingDialog: vi.fn(),
             openIPMDialog: vi.fn(),
             clearPlantSelection: vi.fn(),
+            batchAction: vi.fn(),
         };
 
         element = document.createElement('batch-action-bar') as BatchActionBar;
@@ -103,6 +104,60 @@ describe('BatchActionBar', () => {
 
         expect(mockStore.clearPlantSelection).toHaveBeenCalled();
         expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(false);
+    });
+
+
+    it('should call batchAction with harvest when Harvest button is clicked', async () => {
+        $selectedPlants.set(new Set(['p1']));
+        await element.updateComplete;
+
+        const btns = element.shadowRoot!.querySelectorAll('.action-btn');
+        const harvestBtn = btns[3] as HTMLElement; // 4th button
+        harvestBtn.click();
+
+        expect(mockStore.batchAction).toHaveBeenCalledWith('harvest', ['p1']);
+    });
+
+    it('should call batchAction with remove when Delete button is clicked and confirmed', async () => {
+        $selectedPlants.set(new Set(['p1', 'p2']));
+        await element.updateComplete;
+
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        const deleteBtn = element.shadowRoot!.querySelector('.action-btn.danger') as HTMLElement;
+        deleteBtn.click();
+
+        expect(confirmSpy).toHaveBeenCalled();
+        expect(mockStore.batchAction).toHaveBeenCalledWith('remove', ['p1', 'p2']);
+
+        confirmSpy.mockRestore();
+    });
+
+    it('should NOT call batchAction on Delete if cancelled', async () => {
+        $selectedPlants.set(new Set(['p1']));
+        await element.updateComplete;
+
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+        const deleteBtn = element.shadowRoot!.querySelector('.action-btn.danger') as HTMLElement;
+        deleteBtn.click();
+
+        expect(confirmSpy).toHaveBeenCalled();
+        expect(mockStore.batchAction).not.toHaveBeenCalled();
+
+        confirmSpy.mockRestore();
+    });
+
+    it('should return early if handlers called with no selection', async () => {
+        $selectedPlants.set(new Set());
+        await element.updateComplete;
+
+        // Manually call handlers since buttons are not rendered
+        (element as any)._handleDelete();
+        (element as any)._handleHarvest();
+
+        expect(mockStore.batchAction).not.toHaveBeenCalled();
+        // confirm should not be called either
     });
 
     it('should handle connectedCallback without store', () => {
