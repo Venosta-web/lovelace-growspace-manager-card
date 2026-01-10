@@ -93,22 +93,7 @@ export class GrowspaceHeader extends LitElement {
     return this._activeEnvGraphsController?.value || new Set();
   }
 
-  private _computeMetrics(): {
-    mainChips: any[];
-    deviceChips: any[];
-    dominant: any;
-    envAttrs: any;
-  } {
-    if (!this.device || !this.hass)
-      return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
 
-    return MetricsUtils.computeHeaderMetrics(
-      this.hass,
-      this.device,
-      this.activeEnvGraphs,
-      this._linkedGraphGroupsController?.value || []
-    );
-  }
 
   private _scrollChips(direction: 'left' | 'right') {
     const container = this._chipsContainerRef.value;

@@ -57,7 +57,6 @@ describe('DialogHost', () => {
             performImport: vi.fn().mockResolvedValue(undefined),
             handleExportLibrary: vi.fn(),
             openStrainRecommendationDialog: vi.fn(),
-            updatePlantFromDialog: vi.fn(),
             handleAddGrowspace: vi.fn(),
             handleUpdateGrowspace: vi.fn(),
             showToast: vi.fn(),
@@ -68,7 +67,6 @@ describe('DialogHost', () => {
             getStrainRecommendation: vi.fn(),
             archivePlant: vi.fn(),
             refreshData: vi.fn(),
-            performImport: vi.fn()
         };
 
         (element as any).store = {
@@ -85,7 +83,7 @@ describe('DialogHost', () => {
         // Reset atoms
         $activeDialog.set({ type: 'NONE' });
         $devices.set([]);
-        $selectedDevice.set(undefined);
+        $selectedDevice.set(null);
     });
 
     afterEach(() => {
@@ -315,7 +313,7 @@ describe('DialogHost', () => {
         ]);
         $activeDialog.set({
             type: 'CONFIG',
-            payload: { currentTab: 'environment', environmentData: {} }
+            payload: { currentTab: 'environment', environmentData: {} as any }
         });
 
         document.body.appendChild(element);
@@ -739,7 +737,7 @@ describe('DialogHost', () => {
     it('should render TRAINING dialog', async () => {
         $activeDialog.set({
             type: 'TRAINING',
-            payload: { plantIds: ['p1'], growspaceId: 'g1' }
+            payload: { plantIds: ['p1'], growspaceId: 'g1', isOpen: true }
         });
         document.body.appendChild(element);
         await element.updateComplete;
@@ -781,7 +779,7 @@ describe('DialogHost', () => {
         expect(ipm.plantIds).toEqual([]);
         expect(ipm.presets).toEqual({});
 
-        $activeDialog.set({ type: 'NUTRIENT_PRESETS' });
+        $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
         await element.updateComplete;
         const np = element.shadowRoot?.querySelector('nutrient-presets-editor') as any;
         expect(np.presets).toEqual({});
@@ -795,7 +793,7 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
 
         // Change dialog type before close
-        $activeDialog.set({ type: 'CONFIG', payload: {} });
+        $activeDialog.set({ type: 'CONFIG', payload: { currentTab: 'environment', environmentData: {} as any } });
 
         dialog?.dispatchEvent(new CustomEvent('close'));
         expect(mockStore.ui.closeDialog).not.toHaveBeenCalled();
@@ -833,7 +831,7 @@ describe('DialogHost', () => {
                 personality: 'Expert'
             }
         };
-        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false } });
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, growspaceId: 'g1', response: null, mode: 'single' } });
         document.body.appendChild(element);
         element.requestUpdate();
         await element.updateComplete;
@@ -841,7 +839,7 @@ describe('DialogHost', () => {
         expect(gm.personality).toBe('Expert');
 
         mockHass.states['sensor.growspace_manager'].attributes.personality = undefined;
-        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false } }); // trigger re-render
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, growspaceId: 'g1', response: null, mode: 'single' } }); // trigger re-render
         await element.updateComplete;
         expect(gm.personality).toBe('Helpful');
     });

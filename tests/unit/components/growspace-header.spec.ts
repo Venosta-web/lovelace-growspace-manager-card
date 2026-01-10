@@ -213,7 +213,8 @@ describe('GrowspaceHeader', () => {
             setViewMode: vi.fn(),
             fetchStrainLibrary: vi.fn(),
             openLogbookDialog: vi.fn(),
-            openNutrientPresetsDialog: vi.fn()
+            openNutrientPresetsDialog: vi.fn(),
+            openIPMDialog: vi.fn()
         };
 
         // Initialize Atoms based on mock state
@@ -265,7 +266,8 @@ describe('GrowspaceHeader', () => {
             setViewMode: vi.fn(),
             fetchStrainLibrary: vi.fn(),
             openLogbookDialog: vi.fn(),
-            openNutrientPresetsDialog: vi.fn()
+            openNutrientPresetsDialog: vi.fn(),
+            openIPMDialog: vi.fn()
         };
 
         mockHass = { states: {}, callService: vi.fn() };
@@ -441,7 +443,7 @@ describe('GrowspaceHeader', () => {
             );
 
             // Removed redundant spyOn
-            const strainsItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
+            const strainsItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
             strainsItem.click();
 
             expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(
@@ -579,6 +581,12 @@ describe('GrowspaceHeader', () => {
             }));
         });
 
+        it('should handle control_dehumidifier action without overview_entity_id (no-op)', () => {
+            element.device = { ...deviceMock, overview_entity_id: undefined } as any;
+            (element as any)._triggerAction('control_dehumidifier');
+            expect(mockHass.callService).not.toHaveBeenCalled();
+        });
+
         it('should handle nutrient_presets action', () => {
             const spy = vi.spyOn(mockStore, 'openNutrientPresetsDialog');
             (element as any)._triggerAction('nutrient_presets');
@@ -672,7 +680,7 @@ describe('GrowspaceHeader', () => {
             await element.updateComplete;
 
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
+            const waterItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
             expect(waterItem.textContent).toContain('Water Growspace');
         });
 
@@ -683,7 +691,7 @@ describe('GrowspaceHeader', () => {
             await element.updateComplete;
 
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
+            const waterItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
             expect(waterItem.textContent).toContain('Water Selected');
         });
     });
@@ -721,11 +729,7 @@ describe('GrowspaceHeader', () => {
             expect(element.activeEnvGraphs).toEqual(new Set());
         });
 
-        it('should handle _computeMetrics with missing linkedGraphGroupsController', () => {
-            (element as any)._linkedGraphGroupsController = undefined;
-            const result = (element as any)._computeMetrics();
-            expect(result).toBeDefined();
-        });
+
     });
 
     describe('Toggle Env Graph', () => {
@@ -865,6 +869,8 @@ describe('GrowspaceHeader', () => {
 
                 // Order: Config, Edit, Compact, Dehumidifier, Strains, Irrigation, AI, Logbook
 
+                // Order: Config, Edit, Compact, Dehumidifier, Water, Irrigation, IPM, Nutrient Presets, Add Plant, Strains, Logbook, AI
+
                 // 2. Edit (Index 1)
                 const editSpy = vi.spyOn(mockStore.ui, 'setEditMode');
                 clickItem(1, 'edit');
@@ -880,29 +886,37 @@ describe('GrowspaceHeader', () => {
                 clickItem(3, 'control_dehumidifier');
                 expect(triggerSpy).toHaveBeenCalledWith('control_dehumidifier');
 
-                // 5. Strains (Index 4)
-                clickItem(4, 'strains');
-                expect(triggerSpy).toHaveBeenCalledWith('strains');
+                // 5. Water (Index 4)
+                clickItem(4, 'water');
+                expect(triggerSpy).toHaveBeenCalledWith('water');
 
                 // 6. Irrigation (Index 5)
                 clickItem(5, 'irrigation');
                 expect(triggerSpy).toHaveBeenCalledWith('irrigation');
 
-                // 7. AI (Index 6)
-                clickItem(6, 'ai');
-                expect(triggerSpy).toHaveBeenCalledWith('ai');
+                // 7. IPM (Index 6)
+                clickItem(6, 'ipm');
+                expect(triggerSpy).toHaveBeenCalledWith('ipm');
 
-                // 8. Logbook (Index 7)
-                clickItem(7, 'logbook');
-                expect(triggerSpy).toHaveBeenCalledWith('logbook');
-
-                // 9. Nutrient Presets (Index 8)
-                clickItem(8, 'nutrient_presets');
+                // 8. Nutrient Presets (Index 7)
+                clickItem(7, 'nutrient_presets');
                 expect(triggerSpy).toHaveBeenCalledWith('nutrient_presets');
 
-                // 10. Water (Index 9)
-                clickItem(9, 'water');
-                expect(triggerSpy).toHaveBeenCalledWith('water');
+                // 9. Add Plant (Index 8)
+                clickItem(8, 'add_plant');
+                expect(triggerSpy).toHaveBeenCalledWith('add_plant');
+
+                // 10. Strains (Index 9)
+                clickItem(9, 'strains');
+                expect(triggerSpy).toHaveBeenCalledWith('strains');
+
+                // 11. Logbook (Index 10)
+                clickItem(10, 'logbook');
+                expect(triggerSpy).toHaveBeenCalledWith('logbook');
+
+                // 12. AI (Index 11)
+                clickItem(11, 'ai');
+                expect(triggerSpy).toHaveBeenCalledWith('ai');
             });
         });
 
@@ -1149,20 +1163,7 @@ describe('GrowspaceHeader', () => {
         });
     });
 
-    describe('_computeMetrics Edge Cases', () => {
-        it('should return empty metrics when device is null', () => {
-            element.device = null as any;
-            const result = (element as any)._computeMetrics();
-            expect(result.mainChips).toEqual([]);
-            expect(result.deviceChips).toEqual([]);
-        });
 
-        it('should return empty metrics when hass is null', () => {
-            element.hass = null as any;
-            const result = (element as any)._computeMetrics();
-            expect(result.mainChips).toEqual([]);
-        });
-    });
 
     describe('_updateMetrics Edge Cases', () => {
         it('should reset metrics when device is null', () => {
@@ -1593,5 +1594,159 @@ describe('GrowspaceHeader', () => {
             const svg = element.shadowRoot?.querySelector('.hero-sparkline');
             expect(svg).toBeFalsy();
         });
+        it('should handle dragging hero chips', async () => {
+            // Render specific state with hero chips
+            Object.defineProperty(element, '_mainChips', { value: [{ key: 'temperature', value: '25', status: 'ok' }] });
+            // Ensure devices controller has value to avoid render crash
+            Object.defineProperty(element, '_devicesController', { value: { value: [{ device_id: 'gs1' }] } });
+
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const heroCard = element.shadowRoot?.querySelector('.hero-card');
+            expect(heroCard).toBeTruthy();
+
+            if (heroCard) {
+                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
+                heroCard.dispatchEvent(new Event('dragstart'));
+                expect(dragStartSpy).toHaveBeenCalled();
+            }
+        });
+    });
+
+
+    describe('Template Interactions', () => {
+        beforeEach(async () => {
+            // Setup standard state
+            (element as any)._devicesController = { value: [{ device_id: 'gs1', name: 'GS1' }] };
+            element.device = { ...deviceMock, device_id: 'gs1' };
+            element.hass = mockHass;
+            Object.defineProperty(element, '_mainChips', {
+                value: [
+                    { key: 'temperature', value: '25', status: 'ok', icon: 'mdi:thermometer' },
+                    { key: 'humidity', value: '60', status: 'ok', icon: 'mdi:water-percent' } // Secondary
+                ]
+            });
+            // Mock dominant for stage area
+            Object.defineProperty(element, '_dominant', { value: { icon: 'mdi:flower', daysLabel: 'Day 10', weeksLabel: 'Week 2' } });
+
+            // Mock scroll capabilities to ensure arrows are rendered
+            Object.defineProperty(element, '_canScrollDeviceLeft', { value: true, writable: true });
+            Object.defineProperty(element, '_canScrollDeviceRight', { value: true, writable: true });
+            Object.defineProperty(element, '_canScrollStageLeft', { value: true, writable: true });
+            Object.defineProperty(element, '_canScrollStageRight', { value: true, writable: true });
+            Object.defineProperty(element, '_canScrollLeft', { value: true, writable: true }); // Secondary
+            Object.defineProperty(element, '_canScrollRight', { value: true, writable: true }); // Secondary
+
+            element.requestUpdate();
+            await element.updateComplete;
+        });
+
+        it('should trigger scroll arrows', async () => {
+            const spyScrollDevice = vi.spyOn(element as any, '_scrollDeviceChips');
+            const spyScrollStage = vi.spyOn(element as any, '_scrollStage');
+            const spyScrollChips = vi.spyOn(element as any, '_scrollChips');
+
+            // Device Chips Arrows
+            const deviceLeft = element.shadowRoot?.querySelector('.gs-device-chips-container .scroll-arrow:first-child') as HTMLElement;
+            const deviceRight = element.shadowRoot?.querySelector('.gs-device-chips-container .scroll-arrow:last-child') as HTMLElement;
+            deviceLeft?.click();
+            expect(spyScrollDevice).toHaveBeenCalledWith('left');
+            deviceRight?.click();
+            expect(spyScrollDevice).toHaveBeenCalledWith('right');
+
+            // Stage Arrows
+            const stageLeft = element.shadowRoot?.querySelector('.header-stage-area-wrapper .scroll-arrow:first-child') as HTMLElement;
+            const stageRight = element.shadowRoot?.querySelector('.header-stage-area-wrapper .scroll-arrow:last-child') as HTMLElement;
+            stageLeft?.click();
+            expect(spyScrollStage).toHaveBeenCalledWith('left');
+            stageRight?.click();
+            expect(spyScrollStage).toHaveBeenCalledWith('right');
+
+            // Secondary Chips Arrows
+            const secondaryLeft = element.shadowRoot?.querySelector('.secondary-strip-container .scroll-arrow:first-child') as HTMLElement;
+            const secondaryRight = element.shadowRoot?.querySelector('.secondary-strip-container .scroll-arrow:last-child') as HTMLElement;
+            secondaryLeft?.click();
+            expect(spyScrollChips).toHaveBeenCalledWith('left');
+            secondaryRight?.click();
+            expect(spyScrollChips).toHaveBeenCalledWith('right');
+        });
+
+        it('should trigger menu and mobile toggles', async () => {
+            // Force mobile
+            (element as any)._resizeController = { isMobile: true };
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const mobileToggle = element.shadowRoot?.querySelector('.mobile-link') as HTMLElement;
+            const menuToggle = element.shadowRoot?.querySelector('.menu-container .icon-button') as HTMLElement;
+
+            mobileToggle?.click();
+            expect((element as any)._mobileLink).toBe(true);
+
+            menuToggle?.click();
+            expect((element as any)._menuOpen).toBe(true);
+        });
+
+        it('should trigger chip drag events (secondary)', async () => {
+            const chip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip') as HTMLElement;
+            expect(chip).toBeTruthy();
+
+            const spyDragStart = vi.spyOn(element as any, '_handleChipDragStart');
+            const spyDrop = vi.spyOn(element as any, '_handleChipDrop');
+
+            chip.dispatchEvent(new Event('dragstart'));
+            expect(spyDragStart).toHaveBeenCalledWith(expect.any(Event), 'ppfd'); // secondary
+
+            chip.dispatchEvent(new Event('drop'));
+            expect(spyDrop).toHaveBeenCalledWith(expect.any(Event), 'ppfd');
+        });
+
+        it('should trigger chip click/unlink (secondary)', async () => {
+            const chip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip') as HTMLElement;
+            const spyToggle = vi.spyOn(element as any, '_toggleEnvGraph');
+            const spyUnlink = vi.spyOn(element as any, '_unlinkGraphs');
+
+            chip.click();
+            expect(spyToggle).toHaveBeenCalledWith('ppfd');
+
+            chip.dispatchEvent(new CustomEvent('unlink'));
+            expect(spyUnlink).toHaveBeenCalled();
+        });
+    });
+
+    it('should trigger scroll event listeners', async () => {
+        const spyCheckScroll = vi.spyOn(element as any, '_checkScroll');
+
+        const deviceContainer = element.shadowRoot?.querySelector('.gs-device-chips-header');
+        const stageContainer = element.shadowRoot?.querySelector('.header-stage-area');
+        const secondaryContainer = element.shadowRoot?.querySelector('.secondary-strip');
+
+        expect(deviceContainer, 'deviceContainer').toBeTruthy();
+        expect(stageContainer, 'stageContainer').toBeTruthy();
+        expect(secondaryContainer, 'secondaryContainer').toBeTruthy();
+
+        deviceContainer?.dispatchEvent(new Event('scroll'));
+        expect(spyCheckScroll).toHaveBeenCalledTimes(1);
+
+        stageContainer?.dispatchEvent(new Event('scroll'));
+        expect(spyCheckScroll).toHaveBeenCalledTimes(2);
+
+        secondaryContainer?.dispatchEvent(new Event('scroll'));
+        expect(spyCheckScroll).toHaveBeenCalledTimes(3);
+    });
+
+    it('should trigger initial scroll check timeout', async () => {
+        vi.useFakeTimers();
+        const spyCheckScroll = vi.spyOn(element as any, '_checkScroll');
+
+        // Re-run firstUpdated to trigger timeout
+        element.firstUpdated();
+
+        vi.runAllTimers();
+        expect(spyCheckScroll).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 });
+
+
