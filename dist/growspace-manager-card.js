@@ -26871,11 +26871,6 @@ class ResizeController {
         get activeEnvGraphs() {
             return this._activeEnvGraphsController?.value || new Set();
         }
-        _computeMetrics() {
-            if (!this.device || !this.hass)
-                return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
-            return MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
-        }
         _scrollChips(direction) {
             const container = this._chipsContainerRef.value;
             if (container) {
