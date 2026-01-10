@@ -100,7 +100,7 @@ describe('TrainingDialog', () => {
         const content = element.shadowRoot?.querySelector('.content');
         expect(content).not.toBeNull();
 
-        const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box');
+        const techniqueSelect = element.shadowRoot?.querySelector('md3-select');
         expect(techniqueSelect).not.toBeNull();
 
         const notesInput = element.shadowRoot?.querySelector('ha-textarea');
@@ -109,13 +109,13 @@ describe('TrainingDialog', () => {
 
     it('should call log_training_event service on save', async () => {
         // Set values
-        const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
+        const techniqueSelect = element.shadowRoot?.querySelector('md3-select') as any;
         expect(techniqueSelect).not.toBeNull();
 
-        // ha-combo-box usually fires 'value-changed' with detail.value
+        // md3-select usually fires 'change' with detail.value
         techniqueSelect.value = 'topping';
-        techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
-            detail: { value: 'topping' }
+        techniqueSelect.dispatchEvent(new CustomEvent('change', {
+            detail: 'topping'
         }));
 
         const notesInput = element.shadowRoot?.querySelector('ha-textarea') as any;
@@ -154,9 +154,9 @@ describe('TrainingDialog', () => {
     it('should handle error during save', async () => {
         mockHass.callService = vi.fn().mockRejectedValue(new Error('Backend error'));
 
-        const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
-        techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
-            detail: { value: 'topping' }
+        const techniqueSelect = element.shadowRoot?.querySelector('md3-select') as any;
+        techniqueSelect.dispatchEvent(new CustomEvent('change', {
+            detail: 'topping'
         }));
 
         const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
@@ -206,9 +206,9 @@ describe('TrainingDialog', () => {
             await element.updateComplete;
 
             // Set technique
-            const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
-            techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
-                detail: { value: 'LST' }
+            const techniqueSelect = element.shadowRoot?.querySelector('md3-select') as any;
+            techniqueSelect.dispatchEvent(new CustomEvent('change', {
+                detail: 'LST'
             }));
 
             const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
@@ -264,9 +264,9 @@ describe('TrainingDialog', () => {
         });
 
         it('should save with notes as undefined when empty', async () => {
-            const techniqueSelect = element.shadowRoot?.querySelector('ha-combo-box') as any;
-            techniqueSelect.dispatchEvent(new CustomEvent('value-changed', {
-                detail: { value: 'defoliation' }
+            const techniqueSelect = element.shadowRoot?.querySelector('md3-select') as any;
+            techniqueSelect.dispatchEvent(new CustomEvent('change', {
+                detail: 'defoliation'
             }));
 
             // Don't set any notes

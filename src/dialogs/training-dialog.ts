@@ -101,14 +101,12 @@ export class TrainingDialog extends LitElement {
                 <div class="content">
                     <p>Select the technique used and add any optional notes.</p>
                     
-                    <ha-combo-box
+                    <md3-select
                         .label=${'Technique'}
-                        .items=${this._techniques}
+                        .options=${this._techniques}
                         .value=${this._technique}
-                        @value-changed=${(e: CustomEvent) => this._technique = e.detail.value}
-                        required
-                        validationMessage="Please select a technique"
-                    ></ha-combo-box>
+                        @change=${(e: CustomEvent) => this._technique = e.detail}
+                    ></md3-select>
 
                     <ha-textarea
                         .label=${'Notes (Optional)'}
