@@ -737,6 +737,16 @@ export class GrowspaceStore {
         });
     }
 
+    openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }) {
+        this.ui.setActiveDialog({
+            type: 'IPM',
+            payload: {
+                growspaceId: context?.growspaceId,
+                plantIds: context?.plantIds
+            }
+        });
+    }
+
     openLogbookDialog() {
         const growspaceId = this.data.$selectedDevice.get();
         if (growspaceId) {

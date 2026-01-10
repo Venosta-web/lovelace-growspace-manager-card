@@ -110,4 +110,18 @@ describe('GrowspaceViewSwitcher', () => {
         expect(view.selectedCount).toBe(3);
         expect(view.cols).toBe(4); // from device mock
     });
+
+    it('triggers focusPlant when focusedPlantIndex changes', async () => {
+        element.viewMode = 'standard';
+        await element.updateComplete;
+
+        const childMock = element.shadowRoot?.querySelector('growspace-view-standard') as any;
+        childMock.focusPlant = vi.fn();
+
+        // Update focusedPlantIndex
+        element.focusedPlantIndex = 3;
+        await element.updateComplete;
+
+        expect(childMock.focusPlant).toHaveBeenCalledWith(3);
+    });
 });

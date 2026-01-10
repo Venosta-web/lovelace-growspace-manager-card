@@ -456,6 +456,48 @@ describe('GrowspaceGrid', () => {
 
             expect(mockStore.handleDrop).toHaveBeenCalledWith(0, 0, null, plant);
         });
+
+        it('handles mobile drop with missing row and col attributes', () => {
+            const mockTarget = {
+                tagName: 'DIV',
+                classList: { contains: (cls: string) => cls === 'plant-card-empty' },
+                // Return null to trigger || '0'
+                getAttribute: () => null,
+                parentElement: null
+            };
+
+            const mockShadowRoot = {
+                elementFromPoint: vi.fn().mockReturnValue(mockTarget)
+            };
+
+            Object.defineProperty(element, 'shadowRoot', {
+                get: () => mockShadowRoot,
+                configurable: true
+            });
+
+            const plant = { entity_id: 'dragged' };
+            (element as any)._handleMobileDrop({
+                detail: { x: 10, y: 10, plant }
+            });
+
+            // Should default to 0,0
+            expect(mockStore.handleDrop).toHaveBeenCalledWith(0, 0, null, plant);
+        });
+    });
+
+    it('falls back to none overlay mode when controller value is missing', async () => {
+        // Set value to undefined to trigger || 'none'
+        (element as any)._overlayModeController = { value: undefined };
+        const plant: any = {
+            entity_id: 'p1',
+            state: 'ok',
+            attributes: { plant_id: 'p1' }
+        };
+        element.plants = [[plant]];
+        await waitForUpdates(element);
+
+        const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+        expect(overlay).toBeNull();
     });
 
     describe('Drag Over Edge Cases', () => {

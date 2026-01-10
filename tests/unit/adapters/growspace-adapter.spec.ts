@@ -46,7 +46,8 @@ describe('GrowspaceAdapter', () => {
                     veg_start: '2023-01-11',
                     flower_start: null,
                     dry_start: null,
-                    cure_start: null
+                    cure_start: null,
+                    days_since_last_watering: 0,
                 },
                 'position_0_1': null // Empty slot
             },
@@ -292,6 +293,32 @@ describe('GrowspaceAdapter', () => {
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithStrategy);
         expect(result?.irrigation_strategy).toEqual({ enabled: true, target_ml: 500 });
+    });
+
+    it('should include ipm_presets when provided', () => {
+        const ipm_presets = {
+            'preset1': {
+                id: 'preset1',
+                name: 'Test IPM',
+                type: 'foliar',
+                items: [{ name: 'Neem', dose_amount: 5, dose_unit: 'ml/L' }]
+            }
+        };
+        const wsWithIPM: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            name: 'IPM Room',
+            type: 'normal',
+            rows: 1,
+            plants_per_row: 1,
+            total_plants: 0,
+            grid: {},
+            irrigation_config: { irrigation_times: [], drain_times: [] },
+            ipm_presets: ipm_presets as any,
+            vpd_status: 'ok'
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithIPM);
+        expect(result?.ipm_presets).toEqual(ipm_presets);
     });
 
     describe('Coverage Gap Fillers', () => {

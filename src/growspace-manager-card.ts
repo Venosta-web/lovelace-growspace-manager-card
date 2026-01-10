@@ -25,6 +25,7 @@ import './components/growspace-toast';
 import './components/manager/batch-action-bar';
 import { LibraryExportReadyEvent } from './events';
 import './components/growspace-view-switcher';
+import './components/ui'; // Register MD3 components
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
@@ -199,6 +200,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.ui.setEditMode(false);
   }
 
+  private _handleIPMSelected() {
+    this.store.openIPMDialog();
+  }
+
   private _handleToggleExpansion() {
     this.store.toggleHeaderExpansion();
   }
@@ -253,6 +258,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
             @training-selected=${this._handleTrainingSelected}
+            @ipm-selected=${this._handleIPMSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

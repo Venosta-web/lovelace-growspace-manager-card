@@ -988,6 +988,47 @@ describe('PlantOverviewDialog', () => {
         document.body.removeChild(element);
     });
 
+    it('should filter for and include IPM events in timeline', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'ipm',
+                sensor_type: 'ipm_foliar',
+                start_time: '2023-01-05T13:00:00Z',
+                reasons: ['plant_id:plant_1', 'IPM Treatment: Soap Spray']
+            },
+            {
+                growspace_id: 'gs1',
+                category: 'not_ipm',
+                sensor_type: 'other',
+                start_time: '2023-01-05T14:00:00Z',
+                reasons: ['plant_id:plant_1']
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        const ipmEvent = events.find((e: any) => e.date === '2023-01-05T13:00:00Z');
+        const otherEvent = events.find((e: any) => e.date === '2023-01-05T14:00:00Z');
+
+        expect(ipmEvent).toBeTruthy();
+        expect(ipmEvent.action).toBe('ipm');
+        expect(otherEvent).toBeFalsy();
+
+        document.body.removeChild(element);
+    });
+
     it('should switch tabs when clicking tab buttons', async () => {
         element.open = true;
         document.body.appendChild(element);

@@ -8,6 +8,7 @@ var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
+var mdiBug = "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z";
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
 var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
@@ -719,6 +720,7 @@ class GrowspaceAdapter {
             irrigation_config: wsData.irrigation_config,
             irrigation_strategy: wsData.irrigation_strategy || undefined,
             nutrient_presets: wsData.nutrient_presets,
+            ipm_presets: wsData.ipm_presets,
         });
     }
     /**
@@ -860,6 +862,9 @@ const SERVICES = {
     WATER_GROWSPACE: 'water_growspace',
     SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
     REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
+    SAVE_IPM_PRESET: 'save_ipm_preset',
+    REMOVE_IPM_PRESET: 'remove_ipm_preset',
+    APPLY_IPM: 'apply_ipm',
 };
 /**
  * Default configuration values to replace magic numbers throughout the codebase.
@@ -4761,6 +4766,8 @@ const PlantSlotSchema = objectType({
     flower_days: numberType().optional().default(0),
     dry_days: numberType().optional().default(0),
     cure_days: numberType().optional().default(0),
+    last_ipm: stringType().nullable().optional().default(null),
+    last_ipm_type: stringType().nullable().optional().default(null),
     // Start dates
     seedling_start: stringType().nullable().optional().default(null),
     mother_start: stringType().nullable().optional().default(null),
@@ -4829,6 +4836,18 @@ const GrowspaceAPIResponseSchema = objectType({
         nutrients: arrayType(objectType({
             name: stringType(),
             dose_ml_l: numberType(),
+        })),
+        stage: stringType().nullable().optional(),
+        min_days_in_stage: numberType().nullable().optional(),
+    }).passthrough()).optional().default({}),
+    ipm_presets: recordType(stringType(), objectType({
+        id: stringType(),
+        name: stringType(),
+        type: stringType(), // Use string to be resilient
+        items: arrayType(objectType({
+            name: stringType(),
+            dose_amount: numberType(),
+            dose_unit: stringType(),
         })),
         stage: stringType().nullable().optional(),
         min_days_in_stage: numberType().nullable().optional(),
@@ -5535,6 +5554,39 @@ class DataService {
         }
         catch (err) {
             console.error('[DataService:waterPlant] Error:', err);
+            throw err;
+        }
+    }
+    async saveIPMPreset(data) {
+        console.log('[DataService:saveIPMPreset] Saving IPM preset:', data);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
+            console.log('[DataService:saveIPMPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:saveIPMPreset] Error:', err);
+            throw err;
+        }
+    }
+    async removeIPMPreset(presetId) {
+        console.log('[DataService:removeIPMPreset] Removing IPM preset:', presetId);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
+            console.log('[DataService:removeIPMPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:removeIPMPreset] Error:', err);
+            throw err;
+        }
+    }
+    async applyIPM(data) {
+        console.log('[DataService:applyIPM] Applying IPM:', data);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.APPLY_IPM, data);
+            console.log('[DataService:applyIPM] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:applyIPM] Error:', err);
             throw err;
         }
     }
@@ -8863,6 +8915,8 @@ const dialogStyles = [
                 case 'action':
                     if (action === 'water' || action === 'watering')
                         return mdiWater;
+                    if (action === 'ipm')
+                        return mdiBug;
                     return mdiLeaf;
                 default: return mdiLeaf;
             }
@@ -9885,7 +9939,9 @@ class GrowspaceLogbookController {
                     type.includes('water');
                 // 2. Check if it's a training event
                 const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
-                if (!isWatering && !isTraining)
+                // 3. Check if it's an IPM event
+                const isIPM = cat === 'ipm' || type.startsWith('ipm_');
+                if (!isWatering && !isTraining && !isIPM)
                     return false;
                 // 3. Filter by plant_id - only include events that mention THIS plant
                 // OR if it's an automated irrigation event (growspace-wide)
@@ -16032,6 +16088,553 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
+    var _IPMDialog_hass_accessor_storage, _IPMDialog_dataService_accessor_storage, _IPMDialog_open_accessor_storage, _IPMDialog_growspaceId_accessor_storage, _IPMDialog_plantIds_accessor_storage, _IPMDialog_presets_accessor_storage, _IPMDialog__view_accessor_storage, _IPMDialog__selectedPresetId_accessor_storage, _IPMDialog__notes_accessor_storage, _IPMDialog__editingPreset_accessor_storage, _IPMDialog__error_accessor_storage;
+    let _classDecorators = [t$2('ipm-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _dataService_decorators;
+    let _dataService_initializers = [];
+    let _dataService_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _growspaceId_decorators;
+    let _growspaceId_initializers = [];
+    let _growspaceId_extraInitializers = [];
+    let _plantIds_decorators;
+    let _plantIds_initializers = [];
+    let _plantIds_extraInitializers = [];
+    let _presets_decorators;
+    let _presets_initializers = [];
+    let _presets_extraInitializers = [];
+    let __view_decorators;
+    let __view_initializers = [];
+    let __view_extraInitializers = [];
+    let __selectedPresetId_decorators;
+    let __selectedPresetId_initializers = [];
+    let __selectedPresetId_extraInitializers = [];
+    let __notes_decorators;
+    let __notes_initializers = [];
+    let __notes_extraInitializers = [];
+    let __editingPreset_decorators;
+    let __editingPreset_initializers = [];
+    let __editingPreset_extraInitializers = [];
+    let __error_decorators;
+    let __error_initializers = [];
+    let __error_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _IPMDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _IPMDialog_hass_accessor_storage, value, "f"); }
+        get dataService() { return __classPrivateFieldGet(this, _IPMDialog_dataService_accessor_storage, "f"); }
+        set dataService(value) { __classPrivateFieldSet(this, _IPMDialog_dataService_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _IPMDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _IPMDialog_open_accessor_storage, value, "f"); }
+        get growspaceId() { return __classPrivateFieldGet(this, _IPMDialog_growspaceId_accessor_storage, "f"); }
+        set growspaceId(value) { __classPrivateFieldSet(this, _IPMDialog_growspaceId_accessor_storage, value, "f"); }
+        get plantIds() { return __classPrivateFieldGet(this, _IPMDialog_plantIds_accessor_storage, "f"); }
+        set plantIds(value) { __classPrivateFieldSet(this, _IPMDialog_plantIds_accessor_storage, value, "f"); }
+        get presets() { return __classPrivateFieldGet(this, _IPMDialog_presets_accessor_storage, "f"); }
+        set presets(value) { __classPrivateFieldSet(this, _IPMDialog_presets_accessor_storage, value, "f"); }
+        get _view() { return __classPrivateFieldGet(this, _IPMDialog__view_accessor_storage, "f"); }
+        set _view(value) { __classPrivateFieldSet(this, _IPMDialog__view_accessor_storage, value, "f"); }
+        get _selectedPresetId() { return __classPrivateFieldGet(this, _IPMDialog__selectedPresetId_accessor_storage, "f"); }
+        set _selectedPresetId(value) { __classPrivateFieldSet(this, _IPMDialog__selectedPresetId_accessor_storage, value, "f"); }
+        get _notes() { return __classPrivateFieldGet(this, _IPMDialog__notes_accessor_storage, "f"); }
+        set _notes(value) { __classPrivateFieldSet(this, _IPMDialog__notes_accessor_storage, value, "f"); }
+        // Edit mode state
+        get _editingPreset() { return __classPrivateFieldGet(this, _IPMDialog__editingPreset_accessor_storage, "f"); }
+        set _editingPreset(value) { __classPrivateFieldSet(this, _IPMDialog__editingPreset_accessor_storage, value, "f"); }
+        get _error() { return __classPrivateFieldGet(this, _IPMDialog__error_accessor_storage, "f"); }
+        set _error(value) { __classPrivateFieldSet(this, _IPMDialog__error_accessor_storage, value, "f"); }
+        updated(changedProps) {
+            if (changedProps.has('open') && this.open) {
+                if (!this._editingPreset) {
+                    this._view = 'APPLY';
+                    this._selectedPresetId = null;
+                    this._notes = '';
+                    this._error = null;
+                }
+            }
+        }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close'));
+        }
+        // --- APPLY VIEW LOGIC ---
+        async _apply() {
+            if (!this._selectedPresetId)
+                return;
+            try {
+                await this.dataService.applyIPM({
+                    preset_id: this._selectedPresetId,
+                    growspace_id: (!this.plantIds || this.plantIds.length === 0) ? this.growspaceId : undefined,
+                    plant_ids: (this.plantIds && this.plantIds.length > 0) ? this.plantIds : undefined,
+                    notes: this._notes
+                });
+                this._close();
+            }
+            catch (e) {
+                console.error('Failed to apply IPM', e);
+                this._error = e.message || 'Failed to apply treatment';
+            }
+        }
+        // --- EDIT VIEW LOGIC ---
+        _startNew() {
+            this._editingPreset = {
+                name: '',
+                type: 'foliar',
+                items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
+                stage: undefined,
+                min_days_in_stage: 0
+            };
+            this._view = 'EDIT';
+            this._error = null;
+        }
+        _editPreset(preset) {
+            this._editingPreset = JSON.parse(JSON.stringify(preset));
+            this._view = 'EDIT';
+            this._error = null;
+        }
+        async _deletePreset(presetId) {
+            if (!confirm('Are you sure you want to delete this preset?'))
+                return;
+            try {
+                await this.dataService.removeIPMPreset(presetId);
+                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+            }
+            catch (err) {
+                this._error = err.message;
+            }
+        }
+        _addProduct() {
+            if (!this._editingPreset)
+                return;
+            const items = [...(this._editingPreset.items || []), { name: '', dose_amount: 0, dose_unit: 'ml/L' }];
+            this._editingPreset = { ...this._editingPreset, items };
+        }
+        _removeProduct(index) {
+            if (!this._editingPreset)
+                return;
+            const items = [...(this._editingPreset.items || [])];
+            items.splice(index, 1);
+            this._editingPreset = { ...this._editingPreset, items };
+        }
+        _updateProduct(index, updates) {
+            if (!this._editingPreset)
+                return;
+            const items = [...(this._editingPreset.items || [])];
+            items[index] = { ...items[index], ...updates };
+            this._editingPreset = { ...this._editingPreset, items };
+        }
+        async _savePreset() {
+            if (!this._editingPreset || !this._editingPreset.name) {
+                this._error = 'Preset name is required';
+                return;
+            }
+            const items = (this._editingPreset.items || []).filter(i => i.name);
+            try {
+                await this.dataService.saveIPMPreset({
+                    preset_id: this._editingPreset.id,
+                    name: this._editingPreset.name,
+                    type: this._editingPreset.type || 'foliar',
+                    items: items,
+                    stage: this._editingPreset.stage || undefined,
+                    min_days_in_stage: this._editingPreset.min_days_in_stage || 0
+                });
+                this._view = 'LIST';
+                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+            }
+            catch (err) {
+                this._error = err.message;
+            }
+        }
+        render() {
+            if (!this.open)
+                return E;
+            let title = 'Integrated Pest Management';
+            let subtitle = 'Manage pests and pathogens';
+            if (this._view === 'LIST') {
+                title = 'Manage Presets';
+                subtitle = 'Configure IPM recipes';
+            }
+            else if (this._view === 'EDIT') {
+                title = this._editingPreset?.id ? 'Edit Preset' : 'New Preset';
+                subtitle = 'Define treatment details';
+            }
+            return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${title}
+      >
+        <div class="glass-dialog-container">
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
+              <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">${subtitle}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid">
+            ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
+            
+            ${this._view === 'APPLY' ? this._renderApply() :
+                this._view === 'LIST' ? this._renderList() :
+                    this._renderEdit()}
+          </div>
+
+          <div class="button-group">
+            ${this._renderFooterButtons()}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+        }
+        _renderFooterButtons() {
+            if (this._view === 'APPLY') {
+                return x `
+        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Manage Presets</button>
+        <button class="md3-button primary" ?disabled=${!this._selectedPresetId} @click=${this._apply}>
+          <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+          Apply Treatment
+        </button>
+      `;
+            }
+            else if (this._view === 'LIST') {
+                return x `
+        <button class="md3-button tonal" @click=${() => this._view = 'APPLY'}>Back to Apply</button>
+        <button class="md3-button primary" @click=${this._startNew}>
+          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+          Add Preset
+        </button>
+      `;
+            }
+            else {
+                return x `
+        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
+        <button class="md3-button primary" @click=${this._savePreset}>
+          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+          Save Preset
+        </button>
+      `;
+            }
+        }
+        _renderApply() {
+            const presetList = Object.values(this.presets || {});
+            const targetText = (this.plantIds && this.plantIds.length > 0)
+                ? `${this.plantIds.length} Plants`
+                : `Entire Growspace`;
+            return x `
+      <div class="form-section">
+        <h3>Treatment Selection</h3>
+        <md3-select
+          label="Select Preset"
+          .value=${this._selectedPresetId || ''}
+          .options=${presetList.map(p => ({ label: `${p.name} (${p.type})`, value: p.id }))}
+          @change=${(e) => this._selectedPresetId = e.detail}
+        ></md3-select>
+        
+        <div class="apply-summary">
+          Targeting: <span class="apply-target">${targetText}</span>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>Notes</h3>
+        <ha-textarea
+          label="Treatment Notes (Optional)"
+          .value=${this._notes}
+          @input=${(e) => this._notes = e.target.value}
+          rows="3"
+          style="width: 100%;"
+        ></ha-textarea>
+      </div>
+    `;
+        }
+        _renderList() {
+            const presetEntries = Object.values(this.presets || {});
+            if (presetEntries.length === 0) {
+                return x `
+        <div class="empty-state">
+          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <p>No IPM presets defined yet.</p>
+          <p style="font-size: 0.9rem;">Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").</p>
+        </div>
+      `;
+            }
+            return x `
+      <div class="presets-list">
+        ${presetEntries.map(preset => x `
+          <div class="preset-item">
+            <div class="preset-info">
+              <div class="preset-name">${preset.name}</div>
+              <div class="preset-details">
+                ${preset.type} • ${preset.items.length} products
+                ${preset.stage ? ` • ${preset.stage}` : ''}
+              </div>
+            </div>
+            <div class="preset-actions">
+              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
+                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+              </button>
+              <button class="md3-button icon" @click=${() => this._deletePreset(preset.id)} title="Delete" style="color: var(--error-color);">
+                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+              </button>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+        }
+        _renderEdit() {
+            if (!this._editingPreset)
+                return E;
+            return x `
+      <div class="preset-form">
+        <div class="form-section">
+           <h3>General Info</h3>
+           <md3-text-input
+              label="Preset Name"
+              .value=${this._editingPreset.name || ''}
+              @change=${(e) => this._editingPreset = { ...this._editingPreset, name: e.detail }}
+              placeholder="e.g. Neem Oil Spray"
+           ></md3-text-input>
+           
+           <div style="margin-top: 12px;">
+             <label class="md3-label">Type</label>
+             <select 
+                 class="md3-input"
+                 .value=${this._editingPreset.type || 'foliar'}
+                 @change=${(e) => this._editingPreset = { ...this._editingPreset, type: e.target.value }}
+             >
+                 <option value="foliar">Foliar Spray</option>
+                 <option value="drench">Root Drench</option>
+                 <option value="beneficials">Beneficials</option>
+             </select>
+           </div>
+        </div>
+
+        <div class="form-section">
+            <h3>Usage</h3>
+            <div class="row-col-grid">
+                <div class="md3-input-group">
+                    <label class="md3-label">Recommended Stage</label>
+                    <select 
+                        class="md3-input"
+                        .value=${this._editingPreset.stage || ''}
+                        @change=${(e) => this._editingPreset = { ...this._editingPreset, stage: e.target.value || undefined }}
+                    >
+                        <option value="">Any Stage</option>
+                        <option value="seedling">Seedling</option>
+                        <option value="veg">Veg</option>
+                        <option value="flower">Flower</option>
+                        <option value="dry">Dry</option>
+                        <option value="cure">Cure</option>
+                    </select>
+                </div>
+                <md3-number-input
+                    label="Min Days"
+                    .value=${this._editingPreset.min_days_in_stage || 0}
+                    @change=${(e) => this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }}
+                    min="0"
+                ></md3-number-input>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">Products / Ingredients</h3>
+                <button class="md3-button text" @click=${this._addProduct} style="--mdc-button-horizontal-padding: 8px;">
+                    <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+                    Add
+                </button>
+            </div>
+            
+            ${(this._editingPreset.items || []).map((item, i) => x `
+                <div class="product-row">
+                    <md3-text-input
+                        label="Product"
+                        .value=${item.name}
+                        @change=${(e) => this._updateProduct(i, { name: e.detail })}
+                        placeholder="e.g. Neem Oil"
+                    ></md3-text-input>
+                    <md3-number-input
+                        label="Dose"
+                        .value=${item.dose_amount}
+                        @change=${(e) => this._updateProduct(i, { dose_amount: parseFloat(e.detail) })}
+                        min="0"
+                        step="0.1"
+                    ></md3-number-input>
+                    <md3-text-input
+                        label="Unit"
+                        .value=${item.dose_unit}
+                        @change=${(e) => this._updateProduct(i, { dose_unit: e.detail })}
+                        style="flex: 1;"
+                    ></md3-text-input>
+                    <button class="md3-button icon" @click=${() => this._removeProduct(i)} style="color: var(--error-color);">
+                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                    </button>
+                </div>
+            `)}
+        </div>
+      </div>
+    `;
+        }
+        constructor() {
+            super(...arguments);
+            _IPMDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _IPMDialog_dataService_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _dataService_initializers, void 0)));
+            _IPMDialog_open_accessor_storage.set(this, (__runInitializers(this, _dataService_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _IPMDialog_growspaceId_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _growspaceId_initializers, undefined)));
+            _IPMDialog_plantIds_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, _plantIds_initializers, [])));
+            _IPMDialog_presets_accessor_storage.set(this, (__runInitializers(this, _plantIds_extraInitializers), __runInitializers(this, _presets_initializers, {})));
+            _IPMDialog__view_accessor_storage.set(this, (__runInitializers(this, _presets_extraInitializers), __runInitializers(this, __view_initializers, 'APPLY')));
+            _IPMDialog__selectedPresetId_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __selectedPresetId_initializers, null)));
+            _IPMDialog__notes_accessor_storage.set(this, (__runInitializers(this, __selectedPresetId_extraInitializers), __runInitializers(this, __notes_initializers, '')));
+            _IPMDialog__editingPreset_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
+            _IPMDialog__error_accessor_storage.set(this, (__runInitializers(this, __editingPreset_extraInitializers), __runInitializers(this, __error_initializers, null)));
+            __runInitializers(this, __error_extraInitializers);
+        }
+    };
+    _IPMDialog_hass_accessor_storage = new WeakMap();
+    _IPMDialog_dataService_accessor_storage = new WeakMap();
+    _IPMDialog_open_accessor_storage = new WeakMap();
+    _IPMDialog_growspaceId_accessor_storage = new WeakMap();
+    _IPMDialog_plantIds_accessor_storage = new WeakMap();
+    _IPMDialog_presets_accessor_storage = new WeakMap();
+    _IPMDialog__view_accessor_storage = new WeakMap();
+    _IPMDialog__selectedPresetId_accessor_storage = new WeakMap();
+    _IPMDialog__notes_accessor_storage = new WeakMap();
+    _IPMDialog__editingPreset_accessor_storage = new WeakMap();
+    _IPMDialog__error_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "IPMDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [n$5({ attribute: false })];
+        _dataService_decorators = [n$5({ attribute: false })];
+        _open_decorators = [n$5({ type: Boolean })];
+        _growspaceId_decorators = [n$5({ attribute: false })];
+        _plantIds_decorators = [n$5({ attribute: false })];
+        _presets_decorators = [n$5({ attribute: false })];
+        __view_decorators = [r$2()];
+        __selectedPresetId_decorators = [r$2()];
+        __notes_decorators = [r$2()];
+        __editingPreset_decorators = [r$2()];
+        __error_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _dataService_decorators, { kind: "accessor", name: "dataService", static: false, private: false, access: { has: obj => "dataService" in obj, get: obj => obj.dataService, set: (obj, value) => { obj.dataService = value; } }, metadata: _metadata }, _dataService_initializers, _dataService_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
+        __esDecorate(_classThis, null, _plantIds_decorators, { kind: "accessor", name: "plantIds", static: false, private: false, access: { has: obj => "plantIds" in obj, get: obj => obj.plantIds, set: (obj, value) => { obj.plantIds = value; } }, metadata: _metadata }, _plantIds_initializers, _plantIds_extraInitializers);
+        __esDecorate(_classThis, null, _presets_decorators, { kind: "accessor", name: "presets", static: false, private: false, access: { has: obj => "presets" in obj, get: obj => obj.presets, set: (obj, value) => { obj.presets = value; } }, metadata: _metadata }, _presets_initializers, _presets_extraInitializers);
+        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
+        __esDecorate(_classThis, null, __selectedPresetId_decorators, { kind: "accessor", name: "_selectedPresetId", static: false, private: false, access: { has: obj => "_selectedPresetId" in obj, get: obj => obj._selectedPresetId, set: (obj, value) => { obj._selectedPresetId = value; } }, metadata: _metadata }, __selectedPresetId_initializers, __selectedPresetId_extraInitializers);
+        __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
+        __esDecorate(_classThis, null, __editingPreset_decorators, { kind: "accessor", name: "_editingPreset", static: false, private: false, access: { has: obj => "_editingPreset" in obj, get: obj => obj._editingPreset, set: (obj, value) => { obj._editingPreset = value; } }, metadata: _metadata }, __editingPreset_initializers, __editingPreset_extraInitializers);
+        __esDecorate(_classThis, null, __error_decorators, { kind: "accessor", name: "_error", static: false, private: false, access: { has: obj => "_error" in obj, get: obj => obj._error, set: (obj, value) => { obj._error = value; } }, metadata: _metadata }, __error_initializers, __error_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
+      .preset-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+      .preset-info {
+        flex: 1;
+      }
+      .preset-name {
+        font-weight: 500;
+        font-size: 1rem;
+      }
+      .preset-details {
+        font-size: 0.8rem;
+        opacity: 0.7;
+      }
+      .preset-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.6;
+      }
+      .product-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .product-row md3-text-input {
+        flex: 2;
+      }
+      .product-row md3-number-input {
+        flex: 1;
+      }
+      .error-bar {
+        background: var(--error-color, #ff5252);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+      }
+      .form-section {
+          margin-bottom: 24px;
+      }
+      .form-section h3 {
+          margin-top: 0;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+      }
+      .apply-summary {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      }
+      .apply-target {
+        font-weight: 500;
+        color: var(--primary-color, #4caf50);
+      }
+    `
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+(() => {
     var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
     let _classDecorators = [t$2('growspace-dialog-host')];
     let _classDescriptor;
@@ -16101,6 +16704,8 @@ class GrowspaceLogbookController {
                     return this._renderNutrientPresetsDialog(active, selectedDeviceData);
                 case 'TRAINING':
                     return this._renderTrainingDialog(active);
+                case 'IPM':
+                    return this._renderIPMDialog(active, selectedDeviceData);
                 default:
                     return x ``;
             }
@@ -16348,6 +16953,23 @@ class GrowspaceLogbookController {
         ></training-dialog>
         `;
         }
+        _renderIPMDialog(active, selectedDeviceData) {
+            if (active.type !== 'IPM')
+                return x ``;
+            const dialogState = active.payload;
+            return x `
+        <ipm-dialog
+            .open=${true}
+            .hass=${this.hass}
+            .dataService=${this.store.dataService}
+            .growspaceId=${dialogState.growspaceId}
+            .plantIds=${dialogState.plantIds || []}
+            .presets=${selectedDeviceData?.ipm_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></ipm-dialog>
+        `;
+        }
         constructor() {
             super(...arguments);
             _DialogHost_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
@@ -16422,6 +17044,7 @@ class GrowspaceLogbookController {
           <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
           <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
           <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>Log Training</button>
+          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>Log IPM</button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
         </div>
       </div>
@@ -26470,6 +27093,9 @@ class ResizeController {
                         });
                     }
                     break;
+                case 'ipm':
+                    this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+                    break;
             }
         }
         render() {
@@ -26781,6 +27407,10 @@ class ResizeController {
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
             <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            <span class="menu-item-label">Log / Manage IPM</span>
         </div>
       </div>
     `;
@@ -27493,6 +28123,9 @@ class ResizeController {
         _handleStage() {
             this.store.openBatchTrainingDialog();
         }
+        _handleIPM() {
+            this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
+        }
         _handleClear() {
             this.store.clearPlantSelection();
             this.store.ui.setEditMode(false);
@@ -27521,6 +28154,11 @@ class ResizeController {
           <button class="action-btn" @click=${this._handleStage}>
             <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
             Log Training
+          </button>
+          
+          <button class="action-btn" @click=${this._handleIPM}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            Log IPM
           </button>
         </div>
 
@@ -32349,6 +32987,15 @@ class GrowspaceStore {
             payload: {}
         });
     }
+    openIPMDialog(context) {
+        this.ui.setActiveDialog({
+            type: 'IPM',
+            payload: {
+                growspaceId: context?.growspaceId,
+                plantIds: context?.plantIds
+            }
+        });
+    }
     openLogbookDialog() {
         const growspaceId = this.data.$selectedDevice.get();
         if (growspaceId) {
@@ -32631,6 +33278,9 @@ let GrowspaceManagerCard = (() => {
         _handleExitEditMode() {
             this.store.ui.setEditMode(false);
         }
+        _handleIPMSelected() {
+            this.store.openIPMDialog();
+        }
         _handleToggleExpansion() {
             this.store.toggleHeaderExpansion();
         }
@@ -32677,6 +33327,7 @@ let GrowspaceManagerCard = (() => {
             @clear-selection=${this._handleClearSelection}
             @water-selected=${this._handleWaterSelected}
             @training-selected=${this._handleTrainingSelected}
+            @ipm-selected=${this._handleIPMSelected}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

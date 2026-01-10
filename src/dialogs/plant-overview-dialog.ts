@@ -831,7 +831,10 @@ export class PlantOverviewDialog extends LitElement {
         // 2. Check if it's a training event
         const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
 
-        if (!isWatering && !isTraining) return false;
+        // 3. Check if it's an IPM event
+        const isIPM = cat === 'ipm' || type.startsWith('ipm_');
+
+        if (!isWatering && !isTraining && !isIPM) return false;
 
         // 3. Filter by plant_id - only include events that mention THIS plant
         // OR if it's an automated irrigation event (growspace-wide)

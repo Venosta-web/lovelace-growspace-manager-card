@@ -21,6 +21,7 @@ describe('BatchActionBar', () => {
             },
             openBatchWateringDialog: vi.fn(),
             openBatchTrainingDialog: vi.fn(),
+            openIPMDialog: vi.fn(),
             clearPlantSelection: vi.fn(),
         };
 
@@ -77,6 +78,21 @@ describe('BatchActionBar', () => {
         expect(mockStore.openBatchTrainingDialog).toHaveBeenCalled();
     });
 
+    it('should call openIPMDialog when IPM button is clicked', async () => {
+        // Setup visibility
+        $selectedPlants.set(new Set(['plant1', 'plant2']));
+        await element.updateComplete;
+
+        // Find the IPM button (third action button)
+        const btns = element.shadowRoot!.querySelectorAll('.action-btn');
+        const ipmBtn = btns[2] as HTMLElement;
+        ipmBtn.click();
+
+        expect(mockStore.openIPMDialog).toHaveBeenCalledWith({
+            plantIds: ['plant1', 'plant2']
+        });
+    });
+
     it('should call clearPlantSelection and exit edit mode when close is clicked', async () => {
         // Setup visibility
         $selectedPlants.set(new Set(['plant1']));
@@ -87,5 +103,12 @@ describe('BatchActionBar', () => {
 
         expect(mockStore.clearPlantSelection).toHaveBeenCalled();
         expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(false);
+    });
+
+    it('should handle connectedCallback without store', () => {
+        const el = document.createElement('batch-action-bar') as any;
+        el.store = undefined;
+        el.connectedCallback();
+        expect(el._selectedPlantsController).toBeUndefined();
     });
 });

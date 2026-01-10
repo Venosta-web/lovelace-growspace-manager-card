@@ -211,6 +211,26 @@ describe('PlantTimeline', () => {
     });
 
 
+    it('renders ipm action events with bug icon', async () => {
+        const event: PlantTimelineEvent = {
+            date: '2023-01-01',
+            type: 'action',
+            action: 'ipm',
+            details: 'Neem Spray'
+        };
+        const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+        expect(el.shadowRoot?.querySelector('.content')?.textContent).toContain('IPM');
+        expect(el.shadowRoot?.querySelector('.details')?.textContent).toContain('Neem Spray');
+
+        // Directly test _getIcon for ipm
+        const icon = (el as any)._getIcon('action', 'ipm');
+        expect(icon).toBeDefined();
+        // Since we can't easily compare equality of the SVG path without importing mdiBug,
+        // we at least ensure it's not the default leaf if we can distinguish them.
+        const leafIcon = (el as any)._getIcon('action', 'unknown');
+        expect(icon).not.toBe(leafIcon);
+    });
+
     it('renders action event with defaults when action and details are missing', async () => {
         const event: PlantTimelineEvent = {
             date: '2023-01-01',

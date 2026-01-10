@@ -165,6 +165,8 @@ export interface RawPlantData {
   last_watered?: string | null;
   last_trained?: string | null;
   last_training_technique?: string | null;
+  last_ipm?: string | null;
+  last_ipm_type?: string | null;
   days_since_last_watering: number | null;
   events?: PlantTimelineEvent[];
 }
@@ -183,6 +185,7 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy | null;
   nutrient_presets?: Record<string, NutrientPreset>;
+  ipm_presets?: Record<string, IPMPreset>;
 }
 
 // --- Internal Frontend Models ---
@@ -209,6 +212,7 @@ export interface GrowspaceDevice {
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy;
   nutrient_presets?: Record<string, NutrientPreset>;
+  ipm_presets?: Record<string, IPMPreset>;
 }
 
 export enum TrainingTechnique {
@@ -431,6 +435,29 @@ export interface GrowspaceEvent {
   severity: number;
   category: string;
   reasons: string[];
+}
+
+export type IPMType = 'foliar' | 'drench' | 'beneficials';
+
+export interface IPMItem {
+  name: string;
+  dose_amount: number;
+  dose_unit: string;
+}
+
+export interface IPMPreset {
+  id: string;
+  name: string;
+  type: IPMType;
+  items: IPMItem[];
+  stage?: string;
+  min_days_in_stage?: number;
+}
+
+export interface IPMDialogState {
+  presetId?: string;
+  growspaceId?: string;
+  plantIds?: string[];
 }
 
 export type MetricType =

@@ -19,6 +19,9 @@ const PlantSlotSchema = z.object({
     dry_days: z.number().optional().default(0),
     cure_days: z.number().optional().default(0),
 
+    last_ipm: z.string().nullable().optional().default(null),
+    last_ipm_type: z.string().nullable().optional().default(null),
+
     // Start dates
     seedling_start: z.string().nullable().optional().default(null),
     mother_start: z.string().nullable().optional().default(null),
@@ -93,6 +96,18 @@ export const GrowspaceAPIResponseSchema = z.object({
         nutrients: z.array(z.object({
             name: z.string(),
             dose_ml_l: z.number(),
+        })),
+        stage: z.string().nullable().optional(),
+        min_days_in_stage: z.number().nullable().optional(),
+    }).passthrough()).optional().default({}),
+    ipm_presets: z.record(z.string(), z.object({
+        id: z.string(),
+        name: z.string(),
+        type: z.string(), // Use string to be resilient
+        items: z.array(z.object({
+            name: z.string(),
+            dose_amount: z.number(),
+            dose_unit: z.string(),
         })),
         stage: z.string().nullable().optional(),
         min_days_in_stage: z.number().nullable().optional(),

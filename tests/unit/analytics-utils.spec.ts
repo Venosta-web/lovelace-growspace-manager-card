@@ -101,5 +101,18 @@ describe('analytics-utils', () => {
             // currentDays = 0, 0 / 60 = 0%
             expect(calculateGrowthDeviation(plant, strain)).toBe(0);
         });
+
+        it('falls back to 63 days when phenotype_target_days and flowering_days are 0', () => {
+            const plant = mockPlant(PlantStage.FLOWER, 30);
+            const strain = { ...mockStrain(0), flowering_days: 0 };
+            // 30 / 63 = ~47.62%
+            expect(calculateGrowthDeviation(plant, strain)).toBeCloseTo(47.62, 1);
+        });
+
+        it('returns 0 if targetDays is negative', () => {
+            const plant = mockPlant(PlantStage.FLOWER, 30);
+            const strain = { ...mockStrain(-10), flowering_days: -10 };
+            expect(calculateGrowthDeviation(plant, strain)).toBe(0);
+        });
     });
 });

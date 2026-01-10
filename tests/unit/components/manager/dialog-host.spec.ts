@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DialogHost } from '../../../../src/components/manager/dialog-host';
+import { html } from 'lit';
 import { atom } from 'nanostores';
 import { ActiveDialogState } from '../../../../src/ui-state';
 
@@ -53,7 +54,10 @@ describe('DialogHost', () => {
             movePlantToGrowspace: vi.fn(),
             addStrain: vi.fn(),
             removeStrain: vi.fn(),
+            performImport: vi.fn().mockResolvedValue(undefined),
             handleExportLibrary: vi.fn(),
+            openStrainRecommendationDialog: vi.fn(),
+            updatePlantFromDialog: vi.fn(),
             handleAddGrowspace: vi.fn(),
             handleUpdateGrowspace: vi.fn(),
             showToast: vi.fn(),
@@ -230,12 +234,17 @@ describe('DialogHost', () => {
         dialog.dispatchEvent(new CustomEvent('export-library'));
         expect(mockStore.handleExportLibrary).toHaveBeenCalled();
 
+        dialog.dispatchEvent(new CustomEvent('get-recommendation'));
+        expect(mockStore.openStrainRecommendationDialog).toHaveBeenCalled();
+
         // Import
         const file = new File([''], 'test.json');
         dialog.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace: true } }));
-        // Ensure mock performImport is called. 
-        // Note: _performImport is async, we should wait if we want strict timing, but checking call is usually enough for fire-and-forget
         expect(mockStore.performImport).toHaveBeenCalledWith(file, true);
+
+        // Null file import coverage
+        await (element as any)._performImport(null);
+        expect(mockStore.performImport).toHaveBeenCalledTimes(1); // Still 1
     });
 
     it('should handle import library failure', async () => {
@@ -629,18 +638,25 @@ describe('DialogHost', () => {
 
     it('should return empty template for mismatched dialog types in render helpers', async () => {
         const wrongType: ActiveDialogState = { type: 'NONE' };
+        expect((element as any)._renderAddPlantDialog(wrongType, [])).toEqual(html``);
+        expect((element as any)._renderPlantOverviewDialog(wrongType, {})).toEqual(html``);
+        expect((element as any)._renderStrainLibraryDialog(wrongType, [])).toEqual(html``);
+        expect((element as any)._renderConfigDialog(wrongType, {})).toEqual(html``);
+        expect((element as any)._renderGrowMasterDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderStrainRecommendationDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderIrrigationDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderLogbookDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderWateringDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderNutrientPresetsDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderTrainingDialog(wrongType)).toEqual(html``);
+        expect((element as any)._renderIPMDialog(wrongType)).toEqual(html``);
+    });
 
-        expect((element as any)._renderAddPlantDialog(wrongType, [])).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderPlantOverviewDialog(wrongType, {})).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderStrainLibraryDialog(wrongType, [])).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderConfigDialog(wrongType, {})).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderGrowMasterDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderStrainRecommendationDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderIrrigationDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderLogbookDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderWateringDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderNutrientPresetsDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
-        expect((element as any)._renderTrainingDialog(wrongType)).toEqual(expect.objectContaining({ strings: expect.anything() }));
+    it('should return empty template for unknown dialog type', async () => {
+        $activeDialog.set({ type: 'UNKNOWN' as any });
+        document.body.appendChild(element);
+        await element.updateComplete;
+        expect(element.render()).toEqual(html``);
     });
 
     it('should render WATERING dialog', async () => {
@@ -730,5 +746,103 @@ describe('DialogHost', () => {
 
         const dialog = element.shadowRoot?.querySelector('training-dialog');
         expect(dialog).toBeTruthy();
+
+        dialog?.dispatchEvent(new CustomEvent('close'));
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should render IPM dialog and handle events', async () => {
+        $devices.set([{ device_id: 'g1', name: 'Grow 1', ipm_presets: {} } as any]);
+        $selectedDevice.set('g1');
+        $activeDialog.set({
+            type: 'IPM',
+            payload: { growspaceId: 'g1', plantIds: ['p1'] }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('ipm-dialog');
+        expect(dialog).toBeTruthy();
+        expect((dialog as any).plantIds).toEqual(['p1']);
+
+        dialog?.dispatchEvent(new CustomEvent('close'));
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+    });
+
+    it('should handle optional fields in IPM and Nutrient Presets rendering', async () => {
+        $selectedDevice.set('unknown');
+        $activeDialog.set({ type: 'IPM', payload: { growspaceId: 'g1' } }); // missing plantIds
+        document.body.appendChild(element);
+        await element.updateComplete;
+        const ipm = element.shadowRoot?.querySelector('ipm-dialog') as any;
+        expect(ipm.plantIds).toEqual([]);
+        expect(ipm.presets).toEqual({});
+
+        $activeDialog.set({ type: 'NUTRIENT_PRESETS' });
+        await element.updateComplete;
+        const np = element.shadowRoot?.querySelector('nutrient-presets-editor') as any;
+        expect(np.presets).toEqual({});
+    });
+
+    it('should guard STRAIN_LIBRARY close if dialog type changed', async () => {
+        $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
+
+        // Change dialog type before close
+        $activeDialog.set({ type: 'CONFIG', payload: {} });
+
+        dialog?.dispatchEvent(new CustomEvent('close'));
+        expect(mockStore.ui.closeDialog).not.toHaveBeenCalled();
+    });
+
+    it('should handle data-changed event on IRRIGATION dialog', async () => {
+        $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('irrigation-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+
+        expect(mockStore.refreshData).toHaveBeenCalled();
+    });
+
+    it('should handle close event on NUTRIENT_PRESETS dialog', async () => {
+        $devices.set([{ device_id: 'g1', name: 'Grow 1', nutrient_presets: {} } as any]);
+        $selectedDevice.set('g1');
+        $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-presets-editor');
+        dialog?.dispatchEvent(new CustomEvent('close'));
+
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should cover growspace_manager sensor attributes in GROW_MASTER', async () => {
+        $selectedDevice.set('g1');
+        mockHass.states['sensor.growspace_manager'] = {
+            attributes: {
+                ai_settings: { personality: 'Helpful' },
+                personality: 'Expert'
+            }
+        };
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false } });
+        document.body.appendChild(element);
+        element.requestUpdate();
+        await element.updateComplete;
+        const gm = element.shadowRoot?.querySelector('grow-master-dialog') as any;
+        expect(gm.personality).toBe('Expert');
+
+        mockHass.states['sensor.growspace_manager'].attributes.personality = undefined;
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false } }); // trigger re-render
+        await element.updateComplete;
+        expect(gm.personality).toBe('Helpful');
     });
 });

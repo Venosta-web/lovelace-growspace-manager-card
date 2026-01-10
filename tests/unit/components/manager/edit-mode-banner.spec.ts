@@ -103,4 +103,20 @@ describe('GrowspaceEditModeBanner', () => {
 
         document.body.removeChild(element);
     });
+
+    it('should dispatch ipm-selected event', async () => {
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('ipm-selected', listener);
+
+        const buttons = element.shadowRoot?.querySelectorAll('button');
+        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Log IPM'));
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
 });

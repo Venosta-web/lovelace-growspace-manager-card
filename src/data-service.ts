@@ -840,6 +840,51 @@ export class DataService {
     }
   }
 
+  async saveIPMPreset(data: {
+    preset_id?: string;
+    name: string;
+    type: string;
+    items: { name: string; dose_amount: number; dose_unit: string }[];
+    stage?: string;
+    min_days_in_stage?: number;
+  }): Promise<void> {
+    console.log('[DataService:saveIPMPreset] Saving IPM preset:', data);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
+      console.log('[DataService:saveIPMPreset] Service Called');
+    } catch (err) {
+      console.error('[DataService:saveIPMPreset] Error:', err);
+      throw err;
+    }
+  }
+
+  async removeIPMPreset(presetId: string): Promise<void> {
+    console.log('[DataService:removeIPMPreset] Removing IPM preset:', presetId);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
+      console.log('[DataService:removeIPMPreset] Service Called');
+    } catch (err) {
+      console.error('[DataService:removeIPMPreset] Error:', err);
+      throw err;
+    }
+  }
+
+  async applyIPM(data: {
+    preset_id: string;
+    growspace_id?: string;
+    plant_ids?: string[];
+    notes?: string;
+  }): Promise<void> {
+    console.log('[DataService:applyIPM] Applying IPM:', data);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.APPLY_IPM, data);
+      console.log('[DataService:applyIPM] Service Called');
+    } catch (err) {
+      console.error('[DataService:applyIPM] Error:', err);
+      throw err;
+    }
+  }
+
   async waterGrowspace(
     growspaceId: string,
     amountPerPlant: number,

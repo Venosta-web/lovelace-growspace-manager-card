@@ -1,0 +1,268 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | tests/unit/components/manager/nutrient-presets-editor.spec.ts
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+
+[90mstderr[2m | tests/unit/components/manager/edit-mode-banner.spec.ts
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+
+[90mstderr[2m | tests/unit/components/manager/dialog-host.spec.ts
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+
+[90mstderr[2m | tests/unit/components/manager/ipm-dialog.spec.ts
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+
+[90mstderr[2m | tests/unit/components/manager/batch-action-bar.spec.ts
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+
+ [32m✓[39m tests/unit/components/manager/edit-mode-banner.spec.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m tests/unit/components/manager/batch-action-bar.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+[90mstderr[2m | tests/unit/components/manager/ipm-dialog.spec.ts[2m > [22m[2mIPMDialog[2m > [22m[2mshould cover apply logic and branches
+[22m[39mFailed to apply IPM Error: Fail
+    at [90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mtests/unit/components/manager/ipm-dialog.spec.ts:94:52
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at [90mfile:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:919:20
+
+[90mstderr[2m | tests/unit/components/manager/ipm-dialog.spec.ts[2m > [22m[2mIPMDialog[2m > [22m[2mshould cover apply logic and branches
+[22m[39mFailed to apply IPM {}
+
+[90mstderr[2m | tests/unit/components/manager/ipm-dialog.spec.ts[2m > [22m[2mIPMDialog[2m > [22m[2mshould cover miscellaneous branches
+[22m[39mElement ipm-dialog scheduled an update (generally because a property was set) after an update completed, causing a new update to be scheduled. This is inefficient and should be avoided unless the next update can only be scheduled as a side effect of the previous update. See https://lit.dev/msg/change-in-update for more information.
+
+ [32m✓[39m tests/unit/components/manager/ipm-dialog.spec.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 108[2mms[22m[39m
+ [32m✓[39m tests/unit/components/manager/nutrient-presets-editor.spec.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 230[2mms[22m[39m
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render nothing when dialog type is NONE
+[22m[39m[DialogHost] Rendering with active type: NONE
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render ADD_PLANT dialog
+[22m[39m[DialogHost] Rendering with active type: ADD_PLANT
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render ADD_PLANT dialog
+[22m[39m[AddPlantDialog] render called, open: [33mtrue[39m strains: [33m0[39m
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle ADD_PLANT event
+[22m[39m[DialogHost] Rendering with active type: ADD_PLANT
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle ADD_PLANT event
+[22m[39m[AddPlantDialog] render called, open: [33mtrue[39m strains: [33m0[39m
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle environment config submission
+[22m[39m[DialogHost] Rendering with active type: CONFIG
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle environment config submission
+[22m[39mDEBUG: Pre-selecting growspace for edit: g1
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould close dialog when requested
+[22m[39m[DialogHost] Rendering with active type: ADD_PLANT
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould close dialog when requested
+[22m[39m[AddPlantDialog] render called, open: [33mtrue[39m strains: [33m0[39m
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render STRAIN_LIBRARY dialog and handle events
+[22m[39m[DialogHost] Rendering with active type: STRAIN_LIBRARY
+
+[90mstderr[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle import library failure
+[22m[39mImport failed: Error: Import failed
+    at [90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mtests/unit/components/manager/dialog-host.spec.ts:242:66
+    at [90mfile:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:145:11
+    at [90mfile:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:919:26
+    at [90mfile:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1244:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1210:10[90m)[39m
+    at [90mfile:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1654:37
+    at Traces.$ [90m(file:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4mvitest[24m/dist/chunks/traces.U4xDYhzZ.js:115:27[90m)[39m
+    at trace [90m(file:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4mvitest[24m/dist/chunks/test.DqQZzsWf.js:234:21[90m)[39m
+    at runTest [90m(file:///home/maxi/core/core/vendor/lovelace-growspace-manager-card/[39mnode_modules/[4m@vitest/runner[24m/dist/index.js:1654:12[90m)[39m
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render GROW_MASTER dialog
+[22m[39m[DialogHost] Rendering with active type: GROW_MASTER
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render GROW_MASTER dialog with stress
+[22m[39m[DialogHost] Rendering with active type: GROW_MASTER
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould map growspace options correctly in render
+[22m[39m[DialogHost] Rendering with active type: CONFIG
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render STRAIN_RECOMMENDATION dialog
+[22m[39m[DialogHost] Rendering with active type: STRAIN_RECOMMENDATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render IRRIGATION dialog
+[22m[39m[DialogHost] Rendering with active type: IRRIGATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render LOGBOOK dialog
+[22m[39m[DialogHost] Rendering with active type: LOGBOOK
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle delete-plant event
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on IRRIGATION dialog
+[22m[39m[DialogHost] Rendering with active type: IRRIGATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle closed event on IRRIGATION dialog
+[22m[39m[DialogHost] Rendering with active type: IRRIGATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on LOGBOOK dialog
+[22m[39m[DialogHost] Rendering with active type: LOGBOOK
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle get-recommendation event on STRAIN_RECOMMENDATION dialog
+[22m[39m[DialogHost] Rendering with active type: STRAIN_RECOMMENDATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on CONFIG dialog
+[22m[39m[DialogHost] Rendering with active type: CONFIG
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on GROW_MASTER dialog
+[22m[39m[DialogHost] Rendering with active type: GROW_MASTER
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on STRAIN_RECOMMENDATION dialog
+[22m[39m[DialogHost] Rendering with active type: STRAIN_RECOMMENDATION
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle update-plant event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle harvest-plant event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle finish-drying event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle take-clone event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle move-clone event on PLANT_OVERVIEW dialog
+[22m[39m[DialogHost] Rendering with active type: PLANT_OVERVIEW
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on STRAIN_LIBRARY dialog
+[22m[39m[DialogHost] Rendering with active type: STRAIN_LIBRARY
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle add-growspace-submit event on CONFIG dialog
+[22m[39m[DialogHost] Rendering with active type: CONFIG
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle edit-growspace-submit event on CONFIG dialog
+[22m[39m[DialogHost] Rendering with active type: CONFIG
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render WATERING dialog
+[22m[39m[DialogHost] Rendering with active type: WATERING
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle close event on WATERING dialog
+[22m[39m[DialogHost] Rendering with active type: WATERING
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle data-changed event on WATERING dialog
+[22m[39m[DialogHost] Rendering with active type: WATERING
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render NUTRIENT_PRESETS dialog
+[22m[39m[DialogHost] Rendering with active type: NUTRIENT_PRESETS
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould handle data-changed event on NUTRIENT_PRESETS dialog
+[22m[39m[DialogHost] Rendering with active type: NUTRIENT_PRESETS
+
+[90mstdout[2m | tests/unit/components/manager/dialog-host.spec.ts[2m > [22m[2mDialogHost[2m > [22m[2mshould render TRAINING dialog
+[22m[39m[DialogHost] Rendering with active type: TRAINING
+
+ [32m✓[39m tests/unit/components/manager/dialog-host.spec.ts [2m([22m[2m42 tests[22m[2m)[22m[33m 400[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m5 passed[39m[22m[90m (5)[39m
+[2m      Tests [22m [1m[32m99 passed[39m[22m[90m (99)[39m
+[2m   Start at [22m 08:56:40
+[2m   Duration [22m 1.71s[2m (transform 856ms, setup 0ms, import 1.54s, tests 854ms, environment 1.66s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   20.59 |    13.53 |   18.01 |   16.25 |                   
+ src               |    2.59 |        0 |       0 |       3 |                   
+  constants.ts     |     100 |      100 |     100 |     100 |                   
+  context.ts       |     100 |      100 |     100 |     100 |                   
+  data-service.ts  |       0 |        0 |       0 |       0 | 36-942            
+  events.ts        |      50 |      100 |       0 |      50 | ...97,108,119,130 
+  ...ransformer.ts |       0 |        0 |       0 |       0 | 17-153            
+  ...-env-chart.ts |       0 |        0 |       0 |       0 | 22-683            
+  ...ard-editor.ts |       0 |        0 |       0 |       0 | 8-137             
+  ...nager-card.ts |       0 |        0 |       0 |       0 | 38-288            
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  ui-state.ts      |       0 |        0 |       0 |       0 |                   
+ src/adapters      |      12 |        0 |      60 |    12.5 |                   
+  ...ce-adapter.ts |      12 |        0 |      60 |    12.5 | 38-126            
+ src/components    |       0 |        0 |       0 |       0 |                   
+  ...-analytics.ts |       0 |        0 |       0 |       0 | 18-260            
+  ...space-chip.ts |       0 |        0 |       0 |       0 | 6-147             
+  ...space-grid.ts |       0 |        0 |       0 |       0 | 18-548            
+  ...ace-header.ts |       0 |        0 |       0 |       0 | 36-1202           
+  ...pace-toast.ts |       0 |        0 |       0 |       0 | 10-100            
+  ...w-switcher.ts |       0 |        0 |       0 |       0 | 10-68             
+  plant-card.ts    |       0 |        0 |       0 |       0 | 30-155            
+ ...onents/manager |   95.05 |    89.32 |   92.48 |   94.92 |                   
+  ...action-bar.ts |   95.83 |     87.5 |   85.71 |   94.73 | 138               
+  dialog-host.ts   |   91.77 |    86.59 |   87.03 |   91.79 | ...32,377,389-409 
+  ...ode-banner.ts |   93.75 |      100 |   88.88 |   91.66 | 77                
+  ipm-dialog.ts    |   95.45 |    85.55 |   97.14 |      96 | 175,216-217,327   
+  ...ets-editor.ts |     100 |      100 |     100 |     100 |                   
+ ...mponents/plant |    8.53 |        0 |       0 |    5.88 |                   
+  plant-stats.ts   |       0 |      100 |       0 |       0 | 8-17              
+  ...t-timeline.ts |    9.72 |        0 |       0 |    6.45 | 113-246           
+ src/components/ui |   64.65 |     32.6 |   39.53 |   54.16 |                   
+  ...ce-logbook.ts |   43.87 |    24.28 |      32 |   38.46 | ...74-276,292-318 
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  ...date-input.ts |    82.6 |    83.33 |      50 |   73.33 | 23-25,44          
+  ...mber-input.ts |   88.88 |       50 |   66.66 |   76.92 | 26-28             
+  md3-select.ts    |   85.71 |       50 |      75 |   76.92 | 24-26             
+  md3-switch.ts    |   56.25 |        0 |       0 |   55.55 | 58-70             
+  ...text-input.ts |   86.66 |    66.66 |      50 |      75 | 27-29,49          
+ ...mponents/views |       0 |        0 |       0 |       0 |                   
+  ...ew-compact.ts |       0 |        0 |       0 |       0 | 11-50             
+  ...iew-header.ts |       0 |        0 |       0 |       0 | 11-49             
+  ...w-standard.ts |       0 |        0 |       0 |       0 | 14-86             
+ src/controllers   |       0 |        0 |       0 |       0 |                   
+  ...controller.ts |       0 |        0 |       0 |       0 | 18-228            
+  ...controller.ts |       0 |        0 |       0 |       0 | 6-21              
+  ...controller.ts |       0 |        0 |       0 |       0 | 6-57              
+  ...controller.ts |       0 |        0 |       0 |       0 | 6-65              
+  ...controller.ts |       0 |        0 |       0 |       0 | 13-88             
+ src/dialogs       |   43.73 |     25.5 |   14.61 |   31.47 |                   
+  ...ant-dialog.ts |   65.93 |    41.66 |   16.66 |   49.12 | ...15-218,225-235 
+  config-dialog.ts |   53.64 |    31.45 |    16.9 |    40.2 | ...53-633,687-981 
+  ...ter-dialog.ts |   84.37 |       70 |   33.33 |   76.47 | 82-96,150         
+  ...ion-dialog.ts |   38.67 |    22.69 |   17.39 |   28.05 | ...50-575,594-683 
+  ...ook-dialog.ts |   88.88 |       50 |   66.66 |   88.88 | 60                
+  ...iew-dialog.ts |   38.37 |       34 |   14.75 |   29.37 | ...79-579,602-871 
+  ...ary-dialog.ts |   20.39 |     8.44 |    3.12 |   12.44 | ...4,730,751-1658 
+  ...ion-dialog.ts |   84.61 |    58.33 |      40 |   76.92 | 78-82,131         
+  ...ing-dialog.ts |      64 |       25 |   55.55 |   53.12 | 51-81,108-116     
+  ...ing-dialog.ts |   35.82 |    16.82 |    14.7 |   26.47 | ...39-414,454-515 
+ src/localize      |       0 |        0 |       0 |       0 |                   
+  localize.ts      |       0 |        0 |       0 |       0 | 3-27              
+ ...lize/languages |       0 |      100 |     100 |       0 |                   
+  en.ts            |       0 |      100 |     100 |       0 | 1                 
+ src/schemas       |   85.71 |        0 |       0 |   85.71 |                   
+  api-schema.ts    |   85.71 |        0 |       0 |   85.71 | 46                
+ src/store         |       0 |        0 |       0 |       0 |                   
+  data-store.ts    |       0 |        0 |       0 |       0 | 14-138            
+  grid-store.ts    |       0 |        0 |       0 |       0 | 28-68             
+  ...pace-store.ts |       0 |        0 |       0 |       0 | 30-797            
+  history-store.ts |       0 |        0 |       0 |       0 | 29-523            
+  ...rd-actions.ts |       0 |        0 |       0 |       0 | 21-79             
+  plant-actions.ts |       0 |        0 |       0 |       0 | 26-268            
+  ...in-actions.ts |       0 |        0 |       0 |       0 | 25-200            
+  ui-store.ts      |       0 |        0 |       0 |       0 | 23-106            
+ src/styles        |   42.85 |      100 |     100 |   42.85 |                   
+  dialog.styles.ts |     100 |      100 |     100 |     100 |                   
+  ...ard.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  ...ard.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  ...ats.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  shared.styles.ts |     100 |      100 |     100 |     100 |                   
+  ui.styles.ts     |     100 |      100 |     100 |     100 |                   
+  variables.ts     |       0 |      100 |     100 |       0 | 3                 
+ src/utils         |     1.9 |     0.68 |   27.39 |     1.9 |                   
+  ...tics-utils.ts |       0 |        0 |       0 |       0 | 12-45             
+  chart-utils.ts   |       0 |        0 |       0 |       0 | 15-514            
+  metrics-utils.ts |       0 |        0 |       0 |       0 | 43-328            
+  plant-utils.ts   |    4.85 |     2.22 |   42.55 |    4.84 | ...59-297,305-551 
+-------------------|---------|----------|---------|---------|-------------------

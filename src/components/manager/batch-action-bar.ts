@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { mdiWater, mdiSprout, mdiClose } from '@mdi/js';
+import { mdiWater, mdiSprout, mdiBug, mdiClose } from '@mdi/js';
 import { storeContext } from '../../context';
 import type { GrowspaceStore } from '../../store/growspace-store';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -134,6 +134,10 @@ export class BatchActionBar extends LitElement {
     this.store.openBatchTrainingDialog();
   }
 
+  private _handleIPM() {
+    this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
+  }
+
   private _handleClear() {
     this.store.clearPlantSelection();
     this.store.ui.setEditMode(false);
@@ -164,6 +168,11 @@ export class BatchActionBar extends LitElement {
           <button class="action-btn" @click=${this._handleStage}>
             <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
             Log Training
+          </button>
+          
+          <button class="action-btn" @click=${this._handleIPM}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            Log IPM
           </button>
         </div>
 

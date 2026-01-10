@@ -19,6 +19,7 @@ import '../../dialogs/logbook-dialog';
 import '../../dialogs/watering-dialog';
 import '../../dialogs/training-dialog';
 import './nutrient-presets-editor';
+import './ipm-dialog';
 
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -89,6 +90,8 @@ export class DialogHost extends LitElement {
                 return this._renderNutrientPresetsDialog(active, selectedDeviceData);
             case 'TRAINING':
                 return this._renderTrainingDialog(active);
+            case 'IPM':
+                return this._renderIPMDialog(active, selectedDeviceData);
             default:
                 return html``;
         }
@@ -385,6 +388,26 @@ export class DialogHost extends LitElement {
             .store=${this.store}
             @close=${() => this.store.ui.closeDialog()}
         ></training-dialog>
+        `;
+    }
+
+    private _renderIPMDialog(
+        active: ActiveDialogState,
+        selectedDeviceData?: GrowspaceDevice
+    ): TemplateResult {
+        if (active.type !== 'IPM') return html``;
+        const dialogState = active.payload;
+        return html`
+        <ipm-dialog
+            .open=${true}
+            .hass=${this.hass}
+            .dataService=${this.store.dataService}
+            .growspaceId=${dialogState.growspaceId}
+            .plantIds=${dialogState.plantIds || []}
+            .presets=${selectedDeviceData?.ipm_presets || {}}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this.store.refreshData()}
+        ></ipm-dialog>
         `;
     }
 }

@@ -231,6 +231,43 @@ describe('DataService', () => {
         });
     });
 
+    describe('IPM Actions', () => {
+        it('should save IPM preset', async () => {
+            const data = { name: 'Neem', type: 'Foliar', items: [{ name: 'Neem Oil', dose_amount: 5, dose_unit: 'ml/L' }] };
+            await service.saveIPMPreset(data);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'save_ipm_preset', data);
+        });
+
+        it('should handle error in saveIPMPreset', async () => {
+            callServiceMock.mockRejectedValue(new Error('Save Fail'));
+            await expect(service.saveIPMPreset({ name: 'X', type: 'Y', items: [] }))
+                .rejects.toThrow('Save Fail');
+        });
+
+        it('should remove IPM preset', async () => {
+            await service.removeIPMPreset('p1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_ipm_preset', { preset_id: 'p1' });
+        });
+
+        it('should handle error in removeIPMPreset', async () => {
+            callServiceMock.mockRejectedValue(new Error('Remove Fail'));
+            await expect(service.removeIPMPreset('p1'))
+                .rejects.toThrow('Remove Fail');
+        });
+
+        it('should apply IPM preset', async () => {
+            const data = { preset_id: 'p1', growspace_id: 'g1' };
+            await service.applyIPM(data);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'apply_ipm', data);
+        });
+
+        it('should handle error in applyIPM', async () => {
+            callServiceMock.mockRejectedValue(new Error('Apply Fail'));
+            await expect(service.applyIPM({ preset_id: 'p1' }))
+                .rejects.toThrow('Apply Fail');
+        });
+    });
+
     describe('Import/Export', () => {
         it('should export strain library', async () => {
             await service.exportStrainLibrary();

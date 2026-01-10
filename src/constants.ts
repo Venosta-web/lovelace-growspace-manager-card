@@ -169,6 +169,9 @@ export const SERVICES = {
   WATER_GROWSPACE: 'water_growspace',
   SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
   REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
+  SAVE_IPM_PRESET: 'save_ipm_preset',
+  REMOVE_IPM_PRESET: 'remove_ipm_preset',
+  APPLY_IPM: 'apply_ipm',
 };
 
 /**

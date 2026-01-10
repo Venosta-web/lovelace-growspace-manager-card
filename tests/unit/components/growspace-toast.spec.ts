@@ -77,4 +77,45 @@ describe('GrowspaceToast', () => {
 
         vi.useRealTimers();
     });
+
+    it('should handle missing store gracefully', async () => {
+        const noStoreEl = document.createElement('growspace-toast') as GrowspaceToast;
+        // Do not set store
+        document.body.appendChild(noStoreEl);
+        await noStoreEl.updateComplete;
+
+        expect((noStoreEl as any)._notificationController).toBeUndefined();
+
+        document.body.removeChild(noStoreEl);
+    });
+
+    it('should fallback to info type if notification type is missing', async () => {
+        // Notification satisfies { message: string; type: ... } | null
+        // But we can force it for reaching the branch
+        (el as any)._notificationController = { value: { message: 'Type Missing' } };
+        await el.updateComplete;
+
+        const div = el.shadowRoot!.querySelector('.toast-notification');
+        expect(div?.classList.contains('info')).toBe(true);
+    });
+
+    it('should fallback to empty string if notification message is missing', async () => {
+        (el as any)._notificationController = { value: { type: 'success' } };
+        await el.updateComplete;
+
+        const div = el.shadowRoot!.querySelector('.toast-notification');
+        expect(div?.textContent?.trim()).toBe('');
+    });
+
+    it('should reset timeout on disconnectedCallback', async () => {
+        vi.useFakeTimers();
+        $notification.set({ message: 'Disconnect Test', type: 'info' });
+        await el.updateComplete;
+
+        const clearSpy = vi.spyOn(window, 'clearTimeout');
+        document.body.removeChild(el);
+
+        expect(clearSpy).toHaveBeenCalled();
+        vi.useRealTimers();
+    });
 });

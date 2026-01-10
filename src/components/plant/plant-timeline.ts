@@ -2,15 +2,15 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { PlantTimelineEvent } from '../../types';
 import { sharedStyles } from '../../styles/shared.styles';
-import { mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf } from '@mdi/js';
+import { mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug } from '@mdi/js';
 
 @customElement('plant-timeline')
 export class PlantTimeline extends LitElement {
-    @property({ type: Array }) accessor events: PlantTimelineEvent[] = [];
+  @property({ type: Array }) accessor events: PlantTimelineEvent[] = [];
 
-    static styles = [
-        sharedStyles,
-        css`
+  static styles = [
+    sharedStyles,
+    css`
       :host {
         display: block;
         padding: var(--spacing-md, 16px);
@@ -107,95 +107,96 @@ export class PlantTimeline extends LitElement {
         z-index: 2;
       }
     `
-    ];
+  ];
 
-    private _getIcon(type: string, action?: string) {
-        switch (type) {
-            case 'stage_change': return mdiSprout;
-            case 'alert': return mdiAlertCircle;
-            case 'note': return mdiNoteText;
-            case 'milestone': return mdiSprout;
-            case 'action':
-                if (action === 'water' || action === 'watering') return mdiWater;
-                return mdiLeaf;
-            default: return mdiLeaf;
-        }
+  private _getIcon(type: string, action?: string) {
+    switch (type) {
+      case 'stage_change': return mdiSprout;
+      case 'alert': return mdiAlertCircle;
+      case 'note': return mdiNoteText;
+      case 'milestone': return mdiSprout;
+      case 'action':
+        if (action === 'water' || action === 'watering') return mdiWater;
+        if (action === 'ipm') return mdiBug;
+        return mdiLeaf;
+      default: return mdiLeaf;
     }
+  }
 
-    private _formatDate(dateStr: string) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) throw new Error();
-            return date.toLocaleString();
-        } catch {
-            return dateStr;
-        }
+  private _formatDate(dateStr: string) {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) throw new Error();
+      return date.toLocaleString();
+    } catch {
+      return dateStr;
     }
+  }
 
-    private _formatDayHeader(dateStr: string) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) throw new Error();
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+  private _formatDayHeader(dateStr: string) {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) throw new Error();
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-            if (date.toDateString() === today.toDateString()) {
-                return 'Today';
-            } else if (date.toDateString() === yesterday.toDateString()) {
-                return 'Yesterday';
-            }
-            return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        } catch {
-            return dateStr;
-        }
+      if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+      }
+      return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return dateStr;
     }
+  }
 
-    private _formatTime(dateStr: string) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) throw new Error();
-            return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        } catch {
-            return dateStr;
-        }
+  private _formatTime(dateStr: string) {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) throw new Error();
+      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return dateStr;
     }
+  }
 
-    private _getDateKey(dateStr: string): string {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) throw new Error();
-            return date.toDateString();
-        } catch {
-            return dateStr;
-        }
+  private _getDateKey(dateStr: string): string {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) throw new Error();
+      return date.toDateString();
+    } catch {
+      return dateStr;
     }
+  }
 
-    render() {
-        if (!this.events || this.events.length === 0) {
-            return html`
+  render() {
+    if (!this.events || this.events.length === 0) {
+      return html`
             <div class="glass-surface glass-panel" style="text-align: center; color: var(--secondary-text-color);">
                 No events recorded.
             </div>
         `;
-        }
+    }
 
-        // Sort events descending
-        const sortedEvents = [...this.events]
-            .filter(e => e.date)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Sort events descending
+    const sortedEvents = [...this.events]
+      .filter(e => e.date)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // Group by day
-        const groupedByDay = new Map<string, typeof sortedEvents>();
-        for (const event of sortedEvents) {
-            const dayKey = this._getDateKey(event.date);
-            if (!groupedByDay.has(dayKey)) {
-                groupedByDay.set(dayKey, []);
-            }
-            groupedByDay.get(dayKey)!.push(event);
-        }
+    // Group by day
+    const groupedByDay = new Map<string, typeof sortedEvents>();
+    for (const event of sortedEvents) {
+      const dayKey = this._getDateKey(event.date);
+      if (!groupedByDay.has(dayKey)) {
+        groupedByDay.set(dayKey, []);
+      }
+      groupedByDay.get(dayKey)!.push(event);
+    }
 
-        return html`
+    return html`
       <div class="timeline">
         ${Array.from(groupedByDay.entries()).map(([dayKey, events]) => html`
           <div class="day-group">
@@ -215,42 +216,43 @@ export class PlantTimeline extends LitElement {
         `)}
       </div>
     `;
-    }
+  }
 
-    private _renderEventContent(event: PlantTimelineEvent) {
-        switch (event.type) {
-            case 'stage_change':
-                return html`
+  private _renderEventContent(event: PlantTimelineEvent) {
+    switch (event.type) {
+      case 'stage_change':
+        return html`
             <div class="content">Stage Changed</div>
             <div class="details">Changed from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
         `;
-            case 'milestone':
-                return html`
+      case 'milestone':
+        return html`
             <div class="content">${event.label} Started</div>
             <div class="details">Milestone reached on ${this._formatDate(event.date)}</div>
         `;
-            case 'action':
-                const actionLabel = event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action';
-                return html`
+      case 'action':
+        const actionLabel = event.action === 'ipm' ? 'IPM' :
+          (event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action');
+        return html`
             <div class="content">${actionLabel}</div>
             ${event.details ? html`<div class="details">${event.details}</div>` : nothing}
         `;
-            case 'alert':
-                return html`
+      case 'alert':
+        return html`
             <div class="content" style="color: var(--error-color, #f44336)">Alert: ${event.message}</div>
             <div class="details">Severity: ${event.severity}</div>
         `;
-            case 'note':
-                return html`
+      case 'note':
+        return html`
             <div class="content">Note</div>
             <div class="details">${event.text}</div>
         `;
-        }
     }
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'plant-timeline': PlantTimeline;
-    }
+  interface HTMLElementTagNameMap {
+    'plant-timeline': PlantTimeline;
+  }
 }

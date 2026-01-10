@@ -18,7 +18,8 @@ import {
   mdiDna,
   mdiWater,
   mdiWaterPlus,
-  mdiBottleTonicPlus
+  mdiBottleTonicPlus,
+  mdiBug
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -847,6 +848,9 @@ export class GrowspaceHeader extends LitElement {
           });
         }
         break;
+      case 'ipm':
+        this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+        break;
     }
   }
 
@@ -1194,6 +1198,10 @@ export class GrowspaceHeader extends LitElement {
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
             <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            <span class="menu-item-label">Log / Manage IPM</span>
         </div>
       </div>
     `;

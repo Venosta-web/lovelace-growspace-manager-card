@@ -94,6 +94,7 @@ export class GrowspaceToast extends LitElement {
     `;
 
     render() {
+        if (!this._notificationController) return html``;
         const notification = this._notificationController.value;
         const isVisible = !!notification;
 
