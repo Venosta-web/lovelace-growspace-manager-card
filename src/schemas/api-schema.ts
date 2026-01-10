@@ -187,7 +187,7 @@ export function validateGrowspaceCollection(data: unknown): ValidationResult<Gro
  * Validates strain library response.
  */
 export function validateStrainLibrary(data: unknown): ValidationResult<StrainLibraryResponse> {
-    const result = StrainLibrarySchema.safeParse(data);
+    const result = StrainLibraryWrapperSchema.safeParse(data);
     if (result.success) {
         return { success: true, data: result.data };
     }
