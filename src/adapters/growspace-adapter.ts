@@ -111,11 +111,12 @@ export class GrowspaceAdapter {
   /**
    * Helper to extract specific keys from the flattened API response into a typed object.
    */
-  private static extractSubset<T>(source: any, keys: (keyof T)[]): T {
+  private static extractSubset<T>(source: object, keys: (keyof T)[]): T {
     const result = {} as T;
+    const src = source as Record<string, unknown>;
     keys.forEach((key) => {
       if (key in source) {
-        result[key] = source[key];
+        result[key] = src[key as string] as T[keyof T];
       }
     });
     return result;

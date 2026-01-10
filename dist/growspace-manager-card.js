@@ -728,9 +728,10 @@ class GrowspaceAdapter {
      */
     static extractSubset(source, keys) {
         const result = {};
+        const src = source;
         keys.forEach((key) => {
             if (key in source) {
-                result[key] = source[key];
+                result[key] = src[key];
             }
         });
         return result;
@@ -31199,16 +31200,35 @@ class GrowspaceDataStore {
             writable: true,
             value: void 0
         });
+        /** Map from plantId to deviceId for O(1) lookups */
+        Object.defineProperty(this, "$plantToDeviceMap", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.$devices = atom([]);
         this.$strainLibrary = atom([]);
         this.$config = atom({});
         this.$optimisticDeletedPlantIds = atom(new Set());
         this.$wsDataCache = atom({});
         this.$selectedDevice = atom(null);
+        this.$plantToDeviceMap = atom(new Map());
     }
     // Actions (State setters)
     setDevices(devices) {
         this.$devices.set(devices);
+        // Rebuild plant-to-device map for O(1) lookups
+        const map = new Map();
+        for (const device of devices) {
+            if (!device.plants)
+                continue;
+            for (const plant of device.plants) {
+                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+                map.set(plantId, device.device_id);
+            }
+        }
+        this.$plantToDeviceMap.set(map);
     }
     setSelectedDevice(deviceId) {
         this.$selectedDevice.set(deviceId);
@@ -32386,8 +32406,8 @@ function handleKeyboardNavigation(ctx, key, uiStore, dataStore) {
 }
 
 class GrowspaceStore {
-    /** Context object for plant action functions */
-    get _plantActionContext() {
+    /** Base context with common action dependencies */
+    get _baseActionContext() {
         return {
             dataService: this.dataService,
             showToast: (msg, type) => this.showToast(msg, type),
@@ -32395,13 +32415,14 @@ class GrowspaceStore {
             refreshData: () => this.refreshData(),
         };
     }
+    /** Context object for plant action functions */
+    get _plantActionContext() {
+        return this._baseActionContext;
+    }
     /** Context object for strain action functions */
     get _strainActionContext() {
         return {
-            dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
-            closeDialog: () => this.ui.closeDialog(),
-            refreshData: () => this.refreshData(),
+            ...this._baseActionContext,
             refreshStrainLibrary: (force) => this.fetchStrainLibrary(force),
             setStrainLibrary: (lib) => this.data.setStrainLibrary(lib),
             getStrainLibrary: () => this.data.$strainLibrary.get(),
@@ -32409,12 +32430,7 @@ class GrowspaceStore {
     }
     /** Context object for growspace action functions */
     get _growspaceActionContext() {
-        return {
-            dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
-            closeDialog: () => this.ui.closeDialog(),
-            refreshData: () => this.refreshData(),
-        };
+        return this._baseActionContext;
     }
     /** Context object for keyboard action functions */
     get _keyboardActionContext() {
@@ -32891,28 +32907,20 @@ class GrowspaceStore {
         });
     }
     _getCommonGrowspaceId(plantIds) {
-        const devices = this.data.$devices.get();
+        const plantToDevice = this.data.$plantToDeviceMap.get();
         let commonGrowspaceId;
-        let mixed = false;
         for (const plantId of plantIds) {
-            let plantGrowspaceId;
-            for (const device of devices) {
-                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
-                    plantGrowspaceId = device.device_id;
-                    break;
-                }
-            }
+            const plantGrowspaceId = plantToDevice.get(plantId);
             if (!plantGrowspaceId)
                 continue;
             if (commonGrowspaceId === undefined) {
                 commonGrowspaceId = plantGrowspaceId;
             }
             else if (commonGrowspaceId !== plantGrowspaceId) {
-                mixed = true;
-                break;
+                return undefined; // Mixed growspaces
             }
         }
-        return mixed ? undefined : commonGrowspaceId;
+        return commonGrowspaceId;
     }
     openAddPlantDialog(row, col) {
         if (row !== undefined && col !== undefined) {

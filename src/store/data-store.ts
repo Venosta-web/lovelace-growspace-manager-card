@@ -9,6 +9,8 @@ export class GrowspaceDataStore {
     public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
     public readonly $wsDataCache: WritableAtom<Record<string, GrowspaceAPIResponse>>;
     public readonly $selectedDevice: WritableAtom<string | null>;
+    /** Map from plantId to deviceId for O(1) lookups */
+    public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
 
     constructor() {
         this.$devices = atom<GrowspaceDevice[]>([]);
@@ -17,12 +19,23 @@ export class GrowspaceDataStore {
         this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
         this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
         this.$selectedDevice = atom<string | null>(null);
+        this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
     }
 
     // Actions (State setters)
 
     public setDevices(devices: GrowspaceDevice[]) {
         this.$devices.set(devices);
+        // Rebuild plant-to-device map for O(1) lookups
+        const map = new Map<string, string>();
+        for (const device of devices) {
+            if (!device.plants) continue;
+            for (const plant of device.plants) {
+                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+                map.set(plantId, device.device_id);
+            }
+        }
+        this.$plantToDeviceMap.set(map);
     }
 
     public setSelectedDevice(deviceId: string | null) {

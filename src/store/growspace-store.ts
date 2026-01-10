@@ -29,23 +29,25 @@ export class GrowspaceStore {
 
     private _isFetchingWS = false;
 
-    /** Context object for plant action functions */
-    private get _plantActionContext(): plantActions.PlantActionContext {
+    /** Base context with common action dependencies */
+    private get _baseActionContext() {
         return {
             dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
+            showToast: (msg: string, type: 'info' | 'error' | 'success') => this.showToast(msg, type),
             closeDialog: () => this.ui.closeDialog(),
             refreshData: () => this.refreshData(),
         };
     }
 
+    /** Context object for plant action functions */
+    private get _plantActionContext(): plantActions.PlantActionContext {
+        return this._baseActionContext;
+    }
+
     /** Context object for strain action functions */
     private get _strainActionContext(): strainActions.StrainActionContext {
         return {
-            dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
-            closeDialog: () => this.ui.closeDialog(),
-            refreshData: () => this.refreshData(),
+            ...this._baseActionContext,
             refreshStrainLibrary: (force) => this.fetchStrainLibrary(force),
             setStrainLibrary: (lib) => this.data.setStrainLibrary(lib),
             getStrainLibrary: () => this.data.$strainLibrary.get(),
@@ -54,12 +56,7 @@ export class GrowspaceStore {
 
     /** Context object for growspace action functions */
     private get _growspaceActionContext(): strainActions.GrowspaceActionContext {
-        return {
-            dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
-            closeDialog: () => this.ui.closeDialog(),
-            refreshData: () => this.refreshData(),
-        };
+        return this._baseActionContext;
     }
 
     /** Context object for keyboard action functions */
@@ -591,30 +588,21 @@ export class GrowspaceStore {
     }
 
     private _getCommonGrowspaceId(plantIds: string[]): string | undefined {
-        const devices = this.data.$devices.get();
+        const plantToDevice = this.data.$plantToDeviceMap.get();
         let commonGrowspaceId: string | undefined;
-        let mixed = false;
 
         for (const plantId of plantIds) {
-            let plantGrowspaceId: string | undefined;
-            for (const device of devices) {
-                if (device.plants.some(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId)) {
-                    plantGrowspaceId = device.device_id;
-                    break;
-                }
-            }
-
+            const plantGrowspaceId = plantToDevice.get(plantId);
             if (!plantGrowspaceId) continue;
 
             if (commonGrowspaceId === undefined) {
                 commonGrowspaceId = plantGrowspaceId;
             } else if (commonGrowspaceId !== plantGrowspaceId) {
-                mixed = true;
-                break;
+                return undefined; // Mixed growspaces
             }
         }
 
-        return mixed ? undefined : commonGrowspaceId;
+        return commonGrowspaceId;
     }
 
     openAddPlantDialog(row?: number, col?: number) {
