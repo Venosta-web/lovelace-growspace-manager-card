@@ -135,9 +135,9 @@ export const StrainDataSchema = z.object({
         sex: z.string().optional(),
         sativa_percentage: z.number().optional(),
         indica_percentage: z.number().optional()
-    }).optional().default({}),
+    }).passthrough().optional().default({}),
     phenotypes: z.record(z.string(), StrainPhenotypeSchema).optional().default({})
-});
+}).passthrough();
 
 export const StrainLibrarySchema = z.record(z.string(), StrainDataSchema);
 export const StrainLibraryWrapperSchema = z.object({

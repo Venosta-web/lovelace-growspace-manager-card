@@ -4871,9 +4871,9 @@ const StrainDataSchema = objectType({
         sex: stringType().optional(),
         sativa_percentage: numberType().optional(),
         indica_percentage: numberType().optional()
-    }).optional().default({}),
+    }).passthrough().optional().default({}),
     phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({})
-});
+}).passthrough();
 const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
 const StrainLibraryWrapperSchema = objectType({
     strains: StrainLibrarySchema,
