@@ -99,11 +99,11 @@ describe('Validation Helpers', () => {
 
     describe('validateStrainLibrary', () => {
         it('should return success for valid library', () => {
-            const library = { 'Strain 1': { meta: { type: 'Indica' } } };
+            const library = { strains: { 'Strain 1': { meta: { type: 'Indica' } } } };
             const result = validateStrainLibrary(library);
             expect(result.success).toBe(true);
-            expect(result.data?.['Strain 1'].meta?.type).toBe('Indica');
-            expect(result.data?.['Strain 1'].phenotypes).toEqual({});
+            expect(result.data?.strains?.['Strain 1'].meta?.type).toBe('Indica');
+            expect(result.data?.strains?.['Strain 1'].phenotypes).toEqual({});
         });
 
         it('should return errors for invalid library', () => {
