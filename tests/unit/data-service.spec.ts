@@ -123,6 +123,25 @@ describe('DataService', () => {
             expect(strains[0].strain).toBe('Kush');
         });
 
+        it('should fetch strain library via service with wrapper format', async () => {
+            const mockResponse = {
+                strains: {
+                    'Haze': {
+                        meta: { breeder: 'You' },
+                        phenotypes: {
+                            'default': { description: 'Sativa' }
+                        }
+                    }
+                },
+                strain_list: ['Haze']
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockResponse);
+            const strains = await service.fetchStrainLibrary();
+            expect(strains).toHaveLength(1);
+            expect(strains[0].strain).toBe('Haze');
+            expect(strains[0].breeder).toBe('You');
+        });
+
         it('should add strain with base64 image handling', async () => {
             await service.addStrain({ strain: 'X', image: 'data:image/png;base64,abc' });
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', expect.objectContaining({

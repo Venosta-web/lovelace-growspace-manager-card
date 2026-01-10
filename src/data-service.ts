@@ -4,7 +4,7 @@ import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAP
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
-import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema } from './schemas/api-schema';
+import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary } from './schemas/api-schema';
 
 /** Shape of raw phenotype data from strain sensor */
 interface RawPhenotypeData {
@@ -181,31 +181,39 @@ export class DataService {
         type: 'growspace_manager/get_strain_library',
       });
 
-      // The WS API returns the analytics object directly
-      // Schema validation will happen next
+      console.log('[DataService:fetchStrainLibrary] WS Response:', rawResponse);
 
-      // Remove legacy or wrapper 'response' key if present to pass validation
+      // Remove legacy or wrapper 'response' key if present to pass legacy validation
       if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
         delete rawResponse['response'];
       }
 
-      const parsed = StrainLibrarySchema.safeParse(rawResponse);
-      if (!parsed.success) {
-        console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
-        return [];
+      // The WS API returns: { strains: { ... }, strain_list: [...] }
+      const parsed = StrainLibraryWrapperSchema.safeParse(rawResponse);
+
+      let rawStrains: StrainLibrary = {};
+
+      if (parsed.success) {
+        rawStrains = parsed.data.strains;
+      } else {
+        // Fallback for backward compatibility or if backend changes
+        const legacyParsed = StrainLibrarySchema.safeParse(rawResponse);
+        if (legacyParsed.success) {
+          rawStrains = legacyParsed.data;
+        } else {
+          console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
+          return [];
+        }
       }
-      const rawStrains = parsed.data;
 
       const currentStrains: StrainEntry[] = [];
 
-      console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
-
-      Object.entries(rawStrains).forEach(([strainName, data]: [string, any]) => {
+      Object.entries(rawStrains).forEach(([strainName, data]) => {
         if (strainName === 'response') return; // unexpected wrapper or metadata
         const meta = data.meta || {};
         const phenotypes = data.phenotypes || {};
 
-        Object.entries(phenotypes).forEach(([phenoName, phenoData]: [string, any]) => {
+        Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
           currentStrains.push({
             strain: strainName,
             phenotype: phenoName,

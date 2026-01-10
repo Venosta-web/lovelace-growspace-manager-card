@@ -4875,6 +4875,10 @@ const StrainDataSchema = objectType({
     phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({})
 });
 const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
+const StrainLibraryWrapperSchema = objectType({
+    strains: StrainLibrarySchema,
+    strain_list: arrayType(stringType()).optional()
+}).passthrough();
 
 class DataService {
     constructor(hass) {
@@ -5012,20 +5016,29 @@ class DataService {
             const rawResponse = await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/get_strain_library',
             });
-            // The WS API returns the analytics object directly
-            // Schema validation will happen next
-            // Remove legacy or wrapper 'response' key if present to pass validation
+            console.log('[DataService:fetchStrainLibrary] WS Response:', rawResponse);
+            // Remove legacy or wrapper 'response' key if present to pass legacy validation
             if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
                 delete rawResponse['response'];
             }
-            const parsed = StrainLibrarySchema.safeParse(rawResponse);
-            if (!parsed.success) {
-                console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
-                return [];
+            // The WS API returns: { strains: { ... }, strain_list: [...] }
+            const parsed = StrainLibraryWrapperSchema.safeParse(rawResponse);
+            let rawStrains = {};
+            if (parsed.success) {
+                rawStrains = parsed.data.strains;
             }
-            const rawStrains = parsed.data;
+            else {
+                // Fallback for backward compatibility or if backend changes
+                const legacyParsed = StrainLibrarySchema.safeParse(rawResponse);
+                if (legacyParsed.success) {
+                    rawStrains = legacyParsed.data;
+                }
+                else {
+                    console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
+                    return [];
+                }
+            }
             const currentStrains = [];
-            console.log('[DataService:fetchStrainLibrary] Raw response:', rawStrains);
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
                     return; // unexpected wrapper or metadata

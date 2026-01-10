@@ -140,7 +140,13 @@ export const StrainDataSchema = z.object({
 });
 
 export const StrainLibrarySchema = z.record(z.string(), StrainDataSchema);
-export type StrainLibraryResponse = z.infer<typeof StrainLibrarySchema>;
+export const StrainLibraryWrapperSchema = z.object({
+    strains: StrainLibrarySchema,
+    strain_list: z.array(z.string()).optional()
+}).passthrough();
+
+export type StrainLibrary = z.infer<typeof StrainLibrarySchema>;
+export type StrainLibraryResponse = z.infer<typeof StrainLibraryWrapperSchema>;
 
 /**
  * API Validation Helpers - Corrupted data firewall at API boundary
