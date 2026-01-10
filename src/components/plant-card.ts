@@ -17,6 +17,7 @@ import {
   mdiTrendingUp,
   mdiTrendingDown,
   mdiMinus,
+  mdiBug,
 } from '@mdi/js';
 import { PlantEntity, StrainEntry, PlantDisplayData, StageDisplay } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
@@ -198,6 +199,12 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
             ${this.plant.attributes.last_training_technique ? html`
               <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
                 <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
+              </div>
+            ` : nothing}
+
+            ${this.plant.attributes.last_ipm ? html`
+              <div class="status-icon ipm" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
+                <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
               </div>
             ` : nothing}
 

@@ -143,16 +143,17 @@ export const plantCardStyles = css`
   }
 
   .status-icons {
-    position: relative;
-    top: 16px;
-    left: 16px;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 8px;
     z-index: 5;
-    padding: 6px 12px
-    right: 16px;
-    justify-content: space-between;
+    pointer-events: none;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .status-icon {
@@ -167,6 +168,7 @@ export const plantCardStyles = css`
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.2s ease;
+    pointer-events: auto;
   }
 
   .status-icon:hover {
@@ -184,6 +186,10 @@ export const plantCardStyles = css`
 
   .status-icon.problem {
     color: #f44336; /* Red for problem */
+  }
+
+  .status-icon.ipm {
+    color: #9c27b0; /* Purple for IPM */
   }
 
   .status-icon.preset-recommended {

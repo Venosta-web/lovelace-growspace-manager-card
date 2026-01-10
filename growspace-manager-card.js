@@ -9029,7 +9029,8 @@ const dialogStyles = [
             <div class="details">Milestone reached on ${this._formatDate(event.date)}</div>
         `;
                 case 'action':
-                    const actionLabel = event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action';
+                    const actionLabel = event.action === 'ipm' ? 'IPM' :
+                        (event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action');
                     return x `
             <div class="content">${actionLabel}</div>
             ${event.details ? x `<div class="details">${event.details}</div>` : E}
@@ -17653,16 +17654,17 @@ const plantCardStyles = i$6 `
   }
 
   .status-icons {
-    position: relative;
-    top: 16px;
-    left: 16px;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    gap: 8px;
     z-index: 5;
-    padding: 6px 12px
-    right: 16px;
-    justify-content: space-between;
+    pointer-events: none;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .status-icon {
@@ -17677,6 +17679,7 @@ const plantCardStyles = i$6 `
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.2s ease;
+    pointer-events: auto;
   }
 
   .status-icon:hover {
@@ -17694,6 +17697,10 @@ const plantCardStyles = i$6 `
 
   .status-icon.problem {
     color: #f44336; /* Red for problem */
+  }
+
+  .status-icon.ipm {
+    color: #9c27b0; /* Purple for IPM */
   }
 
   .status-icon.preset-recommended {
@@ -17910,6 +17917,12 @@ const plantCardStyles = i$6 `
             ${this.plant.attributes.last_training_technique ? x `
               <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
                 <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
+              </div>
+            ` : E}
+
+            ${this.plant.attributes.last_ipm ? x `
+              <div class="status-icon ipm" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
+                <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
               </div>
             ` : E}
 
@@ -27365,52 +27378,65 @@ class ResizeController {
                 return '';
             return x `
       <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+        <div class="menu-header">Configuration</div>
         <div class="menu-item" @click=${() => this._triggerAction('config')}>
             <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-            <span class="menu-item-label">Config</span>
+            <span class="menu-item-label">Settings</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-            <span class="menu-item-label">Edit</span>
-            <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
+             <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+             <span class="menu-item-label">Edit Mode</span>
+             <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-            <span class="menu-item-label">Compact View</span>
-            <div class=${e({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
+             <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
+             <span class="menu-item-label">Compact View</span>
+             <div class=${e({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-            <span class="menu-item-label">Control Dehumidifier</span>
-            <div class=${e({ 'menu-toggle-switch': true, active: !!this._envAttrs.dehumidifier_control_enabled })}></div>
+             <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
+             <span class="menu-item-label">Dehumidifier Ctrl</span>
+             <div class=${e({ 'menu-toggle-switch': true, active: !!this._envAttrs.dehumidifier_control_enabled })}></div>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-            <span class="menu-item-label">Strains</span>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-header">Plant Care</div>
+        <div class="menu-item" @click=${() => this._triggerAction('water')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
             <span class="menu-item-label">Irrigation</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-            <span class="menu-item-label">Ask AI</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-            <span class="menu-item-label">Logbook</span>
+        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            <span class="menu-item-label">Log / Manage IPM</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('nutrient_presets')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
             <span class="menu-item-label">Nutrient Presets</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('water')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-header">Tools</div>
+        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            <span class="menu-item-label">Add Plant</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            <span class="menu-item-label">Log / Manage IPM</span>
+        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+            <span class="menu-item-label">Strains</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+            <span class="menu-item-label">Logbook</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+            <span class="menu-item-label">Ask AI</span>
         </div>
       </div>
     `;
@@ -27945,6 +27971,21 @@ class ResizeController {
     .menu-toggle-switch.active::after {
       transform: translateX(20px);
     }
+
+    .menu-divider {
+      height: 1px;
+      background: var(--divider-color, rgba(255,255,255,0.1));
+      margin: 4px 0;
+    }
+
+    .menu-header {
+      padding: 8px 16px 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
   `
     });
     (() => {
@@ -28009,6 +28050,8 @@ class ResizeController {
             this._resetTimeout();
         }
         render() {
+            if (!this._notificationController)
+                return x ``;
             const notification = this._notificationController.value;
             const isVisible = !!notification;
             return x `
