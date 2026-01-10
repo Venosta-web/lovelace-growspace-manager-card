@@ -141,3 +141,50 @@ export const StrainDataSchema = z.object({
 
 export const StrainLibrarySchema = z.record(z.string(), StrainDataSchema);
 export type StrainLibraryResponse = z.infer<typeof StrainLibrarySchema>;
+
+/**
+ * API Validation Helpers - Corrupted data firewall at API boundary
+ */
+
+export interface ValidationResult<T> {
+    success: boolean;
+    data?: T;
+    errors?: string[];
+}
+
+/**
+ * Validates a single growspace API response.
+ * Returns parsed data on success, or logs errors and returns null on failure.
+ */
+export function validateGrowspaceResponse(data: unknown): ValidationResult<GrowspaceAPIResponse> {
+    const result = GrowspaceAPIResponseSchema.safeParse(data);
+    if (result.success) {
+        return { success: true, data: result.data };
+    }
+    console.error('[API Validation Failed for Growspace]', result.error.flatten());
+    return { success: false, errors: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) };
+}
+
+/**
+ * Validates a collection of growspace API responses.
+ */
+export function validateGrowspaceCollection(data: unknown): ValidationResult<GrowspaceAPICollection> {
+    const result = GrowspaceAPICollectionSchema.safeParse(data);
+    if (result.success) {
+        return { success: true, data: result.data };
+    }
+    console.error('[API Validation Failed for Collection (All Data)]', result.error.flatten());
+    return { success: false, errors: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) };
+}
+
+/**
+ * Validates strain library response.
+ */
+export function validateStrainLibrary(data: unknown): ValidationResult<StrainLibraryResponse> {
+    const result = StrainLibrarySchema.safeParse(data);
+    if (result.success) {
+        return { success: true, data: result.data };
+    }
+    console.error('[API Validation Failed for Strain Library]', result.error.flatten());
+    return { success: false, errors: result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`) };
+}

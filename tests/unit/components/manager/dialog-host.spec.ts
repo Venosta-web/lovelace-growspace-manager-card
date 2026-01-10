@@ -42,7 +42,35 @@ describe('DialogHost', () => {
             },
             data: {
                 $devices: $devices,
-                $selectedDevice: $selectedDevice
+                $selectedDevice: $selectedDevice,
+                $strainLibrary: atom([])
+            },
+            actions: {
+                plant: {
+                    update: vi.fn(),
+                    delete: vi.fn(),
+                    move: vi.fn(),
+                    drop: vi.fn(),
+                    nextStage: vi.fn(),
+                    takeClone: vi.fn(),
+                    updateFromDialog: vi.fn(),
+                    add: vi.fn()
+                },
+                growspace: {
+                    add: vi.fn(),
+                    update: vi.fn(),
+                    remove: vi.fn()
+                },
+                strain: {
+                    add: vi.fn(),
+                    remove: vi.fn()
+                },
+                history: {
+                    undo: vi.fn(),
+                    redo: vi.fn(),
+                    canUndo: vi.fn(),
+                    canRedo: vi.fn()
+                }
             },
             closeActiveDialog: vi.fn(),
             confirmAddPlant: vi.fn(),
@@ -69,11 +97,7 @@ describe('DialogHost', () => {
             refreshData: vi.fn(),
         };
 
-        (element as any).store = {
-            ui: { $activeDialog: $activeDialog, closeDialog: vi.fn() },
-            data: { $devices: $devices, $selectedDevice: $selectedDevice },
-            ...mockStore
-        };
+        (element as any).store = mockStore;
 
         mockHass = {
             states: {}
@@ -224,10 +248,10 @@ describe('DialogHost', () => {
         expect(dialog).toBeTruthy();
 
         dialog.dispatchEvent(new CustomEvent('save-strain', { detail: { name: 'S1' } }));
-        expect(mockStore.addStrain).toHaveBeenCalledWith({ name: 'S1' });
+        expect(mockStore.actions.strain.add).toHaveBeenCalledWith({ name: 'S1' });
 
         dialog.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: 'k1' } }));
-        expect(mockStore.removeStrain).toHaveBeenCalledWith('k1');
+        expect(mockStore.actions.strain.remove).toHaveBeenCalledWith('k1');
 
         dialog.dispatchEvent(new CustomEvent('export-library'));
         expect(mockStore.handleExportLibrary).toHaveBeenCalled();
@@ -367,7 +391,7 @@ describe('DialogHost', () => {
         const detail = { plantId: 'p1' };
         dialog?.dispatchEvent(new CustomEvent('delete-plant', { detail }));
 
-        expect(mockStore.handleDeletePlant).toHaveBeenCalledWith('p1');
+        expect(mockStore.actions.plant.delete).toHaveBeenCalledWith('p1');
         // It does NOT automatically close dialog in the listener, it just calls store handler.
         // Store handler might close it.
     });
@@ -520,7 +544,7 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
         dialog?.dispatchEvent(new CustomEvent('harvest-plant', { detail: { plant: mockPlant } }));
 
-        expect(mockStore.harvestPlant).toHaveBeenCalledWith(mockPlant);
+        expect(mockStore.actions.plant.nextStage).toHaveBeenCalledWith(mockPlant);
     });
 
     it('should handle finish-drying event on PLANT_OVERVIEW dialog', async () => {
@@ -566,7 +590,7 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
         dialog?.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: mockPlant, numClones: 3 } }));
 
-        expect(mockStore.handleTakeClone).toHaveBeenCalledWith(mockPlant, 3);
+        expect(mockStore.actions.plant.takeClone).toHaveBeenCalledWith(mockPlant, 3);
     });
     it('should handle move-clone event on PLANT_OVERVIEW dialog', async () => {
         $activeDialog.set({
@@ -588,7 +612,7 @@ describe('DialogHost', () => {
         const mockPlant = { entity_id: 'sensor.p1' } as any;
         dialog?.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: mockPlant, targetGrowspace: 'g2' } }));
 
-        expect(mockStore.movePlantToGrowspace).toHaveBeenCalledWith(mockPlant, 'g2');
+        expect(mockStore.actions.plant.move).toHaveBeenCalledWith(mockPlant, 'g2');
     });
 
     it('should handle close event on STRAIN_LIBRARY dialog', async () => {
@@ -614,7 +638,7 @@ describe('DialogHost', () => {
         const detail = { name: 'New Growspace', rows: 4, cols: 4 };
         dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', { detail }));
 
-        expect(mockStore.handleAddGrowspace).toHaveBeenCalledWith(detail);
+        expect(mockStore.actions.growspace.add).toHaveBeenCalledWith(detail);
     });
 
     it('should handle edit-growspace-submit event on CONFIG dialog', async () => {
@@ -629,7 +653,7 @@ describe('DialogHost', () => {
         const detail = { device_id: 'g1', name: 'Updated Growspace' };
         dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', { detail }));
 
-        expect(mockStore.handleUpdateGrowspace).toHaveBeenCalledWith(detail);
+        expect(mockStore.actions.growspace.update).toHaveBeenCalledWith(detail);
     });
 
     // Note: navigate event handler does not exist in DialogHost, so no test needed.

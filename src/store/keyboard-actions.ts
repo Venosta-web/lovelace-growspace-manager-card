@@ -10,7 +10,8 @@ import { GrowspaceDataStore } from './data-store';
 export interface KeyboardActionContext {
     exitEditMode: () => void;
     handlePlantClick: (plant: PlantEntity) => void;
-    handleDeletePlant: (plantId: string | string[]) => void;
+    handleDeletePlant: (plantId: string) => void;
+    deletePlants: (plantId: string | string[]) => void;
 }
 
 /**
@@ -71,10 +72,10 @@ export function handleKeyboardNavigation(
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                ctx.handleDeletePlant(focusedPlant.entity_id);
+                ctx.deletePlants(focusedPlant.entity_id);
             } else if (uiStore.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
-                ctx.handleDeletePlant(Array.from(uiStore.$selectedPlants.get()));
+                ctx.deletePlants(Array.from(uiStore.$selectedPlants.get()));
             }
             break;
     }

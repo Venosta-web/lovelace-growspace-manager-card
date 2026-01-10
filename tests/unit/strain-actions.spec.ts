@@ -6,6 +6,7 @@ import {
     updateGrowspace,
     analyzeGrowspace,
     getStrainRecommendation,
+    removeGrowspace,
     StrainActionContext,
     GrowspaceActionContext,
 } from '../../src/store/strain-actions';
@@ -145,6 +146,7 @@ describe('strain-actions', () => {
             mockDataService = {
                 addGrowspace: vi.fn().mockResolvedValue({}),
                 updateGrowspace: vi.fn().mockResolvedValue({}),
+                removeGrowspace: vi.fn().mockResolvedValue({}),
                 analyzeAllGrowspaces: vi.fn().mockResolvedValue({ response: 'AI analysis result' }),
                 askGrowAdvice: vi.fn().mockResolvedValue({ response: 'Advice for your plants' }),
                 getStrainRecommendation: vi.fn().mockResolvedValue({ response: 'Try Blue Dream' }),
@@ -225,6 +227,27 @@ describe('strain-actions', () => {
 
                 expect(result).toBe(false);
                 expect(ctx.showToast).toHaveBeenCalledWith('Failed to update growspace: Update failed', 'error');
+            });
+        });
+
+        describe('removeGrowspace', () => {
+            it('should remove growspace successfully', async () => {
+                const result = await removeGrowspace(ctx, 'gs123');
+
+                expect(result).toBe(true);
+                expect(mockDataService.removeGrowspace).toHaveBeenCalledWith('gs123');
+                expect(ctx.showToast).toHaveBeenCalledWith('Growspace removed successfully', 'success');
+                expect(ctx.refreshData).toHaveBeenCalled();
+                expect(ctx.closeDialog).toHaveBeenCalled();
+            });
+
+            it('should return false on error', async () => {
+                mockDataService.removeGrowspace.mockRejectedValue(new Error('Removal failed'));
+
+                const result = await removeGrowspace(ctx, 'gs123');
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Removal failed', 'error');
             });
         });
 

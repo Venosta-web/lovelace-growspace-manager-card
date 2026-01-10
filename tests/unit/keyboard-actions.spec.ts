@@ -48,6 +48,7 @@ describe('keyboard-actions', () => {
             exitEditMode: vi.fn(),
             handlePlantClick: vi.fn(),
             handleDeletePlant: vi.fn(),
+            deletePlants: vi.fn(),
         };
 
         mockPlants = [
@@ -150,7 +151,7 @@ describe('keyboard-actions', () => {
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
 
-            expect(mockContext.handleDeletePlant).toHaveBeenCalledWith('sensor.plant_1');
+            expect(mockContext.deletePlants).toHaveBeenCalledWith('sensor.plant_1');
         });
 
         it('should delete focused plant on Backspace', () => {
@@ -158,7 +159,7 @@ describe('keyboard-actions', () => {
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Backspace', store.ui, store.data);
 
-            expect(mockContext.handleDeletePlant).toHaveBeenCalledWith('sensor.plant_2');
+            expect(mockContext.deletePlants).toHaveBeenCalledWith('sensor.plant_2');
         });
 
         it('should delete selected plants when no focused plant on Delete', () => {
@@ -167,7 +168,7 @@ describe('keyboard-actions', () => {
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
 
-            expect(mockContext.handleDeletePlant).toHaveBeenCalledWith(['p1', 'p2']);
+            expect(mockContext.deletePlants).toHaveBeenCalledWith(['p1', 'p2']);
         });
 
         it('should do nothing on Delete when no plant focused and no selection', () => {
@@ -176,7 +177,7 @@ describe('keyboard-actions', () => {
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Delete', store.ui, store.data);
 
-            expect(mockContext.handleDeletePlant).not.toHaveBeenCalled();
+            expect(mockContext.deletePlants).not.toHaveBeenCalled();
         });
 
         it('should do nothing when no device is selected', () => {

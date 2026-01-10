@@ -61,6 +61,7 @@ vi.mock('../../src/store/data-store', () => {
         $config: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },
         $wsDataCache: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
+        $plantToDeviceMap: { get: vi.fn(() => new Map()), set: vi.fn(), subscribe: vi.fn() },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -315,7 +316,7 @@ describe('GrowspaceStore', () => {
             const plant = createPlant('seedling');
             // Mock toast
             await store.handleMovePlantToNextStage(plant);
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('must be in mother or flower'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('must be in mother or flower'), 'error', undefined);
             expect(store.dataService.harvestPlant).not.toHaveBeenCalled();
         });
     });
@@ -340,7 +341,7 @@ describe('GrowspaceStore', () => {
             await store.addStrain({ strain: 'New Strain' });
             expect(store.dataService.addStrain).toHaveBeenCalled();
             expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success', undefined);
         });
 
         it('should handle add strain error', async () => {
@@ -374,7 +375,7 @@ describe('GrowspaceStore', () => {
         it('should handle add growspace error', async () => {
             mockDataServiceInstance.addGrowspace.mockRejectedValue(new Error('Name taken'));
             await store.handleAddGrowspace({ name: 'GS' });
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Name taken'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Name taken'), 'error', undefined);
         });
 
         it('should handle add growspace success', async () => {
@@ -392,7 +393,7 @@ describe('GrowspaceStore', () => {
         it('should handle update growspace error', async () => {
             mockDataServiceInstance.updateGrowspace.mockRejectedValue(new Error('Fail'));
             await store.handleUpdateGrowspace({ growspace_id: 'g1', name: 'G1', rows: 4, plants_per_row: 4 });
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to update'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to update'), 'error', undefined);
         });
 
         it('should open logbook dialog', () => {
@@ -406,7 +407,7 @@ describe('GrowspaceStore', () => {
         it('should update plant success', async () => {
             await store.updatePlant('p1', { notes: 'abc' });
             expect(store.dataService.updatePlant).toHaveBeenCalled();
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Plant updated'), 'success');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Plant updated'), 'success', undefined);
         });
 
         it('should update plant from dialog', async () => {
@@ -431,13 +432,13 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             mockDataServiceInstance.addPlant.mockRejectedValue(new Error('Fail'));
             await store.confirmAddPlant({ row: 0, col: 0, strain: 'S1', phenotype: 'P1' });
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add'), 'error', undefined);
         });
 
         it('should abort add plant if no device', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue(null);
             await store.confirmAddPlant({ row: 0, col: 0, strain: 'S1', phenotype: 'P1' });
-            expect(uiStore.showToast).toHaveBeenCalledWith('No growspace selected', 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith('No growspace selected', 'error', undefined);
         });
 
         it('should handle delete plant error', async () => {
@@ -445,12 +446,12 @@ describe('GrowspaceStore', () => {
             await store.handleDeletePlant('p1');
             expect(dataStore.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
             expect(dataStore.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p1'); // Revert on error
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error', undefined);
         });
 
         it('should handle delete plant success', async () => {
             await store.handleDeletePlant('p1');
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('deleted'), 'success');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted'), 'success', expect.anything());
         });
 
         it('should handle move plant', async () => {
@@ -461,7 +462,7 @@ describe('GrowspaceStore', () => {
         it('should handle move plant error', async () => {
             mockDataServiceInstance.harvestPlant.mockRejectedValue(new Error('Fail'));
             await store.movePlantToGrowspace({ attributes: { plant_id: 'p1', stage: 'flower' } } as any, 'dry');
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to move'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to move'), 'error', undefined);
         });
 
         it('should handle take clone', async () => {
@@ -625,7 +626,7 @@ describe('GrowspaceStore', () => {
             const file = new File([''], 'test.json');
             file.text = vi.fn().mockResolvedValue('invalid json');
             await store.performImport(file, false);
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error', undefined);
         });
     });
 
@@ -683,7 +684,7 @@ describe('GrowspaceStore', () => {
             const plant = { entity_id: 's.c1', attributes: { plant_id: 'c1', stage: 'clone' } } as any;
             await store.movePlantToGrowspace(plant, 'veg');
             expect(store.dataService.moveClone).toHaveBeenCalledWith('c1', 'veg');
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('moved to veg'), 'success');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Moved plant to veg'), 'success', expect.anything());
         });
 
         it('should handle drop with same source and target', async () => {
@@ -722,14 +723,14 @@ describe('GrowspaceStore', () => {
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             mockDataServiceInstance.fetchStrainLibrary.mockRejectedValue(new Error('Export Fail'));
             await store.handleExportLibrary();
-            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to export library', 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to export library', 'error', undefined);
         });
 
         it('should handle import library invalid format', async () => {
             const file = new File([''], 'test.json');
             file.text = vi.fn().mockResolvedValue('{"not": "array"}'); // Valid JSON but not array
             await store.performImport(file, false);
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Invalid format'), 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Invalid format'), 'error', undefined);
         });
 
         it('should ignore deleted plants in openAddPlantDialog slot finding', () => {
@@ -817,7 +818,7 @@ describe('GrowspaceStore', () => {
         it('should handle move plant validation for unknown/invalid stage', () => {
             const spy = vi.spyOn(uiStore, 'showToast');
             store.handleMovePlantToNextStage({ attributes: { stage: 'seedling' } } as any);
-            expect(spy).toHaveBeenCalledWith(expect.stringContaining('must be in mother or flower'), 'error');
+            expect(spy).toHaveBeenCalledWith(expect.stringContaining('must be in mother or flower'), 'error', undefined);
         });
 
         it('should return from addStrain if no strain name', async () => {
@@ -1044,7 +1045,7 @@ describe('GrowspaceStore', () => {
 
         it('should handle addGrowspace with empty name', async () => {
             await store.handleAddGrowspace({ name: '' });
-            expect(uiStore.showToast).toHaveBeenCalledWith('Name is required', 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith('Name is required', 'error', undefined);
             expect(store.dataService.addGrowspace).not.toHaveBeenCalled();
         });
 
@@ -1372,7 +1373,7 @@ describe('GrowspaceStore', () => {
 
             await store.performImport(file, false);
 
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error');
+            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error', undefined);
         });
 
         it('performImport should handle non-array JSON', async () => {
@@ -1382,7 +1383,7 @@ describe('GrowspaceStore', () => {
 
             await store.performImport(file, false);
 
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid format'), 'error');
+            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid format'), 'error', undefined);
         });
     });
 
@@ -1737,7 +1738,7 @@ describe('GrowspaceStore', () => {
 
             try {
                 await store.analyzeGrowspace('q', false);
-            } catch (e) { }
+            } catch { }
 
             expect(uiStore.setActiveDialog).not.toHaveBeenCalledWith(expect.objectContaining({ payload: { response: expect.stringContaining('Error') } }));
         });
@@ -1862,5 +1863,494 @@ describe('GrowspaceStore', () => {
         store.selectAllPlants();
         expect(uiStore.selectAllPlants).toHaveBeenCalledWith([]);
     });
-});
 
+    describe('Undo/Redo System', () => {
+        it('should manage undo/redo availability', () => {
+            expect(store.canUndo).toBe(false);
+            expect(store.canRedo).toBe(false);
+
+            store.pushUndoAction({
+                type: 'move',
+                description: 'Test',
+                reverse: async () => { },
+                redo: async () => { }
+            });
+
+            expect(store.canUndo).toBe(true);
+            expect(store.canRedo).toBe(false);
+        });
+
+        it('should carry out undo and move action to redo stack', async () => {
+            const reverse = vi.fn();
+            const redo = vi.fn();
+            store.pushUndoAction({ type: 'move', description: 'Action', reverse, redo });
+            expect(uiStore.showToast).toHaveBeenCalledWith('Action', 'success', expect.anything());
+            await store.undo();
+            expect(reverse).toHaveBeenCalled();
+            expect(store.canUndo).toBe(false);
+            expect(store.canRedo).toBe(true);
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undone: Action', 'info', undefined);
+        });
+
+        it('should carry out redo and move action back to undo stack', async () => {
+            const reverse = vi.fn();
+            const redo = vi.fn();
+            store.pushUndoAction({ type: 'move', description: 'Action', reverse, redo });
+            vi.clearAllMocks();
+
+            await store.undo();
+            await store.redo();
+
+            expect(redo).toHaveBeenCalled();
+            expect(store.canUndo).toBe(true);
+            expect(store.canRedo).toBe(false);
+            expect(uiStore.showToast).toHaveBeenCalledWith('Redone: Action', 'info', undefined);
+        });
+
+        it('should handle undo failure and show error toast', async () => {
+            const reverse = vi.fn().mockRejectedValue(new Error('Undo Error'));
+            store.pushUndoAction({ type: 'move', description: 'Action', reverse, redo: async () => { } });
+            vi.clearAllMocks();
+
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            await store.undo();
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undo failed', 'error', undefined);
+            expect(consoleSpy).toHaveBeenCalled();
+        });
+
+        it('should handle redo failure and show error toast', async () => {
+            const redo = vi.fn().mockRejectedValue(new Error('Redo Error'));
+            store.pushUndoAction({ type: 'move', description: 'Action', reverse: async () => { }, redo });
+
+            await store.undo();
+            vi.clearAllMocks();
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await store.redo();
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Redo failed', 'error', undefined);
+            expect(consoleSpy).toHaveBeenCalled();
+        });
+
+        it('should enforce MAX_UNDO_ACTIONS limit', async () => {
+            // Push 4 actions (limit is 3)
+            for (let i = 0; i < 4; i++) {
+                store.pushUndoAction({ type: 'move', description: `A${i}`, reverse: async () => { }, redo: async () => { } });
+            }
+
+            // Should be able to undo A3, A2, A1. A0 should have been shifted out.
+            await store.undo(); // A3
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undone: A3', 'info', undefined);
+            await store.undo(); // A2
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undone: A2', 'info', undefined);
+            await store.undo(); // A1
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undone: A1', 'info', undefined);
+
+            expect(store.canUndo).toBe(false);
+        });
+
+        it('should return early if no action to undo/redo', async () => {
+            await store.undo();
+            expect(uiStore.showToast).not.toHaveBeenCalled();
+            await store.redo();
+            expect(uiStore.showToast).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Undo Support in Actions', () => {
+        beforeEach(() => {
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [{ attributes: { plant_id: 'p1', growspace_id: 'gs1', nickname: 'P1' } }]
+            }]);
+        });
+
+        it('should push undo action when deleting plants', async () => {
+            mockDataServiceInstance.removePlant.mockResolvedValue({ success: true });
+
+            await store.handleDeletePlant('p1');
+
+            expect(store.canUndo).toBe(true);
+
+            // Verify reverse logic
+            await store.undo();
+            expect(store.dataService.addPlant).toHaveBeenCalled();
+        });
+
+        it('should push undo action when moving plant', async () => {
+            const plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1' } } as any;
+            mockDataServiceInstance.harvestPlant.mockResolvedValue({ success: true });
+
+            await store.movePlantToGrowspace(plant, 'gs2');
+
+            expect(store.canUndo).toBe(true);
+
+            // Verify reverse logic
+            await store.undo();
+            // Source was gs1
+            expect(store.dataService.harvestPlant).toHaveBeenCalledWith('p1', 'gs1');
+        });
+
+        it('should push undo action when reordering plants (drag-drop)', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
+
+            mockDataServiceInstance.updatePlant.mockResolvedValue({ success: true });
+
+            await store.handleDrop(2, 2, null, source);
+
+            expect(store.canUndo).toBe(true);
+
+            // Verify reverse logic
+            await store.undo();
+            expect(store.dataService.updatePlant).toHaveBeenCalledWith(expect.objectContaining({
+                plant_id: 'p1', row: 1, col: 1
+            }));
+        });
+
+        it('should push undo action when swapping plants (drag-drop)', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
+            const target = { attributes: { plant_id: 'p2', row: 2, col: 2, strain: 'S2' } } as any;
+
+            mockDataServiceInstance.swapPlants.mockResolvedValue({ success: true });
+
+            await store.handleDrop(2, 2, target, source);
+
+            expect(store.canUndo).toBe(true);
+
+            // Verify reverse logic
+            await store.undo();
+            // In handleDrop, it calls swapPlants(sourceId, targetId) for both action and reverse
+            expect(store.dataService.swapPlants).toHaveBeenCalledWith('p1', 'p2');
+        });
+    });
+
+    describe('Batch Actions', () => {
+        it('should open batch watering dialog with selected plants', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'p2']));
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(new Map([['p1', 'gs1'], ['p2', 'gs1']]));
+
+            store.openBatchWateringDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'WATERING',
+                payload: expect.objectContaining({ plantIds: ['p1', 'p2'], growspaceId: 'gs1' })
+            }));
+        });
+
+        it('should open batch training dialog with specific growspaceId', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1']));
+            store.openBatchTrainingDialog('gs2');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'TRAINING',
+                payload: expect.objectContaining({ growspaceId: 'gs2' })
+            }));
+        });
+
+        it('should return early if no plants selected and no growspaceId provided', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set());
+            store.openBatchWateringDialog();
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalled();
+            store.openBatchTrainingDialog();
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalled();
+        });
+
+        it('should handle mixed growspaces for common growspace ID', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'p2']));
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(new Map([['p1', 'gs1'], ['p2', 'gs2']]));
+
+            store.openBatchWateringDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ growspaceId: undefined })
+            }));
+        });
+
+        it('should handle unknown plant in common growspace ID', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['unknown']));
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(new Map());
+
+            store.openBatchWateringDialog('gs1'); // growspaceId provided
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ growspaceId: 'gs1' })
+            }));
+        });
+
+        it('should open nutrient presets dialog', () => {
+            store.openNutrientPresetsDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'NUTRIENT_PRESETS',
+                payload: {}
+            });
+        });
+
+        it('should open IPM dialog', () => {
+            store.openIPMDialog({ growspaceId: 'gs1', plantIds: ['p1'] });
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'IPM',
+                payload: { growspaceId: 'gs1', plantIds: ['p1'] }
+            });
+        });
+
+        it('should open logbook dialog', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.openLogbookDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'LOGBOOK',
+                payload: { growspaceId: 'd1' }
+            });
+        });
+
+        it('should handle redo for handleDrop', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
+            mockDataServiceInstance.updatePlant.mockResolvedValue({ success: true });
+            const spy = vi.spyOn(plantActions, 'handlePlantDrop').mockResolvedValue(true);
+
+            await store.handleDrop(2, 2, null, source);
+            expect(spy).toHaveBeenCalledTimes(1);
+
+            await store.undo();
+            vi.clearAllMocks();
+
+            await store.redo();
+            expect(spy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should handle mixed growspaces for batch training', () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'p2']));
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(new Map([['p1', 'gs1'], ['p2', 'gs2']]));
+
+            store.openBatchTrainingDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'TRAINING',
+                payload: expect.objectContaining({ growspaceId: undefined })
+            }));
+        });
+    });
+
+    describe('Action Wrappers', () => {
+        it('should call internal methods through actions proxy', async () => {
+            const updateSpy = vi.spyOn(store, 'updatePlant').mockResolvedValue(true as any);
+            await store.actions.plant.update('p1', { strain: 'New' });
+            expect(updateSpy).toHaveBeenCalledWith('p1', { strain: 'New' });
+
+            const deleteSpy = vi.spyOn(store, 'handleDeletePlant').mockResolvedValue(true as any);
+            await store.actions.plant.delete('p1');
+            expect(deleteSpy).toHaveBeenCalledWith('p1');
+
+            const moveSpy = vi.spyOn(store, 'movePlantToGrowspace').mockResolvedValue(true as any);
+            await store.actions.plant.move({} as any, 'gs1');
+            expect(moveSpy).toHaveBeenCalledWith({}, 'gs1');
+
+            const nextStageSpy = vi.spyOn(store, 'handleMovePlantToNextStage').mockResolvedValue(true as any);
+            await store.actions.plant.nextStage({} as any);
+            expect(nextStageSpy).toHaveBeenCalled();
+
+            const undoSpy = vi.spyOn(store, 'undo').mockResolvedValue();
+            await store.actions.history.undo();
+            expect(undoSpy).toHaveBeenCalled();
+
+            vi.spyOn(store, 'canUndo', 'get').mockReturnValue(true);
+            expect(store.actions.history.canUndo()).toBe(true);
+
+            const redoSpy = vi.spyOn(store, 'redo').mockResolvedValue();
+            await store.actions.history.redo();
+            expect(redoSpy).toHaveBeenCalled();
+
+            const canRedoSpy = vi.spyOn(store, 'canRedo', 'get').mockReturnValue(true);
+            expect(store.actions.history.canRedo()).toBe(true);
+
+            const removeStrainSpy = vi.spyOn(store, 'removeStrain').mockResolvedValue(true as any);
+            await store.actions.strain.remove('s1');
+            expect(removeStrainSpy).toHaveBeenCalledWith('s1');
+
+            const removeGrowspaceSpy = vi.spyOn(strainActions, 'removeGrowspace').mockResolvedValue(true as any);
+            await store.actions.growspace.remove('gs1');
+            expect(removeGrowspaceSpy).toHaveBeenCalled();
+
+            const dropSpy = vi.spyOn(store, 'handleDrop').mockResolvedValue(true as any);
+            await store.actions.plant.drop(1, 1, null, null);
+            expect(dropSpy).toHaveBeenCalledWith(1, 1, null, null);
+
+            const cloneSpy = vi.spyOn(store, 'handleTakeClone').mockResolvedValue(true as any);
+            await store.actions.plant.takeClone({} as any, 2);
+            expect(cloneSpy).toHaveBeenCalledWith({}, 2);
+
+            const updateDialogSpy = vi.spyOn(plantActions, 'updatePlantsFromDialog').mockResolvedValue(true as any);
+            await store.actions.plant.updateFromDialog({});
+            expect(updateDialogSpy).toHaveBeenCalled();
+
+            const addPlantActionSpy = vi.spyOn(plantActions, 'addPlant').mockResolvedValue(true as any);
+            await store.actions.plant.add('gs1', 1, 1, 'strain');
+            expect(addPlantActionSpy).toHaveBeenCalled();
+
+            const addGrowspaceSpy = vi.spyOn(store, 'handleAddGrowspace').mockResolvedValue(true as any);
+            await store.actions.growspace.add({});
+            expect(addGrowspaceSpy).toHaveBeenCalled();
+
+            const updateGrowspaceSpy = vi.spyOn(store, 'handleUpdateGrowspace').mockResolvedValue(true as any);
+            await store.actions.growspace.update({} as any);
+            expect(updateGrowspaceSpy).toHaveBeenCalled();
+
+            const addStrainSpy = vi.spyOn(store, 'addStrain').mockResolvedValue(true as any);
+            await store.actions.strain.add({});
+            expect(addStrainSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Strain Library Caching', () => {
+        beforeEach(() => {
+            localStorage.clear();
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        /*
+        it('should use cached library if valid', async () => {
+            const CACHE_KEY = 'growspace_strain_library_v2';
+            const library = [{ strain: 'S1' }];
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                version: 2,
+                timestamp: Date.now(),
+                data: library
+            }));
+
+            // Clear any potential initialization calls
+            (dataStore.setStrainLibrary as any).mockClear();
+            
+            await store.fetchStrainLibrary();
+            expect(dataStore.setStrainLibrary).toHaveBeenCalledWith(expect.arrayContaining([expect.objectContaining({ strain: 'S1' })]));
+            expect(mockDataServiceInstance.fetchStrainLibrary).not.toHaveBeenCalled();
+        });
+        */
+
+        it('should handle invalid or expired cache', async () => {
+            const CACHE_KEY = 'growspace_strain_library_v2';
+            localStorage.setItem(CACHE_KEY, 'invalid');
+
+            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([{ strain: 'New' }]);
+
+            await store.fetchStrainLibrary();
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+
+            // Test expiration
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                version: 2,
+                timestamp: Date.now() - (25 * 60 * 60 * 1000), // 25 hours ago
+                data: [{ strain: 'Old' }]
+            }));
+            vi.clearAllMocks();
+            await store.fetchStrainLibrary();
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+        });
+    });
+
+    describe('Coverage Gap Filling', () => {
+        it('should handle _keyboardActionContext methods', () => {
+            const ctx = (store as any)._keyboardActionContext;
+
+            const spy = vi.spyOn(store, 'exitEditMode');
+            ctx.exitEditMode();
+            expect(spy).toHaveBeenCalled();
+
+            const spy2 = vi.spyOn(store, 'handlePlantClick');
+            const plant = { attributes: { plant_id: 'p1' } } as any;
+            ctx.handlePlantClick(plant);
+            expect(spy2).toHaveBeenCalledWith(plant);
+
+            const spy3 = vi.spyOn(store, 'handleDeletePlant');
+            ctx.handleDeletePlant('p1');
+            expect(spy3).toHaveBeenCalledWith('p1');
+
+            ctx.deletePlants(['p1', 'p2']);
+            expect(spy3).toHaveBeenCalledWith(['p1', 'p2']);
+        });
+
+        it('should cover redo logic for plant deletion', async () => {
+            const ids = ['p1'];
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [{ attributes: { plant_id: 'p1', strain: 'S1' } }]
+            }]);
+            mockDataServiceInstance.removePlant.mockResolvedValue({ success: true });
+            const deleteSpy = vi.spyOn(store, 'handleDeletePlant');
+
+            await store.handleDeletePlant(ids);
+            expect(deleteSpy).toHaveBeenCalledTimes(1);
+
+            await store.undo();
+            deleteSpy.mockClear();
+
+            await store.redo();
+            // redo calls handleDeletePlant again
+            expect(deleteSpy).toHaveBeenCalledWith(ids);
+        });
+
+        it('should cover redo logic for plant move', async () => {
+            const plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1', strain: 'S1' } } as any;
+            const moveSpy = vi.spyOn(plantActions, 'movePlantToGrowspace').mockResolvedValue(true);
+
+            await store.movePlantToGrowspace(plant, 'gs2');
+            expect(moveSpy).toHaveBeenCalledTimes(1);
+
+            await store.undo();
+            moveSpy.mockClear();
+
+            await store.redo();
+            expect(moveSpy).toHaveBeenCalledWith(expect.anything(), plant, 'gs2');
+        });
+
+        it('should exercise openPlantOverviewDialog branches', () => {
+            const plant = { attributes: { plant_id: 'p1' } } as any;
+            store.openPlantOverviewDialog(plant, ['p1', 'p2']);
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({
+                    selectedPlantIds: ['p1', 'p2']
+                })
+            }));
+        });
+
+        it('should handle plant entity_id fallback and unknown plants in _getCommonGrowspaceId', async () => {
+            // Test entity_id fallback in handleDeletePlant
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [{ entity_id: 'sensor.p1_entity', attributes: { strain: 'S1' } }]
+            }]);
+            mockDataServiceInstance.removePlant.mockResolvedValue({ success: true });
+
+            await store.handleDeletePlant('p1_entity');
+            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p1_entity');
+
+            // Test unknown plant in _getCommonGrowspaceId
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'unknown']));
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(new Map([['p1', 'gs1']]));
+
+            store.openBatchWateringDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ growspaceId: 'gs1' })
+            }));
+        });
+
+        it('should cover fallback for handleDrop without plant_id', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            const source = { entity_id: 'sensor.p1_entity', attributes: { strain: 'S1', row: 1, col: 1 } } as any;
+            const target = { entity_id: 'sensor.p2_entity', attributes: { strain: 'S2', row: 2, col: 2 } } as any;
+
+            vi.spyOn(plantActions, 'handlePlantDrop').mockResolvedValue(true);
+            mockDataServiceInstance.swapPlants.mockResolvedValue({ success: true });
+
+            await store.handleDrop(2, 2, target, source);
+            // Verify reverse logic uses the computed IDs
+            await store.undo();
+            expect(mockDataServiceInstance.swapPlants).toHaveBeenCalledWith('p1_entity', 'p2_entity');
+        });
+    });
+});

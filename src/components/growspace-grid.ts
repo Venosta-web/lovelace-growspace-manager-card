@@ -80,6 +80,8 @@ export class GrowspaceGrid extends LitElement {
     css`
     :host {
       display: block;
+      container-type: inline-size;
+      container-name: growspace-grid;
     }
 
     .grid {
@@ -356,6 +358,28 @@ export class GrowspaceGrid extends LitElement {
         justify-content: flex-start;
         padding: 0 24px;
         gap: 16px;
+      }
+    }
+
+    /* Container Query: List view when card itself is narrow (not viewport) */
+    @container growspace-grid (max-width: 400px) {
+      .grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: var(--spacing-sm);
+      }
+
+      .plant-card-rich {
+        flex-direction: row;
+        align-items: center;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .plant-card-empty {
+        min-height: 80px;
+        aspect-ratio: unset;
+        flex-direction: row;
       }
     }
   `];

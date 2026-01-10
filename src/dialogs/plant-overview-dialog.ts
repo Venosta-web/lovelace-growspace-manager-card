@@ -859,10 +859,10 @@ export class PlantOverviewDialog extends LitElement {
         date: e.start_time,
         action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
         // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-        details: e.reasons?.filter(r => {
+        details: (e.reasons || []).filter(r => {
           const rLower = r.toLowerCase();
           return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-        }).join(', ') || ''
+        }).join(', ')
       }));
 
     // Combine all

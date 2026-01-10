@@ -1,4 +1,4 @@
-import { atom, WritableAtom } from 'nanostores';
+import { atom, onMount, WritableAtom } from 'nanostores';
 import { GrowspaceDevice, StrainEntry, GrowspaceManagerCardConfig, GrowspaceAPIResponse } from '../types';
 
 export class GrowspaceDataStore {
@@ -12,6 +12,9 @@ export class GrowspaceDataStore {
     /** Map from plantId to deviceId for O(1) lookups */
     public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
 
+    /** Indicates if store has active subscribers (for lazy loading) */
+    private _isActive = false;
+
     constructor() {
         this.$devices = atom<GrowspaceDevice[]>([]);
         this.$strainLibrary = atom<StrainEntry[]>([]);
@@ -20,6 +23,21 @@ export class GrowspaceDataStore {
         this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
         this.$selectedDevice = atom<string | null>(null);
         this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
+
+        // Lazy initialization: only log activity when store has subscribers
+        onMount(this.$devices, () => {
+            this._isActive = true;
+            console.debug('[GrowspaceDataStore] Mounted - subscribers connected');
+            return () => {
+                this._isActive = false;
+                console.debug('[GrowspaceDataStore] Unmounted - cleaning up');
+            };
+        });
+    }
+
+    /** Check if store has active subscribers */
+    public get isActive(): boolean {
+        return this._isActive;
     }
 
     // Actions (State setters)

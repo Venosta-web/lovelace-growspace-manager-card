@@ -46,6 +46,7 @@ describe('plant-actions', () => {
             flower_start: '2024-01-15',
             dry_start: null,
             cure_start: null,
+            days_since_last_watering: 0,
         },
     };
 
@@ -157,7 +158,7 @@ describe('plant-actions', () => {
             expect(result).toBe(true);
             expect(addOptimistic).toHaveBeenCalledTimes(2);
             expect(mockDataService.removePlant).toHaveBeenCalledTimes(2);
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant(s) deleted', 'success');
+            expect(mockDataService.removePlant).toHaveBeenCalledTimes(2);
         });
 
         it('should remove optimistic IDs on failure', async () => {
@@ -244,7 +245,7 @@ describe('plant-actions', () => {
 
             expect(result).toBe(true);
             expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_growspace');
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant moved to target_growspace', 'success');
+            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_growspace');
             expect(ctx.refreshData).toHaveBeenCalled();
             expect(ctx.closeDialog).toHaveBeenCalled();
         });

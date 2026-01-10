@@ -139,13 +139,13 @@ export class DialogHost extends LitElement {
                     selectedPlantIds: dialogState.selectedPlantIds
                 })}
             @delete-plant=${(e: CustomEvent) =>
-                this.store.handleDeletePlant(e.detail.plantId)}
-            @harvest-plant=${(e: CustomEvent) => this.store.harvestPlant(e.detail.plant)}
+                this.store.actions.plant.delete(e.detail.plantId)}
+            @harvest-plant=${(e: CustomEvent) => this.store.actions.plant.nextStage(e.detail.plant)}
             @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
             @take-clone=${(e: CustomEvent) =>
-                this.store.handleTakeClone(e.detail.plant, e.detail.numClones)}
+                this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e: CustomEvent) =>
-                this.store.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
+                this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
         ></plant-overview-dialog>
         `;
     }
@@ -166,8 +166,8 @@ export class DialogHost extends LitElement {
                     this.store.ui.closeDialog();
                 }
             }}
-            @save-strain=${(e: CustomEvent) => this.store.addStrain(e.detail)}
-            @delete-strain=${(e: CustomEvent) => this.store.removeStrain(e.detail.key)}
+            @save-strain=${(e: CustomEvent) => this.store.actions.strain.add(e.detail)}
+            @delete-strain=${(e: CustomEvent) => this.store.actions.strain.remove(e.detail.key)}
             @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
             @export-library=${() => this.store.handleExportLibrary()}
             @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
@@ -200,8 +200,8 @@ export class DialogHost extends LitElement {
             .environmentData=${dialogState.environmentData}
             .growspaceOptions=${growspaceOptions}
             @close=${() => this.store.ui.closeDialog()}
-            @add-growspace-submit=${(e: CustomEvent) => this.store.handleAddGrowspace(e.detail)}
-            @edit-growspace-submit=${(e: CustomEvent) => this.store.handleUpdateGrowspace(e.detail)}
+            @add-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.add(e.detail)}
+            @edit-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.update(e.detail)}
             @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
         ></config-dialog>
         `;
@@ -299,22 +299,23 @@ export class DialogHost extends LitElement {
             @analyze-all-growspaces=${(e: CustomEvent) =>
                 this.store.analyzeGrowspace(e.detail.query, true)}
         ></grow-master-dialog>
-        `;
+    `;
     }
 
     private _renderStrainRecommendationDialog(active: ActiveDialogState): TemplateResult {
         if (active.type !== 'STRAIN_RECOMMENDATION') return html``;
         const dialogState = active.payload;
         return html`
-        <strain-recommendation-dialog
-            .open=${true}
-            .isLoading=${dialogState.isLoading}
-            .response=${dialogState.response}
-            @close=${() => this.store.ui.closeDialog()}
-            @get-recommendation=${(e: CustomEvent) =>
-                this.store.getStrainRecommendation(e.detail.query)}
-        ></strain-recommendation-dialog>
-        `;
+    <strain-recommendation-dialog
+        .open=${true}
+            .isLoading = ${dialogState.isLoading}
+            .response = ${dialogState.response}
+@close=${() => this.store.ui.closeDialog()}
+@get-recommendation=${(e: CustomEvent) =>
+                this.store.getStrainRecommendation(e.detail.query)
+            }
+        > </strain-recommendation-dialog>
+    `;
     }
 
     private _renderIrrigationDialog(
@@ -323,27 +324,27 @@ export class DialogHost extends LitElement {
     ): TemplateResult {
         if (active.type !== 'IRRIGATION') return html``;
         return html`
-        <irrigation-dialog
-            .open=${true}
-            .device=${selectedDeviceData}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
-            @closed=${() => this.store.ui.closeDialog()}
-            @data-changed=${() => this.store.refreshData()}
-        ></irrigation-dialog>
-        `;
+    <irrigation-dialog
+        .open=${true}
+            .device = ${selectedDeviceData}
+            .growspaceName = ${selectedDeviceData?.name || ''}
+@close=${() => this.store.ui.closeDialog()}
+@closed=${() => this.store.ui.closeDialog()}
+@data-changed=${() => this.store.refreshData()}
+        > </irrigation-dialog>
+    `;
     }
 
     private _renderLogbookDialog(active: ActiveDialogState): TemplateResult {
         if (active.type !== 'LOGBOOK') return html``;
         const dialogState = active.payload;
         return html`
-        <logbook-dialog
-            .open=${true}
-            .growspaceId=${dialogState.growspaceId}
-            @close=${() => this.store.ui.closeDialog()}
-        ></logbook-dialog>
-        `;
+    <logbook-dialog
+        .open=${true}
+            .growspaceId = ${dialogState.growspaceId}
+@close=${() => this.store.ui.closeDialog()}
+        > </logbook-dialog>
+    `;
     }
 
     private _renderWateringDialog(
@@ -353,14 +354,14 @@ export class DialogHost extends LitElement {
         if (active.type !== 'WATERING') return html``;
         const dialogState = active.payload;
         return html`
-        <watering-dialog
-            .open=${true}
-            .dialogState=${dialogState}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
-            @data-changed=${() => this.store.refreshData()}
-        ></watering-dialog>
-        `;
+    <watering-dialog
+        .open=${true}
+            .dialogState = ${dialogState}
+            .growspaceName = ${selectedDeviceData?.name || ''}
+@close=${() => this.store.ui.closeDialog()}
+@data-changed=${() => this.store.refreshData()}
+        > </watering-dialog>
+    `;
     }
 
     private _renderNutrientPresetsDialog(
@@ -369,26 +370,26 @@ export class DialogHost extends LitElement {
     ): TemplateResult {
         if (active.type !== 'NUTRIENT_PRESETS') return html``;
         return html`
-        <nutrient-presets-editor
-            .open=${true}
-            .hass=${this.hass}
-            .dataService=${this.store.dataService}
-            .presets=${selectedDeviceData?.nutrient_presets || {}}
-            @close=${() => this.store.ui.closeDialog()}
-            @data-changed=${() => this.store.refreshData()}
-        ></nutrient-presets-editor>
-        `;
+    <nutrient-presets-editor
+        .open=${true}
+            .hass = ${this.hass}
+            .dataService = ${this.store.dataService}
+            .presets = ${selectedDeviceData?.nutrient_presets || {}}
+@close=${() => this.store.ui.closeDialog()}
+@data-changed=${() => this.store.refreshData()}
+        > </nutrient-presets-editor>
+    `;
     }
 
     private _renderTrainingDialog(active: ActiveDialogState): TemplateResult {
         if (active.type !== 'TRAINING') return html``;
         return html`
-        <training-dialog
-            .open=${true}
-            .store=${this.store}
-            @close=${() => this.store.ui.closeDialog()}
-        ></training-dialog>
-        `;
+    <training-dialog
+        .open=${true}
+            .store = ${this.store}
+@close=${() => this.store.ui.closeDialog()}
+        > </training-dialog>
+    `;
     }
 
     private _renderIPMDialog(
@@ -398,16 +399,16 @@ export class DialogHost extends LitElement {
         if (active.type !== 'IPM') return html``;
         const dialogState = active.payload;
         return html`
-        <ipm-dialog
-            .open=${true}
-            .hass=${this.hass}
-            .dataService=${this.store.dataService}
-            .growspaceId=${dialogState.growspaceId}
-            .plantIds=${dialogState.plantIds || []}
-            .presets=${selectedDeviceData?.ipm_presets || {}}
-            @close=${() => this.store.ui.closeDialog()}
-            @data-changed=${() => this.store.refreshData()}
-        ></ipm-dialog>
-        `;
+    <ipm-dialog
+        .open=${true}
+            .hass = ${this.hass}
+            .dataService = ${this.store.dataService}
+            .growspaceId = ${dialogState.growspaceId}
+            .plantIds = ${dialogState.plantIds || []}
+            .presets = ${selectedDeviceData?.ipm_presets || {}}
+@close=${() => this.store.ui.closeDialog()}
+@data-changed=${() => this.store.refreshData()} 
+        > </ipm-dialog>
+    `;
     }
 }

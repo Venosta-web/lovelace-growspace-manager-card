@@ -75,7 +75,6 @@ export async function deletePlants(
 
     try {
         await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
-        ctx.showToast('Plant(s) deleted', 'success');
         return true;
     } catch (e: any) {
         console.error('Failed to delete plant:', e);
@@ -148,7 +147,6 @@ export async function movePlantToGrowspace(
             await ctx.dataService.harvestPlant(plantId, targetGrowspace);
         }
 
-        ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise(resolve => setTimeout(resolve, 500));
         await ctx.refreshData();

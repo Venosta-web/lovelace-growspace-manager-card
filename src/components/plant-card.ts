@@ -127,8 +127,20 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
     );
   }
 
+  /** Trigger HA haptic feedback for tactile mobile interactions */
+  private _triggerHaptic(type: 'success' | 'warning' | 'failure' | 'light' | 'medium' | 'heavy' | 'selection' = 'light') {
+    this.dispatchEvent(
+      new CustomEvent('haptic', {
+        detail: type,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _toggleSelection(e: Event) {
     e.stopPropagation();
+    this._triggerHaptic('selection');
     this.dispatchEvent(
       new CustomEvent('plant-toggle-selection', {
         detail: { plant: this.plant },

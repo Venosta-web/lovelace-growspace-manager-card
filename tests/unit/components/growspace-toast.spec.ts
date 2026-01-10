@@ -8,7 +8,11 @@ describe('GrowspaceToast', () => {
     let mockStore: any;
 
     // Local atom
-    const $notification = atom<{ message: string; type: "success" | "error" | "info" } | null>(null);
+    const $notification = atom<{
+        message: string;
+        type: "success" | "error" | "info";
+        action?: { label: string; callback: () => void };
+    } | null>(null);
 
     beforeEach(async () => {
         vi.clearAllMocks();
@@ -117,5 +121,25 @@ describe('GrowspaceToast', () => {
 
         expect(clearSpy).toHaveBeenCalled();
         vi.useRealTimers();
+    });
+
+    it('should render action button and handle click', async () => {
+        const actionCallback = vi.fn();
+        $notification.set({
+            message: 'Action Test',
+            type: 'success',
+            action: { label: 'Undo', callback: actionCallback }
+        });
+
+        await el.updateComplete;
+
+        const button = el.shadowRoot!.querySelector('.toast-action');
+        expect(button).not.toBeNull();
+        expect(button?.textContent?.trim()).toBe('Undo');
+
+        (button as HTMLElement).click();
+
+        expect(actionCallback).toHaveBeenCalled();
+        expect(mockStore.ui.clearToast).toHaveBeenCalled();
     });
 });

@@ -13,8 +13,16 @@ import { GrowspaceGridStore } from './grid-store';
 import * as plantActions from './plant-actions';
 import * as strainActions from './strain-actions';
 import * as keyboardActions from './keyboard-actions';
+
 import { number } from 'zod';
 
+/** Represents an undoable action for the undo/redo stack */
+export interface UndoableAction {
+    type: 'move' | 'delete' | 'batch-delete';
+    description: string;
+    reverse: () => Promise<void>;
+    redo: () => Promise<void>;
+}
 
 
 export class GrowspaceStore {
@@ -28,6 +36,11 @@ export class GrowspaceStore {
     public readonly grid: GrowspaceGridStore;
 
     private _isFetchingWS = false;
+
+    /** Undo/Redo stack for plant operations (max 3 actions) */
+    private _undoStack: UndoableAction[] = [];
+    private _redoStack: UndoableAction[] = [];
+    private readonly MAX_UNDO_ACTIONS = 3;
 
     /** Base context with common action dependencies */
     private get _baseActionContext() {
@@ -63,10 +76,43 @@ export class GrowspaceStore {
     private get _keyboardActionContext(): keyboardActions.KeyboardActionContext {
         return {
             exitEditMode: () => this.exitEditMode(),
-            handlePlantClick: (plant) => this.handlePlantClick(plant),
-            handleDeletePlant: (plantId) => this.handleDeletePlant(plantId),
+            handlePlantClick: (p) => this.handlePlantClick(p),
+            handleDeletePlant: (plantId: string) => this.handleDeletePlant(plantId),
+            deletePlants: (plantIds: string | string[]) => this.handleDeletePlant(plantIds),
         };
     }
+
+    /**
+     * Centralized Action Dispatcher
+     * Provides a single entry point for all business logic actions.
+     */
+    public readonly actions = {
+        plant: {
+            update: (id: string, updates: Partial<PlantEntity['attributes']>) => this.updatePlant(id, updates),
+            delete: (id: string | string[]) => this.handleDeletePlant(id),
+            move: (plant: PlantEntity, growspace: string) => this.movePlantToGrowspace(plant, growspace),
+            drop: (row: number, col: number, target: PlantEntity | null, source: PlantEntity | null) => this.handleDrop(row, col, target, source),
+            nextStage: (plant: PlantEntity) => this.handleMovePlantToNextStage(plant),
+            takeClone: (mother: PlantEntity, num?: number) => this.handleTakeClone(mother, num),
+            updateFromDialog: (state: any) => plantActions.updatePlantsFromDialog(this._plantActionContext, state),
+            add: (gid: string, r: number, c: number, s: string, p?: string) => plantActions.addPlant(this._plantActionContext, gid, r, c, s, p)
+        },
+        growspace: {
+            add: (detail: any) => this.handleAddGrowspace(detail),
+            update: (detail: any) => this.handleUpdateGrowspace(detail),
+            remove: (id: string) => strainActions.removeGrowspace(this._growspaceActionContext, id)
+        },
+        strain: {
+            add: (data: Partial<StrainEntry>) => this.addStrain(data),
+            remove: (key: string) => this.removeStrain(key)
+        },
+        history: {
+            undo: () => this.undo(),
+            redo: () => this.redo(),
+            canUndo: () => this.canUndo,
+            canRedo: () => this.canRedo
+        }
+    };
 
     constructor() {
         this.dataService = new DataService();
@@ -76,6 +122,61 @@ export class GrowspaceStore {
         this.ui = new GrowspaceUIStore();
         this.history = new GrowspaceHistoryStore(this.dataService, this.data);
         this.grid = new GrowspaceGridStore(this.data);
+    }
+
+    // === Undo/Redo Methods ===
+
+    /** Push an undoable action onto the stack, clearing redo stack and enforcing limit */
+    public pushUndoAction(action: UndoableAction): void {
+        this._undoStack.push(action);
+        if (this._undoStack.length > this.MAX_UNDO_ACTIONS) {
+            this._undoStack.shift(); // Remove oldest
+        }
+        this._redoStack = []; // Clear redo on new action
+
+        // Show toast with Undo button
+        this.showToast(action.description, 'success', {
+            label: 'Undo',
+            callback: () => this.undo()
+        });
+    }
+
+    /** Check if undo is available */
+    public get canUndo(): boolean {
+        return this._undoStack.length > 0;
+    }
+
+    /** Check if redo is available */
+    public get canRedo(): boolean {
+        return this._redoStack.length > 0;
+    }
+
+    /** Undo the last action */
+    public async undo(): Promise<void> {
+        const action = this._undoStack.pop();
+        if (!action) return;
+        try {
+            await action.reverse();
+            this._redoStack.push(action);
+            this.showToast(`Undone: ${action.description}`, 'info');
+        } catch (err) {
+            console.error('[Undo failed]', err);
+            this.showToast('Undo failed', 'error');
+        }
+    }
+
+    /** Redo the last undone action */
+    public async redo(): Promise<void> {
+        const action = this._redoStack.pop();
+        if (!action) return;
+        try {
+            await action.redo();
+            this._undoStack.push(action);
+            this.showToast(`Redone: ${action.description}`, 'info');
+        } catch (err) {
+            console.error('[Redo failed]', err);
+            this.showToast('Redo failed', 'error');
+        }
     }
 
     updateHass(hass: HomeAssistant) {
@@ -90,12 +191,11 @@ export class GrowspaceStore {
             // Just re-calculate derived state (sync) because entities might have changed
             this._updateDevicesState();
         }
-
-        this.pruneOptimisticDeletions();
     }
 
     async refreshData() {
         await this._refreshGrowspaceData();
+        this.pruneOptimisticDeletions();
     }
 
     private async _refreshGrowspaceData() {
@@ -180,8 +280,8 @@ export class GrowspaceStore {
         }
     }
 
-    showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
-        this.ui.showToast(message, type);
+    showToast(message: string, type: 'info' | 'error' | 'success' = 'info', action?: { label: string; callback: () => void }) {
+        this.ui.showToast(message, type, action);
     }
 
     initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
@@ -357,6 +457,32 @@ export class GrowspaceStore {
     async handleDeletePlant(plantId: string | string[]) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
 
+        // Capture plant state for Undo
+        const plantsToRestore: any[] = [];
+        const devices = this.data.$devices.get();
+        ids.forEach(id => {
+            for (const device of devices) {
+                const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+                if (plant) {
+                    plantsToRestore.push({
+                        growspace_id: plant.attributes.growspace_id || device.device_id,
+                        row: plant.attributes.row,
+                        col: plant.attributes.col,
+                        strain: plant.attributes.strain,
+                        phenotype: plant.attributes.phenotype,
+                        veg_start: plant.attributes.veg_start,
+                        flower_start: plant.attributes.flower_start,
+                        mother_start: plant.attributes.mother_start,
+                        clone_start: plant.attributes.clone_start,
+                        seedling_start: plant.attributes.seedling_start,
+                        dry_start: plant.attributes.dry_start,
+                        cure_start: plant.attributes.cure_start,
+                    });
+                    break;
+                }
+            }
+        });
+
         const success = await plantActions.deletePlants(
             this._plantActionContext,
             ids,
@@ -365,6 +491,21 @@ export class GrowspaceStore {
         );
 
         if (success) {
+            // Push to Undo Stack
+            this.pushUndoAction({
+                type: ids.length > 1 ? 'batch-delete' : 'delete',
+                description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+                reverse: async () => {
+                    for (const p of plantsToRestore) {
+                        await this.dataService.addPlant(p);
+                    }
+                    await this.refreshData();
+                },
+                redo: async () => {
+                    await this.handleDeletePlant(ids);
+                }
+            });
+
             ids.forEach((id) => this.ui.togglePlantSelection(id));
             if (this.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
                 this.ui.closeDialog();
@@ -406,7 +547,21 @@ export class GrowspaceStore {
     };
 
     async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string) {
-        await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+        const originalGrowspace = plant.attributes.growspace_id || 'unknown';
+        const success = await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+
+        if (success) {
+            this.pushUndoAction({
+                type: 'move',
+                description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+                reverse: async () => {
+                    await plantActions.movePlantToGrowspace(this._plantActionContext, plant, originalGrowspace);
+                },
+                redo: async () => {
+                    await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+                }
+            });
+        }
     }
 
     async addStrain(strainData: Partial<StrainEntry>) {
@@ -502,6 +657,11 @@ export class GrowspaceStore {
         const selectedDevice = this.data.$selectedDevice.get();
         if (!sourcePlant || !selectedDevice) return;
 
+        const originalRow = sourcePlant.attributes.row;
+        const originalCol = sourcePlant.attributes.col;
+        const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+        const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
+
         const success = await plantActions.handlePlantDrop(
             this._plantActionContext,
             targetRow,
@@ -509,7 +669,23 @@ export class GrowspaceStore {
             targetPlant,
             sourcePlant
         );
+
         if (success) {
+            this.pushUndoAction({
+                type: 'move',
+                description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                reverse: async () => {
+                    if (targetPlant && targetId) {
+                        await this.dataService.swapPlants(sourceId, targetId);
+                    } else {
+                        await plantActions.movePlantPosition(this._plantActionContext, sourcePlant, originalRow, originalCol);
+                    }
+                    await this.refreshData();
+                },
+                redo: async () => {
+                    await this.handleDrop(targetRow, targetCol, targetPlant, sourcePlant);
+                }
+            });
             this.updateGrid();
         }
     }

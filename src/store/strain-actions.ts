@@ -148,6 +148,26 @@ export async function updateGrowspace(
 }
 
 /**
+ * Remove a growspace.
+ */
+export async function removeGrowspace(
+    ctx: GrowspaceActionContext,
+    growspaceId: string
+): Promise<boolean> {
+    try {
+        await ctx.dataService.removeGrowspace(growspaceId);
+        ctx.showToast('Growspace removed successfully', 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    } catch (e: any) {
+        console.error('[StrainActions] Removal failed:', e);
+        ctx.showToast(`Failed to remove growspace: ${e.message}`, 'error');
+        return false;
+    }
+}
+
+/**
  * Analyze growspace with AI.
  */
 export async function analyzeGrowspace(

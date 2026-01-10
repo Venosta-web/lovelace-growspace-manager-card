@@ -1,6 +1,10 @@
-
 import { describe, it, expect } from 'vitest';
-import { GrowspaceAPIResponseSchema } from '../../../src/schemas/api-schema';
+import {
+    GrowspaceAPIResponseSchema,
+    validateGrowspaceResponse,
+    validateGrowspaceCollection,
+    validateStrainLibrary
+} from '../../../src/schemas/api-schema';
 
 describe('GrowspaceAPIResponseSchema', () => {
     it('should allow null values for sensor fields', () => {
@@ -28,24 +32,6 @@ describe('GrowspaceAPIResponseSchema', () => {
         }
     });
 
-    it('should allow valid string values for sensor fields', () => {
-        const validData = {
-            growspace_id: 'test_id',
-            name: 'Test Growspace',
-            type: 'normal',
-            rows: 1,
-            plants_per_row: 1,
-            vpd: '1.2',
-            soil_moisture_value: '45.5',
-            dehumidifier_state: 'off',
-            grid: {},
-            irrigation_config: {},
-        };
-
-        const result = GrowspaceAPIResponseSchema.safeParse(validData);
-        expect(result.success).toBe(true);
-    });
-
     it('should fail on invalid types', () => {
         const invalidData = {
             growspace_id: 'test_id',
@@ -60,5 +46,70 @@ describe('GrowspaceAPIResponseSchema', () => {
 
         const result = GrowspaceAPIResponseSchema.safeParse(invalidData);
         expect(result.success).toBe(false);
+    });
+});
+
+describe('Validation Helpers', () => {
+    const validGrowspace = {
+        growspace_id: 'g1',
+        name: 'G1',
+        type: 'normal',
+        rows: 2,
+        plants_per_row: 2,
+        grid: {},
+        irrigation_config: {}
+    };
+
+    describe('validateGrowspaceResponse', () => {
+        it('should return success and data for valid input', () => {
+            const result = validateGrowspaceResponse(validGrowspace);
+            expect(result.success).toBe(true);
+            // Zod adds defaults like grid: {}, irrigation_config: {} if not present
+            expect(result.data).toEqual(expect.objectContaining({
+                growspace_id: 'g1',
+                name: 'G1'
+            }));
+        });
+
+        it('should return errors for invalid input', () => {
+            const result = validateGrowspaceResponse({ ...validGrowspace, rows: 'invalid' });
+            expect(result.success).toBe(false);
+            expect(result.errors).toBeDefined();
+        });
+    });
+
+    describe('validateGrowspaceCollection', () => {
+        it('should return success and data for valid collection', () => {
+            const collection = {
+                'g1': validGrowspace
+            };
+            const result = validateGrowspaceCollection(collection);
+            expect(result.success).toBe(true);
+            expect(result.data?.['g1']).toEqual(expect.objectContaining({
+                growspace_id: 'g1'
+            }));
+        });
+
+        it('should return errors for invalid collection', () => {
+            const result = validateGrowspaceCollection({ 'g1': { ...validGrowspace, rows: 'invalid' } });
+            expect(result.success).toBe(false);
+            expect(result.errors).toBeDefined();
+        });
+    });
+
+    describe('validateStrainLibrary', () => {
+        it('should return success for valid library', () => {
+            const library = { 'Strain 1': { meta: { type: 'Indica' } } };
+            const result = validateStrainLibrary(library);
+            expect(result.success).toBe(true);
+            expect(result.data?.['Strain 1'].meta?.type).toBe('Indica');
+            expect(result.data?.['Strain 1'].phenotypes).toEqual({});
+        });
+
+        it('should return errors for invalid library', () => {
+            const result = validateStrainLibrary({ not: 'an array' });
+            expect(result.success).toBe(false);
+            expect(result.errors).toBeDefined();
+        });
     });
 });

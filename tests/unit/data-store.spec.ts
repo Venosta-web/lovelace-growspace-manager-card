@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceDataStore } from '../../src/store/data-store';
 
 describe('DataStore', () => {
@@ -251,6 +251,32 @@ describe('DataStore', () => {
             const updated = store.$wsDataCache.get();
             expect(updated!.gs1.grid['1-1']).toBeNull();
             expect(updated!.gs1.grid['1-2']!.events).toHaveLength(1);
+        });
+    });
+
+    describe('Lifecycle & Status', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('should track active status based on subscribers', async () => {
+            expect(store.isActive).toBe(false);
+
+            // Subscribing should trigger onMount
+            const unsubscribe = store.$devices.subscribe(() => { });
+            expect(store.isActive).toBe(true);
+
+            // Unsubscribing all should trigger clean up
+            unsubscribe();
+
+            // Fast-forward past nanostores stop delay (default 1000ms)
+            vi.advanceTimersByTime(1100);
+
+            expect(store.isActive).toBe(false);
         });
     });
 });

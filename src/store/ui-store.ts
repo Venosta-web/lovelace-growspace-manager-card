@@ -11,7 +11,11 @@ export class GrowspaceUIStore {
     public readonly $selectedPlants: WritableAtom<Set<string>>;
     public readonly $focusedPlantIndex: WritableAtom<number>;
     public readonly $menuOpen: WritableAtom<boolean>;
-    public readonly $notification: WritableAtom<{ message: string; type: 'info' | 'error' | 'success' } | null>;
+    public readonly $notification: WritableAtom<{
+        message: string;
+        type: 'info' | 'error' | 'success';
+        action?: { label: string; callback: () => void };
+    } | null>;
     public readonly $error: WritableAtom<string | null>;
     public readonly $defaultApplied: WritableAtom<boolean>;
     public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
@@ -90,8 +94,8 @@ export class GrowspaceUIStore {
         this.$menuOpen.set(isOpen);
     }
 
-    public showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
-        this.$notification.set({ message, type });
+    public showToast(message: string, type: 'info' | 'error' | 'success' = 'info', action?: { label: string; callback: () => void }) {
+        this.$notification.set({ message, type, action });
     }
 
     public clearToast() {

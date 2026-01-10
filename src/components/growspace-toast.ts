@@ -12,7 +12,11 @@ export class GrowspaceToast extends LitElement {
     @consume({ context: storeContext })
     private accessor store!: GrowspaceStore;
 
-    private _notificationController!: StoreController<{ message: string; type: "success" | "error" | "info" } | null>;
+    private _notificationController!: StoreController<{
+        message: string;
+        type: "success" | "error" | "info";
+        action?: { label: string; callback: () => void };
+    } | null>;
     private _timeoutId: number | null = null;
 
     connectedCallback() {
@@ -29,9 +33,11 @@ export class GrowspaceToast extends LitElement {
 
         if (notification) {
             this._resetTimeout();
+            // Longer duration for actions
+            const duration = notification.action ? 6000 : 3000;
             this._timeoutId = window.setTimeout(() => {
                 this.store.ui.clearToast();
-            }, 3000);
+            }, duration);
         }
     }
 
@@ -60,7 +66,7 @@ export class GrowspaceToast extends LitElement {
         .toast-notification {
             background: var(--ha-card-background, var(--card-background-color, white));
             color: var(--primary-text-color);
-            padding: 12px 24px;
+            padding: 8px 16px 8px 24px;
             border-radius: 24px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             font-size: 14px;
@@ -68,6 +74,7 @@ export class GrowspaceToast extends LitElement {
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 16px;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.3s ease, transform 0.3s ease;
@@ -91,6 +98,28 @@ export class GrowspaceToast extends LitElement {
         .toast-notification.info {
              border-left: 4px solid var(--primary-color, #03a9f4);
         }
+
+        .toast-message {
+            flex: 1;
+        }
+
+        .toast-action {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .toast-action:hover {
+            background: rgba(var(--rgb-primary-color), 0.1);
+        }
     `;
 
     render() {
@@ -104,7 +133,15 @@ export class GrowspaceToast extends LitElement {
             'visible': isVisible,
             [notification?.type || 'info']: true
         })}>
-                ${notification?.message || ''}
+                <span class="toast-message">${notification?.message || ''}</span>
+                ${notification?.action ? html`
+                    <button class="toast-action" @click=${() => {
+                    notification.action?.callback();
+                    this.store.ui.clearToast();
+                }}>
+                        ${notification.action.label}
+                    </button>
+                ` : ''}
             </div>
         `;
     }

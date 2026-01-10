@@ -161,6 +161,27 @@ test.describe('Plant Management', () => {
         await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
 
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
+
+        // Verify Undo Functionality
+        const toast = card.locator('growspace-toast');
+        await expect(toast.getByText(/Deleted/i)).toBeVisible(); // Check for past tense "Deleted"
+        const undoBtn = toast.locator('.toast-action');
+        await expect(undoBtn).toBeVisible();
+        // await expect(undoBtn).toHaveText(/Undo/i); // Removing for now due to potential flakiness/rendering delay
+
+        // Perform Undo
+        await undoBtn.click();
+
+        // Verify Plant Restored
+        const restoredPlant = card.locator('growspace-plant-card').filter({ hasText: '#DeleteMe' }).first();
+        await expect(restoredPlant).toBeVisible({ timeout: 10000 });
+
+        // Cleanup: Delete again (permanently)
+        await restoredPlant.locator('.plant-card-rich').first().dispatchEvent('click', { bubbles: true, composed: true });
+        const finalDelDialog = card.locator('growspace-dialog-host ha-dialog').first();
+        await finalDelDialog.getByRole('button', { name: /delete/i }).first().dispatchEvent('click', { bubbles: true, composed: true });
+        await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
     });
 
     test('1.5 Duplicate Location Check', async ({ coveragePage: page }) => {

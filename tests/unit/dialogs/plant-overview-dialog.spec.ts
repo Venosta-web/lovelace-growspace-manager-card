@@ -1208,5 +1208,167 @@ describe('PlantOverviewDialog', () => {
         element.plant = { entity_id: undefined } as any;
         (element as any)._renderTimeline();
     });
+
+    it('should include automated irrigation events in timeline', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'irrigation',
+                sensor_type: 'automatic',
+                start_time: '2023-01-05T15:00:00Z',
+                reasons: ['Tank low', 'Scheduled cycle'] // No plant_id:
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        const autoIrrigation = events.find((e: any) => e.date === '2023-01-05T15:00:00Z');
+        expect(autoIrrigation).toBeTruthy();
+        expect(autoIrrigation.action).toBe('water');
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle logbook events with undefined reasons', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'irrigation',
+                sensor_type: 'automatic',
+                start_time: '2023-01-05T16:00:00Z',
+                reasons: undefined
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        const event = events.find((e: any) => e.date === '2023-01-05T16:00:00Z');
+        expect(event).toBeTruthy();
+        expect(event.details).toBe('');
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle NaN clone count input', async () => {
+        document.body.appendChild(element);
+        const motherPlant = { ...mockPlant, state: 'mother' };
+        element.plant = motherPlant as any;
+        element.open = true;
+        await element.updateComplete;
+
+        let cloneEvent: any = null;
+        element.addEventListener('take-clone', (e: any) => {
+            cloneEvent = e.detail;
+        });
+
+        const container = element.shadowRoot?.querySelector('.take-clone-container');
+        const input = container?.querySelector('#clone-count-input') as any;
+        if (input) input.value = 'abc'; // NaN
+
+        const btn = container?.querySelector('button.primary') as HTMLButtonElement;
+        btn.click();
+
+        expect(cloneEvent.numClones).toBe(1); // Should default to 1
+        document.body.removeChild(element);
+    });
+
+    it('should handle missing plant state in render', async () => {
+        document.body.appendChild(element);
+        element.plant = { ...mockPlant, state: undefined as any };
+        element.open = true;
+        await element.updateComplete;
+
+        // Should not throw and should render
+        const title = element.shadowRoot?.querySelector('.dialog-title');
+        expect(title).toBeTruthy();
+        document.body.removeChild(element);
+    });
+
+    it('should handle empty plant state in render', async () => {
+        document.body.appendChild(element);
+        element.plant = { ...mockPlant, state: '' };
+        element.open = true;
+        await element.updateComplete;
+
+        const title = element.shadowRoot?.querySelector('.dialog-title');
+        expect(title).toBeTruthy();
+        document.body.removeChild(element);
+    });
+
+    it('should dispatch UpdatePlantEvent when Save Changes is clicked', async () => {
+        document.body.appendChild(element);
+        element.plant = mockPlant;
+        element.open = true;
+        await element.updateComplete;
+
+        let updateEvent: any = null;
+        element.addEventListener(UpdatePlantEvent.TYPE, (e: any) => {
+            updateEvent = e.detail;
+        });
+
+        const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            .find(b => b.textContent?.includes('Save Changes'));
+        (saveBtn as HTMLElement).click();
+
+        expect(updateEvent).toBeTruthy();
+        expect(updateEvent.strain).toBe('Blue Dream');
+        document.body.removeChild(element);
+    });
+
+    it('should handle _update with null editedAttributes', () => {
+        element.editedAttributes = null as any;
+        const spy = vi.fn();
+        element.addEventListener(UpdatePlantEvent.TYPE, spy);
+        (element as any)._update();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should handle _confirmDelete with null plant', () => {
+        element.plant = null as any;
+        const spy = vi.fn();
+        element.addEventListener(DeletePlantEvent.TYPE, spy);
+        (element as any)._confirmDelete();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should return nothing when stats length is 0', () => {
+        const emptyPlant = {
+            ...mockPlant,
+            state: 'unknown',
+            attributes: {
+                ...mockPlant.attributes,
+                veg_days: 0,
+                flower_days: 0,
+                mom_days: 0,
+                clone_days: 0,
+                dry_days: 0,
+                cure_days: 0
+            }
+        };
+        const result = (element as any)._renderPlantStats(emptyPlant);
+        expect(typeof result).toBe('symbol'); // nothing
+    });
 });
 
