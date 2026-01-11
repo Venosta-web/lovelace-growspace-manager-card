@@ -76,7 +76,13 @@ describe('PlantOverviewDialog', () => {
         vi.clearAllMocks();
         element = new PlantOverviewDialog();
         element.plant = mockPlant;
-        element.hass = {} as any;
+        element.hass = {
+            connection: {
+                subscribeEvents: vi.fn().mockResolvedValue(() => {})
+            },
+            callService: vi.fn(),
+            callWS: vi.fn(),
+        } as any;
     });
 
     it('should be defined', () => {

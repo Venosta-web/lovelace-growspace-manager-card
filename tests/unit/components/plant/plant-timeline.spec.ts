@@ -261,4 +261,91 @@ describe('PlantTimeline', () => {
         expect((el as any)._noteImages).toEqual(['data:image/jpeg;base64,fake']);
         expect((el as any)._resizeImage).toHaveBeenCalledWith(file);
     });
+
+    it('handles delete event', async () => {
+        const event: PlantTimelineEvent = {
+            date: '2023-01-01',
+            type: 'note',
+            text: 'Delete me',
+            event_id: 123
+        };
+        const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+        
+        // Mock callWS
+        const callWS = vi.fn().mockResolvedValue(undefined);
+        el.hass = { callWS } as any;
+
+        await el.updateComplete;
+
+        const deleteBtn = el.shadowRoot?.querySelector('.delete-btn') as HTMLElement;
+        expect(deleteBtn).toBeTruthy();
+
+        // 1. Click delete icon
+        deleteBtn.click();
+        await el.updateComplete;
+
+        // 2. Check if overlay is shown
+        const overlay = el.shadowRoot?.querySelector('.dialog-overlay');
+        expect(overlay).toBeTruthy();
+
+        // 3. Click Confirm Delete button in overlay
+        const confirmBtn = el.shadowRoot?.querySelector('.dialog-overlay .md3-button.danger') as HTMLElement;
+        expect(confirmBtn).toBeTruthy();
+
+        // Listen for refresh
+        const refreshSpy = vi.fn();
+        el.addEventListener('growspace-refresh', refreshSpy);
+
+        confirmBtn.click();
+        
+        // Need to wait for async click handler
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(callWS).toHaveBeenCalledWith({
+            type: 'growspace_manager/remove_timeline_event',
+            event_id: 123
+        });
+        expect(refreshSpy).toHaveBeenCalled();
+    });
+
+    it('does not show delete button without event_id', async () => {
+        const event: PlantTimelineEvent = {
+            date: '2023-01-01',
+            type: 'note',
+            text: 'Keep me'
+            // No event_id
+        };
+        const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+        await el.updateComplete;
+        const deleteBtn = el.shadowRoot?.querySelector('.delete-btn');
+        expect(deleteBtn).toBeNull();
+    });
+
+    it('shows image overlay on hover', async () => {
+        const event: PlantTimelineEvent = {
+            date: '2023-01-01',
+            type: 'note',
+            text: 'Note with image',
+            images: ['image.jpg']
+        };
+        const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+        await el.updateComplete;
+
+        const img = el.shadowRoot?.querySelector('.image-grid img');
+        expect(img).toBeTruthy();
+
+        // Simulate hover
+        img?.dispatchEvent(new MouseEvent('mouseenter'));
+        await el.updateComplete;
+
+        const overlay = el.shadowRoot?.querySelector('.image-hover-overlay');
+        expect(overlay).toBeTruthy();
+        expect(overlay?.querySelector('img')?.getAttribute('src')).toBe('/api/growspace_manager/v1/images/image.jpg');
+
+        // Simulate leave
+        img?.dispatchEvent(new MouseEvent('mouseleave'));
+        await el.updateComplete;
+
+        expect(el.shadowRoot?.querySelector('.image-hover-overlay')).toBeNull();
+    });
 });

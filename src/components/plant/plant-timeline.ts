@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PlantTimelineEvent, TimelineEventMetadata } from '../../types';
@@ -6,7 +6,7 @@ import { sharedStyles } from '../../styles/shared.styles';
 import {
   mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
   mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlaskOutline, mdiFlash,
-  mdiCupWater, mdiTag, mdiCameraPlus, mdiSend, mdiClose
+  mdiCupWater, mdiTag, mdiCameraPlus, mdiSend, mdiClose, mdiDelete, mdiDumbbell
 } from '@mdi/js';
 
 @customElement('plant-timeline')
@@ -18,6 +18,9 @@ export class PlantTimeline extends LitElement {
   @state() private accessor _noteText = '';
   @state() private accessor _noteImages: string[] = [];
   @state() private accessor _isSaving = false;
+  @state() private accessor _showDeleteConfirmation = false;
+  @state() private accessor _deletingEventId: string | number | null = null;
+  @state() private accessor _hoveredImage: string | null = null;
 
   static styles = [
     sharedStyles,
@@ -48,6 +51,25 @@ export class PlantTimeline extends LitElement {
         border-radius: 8px;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+      }
+      .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+      }
+      .event:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn:hover {
+        color: var(--error-color);
       }
       .icon-wrapper {
         position: absolute;
@@ -202,6 +224,9 @@ export class PlantTimeline extends LitElement {
         margin-top: 6px;
       }
       .tag {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-size: 0.7rem;
         padding: 1px 6px;
         border-radius: 4px;
@@ -269,6 +294,48 @@ export class PlantTimeline extends LitElement {
         margin-left: 8px;
         vertical-align: middle;
       }
+
+      .dialog-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .overlay-content {
+        width: 320px;
+        padding: 24px;
+        background: var(--card-background-color, #1c1c1c);
+        border-radius: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0,0,0,0.4));
+      }
+
+      .image-hover-overlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.9);
+        border-radius: 8px;
+        padding: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .image-hover-overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 4px;
+        object-fit: contain;
+      }
     `
   ];
 
@@ -281,6 +348,7 @@ export class PlantTimeline extends LitElement {
       case 'action':
         if (action === 'water' || action === 'watering') return mdiWater;
         if (action === 'ipm') return mdiBug;
+        if (action === 'training') return mdiDumbbell;
         return mdiLeaf;
       default: return mdiLeaf;
     }
@@ -363,6 +431,10 @@ export class PlantTimeline extends LitElement {
       });
       this._noteText = '';
       this._noteImages = [];
+      
+      // Allow time for recorder to write to DB
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Fire refresh event
       this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
     } catch (e) {
@@ -370,6 +442,62 @@ export class PlantTimeline extends LitElement {
     } finally {
       this._isSaving = false;
     }
+  }
+
+  private _deleteEvent(e: Event, eventId: string | number) {
+    e.stopPropagation();
+    this._deletingEventId = eventId;
+    this._showDeleteConfirmation = true;
+  }
+
+  private async _confirmDeleteEvent() {
+    if (this._deletingEventId === null) return;
+    
+    try {
+      await this.hass.callWS({
+        type: 'growspace_manager/remove_timeline_event',
+        event_id: this._deletingEventId
+      });
+      this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+    } catch (err) {
+      console.error('Error deleting event:', err);
+    } finally {
+      this._showDeleteConfirmation = false;
+      this._deletingEventId = null;
+    }
+  }
+
+  private _renderDeleteOverlay(): TemplateResult {
+    return html`
+      <div class="dialog-overlay" @click=${() => this._showDeleteConfirmation = false}>
+        <div class="overlay-content" @click=${(e: Event) => e.stopPropagation()}>
+          <h2 style="margin: 0 0 12px 0; font-size: 1.25rem;">Confirm Deletion</h2>
+          <p style="margin: 0 0 24px 0; color: var(--secondary-text-color); font-size: 0.95rem; line-height: 1.5;">
+            Are you sure you want to delete this entry? This action cannot be undone.
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button class="md3-button tonal" @click=${() => this._showDeleteConfirmation = false}>
+              Cancel
+            </button>
+            <button class="md3-button danger" @click=${this._confirmDeleteEvent}>
+              <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 4px; fill: currentColor;">
+                <path d="${mdiDelete}" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderHoverOverlay(): TemplateResult | typeof nothing {
+    if (!this._hoveredImage) return nothing;
+    return html`
+      <div class="image-hover-overlay">
+        <img src=${this._hoveredImage} />
+      </div>
+    `;
   }
 
   private async _resizeImage(file: File): Promise<string> {
@@ -464,6 +592,9 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div class="timeline" style="--stage-color: ${stageColor}">
+        ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : nothing}
+        ${this._renderHoverOverlay()}
+        
         <!-- Quick Note Section -->
         <div class="quick-note glass-surface">
           <div class="note-input">
@@ -481,7 +612,7 @@ export class PlantTimeline extends LitElement {
                 <div class="preview-item">
                   <img src=${img} />
                   <button class="remove-img" @click=${() => this._removeImage(i)}>
-                    <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: white;"><path d="${mdiClose}" /></svg>
                   </button>
                 </div>
               `)}
@@ -499,14 +630,14 @@ export class PlantTimeline extends LitElement {
                 style="display: none;"
               >
               <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
-                <ha-svg-icon .path=${mdiCameraPlus}></ha-svg-icon>
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiCameraPlus}" /></svg>
               </ha-icon-button>
             </div>
             <ha-icon-button 
               .disabled=${(!this._noteText.trim() && !this._noteImages.length) || this._isSaving}
               @click=${this._submitNote}
             >
-              <ha-svg-icon .path=${mdiSend}></ha-svg-icon>
+              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiSend}" /></svg>
             </ha-icon-button>
           </div>
         </div>
@@ -525,7 +656,7 @@ export class PlantTimeline extends LitElement {
                 
                 ${alerts.length > 2 ? html`
                   <div class="day-summary glass-surface">
-                    <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"><path d="${mdiAlertCircle}" /></svg>
                     <span>${alerts.length} system alerts recorded. Environment may require attention.</span>
                   </div>
                 ` : alerts.map(event => this._renderEvent(event, sortedEvents))}
@@ -548,6 +679,13 @@ export class PlantTimeline extends LitElement {
             <path d="${this._getIcon(event.type, (event as any).action)}" />
           </svg>
         </div>
+        ${event.event_id ? html`
+          <button class="delete-btn" @click=${(e: Event) => this._deleteEvent(e, event.event_id!)}>
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
+              <path d="${mdiDelete}" />
+            </svg>
+          </button>
+        ` : nothing}
         <div class="date">
           ${this._formatTime(event.date)}
           ${isCorrelated ? html`<span class="correlated-badge">System Correlated</span>` : nothing}
@@ -612,7 +750,7 @@ export class PlantTimeline extends LitElement {
       const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
       return html`
             <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
-              <svg viewBox="0 0 24 24"><path d="${item.icon}" /></svg>
+              <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
               <span>${display}</span>
             </div>
           `;
@@ -629,7 +767,14 @@ export class PlantTimeline extends LitElement {
         ${images.map(img => {
       // If it's a relative path, prefix with /api/growspace_manager/v1/images/
       const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
-      return html`<img src=${src} @click=${() => this._openImage(src)} />`;
+      return html`
+        <img 
+          src=${src} 
+          @click=${() => this._openImage(src)}
+          @mouseenter=${() => this._hoveredImage = src}
+          @mouseleave=${() => this._hoveredImage = null}
+        />
+      `;
     })}
       </div>
     `;
@@ -641,7 +786,7 @@ export class PlantTimeline extends LitElement {
       <div class="tags">
         ${tags.map(tag => html`
           <div class="tag">
-            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;margin-right:2px;"><path d="${mdiTag}" /></svg>
+            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;"><path d="${mdiTag}" /></svg>
             ${tag}
           </div>
         `)}

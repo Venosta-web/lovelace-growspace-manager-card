@@ -266,17 +266,23 @@ export class GrowspaceLogbook extends LitElement {
       });
     }
     // 'all' case keeps filteredEvents as allEvents
+    if (this._activeFilter === 'notes') {
+      filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
+    }
 
     // ⚡ Performance: Schwartzian transform for efficient sorting
     // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
-    // For 100 events, reduces from ~1400 Date creations to 100
     const sortedEvents = filteredEvents
-      .map(e => ({ event: e, time: new Date(e.start_time).getTime() }))
+      .map(e => ({ 
+        event: e, 
+        time: new Date((e as any).timestamp || e.start_time).getTime() 
+      }))
       .sort((a, b) => b.time - a.time)
       .map(item => item.event);
 
     const filters = [
       { id: 'all', label: 'All' },
+      { id: 'notes', label: 'Notes' },
       { id: 'alerts', label: 'Alerts' },
       { id: 'watering', label: 'Watering/Nutrients' },
       { id: 'environment', label: 'Environment' },
@@ -300,12 +306,20 @@ export class GrowspaceLogbook extends LitElement {
       <div class="log-container">
         ${sortedEvents.length > 0
         ? sortedEvents.map(
-          (event) => html`
+          (event) => {
+            const cat = normalize(event.category);
+            const isNote = cat === 'note';
+            const type = isNote ? 'Plant Note' : 
+                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') : 
+                        (cat ? cat.replace(/_/g, ' ') : 'Event'));
+            const startTime = (event as any).timestamp || event.start_time;
+
+            return html`
                 <div class="event-card">
                   <div class="event-header">
                     <div>
-                      <div class="event-type">${event.sensor_type ? event.sensor_type.replace(/_/g, ' ') : 'Event'}</div>
-                      <div class="event-time">${this._formatTime(event.start_time)}</div>
+                      <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                      <div class="event-time">${this._formatTime(startTime)}</div>
                     </div>
                     ${event.duration_sec > 0
               ? html`<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
@@ -314,12 +328,28 @@ export class GrowspaceLogbook extends LitElement {
                   
                   <div class="event-details">
                     <div class="event-reasons">
-                      ${event.reasons && event.reasons.length > 0
-              ? event.reasons.map((reason) => html`<span class="reason-badge">${reason}</span>`)
-              : nothing}
+                      ${isNote ? html`
+                        <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
+                          ${(event as any).notes}
+                        </div>
+                        ${(event as any).tags?.length > 0 ? html`
+                          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                            ${(event as any).tags.map((tag: string) => html`
+                              <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
+                            `)}
+                          </div>
+                        ` : nothing}
+                        ${(event as any).images?.length > 0 ? html`
+                          <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
+                            ${(event as any).images.length} Image${(event as any).images.length > 1 ? 's' : ''} attached
+                          </div>
+                        ` : nothing}
+                      ` : (event.reasons && event.reasons.length > 0
+                        ? event.reasons.map((reason) => html`<span class="reason-badge">${reason}</span>`)
+                        : nothing)}
                     </div>
                     
-                    ${event.severity > 0.5 && event.category !== 'training'
+                    ${!isNote && event.severity > 0.5 && event.category !== 'training'
               ? html`
                           <div 
                             class="event-probability"
@@ -331,7 +361,8 @@ export class GrowspaceLogbook extends LitElement {
               : nothing}
                   </div>
                 </div>
-              `
+              `;
+          }
         )
         : html`
               <div class="empty-state">

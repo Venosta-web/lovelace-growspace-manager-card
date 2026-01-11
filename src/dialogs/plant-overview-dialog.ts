@@ -46,6 +46,7 @@ export class PlantOverviewDialog extends LitElement {
   accessor hass!: HomeAssistant;
 
   private _logbookController = new GrowspaceLogbookController();
+  private _unsubEvents?: Promise<() => Promise<void>>;
 
   @property({ type: Boolean, reflect: true }) accessor open = false;
   @property({ attribute: false }) accessor dialog: PlantOverviewDialogState | undefined;
@@ -60,7 +61,56 @@ export class PlantOverviewDialog extends LitElement {
   @state() private accessor _activeTab: 'dashboard' | 'timeline' = 'dashboard';
   @state() private accessor _logbookEvents: GrowspaceEvent[] = [];
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._subscribeToEvents();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubEvents) {
+      this._unsubEvents.then((unsub) => unsub && unsub());
+      this._unsubEvents = undefined;
+    }
+  }
+
+  private async _subscribeToEvents() {
+    if (!this.hass) return;
+    // Subscribe if not already subscribed
+    if (!this._unsubEvents) {
+      this._unsubEvents = this.hass.connection.subscribeEvents(
+        (event) => this._handleGrowspaceEvent(event),
+        'growspace_manager_log_entry'
+      );
+    }
+  }
+
+  private _handleGrowspaceEvent(event: any) {
+    const data = event.data;
+    const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
+    const growspaceId = this.plant?.attributes?.growspace_id;
+
+    // Check if relevant to this plant (direct match)
+    const isForThisPlant = data.plant_id === plantId;
+    
+    // Check if relevant to this growspace (e.g. irrigation)
+    const isForThisGrowspace = data.growspace_id === growspaceId;
+    const isSharedEvent = data.category === 'irrigation' && !data.plant_id;
+
+    if (isForThisPlant || (isForThisGrowspace && isSharedEvent)) {
+      // Prepend to list for instant update
+      // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
+      // but _renderTimeline mapping logic handles both.
+      this._logbookEvents = [data as any, ...this._logbookEvents];
+    }
+  }
+
   willUpdate(changedProps: Map<string, any>) {
+    // Retry subscription if hass becomes available later
+    if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
+        this._subscribeToEvents();
+    }
+
     // Handle dialog state object if passed (legacy/alternative usage)
     if (changedProps.has('dialog') && this.dialog) {
       this.plant = this.dialog.plant;
@@ -87,7 +137,24 @@ export class PlantOverviewDialog extends LitElement {
 
   private async _fetchLogbook() {
     if (!this.plant?.attributes?.growspace_id || !this.hass) return;
-    this._logbookEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+    const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+
+    // Identify optimistic events (no event_id, recent timestamp) to preserve
+    // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
+    const now = new Date().getTime();
+    const optimisticEvents = this._logbookEvents.filter(e => {
+        const evt = e as any;
+        if (evt.event_id) return false; // Already from DB
+        
+        // Check if recent (< 60 seconds)
+        const ts = evt.timestamp || evt.start_time;
+        if (!ts) return false;
+        const time = new Date(ts).getTime();
+        return (now - time) < 60000;
+    });
+
+    // Merge: Put optimistic events first, then fetched events
+    this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
   }
 
   private _getAttributesFromPlant(): PlantOverviewEditedAttributes {
@@ -876,6 +943,7 @@ export class PlantOverviewDialog extends LitElement {
                 images: (e as any).images,
                 tags: (e as any).tags,
                 metadata: (e as any).metadata,
+                event_id: (e as any).event_id
             } as PlantTimelineEvent;
         }
 
@@ -887,7 +955,8 @@ export class PlantOverviewDialog extends LitElement {
             details: (e.reasons || []).filter(r => {
             const rLower = r.toLowerCase();
             return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-            }).join(', ')
+            }).join(', '),
+            event_id: (e as any).event_id
         } as PlantTimelineEvent;
       });
 
@@ -900,6 +969,7 @@ export class PlantOverviewDialog extends LitElement {
               .hass=${this.hass} 
               .plant_id=${plantId}
               .events=${allEvents}
+              @growspace-refresh=${() => this._fetchLogbook()}
             ></plant-timeline>
         </div>
     `;

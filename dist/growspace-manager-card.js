@@ -34,6 +34,7 @@ var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0
 var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
+var mdiDumbbell = "M20.57,14.86L22,13.43L20.57,12L17,15.57L8.43,7L12,3.43L10.57,2L9.14,3.43L7.71,2L5.57,4.14L4.14,2.71L2.71,4.14L4.14,5.57L2,7.71L3.43,9.14L2,10.57L3.43,12L7,8.43L15.57,17L12,20.57L13.43,22L14.86,20.57L16.29,22L18.43,19.86L19.86,21.29L21.29,19.86L19.86,18.43L22,16.29L20.57,14.86Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
@@ -8955,7 +8956,7 @@ const dialogStyles = [
 })();
 
 (() => {
-    var _PlantTimeline_hass_accessor_storage, _PlantTimeline_plant_id_accessor_storage, _PlantTimeline_events_accessor_storage, _PlantTimeline__noteText_accessor_storage, _PlantTimeline__noteImages_accessor_storage, _PlantTimeline__isSaving_accessor_storage;
+    var _PlantTimeline_hass_accessor_storage, _PlantTimeline_plant_id_accessor_storage, _PlantTimeline_events_accessor_storage, _PlantTimeline__noteText_accessor_storage, _PlantTimeline__noteImages_accessor_storage, _PlantTimeline__isSaving_accessor_storage, _PlantTimeline__showDeleteConfirmation_accessor_storage, _PlantTimeline__deletingEventId_accessor_storage, _PlantTimeline__hoveredImage_accessor_storage;
     let _classDecorators = [t$2('plant-timeline')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -8979,6 +8980,15 @@ const dialogStyles = [
     let __isSaving_decorators;
     let __isSaving_initializers = [];
     let __isSaving_extraInitializers = [];
+    let __showDeleteConfirmation_decorators;
+    let __showDeleteConfirmation_initializers = [];
+    let __showDeleteConfirmation_extraInitializers = [];
+    let __deletingEventId_decorators;
+    let __deletingEventId_initializers = [];
+    let __deletingEventId_extraInitializers = [];
+    let __hoveredImage_decorators;
+    let __hoveredImage_initializers = [];
+    let __hoveredImage_extraInitializers = [];
     _classThis = class extends _classSuper {
         get hass() { return __classPrivateFieldGet(this, _PlantTimeline_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _PlantTimeline_hass_accessor_storage, value, "f"); }
@@ -8992,6 +9002,12 @@ const dialogStyles = [
         set _noteImages(value) { __classPrivateFieldSet(this, _PlantTimeline__noteImages_accessor_storage, value, "f"); }
         get _isSaving() { return __classPrivateFieldGet(this, _PlantTimeline__isSaving_accessor_storage, "f"); }
         set _isSaving(value) { __classPrivateFieldSet(this, _PlantTimeline__isSaving_accessor_storage, value, "f"); }
+        get _showDeleteConfirmation() { return __classPrivateFieldGet(this, _PlantTimeline__showDeleteConfirmation_accessor_storage, "f"); }
+        set _showDeleteConfirmation(value) { __classPrivateFieldSet(this, _PlantTimeline__showDeleteConfirmation_accessor_storage, value, "f"); }
+        get _deletingEventId() { return __classPrivateFieldGet(this, _PlantTimeline__deletingEventId_accessor_storage, "f"); }
+        set _deletingEventId(value) { __classPrivateFieldSet(this, _PlantTimeline__deletingEventId_accessor_storage, value, "f"); }
+        get _hoveredImage() { return __classPrivateFieldGet(this, _PlantTimeline__hoveredImage_accessor_storage, "f"); }
+        set _hoveredImage(value) { __classPrivateFieldSet(this, _PlantTimeline__hoveredImage_accessor_storage, value, "f"); }
         _getIcon(type, action) {
             switch (type) {
                 case 'stage_change': return mdiSprout;
@@ -9003,6 +9019,8 @@ const dialogStyles = [
                         return mdiWater;
                     if (action === 'ipm')
                         return mdiBug;
+                    if (action === 'training')
+                        return mdiDumbbell;
                     return mdiLeaf;
                 default: return mdiLeaf;
             }
@@ -9097,6 +9115,8 @@ const dialogStyles = [
                 });
                 this._noteText = '';
                 this._noteImages = [];
+                // Allow time for recorder to write to DB
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 // Fire refresh event
                 this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
             }
@@ -9106,6 +9126,61 @@ const dialogStyles = [
             finally {
                 this._isSaving = false;
             }
+        }
+        _deleteEvent(e, eventId) {
+            e.stopPropagation();
+            this._deletingEventId = eventId;
+            this._showDeleteConfirmation = true;
+        }
+        async _confirmDeleteEvent() {
+            if (this._deletingEventId === null)
+                return;
+            try {
+                await this.hass.callWS({
+                    type: 'growspace_manager/remove_timeline_event',
+                    event_id: this._deletingEventId
+                });
+                this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+            }
+            catch (err) {
+                console.error('Error deleting event:', err);
+            }
+            finally {
+                this._showDeleteConfirmation = false;
+                this._deletingEventId = null;
+            }
+        }
+        _renderDeleteOverlay() {
+            return x `
+      <div class="dialog-overlay" @click=${() => this._showDeleteConfirmation = false}>
+        <div class="overlay-content" @click=${(e) => e.stopPropagation()}>
+          <h2 style="margin: 0 0 12px 0; font-size: 1.25rem;">Confirm Deletion</h2>
+          <p style="margin: 0 0 24px 0; color: var(--secondary-text-color); font-size: 0.95rem; line-height: 1.5;">
+            Are you sure you want to delete this entry? This action cannot be undone.
+          </p>
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button class="md3-button tonal" @click=${() => this._showDeleteConfirmation = false}>
+              Cancel
+            </button>
+            <button class="md3-button danger" @click=${this._confirmDeleteEvent}>
+              <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 4px; fill: currentColor;">
+                <path d="${mdiDelete}" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+        }
+        _renderHoverOverlay() {
+            if (!this._hoveredImage)
+                return E;
+            return x `
+      <div class="image-hover-overlay">
+        <img src=${this._hoveredImage} />
+      </div>
+    `;
         }
         async _resizeImage(file) {
             return new Promise((resolve, reject) => {
@@ -9190,6 +9265,9 @@ const dialogStyles = [
             const stageColor = this._getStageColor(currentStage);
             return x `
       <div class="timeline" style="--stage-color: ${stageColor}">
+        ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
+        ${this._renderHoverOverlay()}
+        
         <!-- Quick Note Section -->
         <div class="quick-note glass-surface">
           <div class="note-input">
@@ -9207,7 +9285,7 @@ const dialogStyles = [
                 <div class="preview-item">
                   <img src=${img} />
                   <button class="remove-img" @click=${() => this._removeImage(i)}>
-                    <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: white;"><path d="${mdiClose}" /></svg>
                   </button>
                 </div>
               `)}
@@ -9225,14 +9303,14 @@ const dialogStyles = [
                 style="display: none;"
               >
               <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
-                <ha-svg-icon .path=${mdiCameraPlus}></ha-svg-icon>
+                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiCameraPlus}" /></svg>
               </ha-icon-button>
             </div>
             <ha-icon-button 
               .disabled=${(!this._noteText.trim() && !this._noteImages.length) || this._isSaving}
               @click=${this._submitNote}
             >
-              <ha-svg-icon .path=${mdiSend}></ha-svg-icon>
+              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiSend}" /></svg>
             </ha-icon-button>
           </div>
         </div>
@@ -9250,7 +9328,7 @@ const dialogStyles = [
                 
                 ${alerts.length > 2 ? x `
                   <div class="day-summary glass-surface">
-                    <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"><path d="${mdiAlertCircle}" /></svg>
                     <span>${alerts.length} system alerts recorded. Environment may require attention.</span>
                   </div>
                 ` : alerts.map(event => this._renderEvent(event, sortedEvents))}
@@ -9271,6 +9349,13 @@ const dialogStyles = [
             <path d="${this._getIcon(event.type, event.action)}" />
           </svg>
         </div>
+        ${event.event_id ? x `
+          <button class="delete-btn" @click=${(e) => this._deleteEvent(e, event.event_id)}>
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
+              <path d="${mdiDelete}" />
+            </svg>
+          </button>
+        ` : E}
         <div class="date">
           ${this._formatTime(event.date)}
           ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
@@ -9333,7 +9418,7 @@ const dialogStyles = [
                 const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
                 return x `
             <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
-              <svg viewBox="0 0 24 24"><path d="${item.icon}" /></svg>
+              <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
               <span>${display}</span>
             </div>
           `;
@@ -9349,7 +9434,14 @@ const dialogStyles = [
         ${images.map(img => {
                 // If it's a relative path, prefix with /api/growspace_manager/v1/images/
                 const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
-                return x `<img src=${src} @click=${() => this._openImage(src)} />`;
+                return x `
+        <img 
+          src=${src} 
+          @click=${() => this._openImage(src)}
+          @mouseenter=${() => this._hoveredImage = src}
+          @mouseleave=${() => this._hoveredImage = null}
+        />
+      `;
             })}
       </div>
     `;
@@ -9361,7 +9453,7 @@ const dialogStyles = [
       <div class="tags">
         ${tags.map(tag => x `
           <div class="tag">
-            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;margin-right:2px;"><path d="${mdiTag}" /></svg>
+            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;"><path d="${mdiTag}" /></svg>
             ${tag}
           </div>
         `)}
@@ -9379,7 +9471,10 @@ const dialogStyles = [
             _PlantTimeline__noteText_accessor_storage.set(this, (__runInitializers(this, _events_extraInitializers), __runInitializers(this, __noteText_initializers, '')));
             _PlantTimeline__noteImages_accessor_storage.set(this, (__runInitializers(this, __noteText_extraInitializers), __runInitializers(this, __noteImages_initializers, [])));
             _PlantTimeline__isSaving_accessor_storage.set(this, (__runInitializers(this, __noteImages_extraInitializers), __runInitializers(this, __isSaving_initializers, false)));
-            __runInitializers(this, __isSaving_extraInitializers);
+            _PlantTimeline__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, __isSaving_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
+            _PlantTimeline__deletingEventId_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __deletingEventId_initializers, null)));
+            _PlantTimeline__hoveredImage_accessor_storage.set(this, (__runInitializers(this, __deletingEventId_extraInitializers), __runInitializers(this, __hoveredImage_initializers, null)));
+            __runInitializers(this, __hoveredImage_extraInitializers);
         }
     };
     _PlantTimeline_hass_accessor_storage = new WeakMap();
@@ -9388,6 +9483,9 @@ const dialogStyles = [
     _PlantTimeline__noteText_accessor_storage = new WeakMap();
     _PlantTimeline__noteImages_accessor_storage = new WeakMap();
     _PlantTimeline__isSaving_accessor_storage = new WeakMap();
+    _PlantTimeline__showDeleteConfirmation_accessor_storage = new WeakMap();
+    _PlantTimeline__deletingEventId_accessor_storage = new WeakMap();
+    _PlantTimeline__hoveredImage_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "PlantTimeline");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -9397,12 +9495,18 @@ const dialogStyles = [
         __noteText_decorators = [r$2()];
         __noteImages_decorators = [r$2()];
         __isSaving_decorators = [r$2()];
+        __showDeleteConfirmation_decorators = [r$2()];
+        __deletingEventId_decorators = [r$2()];
+        __hoveredImage_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
         __esDecorate(_classThis, null, _plant_id_decorators, { kind: "accessor", name: "plant_id", static: false, private: false, access: { has: obj => "plant_id" in obj, get: obj => obj.plant_id, set: (obj, value) => { obj.plant_id = value; } }, metadata: _metadata }, _plant_id_initializers, _plant_id_extraInitializers);
         __esDecorate(_classThis, null, _events_decorators, { kind: "accessor", name: "events", static: false, private: false, access: { has: obj => "events" in obj, get: obj => obj.events, set: (obj, value) => { obj.events = value; } }, metadata: _metadata }, _events_initializers, _events_extraInitializers);
         __esDecorate(_classThis, null, __noteText_decorators, { kind: "accessor", name: "_noteText", static: false, private: false, access: { has: obj => "_noteText" in obj, get: obj => obj._noteText, set: (obj, value) => { obj._noteText = value; } }, metadata: _metadata }, __noteText_initializers, __noteText_extraInitializers);
         __esDecorate(_classThis, null, __noteImages_decorators, { kind: "accessor", name: "_noteImages", static: false, private: false, access: { has: obj => "_noteImages" in obj, get: obj => obj._noteImages, set: (obj, value) => { obj._noteImages = value; } }, metadata: _metadata }, __noteImages_initializers, __noteImages_extraInitializers);
         __esDecorate(_classThis, null, __isSaving_decorators, { kind: "accessor", name: "_isSaving", static: false, private: false, access: { has: obj => "_isSaving" in obj, get: obj => obj._isSaving, set: (obj, value) => { obj._isSaving = value; } }, metadata: _metadata }, __isSaving_initializers, __isSaving_extraInitializers);
+        __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
+        __esDecorate(_classThis, null, __deletingEventId_decorators, { kind: "accessor", name: "_deletingEventId", static: false, private: false, access: { has: obj => "_deletingEventId" in obj, get: obj => obj._deletingEventId, set: (obj, value) => { obj._deletingEventId = value; } }, metadata: _metadata }, __deletingEventId_initializers, __deletingEventId_extraInitializers);
+        __esDecorate(_classThis, null, __hoveredImage_decorators, { kind: "accessor", name: "_hoveredImage", static: false, private: false, access: { has: obj => "_hoveredImage" in obj, get: obj => obj._hoveredImage, set: (obj, value) => { obj._hoveredImage = value; } }, metadata: _metadata }, __hoveredImage_initializers, __hoveredImage_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -9440,6 +9544,25 @@ const dialogStyles = [
         border-radius: 8px;
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+      }
+      .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+      }
+      .event:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn:hover {
+        color: var(--error-color);
       }
       .icon-wrapper {
         position: absolute;
@@ -9594,6 +9717,9 @@ const dialogStyles = [
         margin-top: 6px;
       }
       .tag {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         font-size: 0.7rem;
         padding: 1px 6px;
         border-radius: 4px;
@@ -9660,6 +9786,48 @@ const dialogStyles = [
         border-radius: 4px;
         margin-left: 8px;
         vertical-align: middle;
+      }
+
+      .dialog-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .overlay-content {
+        width: 320px;
+        padding: 24px;
+        background: var(--card-background-color, #1c1c1c);
+        border-radius: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0,0,0,0.4));
+      }
+
+      .image-hover-overlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.9);
+        border-radius: 8px;
+        padding: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .image-hover-overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 4px;
+        object-fit: contain;
       }
     `
         ]
@@ -9865,7 +10033,46 @@ class GrowspaceLogbookController {
         set _activeTab(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__activeTab_accessor_storage, value, "f"); }
         get _logbookEvents() { return __classPrivateFieldGet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, "f"); }
         set _logbookEvents(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, value, "f"); }
+        connectedCallback() {
+            super.connectedCallback();
+            this._subscribeToEvents();
+        }
+        disconnectedCallback() {
+            super.disconnectedCallback();
+            if (this._unsubEvents) {
+                this._unsubEvents.then((unsub) => unsub && unsub());
+                this._unsubEvents = undefined;
+            }
+        }
+        async _subscribeToEvents() {
+            if (!this.hass)
+                return;
+            // Subscribe if not already subscribed
+            if (!this._unsubEvents) {
+                this._unsubEvents = this.hass.connection.subscribeEvents((event) => this._handleGrowspaceEvent(event), 'growspace_manager_log_entry');
+            }
+        }
+        _handleGrowspaceEvent(event) {
+            const data = event.data;
+            const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
+            const growspaceId = this.plant?.attributes?.growspace_id;
+            // Check if relevant to this plant (direct match)
+            const isForThisPlant = data.plant_id === plantId;
+            // Check if relevant to this growspace (e.g. irrigation)
+            const isForThisGrowspace = data.growspace_id === growspaceId;
+            const isSharedEvent = data.category === 'irrigation' && !data.plant_id;
+            if (isForThisPlant || (isForThisGrowspace && isSharedEvent)) {
+                // Prepend to list for instant update
+                // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
+                // but _renderTimeline mapping logic handles both.
+                this._logbookEvents = [data, ...this._logbookEvents];
+            }
+        }
         willUpdate(changedProps) {
+            // Retry subscription if hass becomes available later
+            if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
+                this._subscribeToEvents();
+            }
             // Handle dialog state object if passed (legacy/alternative usage)
             if (changedProps.has('dialog') && this.dialog) {
                 this.plant = this.dialog.plant;
@@ -9890,7 +10097,23 @@ class GrowspaceLogbookController {
         async _fetchLogbook() {
             if (!this.plant?.attributes?.growspace_id || !this.hass)
                 return;
-            this._logbookEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+            const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+            // Identify optimistic events (no event_id, recent timestamp) to preserve
+            // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
+            const now = new Date().getTime();
+            const optimisticEvents = this._logbookEvents.filter(e => {
+                const evt = e;
+                if (evt.event_id)
+                    return false; // Already from DB
+                // Check if recent (< 60 seconds)
+                const ts = evt.timestamp || evt.start_time;
+                if (!ts)
+                    return false;
+                const time = new Date(ts).getTime();
+                return (now - time) < 60000;
+            });
+            // Merge: Put optimistic events first, then fetched events
+            this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
         }
         _getAttributesFromPlant() {
             if (!this.plant)
@@ -10474,6 +10697,7 @@ class GrowspaceLogbookController {
                         images: e.images,
                         tags: e.tags,
                         metadata: e.metadata,
+                        event_id: e.event_id
                     };
                 }
                 return {
@@ -10484,7 +10708,8 @@ class GrowspaceLogbookController {
                     details: (e.reasons || []).filter(r => {
                         const rLower = r.toLowerCase();
                         return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-                    }).join(', ')
+                    }).join(', '),
+                    event_id: e.event_id
                 };
             });
             // Combine all
@@ -10495,6 +10720,7 @@ class GrowspaceLogbookController {
               .hass=${this.hass} 
               .plant_id=${plantId}
               .events=${allEvents}
+              @growspace-refresh=${() => this._fetchLogbook()}
             ></plant-timeline>
         </div>
     `;
@@ -10507,6 +10733,12 @@ class GrowspaceLogbookController {
                 configurable: true,
                 writable: true,
                 value: (__runInitializers(this, _hass_extraInitializers), new GrowspaceLogbookController())
+            });
+            Object.defineProperty(this, "_unsubEvents", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
             });
             _PlantOverviewDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
             _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
@@ -15106,15 +15338,21 @@ class GrowspaceLogbookController {
                 });
             }
             // 'all' case keeps filteredEvents as allEvents
+            if (this._activeFilter === 'notes') {
+                filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
+            }
             // ⚡ Performance: Schwartzian transform for efficient sorting
             // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
-            // For 100 events, reduces from ~1400 Date creations to 100
             const sortedEvents = filteredEvents
-                .map(e => ({ event: e, time: new Date(e.start_time).getTime() }))
+                .map(e => ({
+                event: e,
+                time: new Date(e.timestamp || e.start_time).getTime()
+            }))
                 .sort((a, b) => b.time - a.time)
                 .map(item => item.event);
             const filters = [
                 { id: 'all', label: 'All' },
+                { id: 'notes', label: 'Notes' },
                 { id: 'alerts', label: 'Alerts' },
                 { id: 'watering', label: 'Watering/Nutrients' },
                 { id: 'environment', label: 'Environment' },
@@ -15134,27 +15372,50 @@ class GrowspaceLogbookController {
 
       <div class="log-container">
         ${sortedEvents.length > 0
-                ? sortedEvents.map((event) => x `
+                ? sortedEvents.map((event) => {
+                    const cat = normalize(event.category);
+                    const isNote = cat === 'note';
+                    const type = isNote ? 'Plant Note' :
+                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
+                            (cat ? cat.replace(/_/g, ' ') : 'Event'));
+                    const startTime = event.timestamp || event.start_time;
+                    return x `
                 <div class="event-card">
                   <div class="event-header">
                     <div>
-                      <div class="event-type">${event.sensor_type ? event.sensor_type.replace(/_/g, ' ') : 'Event'}</div>
-                      <div class="event-time">${this._formatTime(event.start_time)}</div>
+                      <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                      <div class="event-time">${this._formatTime(startTime)}</div>
                     </div>
                     ${event.duration_sec > 0
-                    ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
-                    : E}
+                        ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                        : E}
                   </div>
                   
                   <div class="event-details">
                     <div class="event-reasons">
-                      ${event.reasons && event.reasons.length > 0
-                    ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
-                    : E}
+                      ${isNote ? x `
+                        <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
+                          ${event.notes}
+                        </div>
+                        ${event.tags?.length > 0 ? x `
+                          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                            ${event.tags.map((tag) => x `
+                              <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
+                            `)}
+                          </div>
+                        ` : E}
+                        ${event.images?.length > 0 ? x `
+                          <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
+                            ${event.images.length} Image${event.images.length > 1 ? 's' : ''} attached
+                          </div>
+                        ` : E}
+                      ` : (event.reasons && event.reasons.length > 0
+                        ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
+                        : E)}
                     </div>
                     
-                    ${event.severity > 0.5 && event.category !== 'training'
-                    ? x `
+                    ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                        ? x `
                           <div 
                             class="event-probability"
                             style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
@@ -15162,10 +15423,11 @@ class GrowspaceLogbookController {
                             ${this._formatProb(event.severity)}
                           </div>
                         `
-                    : E}
+                        : E}
                   </div>
                 </div>
-              `)
+              `;
+                })
                 : x `
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".

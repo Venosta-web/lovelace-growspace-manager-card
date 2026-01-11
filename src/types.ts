@@ -143,6 +143,7 @@ export interface BaseTimelineEvent {
   images?: string[];
   tags?: string[];
   metadata?: TimelineEventMetadata;
+  event_id?: string | number;
 }
 
 export type PlantTimelineEvent =
@@ -450,6 +451,10 @@ export interface GrowspaceEvent {
   severity: number;
   category: string;
   reasons: string[];
+  notes?: string;
+  timestamp?: string;
+  images?: string[];
+  tags?: string[];
 }
 
 export type IPMType = 'foliar' | 'drench' | 'beneficials';

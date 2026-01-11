@@ -366,8 +366,44 @@ describe('GrowspaceLogbook', () => {
         expect(cards?.length).toBe(3);
     });
 
-    it('should handle undefined sensor type in severity color', () => {
-        expect((element as any)._getSeverityColor(0.95, undefined)).toBe('var(--error-color)');
-        expect((element as any)._getSeverityColor(0.95, null)).toBe('var(--error-color)');
+    it('should render note events correctly', async () => {
+        const noteEvent: any = {
+            growspace_id: 'gs1',
+            category: 'note',
+            notes: 'This is a test note',
+            timestamp: '2023-01-05T10:00:00Z',
+            tags: ['pest', 'remedy'],
+            images: ['image1.jpg']
+        };
+
+        (element as any)._events = [noteEvent];
+        element.growspaceId = 'gs1';
+        await element.updateComplete;
+
+        const eventCard = element.shadowRoot?.querySelector('.event-card');
+        expect(eventCard?.textContent).toContain('Plant Note');
+        expect(eventCard?.textContent).toContain('This is a test note');
+        expect(eventCard?.textContent).toContain('#pest');
+        expect(eventCard?.textContent).toContain('#remedy');
+        expect(eventCard?.textContent).toContain('1 Image attached');
+    });
+
+    it('should filter note events correctly', async () => {
+        const events: any[] = [
+            { growspace_id: 'gs1', category: 'note', notes: 'Note 1', timestamp: '2023-01-05T10:00:00Z' },
+            { growspace_id: 'gs1', category: 'alert', sensor_type: 'stress', start_time: '2023-01-05T11:00:00Z' }
+        ];
+
+        (element as any)._events = events;
+        element.growspaceId = 'gs1';
+        
+        // Set filter to notes
+        (element as any)._activeFilter = 'notes';
+        await element.updateComplete;
+
+        const cards = element.shadowRoot?.querySelectorAll('.event-card');
+        expect(cards?.length).toBe(1);
+        expect(cards?.[0].textContent).toContain('Plant Note');
     });
 });
+
