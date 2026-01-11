@@ -1,4 +1,5 @@
 import { GraphDataPoint, HistorySensorState, MetricType } from './types';
+import { MetricKey, EntityState, BINARY_ON_STATES, BINARY_OFF_STATES } from './constants';
 
 export class GraphDataTransformer {
   /**
@@ -84,25 +85,26 @@ export class GraphDataTransformer {
     now: Date,
     lastDataPoint?: GraphDataPoint
   ): GraphDataPoint | null {
-    if (metricKey === 'dehumidifier') {
+    if (metricKey === MetricKey.DEHUMIDIFIER) {
       if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
         const state = overviewEntity.attributes.dehumidifier_state;
-        const val = state === 'on' || state === 'true' || state === '1' ? 1 : 0;
+        const val = BINARY_ON_STATES.includes(state) ? 1 : 0;
         return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
       }
-    } else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
+    } else if (metricKey === MetricKey.EXHAUST || metricKey === MetricKey.HUMIDIFIER) {
       const val =
-        metricKey === 'exhaust'
+        metricKey === MetricKey.EXHAUST
           ? overviewEntity?.attributes?.exhaust_value
           : overviewEntity?.attributes?.humidifier_value;
       if (val !== undefined) {
         let numVal = parseFloat(val);
         let meta: any;
         if (isNaN(numVal)) {
-          if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+          const lowerVal = String(val).toLowerCase();
+          if (lowerVal === EntityState.ON || lowerVal === EntityState.ACTIVE) {
             numVal = 1;
             meta = { state: 'ON' };
-          } else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+          } else if (lowerVal === EntityState.OFF || lowerVal === EntityState.IDLE) {
             numVal = 0;
             meta = { state: 'OFF' };
           }
@@ -123,15 +125,15 @@ export class GraphDataTransformer {
 
   static normalizeSensorValue(ent: HistorySensorState, key: string): number | undefined {
     const s = ent.state;
-    if (s === 'unavailable' || s === 'unknown') return undefined;
+    if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
 
-    if (key === 'dehumidifier') {
-      return s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying' ? 1 : 0;
+    if (key === MetricKey.DEHUMIDIFIER) {
+      return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
     }
-    if (key === 'light') {
+    if (key === MetricKey.LIGHT) {
       // Text based check
-      if (s === 'on' || s === 'true') return 1;
-      if (s === 'off' || s === 'false') return 0;
+      if (s === EntityState.ON || s === EntityState.TRUE) return 1;
+      if (s === EntityState.OFF || s === EntityState.FALSE) return 0;
 
       // Numeric check for dimmers/percentages (0 = off, >0 = on)
       const val = parseFloat(s);

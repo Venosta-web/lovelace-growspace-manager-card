@@ -16,6 +16,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { DateTime } from 'luxon';
 import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes } from '../types';
+import { MetricKey, EntityState, StatusLevel } from '../constants';
 import { PlantUtils } from './plant-utils';
 
 /** Represents a chip displayed in the header */
@@ -121,7 +122,7 @@ export class MetricsUtils {
         if (vpd === undefined || vpd === null) {
             if (envAttrs.vpd_sensor) {
                 const vpdState = hass.states[envAttrs.vpd_sensor];
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val)) vpd = val;
                 }
@@ -144,15 +145,15 @@ export class MetricsUtils {
                 let vpdState = hass.states[calculatedId];
 
                 // 2. Try UUID-based ID (Old Legacy)
-                if (!vpdState || vpdState.state === 'unknown' || vpdState.state === 'unavailable') {
+                if (!vpdState || vpdState.state === EntityState.UNKNOWN || vpdState.state === EntityState.UNAVAILABLE) {
                     const oldId = `sensor.${device.device_id}_calculated_vpd`;
                     const oldState = hass.states[oldId];
-                    if (oldState && oldState.state !== 'unknown' && oldState.state !== 'unavailable') {
+                    if (oldState && oldState.state !== EntityState.UNKNOWN && oldState.state !== EntityState.UNAVAILABLE) {
                         vpdState = oldState;
                     }
                 }
 
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val)) vpd = val;
                 }
@@ -166,7 +167,7 @@ export class MetricsUtils {
         const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
 
         if (
-            (!vpdStatus || vpdStatus === 'unknown') &&
+            (!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
             vpd !== undefined && vpd !== null &&
             vpdTargetMin !== undefined &&
             vpdTargetMax !== undefined &&
@@ -174,11 +175,11 @@ export class MetricsUtils {
             vpdDangerMax !== undefined
         ) {
             if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
-                vpdStatus = 'danger';
+                vpdStatus = StatusLevel.DANGER;
             } else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
-                vpdStatus = 'warning';
+                vpdStatus = StatusLevel.WARNING;
             } else {
-                vpdStatus = 'optimal';
+                vpdStatus = StatusLevel.OPTIMAL;
             }
         }
 
@@ -225,10 +226,10 @@ export class MetricsUtils {
         };
 
         const mainChips = [
-            createChipData('temperature', mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
-            createChipData('humidity', mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
+            createChipData(MetricKey.TEMPERATURE, mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
+            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
             createChipData(
-                'vpd',
+                MetricKey.VPD,
                 mdiCloudOutline,
                 vpd !== undefined ? `${vpd} kPa` : undefined,
                 undefined,
@@ -237,26 +238,26 @@ export class MetricsUtils {
                     ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
                     : ''
             ),
-            createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
+            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
             createChipData(
-                'soil_moisture',
+                MetricKey.SOIL_MOISTURE,
                 mdiWaterPercent,
                 this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
                     ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
                     : undefined,
                 'Moisture'
             ),
-            createChipData('irrigation', mdiWater, nextIrrigation, 'Next'),
-            createChipData('drain', mdiWater, nextDrain, 'Next'),
+            createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, 'Next'),
+            createChipData(MetricKey.DRAIN, mdiWater, nextDrain, 'Next'),
             envEntity
                 ? createChipData(
-                    'optimal',
-                    envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank,
-                    envEntity.state === 'on'
+                    MetricKey.OPTIMAL,
+                    envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
+                    envEntity.state === EntityState.ON
                         ? 'Optimal Conditions'
                         : envEntity.attributes.reasons || 'Not Optimal',
                     undefined,
-                    envEntity.state === 'on' ? 'optimal' : 'warning'
+                    envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
                 )
                 : null,
         ].filter((c): c is NonNullable<typeof c> => c !== null);
@@ -295,30 +296,30 @@ export class MetricsUtils {
         const deviceChips = [
             // Moved light chip here per request
             createChipData(
-                'light',
+                MetricKey.LIGHT,
                 isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
                 hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined
             ),
             createChipData(
-                'exhaust',
+                MetricKey.EXHAUST,
                 mdiFan,
                 exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined,
                 'Exhaust'
             ),
             createChipData(
-                'circulation_fan',
+                MetricKey.CIRCULATION_FAN,
                 mdiFan,
                 circulationFanId ? `${circulationFanState ?? '-'}` : undefined,
                 'Fan'
             ),
             createChipData(
-                'humidifier',
+                MetricKey.HUMIDIFIER,
                 mdiAirHumidifier,
                 humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined,
                 'Humidifier'
             ),
             createChipData(
-                'dehumidifier',
+                MetricKey.DEHUMIDIFIER,
                 mdiAirHumidifierOff,
                 dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined,
                 'Dehumidifier'

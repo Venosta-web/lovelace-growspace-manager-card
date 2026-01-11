@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GrowspaceAdapter } from '../../../src/adapters/growspace-adapter';
-import { GrowspaceAPIResponse, PlantStage } from '../../../src/types';
+import { GrowspaceAPIResponse, PlantStage, GrowspaceTypeEnum } from '../../../src/types';
 
 describe('GrowspaceAdapter', () => {
     const mockOverview: any = {
@@ -19,7 +19,7 @@ describe('GrowspaceAdapter', () => {
         const mockWSData: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Test Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 2,
             plants_per_row: 2,
             total_plants: 2,
@@ -102,7 +102,7 @@ describe('GrowspaceAdapter', () => {
         const mockWSData: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Test Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 2,
             plants_per_row: 2,
             total_plants: 0,
@@ -198,7 +198,7 @@ describe('GrowspaceAdapter', () => {
         const wsWithoutId: GrowspaceAPIResponse = {
             growspace_id: '',
             name: 'Test Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 2,
             plants_per_row: 2,
             total_plants: 0,
@@ -215,7 +215,7 @@ describe('GrowspaceAdapter', () => {
         const wsWithoutName: GrowspaceAPIResponse = {
             growspace_id: 'gs_anon',
             name: '',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 1,
             plants_per_row: 1,
             total_plants: 0,
@@ -237,7 +237,7 @@ describe('GrowspaceAdapter', () => {
         const wsEmptyGrid: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Empty Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 2,
             plants_per_row: 2,
             total_plants: 0,
@@ -254,7 +254,7 @@ describe('GrowspaceAdapter', () => {
         const wsWithUnknownStage: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Test Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 1,
             plants_per_row: 1,
             total_plants: 1,
@@ -281,7 +281,7 @@ describe('GrowspaceAdapter', () => {
         const wsWithStrategy: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Irrigated Room',
-            type: 'normal',
+            type: GrowspaceTypeEnum.NORMAL,
             rows: 1,
             plants_per_row: 1,
             total_plants: 0,
@@ -301,7 +301,7 @@ describe('GrowspaceAdapter', () => {
             const wsWithoutId: GrowspaceAPIResponse = {
                 growspace_id: '',
                 name: 'No ID Room',
-                type: 'normal',
+                type: GrowspaceTypeEnum.NORMAL,
                 rows: 1,
                 plants_per_row: 1,
                 total_plants: 0,
@@ -340,7 +340,7 @@ describe('GrowspaceAdapter', () => {
             const wsWithNullSlots: GrowspaceAPIResponse = {
                 growspace_id: 'test_gs',
                 name: 'Mixed Grid Room',
-                type: 'normal',
+                type: GrowspaceTypeEnum.NORMAL,
                 rows: 2,
                 plants_per_row: 2,
                 total_plants: 1,

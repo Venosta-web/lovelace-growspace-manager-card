@@ -14,77 +14,150 @@ import {
   mdiAirFilter,
 } from '@mdi/js';
 
+export enum MetricKey {
+  TEMPERATURE = 'temperature',
+  HUMIDITY = 'humidity',
+  VPD = 'vpd',
+  CO2 = 'co2',
+  SOIL_MOISTURE = 'soil_moisture',
+  IRRIGATION = 'irrigation',
+  DRAIN = 'drain',
+  OPTIMAL = 'optimal',
+  LIGHT = 'light',
+  EXHAUST = 'exhaust',
+  CIRCULATION_FAN = 'circulation_fan',
+  HUMIDIFIER = 'humidifier',
+  DEHUMIDIFIER = 'dehumidifier',
+  CALCULATED_VPD = 'calculated_vpd',
+  AIR_EXCHANGE = 'air_exchange',
+}
+
 export const METRIC_SORT_ORDER = [
-  'temperature',
-  'humidity',
-  'vpd',
-  'co2',
-  'soil_moisture',
-  'irrigation',
-  'drain',
-  'optimal',
-  'light',
-  'exhaust',
-  'circulation_fan',
-  'humidifier',
-  'dehumidifier',
+  MetricKey.TEMPERATURE,
+  MetricKey.HUMIDITY,
+  MetricKey.VPD,
+  MetricKey.CO2,
+  MetricKey.SOIL_MOISTURE,
+  MetricKey.IRRIGATION,
+  MetricKey.DRAIN,
+  MetricKey.OPTIMAL,
+  MetricKey.LIGHT,
+  MetricKey.EXHAUST,
+  MetricKey.CIRCULATION_FAN,
+  MetricKey.HUMIDIFIER,
+  MetricKey.DEHUMIDIFIER,
 ];
+
+export enum ChartType {
+  LINE = 'line',
+  STEP = 'step',
+}
 
 export interface MetricConfigItem {
   color: string;
   title: string;
   unit: string;
   icon: string;
-  type?: 'line' | 'step';
+  type?: ChartType;
 }
 
 export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
-  temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
-  humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
-  vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-  calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
-  co2: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-  air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
-  soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-  light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
-  irrigation: {
+  [MetricKey.TEMPERATURE]: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+  [MetricKey.HUMIDITY]: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
+  [MetricKey.VPD]: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+  [MetricKey.CALCULATED_VPD]: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
+  [MetricKey.CO2]: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+  [MetricKey.AIR_EXCHANGE]: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
+  [MetricKey.SOIL_MOISTURE]: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
+  [MetricKey.LIGHT]: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: ChartType.STEP },
+  [MetricKey.IRRIGATION]: {
     color: '#03a9f4',
     title: 'Irrigation',
     unit: 'state',
     icon: mdiWater,
-    type: 'step',
+    type: ChartType.STEP,
   },
-  drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
-  exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
-  circulation_fan: {
+  [MetricKey.DRAIN]: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: ChartType.STEP },
+  [MetricKey.EXHAUST]: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+  [MetricKey.CIRCULATION_FAN]: {
     color: '#243491',
     title: 'Circulation Fan',
     unit: '',
     icon: mdiFan,
   },
-  humidifier: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-  dehumidifier: {
+  [MetricKey.HUMIDIFIER]: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+  [MetricKey.DEHUMIDIFIER]: {
     color: '#009688',
     title: 'Dehumidifier',
     unit: 'state',
     icon: mdiAirHumidifierOff,
-    type: 'step',
+    type: ChartType.STEP,
   },
-  optimal: {
+  [MetricKey.OPTIMAL]: {
     color: '#4caf50',
     title: 'Optimal Conditions',
     unit: 'state',
     icon: mdiRadioboxMarked,
-    type: 'step',
+    type: ChartType.STEP,
   },
 };
+
+export enum StatusLevel {
+  OPTIMAL = 'optimal',
+  WARNING = 'warning',
+  DANGER = 'danger',
+}
+
+export const STATUS_COLORS = {
+  [StatusLevel.OPTIMAL]: '#4caf50',
+  [StatusLevel.WARNING]: '#ff9800',
+  [StatusLevel.DANGER]: '#f44336',
+} as const;
+
+export enum ScrollDirection {
+  LEFT = 'left',
+  RIGHT = 'right',
+}
+
+export enum ConfigTab {
+  ADD_GROWSPACE = 'add_growspace',
+  EDIT_GROWSPACE = 'edit_growspace',
+  ENVIRONMENT = 'environment',
+  DEHUMIDIFIER = 'dehumidifier',
+}
+
+export enum ViewMode {
+  STANDARD = 'standard',
+  COMPACT = 'compact',
+  HEADER = 'header',
+}
+
+export enum GridOverlayMode {
+  NONE = 'none',
+  TEMPERATURE = 'temperature',
+  HUMIDITY = 'humidity',
+  VPD = 'vpd',
+}
+
+export enum GrowspaceType {
+  NORMAL = 'normal',
+  MOTHER = 'mother',
+  CLONE = 'clone',
+  DRY = 'dry',
+  CURE = 'cure',
+  VEG = 'veg',
+}
+
+export const STORAGE_KEYS = {
+  HISTORY_PREFIX: 'growspace_history_',
+} as const;
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
   color: '#fff',
   title: 'Unknown',
   unit: '',
   icon: mdiMagnify,
-  type: 'line',
+  type: ChartType.LINE,
 };
 
 export const SENSOR_CHART_DEFAULTS: Record<
@@ -106,18 +179,18 @@ export const METRIC_ENTITY_KEYS: Record<
   string,
   { primary: string; fallback?: string; source?: 'environment' | 'irrigation' }
 > = {
-  temperature: { primary: 'temperature_sensor' },
-  humidity: { primary: 'humidity_sensor' },
-  vpd: { primary: 'vpd_sensor' },
-  co2: { primary: 'co2_sensor' },
-  exhaust: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
-  humidifier: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
-  dehumidifier: { primary: 'dehumidifier_entity' },
-  circulation_fan: { primary: 'circulation_fan_entity' },
-  light: { primary: 'light_sensor' },
-  soil_moisture: { primary: 'soil_moisture_sensor' },
-  irrigation: { primary: 'irrigation_pump_entity', source: 'irrigation' },
-  drain: { primary: 'drain_pump_entity', source: 'irrigation' },
+  [MetricKey.TEMPERATURE]: { primary: 'temperature_sensor' },
+  [MetricKey.HUMIDITY]: { primary: 'humidity_sensor' },
+  [MetricKey.VPD]: { primary: 'vpd_sensor' },
+  [MetricKey.CO2]: { primary: 'co2_sensor' },
+  [MetricKey.EXHAUST]: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
+  [MetricKey.HUMIDIFIER]: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
+  [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifier_entity' },
+  [MetricKey.CIRCULATION_FAN]: { primary: 'circulation_fan_entity' },
+  [MetricKey.LIGHT]: { primary: 'light_sensor' },
+  [MetricKey.SOIL_MOISTURE]: { primary: 'soil_moisture_sensor' },
+  [MetricKey.IRRIGATION]: { primary: 'irrigation_pump_entity', source: 'irrigation' },
+  [MetricKey.DRAIN]: { primary: 'drain_pump_entity', source: 'irrigation' },
 };
 
 export const DOMAIN = 'growspace_manager';
@@ -200,3 +273,30 @@ export const DEFAULTS = {
     REFRESH_INTERVAL_MS: 60000,
   },
 } as const;
+
+export enum EntityState {
+  ON = 'on',
+  OFF = 'off',
+  UNAVAILABLE = 'unavailable',
+  UNKNOWN = 'unknown',
+  TRUE = 'true',
+  FALSE = 'false',
+  ACTIVE = 'active',
+  IDLE = 'idle',
+}
+
+export const BINARY_ON_STATES = [
+  EntityState.ON,
+  EntityState.TRUE,
+  '1',
+  'heating',
+  'drying',
+  EntityState.ACTIVE,
+];
+
+export const BINARY_OFF_STATES = [
+  EntityState.OFF,
+  EntityState.FALSE,
+  '0',
+  EntityState.IDLE,
+];

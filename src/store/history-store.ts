@@ -1,6 +1,6 @@
 import { atom, map, computed, WritableAtom, MapStore, ReadableAtom } from 'nanostores';
 import { HistorySensorState, SensorHistories, HistoryTimeRange, GrowspaceDevice } from '../types';
-import { METRIC_ENTITY_KEYS } from '../constants';
+import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../constants';
 import { DataService } from '../data-service';
 import { GrowspaceDataStore } from './data-store';
 
@@ -26,7 +26,7 @@ export class GrowspaceHistoryStore {
     private dataStore: GrowspaceDataStore;
 
     // --- Internals ---
-    private readonly STORAGE_KEY_PREFIX = 'growspace_history_';
+    private readonly STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
     private readonly CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
     private _refreshInterval: number | null = null;
     private _selectedDeviceUnsub: (() => void) | null = null;

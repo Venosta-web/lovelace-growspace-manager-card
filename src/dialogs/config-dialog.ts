@@ -7,7 +7,8 @@ import { HassEntity } from 'home-assistant-js-websocket';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
-import { GrowspaceDevice } from '../types';
+import { GrowspaceDevice, DehumidifierStage } from '../types';
+import { ConfigTab } from '../constants';
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
@@ -22,10 +23,10 @@ export class ConfigDialog extends LitElement {
   @property({ attribute: false })
   public accessor devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) accessor initialTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' =
-    'environment';
+  @property({ type: String }) accessor initialTab: ConfigTab =
+    ConfigTab.ENVIRONMENT;
   @property({ type: String })
-  public accessor currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' = 'environment';
+  public accessor currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
   @property({ attribute: false })
   public accessor environmentData: any;
@@ -61,7 +62,7 @@ export class ConfigDialog extends LitElement {
   @state() private accessor env_soil_moisture_sensor = '';
   @state() private accessor env_control_dehumidifier = false;
   @state() private accessor env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
-  @state() private accessor _activeDehumidifierStage = 'seedling';
+  @state() private accessor _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
 
   static styles = [
     dialogStyles,
@@ -165,7 +166,7 @@ export class ConfigDialog extends LitElement {
 
   // Provide initial state setting from parent
   public setInitialState(
-    currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' = 'environment',
+    currentTab: ConfigTab = ConfigTab.ENVIRONMENT,
     environmentData?: {
       selectedGrowspaceId: string;
       temp_sensor: string;
@@ -214,7 +215,7 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  private _switchTab(tab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier') {
+  private _switchTab(tab: ConfigTab) {
     this.currentTab = tab;
   }
 
@@ -365,29 +366,29 @@ export class ConfigDialog extends LitElement {
           <!-- Tabs -->
           <div class="config-tabs">
             <div
-              class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('add_growspace')}
+              class="config-tab ${this.currentTab === ConfigTab.ADD_GROWSPACE ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.ADD_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
               Add Growspace
             </div>
             <div
-              class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('edit_growspace')}
+              class="config-tab ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.EDIT_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
               Edit Growspace
             </div>
             <div
-              class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
-              @click=${() => this._switchTab('environment')}
+              class="config-tab ${this.currentTab === ConfigTab.ENVIRONMENT ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.ENVIRONMENT)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
             </div>
             <div
-              class="config-tab ${this.currentTab === 'dehumidifier' ? 'active' : ''}"
-              @click=${() => this._switchTab('dehumidifier')}
+              class="config-tab ${this.currentTab === ConfigTab.DEHUMIDIFIER ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.DEHUMIDIFIER)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
@@ -396,30 +397,30 @@ export class ConfigDialog extends LitElement {
 
           <!-- Content -->
           <div class="config-content">
-            ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : nothing}
-            ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : nothing}
-            ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : nothing}
-            ${this.currentTab === 'dehumidifier' ? this.renderDehumidifierTab() : nothing}
+            ${this.currentTab === ConfigTab.ADD_GROWSPACE ? this.renderAddGrowspaceTab() : nothing}
+            ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? this.renderEditGrowspaceTab() : nothing}
+            ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
+            ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
           </div>
 
           <!-- Actions -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            ${this.currentTab === 'add_growspace'
+            ${this.currentTab === ConfigTab.ADD_GROWSPACE
         ? html`
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
         : nothing}
-            ${['environment', 'dehumidifier'].includes(this.currentTab)
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
         ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
                   </button>
                 `
         : nothing}
-            ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
+            ${this.currentTab === ConfigTab.EDIT_GROWSPACE && !this._showDeleteConfirm
         ? html`
                   <button
                     class="md3-button tonal error"
@@ -694,7 +695,6 @@ export class ConfigDialog extends LitElement {
       (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
     )}
           </div>
-
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect(
       'VPD Sensor (Optional)',
@@ -704,23 +704,23 @@ export class ConfigDialog extends LitElement {
       (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
     )}
             ${this._renderEntitySelect(
-      'CO2 Sensor',
-      this.env_co2_sensor,
-      ['sensor', 'input_number'],
-      'carbon_dioxide',
-      (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
-    )}
-          </div>
-
-          <div class="row-col-grid" style="margin-top:16px;">
-             ${this._renderEntitySelect(
       'Soil Moisture Sensor',
       this.env_soil_moisture_sensor,
       ['sensor', 'input_number'],
       'moisture',
       (e: Event) => (this.env_soil_moisture_sensor = (e.target as HTMLSelectElement).value)
     )}
-             ${this._renderEntitySelect(
+          </div>
+
+          <div class="row-col-grid" style="margin-top:16px;">
+            ${this._renderEntitySelect(
+      'CO2 Sensor',
+      this.env_co2_sensor,
+      ['sensor', 'input_number'],
+      'carbon_dioxide',
+      (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
+    )}
+            ${this._renderEntitySelect(
       'Light Source / Sensor',
       this.env_light_sensor,
       ['switch', 'light', 'input_boolean', 'sensor'],
@@ -738,14 +738,14 @@ export class ConfigDialog extends LitElement {
           </div>
 
           <div class="row-col-grid">
-             ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'Exhaust Fan / Switch',
       this.env_exhaust_entity,
       ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (e: Event) => (this.env_exhaust_entity = (e.target as HTMLSelectElement).value)
     )}
-             ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'Circulation Fan / Switch',
       this.env_circulation_fan,
       ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
@@ -755,14 +755,14 @@ export class ConfigDialog extends LitElement {
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-             ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'Humidifier',
       this.env_humidifier_entity,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (e: Event) => (this.env_humidifier_entity = (e.target as HTMLSelectElement).value)
     )}
-             ${this._renderEntitySelect(
+            ${this._renderEntitySelect(
       'Dehumidifier',
       this.env_dehumidifier_entity,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
@@ -852,13 +852,13 @@ export class ConfigDialog extends LitElement {
   private renderDehumidifierTab() {
     // Define structure for rendering
     const stages = [
-      { id: 'seedling', label: 'Seedling' },
-      { id: 'veg', label: 'Vegetative' },
-      { id: 'early_flower', label: 'Early Flower' },
-      { id: 'mid_flower', label: 'Mid Flower' },
-      { id: 'late_flower', label: 'Late Flower' },
-      { id: 'drying', label: 'Drying' },
-      { id: 'curing', label: 'Curing' }
+      { id: DehumidifierStage.SEEDLING, label: 'Seedling' },
+      { id: DehumidifierStage.VEG, label: 'Vegetative' },
+      { id: DehumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
+      { id: DehumidifierStage.MID_FLOWER, label: 'Mid Flower' },
+      { id: DehumidifierStage.LATE_FLOWER, label: 'Late Flower' },
+      { id: DehumidifierStage.DRYING, label: 'Drying' },
+      { id: DehumidifierStage.CURING, label: 'Curing' }
     ];
 
     const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];

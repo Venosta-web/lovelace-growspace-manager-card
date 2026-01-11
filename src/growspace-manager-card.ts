@@ -14,6 +14,7 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 
 
 import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
+import { ViewMode } from './constants';
 
 import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
@@ -148,7 +149,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (this._config.initial_view_mode) {
       this.store.ui.setViewMode(this._config.initial_view_mode);
     } else if (this._config.compact !== undefined && this._config.compact) {
-      this.store.ui.setViewMode('compact');
+      this.store.ui.setViewMode(ViewMode.COMPACT);
     }
 
     // Initialize store config immediately to prevent race conditions with updateHass

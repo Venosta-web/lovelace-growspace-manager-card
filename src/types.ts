@@ -1,4 +1,5 @@
 import { LovelaceCardConfig, HomeAssistant } from 'custom-card-helpers';
+import { MetricKey, ViewMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceType as GrowspaceTypeEnum } from './constants';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
 
@@ -9,12 +10,13 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   default_growspace?: string;
   theme?: 'dark' | 'default' | 'green';
   growspaces?: string[];
-  initial_view_mode?: GrowspaceViewMode;
+  initial_view_mode?: ViewMode;
 }
 
-export type GrowspaceViewMode = 'standard' | 'compact' | 'header';
+export type GrowspaceViewMode = ViewMode;
 
-export type GridOverlayMode = 'none' | 'temperature' | 'humidity' | 'vpd';
+export { GridOverlayModeEnum };
+export type GridOverlayMode = GridOverlayModeEnum;
 
 // --- Enums ---
 
@@ -28,7 +30,18 @@ export enum PlantStage {
   CURE = 'cure',
 }
 
-export type GrowspaceType = 'normal' | 'mother' | 'clone' | 'dry' | 'cure' | 'veg';
+export enum DehumidifierStage {
+  SEEDLING = 'seedling',
+  VEG = 'veg',
+  EARLY_FLOWER = 'early_flower',
+  MID_FLOWER = 'mid_flower',
+  LATE_FLOWER = 'late_flower',
+  DRYING = 'drying',
+  CURING = 'curing',
+}
+
+export { GrowspaceTypeEnum };
+export type GrowspaceType = GrowspaceTypeEnum;
 
 // --- Configuration Constants ---
 
@@ -272,7 +285,7 @@ export function createGrowspaceDevice(
   params: Partial<GrowspaceDevice> & { device_id: string; name: string }
 ): GrowspaceDevice {
   return {
-    type: 'normal',
+    type: GrowspaceTypeEnum.NORMAL,
     rows: 3,
     plants_per_row: 3,
     plants: [],
@@ -485,17 +498,17 @@ export interface IPMDialogState {
 }
 
 export type MetricType =
-  | 'temperature'
-  | 'humidity'
-  | 'vpd'
-  | 'co2'
-  | 'soil_moisture'
-  | 'exhaust'
-  | 'humidifier'
-  | 'dehumidifier'
-  | 'circulation_fan'
-  | 'light'
-  | 'optimal';
+  | MetricKey.TEMPERATURE
+  | MetricKey.HUMIDITY
+  | MetricKey.VPD
+  | MetricKey.CO2
+  | MetricKey.SOIL_MOISTURE
+  | MetricKey.EXHAUST
+  | MetricKey.HUMIDIFIER
+  | MetricKey.DEHUMIDIFIER
+  | MetricKey.CIRCULATION_FAN
+  | MetricKey.LIGHT
+  | MetricKey.OPTIMAL;
 
 export interface GraphDataPoint {
   time: number;

@@ -1,5 +1,6 @@
 import { atom, computed, WritableAtom, ReadableAtom } from 'nanostores';
 import { GrowspaceViewMode, GridOverlayMode } from '../types';
+import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../constants';
 import { ActiveDialogState } from '../ui-state';
 
 export class GrowspaceUIStore {
@@ -24,7 +25,7 @@ export class GrowspaceUIStore {
     public readonly $isCompactView: ReadableAtom<boolean>;
 
     constructor() {
-        this.$viewMode = atom<GrowspaceViewMode>('standard');
+        this.$viewMode = atom<GrowspaceViewMode>(ViewMode.STANDARD);
         this.$isLoading = atom<boolean>(true);
         this.$activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
         this.$isEditMode = atom<boolean>(false);
@@ -34,9 +35,9 @@ export class GrowspaceUIStore {
         this.$notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
         this.$error = atom<string | null>(null);
         this.$defaultApplied = atom<boolean>(false);
-        this.$gridOverlayMode = atom<GridOverlayMode>('none');
+        this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
 
-        this.$isCompactView = computed(this.$viewMode, (mode) => mode === 'compact');
+        this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
     }
 
     // Actions

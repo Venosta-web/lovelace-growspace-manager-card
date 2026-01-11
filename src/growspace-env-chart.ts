@@ -14,7 +14,17 @@ import {
 } from './types';
 import { ChartUtils } from './utils/chart-utils';
 import { GraphDataTransformer } from './graph-data-transformer';
-import { SENSOR_CHART_DEFAULTS, METRIC_CONFIG, DEFAULTS } from './constants';
+import {
+  SENSOR_CHART_DEFAULTS,
+  METRIC_CONFIG,
+  MetricKey,
+  DEFAULTS,
+  ChartType,
+  StatusLevel,
+  STATUS_COLORS,
+  ScrollDirection,
+  EntityState,
+} from './constants';
 
 import { consume } from '@lit/context';
 import { hassContext } from './context';
@@ -33,7 +43,7 @@ export class GrowspaceEnvChart extends LitElement {
   @property({ type: String }) accessor title = '';
   @property({ type: String }) accessor icon = mdiMagnify;
   @property({ type: String }) accessor range: '1h' | '6h' | '24h' | '7d' = '24h';
-  @property({ type: String }) accessor type: 'line' | 'step' = 'line';
+  @property({ type: String }) accessor type: ChartType = ChartType.LINE;
 
   // For combined graphs
   @property({ type: Array }) accessor metrics: string[] = [];
@@ -57,10 +67,10 @@ export class GrowspaceEnvChart extends LitElement {
   private _cachedChartRect: DOMRect | null = null;
   private _tooltipRafId: number | null = null;
 
-  private _scrollChips(direction: 'left' | 'right') {
+  private _scrollChips(direction: ScrollDirection) {
     const container = this._chipsContainerRef.value;
     if (container) {
-      container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+      container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
     }
   }
 
@@ -179,20 +189,19 @@ export class GrowspaceEnvChart extends LitElement {
     return { day, night };
   }
 
-  private _getVpdStatusForValue(value: number, thresholds: ReturnType<typeof this._getVpdThresholds>, isDay: boolean): string {
+  private _getVpdStatusForValue(
+    value: number,
+    thresholds: ReturnType<typeof this._getVpdThresholds>,
+    isDay: boolean
+  ): StatusLevel {
     const t = isDay ? thresholds.day : thresholds.night;
-    if (value < t.dangerMin || value > t.dangerMax) return 'danger';
-    if (value < t.targetMin || value > t.targetMax) return 'warning';
-    return 'optimal';
+    if (value < t.dangerMin || value > t.dangerMax) return StatusLevel.DANGER;
+    if (value < t.targetMin || value > t.targetMax) return StatusLevel.WARNING;
+    return StatusLevel.OPTIMAL;
   }
 
-  private _getVpdStatusColor(status: string): string {
-    switch (status) {
-      case 'optimal': return '#4caf50';
-      case 'warning': return '#ff9800';
-      case 'danger': return '#f44336';
-      default: return '#9c27b0';
-    }
+  private _getVpdStatusColor(status: StatusLevel): string {
+    return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
   }
 
   private _generateVpdSegments(
@@ -249,10 +258,10 @@ export class GrowspaceEnvChart extends LitElement {
 
     // Prepare Light History for VPD calculation if needed
     let lightHistoryPoints: GraphDataPoint[] = [];
-    if (metricKeys.includes('vpd') && this.sensorHistory['light']) {
+    if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
       lightHistoryPoints = ChartUtils.normalizeHistory(
-        this.sensorHistory['light'],
-        'light',
+        this.sensorHistory[MetricKey.LIGHT],
+        MetricKey.LIGHT,
         startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
         nowMs
       );
@@ -278,7 +287,7 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       if (initialState) {
-        const val = key === 'optimal' || initialState.state === 'on' ? (initialState.state === 'on' ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+        const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
         if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
@@ -289,8 +298,8 @@ export class GrowspaceEnvChart extends LitElement {
         if (t <= startTimeMs) continue;
 
         let val: number | undefined;
-        if (key === 'optimal') {
-          val = h.state === 'on' ? 1 : 0;
+        if (key === MetricKey.OPTIMAL) {
+          val = h.state === EntityState.ON ? 1 : 0;
           if (h.attributes?.reasons) dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
           else dataPoints.push({ time: t, value: val });
         } else {
@@ -319,9 +328,9 @@ export class GrowspaceEnvChart extends LitElement {
         }
         const avg = sum / dataPoints.length;
 
-        const isStep = (config as any).type === 'step' || key === 'optimal' || key === 'dehumidifier' || key === 'light' || key === 'irrigation' || key === 'drain';
-        if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') { min = 0; max = 10; }
-        else if (key === 'dehumidifier') { min = 0; max = 1; }
+        const isStep = (config as any).type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
+        if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) { min = 0; max = 10; }
+        else if (key === MetricKey.DEHUMIDIFIER) { min = 0; max = 1; }
         else if (isStep) { min = 0; max = 1; }
 
         if (!this.isCombined && max === min && !isStep) { max += 1; min -= 1; }
@@ -336,7 +345,7 @@ export class GrowspaceEnvChart extends LitElement {
             min, max,
             startTime: startTimeMs,
             endTime: startTimeMs + durationMillis,
-            type: isStep ? 'step' : 'line',
+            type: isStep ? ChartType.STEP : ChartType.LINE,
             timeRange: this.range
           }
         );
@@ -344,7 +353,7 @@ export class GrowspaceEnvChart extends LitElement {
         let vpdSegments;
         let seriesColor = config.color || '#fff';
 
-        if (key === 'vpd') {
+        if (key === MetricKey.VPD) {
           const thresholds = this._getVpdThresholds();
           const vpdPoints = dataPoints.map((p) => ({
             x: ((p.time - startTimeMs) / durationMillis) * width,
@@ -540,12 +549,12 @@ export class GrowspaceEnvChart extends LitElement {
 
       let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
       const defaults = SENSOR_CHART_DEFAULTS[s.id];
-      const isBinary = defaults?.binary || s.id === 'optimal' || s.id === 'dehumidifier' || s.unit === 'state';
+      const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
 
       if (isBinary) {
-        if (s.id === 'optimal') valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
+        if (s.id === MetricKey.OPTIMAL) valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
         else valStr = closest.value === 1 ? 'ON' : 'OFF';
-      } else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+      } else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
         valStr = closest.meta.state;
       }
 
@@ -567,12 +576,12 @@ export class GrowspaceEnvChart extends LitElement {
     if (series.points.length > 0) {
       const last = series.points[series.points.length - 1];
       const defaults = SENSOR_CHART_DEFAULTS[series.id];
-      const isBinary = defaults?.binary || series.id === 'optimal' || series.id === 'dehumidifier' || series.id === 'light' || series.id === 'irrigation' || series.id === 'drain';
+      const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
 
       if (isBinary) {
-        if (series.id === 'optimal') valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
+        if (series.id === MetricKey.OPTIMAL) valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
         else valStr = last.value === 1 ? 'ON' : 'OFF';
-      } else if ((series.id === 'exhaust' || series.id === 'humidifier') && last.meta?.state) {
+      } else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
         valStr = last.meta.state;
       } else {
         valStr = `${last.value.toFixed(1)} ${series.unit}`;
@@ -598,7 +607,7 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft ? html`<div class="scroll-nav left" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips('left') }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
+          ${this._canScrollLeft ? html`<div class="scroll-nav left" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips(ScrollDirection.LEFT) }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
           
           <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
             ${seriesList.map(s => html`
@@ -611,7 +620,7 @@ export class GrowspaceEnvChart extends LitElement {
             `)}
           </div>
 
-          ${this._canScrollRight ? html`<div class="scroll-nav right" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips('right') }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
+          ${this._canScrollRight ? html`<div class="scroll-nav right" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips(ScrollDirection.RIGHT) }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
            <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))} title="Unlink Graphs"></ha-icon-button>

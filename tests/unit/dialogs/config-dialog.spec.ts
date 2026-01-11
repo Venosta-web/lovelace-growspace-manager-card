@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
+import { ConfigTab } from '../../../src/constants';
 import { html } from 'lit';
 
 // Mock Dependencies
@@ -99,13 +100,13 @@ describe('ConfigDialog', () => {
             const editTab = Array.from(tabs || []).find(t => t.textContent?.includes('Edit Growspace'));
             (editTab as HTMLElement)?.click();
             await element.updateComplete;
-            expect(element.currentTab).toBe('edit_growspace');
+            expect(element.currentTab).toBe(ConfigTab.EDIT_GROWSPACE);
         });
     });
 
     describe('Add Growspace Tab', () => {
         beforeEach(async () => {
-            element.currentTab = 'add_growspace';
+            element.currentTab = ConfigTab.ADD_GROWSPACE;
             await element.updateComplete;
         });
 
@@ -143,7 +144,7 @@ describe('ConfigDialog', () => {
 
     describe('Edit Growspace Tab', () => {
         beforeEach(async () => {
-            element.currentTab = 'edit_growspace';
+            element.currentTab = ConfigTab.EDIT_GROWSPACE;
             await element.updateComplete;
         });
 
@@ -208,12 +209,12 @@ describe('ConfigDialog', () => {
 
     describe('Environment Tab', () => {
         beforeEach(async () => {
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             await element.updateComplete;
         });
 
         it('should load initial state', async () => {
-            element.setInitialState('environment', {
+            element.setInitialState(ConfigTab.ENVIRONMENT, {
                 selectedGrowspaceId: 'gs1',
                 temp_sensor: 'sensor.temp',
                 humidity_sensor: 'sensor.hum',
@@ -262,7 +263,7 @@ describe('ConfigDialog', () => {
 
     describe('Dehumidifier Tab', () => {
         beforeEach(async () => {
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             await element.updateComplete;
         });
 
@@ -345,7 +346,7 @@ describe('ConfigDialog', () => {
             // spy on _populateEditFields
             const spy = vi.spyOn((element as any), '_populateEditFields');
 
-            element.setInitialState('environment', data);
+            element.setInitialState(ConfigTab.ENVIRONMENT, data);
 
             expect((element as any).env_temp_sensor).toBe('T');
             expect((element as any).env_dehumidifier_thresholds.veg.day.on).toBe(1);
@@ -372,7 +373,7 @@ describe('ConfigDialog', () => {
 
     describe('Dehumidifier Logic', () => {
         beforeEach(async () => {
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             (element as any).env_dehumidifier_thresholds = {
                 seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
             };
@@ -423,7 +424,7 @@ describe('ConfigDialog', () => {
 
     describe('Edge Cases', () => {
         it('should switch mobile_app notify service', async () => {
-            element.currentTab = 'add_growspace';
+            element.currentTab = ConfigTab.ADD_GROWSPACE;
             await element.updateComplete;
 
             const select = element.shadowRoot?.querySelector('select');
@@ -436,7 +437,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should cancel delete process', async () => {
-            element.currentTab = 'edit_growspace';
+            element.currentTab = ConfigTab.EDIT_GROWSPACE;
             (element as any).edit_selectedId = 'gs1';
             await element.updateComplete;
 
@@ -450,7 +451,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle environment growspace change', async () => {
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [{
                 device_id: 'gs1',
                 environment_attributes: {
@@ -493,7 +494,7 @@ describe('ConfigDialog', () => {
 
     describe('Full Environment Input Coverage', () => {
         beforeEach(async () => {
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             await element.updateComplete;
         });
 
@@ -570,15 +571,15 @@ describe('ConfigDialog', () => {
                 sensorSelects[2].value = 'sensor.vpd'; selectChange(sensorSelects[2]);
                 expect((element as any).env_vpd_sensor).toBe('sensor.vpd');
             }
-            // 3: CO2
+            // 3: Soil
             if (sensorSelects[3]) {
-                sensorSelects[3].value = 'sensor.co2'; selectChange(sensorSelects[3]);
-                expect((element as any).env_co2_sensor).toBe('sensor.co2');
-            }
-            // 4: Soil
-            if (sensorSelects[4]) {
-                sensorSelects[4].value = 'sensor.soil'; selectChange(sensorSelects[4]);
+                sensorSelects[3].value = 'sensor.soil'; selectChange(sensorSelects[3]);
                 expect((element as any).env_soil_moisture_sensor).toBe('sensor.soil');
+            }
+            // 4: CO2
+            if (sensorSelects[4]) {
+                sensorSelects[4].value = 'sensor.co2'; selectChange(sensorSelects[4]);
+                expect((element as any).env_co2_sensor).toBe('sensor.co2');
             }
             // 5: Light
             if (sensorSelects[5]) {
@@ -633,7 +634,7 @@ describe('ConfigDialog', () => {
 
     describe('Dehumidifier Tab Complex Logic', () => {
         beforeEach(async () => {
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             (element as any).env_dehumidifier_thresholds = {
                 seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
             };
@@ -710,7 +711,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should update Add Growspace inputs', async () => {
-            element.currentTab = 'add_growspace';
+            element.currentTab = ConfigTab.ADD_GROWSPACE;
             await element.updateComplete;
 
             // Name
@@ -741,7 +742,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should update Edit Growspace inputs', async () => {
-            element.currentTab = 'edit_growspace';
+            element.currentTab = ConfigTab.EDIT_GROWSPACE;
             (element as any).edit_selectedId = 'gs1'; // Select one to show fields
             await element.updateComplete;
 
@@ -815,11 +816,11 @@ describe('ConfigDialog', () => {
         });
 
         it('should render correct tab content based on property', async () => {
-            element.currentTab = 'edit_growspace';
+            element.currentTab = ConfigTab.EDIT_GROWSPACE;
             await element.updateComplete;
             expect(element.shadowRoot?.querySelector('.config-content select')).toBeTruthy();
 
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             await element.updateComplete;
             expect(element.shadowRoot?.querySelector('.config-content .sub-tabs')).toBeTruthy();
         });
@@ -832,7 +833,7 @@ describe('ConfigDialog', () => {
             (envTab as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any).currentTab).toBe('environment');
+            expect((element as any).currentTab).toBe(ConfigTab.ENVIRONMENT);
         });
 
         it('should switch to dehumidifier tab', async () => {
@@ -841,7 +842,7 @@ describe('ConfigDialog', () => {
             (dehumTab as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any).currentTab).toBe('dehumidifier');
+            expect((element as any).currentTab).toBe(ConfigTab.DEHUMIDIFIER);
         });
 
         it('should return 0 for missing threshold value', async () => {
@@ -863,7 +864,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle notification service change event', async () => {
-            element.currentTab = 'add_growspace';
+            element.currentTab = ConfigTab.ADD_GROWSPACE;
             await element.updateComplete;
 
             // Find and trigger the hidden md3-text-input for notification service
@@ -901,7 +902,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should trigger all dehumidifier threshold updates', async () => {
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             await element.updateComplete;
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
             const offInputs = Array.from(inputs || []).filter(i => i.getAttribute('label') === 'Off');
@@ -915,17 +916,17 @@ describe('ConfigDialog', () => {
         });
 
         it('should trigger add_growspace tab click handler', async () => {
-            element.currentTab = 'edit_growspace';
+            element.currentTab = ConfigTab.EDIT_GROWSPACE;
             await element.updateComplete;
             const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
             const addTab = Array.from(tabs || []).find(t => t.textContent?.includes('Add Growspace'));
             (addTab as HTMLElement)?.click();
             await element.updateComplete;
-            expect(element.currentTab).toBe('add_growspace');
+            expect(element.currentTab).toBe(ConfigTab.ADD_GROWSPACE);
         });
 
         it('should trigger dehumidifier stage switch', async () => {
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             await element.updateComplete;
             const allTabs = element.shadowRoot?.querySelectorAll('.config-tab');
             const vegTab = Array.from(allTabs || []).find(t => t.textContent?.includes('Vegetative'));
@@ -952,7 +953,7 @@ describe('ConfigDialog', () => {
 
         it('should handle unknown dehumidifier stage fallback', async () => {
             (element as any)._activeDehumidifierStage = 'unknown_stage';
-            element.currentTab = 'dehumidifier';
+            element.currentTab = ConfigTab.DEHUMIDIFIER;
             await element.updateComplete;
             // Should render seedling as fallback stages[0]
             const title = element.shadowRoot?.querySelector('h3');
@@ -990,7 +991,7 @@ describe('ConfigDialog', () => {
                     }
                 }
             } as any;
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             await element.updateComplete;
             // Force re-render/update to ensure _renderEntitySelect uses the entity
             // But we need to make sure _getEntities returns it.
@@ -1100,7 +1101,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle missing environment_attributes in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
                     device_id: 'no_env',
@@ -1121,7 +1122,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should fallback to defaults for environment attributes in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = 'environment';
+            element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
                     device_id: 'partial_env',

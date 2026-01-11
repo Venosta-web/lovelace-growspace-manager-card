@@ -4,7 +4,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
 
-import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG } from '../constants';
+import { METRIC_CONFIG, METRIC_SORT_ORDER, DEFAULT_METRIC_CONFIG, ChartType, MetricKey } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { sharedStyles } from '../styles/shared.styles';
@@ -102,7 +102,7 @@ export class GrowspaceAnalytics extends LitElement {
     if (!this.store?.history || !this._activeEnvGraphsController) return;
 
     const getSortIndex = (metric: string): number => {
-      const index = METRIC_SORT_ORDER.indexOf(metric);
+      const index = METRIC_SORT_ORDER.indexOf(metric as MetricKey);
       return index !== -1 ? index : 999;
     };
 
@@ -202,7 +202,7 @@ export class GrowspaceAnalytics extends LitElement {
               .title=${config.title}
               .icon=${config.icon}
               .range=${range}
-              .type=${config.type || 'line'}
+              .type=${config.type || ChartType.LINE}
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
           `;

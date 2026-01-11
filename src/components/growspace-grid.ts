@@ -5,7 +5,8 @@ import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { StoreController } from '@nanostores/lit';
-import { PlantEntity, StrainEntry, GridOverlayMode } from '../types';
+import { PlantEntity, StrainEntry } from '../types';
+import { GridOverlayMode, StatusLevel } from '../constants';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
 // Global imports removed
@@ -15,7 +16,7 @@ import './plant-card';
 
 // Helper to determine overlay color
 function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: GrowspaceStore): string {
-  if (mode === 'none') return 'transparent';
+  if (mode === GridOverlayMode.NONE) return 'transparent';
 
   const growspaceId = plant.attributes.growspace_id;
   if (!growspaceId) return 'transparent';
@@ -23,11 +24,11 @@ function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: Grows
   const device = store.data.$devices.get().find(d => d.device_id === growspaceId);
   if (!device) return 'transparent';
 
-  if (mode === 'vpd') {
+  if (mode === GridOverlayMode.VPD) {
     const status = device.biological_metrics.vpd_status;
     if (status === 'ok') return 'rgba(76, 175, 80, 0.15)'; // Green
-    if (status === 'warning') return 'rgba(255, 152, 0, 0.15)'; // Orange
-    if (status === 'danger') return 'rgba(244, 67, 54, 0.15)'; // Red
+    if (status === StatusLevel.WARNING) return 'rgba(255, 152, 0, 0.15)'; // Orange
+    if (status === StatusLevel.DANGER) return 'rgba(244, 67, 54, 0.15)'; // Red
   }
 
   // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
@@ -516,7 +517,7 @@ export class GrowspaceGrid extends LitElement {
               return this.renderEmptySlot(row, col);
             }
 
-            const overlayMode = this._overlayModeController?.value || 'none';
+            const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
             const overlayColor = getOverlayColor(overlayMode, plant, this.store);
 
             return html`
@@ -531,7 +532,7 @@ export class GrowspaceGrid extends LitElement {
                 this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
-                  ${overlayMode !== 'none' ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
+                  ${overlayMode !== GridOverlayMode.NONE ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
                 </div>
                 `;
           }

@@ -1,6 +1,7 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../types';
+import { ViewMode } from '../constants';
 
 // Import Views
 import './views/growspace-view-compact';
@@ -9,7 +10,7 @@ import './views/growspace-view-standard';
 
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
-    @property({ type: String }) accessor viewMode = 'standard';
+    @property({ type: String }) accessor viewMode: string = ViewMode.STANDARD;
     @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
     @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
     @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
@@ -44,7 +45,7 @@ export class GrowspaceViewSwitcher extends LitElement {
     protected render(): TemplateResult {
         if (!this.device) return html``;
 
-        if (this.viewMode === 'compact') {
+        if (this.viewMode === ViewMode.COMPACT) {
             return html`
         <growspace-view-compact
             .grid=${this.grid}
@@ -55,7 +56,7 @@ export class GrowspaceViewSwitcher extends LitElement {
       `;
         }
 
-        if (this.viewMode === 'header') {
+        if (this.viewMode === ViewMode.HEADER) {
             return html`
         <growspace-view-header
             .device=${this.device}

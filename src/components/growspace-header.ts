@@ -24,6 +24,7 @@ import {
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { ConfigTab, ScrollDirection, MetricKey, ViewMode } from '../constants';
 import './growspace-chip';
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext } from '../context';
@@ -32,7 +33,6 @@ import { MetricsUtils, HeaderChip, DominantStageInfo } from '../utils/metrics-ut
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import type { GrowspaceStore } from '../store/growspace-store';
-import { any } from 'zod';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
@@ -95,24 +95,24 @@ export class GrowspaceHeader extends LitElement {
 
 
 
-  private _scrollChips(direction: 'left' | 'right') {
+  private _scrollChips(direction: ScrollDirection) {
     const container = this._chipsContainerRef.value;
     if (container) {
-      container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+      container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
     }
   }
 
-  private _scrollStage(direction: 'left' | 'right') {
+  private _scrollStage(direction: ScrollDirection) {
     const container = this._stageContainerRef.value;
     if (container) {
-      container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+      container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
     }
   }
 
-  private _scrollDeviceChips(direction: 'left' | 'right') {
+  private _scrollDeviceChips(direction: ScrollDirection) {
     const container = this._deviceChipsContainerRef.value;
     if (container) {
-      container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+      container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
     }
   }
 
@@ -779,7 +779,7 @@ export class GrowspaceHeader extends LitElement {
         this.store.ui.$activeDialog.set({
           type: 'CONFIG',
           payload: {
-            currentTab: 'environment',
+            currentTab: ConfigTab.ENVIRONMENT,
             environmentData: {
               selectedGrowspaceId: this._selectedDeviceController.value || '',
               temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
@@ -806,7 +806,7 @@ export class GrowspaceHeader extends LitElement {
       case 'compact':
         // Legacy mapping; now should set ViewMode
         const currentMode = this._viewModeController.value;
-        this.store.ui.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+        this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
         break;
       case 'strains':
         this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
@@ -905,7 +905,7 @@ export class GrowspaceHeader extends LitElement {
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
               <div class="gs-device-chips-container">
-                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('left')}>
+                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.LEFT)}>
                       <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
                   </div>
                   <div class="gs-device-chips-header" ${ref(this._deviceChipsContainerRef)}>
@@ -927,7 +927,7 @@ export class GrowspaceHeader extends LitElement {
                         ></growspace-chip>
                     `)}
                   </div>
-                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('right')}>
+                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.RIGHT)}>
                       <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                   </div>
               </div>
@@ -953,7 +953,7 @@ export class GrowspaceHeader extends LitElement {
            <!-- Row 2 Left: Stage Chips -->
            <div class="header-stage-area-wrapper" style="grid-column: 1; grid-row: 2; display: flex; align-items: center; min-width: 0; position: relative;">
                <!-- Added arrows for stage if needed, using same logic or simplified -->
-                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage('left')}>
+                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.LEFT)}>
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
                 </div>
                <div class="header-stage-area" ${ref(this._stageContainerRef)}>
@@ -970,14 +970,14 @@ export class GrowspaceHeader extends LitElement {
                        `
         : ''}
                </div>
-                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage('right')}>
+                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.RIGHT)}>
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                 </div>
            </div>
 
           <!-- Row 2 Right: Secondary Strip -->
           <div class="secondary-strip-container">
-            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips('left')}>
+            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.LEFT)}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
             </div>
             
@@ -1004,7 +1004,7 @@ export class GrowspaceHeader extends LitElement {
                 `)}
             </div>
 
-            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips('right')}>
+            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.RIGHT)}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
             </div>
           </div>

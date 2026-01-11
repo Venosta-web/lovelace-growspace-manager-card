@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceAPIResponse, GrowspaceManagerCardConfig, GrowAdviceResponse } from '../types';
+import { ViewMode } from '../constants';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
 import { LibraryExportReadyEvent } from '../events';
@@ -271,17 +272,17 @@ export class GrowspaceStore {
     // State Setters
     setIsCompactView(value: boolean) {
         if (value) {
-            this.ui.setViewMode('compact');
-        } else if (this.ui.$viewMode.get() === 'compact') {
-            this.ui.setViewMode('standard');
+            this.ui.setViewMode(ViewMode.COMPACT);
+        } else if (this.ui.$viewMode.get() === ViewMode.COMPACT) {
+            this.ui.setViewMode(ViewMode.STANDARD);
         }
     }
 
     toggleHeaderExpansion() {
-        if (this.ui.$viewMode.get() === 'header') {
-            this.ui.setViewMode('standard');
+        if (this.ui.$viewMode.get() === ViewMode.HEADER) {
+            this.ui.setViewMode(ViewMode.STANDARD);
         } else {
-            this.ui.setViewMode('header');
+            this.ui.setViewMode(ViewMode.HEADER);
         }
     }
 
@@ -693,7 +694,7 @@ export class GrowspaceStore {
 
         // Auto-expand if we just enabled a graph while in header mode
         if (isNowActive && this.ui.$viewMode.get() === 'header') {
-            this.ui.setViewMode('standard');
+            this.ui.setViewMode(ViewMode.STANDARD);
         }
     }
 
