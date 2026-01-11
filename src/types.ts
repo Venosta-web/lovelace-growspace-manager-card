@@ -363,6 +363,10 @@ export interface AddPlantDialogState {
   col: number;
 }
 
+export interface AddPlantsDialogState {
+  // Batch add doesn't specific a row/col, it finds available ones
+}
+
 export interface PlantOverviewDialogState {
   plant: PlantEntity;
   editedAttributes: Partial<PlantAttributes>;

@@ -49,6 +49,7 @@ export class GrowspaceViewStandard extends LitElement {
         ? html`
             <growspace-edit-mode-banner
               .selectedCount=${this.selectedCount}
+              @batch-add-plants=${(e: CustomEvent) => this._redispatch(e, 'batch-add-plants')}
             ></growspace-edit-mode-banner>
           `
         : ''}

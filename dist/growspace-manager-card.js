@@ -44,6 +44,7 @@ var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
 var mdiInformation = "M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiInformationOutline = "M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
 var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
 var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
@@ -53,6 +54,7 @@ var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L1
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
+var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
 var mdiSelectAll = "M9,9H15V15H9M7,17H17V7H7M15,5H17V3H15M15,21H17V19H15M19,17H21V15H19M19,9H21V7H19M19,21A2,2 0 0,0 21,19H19M19,13H21V11H19M11,21H13V19H11M9,3H7V5H9M3,17H5V15H3M5,21V19H3A2,2 0 0,0 5,21M19,3V5H21A2,2 0 0,0 19,3M13,3H11V5H13M3,9H5V7H3M7,21H9V19H7M3,13H5V11H3M3,5H5V3A2,2 0 0,0 3,5Z";
@@ -869,6 +871,7 @@ const SERVICES = {
     ASK_GROW_ADVICE: 'ask_grow_advice',
     ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
     STRAIN_RECOMMENDATION: 'strain_recommendation',
+    ADD_PLANTS: 'add_plants',
     WATER_PLANT: 'water_plant',
     WATER_GROWSPACE: 'water_growspace',
     SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
@@ -5218,6 +5221,18 @@ class DataService {
             throw new Error(msg);
         }
     }
+    async addPlants(params) {
+        console.log('[DataService:addPlants] Sending payload:', params);
+        try {
+            await this.hass.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
+            console.log('[DataService:addPlants] Service Called');
+        }
+        catch (err) {
+            console.error('[DataService:addPlants] Error:', err);
+            const msg = err instanceof Error ? err.message : 'Failed to add plants';
+            throw new Error(msg);
+        }
+    }
     async updatePlant(params) {
         console.log('[DataService:updatePlant] Sending payload:', params);
         try {
@@ -8947,6 +8962,379 @@ const dialogStyles = [
         display: flex;
         flex-direction: column;
         gap: 16px;
+      }
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
+      }
+    `,
+        ]
+    });
+    (() => {
+        __runInitializers(_classThis, _classExtraInitializers);
+    })();
+    return _classThis;
+})();
+
+(() => {
+    var _AddPlantsDialog_hass_accessor_storage, _AddPlantsDialog_strainLibrary_accessor_storage, _AddPlantsDialog_growspaceName_accessor_storage, _AddPlantsDialog_open_accessor_storage, _AddPlantsDialog_strain_accessor_storage, _AddPlantsDialog_amount_accessor_storage, _AddPlantsDialog_start_number_accessor_storage, _AddPlantsDialog_veg_start_accessor_storage, _AddPlantsDialog_flower_start_accessor_storage, _AddPlantsDialog_seedling_start_accessor_storage, _AddPlantsDialog_mother_start_accessor_storage, _AddPlantsDialog_clone_start_accessor_storage, _AddPlantsDialog_dry_start_accessor_storage, _AddPlantsDialog_cure_start_accessor_storage;
+    let _classDecorators = [t$2('add-plants-dialog')];
+    let _classDescriptor;
+    let _classExtraInitializers = [];
+    let _classThis;
+    let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _strainLibrary_decorators;
+    let _strainLibrary_initializers = [];
+    let _strainLibrary_extraInitializers = [];
+    let _growspaceName_decorators;
+    let _growspaceName_initializers = [];
+    let _growspaceName_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
+    let _strain_decorators;
+    let _strain_initializers = [];
+    let _strain_extraInitializers = [];
+    let _amount_decorators;
+    let _amount_initializers = [];
+    let _amount_extraInitializers = [];
+    let _start_number_decorators;
+    let _start_number_initializers = [];
+    let _start_number_extraInitializers = [];
+    let _veg_start_decorators;
+    let _veg_start_initializers = [];
+    let _veg_start_extraInitializers = [];
+    let _flower_start_decorators;
+    let _flower_start_initializers = [];
+    let _flower_start_extraInitializers = [];
+    let _seedling_start_decorators;
+    let _seedling_start_initializers = [];
+    let _seedling_start_extraInitializers = [];
+    let _mother_start_decorators;
+    let _mother_start_initializers = [];
+    let _mother_start_extraInitializers = [];
+    let _clone_start_decorators;
+    let _clone_start_initializers = [];
+    let _clone_start_extraInitializers = [];
+    let _dry_start_decorators;
+    let _dry_start_initializers = [];
+    let _dry_start_extraInitializers = [];
+    let _cure_start_decorators;
+    let _cure_start_initializers = [];
+    let _cure_start_extraInitializers = [];
+    _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _AddPlantsDialog_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _AddPlantsDialog_hass_accessor_storage, value, "f"); }
+        get strainLibrary() { return __classPrivateFieldGet(this, _AddPlantsDialog_strainLibrary_accessor_storage, "f"); }
+        set strainLibrary(value) { __classPrivateFieldSet(this, _AddPlantsDialog_strainLibrary_accessor_storage, value, "f"); }
+        get growspaceName() { return __classPrivateFieldGet(this, _AddPlantsDialog_growspaceName_accessor_storage, "f"); }
+        set growspaceName(value) { __classPrivateFieldSet(this, _AddPlantsDialog_growspaceName_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _AddPlantsDialog_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _AddPlantsDialog_open_accessor_storage, value, "f"); }
+        get strain() { return __classPrivateFieldGet(this, _AddPlantsDialog_strain_accessor_storage, "f"); }
+        set strain(value) { __classPrivateFieldSet(this, _AddPlantsDialog_strain_accessor_storage, value, "f"); }
+        get amount() { return __classPrivateFieldGet(this, _AddPlantsDialog_amount_accessor_storage, "f"); }
+        set amount(value) { __classPrivateFieldSet(this, _AddPlantsDialog_amount_accessor_storage, value, "f"); }
+        get start_number() { return __classPrivateFieldGet(this, _AddPlantsDialog_start_number_accessor_storage, "f"); }
+        set start_number(value) { __classPrivateFieldSet(this, _AddPlantsDialog_start_number_accessor_storage, value, "f"); }
+        // Date fields
+        get veg_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_veg_start_accessor_storage, "f"); }
+        set veg_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_veg_start_accessor_storage, value, "f"); }
+        get flower_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_flower_start_accessor_storage, "f"); }
+        set flower_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_flower_start_accessor_storage, value, "f"); }
+        get seedling_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_seedling_start_accessor_storage, "f"); }
+        set seedling_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_seedling_start_accessor_storage, value, "f"); }
+        get mother_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_mother_start_accessor_storage, "f"); }
+        set mother_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_mother_start_accessor_storage, value, "f"); }
+        get clone_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_clone_start_accessor_storage, "f"); }
+        set clone_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_clone_start_accessor_storage, value, "f"); }
+        get dry_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_dry_start_accessor_storage, "f"); }
+        set dry_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_dry_start_accessor_storage, value, "f"); }
+        get cure_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_cure_start_accessor_storage, "f"); }
+        set cure_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_cure_start_accessor_storage, value, "f"); }
+        setInitialState(strain = '') {
+            this.strain = strain;
+            this.amount = 1;
+            this.start_number = 1;
+            this.veg_start = '';
+            this.flower_start = '';
+            this.seedling_start = '';
+            this.mother_start = '';
+            this.clone_start = '';
+            this.dry_start = '';
+            this.cure_start = '';
+        }
+        _close() {
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        }
+        _confirm() {
+            const payload = {
+                strain: this.strain,
+                amount: this.amount,
+                start_number: this.start_number,
+                veg_start: this.veg_start,
+                flower_start: this.flower_start,
+                seedling_start: this.seedling_start,
+                mother_start: this.mother_start,
+                clone_start: this.clone_start,
+                dry_start: this.dry_start,
+                cure_start: this.cure_start,
+            };
+            this.dispatchEvent(new CustomEvent('add-plants-submit', {
+                detail: payload,
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        render() {
+            if (!this.open)
+                return x ``;
+            const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+            return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Batch Add Plants</h2>
+              <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+            <div class="explanation-card">
+              <svg style="width:20px;height:20px;" viewBox="0 0 24 24">
+                <path d="${mdiInformationOutline}"></path>
+              </svg>
+              <div>
+                Batch adding will automatically find available positions in the growspace. 
+                Plants will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>.
+                For example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and OG Kush #3.
+              </div>
+            </div>
+
+            <!-- IDENTITY CARD -->
+            <div class="detail-card">
+              <h3>Batch Configuration</h3>
+              <md3-select
+                label="Strain *"
+                .value=${this.strain}
+                .options=${uniqueStrains}
+                @change=${(e) => (this.strain = e.detail)}
+              ></md3-select>
+              
+              <div class="row-col-grid">
+                <md3-number-input
+                  label="Amount"
+                  .value=${this.amount}
+                  min="1"
+                  @change=${(e) => (this.amount = parseInt(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Start Number"
+                  .value=${this.start_number}
+                  min="1"
+                  @change=${(e) => (this.start_number = parseInt(e.detail))}
+                ></md3-number-input>
+              </div>
+            </div>
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <h3>Timeline</h3>
+              ${this.renderTimelineContent()}
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._confirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+              Add Plants
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+        }
+        renderTimelineContent() {
+            const name = this.growspaceName.toLowerCase();
+            if (name.includes('mother')) {
+                return x `<md3-date-input
+        label="Mother Start"
+        .value=${this.mother_start}
+        @change=${(e) => (this.mother_start = e.detail)}
+      ></md3-date-input>`;
+            }
+            else if (name.includes('clone')) {
+                return x `<md3-date-input
+        label="Clone Start"
+        .value=${this.clone_start}
+        @change=${(e) => (this.clone_start = e.detail)}
+      ></md3-date-input>`;
+            }
+            else if (name.includes('dry')) {
+                return x `<md3-date-input
+        label="Dry Start"
+        .value=${this.dry_start}
+        @change=${(e) => (this.dry_start = e.detail)}
+      ></md3-date-input>`;
+            }
+            else if (name.includes('cure')) {
+                return x `<md3-date-input
+        label="Cure Start"
+        .value=${this.cure_start}
+        @change=${(e) => (this.cure_start = e.detail)}
+      ></md3-date-input>`;
+            }
+            else {
+                return x `
+        <md3-date-input
+          label="Seedling Start"
+          .value=${this.seedling_start}
+          @change=${(e) => (this.seedling_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${this.veg_start}
+          @change=${(e) => (this.veg_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${this.flower_start}
+          @change=${(e) => (this.flower_start = e.detail)}
+        ></md3-date-input>
+      `;
+            }
+        }
+        constructor() {
+            super(...arguments);
+            _AddPlantsDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _AddPlantsDialog_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
+            _AddPlantsDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
+            _AddPlantsDialog_open_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _AddPlantsDialog_strain_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strain_initializers, '')));
+            _AddPlantsDialog_amount_accessor_storage.set(this, (__runInitializers(this, _strain_extraInitializers), __runInitializers(this, _amount_initializers, 1)));
+            _AddPlantsDialog_start_number_accessor_storage.set(this, (__runInitializers(this, _amount_extraInitializers), __runInitializers(this, _start_number_initializers, 1)));
+            _AddPlantsDialog_veg_start_accessor_storage.set(this, (__runInitializers(this, _start_number_extraInitializers), __runInitializers(this, _veg_start_initializers, '')));
+            _AddPlantsDialog_flower_start_accessor_storage.set(this, (__runInitializers(this, _veg_start_extraInitializers), __runInitializers(this, _flower_start_initializers, '')));
+            _AddPlantsDialog_seedling_start_accessor_storage.set(this, (__runInitializers(this, _flower_start_extraInitializers), __runInitializers(this, _seedling_start_initializers, '')));
+            _AddPlantsDialog_mother_start_accessor_storage.set(this, (__runInitializers(this, _seedling_start_extraInitializers), __runInitializers(this, _mother_start_initializers, '')));
+            _AddPlantsDialog_clone_start_accessor_storage.set(this, (__runInitializers(this, _mother_start_extraInitializers), __runInitializers(this, _clone_start_initializers, '')));
+            _AddPlantsDialog_dry_start_accessor_storage.set(this, (__runInitializers(this, _clone_start_extraInitializers), __runInitializers(this, _dry_start_initializers, '')));
+            _AddPlantsDialog_cure_start_accessor_storage.set(this, (__runInitializers(this, _dry_start_extraInitializers), __runInitializers(this, _cure_start_initializers, '')));
+            __runInitializers(this, _cure_start_extraInitializers);
+        }
+    };
+    _AddPlantsDialog_hass_accessor_storage = new WeakMap();
+    _AddPlantsDialog_strainLibrary_accessor_storage = new WeakMap();
+    _AddPlantsDialog_growspaceName_accessor_storage = new WeakMap();
+    _AddPlantsDialog_open_accessor_storage = new WeakMap();
+    _AddPlantsDialog_strain_accessor_storage = new WeakMap();
+    _AddPlantsDialog_amount_accessor_storage = new WeakMap();
+    _AddPlantsDialog_start_number_accessor_storage = new WeakMap();
+    _AddPlantsDialog_veg_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_flower_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_seedling_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_mother_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_clone_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_dry_start_accessor_storage = new WeakMap();
+    _AddPlantsDialog_cure_start_accessor_storage = new WeakMap();
+    __setFunctionName(_classThis, "AddPlantsDialog");
+    (() => {
+        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _strainLibrary_decorators = [n$5({ type: Array })];
+        _growspaceName_decorators = [n$5({ type: String })];
+        _open_decorators = [n$5({ type: Boolean, reflect: true })];
+        _strain_decorators = [r$2()];
+        _amount_decorators = [r$2()];
+        _start_number_decorators = [r$2()];
+        _veg_start_decorators = [r$2()];
+        _flower_start_decorators = [r$2()];
+        _seedling_start_decorators = [r$2()];
+        _mother_start_decorators = [r$2()];
+        _clone_start_decorators = [r$2()];
+        _dry_start_decorators = [r$2()];
+        _cure_start_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
+        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
+        __esDecorate(_classThis, null, _strain_decorators, { kind: "accessor", name: "strain", static: false, private: false, access: { has: obj => "strain" in obj, get: obj => obj.strain, set: (obj, value) => { obj.strain = value; } }, metadata: _metadata }, _strain_initializers, _strain_extraInitializers);
+        __esDecorate(_classThis, null, _amount_decorators, { kind: "accessor", name: "amount", static: false, private: false, access: { has: obj => "amount" in obj, get: obj => obj.amount, set: (obj, value) => { obj.amount = value; } }, metadata: _metadata }, _amount_initializers, _amount_extraInitializers);
+        __esDecorate(_classThis, null, _start_number_decorators, { kind: "accessor", name: "start_number", static: false, private: false, access: { has: obj => "start_number" in obj, get: obj => obj.start_number, set: (obj, value) => { obj.start_number = value; } }, metadata: _metadata }, _start_number_initializers, _start_number_extraInitializers);
+        __esDecorate(_classThis, null, _veg_start_decorators, { kind: "accessor", name: "veg_start", static: false, private: false, access: { has: obj => "veg_start" in obj, get: obj => obj.veg_start, set: (obj, value) => { obj.veg_start = value; } }, metadata: _metadata }, _veg_start_initializers, _veg_start_extraInitializers);
+        __esDecorate(_classThis, null, _flower_start_decorators, { kind: "accessor", name: "flower_start", static: false, private: false, access: { has: obj => "flower_start" in obj, get: obj => obj.flower_start, set: (obj, value) => { obj.flower_start = value; } }, metadata: _metadata }, _flower_start_initializers, _flower_start_extraInitializers);
+        __esDecorate(_classThis, null, _seedling_start_decorators, { kind: "accessor", name: "seedling_start", static: false, private: false, access: { has: obj => "seedling_start" in obj, get: obj => obj.seedling_start, set: (obj, value) => { obj.seedling_start = value; } }, metadata: _metadata }, _seedling_start_initializers, _seedling_start_extraInitializers);
+        __esDecorate(_classThis, null, _mother_start_decorators, { kind: "accessor", name: "mother_start", static: false, private: false, access: { has: obj => "mother_start" in obj, get: obj => obj.mother_start, set: (obj, value) => { obj.mother_start = value; } }, metadata: _metadata }, _mother_start_initializers, _mother_start_extraInitializers);
+        __esDecorate(_classThis, null, _clone_start_decorators, { kind: "accessor", name: "clone_start", static: false, private: false, access: { has: obj => "clone_start" in obj, get: obj => obj.clone_start, set: (obj, value) => { obj.clone_start = value; } }, metadata: _metadata }, _clone_start_initializers, _clone_start_extraInitializers);
+        __esDecorate(_classThis, null, _dry_start_decorators, { kind: "accessor", name: "dry_start", static: false, private: false, access: { has: obj => "dry_start" in obj, get: obj => obj.dry_start, set: (obj, value) => { obj.dry_start = value; } }, metadata: _metadata }, _dry_start_initializers, _dry_start_extraInitializers);
+        __esDecorate(_classThis, null, _cure_start_decorators, { kind: "accessor", name: "cure_start", static: false, private: false, access: { has: obj => "cure_start" in obj, get: obj => obj.cure_start, set: (obj, value) => { obj.cure_start = value; } }, metadata: _metadata }, _cure_start_initializers, _cure_start_extraInitializers);
+        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
+        _classThis = _classDescriptor.value;
+        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+    })();
+    Object.defineProperty(_classThis, "styles", {
+        enumerable: true,
+        configurable: true,
+        writable: true,
+        value: [
+            dialogStyles,
+            i$6 `
+      :host {
+        display: block;
+      }
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .explanation-card {
+        background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        font-size: 0.9rem;
+        color: var(--md3-sys-color-on-surface-variant);
+        border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
+      }
+      .explanation-card svg {
+        flex-shrink: 0;
+        fill: var(--md3-sys-color-primary);
       }
       @media (max-width: 450px) {
         .overview-grid {
@@ -17531,6 +17919,8 @@ class GrowspaceLogbookController {
             switch (active.type) {
                 case 'ADD_PLANT':
                     return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                case 'ADD_PLANTS':
+                    return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
                 case 'PLANT_OVERVIEW':
                     return this._renderPlantOverviewDialog(active, growspaceOptions);
                 case 'STRAIN_LIBRARY':
@@ -17571,6 +17961,19 @@ class GrowspaceLogbookController {
             @close=${() => this.store.ui.closeDialog()}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
+        `;
+        }
+        _renderAddPlantsDialog(active, strainLibrary, selectedDeviceData) {
+            if (active.type !== 'ADD_PLANTS')
+                return x ``;
+            return x `
+        <add-plants-dialog
+            .open=${true}
+            .strainLibrary=${strainLibrary}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.ui.closeDialog()}
+            @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
+        ></add-plants-dialog>
         `;
         }
         _renderPlantOverviewDialog(active, growspaceOptions) {
@@ -17920,6 +18323,10 @@ class GrowspaceLogbookController {
           <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
             <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             Log IPM
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
+            Batch Add Plants
           </button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
             <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
@@ -31627,6 +32034,7 @@ const growspaceCardStyles = i$6 `
                 ? x `
             <growspace-edit-mode-banner
               .selectedCount=${this.selectedCount}
+              @batch-add-plants=${(e) => this._redispatch(e, 'batch-add-plants')}
             ></growspace-edit-mode-banner>
           `
                 : ''}
@@ -31833,6 +32241,7 @@ const growspaceCardStyles = i$6 `
         .selectedCount=${this.selectedCount}
         .config=${this.config}
         .isLoading=${this.isLoading}
+        @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
       ></growspace-view-standard>
     `;
         }
@@ -33582,7 +33991,8 @@ class GrowspaceStore {
                     nextStage: (plant) => this.handleMovePlantToNextStage(plant),
                     takeClone: (mother, num) => this.handleTakeClone(mother, num),
                     updateFromDialog: (state) => updatePlantsFromDialog(this._plantActionContext, state),
-                    add: (gid, r, c, s, p) => addPlant(this._plantActionContext, gid, r, c, s, p)
+                    add: (gid, r, c, s, p) => addPlant(this._plantActionContext, gid, r, c, s, p),
+                    addBatch: (detail) => this.confirmAddPlants(detail)
                 },
                 growspace: {
                     add: (detail) => this.handleAddGrowspace(detail),
@@ -34075,6 +34485,25 @@ class GrowspaceStore {
             return;
         }
         await addPlant(this._plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, detail.phenotype);
+    }
+    async confirmAddPlants(detail) {
+        const selectedDevice = this.data.$selectedDevice.get();
+        if (!selectedDevice) {
+            this.showToast('No growspace selected', 'error');
+            return;
+        }
+        try {
+            await this.dataService.addPlants({
+                growspace_id: selectedDevice,
+                ...detail
+            });
+            this.showToast('Batch plants added successfully', 'success');
+            this.ui.closeDialog();
+            await this.refreshData();
+        }
+        catch (err) {
+            this.showToast(`Error: ${err.message}`, 'error');
+        }
     }
     async analyzeGrowspace(query, all) {
         const currentDialog = this.ui.$activeDialog.get();
@@ -34680,6 +35109,9 @@ let GrowspaceManagerCard = (() => {
         _handleTrainingSelected() {
             this.store.openBatchTrainingDialog();
         }
+        _handleBatchAddPlants() {
+            this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+        }
         render() {
             if (!this.hass) {
                 return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -34721,6 +35153,7 @@ let GrowspaceManagerCard = (() => {
             @water-selected=${this._handleWaterSelected}
             @training-selected=${this._handleTrainingSelected}
             @ipm-selected=${this._handleIPMSelected}
+            @batch-add-plants=${this._handleBatchAddPlants}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

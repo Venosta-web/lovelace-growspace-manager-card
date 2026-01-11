@@ -95,7 +95,8 @@ export class GrowspaceStore {
             nextStage: (plant: PlantEntity) => this.handleMovePlantToNextStage(plant),
             takeClone: (mother: PlantEntity, num?: number) => this.handleTakeClone(mother, num),
             updateFromDialog: (state: any) => plantActions.updatePlantsFromDialog(this._plantActionContext, state),
-            add: (gid: string, r: number, c: number, s: string, p?: string) => plantActions.addPlant(this._plantActionContext, gid, r, c, s, p)
+            add: (gid: string, r: number, c: number, s: string, p?: string) => plantActions.addPlant(this._plantActionContext, gid, r, c, s, p),
+            addBatch: (detail: any) => this.confirmAddPlants(detail)
         },
         growspace: {
             add: (detail: any) => this.handleAddGrowspace(detail),
@@ -659,6 +660,26 @@ export class GrowspaceStore {
             detail.strain,
             detail.phenotype
         );
+    }
+
+    async confirmAddPlants(detail: any) {
+        const selectedDevice = this.data.$selectedDevice.get();
+        if (!selectedDevice) {
+            this.showToast('No growspace selected', 'error');
+            return;
+        }
+
+        try {
+            await this.dataService.addPlants({
+                growspace_id: selectedDevice,
+                ...detail
+            });
+            this.showToast('Batch plants added successfully', 'success');
+            this.ui.closeDialog();
+            await this.refreshData();
+        } catch (err: any) {
+            this.showToast(`Error: ${err.message}`, 'error');
+        }
     }
 
     async analyzeGrowspace(query: string, all: boolean) {

@@ -77,6 +77,7 @@ export class GrowspaceViewSwitcher extends LitElement {
         .selectedCount=${this.selectedCount}
         .config=${this.config}
         .isLoading=${this.isLoading}
+        @batch-add-plants=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
       ></growspace-view-standard>
     `;
     }

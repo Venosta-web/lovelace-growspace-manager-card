@@ -7,7 +7,8 @@ import {
   mdiWater,
   mdiDumbbell,
   mdiBug,
-  mdiClose
+  mdiClose,
+  mdiPlusBoxMultiple
 } from '@mdi/js';
 import { sharedStyles } from '../../styles/shared.styles';
 import { uiStyles } from '../../styles/ui.styles';
@@ -97,6 +98,10 @@ export class EditModeBanner extends LitElement {
           <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
             <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             Log IPM
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
+            Batch Add Plants
           </button>
           <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
             <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>

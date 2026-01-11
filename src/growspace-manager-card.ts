@@ -212,6 +212,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.openBatchTrainingDialog();
   }
 
+  private _handleBatchAddPlants() {
+    this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+  }
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -259,6 +263,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @water-selected=${this._handleWaterSelected}
             @training-selected=${this._handleTrainingSelected}
             @ipm-selected=${this._handleIPMSelected}
+            @batch-add-plants=${this._handleBatchAddPlants}
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher

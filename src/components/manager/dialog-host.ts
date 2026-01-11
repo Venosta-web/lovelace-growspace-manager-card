@@ -9,6 +9,7 @@ import { ActiveDialogState } from '../../ui-state';
 import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../types';
 
 import '../../dialogs/add-plant-dialog';
+import '../../dialogs/add-plants-dialog';
 import '../../dialogs/plant-overview-dialog';
 import '../../dialogs/strain-library-dialog';
 import '../../dialogs/config-dialog';
@@ -70,6 +71,8 @@ export class DialogHost extends LitElement {
         switch (active.type) {
             case 'ADD_PLANT':
                 return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+            case 'ADD_PLANTS':
+                return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
             case 'PLANT_OVERVIEW':
                 return this._renderPlantOverviewDialog(active, growspaceOptions);
             case 'STRAIN_LIBRARY':
@@ -114,6 +117,23 @@ export class DialogHost extends LitElement {
             @close=${() => this.store.ui.closeDialog()}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
+        `;
+    }
+
+    private _renderAddPlantsDialog(
+        active: ActiveDialogState,
+        strainLibrary: StrainEntry[],
+        selectedDeviceData?: GrowspaceDevice
+    ): TemplateResult {
+        if (active.type !== 'ADD_PLANTS') return html``;
+        return html`
+        <add-plants-dialog
+            .open=${true}
+            .strainLibrary=${strainLibrary}
+            .growspaceName=${selectedDeviceData?.name || ''}
+            @close=${() => this.store.ui.closeDialog()}
+            @add-plants-submit=${(e: CustomEvent) => this.store.confirmAddPlants(e.detail)}
+        ></add-plants-dialog>
         `;
     }
 

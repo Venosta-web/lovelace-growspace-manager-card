@@ -167,6 +167,7 @@ export const SERVICES = {
   ASK_GROW_ADVICE: 'ask_grow_advice',
   ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
   STRAIN_RECOMMENDATION: 'strain_recommendation',
+  ADD_PLANTS: 'add_plants',
   WATER_PLANT: 'water_plant',
   WATER_GROWSPACE: 'water_growspace',
   SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',

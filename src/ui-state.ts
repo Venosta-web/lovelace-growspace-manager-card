@@ -1,5 +1,6 @@
 import {
   AddPlantDialogState,
+  AddPlantsDialogState,
   PlantOverviewDialogState,
   StrainLibraryDialogState,
   ConfigDialogState,
@@ -15,6 +16,7 @@ import {
 export type ActiveDialogState =
   | { type: 'NONE' }
   | { type: 'ADD_PLANT'; payload: AddPlantDialogState }
+  | { type: 'ADD_PLANTS'; payload: AddPlantsDialogState }
   | { type: 'PLANT_OVERVIEW'; payload: PlantOverviewDialogState }
   | { type: 'STRAIN_LIBRARY'; payload: StrainLibraryDialogState }
   | { type: 'CONFIG'; payload: ConfigDialogState }

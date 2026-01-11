@@ -406,6 +406,30 @@ export class DataService {
     }
   }
 
+  async addPlants(params: {
+    growspace_id: string;
+    strain: string;
+    amount: number;
+    start_number?: number;
+    veg_start?: string;
+    flower_start?: string;
+    mother_start?: string;
+    clone_start?: string;
+    seedling_start?: string;
+    dry_start?: string;
+    cure_start?: string;
+  }): Promise<void> {
+    console.log('[DataService:addPlants] Sending payload:', params);
+    try {
+      await this.hass.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
+      console.log('[DataService:addPlants] Service Called');
+    } catch (err: unknown) {
+      console.error('[DataService:addPlants] Error:', err);
+      const msg = err instanceof Error ? err.message : 'Failed to add plants';
+      throw new Error(msg);
+    }
+  }
+
   async updatePlant(params: { plant_id: string;[key: string]: any }): Promise<void> {
     console.log('[DataService:updatePlant] Sending payload:', params);
     try {
