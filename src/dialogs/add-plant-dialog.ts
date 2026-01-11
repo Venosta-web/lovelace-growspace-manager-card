@@ -107,6 +107,14 @@ export class AddPlantDialog extends LitElement {
     if (!this.open) return html``;
 
     const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+    
+    // Filter phenotypes based on selected strain
+    const relevantPhenotypes = this.strain
+      ? [...new Set(this.strainLibrary
+          .filter(s => s.strain === this.strain && s.phenotype)
+          .map(s => s.phenotype)
+        )].sort()
+      : [];
 
     return html`
       <ha-dialog
@@ -152,6 +160,7 @@ export class AddPlantDialog extends LitElement {
               <md3-text-input
                 label="Phenotype"
                 .value=${this.phenotype}
+                .suggestions=${relevantPhenotypes}
                 @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
               ></md3-text-input>
               <div class="row-col-grid">
