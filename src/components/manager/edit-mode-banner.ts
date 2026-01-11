@@ -1,6 +1,14 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { mdiCheckboxMarked } from '@mdi/js';
+import {
+  mdiCheckboxMarked,
+  mdiSelectAll,
+  mdiSelectionOff,
+  mdiWater,
+  mdiDumbbell,
+  mdiBug,
+  mdiClose
+} from '@mdi/js';
 import { sharedStyles } from '../../styles/shared.styles';
 import { uiStyles } from '../../styles/ui.styles';
 
@@ -70,12 +78,30 @@ export class EditModeBanner extends LitElement {
           <span>${this.selectedCount} plant(s) selected</span>
         </div>
         <div class="banner-actions">
-          <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
-          <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
-          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
-          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>Log Training</button>
-          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>Log IPM</button>
-          <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
+          <button class="md3-button text" @click=${() => this._dispatch('select-all')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
+            Select All
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
+            Clear
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            Water / Nutrients
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            Log Training
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            Log IPM
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            Exit
+          </button>
         </div>
       </div>
     `;

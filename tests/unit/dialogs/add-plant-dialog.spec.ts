@@ -1,249 +1,213 @@
-
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { AddPlantDialog } from '../../../src/dialogs/add-plant-dialog';
+import '../../../src/dialogs/add-plant-dialog';
 import { StrainEntry } from '../../../src/types';
 
-// Mock dependencies
-vi.mock('../../../src/components/ui/md3-text-input', () => ({
-    Md3TextInput: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
+// Mock ha-dialog if not already defined
+if (!customElements.get('ha-dialog')) {
+    class MockHaDialog extends HTMLElement {
+        open = false;
     }
-}));
-vi.mock('../../../src/components/ui/md3-number-input', () => ({
-    Md3NumberInput: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
-    }
-}));
-vi.mock('../../../src/components/ui/md3-date-input', () => ({
-    Md3DateInput: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
-    }
-}));
-vi.mock('../../../src/components/ui/md3-select', () => ({
-    Md3Select: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
-        get options() { return JSON.parse(this.getAttribute('options') || '[]'); }
-        set options(v) { this.setAttribute('options', JSON.stringify(v)); }
-    }
-}));
-
-// Mock ha-dialog
-class HaDialogMock extends HTMLElement {
-    open = false;
+    customElements.define('ha-dialog', MockHaDialog);
 }
-customElements.define('ha-dialog', HaDialogMock);
 
 describe('AddPlantDialog', () => {
     let element: AddPlantDialog;
     const mockStrains: StrainEntry[] = [
-        { key: '1', strain: 'Blue Dream', phenotype: 'Original', type: 'Sativa', breeder: 'HSO', flowering_days_min: 60, flowering_days_max: 70 },
-        { key: '2', strain: 'OG Kush', phenotype: '#18', type: 'Indica', breeder: 'Dinafem', flowering_days_min: 50, flowering_days_max: 60 }
+        { strain: 'Blue Dream', phenotype: 'Sativa Dom', key: 'bd1' },
+        { strain: 'Blue Dream', phenotype: 'Indica Pheno', key: 'bd2' },
+        { strain: 'OG Kush', phenotype: '', key: 'og1' }
     ];
 
     beforeEach(async () => {
-        element = new AddPlantDialog();
-        element.strainLibrary = [...mockStrains];
+        element = await fixture(html`<add-plant-dialog></add-plant-dialog>`);
+        element.hass = {} as any;
+        element.strainLibrary = mockStrains;
         element.open = true;
-        document.body.appendChild(element);
         await element.updateComplete;
     });
 
-    afterEach(() => {
-        if (element.isConnected) document.body.removeChild(element);
-    });
-
-    it('should render content when open', () => {
+    it('should render content when open', async () => {
         const dialog = element.shadowRoot?.querySelector('ha-dialog');
         expect(dialog).toBeTruthy();
+        const title = element.shadowRoot?.querySelector('.dialog-title');
+        expect(title?.textContent).toBe('Add New Plant');
     });
 
     it('should render nothing when closed', async () => {
         element.open = false;
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        expect(dialog).toBeNull();
+        const container = element.shadowRoot?.querySelector('.glass-dialog-container');
+        expect(container).toBeNull();
     });
 
-    it('should populate strain options', () => {
+    it('should populate strain options', async () => {
         const select = element.shadowRoot?.querySelector('md3-select') as any;
         expect(select).toBeTruthy();
-        expect(select.options).toContain('Blue Dream');
-        expect(select.options).toContain('OG Kush');
+        expect(select.options).toEqual(['Blue Dream', 'OG Kush']);
+    });
+
+    it('should populate phenotype suggestions when strain is selected', async () => {
+        const select = element.shadowRoot?.querySelector('md3-select') as any;
+        
+        // Simulate strain selection
+        select.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
+        await element.updateComplete;
+
+        const phenotypeInput = element.shadowRoot?.querySelector('md3-text-input') as any;
+        expect(phenotypeInput).toBeTruthy();
+        
+        // Should contain phenotypes for Blue Dream, sorted
+        expect(phenotypeInput.suggestions).toEqual(['Indica Pheno', 'Sativa Dom']);
+        
+        // Change strain to OG Kush (no phenotypes)
+        select.dispatchEvent(new CustomEvent('change', { detail: 'OG Kush' }));
+        await element.updateComplete;
+        
+        expect(phenotypeInput.suggestions).toEqual([]);
     });
 
     it('should set initial state', async () => {
-        element.setInitialState(2, 3, 'Blue Dream', '#1');
+        element.setInitialState(2, 3);
         await element.updateComplete;
-
-        const rowInput = element.shadowRoot?.querySelector('md3-number-input[label="Row"]') as any;
-        const colInput = element.shadowRoot?.querySelector('md3-number-input[label="Col"]') as any;
-        const strainSelect = element.shadowRoot?.querySelector('md3-select') as any;
-        const phenoInput = element.shadowRoot?.querySelector('md3-text-input[label="Phenotype"]') as any;
-
-        expect(String(rowInput.value)).toBe('3'); // Displayed as 1-indexed (2+1)
-        expect(String(colInput.value)).toBe('4'); // Displayed as 1-indexed (3+1)
-        expect(strainSelect.value).toBe('Blue Dream');
-        expect(phenoInput.value).toBe('#1');
+        
+        const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0] as any;
+        const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1] as any;
+        
+        // Inputs display 1-based index
+        expect(rowInput.value).toBe(3);
+        expect(colInput.value).toBe(4);
     });
 
     describe('Timeline Variations', () => {
         it('should show veg/flower inputs for standard growspace', async () => {
-            element.growspaceName = 'Tent 1';
+            element.growspaceName = 'Main Tent';
             await element.updateComplete;
-
-            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
-                .map(el => el.getAttribute('label'));
-
-            expect(labels).toContain('Veg Start');
-            expect(labels).toContain('Flower Start');
-            expect(labels).not.toContain('Mother Start');
+            
+            const dateInputs = element.shadowRoot?.querySelectorAll('md3-date-input');
+            expect(dateInputs?.length).toBe(3);
+            expect(dateInputs?.[0].getAttribute('label')).toBe('Seedling Start');
         });
 
         it('should show mother input for mother growspace and handle change', async () => {
             element.growspaceName = 'Mother Tent';
             await element.updateComplete;
+            
+            const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
+            expect(dateInput?.getAttribute('label')).toBe('Mother Start');
 
-            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
-                .map(el => el.getAttribute('label'));
-
-            expect(labels).toContain('Mother Start');
-            expect(labels).not.toContain('Flower Start');
-
-            const motherInput = element.shadowRoot?.querySelector('md3-date-input[label="Mother Start"]') as any;
-            motherInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01', bubbles: true, composed: true }));
+            dateInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
+            await element.updateComplete;
         });
 
         it('should show cure input for cure growspace and handle change', async () => {
-            element.growspaceName = 'Cure Tent';
+            element.growspaceName = 'Cure Area';
             await element.updateComplete;
+            
+            const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
+            expect(dateInput?.getAttribute('label')).toBe('Cure Start');
 
-            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
-                .map(el => el.getAttribute('label'));
-
-            expect(labels).toContain('Cure Start');
-
-            // Trigger change coverage for Cure
-            const cureInput = element.shadowRoot?.querySelector('md3-date-input[label="Cure Start"]') as any;
-            cureInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01', bubbles: true, composed: true }));
+            dateInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
+            await element.updateComplete;
         });
 
         it('should show clone input for clone growspace and handle change', async () => {
-            element.growspaceName = 'Clone Room';
+            element.growspaceName = 'Clone Dome';
             await element.updateComplete;
+            
+            const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
+            expect(dateInput?.getAttribute('label')).toBe('Clone Start');
 
-            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
-                .map(el => el.getAttribute('label'));
-
-            expect(labels).toContain('Clone Start');
-
-            const cloneInput = element.shadowRoot?.querySelector('md3-date-input[label="Clone Start"]') as any;
-            cloneInput.dispatchEvent(new CustomEvent('change', { detail: '2023-05-01', bubbles: true, composed: true }));
+            dateInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
+            await element.updateComplete;
         });
 
         it('should show dry input for dry growspace and handle change', async () => {
-            element.growspaceName = 'Dry Room';
+            element.growspaceName = 'Dry Tent';
             await element.updateComplete;
+            
+            const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
+            expect(dateInput?.getAttribute('label')).toBe('Dry Start');
 
-            const labels = Array.from(element.shadowRoot?.querySelectorAll('md3-date-input') || [])
-                .map(el => el.getAttribute('label'));
-
-            expect(labels).toContain('Dry Start');
-
-            const dryInput = element.shadowRoot?.querySelector('md3-date-input[label="Dry Start"]') as any;
-            dryInput.dispatchEvent(new CustomEvent('change', { detail: '2023-06-01', bubbles: true, composed: true }));
+            dateInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
+            await element.updateComplete;
         });
     });
 
     describe('Interaction Tests', () => {
         it('should handle Row and Col changes', async () => {
-            element.setInitialState(0, 0); // 1-indexed view is 1, 1
+            const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0];
+            const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1];
+
+            // User inputs 5 (means index 4)
+            rowInput?.dispatchEvent(new CustomEvent('change', { detail: '5' }));
+            colInput?.dispatchEvent(new CustomEvent('change', { detail: '10' }));
+            
             await element.updateComplete;
-
-            const rowInput = element.shadowRoot?.querySelector('md3-number-input[label="Row"]') as any;
-            const colInput = element.shadowRoot?.querySelector('md3-number-input[label="Col"]') as any;
-
-            // User changes Row to "2" (index 1)
-            rowInput.dispatchEvent(new CustomEvent('change', { detail: '2', bubbles: true, composed: true }));
-            // User changes Col to "3" (index 2)
-            colInput.dispatchEvent(new CustomEvent('change', { detail: '3', bubbles: true, composed: true }));
-
-            await element.updateComplete;
-
-            // Verify internal state (0-indexed)
-            expect(element.row).toBe(1);
-            expect(element.col).toBe(2);
+            
+            expect(element.row).toBe(4);
+            expect(element.col).toBe(9);
         });
 
         it('should dispatch close event on cancel', async () => {
-            const listener = vi.fn();
-            element.addEventListener('close', listener);
-
-            const cancelBtn = element.shadowRoot?.querySelector('button.tonal') as HTMLElement;
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+            
+            const cancelBtn = element.shadowRoot?.querySelector('.tonal') as HTMLElement;
             cancelBtn.click();
-
-            expect(listener).toHaveBeenCalled();
+            
+            expect(closeSpy).toHaveBeenCalled();
         });
 
         it('should dispatch close event on verify close button', async () => {
-            const listener = vi.fn();
-            element.addEventListener('close', listener);
-
-            const closeIconBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button.text') as HTMLElement;
-            closeIconBtn.click();
-
-            expect(listener).toHaveBeenCalled();
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+            
+            const xBtn = element.shadowRoot?.querySelector('.dialog-header .text') as HTMLElement;
+            xBtn.click();
+            
+            expect(closeSpy).toHaveBeenCalled();
         });
     });
 
     it('should dispatch submit event with payload', async () => {
-        element.setInitialState(0, 0);
+        element.row = 0; // index 0 = row 1
+        element.col = 0; // index 0 = col 1
+        // Simulate filling form via events or props
+        const strainSelect = element.shadowRoot?.querySelector('md3-select');
+        strainSelect?.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
+        
+        const phenoInput = element.shadowRoot?.querySelector('md3-text-input');
+        phenoInput?.dispatchEvent(new CustomEvent('change', { detail: 'Sativa Dom' }));
+
+        // Simulate timeline date input (standard view)
+        element.growspaceName = 'Tent';
         await element.updateComplete;
+        const dateInput = element.shadowRoot?.querySelector('md3-date-input[label="Veg Start"]');
+        dateInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
 
-        // Fill Form
-        const strainSelect = element.shadowRoot?.querySelector('md3-select') as any;
-        strainSelect.value = 'OG Kush';
-        strainSelect.dispatchEvent(new CustomEvent('change', { detail: 'OG Kush', bubbles: true, composed: true }));
-        await element.updateComplete;
+        const submitSpy = vi.fn();
+        element.addEventListener('add-plant-submit', submitSpy);
 
-        const phenoInput = element.shadowRoot?.querySelector('md3-text-input[label="Phenotype"]') as any;
-        phenoInput.value = '#5';
-        phenoInput.dispatchEvent(new CustomEvent('change', { detail: '#5', bubbles: true, composed: true }));
-        await element.updateComplete;
+        const addBtn = element.shadowRoot?.querySelector('.primary') as HTMLElement;
+        addBtn.click();
 
-        // Trigger multiple inputs for coverage (standard view)
-        const vegInput = element.shadowRoot?.querySelector('md3-date-input[label="Veg Start"]') as any;
-        if (vegInput) {
-            vegInput.value = '2023-01-01';
-            vegInput.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01', bubbles: true, composed: true }));
-        }
-
-        const flowerInput = element.shadowRoot?.querySelector('md3-date-input[label="Flower Start"]') as any;
-        if (flowerInput) flowerInput.dispatchEvent(new CustomEvent('change', { detail: '2023-02-01', bubbles: true, composed: true }));
-
-        const seedlingInput = element.shadowRoot?.querySelector('md3-date-input[label="Seedling Start"]') as any;
-        if (seedlingInput) seedlingInput.dispatchEvent(new CustomEvent('change', { detail: '2022-12-01', bubbles: true, composed: true }));
-
-        await element.updateComplete;
-
-        const listener = vi.fn();
-        element.addEventListener('add-plant-submit', listener);
-
-        // Submit
-        const submitBtn = element.shadowRoot?.querySelector('button.primary');
-        (submitBtn as HTMLElement).click();
-
-        expect(listener).toHaveBeenCalledWith(expect.objectContaining({
-            detail: expect.objectContaining({
-                strain: 'OG Kush',
-                phenotype: '#5',
-                veg_start: '2023-01-01',
-                row: 1,
-                col: 1
-            })
+        expect(submitSpy).toHaveBeenCalled();
+        const detail = submitSpy.mock.calls[0][0].detail;
+        
+        expect(detail).toEqual(expect.objectContaining({
+            row: 1,
+            col: 1,
+            strain: 'Blue Dream',
+            phenotype: 'Sativa Dom',
+            veg_start: '2023-01-01',
+            flower_start: '',
+            seedling_start: '',
+            mother_start: '',
+            clone_start: '',
+            dry_start: '',
+            cure_start: ''
         }));
     });
 });

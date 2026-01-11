@@ -131,7 +131,11 @@ export class DialogHost extends LitElement {
             .activeTab=${dialogState.activeTab}
             .selectedPlantIds=${dialogState.selectedPlantIds}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.ui.closeDialog()}
+            @close=${() => {
+                if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                    this.store.ui.closeDialog();
+                }
+            }}
             @update-plant=${(e: CustomEvent) =>
                 this.store.updatePlantFromDialog({
                     plant: dialogState.plant,
@@ -146,6 +150,21 @@ export class DialogHost extends LitElement {
                 this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e: CustomEvent) =>
                 this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+            @open-watering=${(e: CustomEvent) =>
+                this.store.ui.setActiveDialog({
+                    type: 'WATERING',
+                    payload: e.detail
+                })}
+            @open-training=${(e: CustomEvent) =>
+                this.store.ui.setActiveDialog({
+                    type: 'TRAINING',
+                    payload: e.detail
+                })}
+            @open-ipm=${(e: CustomEvent) =>
+                this.store.ui.setActiveDialog({
+                    type: 'IPM',
+                    payload: e.detail
+                })}
         ></plant-overview-dialog>
         `;
     }

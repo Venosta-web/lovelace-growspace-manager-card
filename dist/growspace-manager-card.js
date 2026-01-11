@@ -55,6 +55,8 @@ var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
+var mdiSelectAll = "M9,9H15V15H9M7,17H17V7H7M15,5H17V3H15M15,21H17V19H15M19,17H21V15H19M19,9H21V7H19M19,21A2,2 0 0,0 21,19H19M19,13H21V11H19M11,21H13V19H11M9,3H7V5H9M3,17H5V15H3M5,21V19H3A2,2 0 0,0 5,21M19,3V5H21A2,2 0 0,0 19,3M13,3H11V5H13M3,9H5V7H3M7,21H9V19H7M3,13H5V11H3M3,5H5V3A2,2 0 0,0 3,5Z";
+var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.27L3.73,7H2V5.27L0.5,3.77M4,2H7V4H5.82L3.83,2H4M22,4V7H20V4H17V2H20A2,2 0 0,1 22,4M20,17H22V20L22,20.17L20,18.18V17M2,20V17H4V20H7V22H4A2,2 0 0,1 2,20M10,2H14V4H10V2M10,20H14V22H10V20M20,10H22V14H20V10M2,10H4V14H2V10Z";
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
 var mdiSickle = "M19.3 7.2C17.5 4.7 14.9 3 12 2C26.2 10.5 15.4 22.9 8.5 15.5L5.9 16L2.5 19.4C1.9 20 1.9 21 2.5 21.5C3.1 22.1 4.1 22.1 4.6 21.5L7.8 18.3C15.3 24.3 25 15 19.3 7.2Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
@@ -10186,6 +10188,50 @@ class GrowspaceLogbookController {
         _toggleShowAllDates() {
             this.showAllDates = !this.showAllDates;
         }
+        _openWatering() {
+            if (!this.plant)
+                return;
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            const growspaceId = this.plant.attributes?.growspace_id;
+            this.dispatchEvent(new CustomEvent('open-watering', {
+                detail: {
+                    mode: 'plant',
+                    plantIds: [plantId],
+                    growspaceId: growspaceId
+                },
+                bubbles: true,
+                composed: true
+            }));
+        }
+        _openTraining() {
+            if (!this.plant)
+                return;
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            const growspaceId = this.plant.attributes?.growspace_id;
+            this.dispatchEvent(new CustomEvent('open-training', {
+                detail: {
+                    isOpen: true,
+                    plantIds: [plantId],
+                    growspaceId: growspaceId
+                },
+                bubbles: true,
+                composed: true
+            }));
+        }
+        _openIPM() {
+            if (!this.plant)
+                return;
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            const growspaceId = this.plant.attributes?.growspace_id;
+            this.dispatchEvent(new CustomEvent('open-ipm', {
+                detail: {
+                    growspaceId: growspaceId,
+                    plantIds: [plantId]
+                },
+                bubbles: true,
+                composed: true
+            }));
+        }
         _renderStatItem(label, value, unit = '') {
             if (value === undefined || value === null || value === '')
                 return E;
@@ -10360,80 +10406,101 @@ class GrowspaceLogbookController {
 
           <!-- ACTIONS -->
           <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
-             <div class="standard-actions" style="display:flex; gap:12px;">
-                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                     <path d="${mdiDelete}"></path>
-                   </svg>
-                   Delete
-                 </button>
-             </div>
-
-             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
-                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-                 ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
-                    <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
-                       <md3-number-input
-                        id="clone-count-input"
-                        .value=${1}
-                        .min=${1}
-                        .max=${10}
-                        style="width: 80px;"
-                      ></md3-number-input>
-                      <button class="md3-button primary"
-                        @click=${(e) => {
-                const container = e.currentTarget.closest('.take-clone-container');
-                const input = container?.querySelector('#clone-count-input');
-                const val = input ? parseInt(input.value, 10) : 1;
-                const numClones = isNaN(val) ? 1 : val;
-                this._takeClone(this.plant, numClones);
-            }}
-                      >
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                        Take Clone
-                      </button>
-                    </div>
-                 ` : E}
-                 ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
-                   <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                     Harvest
-                   </button>
-                 ` : E}
+             ${this._activeTab === 'timeline'
+                ? x `
+                 <!-- EVENT ACTIONS (TIMELINE TAB) -->
+                 <div class="event-actions" style="display:flex; gap:12px; width:100%; justify-content: flex-end;">
+                     <button class="md3-button tonal" @click=${() => this._openWatering()}>
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                        Water
+                     </button>
+                     <button class="md3-button tonal" @click=${() => this._openTraining()}>
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+                        Train
+                     </button>
+                     <button class="md3-button tonal" @click=${() => this._openIPM()}>
+                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+                        IPM
+                     </button>
+                 </div>
+               `
+                : x `
+                 <!-- STANDARD ACTIONS (OVERVIEW TAB) -->
+                 <div class="standard-actions" style="display:flex; gap:12px;">
+                     <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                         <path d="${mdiDelete}"></path>
+                       </svg>
+                       Delete
+                     </button>
+                 </div>
     
-                 ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
-                   <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
-                     <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                     Finish Drying
-                   </button>
-                 ` : E}
+                 <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+                     <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+                     ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
+                        <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
+                           <md3-number-input
+                            id="clone-count-input"
+                            .value=${1}
+                            .min=${1}
+                            .max=${10}
+                            style="width: 80px;"
+                          ></md3-number-input>
+                          <button class="md3-button primary"
+                            @click=${(e) => {
+                    const container = e.currentTarget.closest('.take-clone-container');
+                    const input = container?.querySelector('#clone-count-input');
+                    const val = input ? parseInt(input.value, 10) : 1;
+                    const numClones = isNaN(val) ? 1 : val;
+                    this._takeClone(this.plant, numClones);
+                }}
+                          >
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                            Take Clone
+                          </button>
+                        </div>
+                     ` : E}
+                     ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
+                       <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                         Harvest
+                       </button>
+                     ` : E}
+        
+                     ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
+                       <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
+                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                         Finish Drying
+                       </button>
+                     ` : E}
+        
+                     ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
+                        <div style="display:flex; align-items:center; gap:8px;">
+                           <md3-select
+                             label="Target Growspace"
+                             .value=${this.cloneTargetId}
+                             .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                             style="width: 200px;"
+                             @change=${(e) => this.cloneTargetId = e.detail}
+                           ></md3-select>
+                          <button class="md3-button primary"
+                            @click=${() => this._moveClone(this.plant)}
+                            style="margin-top: 24px;"
+                          >
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                            Move
+                          </button>
+                        </div>
+                     ` : E}
     
-                 ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
-                    <div style="display:flex; align-items:center; gap:8px;">
-                       <md3-select
-                         label="Target Growspace"
-                         .value=${this.cloneTargetId}
-                         .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                         style="width: 200px;"
-                         @change=${(e) => this.cloneTargetId = e.detail}
-                       ></md3-select>
-                      <button class="md3-button primary"
-                        @click=${() => this._moveClone(this.plant)}
-                        style="margin-top: 24px;"
-                      >
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                        Move
-                      </button>
-                    </div>
-                 ` : E}
-
-                <button class="md3-button tonal" @click=${() => this._update()}>
-                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                    <path d="${mdiCheck}"></path>
-                  </svg>
-                  Save Changes
-                </button>
-             </div>
+                    <button class="md3-button tonal" @click=${() => this._update()}>
+                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                        <path d="${mdiCheck}"></path>
+                      </svg>
+                      Save Changes
+                    </button>
+                 </div>
+               `}
           </div>
 
       </ha-dialog>
@@ -17518,7 +17585,11 @@ class GrowspaceLogbookController {
             .activeTab=${dialogState.activeTab}
             .selectedPlantIds=${dialogState.selectedPlantIds}
             .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.ui.closeDialog()}
+            @close=${() => {
+                if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                    this.store.ui.closeDialog();
+                }
+            }}
             @update-plant=${(e) => this.store.updatePlantFromDialog({
                 plant: dialogState.plant,
                 editedAttributes: e.detail, // Event detail is the attributes object
@@ -17529,6 +17600,18 @@ class GrowspaceLogbookController {
             @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
             @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+            @open-watering=${(e) => this.store.ui.setActiveDialog({
+                type: 'WATERING',
+                payload: e.detail
+            })}
+            @open-training=${(e) => this.store.ui.setActiveDialog({
+                type: 'TRAINING',
+                payload: e.detail
+            })}
+            @open-ipm=${(e) => this.store.ui.setActiveDialog({
+                type: 'IPM',
+                payload: e.detail
+            })}
         ></plant-overview-dialog>
         `;
         }
@@ -17818,12 +17901,30 @@ class GrowspaceLogbookController {
           <span>${this.selectedCount} plant(s) selected</span>
         </div>
         <div class="banner-actions">
-          <button class="md3-button text" @click=${() => this._dispatch('select-all')}>Select All</button>
-          <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>Clear</button>
-          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>Water / Nutrients</button>
-          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>Log Training</button>
-          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>Log IPM</button>
-          <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>Exit</button>
+          <button class="md3-button text" @click=${() => this._dispatch('select-all')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
+            Select All
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
+            Clear
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            Water / Nutrients
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            Log Training
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            Log IPM
+          </button>
+          <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            Exit
+          </button>
         </div>
       </div>
     `;
