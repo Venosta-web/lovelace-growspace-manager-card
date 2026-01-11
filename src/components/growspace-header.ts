@@ -692,8 +692,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _toggleEnvGraph(metric: string) {
-    if (!this.store?.history) return;
-    this.store.history.toggleEnvGraph(metric);
+    if (!this.store) return;
+    this.store.toggleEnvGraph(metric);
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {

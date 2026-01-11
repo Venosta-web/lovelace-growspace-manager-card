@@ -682,6 +682,21 @@ export class GrowspaceStore {
         }
     }
 
+    /**
+     * Toggles an environment graph on/off.
+     * If the graph is turned ON while in 'header' view mode, automatically expands to 'standard' mode.
+     */
+    toggleEnvGraph(metric: string) {
+        if (!this.history) return;
+
+        const isNowActive = this.history.toggleEnvGraph(metric);
+
+        // Auto-expand if we just enabled a graph while in header mode
+        if (isNowActive && this.ui.$viewMode.get() === 'header') {
+            this.ui.setViewMode('standard');
+        }
+    }
+
     async analyzeGrowspace(query: string, all: boolean) {
         const currentDialog = this.ui.$activeDialog.get();
         if (currentDialog.type === 'GROW_MASTER') {

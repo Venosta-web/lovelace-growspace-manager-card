@@ -2599,6 +2599,36 @@ describe('GrowspaceStore', () => {
             await store.fetchIPMPresets(true);
             expect(spy).toHaveBeenCalledWith('Failed to fetch IPM presets:', expect.any(Error));
         });
-    });
+        describe('Environment Graphs', () => {
+            it('should toggle graph and auto-expand from header mode', () => {
+                (uiStore.$viewMode.get as any).mockReturnValue('header');
+                const toggleSpy = vi.spyOn(store.history, 'toggleEnvGraph').mockReturnValue(true);
 
+                store.toggleEnvGraph('temperature');
+
+                expect(toggleSpy).toHaveBeenCalledWith('temperature');
+                expect(uiStore.setViewMode).toHaveBeenCalledWith('standard');
+            });
+
+            it('should toggle graph but NOT auto-expand if graph was turned off', () => {
+                (uiStore.$viewMode.get as any).mockReturnValue('header');
+                const toggleSpy = vi.spyOn(store.history, 'toggleEnvGraph').mockReturnValue(false);
+
+                store.toggleEnvGraph('temperature');
+
+                expect(toggleSpy).toHaveBeenCalledWith('temperature');
+                expect(uiStore.setViewMode).not.toHaveBeenCalled();
+            });
+
+            it('should toggle graph but NOT auto-expand if already in standard mode', () => {
+                (uiStore.$viewMode.get as any).mockReturnValue('standard');
+                const toggleSpy = vi.spyOn(store.history, 'toggleEnvGraph').mockReturnValue(true);
+
+                store.toggleEnvGraph('temperature');
+
+                expect(toggleSpy).toHaveBeenCalledWith('temperature');
+                expect(uiStore.setViewMode).not.toHaveBeenCalled();
+            });
+        });
+    });
 });

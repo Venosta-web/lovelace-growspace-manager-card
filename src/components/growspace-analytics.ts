@@ -243,8 +243,8 @@ export class GrowspaceAnalytics extends LitElement {
     e.stopPropagation();
     // Chart emits detail: metricKey (string)
     const metric = e.detail;
-    if (metric && typeof metric === 'string') {
-      this.store.history.toggleEnvGraph(metric);
+    if (metric && typeof metric === 'string' && this.store) {
+      this.store.toggleEnvGraph(metric);
     }
   }
 

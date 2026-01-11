@@ -28253,9 +28253,9 @@ class ResizeController {
             this.store.handleDeviceChange(target.value);
         }
         _toggleEnvGraph(metric) {
-            if (!this.store?.history)
+            if (!this.store)
                 return;
-            this.store.history.toggleEnvGraph(metric);
+            this.store.toggleEnvGraph(metric);
         }
         _handleChipDragStart(e, metric) {
             this._draggedMetric = metric;
@@ -31892,8 +31892,8 @@ const growspaceCardStyles = i$6 `
             e.stopPropagation();
             // Chart emits detail: metricKey (string)
             const metric = e.detail;
-            if (metric && typeof metric === 'string') {
-                this.store.history.toggleEnvGraph(metric);
+            if (metric && typeof metric === 'string' && this.store) {
+                this.store.toggleEnvGraph(metric);
             }
         }
         _handleUnlinkGraphs(e) {
@@ -34503,6 +34503,19 @@ class GrowspaceStore {
         }
         catch (err) {
             this.showToast(`Error: ${err.message}`, 'error');
+        }
+    }
+    /**
+     * Toggles an environment graph on/off.
+     * If the graph is turned ON while in 'header' view mode, automatically expands to 'standard' mode.
+     */
+    toggleEnvGraph(metric) {
+        if (!this.history)
+            return;
+        const isNowActive = this.history.toggleEnvGraph(metric);
+        // Auto-expand if we just enabled a graph while in header mode
+        if (isNowActive && this.ui.$viewMode.get() === 'header') {
+            this.ui.setViewMode('standard');
         }
     }
     async analyzeGrowspace(query, all) {
