@@ -49,6 +49,17 @@ describe('PlantUtils', () => {
             const flatGrid = grid.flat();
             expect(flatGrid.every(slot => slot === null)).toBe(true);
         });
+
+        it('should ignore plants with 0 or negative row/col (invalid 1-based index)', () => {
+            const invalidPlant = {
+                entity_id: 'sensor.invalid',
+                attributes: { row: 0, col: 0 } // Becomes -1, -1
+            } as unknown as PlantEntity;
+
+            const { grid } = PlantUtils.createGridLayout([invalidPlant], 3, 3);
+            expect(grid[0][0]).toBeNull();
+        });
+
         it('should handle grid collisions gracefully', () => {
             // Two plants same slot
             const p1 = { attributes: { row: 1, col: 1, plant_id: 'p1' } } as unknown as PlantEntity;

@@ -1,12 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { EditModeBanner } from '../../../../src/components/manager/edit-mode-banner';
-import { mdiClose, mdiSelectAll, mdiSelectOff } from '@mdi/js';
 
 describe('GrowspaceEditModeBanner', () => {
     let element: EditModeBanner;
 
     beforeEach(() => {
         element = new EditModeBanner();
+        document.body.appendChild(element);
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
     });
 
     it('should be defined', () => {
@@ -15,19 +19,14 @@ describe('GrowspaceEditModeBanner', () => {
 
     it('should render correct selection count', async () => {
         element.selectedCount = 5;
-        document.body.appendChild(element);
         await element.updateComplete;
 
-        const count = element.shadowRoot?.querySelector('span')?.textContent;
+        const count = element.shadowRoot?.querySelector('.banner-content span')?.textContent;
         expect(count).toContain('5 plant(s) selected');
-
-        document.body.removeChild(element);
     });
 
-    it('should dispach select-all event', async () => {
-        document.body.appendChild(element);
+    it('should dispatch select-all event', async () => {
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('select-all', listener);
 
@@ -36,14 +35,10 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
-
-        document.body.removeChild(element);
     });
 
-    it('should dispach clear-selection event', async () => {
-        document.body.appendChild(element);
+    it('should dispatch clear-selection event', async () => {
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('clear-selection', listener);
 
@@ -52,14 +47,10 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
-
-        document.body.removeChild(element);
     });
 
-    it('should dispach exit-edit-mode event', async () => {
-        document.body.appendChild(element);
+    it('should dispatch exit-edit-mode event', async () => {
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('exit-edit-mode', listener);
 
@@ -68,14 +59,10 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
-
-        document.body.removeChild(element);
     });
 
     it('should dispatch water-selected event', async () => {
-        document.body.appendChild(element);
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('water-selected', listener);
 
@@ -84,14 +71,10 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
-
-        document.body.removeChild(element);
     });
 
     it('should dispatch training-selected event', async () => {
-        document.body.appendChild(element);
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('training-selected', listener);
 
@@ -100,14 +83,10 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
-
-        document.body.removeChild(element);
     });
 
     it('should dispatch ipm-selected event', async () => {
-        document.body.appendChild(element);
         await element.updateComplete;
-
         const listener = vi.fn();
         element.addEventListener('ipm-selected', listener);
 
@@ -116,7 +95,95 @@ describe('GrowspaceEditModeBanner', () => {
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
+    });
 
-        document.body.removeChild(element);
+    it('should dispatch batch-add-plants event', async () => {
+        await element.updateComplete;
+        const listener = vi.fn();
+        element.addEventListener('batch-add-plants', listener);
+
+        const buttons = element.shadowRoot?.querySelectorAll('button');
+        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Batch Add Plants'));
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+    });
+
+    describe('Scrolling Interactions', () => {
+        let container: HTMLElement;
+
+        beforeEach(async () => {
+            await element.updateComplete;
+            container = element.shadowRoot?.querySelector('.banner-actions') as HTMLElement;
+            // Mock scrollBy as it's not implemented in JSDOM
+            container.scrollBy = vi.fn();
+        });
+
+        it('should handle left scroll arrow click', async () => {
+            // Force state to show left arrow
+            (element as any)._canScrollLeft = true;
+            await element.updateComplete;
+
+            const leftArrow = element.shadowRoot?.querySelector('.scroll-arrow:first-child') as HTMLElement;
+            expect(leftArrow.classList.contains('hidden')).toBe(false);
+            
+            leftArrow.click();
+            expect(container.scrollBy).toHaveBeenCalledWith({ left: -150, behavior: 'smooth' });
+        });
+
+        it('should handle right scroll arrow click', async () => {
+            // Force state to show right arrow
+            (element as any)._canScrollRight = true;
+            await element.updateComplete;
+
+            const rightArrow = element.shadowRoot?.querySelector('.scroll-arrow:last-child') as HTMLElement;
+            expect(rightArrow.classList.contains('hidden')).toBe(false);
+
+            rightArrow.click();
+            expect(container.scrollBy).toHaveBeenCalledWith({ left: 150, behavior: 'smooth' });
+        });
+
+        it('should update scroll state correctly', async () => {
+            // Mock properties on container to simulate scrollable content
+            Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
+            Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
+            Object.defineProperty(container, 'scrollLeft', { value: 100, configurable: true });
+
+            // Trigger check via private method or event
+            // Using the resize controller callback is hard to reach directly without spying on the controller instance
+            // But we can trigger the scroll event which is bound in firstUpdated
+            container.dispatchEvent(new Event('scroll'));
+            
+            await element.updateComplete;
+
+            // scrollLeft > 1 => canScrollLeft = true
+            // scrollLeft < scrollWidth - clientWidth - 1 (100 < 1000 - 500 - 1) => canScrollRight = true
+            expect((element as any)._canScrollLeft).toBe(true);
+            expect((element as any)._canScrollRight).toBe(true);
+        });
+        
+        it('should update scroll state when scrolled to start', async () => {
+            Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
+            Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
+            Object.defineProperty(container, 'scrollLeft', { value: 0, configurable: true });
+
+            container.dispatchEvent(new Event('scroll'));
+            await element.updateComplete;
+
+            expect((element as any)._canScrollLeft).toBe(false);
+            expect((element as any)._canScrollRight).toBe(true);
+        });
+
+        it('should update scroll state when scrolled to end', async () => {
+            Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
+            Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
+            Object.defineProperty(container, 'scrollLeft', { value: 500, configurable: true });
+
+            container.dispatchEvent(new Event('scroll'));
+            await element.updateComplete;
+
+            expect((element as any)._canScrollLeft).toBe(true);
+            expect((element as any)._canScrollRight).toBe(false); // 500 is not < 499
+        });
     });
 });
