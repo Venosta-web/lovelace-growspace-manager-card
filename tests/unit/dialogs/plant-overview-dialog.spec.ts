@@ -988,6 +988,42 @@ describe('PlantOverviewDialog', () => {
         document.body.removeChild(element);
     });
 
+    it('should filter for and include note events in timeline', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'note',
+                plant_id: 'plant_1',
+                notes: 'Test note content',
+                timestamp: '2023-01-05T15:00:00Z',
+                tags: ['issue'],
+                reasons: []
+            }
+        ];
+
+        element.plant = {
+            ...mockPlant,
+            attributes: { ...mockPlant.attributes, plant_id: 'plant_1', growspace_id: 'gs1' }
+        };
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+
+        const noteEvent = events.find((e: any) => e.date === '2023-01-05T15:00:00Z');
+
+        expect(noteEvent).toBeTruthy();
+        expect(noteEvent.type).toBe('note');
+        expect(noteEvent.text).toBe('Test note content');
+        expect(noteEvent.tags).toContain('issue');
+
+        document.body.removeChild(element);
+    });
+
     it('should filter for and include IPM events in timeline', async () => {
         const mockEvents = [
             {

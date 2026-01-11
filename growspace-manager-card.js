@@ -12,6 +12,7 @@ var mdiBug = "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
 var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
+var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
@@ -28,11 +29,14 @@ var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 1
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
 var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
 var mdiContentSave = "M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z";
+var mdiCupWater = "M18.32,8H5.67L5.23,4H18.77M12,19A3,3 0 0,1 9,16C9,14 12,10.6 12,10.6C12,10.6 15,14 15,16A3,3 0 0,1 12,19M3,2L5,20.23C5.13,21.23 5.97,22 7,22H17C18,22 18.87,21.23 19,20.23L21,2H3Z";
 var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z";
 var mdiDna = "M4,2H6V4C6,5.44 6.68,6.61 7.88,7.78C8.74,8.61 9.89,9.41 11.09,10.2L9.26,11.39C8.27,10.72 7.31,10 6.5,9.21C5.07,7.82 4,6.1 4,4V2M18,2H20V4C20,6.1 18.93,7.82 17.5,9.21C16.09,10.59 14.29,11.73 12.54,12.84C10.79,13.96 9.09,15.05 7.88,16.22C6.68,17.39 6,18.56 6,20V22H4V20C4,17.9 5.07,16.18 6.5,14.79C7.91,13.41 9.71,12.27 11.46,11.16C13.21,10.04 14.91,8.95 16.12,7.78C17.32,6.61 18,5.44 18,4V2M14.74,12.61C15.73,13.28 16.69,14 17.5,14.79C18.93,16.18 20,17.9 20,20V22H18V20C18,18.56 17.32,17.39 16.12,16.22C15.26,15.39 14.11,14.59 12.91,13.8L14.74,12.61M7,3H17V4L16.94,4.5H7.06L7,4V3M7.68,6H16.32C16.08,6.34 15.8,6.69 15.42,7.06L14.91,7.5H9.07L8.58,7.06C8.2,6.69 7.92,6.34 7.68,6M9.09,16.5H14.93L15.42,16.94C15.8,17.31 16.08,17.66 16.32,18H7.68C7.92,17.66 8.2,17.31 8.58,16.94L9.09,16.5M7.06,19.5H16.94L17,20V21H7V20L7.06,19.5Z";
 var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z";
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
+var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
+var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiFullscreenExit = "M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z";
 var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18C15.9,16.7 14,16 12,16C10,16 8.2,16.7 6.7,18C5,16.5 4,14.4 4,12A8,8 0 0,1 12,4M14,5.89C13.62,5.9 13.26,6.15 13.1,6.54L11.81,9.77L11.71,10C11,10.13 10.41,10.6 10.14,11.26C9.73,12.29 10.23,13.45 11.26,13.86C12.29,14.27 13.45,13.77 13.86,12.74C14.12,12.08 14,11.32 13.57,10.76L13.67,10.5L14.96,7.29L14.97,7.26C15.17,6.75 14.92,6.17 14.41,5.96C14.28,5.91 14.15,5.89 14,5.89M10,6A1,1 0 0,0 9,7A1,1 0 0,0 10,8A1,1 0 0,0 11,7A1,1 0 0,0 10,6M7,9A1,1 0 0,0 6,10A1,1 0 0,0 7,11A1,1 0 0,0 8,10A1,1 0 0,0 7,9M17,9A1,1 0 0,0 16,10A1,1 0 0,0 17,11A1,1 0 0,0 18,10A1,1 0 0,0 17,9Z";
@@ -50,9 +54,11 @@ var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
+var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
 var mdiSickle = "M19.3 7.2C17.5 4.7 14.9 3 12 2C26.2 10.5 15.4 22.9 8.5 15.5L5.9 16L2.5 19.4C1.9 20 1.9 21 2.5 21.5C3.1 22.1 4.1 22.1 4.6 21.5L7.8 18.3C15.3 24.3 25 15 19.3 7.2Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
+var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
 var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
@@ -8949,18 +8955,43 @@ const dialogStyles = [
 })();
 
 (() => {
-    var _PlantTimeline_events_accessor_storage;
+    var _PlantTimeline_hass_accessor_storage, _PlantTimeline_plant_id_accessor_storage, _PlantTimeline_events_accessor_storage, _PlantTimeline__noteText_accessor_storage, _PlantTimeline__noteImages_accessor_storage, _PlantTimeline__isSaving_accessor_storage;
     let _classDecorators = [t$2('plant-timeline')];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = i$3;
+    let _hass_decorators;
+    let _hass_initializers = [];
+    let _hass_extraInitializers = [];
+    let _plant_id_decorators;
+    let _plant_id_initializers = [];
+    let _plant_id_extraInitializers = [];
     let _events_decorators;
     let _events_initializers = [];
     let _events_extraInitializers = [];
+    let __noteText_decorators;
+    let __noteText_initializers = [];
+    let __noteText_extraInitializers = [];
+    let __noteImages_decorators;
+    let __noteImages_initializers = [];
+    let __noteImages_extraInitializers = [];
+    let __isSaving_decorators;
+    let __isSaving_initializers = [];
+    let __isSaving_extraInitializers = [];
     _classThis = class extends _classSuper {
+        get hass() { return __classPrivateFieldGet(this, _PlantTimeline_hass_accessor_storage, "f"); }
+        set hass(value) { __classPrivateFieldSet(this, _PlantTimeline_hass_accessor_storage, value, "f"); }
+        get plant_id() { return __classPrivateFieldGet(this, _PlantTimeline_plant_id_accessor_storage, "f"); }
+        set plant_id(value) { __classPrivateFieldSet(this, _PlantTimeline_plant_id_accessor_storage, value, "f"); }
         get events() { return __classPrivateFieldGet(this, _PlantTimeline_events_accessor_storage, "f"); }
         set events(value) { __classPrivateFieldSet(this, _PlantTimeline_events_accessor_storage, value, "f"); }
+        get _noteText() { return __classPrivateFieldGet(this, _PlantTimeline__noteText_accessor_storage, "f"); }
+        set _noteText(value) { __classPrivateFieldSet(this, _PlantTimeline__noteText_accessor_storage, value, "f"); }
+        get _noteImages() { return __classPrivateFieldGet(this, _PlantTimeline__noteImages_accessor_storage, "f"); }
+        set _noteImages(value) { __classPrivateFieldSet(this, _PlantTimeline__noteImages_accessor_storage, value, "f"); }
+        get _isSaving() { return __classPrivateFieldGet(this, _PlantTimeline__isSaving_accessor_storage, "f"); }
+        set _isSaving(value) { __classPrivateFieldSet(this, _PlantTimeline__isSaving_accessor_storage, value, "f"); }
         _getIcon(type, action) {
             switch (type) {
                 case 'stage_change': return mdiSprout;
@@ -8976,16 +9007,30 @@ const dialogStyles = [
                 default: return mdiLeaf;
             }
         }
-        _formatDate(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime()))
-                    throw new Error();
-                return date.toLocaleString();
+        _getStageColor(stage) {
+            switch (stage?.toLowerCase()) {
+                case 'flower': return '#e91e63';
+                case 'veg': return '#4caf50';
+                case 'seedling': return '#8bc34a';
+                case 'clone': return '#66bb6a';
+                case 'mother': return '#2e7d32';
+                case 'dry': return '#ff9800';
+                case 'cure': return '#795548';
+                default: return 'var(--divider-color)';
             }
-            catch {
-                return dateStr;
-            }
+        }
+        _isCorrelated(event, allEvents) {
+            if (event.type !== 'note')
+                return false;
+            const noteTime = new Date(event.date).getTime();
+            // Check for alerts within 2 hours before this note
+            return allEvents.some(e => {
+                if (e.type !== 'alert')
+                    return false;
+                const alertTime = new Date(e.date).getTime();
+                const diff = noteTime - alertTime;
+                return diff > 0 && diff < 2 * 60 * 60 * 1000;
+            });
         }
         _formatDayHeader(dateStr) {
             try {
@@ -8995,12 +9040,10 @@ const dialogStyles = [
                 const today = new Date();
                 const yesterday = new Date(today);
                 yesterday.setDate(yesterday.getDate() - 1);
-                if (date.toDateString() === today.toDateString()) {
+                if (date.toDateString() === today.toDateString())
                     return 'Today';
-                }
-                else if (date.toDateString() === yesterday.toDateString()) {
+                if (date.toDateString() === yesterday.toDateString())
                     return 'Yesterday';
-                }
                 return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
             }
             catch {
@@ -9029,16 +9072,108 @@ const dialogStyles = [
                 return dateStr;
             }
         }
-        render() {
-            if (!this.events || this.events.length === 0) {
-                return x `
-            <div class="glass-surface glass-panel" style="text-align: center; color: var(--secondary-text-color);">
-                No events recorded.
-            </div>
-        `;
+        _formatDate(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime()))
+                    throw new Error();
+                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
             }
+            catch {
+                return dateStr;
+            }
+        }
+        async _submitNote() {
+            if (!this._noteText.trim() && !this._noteImages.length)
+                return;
+            this._isSaving = true;
+            try {
+                await this.hass.callWS({
+                    type: 'growspace_manager/add_timeline_note',
+                    plant_id: this.plant_id,
+                    notes: this._noteText,
+                    images: this._noteImages,
+                    transition_date: new Date().toISOString()
+                });
+                this._noteText = '';
+                this._noteImages = [];
+                // Fire refresh event
+                this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+            }
+            catch (e) {
+                console.error(e);
+            }
+            finally {
+                this._isSaving = false;
+            }
+        }
+        async _resizeImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('Could not get canvas context'));
+                            return;
+                        }
+                        // Max dimensions
+                        const MAX_WIDTH = 1024;
+                        const MAX_HEIGHT = 1024;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        }
+                        else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        // Compress to JPEG 0.8
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = (e) => reject(e);
+                    img.src = e.target?.result;
+                };
+                reader.onerror = (e) => reject(e);
+                reader.readAsDataURL(file);
+            });
+        }
+        async _handleFileSelect(e) {
+            const input = e.target;
+            if (!input.files)
+                return;
+            // Process files sequentially or in parallel, but await them
+            const files = Array.from(input.files);
+            for (const file of files) {
+                try {
+                    const resized = await this._resizeImage(file);
+                    this._noteImages = [...this._noteImages, resized];
+                }
+                catch (err) {
+                    console.error('Error processing image:', err);
+                }
+            }
+            // Clear input to allow re-selecting same file if needed
+            input.value = '';
+        }
+        _removeImage(index) {
+            this._noteImages = this._noteImages.filter((_, i) => i !== index);
+        }
+        render() {
             // Sort events descending
-            const sortedEvents = [...this.events]
+            const sortedEvents = [...(this.events || [])]
                 .filter(e => e.date)
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             // Group by day
@@ -9050,24 +9185,100 @@ const dialogStyles = [
                 }
                 groupedByDay.get(dayKey).push(event);
             }
+            const latestStageEvent = sortedEvents.find(e => e.type === 'stage_change' || e.type === 'milestone');
+            const currentStage = latestStageEvent?.to || latestStageEvent?.label;
+            const stageColor = this._getStageColor(currentStage);
             return x `
-      <div class="timeline">
-        ${Array.from(groupedByDay.entries()).map(([dayKey, events]) => x `
-          <div class="day-group">
-            <div class="day-header">${this._formatDayHeader(events[0].date)}</div>
-            ${events.map(event => x `
-              <div class="event type-${event.type} glass-surface">
-                <div class="icon-wrapper">
-                  <svg viewBox="0 0 24 24">
-                    <path d="${this._getIcon(event.type, event.action)}" />
-                  </svg>
-                </div>
-                <div class="date">${this._formatTime(event.date)}</div>
-                ${this._renderEventContent(event)}
-              </div>
-            `)}
+      <div class="timeline" style="--stage-color: ${stageColor}">
+        <!-- Quick Note Section -->
+        <div class="quick-note glass-surface">
+          <div class="note-input">
+            <textarea 
+              placeholder="Add a cultivation note..." 
+              .value=${this._noteText}
+              @input=${(e) => this._noteText = e.target.value}
+              rows="2"
+            ></textarea>
           </div>
-        `)}
+          
+          ${this._noteImages.length > 0 ? x `
+            <div class="image-previews">
+              ${this._noteImages.map((img, i) => x `
+                <div class="preview-item">
+                  <img src=${img} />
+                  <button class="remove-img" @click=${() => this._removeImage(i)}>
+                    <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                  </button>
+                </div>
+              `)}
+            </div>
+          ` : E}
+
+          <div class="note-actions">
+            <div style="display: flex; gap: 8px;">
+              <input 
+                type="file" 
+                id="fileInput" 
+                @change=${this._handleFileSelect} 
+                multiple 
+                accept="image/*" 
+                style="display: none;"
+              >
+              <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
+                <ha-svg-icon .path=${mdiCameraPlus}></ha-svg-icon>
+              </ha-icon-button>
+            </div>
+            <ha-icon-button 
+              .disabled=${(!this._noteText.trim() && !this._noteImages.length) || this._isSaving}
+              @click=${this._submitNote}
+            >
+              <ha-svg-icon .path=${mdiSend}></ha-svg-icon>
+            </ha-icon-button>
+          </div>
+        </div>
+
+        ${sortedEvents.length === 0 ? x `
+          <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
+            No entries for this plant yet.
+          </div>
+        ` : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
+                const alerts = dayEvents.filter(e => e.type === 'alert');
+                const others = dayEvents.filter(e => e.type !== 'alert');
+                return x `
+              <div class="day-group">
+                <div class="day-header">${this._formatDayHeader(dayEvents[0].date)}</div>
+                
+                ${alerts.length > 2 ? x `
+                  <div class="day-summary glass-surface">
+                    <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                    <span>${alerts.length} system alerts recorded. Environment may require attention.</span>
+                  </div>
+                ` : alerts.map(event => this._renderEvent(event, sortedEvents))}
+
+                ${others.map(event => this._renderEvent(event, sortedEvents))}
+              </div>
+            `;
+            })}
+      </div>
+    `;
+        }
+        _renderEvent(event, allEvents) {
+            const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
+            return x `
+      <div class="event type-${event.type} glass-surface">
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24">
+            <path d="${this._getIcon(event.type, event.action)}" />
+          </svg>
+        </div>
+        <div class="date">
+          ${this._formatTime(event.date)}
+          ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
+        </div>
+        ${this._renderEventContent(event)}
+        ${this._renderMetadata(event.metadata)}
+        ${this._renderImages(event.images)}
+        ${this._renderTags(event.tags)}
       </div>
     `;
         }
@@ -9076,23 +9287,23 @@ const dialogStyles = [
                 case 'stage_change':
                     return x `
             <div class="content">Stage Changed</div>
-            <div class="details">Changed from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
+            <div class="details">Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
         `;
                 case 'milestone':
                     return x `
             <div class="content">${event.label} Started</div>
-            <div class="details">Milestone reached on ${this._formatDate(event.date)}</div>
+            <div class="details">Agricultural milestone reached.</div>
         `;
                 case 'action':
-                    const actionLabel = event.action === 'ipm' ? 'IPM' :
-                        (event.action ? event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Action');
+                    const label = event.action === 'ipm' ? 'IPM' :
+                        event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                     return x `
-            <div class="content">${actionLabel}</div>
+            <div class="content">${label}</div>
             ${event.details ? x `<div class="details">${event.details}</div>` : E}
         `;
                 case 'alert':
                     return x `
-            <div class="content" style="color: var(--error-color, #f44336)">Alert: ${event.message}</div>
+            <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
             <div class="details">Severity: ${event.severity}</div>
         `;
                 case 'note':
@@ -9102,18 +9313,96 @@ const dialogStyles = [
         `;
             }
         }
+        _renderMetadata(metadata) {
+            if (!metadata || Object.keys(metadata).length === 0)
+                return E;
+            const items = [
+                { key: 'temperature', icon: mdiThermometer, label: '°C' },
+                { key: 'humidity', icon: mdiWaterPercent, label: '%' },
+                { key: 'vpd', icon: mdiGauge, label: ' kPa' },
+                { key: 'ph', icon: mdiFlaskOutline, label: 'pH ', prefix: true },
+                { key: 'ec', icon: mdiFlash, label: 'EC ', prefix: true },
+                { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
+            ];
+            return x `
+      <div class="metadata-chips">
+        ${items.map(item => {
+                const val = metadata[item.key];
+                if (val === undefined || val === null)
+                    return E;
+                const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
+                return x `
+            <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
+              <svg viewBox="0 0 24 24"><path d="${item.icon}" /></svg>
+              <span>${display}</span>
+            </div>
+          `;
+            })}
+      </div>
+    `;
+        }
+        _renderImages(images) {
+            if (!images || images.length === 0)
+                return E;
+            return x `
+      <div class="image-grid">
+        ${images.map(img => {
+                // If it's a relative path, prefix with /api/growspace_manager/v1/images/
+                const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
+                return x `<img src=${src} @click=${() => this._openImage(src)} />`;
+            })}
+      </div>
+    `;
+        }
+        _renderTags(tags) {
+            if (!tags || tags.length === 0)
+                return E;
+            return x `
+      <div class="tags">
+        ${tags.map(tag => x `
+          <div class="tag">
+            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;margin-right:2px;"><path d="${mdiTag}" /></svg>
+            ${tag}
+          </div>
+        `)}
+      </div>
+    `;
+        }
+        _openImage(src) {
+            window.open(src, '_blank');
+        }
         constructor() {
             super(...arguments);
-            _PlantTimeline_events_accessor_storage.set(this, __runInitializers(this, _events_initializers, []));
-            __runInitializers(this, _events_extraInitializers);
+            _PlantTimeline_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _PlantTimeline_plant_id_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _plant_id_initializers, void 0)));
+            _PlantTimeline_events_accessor_storage.set(this, (__runInitializers(this, _plant_id_extraInitializers), __runInitializers(this, _events_initializers, [])));
+            _PlantTimeline__noteText_accessor_storage.set(this, (__runInitializers(this, _events_extraInitializers), __runInitializers(this, __noteText_initializers, '')));
+            _PlantTimeline__noteImages_accessor_storage.set(this, (__runInitializers(this, __noteText_extraInitializers), __runInitializers(this, __noteImages_initializers, [])));
+            _PlantTimeline__isSaving_accessor_storage.set(this, (__runInitializers(this, __noteImages_extraInitializers), __runInitializers(this, __isSaving_initializers, false)));
+            __runInitializers(this, __isSaving_extraInitializers);
         }
     };
+    _PlantTimeline_hass_accessor_storage = new WeakMap();
+    _PlantTimeline_plant_id_accessor_storage = new WeakMap();
     _PlantTimeline_events_accessor_storage = new WeakMap();
+    _PlantTimeline__noteText_accessor_storage = new WeakMap();
+    _PlantTimeline__noteImages_accessor_storage = new WeakMap();
+    _PlantTimeline__isSaving_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "PlantTimeline");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [n$5({ attribute: false })];
+        _plant_id_decorators = [n$5({ type: String })];
         _events_decorators = [n$5({ type: Array })];
+        __noteText_decorators = [r$2()];
+        __noteImages_decorators = [r$2()];
+        __isSaving_decorators = [r$2()];
+        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
+        __esDecorate(_classThis, null, _plant_id_decorators, { kind: "accessor", name: "plant_id", static: false, private: false, access: { has: obj => "plant_id" in obj, get: obj => obj.plant_id, set: (obj, value) => { obj.plant_id = value; } }, metadata: _metadata }, _plant_id_initializers, _plant_id_extraInitializers);
         __esDecorate(_classThis, null, _events_decorators, { kind: "accessor", name: "events", static: false, private: false, access: { has: obj => "events" in obj, get: obj => obj.events, set: (obj, value) => { obj.events = value; } }, metadata: _metadata }, _events_initializers, _events_extraInitializers);
+        __esDecorate(_classThis, null, __noteText_decorators, { kind: "accessor", name: "_noteText", static: false, private: false, access: { has: obj => "_noteText" in obj, get: obj => obj._noteText, set: (obj, value) => { obj._noteText = value; } }, metadata: _metadata }, __noteText_initializers, __noteText_extraInitializers);
+        __esDecorate(_classThis, null, __noteImages_decorators, { kind: "accessor", name: "_noteImages", static: false, private: false, access: { has: obj => "_noteImages" in obj, get: obj => obj._noteImages, set: (obj, value) => { obj._noteImages = value; } }, metadata: _metadata }, __noteImages_initializers, __noteImages_extraInitializers);
+        __esDecorate(_classThis, null, __isSaving_decorators, { kind: "accessor", name: "_isSaving", static: false, private: false, access: { has: obj => "_isSaving" in obj, get: obj => obj._isSaving, set: (obj, value) => { obj._isSaving = value; } }, metadata: _metadata }, __isSaving_initializers, __isSaving_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -9143,7 +9432,7 @@ const dialogStyles = [
         top: 0;
         bottom: 0;
         width: 2px;
-        background: var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--stage-color, var(--divider-color));
       }
       .event {
         position: relative;
@@ -9154,7 +9443,7 @@ const dialogStyles = [
       }
       .icon-wrapper {
         position: absolute;
-        left: -37px; /* 24px padding + 13px center align */
+        left: -37px;
         top: 12px;
         width: 26px;
         height: 26px;
@@ -9177,9 +9466,9 @@ const dialogStyles = [
         margin-bottom: 4px;
       }
       .content {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: var(--primary-text-color, #fff);
-        font-weight: 500;
+        font-weight: 600;
       }
       .details {
         margin-top: 4px;
@@ -9187,38 +9476,190 @@ const dialogStyles = [
         color: var(--secondary-text-color, #ccc);
         line-height: 1.4;
       }
+
+      /* Quick Note */
+      .quick-note {
+        margin-bottom: 24px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px dashed var(--divider-color);
+      }
+      .note-input {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .note-input textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+        resize: none;
+        padding: 4px;
+        outline: none;
+      }
+      .note-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .image-previews {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        overflow-x: auto;
+      }
+      .preview-item {
+        position: relative;
+        width: 60px;
+        height: 60px;
+      }
+      .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+      .remove-img {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: var(--error-color);
+        color: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+        border: none;
+      }
+
+      /* Metadata Chips */
+      .metadata-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        border: 1px solid transparent;
+      }
+      .chip svg {
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+      }
+      .chip.sensor { border-color: rgba(var(--rgb-primary-color), 0.2); }
+      .chip.action-stat { background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color); }
+
+      /* Image Grid */
+      .image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .image-grid img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 1px solid var(--divider-color);
+      }
+      .image-grid img:hover {
+        transform: scale(1.02);
+      }
+
+      /* Tags */
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      .tag {
+        font-size: 0.7rem;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--divider-color);
+        color: var(--secondary-text-color);
+      }
+
+      /* Milestone Banner */
+      .event.type-milestone {
+        border-left: 4px solid var(--success-color);
+        background: linear-gradient(90deg, rgba(var(--rgb-success-color), 0.15) 0%, transparent 100%);
+      }
+      .event.type-milestone .content {
+        font-size: 1.05rem;
+        letter-spacing: 0.5px;
+        color: var(--success-color);
+      }
       
       /* Type specific styling */
       .type-alert .icon-wrapper { border-color: var(--error-color, #f44336); }
       .type-alert .icon-wrapper svg { fill: var(--error-color, #f44336); }
-      
       .type-action .icon-wrapper { border-color: var(--primary-color, #03a9f4); }
       .type-action .icon-wrapper svg { fill: var(--primary-color, #03a9f4); }
-
       .type-stage_change .icon-wrapper { border-color: var(--success-color, #4caf50); }
       .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
-      
       .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
       .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
 
       /* Day grouping */
-      .day-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
       .day-header {
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--primary-color, #03a9f4);
-        padding: 8px 0;
+        padding: 12px 0 8px 12px;
         margin-left: -24px;
-        padding-left: 24px;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--card-background-color, #1c1c1c);
         position: sticky;
         top: 0;
-        background: var(--card-background-color, #1c1c1c);
         z-index: 2;
+        border-bottom: 1px solid var(--divider-color);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .day-summary {
+        margin: 8px 0 16px 0;
+        padding: 8px 12px;
+        background: rgba(var(--rgb-warning-color), 0.1);
+        border: 1px solid rgba(var(--rgb-warning-color), 0.2);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--warning-color);
+      }
+      .correlated-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--success-color);
+        color: white;
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        border-radius: 4px;
+        margin-left: 8px;
+        vertical-align: middle;
       }
     `
         ]
@@ -9997,10 +10438,18 @@ class GrowspaceLogbookController {
                 const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
                 // 3. Check if it's an IPM event
                 const isIPM = cat === 'ipm' || type.startsWith('ipm_');
-                if (!isWatering && !isTraining && !isIPM)
+                // 4. Check if it's a note event
+                const isNote = cat === 'note';
+                if (!isWatering && !isTraining && !isIPM && !isNote)
                     return false;
-                // 3. Filter by plant_id - only include events that mention THIS plant
-                // OR if it's an automated irrigation event (growspace-wide)
+                // 5. Filter by plant_id
+                // For notes, check the direct plant_id field
+                if (isNote) {
+                    const eventPlantId = e.plant_id;
+                    return eventPlantId && eventPlantId === plantId;
+                }
+                // For others, check growspace-wide or reasons
+                // Include if it's an automated irrigation event (growspace-wide)
                 if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
                     return true;
                 }
@@ -10015,21 +10464,38 @@ class GrowspaceLogbookController {
                 });
                 return mentionsThisPlant;
             })
-                .map(e => ({
-                type: 'action',
-                date: e.start_time,
-                action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
-                // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-                details: (e.reasons || []).filter(r => {
-                    const rLower = r.toLowerCase();
-                    return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-                }).join(', ')
-            }));
+                .map(e => {
+                const cat = normalize(e.category);
+                if (cat === 'note') {
+                    return {
+                        type: 'note',
+                        date: e.timestamp || e.start_time,
+                        text: e.notes || '',
+                        images: e.images,
+                        tags: e.tags,
+                        metadata: e.metadata,
+                    };
+                }
+                return {
+                    type: 'action',
+                    date: e.start_time,
+                    action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+                    // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
+                    details: (e.reasons || []).filter(r => {
+                        const rLower = r.toLowerCase();
+                        return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+                    }).join(', ')
+                };
+            });
             // Combine all
             const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
             return x `
         <div style="grid-column: 1 / -1;">
-            <plant-timeline .events=${allEvents}></plant-timeline>
+            <plant-timeline 
+              .hass=${this.hass} 
+              .plant_id=${plantId}
+              .events=${allEvents}
+            ></plant-timeline>
         </div>
     `;
         }

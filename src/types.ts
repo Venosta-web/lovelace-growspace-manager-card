@@ -126,12 +126,31 @@ export interface SerializedStats {
   total_plants: number;
 }
 
+export interface TimelineEventMetadata {
+  temperature?: number;
+  humidity?: number;
+  vpd?: number;
+  soil_moisture?: number;
+  light_intensity?: number;
+  ph?: number;
+  ec?: number;
+  amount_ml?: number;
+  [key: string]: any;
+}
+
+export interface BaseTimelineEvent {
+  date: string;
+  images?: string[];
+  tags?: string[];
+  metadata?: TimelineEventMetadata;
+}
+
 export type PlantTimelineEvent =
-  | { type: 'stage_change'; date: string; from: string; to: string }
-  | { type: 'action'; date: string; action: string; details?: string }
-  | { type: 'alert'; date: string; severity: 'low' | 'medium' | 'high'; message: string }
-  | { type: 'note'; date: string; text: string }
-  | { type: 'milestone'; date: string; label: string };
+  | ({ type: 'stage_change'; from: string; to: string } & BaseTimelineEvent)
+  | ({ type: 'action'; action: string; details?: string } & BaseTimelineEvent)
+  | ({ type: 'alert'; severity: 'low' | 'medium' | 'high'; message: string } & BaseTimelineEvent)
+  | ({ type: 'note'; text: string } & BaseTimelineEvent)
+  | ({ type: 'milestone'; label: string } & BaseTimelineEvent);
 
 export interface RawPlantData {
   plant_id: string;

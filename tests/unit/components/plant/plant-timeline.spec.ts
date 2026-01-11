@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import "../../../../src/components/plant/plant-timeline";
 import { PlantTimeline } from '../../../../src/components/plant/plant-timeline';
@@ -8,7 +8,7 @@ describe('PlantTimeline', () => {
     it('renders "No events recorded" when events array is empty', async () => {
         const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
         expect(el.events).toEqual([]);
-        expect(el.shadowRoot?.textContent).toContain('No events recorded');
+        expect(el.shadowRoot?.textContent).toContain('No entries for this plant yet.');
     });
 
     it('renders events in descending date order', async () => {
@@ -241,5 +241,24 @@ describe('PlantTimeline', () => {
         const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
         expect(el.shadowRoot?.querySelector('.content')?.textContent).toContain('Action');
         expect(el.shadowRoot?.querySelector('.details')).toBeNull();
+    });
+
+    it('handles file selection and updates _noteImages', async () => {
+        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+        
+        // Mock _resizeImage to return a fake base64 string
+        (el as any)._resizeImage = vi.fn().mockResolvedValue('data:image/jpeg;base64,fake');
+
+        const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+        const event = {
+            target: {
+                files: [file]
+            }
+        } as unknown as Event;
+
+        await (el as any)._handleFileSelect(event);
+
+        expect((el as any)._noteImages).toEqual(['data:image/jpeg;base64,fake']);
+        expect((el as any)._resizeImage).toHaveBeenCalledWith(file);
     });
 });

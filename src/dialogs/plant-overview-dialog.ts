@@ -834,10 +834,21 @@ export class PlantOverviewDialog extends LitElement {
         // 3. Check if it's an IPM event
         const isIPM = cat === 'ipm' || type.startsWith('ipm_');
 
-        if (!isWatering && !isTraining && !isIPM) return false;
+        // 4. Check if it's a note event
+        const isNote = cat === 'note';
 
-        // 3. Filter by plant_id - only include events that mention THIS plant
-        // OR if it's an automated irrigation event (growspace-wide)
+        if (!isWatering && !isTraining && !isIPM && !isNote) return false;
+
+        // 5. Filter by plant_id
+        
+        // For notes, check the direct plant_id field
+        if (isNote) {
+            const eventPlantId = (e as any).plant_id;
+            return eventPlantId && eventPlantId === plantId;
+        }
+
+        // For others, check growspace-wide or reasons
+        // Include if it's an automated irrigation event (growspace-wide)
         if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
           return true;
         }
@@ -854,23 +865,42 @@ export class PlantOverviewDialog extends LitElement {
 
         return mentionsThisPlant;
       })
-      .map(e => ({
-        type: 'action',
-        date: e.start_time,
-        action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
-        // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-        details: (e.reasons || []).filter(r => {
-          const rLower = r.toLowerCase();
-          return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-        }).join(', ')
-      }));
+      .map(e => {
+        const cat = normalize(e.category);
+        
+        if (cat === 'note') {
+            return {
+                type: 'note',
+                date: (e as any).timestamp || e.start_time,
+                text: (e as any).notes || '',
+                images: (e as any).images,
+                tags: (e as any).tags,
+                metadata: (e as any).metadata,
+            } as PlantTimelineEvent;
+        }
+
+        return {
+            type: 'action',
+            date: e.start_time,
+            action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+            // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
+            details: (e.reasons || []).filter(r => {
+            const rLower = r.toLowerCase();
+            return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+            }).join(', ')
+        } as PlantTimelineEvent;
+      });
 
     // Combine all
     const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
 
     return html`
         <div style="grid-column: 1 / -1;">
-            <plant-timeline .events=${allEvents}></plant-timeline>
+            <plant-timeline 
+              .hass=${this.hass} 
+              .plant_id=${plantId}
+              .events=${allEvents}
+            ></plant-timeline>
         </div>
     `;
   }
