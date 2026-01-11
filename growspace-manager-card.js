@@ -9352,6 +9352,96 @@ const dialogStyles = [
     return _classThis;
 })();
 
+class ResizeController {
+    constructor(host, callback) {
+        Object.defineProperty(this, "host", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "isMobile", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "hasTouch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "_resizeObserver", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_elementToObserve", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_callback", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_checkMobileBound", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this._checkMobile()
+        });
+        this.host = host;
+        this._callback = callback;
+        host.addController(this);
+    }
+    hostConnected() {
+        this._checkMobile();
+        window.addEventListener('resize', this._checkMobileBound);
+        // Observe the host element by default if not specified otherwise
+        // Note: The consumer can call startObserving(element) to be more specific
+        // or we can rely on window resize for mobile check.
+    }
+    hostDisconnected() {
+        window.removeEventListener('resize', this._checkMobileBound);
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+    }
+    observe(element) {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+        this._elementToObserve = element;
+        this._resizeObserver = new ResizeObserver(() => {
+            this._callback?.();
+            this.host.requestUpdate();
+        });
+        this._resizeObserver.observe(element);
+    }
+    _checkMobile() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
+        let changed = false;
+        if (this.isMobile !== isMobile) {
+            this.isMobile = isMobile;
+            changed = true;
+        }
+        if (this.hasTouch !== hasTouch) {
+            this.hasTouch = hasTouch;
+            changed = true;
+        }
+        if (changed) {
+            this.host.requestUpdate();
+        }
+    }
+}
+
 (() => {
     var _PlantTimeline_hass_accessor_storage, _PlantTimeline_plant_id_accessor_storage, _PlantTimeline_events_accessor_storage, _PlantTimeline__noteText_accessor_storage, _PlantTimeline__noteImages_accessor_storage, _PlantTimeline__isSaving_accessor_storage, _PlantTimeline__showDeleteConfirmation_accessor_storage, _PlantTimeline__deletingEventId_accessor_storage, _PlantTimeline__hoveredImage_accessor_storage;
     let _classDecorators = [t$2('plant-timeline')];
@@ -9436,8 +9526,8 @@ const dialogStyles = [
                         return mdiWater;
                     if (action === 'ipm')
                         return mdiBug;
-                    if (action === 'training' || action === 'pruning')
-                        return mdiContentCut;
+                    if (action === 'training')
+                        return mdiDumbbell;
                     return mdiLeaf;
                 default: return mdiLeaf;
             }
@@ -10383,7 +10473,7 @@ class GrowspaceLogbookController {
 }
 
 (() => {
-    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, _PlantOverviewDialog__activeTab_accessor_storage, _PlantOverviewDialog__logbookEvents_accessor_storage;
+    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, _PlantOverviewDialog__activeTab_accessor_storage, _PlantOverviewDialog__logbookEvents_accessor_storage, _PlantOverviewDialog__canScrollLeft_accessor_storage, _PlantOverviewDialog__canScrollRight_accessor_storage;
     let _classDecorators = [t$2('plant-overview-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -10425,7 +10515,80 @@ class GrowspaceLogbookController {
     let __logbookEvents_decorators;
     let __logbookEvents_initializers = [];
     let __logbookEvents_extraInitializers = [];
+    let __canScrollLeft_decorators;
+    let __canScrollLeft_initializers = [];
+    let __canScrollLeft_extraInitializers = [];
+    let __canScrollRight_decorators;
+    let __canScrollRight_initializers = [];
+    let __canScrollRight_extraInitializers = [];
     _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _PlantOverviewDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            Object.defineProperty(this, "_logbookController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, _hass_extraInitializers), new GrowspaceLogbookController())
+            });
+            Object.defineProperty(this, "_unsubEvents", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: void 0
+            });
+            _PlantOverviewDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
+            _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
+            _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
+            _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
+            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, void 0)));
+            _PlantOverviewDialog_isEditing_accessor_storage.set(this, (__runInitializers(this, _editedAttributes_extraInitializers), __runInitializers(this, _isEditing_initializers, true)));
+            _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
+            _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));
+            _PlantOverviewDialog__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, _cloneTargetId_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
+            _PlantOverviewDialog__activeTab_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __activeTab_initializers, 'dashboard')));
+            _PlantOverviewDialog__logbookEvents_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __logbookEvents_initializers, [])));
+            _PlantOverviewDialog__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, __logbookEvents_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
+            _PlantOverviewDialog__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
+            Object.defineProperty(this, "_actionsContainer", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: __runInitializers(this, __canScrollRight_extraInitializers)
+            });
+            Object.defineProperty(this, "_resizeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new ResizeController(this, () => this._checkScroll())
+            });
+            Object.defineProperty(this, "_setActionsRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (el) => {
+                    this._actionsContainer = el;
+                    if (el) {
+                        el.addEventListener('scroll', this._checkScroll);
+                        this._resizeController.observe(el);
+                        setTimeout(() => this._checkScroll(), 0);
+                    }
+                }
+            });
+            Object.defineProperty(this, "_checkScroll", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: () => {
+                    const container = this._actionsContainer;
+                    if (container) {
+                        this._canScrollLeft = container.scrollLeft > 1;
+                        this._canScrollRight =
+                            container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+                    }
+                }
+            });
+        }
         get hass() { return __classPrivateFieldGet(this, _PlantOverviewDialog_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_hass_accessor_storage, value, "f"); }
         get open() { return __classPrivateFieldGet(this, _PlantOverviewDialog_open_accessor_storage, "f"); }
@@ -10450,6 +10613,16 @@ class GrowspaceLogbookController {
         set _activeTab(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__activeTab_accessor_storage, value, "f"); }
         get _logbookEvents() { return __classPrivateFieldGet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, "f"); }
         set _logbookEvents(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, value, "f"); }
+        get _canScrollLeft() { return __classPrivateFieldGet(this, _PlantOverviewDialog__canScrollLeft_accessor_storage, "f"); }
+        set _canScrollLeft(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__canScrollLeft_accessor_storage, value, "f"); }
+        get _canScrollRight() { return __classPrivateFieldGet(this, _PlantOverviewDialog__canScrollRight_accessor_storage, "f"); }
+        set _canScrollRight(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__canScrollRight_accessor_storage, value, "f"); }
+        _scrollActions(direction) {
+            const container = this._actionsContainer;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
+            }
+        }
         connectedCallback() {
             super.connectedCallback();
             this._subscribeToEvents();
@@ -10817,19 +10990,29 @@ class GrowspaceLogbookController {
              ${this._activeTab === 'timeline'
                 ? x `
                  <!-- EVENT ACTIONS (TIMELINE TAB) -->
-                 <div class="event-actions" style="display:flex; gap:12px; width:100%; justify-content: flex-end;">
-                     <button class="md3-button tonal" @click=${() => this._openWatering()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                        Water
-                     </button>
-                     <button class="md3-button tonal" @click=${() => this._openTraining()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-                        Train
-                     </button>
-                     <button class="md3-button tonal" @click=${() => this._openIPM()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-                        IPM
-                     </button>
+                 <div class="event-actions-wrapper" style="width: 100%; display: flex; align-items: center; position: relative;">
+                     <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                     </div>
+
+                     <div class="event-actions" ${n$2(this._setActionsRef)}>
+                         <button class="md3-button tonal" @click=${() => this._openWatering()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                            Water
+                         </button>
+                         <button class="md3-button tonal" @click=${() => this._openTraining()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+                            Train
+                         </button>
+                         <button class="md3-button tonal" @click=${() => this._openIPM()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+                            IPM
+                         </button>
+                     </div>
+
+                     <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                     </div>
                  </div>
                `
                 : x `
@@ -11207,34 +11390,6 @@ class GrowspaceLogbookController {
         </div>
     `;
         }
-        constructor() {
-            super(...arguments);
-            _PlantOverviewDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            Object.defineProperty(this, "_logbookController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, _hass_extraInitializers), new GrowspaceLogbookController())
-            });
-            Object.defineProperty(this, "_unsubEvents", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            _PlantOverviewDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
-            _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
-            _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, void 0)));
-            _PlantOverviewDialog_isEditing_accessor_storage.set(this, (__runInitializers(this, _editedAttributes_extraInitializers), __runInitializers(this, _isEditing_initializers, true)));
-            _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
-            _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));
-            _PlantOverviewDialog__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, _cloneTargetId_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
-            _PlantOverviewDialog__activeTab_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __activeTab_initializers, 'dashboard')));
-            _PlantOverviewDialog__logbookEvents_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __logbookEvents_initializers, [])));
-            __runInitializers(this, __logbookEvents_extraInitializers);
-        }
     };
     _PlantOverviewDialog_hass_accessor_storage = new WeakMap();
     _PlantOverviewDialog_open_accessor_storage = new WeakMap();
@@ -11248,6 +11403,8 @@ class GrowspaceLogbookController {
     _PlantOverviewDialog__showDeleteConfirmation_accessor_storage = new WeakMap();
     _PlantOverviewDialog__activeTab_accessor_storage = new WeakMap();
     _PlantOverviewDialog__logbookEvents_accessor_storage = new WeakMap();
+    _PlantOverviewDialog__canScrollLeft_accessor_storage = new WeakMap();
+    _PlantOverviewDialog__canScrollRight_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "PlantOverviewDialog");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
@@ -11263,6 +11420,8 @@ class GrowspaceLogbookController {
         __showDeleteConfirmation_decorators = [r$2()];
         __activeTab_decorators = [r$2()];
         __logbookEvents_decorators = [r$2()];
+        __canScrollLeft_decorators = [r$2()];
+        __canScrollRight_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _dialog_decorators, { kind: "accessor", name: "dialog", static: false, private: false, access: { has: obj => "dialog" in obj, get: obj => obj.dialog, set: (obj, value) => { obj.dialog = value; } }, metadata: _metadata }, _dialog_initializers, _dialog_extraInitializers);
@@ -11275,6 +11434,8 @@ class GrowspaceLogbookController {
         __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
         __esDecorate(_classThis, null, __activeTab_decorators, { kind: "accessor", name: "_activeTab", static: false, private: false, access: { has: obj => "_activeTab" in obj, get: obj => obj._activeTab, set: (obj, value) => { obj._activeTab = value; } }, metadata: _metadata }, __activeTab_initializers, __activeTab_extraInitializers);
         __esDecorate(_classThis, null, __logbookEvents_decorators, { kind: "accessor", name: "_logbookEvents", static: false, private: false, access: { has: obj => "_logbookEvents" in obj, get: obj => obj._logbookEvents, set: (obj, value) => { obj._logbookEvents = value; } }, metadata: _metadata }, __logbookEvents_initializers, __logbookEvents_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -11447,6 +11608,76 @@ class GrowspaceLogbookController {
         width: 18px;
         height: 18px;
         fill: currentColor;
+      }
+
+      /* Scrollable Actions */
+      .event-actions-wrapper {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        position: relative;
+      }
+
+      .event-actions {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+        padding: 4px 0;
+        width: 100%;
+        justify-content: flex-end;
+      }
+
+      .event-actions::-webkit-scrollbar {
+        display: none;
+      }
+
+      .event-actions button {
+        flex-shrink: 0;
+      }
+
+      .scroll-arrow {
+        min-width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        border-radius: 50%;
+        transition: all 0.2s;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 4px;
+        z-index: 1;
+        flex-shrink: 0;
+      }
+
+      .scroll-arrow:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .scroll-arrow.hidden {
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        min-width: 0;
+        margin: 0;
+        visibility: hidden;
+      }
+      
+      .scroll-arrow svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      @media (max-width: 600px) {
+        .event-actions {
+            justify-content: flex-start;
+        }
       }
     `,
         ]
@@ -18302,7 +18533,7 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _EditModeBanner_selectedCount_accessor_storage;
+    var _EditModeBanner_selectedCount_accessor_storage, _EditModeBanner__canScrollLeft_accessor_storage, _EditModeBanner__canScrollRight_accessor_storage;
     let _classDecorators = [t$2('growspace-edit-mode-banner')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -18311,47 +18542,108 @@ class GrowspaceLogbookController {
     let _selectedCount_decorators;
     let _selectedCount_initializers = [];
     let _selectedCount_extraInitializers = [];
+    let __canScrollLeft_decorators;
+    let __canScrollLeft_initializers = [];
+    let __canScrollLeft_extraInitializers = [];
+    let __canScrollRight_decorators;
+    let __canScrollRight_initializers = [];
+    let __canScrollRight_extraInitializers = [];
     _classThis = class extends _classSuper {
+        constructor() {
+            super(...arguments);
+            _EditModeBanner_selectedCount_accessor_storage.set(this, __runInitializers(this, _selectedCount_initializers, 0));
+            _EditModeBanner__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
+            _EditModeBanner__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
+            Object.defineProperty(this, "_actionsContainerRef", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: (__runInitializers(this, __canScrollRight_extraInitializers), e$1())
+            });
+            Object.defineProperty(this, "_resizeController", {
+                enumerable: true,
+                configurable: true,
+                writable: true,
+                value: new ResizeController(this, () => this._checkScroll())
+            });
+        }
         get selectedCount() { return __classPrivateFieldGet(this, _EditModeBanner_selectedCount_accessor_storage, "f"); }
         set selectedCount(value) { __classPrivateFieldSet(this, _EditModeBanner_selectedCount_accessor_storage, value, "f"); }
+        get _canScrollLeft() { return __classPrivateFieldGet(this, _EditModeBanner__canScrollLeft_accessor_storage, "f"); }
+        set _canScrollLeft(value) { __classPrivateFieldSet(this, _EditModeBanner__canScrollLeft_accessor_storage, value, "f"); }
+        get _canScrollRight() { return __classPrivateFieldGet(this, _EditModeBanner__canScrollRight_accessor_storage, "f"); }
+        set _canScrollRight(value) { __classPrivateFieldSet(this, _EditModeBanner__canScrollRight_accessor_storage, value, "f"); }
+        firstUpdated() {
+            const container = this._actionsContainerRef.value;
+            if (container) {
+                container.addEventListener('scroll', () => this._checkScroll());
+                this._resizeController.observe(container);
+            }
+            setTimeout(() => this._checkScroll(), 0);
+        }
+        _scrollActions(direction) {
+            const container = this._actionsContainerRef.value;
+            if (container) {
+                container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
+            }
+        }
+        _checkScroll() {
+            const container = this._actionsContainerRef.value;
+            if (container) {
+                this._canScrollLeft = container.scrollLeft > 1;
+                this._canScrollRight =
+                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+            }
+        }
         render() {
             return x `
       <div class="edit-mode-banner">
         <div class="banner-content">
-          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+          <svg viewBox="0 0 24 24">
             <path d="${mdiCheckboxMarked}"></path>
           </svg>
           <span>${this.selectedCount} plant(s) selected</span>
         </div>
-        <div class="banner-actions">
-          <button class="md3-button text" @click=${() => this._dispatch('select-all')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
-            Select All
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
-            Clear
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            Water / Nutrients
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-            Log Training
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            Log IPM
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
-            Batch Add Plants
-          </button>
-          <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-            Exit
-          </button>
+        
+        <div class="banner-actions-wrapper">
+          <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+          </div>
+
+          <div class="banner-actions" ${n$2(this._actionsContainerRef)}>
+            <button class="md3-button text" @click=${() => this._dispatch('select-all')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
+              Select All
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
+              Clear
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+              Water / Nutrients
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+              Log Training
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+              Log IPM
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
+              Batch Add Plants
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+              Exit
+            </button>
+          </div>
+
+          <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+          </div>
         </div>
       </div>
     `;
@@ -18359,18 +18651,19 @@ class GrowspaceLogbookController {
         _dispatch(event) {
             this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
         }
-        constructor() {
-            super(...arguments);
-            _EditModeBanner_selectedCount_accessor_storage.set(this, __runInitializers(this, _selectedCount_initializers, 0));
-            __runInitializers(this, _selectedCount_extraInitializers);
-        }
     };
     _EditModeBanner_selectedCount_accessor_storage = new WeakMap();
+    _EditModeBanner__canScrollLeft_accessor_storage = new WeakMap();
+    _EditModeBanner__canScrollRight_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "EditModeBanner");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
         _selectedCount_decorators = [n$5({ type: Number })];
+        __canScrollLeft_decorators = [r$2()];
+        __canScrollRight_decorators = [r$2()];
         __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
+        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
         __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
         _classThis = _classDescriptor.value;
         if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
@@ -18390,12 +18683,13 @@ class GrowspaceLogbookController {
         background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
         border: 1px solid rgba(76, 175, 80, 0.4);
         border-radius: 12px;
-        padding: 12px 16px;
+        padding: 8px 16px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
         animation: slideDown 0.3s ease;
+        gap: 16px;
       }
 
       @keyframes slideDown {
@@ -18416,6 +18710,8 @@ class GrowspaceLogbookController {
         color: var(--primary-text-color, #fff);
         font-weight: 500;
         font-size: 0.95rem;
+        white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .banner-content svg {
@@ -18424,9 +18720,75 @@ class GrowspaceLogbookController {
         fill: currentColor;
       }
 
+      .banner-actions-wrapper {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        position: relative;
+      }
+
       .banner-actions {
         display: flex;
         gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+        padding: 4px 0;
+      }
+
+      .banner-actions::-webkit-scrollbar {
+        display: none;
+      }
+
+      .banner-actions button {
+        flex-shrink: 0;
+      }
+
+      .scroll-arrow {
+        min-width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        border-radius: 50%;
+        transition: all 0.2s;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 4px;
+        z-index: 1;
+      }
+
+      .scroll-arrow:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .scroll-arrow.hidden {
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        min-width: 0;
+        margin: 0;
+      }
+
+      .scroll-arrow svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      @media (max-width: 600px) {
+        .edit-mode-banner {
+          flex-direction: column;
+          align-items: stretch;
+          padding: 12px;
+          gap: 8px;
+        }
+        .banner-content {
+          justify-content: center;
+        }
       }
     `
         ]
@@ -27875,96 +28237,6 @@ class MetricsUtils {
             createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier'),
         ].filter((c) => c !== null);
         return { mainChips, deviceChips, dominant, envAttrs };
-    }
-}
-
-class ResizeController {
-    constructor(host, callback) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "isMobile", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "hasTouch", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "_resizeObserver", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_elementToObserve", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_callback", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_checkMobileBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this._checkMobile()
-        });
-        this.host = host;
-        this._callback = callback;
-        host.addController(this);
-    }
-    hostConnected() {
-        this._checkMobile();
-        window.addEventListener('resize', this._checkMobileBound);
-        // Observe the host element by default if not specified otherwise
-        // Note: The consumer can call startObserving(element) to be more specific
-        // or we can rely on window resize for mobile check.
-    }
-    hostDisconnected() {
-        window.removeEventListener('resize', this._checkMobileBound);
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-    }
-    observe(element) {
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-        this._elementToObserve = element;
-        this._resizeObserver = new ResizeObserver(() => {
-            this._callback?.();
-            this.host.requestUpdate();
-        });
-        this._resizeObserver.observe(element);
-    }
-    _checkMobile() {
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
-        let changed = false;
-        if (this.isMobile !== isMobile) {
-            this.isMobile = isMobile;
-            changed = true;
-        }
-        if (this.hasTouch !== hasTouch) {
-            this.hasTouch = hasTouch;
-            changed = true;
-        }
-        if (changed) {
-            this.host.requestUpdate();
-        }
     }
 }
 

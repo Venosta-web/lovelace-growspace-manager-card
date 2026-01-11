@@ -4,6 +4,7 @@ export default defineConfig({
     test: {
         // specific to logic that touches DOM APIs (like FileReader/Image in utils.ts)
         environment: 'jsdom',
+        setupFiles: ['./tests/setup.ts'],
         include: ['tests/unit/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
         coverage: {
             provider: 'v8',

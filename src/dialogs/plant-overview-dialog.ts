@@ -1,5 +1,6 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { ref } from 'lit/directives/ref.js';
 import {
   mdiClose,
   mdiPencil,
@@ -14,6 +15,8 @@ import {
   mdiWater,
   mdiDumbbell,
   mdiBug,
+  mdiChevronLeft,
+  mdiChevronRight,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -24,6 +27,7 @@ import {
 } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
+import { ResizeController } from '../controllers/resize-controller';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
@@ -63,6 +67,36 @@ export class PlantOverviewDialog extends LitElement {
   @state() private accessor _showDeleteConfirmation = false;
   @state() private accessor _activeTab: 'dashboard' | 'timeline' = 'dashboard';
   @state() private accessor _logbookEvents: GrowspaceEvent[] = [];
+
+  @state() private accessor _canScrollLeft = false;
+  @state() private accessor _canScrollRight = false;
+  private _actionsContainer: HTMLDivElement | undefined;
+  private _resizeController = new ResizeController(this, () => this._checkScroll());
+
+  private _setActionsRef = (el?: Element) => {
+    this._actionsContainer = el as HTMLDivElement;
+    if (el) {
+      el.addEventListener('scroll', this._checkScroll);
+      this._resizeController.observe(el);
+      setTimeout(() => this._checkScroll(), 0);
+    }
+  };
+
+  private _checkScroll = () => {
+    const container = this._actionsContainer;
+    if (container) {
+      this._canScrollLeft = container.scrollLeft > 1;
+      this._canScrollRight =
+        container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+    }
+  };
+
+  private _scrollActions(direction: 'left' | 'right') {
+    const container = this._actionsContainer;
+    if (container) {
+      container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
+    }
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -342,6 +376,76 @@ export class PlantOverviewDialog extends LitElement {
         width: 18px;
         height: 18px;
         fill: currentColor;
+      }
+
+      /* Scrollable Actions */
+      .event-actions-wrapper {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+        flex: 1;
+        position: relative;
+      }
+
+      .event-actions {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+        padding: 4px 0;
+        width: 100%;
+        justify-content: flex-end;
+      }
+
+      .event-actions::-webkit-scrollbar {
+        display: none;
+      }
+
+      .event-actions button {
+        flex-shrink: 0;
+      }
+
+      .scroll-arrow {
+        min-width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        border-radius: 50%;
+        transition: all 0.2s;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 4px;
+        z-index: 1;
+        flex-shrink: 0;
+      }
+
+      .scroll-arrow:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .scroll-arrow.hidden {
+        opacity: 0;
+        pointer-events: none;
+        width: 0;
+        min-width: 0;
+        margin: 0;
+        visibility: hidden;
+      }
+      
+      .scroll-arrow svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      @media (max-width: 600px) {
+        .event-actions {
+            justify-content: flex-start;
+        }
       }
     `,
   ];
@@ -629,19 +733,29 @@ export class PlantOverviewDialog extends LitElement {
              ${this._activeTab === 'timeline'
         ? html`
                  <!-- EVENT ACTIONS (TIMELINE TAB) -->
-                 <div class="event-actions" style="display:flex; gap:12px; width:100%; justify-content: flex-end;">
-                     <button class="md3-button tonal" @click=${() => this._openWatering()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                        Water
-                     </button>
-                     <button class="md3-button tonal" @click=${() => this._openTraining()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-                        Train
-                     </button>
-                     <button class="md3-button tonal" @click=${() => this._openIPM()}>
-                        <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-                        IPM
-                     </button>
+                 <div class="event-actions-wrapper" style="width: 100%; display: flex; align-items: center; position: relative;">
+                     <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+                     </div>
+
+                     <div class="event-actions" ${ref(this._setActionsRef)}>
+                         <button class="md3-button tonal" @click=${() => this._openWatering()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                            Water
+                         </button>
+                         <button class="md3-button tonal" @click=${() => this._openTraining()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+                            Train
+                         </button>
+                         <button class="md3-button tonal" @click=${() => this._openIPM()}>
+                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+                            IPM
+                         </button>
+                     </div>
+
+                     <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
+                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+                     </div>
                  </div>
                `
         : html`
