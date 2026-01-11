@@ -204,9 +204,7 @@ export class WateringDialog extends LitElement {
       return;
     }
 
-    const presets = this.dialogState?.growspaceId
-      ? this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId)?.nutrient_presets
-      : undefined;
+    const presets = this.store.data.$nutrientPresets.get();
 
     if (presets && presets[presetId]) {
       const preset = presets[presetId];
@@ -451,31 +449,34 @@ export class WateringDialog extends LitElement {
   }
   private _renderPresetOptions() {
     if (!this.store || !this.store.data) return nothing;
-    const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
-    if (!device || !device.nutrient_presets) return nothing;
+    const presetsRecord = this.store.data.$nutrientPresets.get();
+    if (!presetsRecord) return nothing;
 
-    const presets = Object.values(device.nutrient_presets);
+    const presets = Object.values(presetsRecord);
 
     // Logic for recommendations
     let currentStage: string | undefined;
     let daysInStage = 0;
 
     if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
-      // Check if all selected plants are in the same stage
-      const selectedPlants = device.plants.filter(p =>
-        this.dialogState!.plantIds!.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
-      );
+      const selectedDeviceId = this.store.data.$selectedDevice.get();
+      const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
+      if (selectedDevice) {
+        // Check if all selected plants are in the same stage
+        const selectedPlants = selectedDevice.plants.filter(p =>
+          this.dialogState!.plantIds!.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
+        );
 
-      if (selectedPlants.length > 0) {
-        // Use first plant as baseline
-        const firstStage = selectedPlants[0].attributes.stage;
-        const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+        if (selectedPlants.length > 0) {
+          // Use first plant as baseline
+          const firstStage = selectedPlants[0].attributes.stage;
+          const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
 
-        if (isHomogeneous) {
-          currentStage = firstStage;
-          // Use minimum days in stage to be safe, or average? 
-          // Minimum ensures we don't recommend something too advanced for the youngest plant.
-          daysInStage = Math.min(...selectedPlants.map(p => (p.attributes as any).days_in_stage || 0));
+          if (isHomogeneous) {
+            currentStage = firstStage;
+            // Use minimum days in stage to be safe
+            daysInStage = Math.min(...selectedPlants.map(p => (p.attributes as any).days_in_stage || 0));
+          }
         }
       }
     }
@@ -500,16 +501,12 @@ export class WateringDialog extends LitElement {
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
     if (!this.store || !this.store.data) return [];
-    const devices = this.store.data.$devices.get();
 
-    devices.forEach(device => {
-      if (device.nutrient_presets) {
-        Object.values(device.nutrient_presets).forEach(preset => {
-          preset.nutrients.forEach(n => {
-            if (n.name) nutrients.add(n.name);
-          });
-        });
-      }
+    const presets = this.store.data.$nutrientPresets.get();
+    Object.values(presets).forEach(preset => {
+      preset.nutrients.forEach(n => {
+        if (n.name) nutrients.add(n.name);
+      });
     });
 
     return Array.from(nutrients).sort();

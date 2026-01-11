@@ -806,6 +806,88 @@ describe('DataService', () => {
             expect(result['sensor.temp'][0].state).toBe('20');
         });
 
+        it('should handle history stats validation error', async () => {
+            (mockHass.callWS as any).mockResolvedValue({
+                'sensor.temp': [{ bad_shape: true }]
+            });
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const result = await service.getHistoryStats(['sensor.temp'], new Date(), new Date());
+            // It logs error but returns raw result
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Failed'), expect.anything());
+            expect(result['sensor.temp']).toHaveLength(1);
+        });
+
+        describe('Branch Coverage Specifics', () => {
+
+            it('fetchGrowspaceData: should log error and return raw result if single item validation fails', async () => {
+                const invalidData = { growspace_id: 'g1', missing_required_fields: true };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(invalidData);
+                const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const result = await service.fetchGrowspaceData('g1');
+
+                expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed'), expect.anything());
+                expect(result).toBe(invalidData);
+            });
+
+            it('fetchGrowspaceData: should identify specific problematic items in a collection', async () => {
+                const collection = {
+                    valid: { growspace_id: 'g1', name: 'G1', type: 'normal', rows: 4, plants_per_row: 4, grid: {} },
+                    invalid: { growspace_id: 'g2' } // Missing name etc
+                };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(collection);
+                const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const result = await service.fetchGrowspaceData();
+
+                // 1. Log overall collection failure
+                expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed for Collection'), expect.anything());
+                // 2. Log specific item failure
+                expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Found problematic item: invalid'), expect.anything());
+
+                expect(result).toBe(collection);
+            });
+
+            it('fetchGrowspaceData: should return null if hass not initialized', async () => {
+                service.hass = undefined as any;
+                const result = await service.fetchGrowspaceData('g1');
+                expect(result).toBeNull();
+            });
+
+            it('getStrainLibrary: should handle missing hass/states gracefully', () => {
+                service.hass = undefined as any;
+                expect(() => service.getStrainLibrary()).toThrow(); // Likely throws cannot read properties of undefined
+
+                // But let's check the case where hass exists but states is empty/undefined
+                service.hass = { states: {} } as any;
+                expect(service.getStrainLibrary()).toEqual([]);
+            });
+
+            it('getStrainLibrary: should handle attributes existing but strains prop missing', () => {
+                service.hass = {
+                    states: {
+                        'sensor.strains': { attributes: { other: 123 } } // No 'strains' key
+                    }
+                } as any;
+                expect(service.getStrainLibrary()).toEqual([]);
+            });
+
+            it('getStrainLibrary: should handle non-array/non-object strains attribute (e.g. null)', () => {
+                service.hass = {
+                    states: {
+                        'sensor.strains': { attributes: { strains: null } }
+                    }
+                } as any;
+                expect(service.getStrainLibrary()).toEqual([]);
+            });
+
+            it('getGrowspaceDevices: should return empty if input is null/undefined', () => {
+                expect(service.getGrowspaceDevices(null as any)).toEqual([]);
+                expect(service.getGrowspaceDevices(undefined)).toEqual([]);
+            });
+        });
+
         it('should fallback to REST batch on WS failure', async () => {
             (mockHass.callWS as any).mockRejectedValue(new Error('WS Fail'));
             const batchSpy = vi.spyOn(service, 'getBatchHistory').mockResolvedValue({ 's1': [] });
@@ -1358,6 +1440,201 @@ describe('DataService', () => {
 
             await service.getHistoryStats(['s1'], new Date());
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Fallback params:'));
+        });
+    });
+
+    describe('Missing Method Coverage', () => {
+        it('callService should call hass.callService and log', async () => {
+            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+            const domain = 'test_domain';
+            const srv = 'test_service';
+            const data = { foo: 'bar' };
+
+            await service.callService(domain, srv, data);
+
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService:callService]'), data);
+            expect(mockHass.callService).toHaveBeenCalledWith(domain, srv, data);
+        });
+
+        describe('fetchNutrientPresets', () => {
+            it('should return null if hass is missing', async () => {
+                service.hass = undefined as any;
+                expect(await service.fetchNutrientPresets()).toBeNull();
+            });
+
+            it('should fetch and return presets on success', async () => {
+                const mockPresets = { 'p1': { id: 'p1', name: 'Preset 1', nutrients: [] } };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockPresets);
+
+                const res = await service.fetchNutrientPresets();
+                expect(res).toEqual(mockPresets);
+                expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'growspace_manager/get_nutrient_presets'
+                }));
+            });
+
+            it('should return raw result and log error on validation failure', async () => {
+                const badData = { p1: { name: 'missing_id' } };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchNutrientPresets();
+                expect(res).toBe(badData);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Presets Validation Failed:'), expect.anything());
+            });
+
+            it('should handle websocket error', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchNutrientPresets();
+                expect(res).toBeNull();
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService:fetchNutrientPresets] Error:'), expect.any(Error));
+            });
+        });
+
+        describe('fetchIPMPresets', () => {
+            it('should return null if hass is missing', async () => {
+                service.hass = undefined as any;
+                expect(await service.fetchIPMPresets()).toBeNull();
+            });
+
+            it('should fetch and return presets on success', async () => {
+                const mockPresets = { 'p1': { id: 'p1', name: 'IPM 1', type: 'foliar', items: [] } };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockPresets);
+
+                const res = await service.fetchIPMPresets();
+                expect(res).toEqual(mockPresets);
+                expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'growspace_manager/get_ipm_presets'
+                }));
+            });
+
+            it('should return raw result and log error on validation failure', async () => {
+                const badData = { p1: { name: 'missing_id' } };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchIPMPresets();
+                expect(res).toBe(badData);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('IPM Presets Validation Failed:'), expect.anything());
+            });
+
+            it('should handle websocket error', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchIPMPresets();
+                expect(res).toBeNull();
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService:fetchIPMPresets] Error:'), expect.any(Error));
+            });
+        });
+        describe('Final Coverage Cleanup', () => {
+            it('getHistory should return empty array if hass is missing', async () => {
+                service.hass = undefined as any;
+                expect(await service.getHistory('sensor.test', new Date())).toEqual([]);
+            });
+
+            it('getBatchHistory should return empty object if hass is missing or entities empty', async () => {
+                expect(await service.getBatchHistory([], new Date())).toEqual({});
+                service.hass = undefined as any;
+                expect(await service.getBatchHistory(['s1'], new Date())).toEqual({});
+            });
+
+            it('fetchStrainLibrary should handle missing meta or phenotypes and "response" filter in loop', async () => {
+                const serviceResponse = {
+                    'strain1': { meta: undefined, phenotypes: undefined },
+                    'response': { phenotypes: { 'p1': {} } } // Should be skipped by line 212
+                };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(serviceResponse);
+
+                const res = await service.fetchStrainLibrary();
+                // strain1 has undefined phenotypes (due to ?? {} fallback), so it results in 0 entries for that strain
+                // 'response' key is skipped
+                expect(res).toHaveLength(0);
+            });
+
+            it('getStrainLibrary should handle missing meta or phenotypes', () => {
+                mockHass.states = {
+                    'sensor.strains': {
+                        attributes: {
+                            strains: {
+                                'strain1': { meta: null, phenotypes: null }
+                            }
+                        }
+                    }
+                } as any;
+                const res = service.getStrainLibrary();
+                expect(res).toHaveLength(0);
+            });
+
+            it('fetchGrowspaceData single item validation failure', async () => {
+                const badData = { id: 'g1', name: 'Incomplete' };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchGrowspaceData('g1');
+                expect(res).toBe(badData);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService] API Validation Failed for g1:'), expect.anything());
+                errorSpy.mockRestore();
+            });
+
+            it('fetchGrowspaceData collection validation should log problematic items', async () => {
+                const badCollection = {
+                    'g1': { id: 'g1', name: 'Grow 1' }, // Missing plants etc to fail schema
+                    'g2': { id: 'g2', name: 'Grow 2' }
+                };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badCollection);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchGrowspaceData();
+                // It will fail the safeParse(GrowspaceAPICollectionSchema)
+                // Then it loops over entries and logs them to console.error
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService] -> Found problematic item: g1'), expect.anything());
+                expect(res).toBe(badCollection);
+                errorSpy.mockRestore();
+            });
+
+            it('fetchGrowspaceData collection validation failure with null result', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(null);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchGrowspaceData();
+                expect(res).toBeNull();
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed for Collection (All Data):'), expect.anything());
+                errorSpy.mockRestore();
+            });
+
+            it('fetchGrowspaceData collection validation failure with non-object result', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(42);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchGrowspaceData();
+                expect(res).toBe(42);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed for Collection (All Data):'), expect.anything());
+                errorSpy.mockRestore();
+            });
+
+            it('fetchStrainLibrary should handle missing meta/phenotypes and "response" filter', async () => {
+                const serviceResponse = {
+                    'strain1': { meta: {}, phenotypes: {} },
+                    'response': { phenotypes: { 'p1': {} } }
+                };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(serviceResponse);
+
+                const res = await service.fetchStrainLibrary();
+                expect(res).toHaveLength(0);
+            });
+
+            it('fetchStrainLibrary should handle WS error', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchStrainLibrary();
+                expect(res).toEqual([]);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch strain library for grid:'), expect.anything());
+                errorSpy.mockRestore();
+            });
         });
     });
 });

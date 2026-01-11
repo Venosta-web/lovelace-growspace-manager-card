@@ -123,6 +123,8 @@ export const METRIC_ENTITY_KEYS: Record<
 export const DOMAIN = 'growspace_manager';
 export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 export const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
+export const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
+export const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
 
 export const EVENTS = {
   GROWSPACE_UPDATED: "growspace_manager_updated",

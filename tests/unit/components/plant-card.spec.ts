@@ -42,21 +42,34 @@ describe('PlantCard', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
 
-        // Define mock store
+        // Local atoms
         const $devices = atom<any[]>([]);
+        const $nutrientPresets = atom<any>({});
+        const $ipmPresets = atom<any>({});
+        const $selectedDevice = atom<string | null>(null);
+
         mockStore = {
             ui: {
                 $isEditMode,
-                $selectedPlants
+                $selectedPlants,
+                closeDialog: vi.fn(),
+                setActiveDialog: vi.fn()
             },
             data: {
-                $devices
+                $devices,
+                $nutrientPresets,
+                $ipmPresets,
+                $selectedDevice
             }
         };
 
         // Reset atoms
         $isEditMode.set(false);
         $selectedPlants.set(new Set());
+        $devices.set([]);
+        $nutrientPresets.set({});
+        $ipmPresets.set({});
+        $selectedDevice.set(null);
 
         if (!customElements.get('growspace-plant-card')) {
             customElements.define('growspace-plant-card', GrowspacePlantCard);
@@ -454,8 +467,7 @@ describe('PlantCard', () => {
         });
 
         it('should return false if device has no nutrient presets', async () => {
-            const $devices = atom<any[]>([{ device_id: 'gs1', name: 'Test', nutrient_presets: null }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$nutrientPresets.set({});
 
             element.plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg' } } as any;
             document.body.appendChild(element);
@@ -465,14 +477,10 @@ describe('PlantCard', () => {
         });
 
         it('should return false if no preset matches current stage', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                name: 'Test',
-                nutrient_presets: {
-                    'flower1': { id: 'flower1', stage: 'flower', nutrients: [] }
-                }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$nutrientPresets.set({
+                'flower1': { id: 'flower1', stage: 'flower', nutrients: [] }
+            });
 
             element.plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg' } } as any;
             document.body.appendChild(element);
@@ -482,14 +490,10 @@ describe('PlantCard', () => {
         });
 
         it('should return false if stage matches but min_days_in_stage not met', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                name: 'Test',
-                nutrient_presets: {
-                    'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 20, nutrients: [] }
-                }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$nutrientPresets.set({
+                'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 20, nutrients: [] }
+            });
 
             element.plant = {
                 attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg', days_in_stage: 10 }
@@ -501,14 +505,10 @@ describe('PlantCard', () => {
         });
 
         it('should return true if preset matches stage with no min_days requirement', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                name: 'Test',
-                nutrient_presets: {
-                    'veg_basic': { id: 'veg_basic', stage: 'veg', nutrients: [] }
-                }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$nutrientPresets.set({
+                'veg_basic': { id: 'veg_basic', stage: 'veg', nutrients: [] }
+            });
 
             element.plant = {
                 attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg', days_in_stage: 5 }
@@ -520,14 +520,10 @@ describe('PlantCard', () => {
         });
 
         it('should return true if preset matches stage and min_days_in_stage is met', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                name: 'Test',
-                nutrient_presets: {
-                    'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 10, nutrients: [] }
-                }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$nutrientPresets.set({
+                'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 10, nutrients: [] }
+            });
 
             element.plant = {
                 attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg', days_in_stage: 15 }
@@ -539,14 +535,10 @@ describe('PlantCard', () => {
         });
 
         it('should handle missing days_in_stage attribute (defaults to 0)', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                name: 'Test',
-                nutrient_presets: {
-                    'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 1, nutrients: [] }
-                }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$nutrientPresets.set({
+                'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 1, nutrients: [] }
+            });
 
             element.plant = {
                 attributes: { plant_id: 'p1', growspace_id: 'gs1', stage: 'veg' }  // no days_in_stage
@@ -610,11 +602,8 @@ describe('PlantCard', () => {
         });
 
         it('should render star icon when _hasRecommendedPreset is true', async () => {
-            const $devices = atom<any[]>([{
-                device_id: 'gs1',
-                nutrient_presets: { 'p1': { id: 'p1', stage: 'veg', nutrients: [] } }
-            }]);
-            mockStore.data.$devices = $devices;
+            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Grow 1' }]);
+            mockStore.data.$nutrientPresets.set({ 'p1': { id: 'p1', stage: 'veg', nutrients: [] } });
             element.plant = { attributes: { growspace_id: 'gs1', stage: 'veg' } } as any;
 
             document.body.appendChild(element);

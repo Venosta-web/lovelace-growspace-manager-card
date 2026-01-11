@@ -372,12 +372,11 @@ export class DialogHost extends LitElement {
         return html`
     <nutrient-presets-editor
         .open=${true}
-            .hass = ${this.hass}
-            .dataService = ${this.store.dataService}
-            .presets = ${selectedDeviceData?.nutrient_presets || {}}
-@close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
-        > </nutrient-presets-editor>
+        .store=${this.store}
+        .hass=${this.hass}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this.store.refreshData()}
+    ></nutrient-presets-editor>
     `;
     }
 
@@ -401,14 +400,13 @@ export class DialogHost extends LitElement {
         return html`
     <ipm-dialog
         .open=${true}
-            .hass = ${this.hass}
-            .dataService = ${this.store.dataService}
-            .growspaceId = ${dialogState.growspaceId}
-            .plantIds = ${dialogState.plantIds || []}
-            .presets = ${selectedDeviceData?.ipm_presets || {}}
-@close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()} 
-        > </ipm-dialog>
+        .store=${this.store}
+        .hass=${this.hass}
+        .growspaceId=${dialogState.growspaceId}
+        .plantIds=${dialogState.plantIds || []}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this.store.refreshData()}
+    ></ipm-dialog>
     `;
     }
 }

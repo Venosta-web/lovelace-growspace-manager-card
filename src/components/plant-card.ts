@@ -80,12 +80,13 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
     if (!this.plant || !this.store) return false;
     const growspaceId = this.plant.attributes.growspace_id;
     const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
-    if (!device || !device.nutrient_presets) return false;
+    if (!device) return false;
 
+    const nutrientPresets = this.store.data.$nutrientPresets.get();
     const currentStage = this.plant.attributes.stage;
     const daysInStage = (this.plant.attributes as any).days_in_stage || 0;
 
-    return Object.values(device.nutrient_presets).some(p =>
+    return Object.values(nutrientPresets).some(p =>
       p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage)
     );
   }

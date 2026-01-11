@@ -13,19 +13,27 @@ import {
   mdiCheck,
   mdiFlask
 } from '@mdi/js';
+import { consume } from '@lit/context';
+import { hassContext, storeContext } from '../../context';
 import { DataService } from '../../data-service';
 import { GrowspaceDevice, IPMPreset, IPMItem } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
+import { sharedStyles } from '../../styles/shared.styles';
+import { GrowspaceStore } from '../../store/growspace-store';
 import '../../components/ui'; // Ensure MD3 components are registered
 
 @customElement('ipm-dialog')
 export class IPMDialog extends LitElement {
-  @property({ attribute: false }) accessor hass!: HomeAssistant;
-  @property({ attribute: false }) accessor dataService!: DataService;
+  @consume({ context: hassContext, subscribe: true })
+  public accessor hass!: HomeAssistant;
+
+  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
+  public accessor store!: GrowspaceStore;
+
   @property({ type: Boolean }) accessor open = false;
   @property({ attribute: false }) accessor growspaceId: string | undefined = undefined;
   @property({ attribute: false }) accessor plantIds: string[] = [];
-  @property({ attribute: false }) accessor presets: Record<string, IPMPreset> = {};
 
   @state() private accessor _view: 'APPLY' | 'LIST' | 'EDIT' = 'APPLY';
   @state() private accessor _selectedPresetId: string | null = null;
@@ -143,7 +151,7 @@ export class IPMDialog extends LitElement {
     }
 
     try {
-      await this.dataService.applyIPM({
+      await this.store.dataService.applyIPM({
         preset_id: this._selectedPresetId,
         growspace_id: !hasPlants ? this.growspaceId : undefined,
         plant_ids: hasPlants ? this.plantIds : undefined,
@@ -179,8 +187,8 @@ export class IPMDialog extends LitElement {
   private async _deletePreset(presetId: string) {
     if (!confirm('Are you sure you want to delete this preset?')) return;
     try {
-      await this.dataService.removeIPMPreset(presetId);
-      this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+      await this.store.dataService.removeIPMPreset(presetId);
+      await this.store.fetchIPMPresets(true);
     } catch (err: any) {
       this._error = err.message;
     }
@@ -215,7 +223,7 @@ export class IPMDialog extends LitElement {
     const items = (this._editingPreset.items || []).filter(i => i.name);
 
     try {
-      await this.dataService.saveIPMPreset({
+      await this.store.dataService.saveIPMPreset({
         preset_id: this._editingPreset.id,
         name: this._editingPreset.name,
         type: this._editingPreset.type || 'foliar',
@@ -223,8 +231,8 @@ export class IPMDialog extends LitElement {
         stage: this._editingPreset.stage || undefined,
         min_days_in_stage: this._editingPreset.min_days_in_stage || 0
       });
+      await this.store.fetchIPMPresets(true);
       this._view = 'LIST';
-      this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
     } catch (err: any) {
       this._error = err.message;
     }
@@ -309,7 +317,8 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderApply() {
-    const presetList = Object.values(this.presets || {});
+    const presets = this.store.data.$ipmPresets.get();
+    const presetList = Object.values(presets || {});
     const targetText = (this.plantIds && this.plantIds.length > 0)
       ? `${this.plantIds.length} Plants`
       : `Entire Growspace`;
@@ -343,7 +352,8 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderList() {
-    const presetEntries = Object.values(this.presets || {});
+    const presets = this.store.data.$ipmPresets.get();
+    const presetEntries = Object.values(presets || {});
     if (presetEntries.length === 0) {
       return html`
         <div class="empty-state">
@@ -389,7 +399,7 @@ export class IPMDialog extends LitElement {
            <md3-text-input
               label="Preset Name"
               .value=${this._editingPreset.name || ''}
-              @change=${(e: CustomEvent) => this._editingPreset = { ...this._editingPreset!, name: e.detail }}
+              @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, name: e.detail }; }}
               placeholder="e.g. Neem Oil Spray"
            ></md3-text-input>
            
@@ -415,7 +425,7 @@ export class IPMDialog extends LitElement {
                     <select 
                         class="md3-input"
                         .value=${this._editingPreset.stage || ''}
-                        @change=${(e: Event) => this._editingPreset = { ...this._editingPreset!, stage: (e.target as HTMLSelectElement).value || undefined }}
+                        @change=${(e: Event) => { this._editingPreset = { ...this._editingPreset!, stage: (e.target as HTMLSelectElement).value || undefined }; }}
                     >
                         <option value="">Any Stage</option>
                         <option value="seedling">Seedling</option>
@@ -428,7 +438,7 @@ export class IPMDialog extends LitElement {
                 <md3-number-input
                     label="Min Days"
                     .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e: CustomEvent) => this._editingPreset = { ...this._editingPreset!, min_days_in_stage: parseInt(e.detail) }}
+                    @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, min_days_in_stage: parseInt(e.detail) }; }}
                     min="0"
                 ></md3-number-input>
             </div>

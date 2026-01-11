@@ -1,10 +1,10 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
-import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse, NutrientItem, NutrientPreset } from './types';
+import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse, NutrientItem, NutrientPreset, IPMPreset } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
-import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS } from './constants';
-import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary } from './schemas/api-schema';
+import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS, WS_TYPE_GET_NUTRIENT_PRESETS, WS_TYPE_GET_IPM_PRESETS } from './constants';
+import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary, NutrientPresetsSchema, IPMPresetsSchema, NutrientPresetsResponse, IPMPresetsResponse } from './schemas/api-schema';
 
 /** Shape of raw phenotype data from strain sensor */
 interface RawPhenotypeData {
@@ -237,6 +237,44 @@ export class DataService {
     } catch (e) {
       console.error('Failed to fetch strain library for grid:', e);
       return [];
+    }
+  }
+
+  async fetchNutrientPresets(): Promise<NutrientPresetsResponse | null> {
+    if (!this.hass) return null;
+    try {
+      const result = await this.hass.connection.sendMessagePromise<unknown>({
+        type: WS_TYPE_GET_NUTRIENT_PRESETS,
+      });
+
+      const parsed = NutrientPresetsSchema.safeParse(result);
+      if (!parsed.success) {
+        console.error('[DataService] Nutrient Presets Validation Failed:', parsed.error.format());
+        return result as NutrientPresetsResponse;
+      }
+      return parsed.data;
+    } catch (err) {
+      console.error('[DataService:fetchNutrientPresets] Error:', err);
+      return null;
+    }
+  }
+
+  async fetchIPMPresets(): Promise<IPMPresetsResponse | null> {
+    if (!this.hass) return null;
+    try {
+      const result = await this.hass.connection.sendMessagePromise<unknown>({
+        type: WS_TYPE_GET_IPM_PRESETS,
+      });
+
+      const parsed = IPMPresetsSchema.safeParse(result);
+      if (!parsed.success) {
+        console.error('[DataService] IPM Presets Validation Failed:', parsed.error.format());
+        return result as IPMPresetsResponse;
+      }
+      return parsed.data;
+    } catch (err) {
+      console.error('[DataService:fetchIPMPresets] Error:', err);
+      return null;
     }
   }
 

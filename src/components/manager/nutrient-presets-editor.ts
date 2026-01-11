@@ -1,34 +1,40 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-    mdiClose,
-    mdiPlus,
-    mdiDelete,
-    mdiPencil,
-    mdiBottleTonicPlus,
-    mdiContentSave,
-    mdiCalendarRange,
-    mdiInformation
+  mdiClose,
+  mdiPlus,
+  mdiDelete,
+  mdiPencil,
+  mdiBottleTonicPlus,
+  mdiContentSave,
+  mdiCalendarRange,
+  mdiInformation
 } from '@mdi/js';
+import { consume } from '@lit/context';
 import { HomeAssistant } from 'custom-card-helpers';
+import { hassContext, storeContext } from '../../context';
+import { NutrientPreset, NutrientItem } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
-import { NutrientPreset, NutrientItem, PlantStage } from '../../types';
-import { DataService } from '../../data-service';
+import { GrowspaceStore } from '../../store/growspace-store';
 
 @customElement('nutrient-presets-editor')
 export class NutrientPresetsEditor extends LitElement {
-    @property({ type: Boolean }) accessor open = false;
-    @property({ attribute: false }) accessor hass!: HomeAssistant;
-    @property({ attribute: false }) accessor dataService!: DataService;
-    @property({ attribute: false }) accessor presets: Record<string, NutrientPreset> = {};
+  @consume({ context: hassContext, subscribe: true })
+  public accessor hass!: HomeAssistant;
 
-    @state() private accessor _view: 'LIST' | 'EDIT' = 'LIST';
-    @state() private accessor _editingPreset: Partial<NutrientPreset> | null = null;
-    @state() private accessor _error: string | null = null;
+  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
+  public accessor store!: GrowspaceStore;
 
-    static styles = [
-        dialogStyles,
-        css`
+  @property({ type: Boolean }) accessor open = false;
+
+  @state() private accessor _view: 'LIST' | 'EDIT' = 'LIST';
+  @state() private accessor _editingPreset: Partial<NutrientPreset> | null = null;
+  @state() private accessor _error: string | null = null;
+
+  static styles = [
+    dialogStyles,
+    css`
       .preset-item {
         display: flex;
         align-items: center;
@@ -95,90 +101,90 @@ export class NutrientPresetsEditor extends LitElement {
           gap: 16px;
       }
     `
-    ];
+  ];
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
+
+  private _startNew() {
+    this._editingPreset = {
+      name: '',
+      nutrients: [{ name: '', dose_ml_l: 0 }],
+      stage: '',
+      min_days_in_stage: 0
+    };
+    this._view = 'EDIT';
+    this._error = null;
+  }
+
+  private _editPreset(preset: NutrientPreset) {
+    this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
+    this._view = 'EDIT';
+    this._error = null;
+  }
+
+  private async _deletePreset(presetId: string) {
+    if (!confirm('Are you sure you want to delete this preset?')) return;
+    try {
+      await this.store.dataService.removeNutrientPreset(presetId);
+      await this.store.fetchNutrientPresets(true);
+    } catch (err: any) {
+      this._error = err.message;
+    }
+  }
+
+  private _addNutrient() {
+    if (!this._editingPreset) return;
+    const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
+    this._editingPreset = { ...this._editingPreset, nutrients };
+  }
+
+  private _removeNutrient(index: number) {
+    if (!this._editingPreset) return;
+    const nutrients = [...(this._editingPreset.nutrients || [])];
+    nutrients.splice(index, 1);
+    this._editingPreset = { ...this._editingPreset, nutrients };
+  }
+
+  private _updateNutrient(index: number, updates: Partial<NutrientItem>) {
+    if (!this._editingPreset) return;
+    const nutrients = [...(this._editingPreset.nutrients || [])];
+    nutrients[index] = { ...nutrients[index], ...updates };
+    this._editingPreset = { ...this._editingPreset, nutrients };
+  }
+
+  private async _savePreset() {
+    if (!this._editingPreset || !this._editingPreset.name) {
+      this._error = 'Preset name is required';
+      return;
     }
 
-    private _startNew() {
-        this._editingPreset = {
-            name: '',
-            nutrients: [{ name: '', dose_ml_l: 0 }],
-            stage: '',
-            min_days_in_stage: 0
-        };
-        this._view = 'EDIT';
-        this._error = null;
+    const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
+    if (nutrients.length === 0) {
+      this._error = 'At least one valid nutrient is required';
+      return;
     }
 
-    private _editPreset(preset: NutrientPreset) {
-        this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
-        this._view = 'EDIT';
-        this._error = null;
+    try {
+      await this.store.dataService.saveNutrientPreset({
+        preset_id: this._editingPreset.id,
+        name: this._editingPreset.name,
+        nutrients,
+        stage: this._editingPreset.stage || undefined,
+        min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
+      });
+      await this.store.fetchNutrientPresets(true);
+      this._view = 'LIST';
+    } catch (err: any) {
+      this._error = err.message;
     }
+  }
 
-    private async _deletePreset(presetId: string) {
-        if (!confirm('Are you sure you want to delete this preset?')) return;
-        try {
-            await this.dataService.removeNutrientPreset(presetId);
-            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
-        } catch (err: any) {
-            this._error = err.message;
-        }
-    }
+  render() {
+    if (!this.open) return html``;
 
-    private _addNutrient() {
-        if (!this._editingPreset) return;
-        const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-
-    private _removeNutrient(index: number) {
-        if (!this._editingPreset) return;
-        const nutrients = [...(this._editingPreset.nutrients || [])];
-        nutrients.splice(index, 1);
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-
-    private _updateNutrient(index: number, updates: Partial<NutrientItem>) {
-        if (!this._editingPreset) return;
-        const nutrients = [...(this._editingPreset.nutrients || [])];
-        nutrients[index] = { ...nutrients[index], ...updates };
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-
-    private async _savePreset() {
-        if (!this._editingPreset || !this._editingPreset.name) {
-            this._error = 'Preset name is required';
-            return;
-        }
-
-        const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
-        if (nutrients.length === 0) {
-            this._error = 'At least one valid nutrient is required';
-            return;
-        }
-
-        try {
-            await this.dataService.saveNutrientPreset({
-                preset_id: this._editingPreset.id,
-                name: this._editingPreset.name,
-                nutrients,
-                stage: this._editingPreset.stage || undefined,
-                min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
-            });
-            this._view = 'LIST';
-            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
-        } catch (err: any) {
-            this._error = err.message;
-        }
-    }
-
-    render() {
-        if (!this.open) return html``;
-
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -207,40 +213,41 @@ export class NutrientPresetsEditor extends LitElement {
 
           <div class="button-group">
             ${this._view === 'LIST'
-                ? html`
+        ? html`
                   <button class="md3-button tonal" @click=${this._close}>Close</button>
                   <button class="md3-button primary" @click=${this._startNew}>
                     <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
                     Add Preset
                   </button>
                 `
-                : html`
+        : html`
                   <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
                   <button class="md3-button primary" @click=${this._savePreset}>
                     <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
                     Save Preset
                   </button>
                 `
-            }
+      }
           </div>
         </div>
       </ha-dialog>
     `;
-    }
+  }
 
-    private _renderList() {
-        const presetEntries = Object.values(this.presets);
-        if (presetEntries.length === 0) {
-            return html`
+  private _renderList() {
+    const presets = this.store.data.$nutrientPresets.get();
+    const presetEntries = Object.values(presets);
+    if (presetEntries.length === 0) {
+      return html`
         <div class="empty-state">
           <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
           <p>No nutrient presets defined yet.</p>
           <p style="font-size: 0.9rem;">Presets allow you to quickly apply recurring nutrient recipes while watering.</p>
         </div>
       `;
-        }
+    }
 
-        return html`
+    return html`
       <div class="presets-list">
         ${presetEntries.map(preset => html`
           <div class="preset-item">
@@ -264,19 +271,19 @@ export class NutrientPresetsEditor extends LitElement {
         `)}
       </div>
     `;
-    }
+  }
 
-    private _renderEdit() {
-        if (!this._editingPreset) return nothing;
+  private _renderEdit() {
+    if (!this._editingPreset) return nothing;
 
-        return html`
+    return html`
       <div class="preset-form">
         <div class="form-section">
            <h3>General Info</h3>
            <md3-text-input
               label="Preset Name"
               .value=${this._editingPreset.name || ''}
-              @change=${(e: CustomEvent) => this._editingPreset = { ...this._editingPreset!, name: e.detail }}
+              @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, name: e.detail }; }}
               placeholder="e.g. Veg Week 1"
            ></md3-text-input>
         </div>
@@ -289,7 +296,7 @@ export class NutrientPresetsEditor extends LitElement {
                     <select 
                         class="md3-input"
                         .value=${this._editingPreset.stage || ''}
-                        @change=${(e: Event) => this._editingPreset = { ...this._editingPreset!, stage: (e.target as HTMLSelectElement).value }}
+                        @change=${(e: Event) => { this._editingPreset = { ...this._editingPreset!, stage: (e.target as HTMLSelectElement).value }; }}
                     >
                         <option value="">Any Stage</option>
                         <option value="seedling">Seedling</option>
@@ -302,7 +309,7 @@ export class NutrientPresetsEditor extends LitElement {
                 <md3-number-input
                     label="Min Days in Stage"
                     .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e: CustomEvent) => this._editingPreset = { ...this._editingPreset!, min_days_in_stage: parseInt(e.detail) }}
+                    @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, min_days_in_stage: parseInt(e.detail) }; }}
                     min="0"
                 ></md3-number-input>
             </div>
@@ -341,16 +348,17 @@ export class NutrientPresetsEditor extends LitElement {
         </div>
       </div>
     `;
-    }
-    private _getNutrientSuggestions(): string[] {
-        const nutrients = new Set<string>();
-        Object.values(this.presets).forEach(preset => {
-            if (preset.nutrients) {
-                preset.nutrients.forEach(n => {
-                    if (n.name) nutrients.add(n.name);
-                });
-            }
+  }
+  private _getNutrientSuggestions(): string[] {
+    const nutrients = new Set<string>();
+    const presets = this.store.data.$nutrientPresets.get();
+    Object.values(presets).forEach(preset => {
+      if (preset.nutrients) {
+        preset.nutrients.forEach(n => {
+          if (n.name) nutrients.add(n.name);
         });
-        return Array.from(nutrients).sort();
-    }
+      }
+    });
+    return Array.from(nutrients).sort();
+  }
 }

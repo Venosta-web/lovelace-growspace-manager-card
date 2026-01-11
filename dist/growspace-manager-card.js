@@ -720,8 +720,6 @@ class GrowspaceAdapter {
             // Configs
             irrigation_config: wsData.irrigation_config,
             irrigation_strategy: wsData.irrigation_strategy || undefined,
-            nutrient_presets: wsData.nutrient_presets,
-            ipm_presets: wsData.ipm_presets,
         });
     }
     /**
@@ -833,6 +831,8 @@ const METRIC_ENTITY_KEYS = {
 const DOMAIN = 'growspace_manager';
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
+const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
+const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
     ADD_PLANT: 'add_plant',
@@ -4832,28 +4832,6 @@ const GrowspaceAPIResponseSchema = objectType({
     granular_stage: stringType().optional().default('unknown'),
     is_day: booleanType().optional().default(false),
     air_exchange: unionType([stringType(), numberType().transform(String)]).nullable().optional(), // Default handled by optionality
-    nutrient_presets: recordType(stringType(), objectType({
-        id: stringType(),
-        name: stringType(),
-        nutrients: arrayType(objectType({
-            name: stringType(),
-            dose_ml_l: numberType(),
-        })),
-        stage: stringType().nullable().optional(),
-        min_days_in_stage: numberType().nullable().optional(),
-    }).passthrough()).optional().default({}),
-    ipm_presets: recordType(stringType(), objectType({
-        id: stringType(),
-        name: stringType(),
-        type: stringType(), // Use string to be resilient
-        items: arrayType(objectType({
-            name: stringType(),
-            dose_amount: numberType(),
-            dose_unit: stringType(),
-        })),
-        stage: stringType().nullable().optional(),
-        min_days_in_stage: numberType().nullable().optional(),
-    }).passthrough()).optional().default({}),
 }).passthrough(); // Allow extra fields at root
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 const StrainPhenotypeSchema = objectType({
@@ -4879,6 +4857,29 @@ const StrainLibraryWrapperSchema = objectType({
     strains: StrainLibrarySchema,
     strain_list: arrayType(stringType()).optional()
 }).passthrough();
+const NutrientPresetsSchema = recordType(stringType(), objectType({
+    id: stringType(),
+    name: stringType(),
+    nutrients: arrayType(objectType({
+        name: stringType(),
+        dose_ml_l: numberType(),
+    })),
+    stage: stringType().nullish().transform(v => v || undefined),
+    min_days_in_stage: numberType().nullish().transform(v => v || undefined),
+}).passthrough());
+const IPMPresetSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    type: enumType(['foliar', 'drench', 'beneficials']),
+    items: arrayType(objectType({
+        name: stringType(),
+        dose_amount: numberType(),
+        dose_unit: stringType(),
+    })),
+    stage: stringType().nullish().transform(v => v || undefined),
+    min_days_in_stage: numberType().nullish().transform(v => v || undefined),
+}).passthrough();
+const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
 
 class DataService {
     constructor(hass) {
@@ -5068,6 +5069,44 @@ class DataService {
         catch (e) {
             console.error('Failed to fetch strain library for grid:', e);
             return [];
+        }
+    }
+    async fetchNutrientPresets() {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_NUTRIENT_PRESETS,
+            });
+            const parsed = NutrientPresetsSchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[DataService] Nutrient Presets Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
+        }
+        catch (err) {
+            console.error('[DataService:fetchNutrientPresets] Error:', err);
+            return null;
+        }
+    }
+    async fetchIPMPresets() {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_IPM_PRESETS,
+            });
+            const parsed = IPMPresetsSchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[DataService] IPM Presets Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
+        }
+        catch (err) {
+            console.error('[DataService:fetchIPMPresets] Error:', err);
+            return null;
         }
     }
     async getHistory(entityId, startTime, endTime) {
@@ -15060,9 +15099,7 @@ class GrowspaceLogbookController {
                 this._nutrients = [];
                 return;
             }
-            const presets = this.dialogState?.growspaceId
-                ? this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId)?.nutrient_presets
-                : undefined;
+            const presets = this.store.data.$nutrientPresets.get();
             if (presets && presets[presetId]) {
                 const preset = presets[presetId];
                 this._nutrients = preset.nutrients.map(n => ({
@@ -15282,25 +15319,28 @@ class GrowspaceLogbookController {
         _renderPresetOptions() {
             if (!this.store || !this.store.data)
                 return E;
-            const device = this.store.data.$devices.get().find(d => d.device_id === this.dialogState?.growspaceId);
-            if (!device || !device.nutrient_presets)
+            const presetsRecord = this.store.data.$nutrientPresets.get();
+            if (!presetsRecord)
                 return E;
-            const presets = Object.values(device.nutrient_presets);
+            const presets = Object.values(presetsRecord);
             // Logic for recommendations
             let currentStage;
             let daysInStage = 0;
             if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
-                // Check if all selected plants are in the same stage
-                const selectedPlants = device.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
-                if (selectedPlants.length > 0) {
-                    // Use first plant as baseline
-                    const firstStage = selectedPlants[0].attributes.stage;
-                    const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
-                    if (isHomogeneous) {
-                        currentStage = firstStage;
-                        // Use minimum days in stage to be safe, or average? 
-                        // Minimum ensures we don't recommend something too advanced for the youngest plant.
-                        daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
+                const selectedDeviceId = this.store.data.$selectedDevice.get();
+                const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
+                if (selectedDevice) {
+                    // Check if all selected plants are in the same stage
+                    const selectedPlants = selectedDevice.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
+                    if (selectedPlants.length > 0) {
+                        // Use first plant as baseline
+                        const firstStage = selectedPlants[0].attributes.stage;
+                        const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+                        if (isHomogeneous) {
+                            currentStage = firstStage;
+                            // Use minimum days in stage to be safe
+                            daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
+                        }
                     }
                 }
             }
@@ -15323,16 +15363,12 @@ class GrowspaceLogbookController {
             const nutrients = new Set();
             if (!this.store || !this.store.data)
                 return [];
-            const devices = this.store.data.$devices.get();
-            devices.forEach(device => {
-                if (device.nutrient_presets) {
-                    Object.values(device.nutrient_presets).forEach(preset => {
-                        preset.nutrients.forEach(n => {
-                            if (n.name)
-                                nutrients.add(n.name);
-                        });
-                    });
-                }
+            const presets = this.store.data.$nutrientPresets.get();
+            Object.values(presets).forEach(preset => {
+                preset.nutrients.forEach(n => {
+                    if (n.name)
+                        nutrients.add(n.name);
+                });
             });
             return Array.from(nutrients).sort();
         }
@@ -15690,24 +15726,21 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _NutrientPresetsEditor_open_accessor_storage, _NutrientPresetsEditor_hass_accessor_storage, _NutrientPresetsEditor_dataService_accessor_storage, _NutrientPresetsEditor_presets_accessor_storage, _NutrientPresetsEditor__view_accessor_storage, _NutrientPresetsEditor__editingPreset_accessor_storage, _NutrientPresetsEditor__error_accessor_storage;
+    var _NutrientPresetsEditor_hass_accessor_storage, _NutrientPresetsEditor_store_accessor_storage, _NutrientPresetsEditor_open_accessor_storage, _NutrientPresetsEditor__view_accessor_storage, _NutrientPresetsEditor__editingPreset_accessor_storage, _NutrientPresetsEditor__error_accessor_storage;
     let _classDecorators = [t$2('nutrient-presets-editor')];
     let _classDescriptor;
     let _classExtraInitializers = [];
     let _classThis;
     let _classSuper = i$3;
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
     let _hass_decorators;
     let _hass_initializers = [];
     let _hass_extraInitializers = [];
-    let _dataService_decorators;
-    let _dataService_initializers = [];
-    let _dataService_extraInitializers = [];
-    let _presets_decorators;
-    let _presets_initializers = [];
-    let _presets_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
+    let _open_decorators;
+    let _open_initializers = [];
+    let _open_extraInitializers = [];
     let __view_decorators;
     let __view_initializers = [];
     let __view_extraInitializers = [];
@@ -15718,14 +15751,12 @@ class GrowspaceLogbookController {
     let __error_initializers = [];
     let __error_extraInitializers = [];
     _classThis = class extends _classSuper {
-        get open() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_open_accessor_storage, value, "f"); }
         get hass() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_hass_accessor_storage, value, "f"); }
-        get dataService() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_dataService_accessor_storage, "f"); }
-        set dataService(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_dataService_accessor_storage, value, "f"); }
-        get presets() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_presets_accessor_storage, "f"); }
-        set presets(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_presets_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_store_accessor_storage, value, "f"); }
+        get open() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_open_accessor_storage, "f"); }
+        set open(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_open_accessor_storage, value, "f"); }
         get _view() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__view_accessor_storage, "f"); }
         set _view(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__view_accessor_storage, value, "f"); }
         get _editingPreset() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__editingPreset_accessor_storage, "f"); }
@@ -15754,8 +15785,8 @@ class GrowspaceLogbookController {
             if (!confirm('Are you sure you want to delete this preset?'))
                 return;
             try {
-                await this.dataService.removeNutrientPreset(presetId);
-                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+                await this.store.dataService.removeNutrientPreset(presetId);
+                await this.store.fetchNutrientPresets(true);
             }
             catch (err) {
                 this._error = err.message;
@@ -15792,15 +15823,15 @@ class GrowspaceLogbookController {
                 return;
             }
             try {
-                await this.dataService.saveNutrientPreset({
+                await this.store.dataService.saveNutrientPreset({
                     preset_id: this._editingPreset.id,
                     name: this._editingPreset.name,
                     nutrients,
                     stage: this._editingPreset.stage || undefined,
                     min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
                 });
+                await this.store.fetchNutrientPresets(true);
                 this._view = 'LIST';
-                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
             }
             catch (err) {
                 this._error = err.message;
@@ -15858,7 +15889,8 @@ class GrowspaceLogbookController {
     `;
         }
         _renderList() {
-            const presetEntries = Object.values(this.presets);
+            const presets = this.store.data.$nutrientPresets.get();
+            const presetEntries = Object.values(presets);
             if (presetEntries.length === 0) {
                 return x `
         <div class="empty-state">
@@ -15903,7 +15935,7 @@ class GrowspaceLogbookController {
            <md3-text-input
               label="Preset Name"
               .value=${this._editingPreset.name || ''}
-              @change=${(e) => this._editingPreset = { ...this._editingPreset, name: e.detail }}
+              @change=${(e) => { this._editingPreset = { ...this._editingPreset, name: e.detail }; }}
               placeholder="e.g. Veg Week 1"
            ></md3-text-input>
         </div>
@@ -15916,7 +15948,7 @@ class GrowspaceLogbookController {
                     <select 
                         class="md3-input"
                         .value=${this._editingPreset.stage || ''}
-                        @change=${(e) => this._editingPreset = { ...this._editingPreset, stage: e.target.value }}
+                        @change=${(e) => { this._editingPreset = { ...this._editingPreset, stage: e.target.value }; }}
                     >
                         <option value="">Any Stage</option>
                         <option value="seedling">Seedling</option>
@@ -15929,7 +15961,7 @@ class GrowspaceLogbookController {
                 <md3-number-input
                     label="Min Days in Stage"
                     .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e) => this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }}
+                    @change=${(e) => { this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }; }}
                     min="0"
                 ></md3-number-input>
             </div>
@@ -15971,7 +16003,8 @@ class GrowspaceLogbookController {
         }
         _getNutrientSuggestions() {
             const nutrients = new Set();
-            Object.values(this.presets).forEach(preset => {
+            const presets = this.store.data.$nutrientPresets.get();
+            Object.values(presets).forEach(preset => {
                 if (preset.nutrients) {
                     preset.nutrients.forEach(n => {
                         if (n.name)
@@ -15983,37 +16016,33 @@ class GrowspaceLogbookController {
         }
         constructor() {
             super(...arguments);
-            _NutrientPresetsEditor_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _NutrientPresetsEditor_hass_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
-            _NutrientPresetsEditor_dataService_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _dataService_initializers, void 0)));
-            _NutrientPresetsEditor_presets_accessor_storage.set(this, (__runInitializers(this, _dataService_extraInitializers), __runInitializers(this, _presets_initializers, {})));
-            _NutrientPresetsEditor__view_accessor_storage.set(this, (__runInitializers(this, _presets_extraInitializers), __runInitializers(this, __view_initializers, 'LIST')));
+            _NutrientPresetsEditor_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
+            _NutrientPresetsEditor_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _NutrientPresetsEditor_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _NutrientPresetsEditor__view_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, __view_initializers, 'LIST')));
             _NutrientPresetsEditor__editingPreset_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
             _NutrientPresetsEditor__error_accessor_storage.set(this, (__runInitializers(this, __editingPreset_extraInitializers), __runInitializers(this, __error_initializers, null)));
             __runInitializers(this, __error_extraInitializers);
         }
     };
-    _NutrientPresetsEditor_open_accessor_storage = new WeakMap();
     _NutrientPresetsEditor_hass_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor_dataService_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor_presets_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor_store_accessor_storage = new WeakMap();
+    _NutrientPresetsEditor_open_accessor_storage = new WeakMap();
     _NutrientPresetsEditor__view_accessor_storage = new WeakMap();
     _NutrientPresetsEditor__editingPreset_accessor_storage = new WeakMap();
     _NutrientPresetsEditor__error_accessor_storage = new WeakMap();
     __setFunctionName(_classThis, "NutrientPresetsEditor");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [c$2({ context: storeContext, subscribe: true }), n$5({ attribute: false })];
         _open_decorators = [n$5({ type: Boolean })];
-        _hass_decorators = [n$5({ attribute: false })];
-        _dataService_decorators = [n$5({ attribute: false })];
-        _presets_decorators = [n$5({ attribute: false })];
         __view_decorators = [r$2()];
         __editingPreset_decorators = [r$2()];
         __error_decorators = [r$2()];
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _dataService_decorators, { kind: "accessor", name: "dataService", static: false, private: false, access: { has: obj => "dataService" in obj, get: obj => obj.dataService, set: (obj, value) => { obj.dataService = value; } }, metadata: _metadata }, _dataService_initializers, _dataService_extraInitializers);
-        __esDecorate(_classThis, null, _presets_decorators, { kind: "accessor", name: "presets", static: false, private: false, access: { has: obj => "presets" in obj, get: obj => obj.presets, set: (obj, value) => { obj.presets = value; } }, metadata: _metadata }, _presets_initializers, _presets_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
+        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
         __esDecorate(_classThis, null, __editingPreset_decorators, { kind: "accessor", name: "_editingPreset", static: false, private: false, access: { has: obj => "_editingPreset" in obj, get: obj => obj._editingPreset, set: (obj, value) => { obj._editingPreset = value; } }, metadata: _metadata }, __editingPreset_initializers, __editingPreset_extraInitializers);
         __esDecorate(_classThis, null, __error_decorators, { kind: "accessor", name: "_error", static: false, private: false, access: { has: obj => "_error" in obj, get: obj => obj._error, set: (obj, value) => { obj._error = value; } }, metadata: _metadata }, __error_initializers, __error_extraInitializers);
@@ -16103,7 +16132,7 @@ class GrowspaceLogbookController {
 })();
 
 (() => {
-    var _IPMDialog_hass_accessor_storage, _IPMDialog_dataService_accessor_storage, _IPMDialog_open_accessor_storage, _IPMDialog_growspaceId_accessor_storage, _IPMDialog_plantIds_accessor_storage, _IPMDialog_presets_accessor_storage, _IPMDialog__view_accessor_storage, _IPMDialog__selectedPresetId_accessor_storage, _IPMDialog__notes_accessor_storage, _IPMDialog__editingPreset_accessor_storage, _IPMDialog__error_accessor_storage;
+    var _IPMDialog_hass_accessor_storage, _IPMDialog_store_accessor_storage, _IPMDialog_open_accessor_storage, _IPMDialog_growspaceId_accessor_storage, _IPMDialog_plantIds_accessor_storage, _IPMDialog__view_accessor_storage, _IPMDialog__selectedPresetId_accessor_storage, _IPMDialog__notes_accessor_storage, _IPMDialog__editingPreset_accessor_storage, _IPMDialog__error_accessor_storage;
     let _classDecorators = [t$2('ipm-dialog')];
     let _classDescriptor;
     let _classExtraInitializers = [];
@@ -16112,9 +16141,9 @@ class GrowspaceLogbookController {
     let _hass_decorators;
     let _hass_initializers = [];
     let _hass_extraInitializers = [];
-    let _dataService_decorators;
-    let _dataService_initializers = [];
-    let _dataService_extraInitializers = [];
+    let _store_decorators;
+    let _store_initializers = [];
+    let _store_extraInitializers = [];
     let _open_decorators;
     let _open_initializers = [];
     let _open_extraInitializers = [];
@@ -16124,9 +16153,6 @@ class GrowspaceLogbookController {
     let _plantIds_decorators;
     let _plantIds_initializers = [];
     let _plantIds_extraInitializers = [];
-    let _presets_decorators;
-    let _presets_initializers = [];
-    let _presets_extraInitializers = [];
     let __view_decorators;
     let __view_initializers = [];
     let __view_extraInitializers = [];
@@ -16145,16 +16171,14 @@ class GrowspaceLogbookController {
     _classThis = class extends _classSuper {
         get hass() { return __classPrivateFieldGet(this, _IPMDialog_hass_accessor_storage, "f"); }
         set hass(value) { __classPrivateFieldSet(this, _IPMDialog_hass_accessor_storage, value, "f"); }
-        get dataService() { return __classPrivateFieldGet(this, _IPMDialog_dataService_accessor_storage, "f"); }
-        set dataService(value) { __classPrivateFieldSet(this, _IPMDialog_dataService_accessor_storage, value, "f"); }
+        get store() { return __classPrivateFieldGet(this, _IPMDialog_store_accessor_storage, "f"); }
+        set store(value) { __classPrivateFieldSet(this, _IPMDialog_store_accessor_storage, value, "f"); }
         get open() { return __classPrivateFieldGet(this, _IPMDialog_open_accessor_storage, "f"); }
         set open(value) { __classPrivateFieldSet(this, _IPMDialog_open_accessor_storage, value, "f"); }
         get growspaceId() { return __classPrivateFieldGet(this, _IPMDialog_growspaceId_accessor_storage, "f"); }
         set growspaceId(value) { __classPrivateFieldSet(this, _IPMDialog_growspaceId_accessor_storage, value, "f"); }
         get plantIds() { return __classPrivateFieldGet(this, _IPMDialog_plantIds_accessor_storage, "f"); }
         set plantIds(value) { __classPrivateFieldSet(this, _IPMDialog_plantIds_accessor_storage, value, "f"); }
-        get presets() { return __classPrivateFieldGet(this, _IPMDialog_presets_accessor_storage, "f"); }
-        set presets(value) { __classPrivateFieldSet(this, _IPMDialog_presets_accessor_storage, value, "f"); }
         get _view() { return __classPrivateFieldGet(this, _IPMDialog__view_accessor_storage, "f"); }
         set _view(value) { __classPrivateFieldSet(this, _IPMDialog__view_accessor_storage, value, "f"); }
         get _selectedPresetId() { return __classPrivateFieldGet(this, _IPMDialog__selectedPresetId_accessor_storage, "f"); }
@@ -16192,7 +16216,7 @@ class GrowspaceLogbookController {
                 return;
             }
             try {
-                await this.dataService.applyIPM({
+                await this.store.dataService.applyIPM({
                     preset_id: this._selectedPresetId,
                     growspace_id: !hasPlants ? this.growspaceId : undefined,
                     plant_ids: hasPlants ? this.plantIds : undefined,
@@ -16226,8 +16250,8 @@ class GrowspaceLogbookController {
             if (!confirm('Are you sure you want to delete this preset?'))
                 return;
             try {
-                await this.dataService.removeIPMPreset(presetId);
-                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+                await this.store.dataService.removeIPMPreset(presetId);
+                await this.store.fetchIPMPresets(true);
             }
             catch (err) {
                 this._error = err.message;
@@ -16260,7 +16284,7 @@ class GrowspaceLogbookController {
             }
             const items = (this._editingPreset.items || []).filter(i => i.name);
             try {
-                await this.dataService.saveIPMPreset({
+                await this.store.dataService.saveIPMPreset({
                     preset_id: this._editingPreset.id,
                     name: this._editingPreset.name,
                     type: this._editingPreset.type || 'foliar',
@@ -16268,8 +16292,8 @@ class GrowspaceLogbookController {
                     stage: this._editingPreset.stage || undefined,
                     min_days_in_stage: this._editingPreset.min_days_in_stage || 0
                 });
+                await this.store.fetchIPMPresets(true);
                 this._view = 'LIST';
-                this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
             }
             catch (err) {
                 this._error = err.message;
@@ -16354,7 +16378,8 @@ class GrowspaceLogbookController {
             }
         }
         _renderApply() {
-            const presetList = Object.values(this.presets || {});
+            const presets = this.store.data.$ipmPresets.get();
+            const presetList = Object.values(presets || {});
             const targetText = (this.plantIds && this.plantIds.length > 0)
                 ? `${this.plantIds.length} Plants`
                 : `Entire Growspace`;
@@ -16386,7 +16411,8 @@ class GrowspaceLogbookController {
     `;
         }
         _renderList() {
-            const presetEntries = Object.values(this.presets || {});
+            const presets = this.store.data.$ipmPresets.get();
+            const presetEntries = Object.values(presets || {});
             if (presetEntries.length === 0) {
                 return x `
         <div class="empty-state">
@@ -16430,7 +16456,7 @@ class GrowspaceLogbookController {
            <md3-text-input
               label="Preset Name"
               .value=${this._editingPreset.name || ''}
-              @change=${(e) => this._editingPreset = { ...this._editingPreset, name: e.detail }}
+              @change=${(e) => { this._editingPreset = { ...this._editingPreset, name: e.detail }; }}
               placeholder="e.g. Neem Oil Spray"
            ></md3-text-input>
            
@@ -16456,7 +16482,7 @@ class GrowspaceLogbookController {
                     <select 
                         class="md3-input"
                         .value=${this._editingPreset.stage || ''}
-                        @change=${(e) => this._editingPreset = { ...this._editingPreset, stage: e.target.value || undefined }}
+                        @change=${(e) => { this._editingPreset = { ...this._editingPreset, stage: e.target.value || undefined }; }}
                     >
                         <option value="">Any Stage</option>
                         <option value="seedling">Seedling</option>
@@ -16469,7 +16495,7 @@ class GrowspaceLogbookController {
                 <md3-number-input
                     label="Min Days"
                     .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e) => this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }}
+                    @change=${(e) => { this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }; }}
                     min="0"
                 ></md3-number-input>
             </div>
@@ -16517,12 +16543,11 @@ class GrowspaceLogbookController {
         constructor() {
             super(...arguments);
             _IPMDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _IPMDialog_dataService_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _dataService_initializers, void 0)));
-            _IPMDialog_open_accessor_storage.set(this, (__runInitializers(this, _dataService_extraInitializers), __runInitializers(this, _open_initializers, false)));
+            _IPMDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
+            _IPMDialog_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
             _IPMDialog_growspaceId_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _growspaceId_initializers, undefined)));
             _IPMDialog_plantIds_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, _plantIds_initializers, [])));
-            _IPMDialog_presets_accessor_storage.set(this, (__runInitializers(this, _plantIds_extraInitializers), __runInitializers(this, _presets_initializers, {})));
-            _IPMDialog__view_accessor_storage.set(this, (__runInitializers(this, _presets_extraInitializers), __runInitializers(this, __view_initializers, 'APPLY')));
+            _IPMDialog__view_accessor_storage.set(this, (__runInitializers(this, _plantIds_extraInitializers), __runInitializers(this, __view_initializers, 'APPLY')));
             _IPMDialog__selectedPresetId_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __selectedPresetId_initializers, null)));
             _IPMDialog__notes_accessor_storage.set(this, (__runInitializers(this, __selectedPresetId_extraInitializers), __runInitializers(this, __notes_initializers, '')));
             _IPMDialog__editingPreset_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
@@ -16531,11 +16556,10 @@ class GrowspaceLogbookController {
         }
     };
     _IPMDialog_hass_accessor_storage = new WeakMap();
-    _IPMDialog_dataService_accessor_storage = new WeakMap();
+    _IPMDialog_store_accessor_storage = new WeakMap();
     _IPMDialog_open_accessor_storage = new WeakMap();
     _IPMDialog_growspaceId_accessor_storage = new WeakMap();
     _IPMDialog_plantIds_accessor_storage = new WeakMap();
-    _IPMDialog_presets_accessor_storage = new WeakMap();
     _IPMDialog__view_accessor_storage = new WeakMap();
     _IPMDialog__selectedPresetId_accessor_storage = new WeakMap();
     _IPMDialog__notes_accessor_storage = new WeakMap();
@@ -16544,23 +16568,21 @@ class GrowspaceLogbookController {
     __setFunctionName(_classThis, "IPMDialog");
     (() => {
         const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [n$5({ attribute: false })];
-        _dataService_decorators = [n$5({ attribute: false })];
+        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
+        _store_decorators = [c$2({ context: storeContext, subscribe: true }), n$5({ attribute: false })];
         _open_decorators = [n$5({ type: Boolean })];
         _growspaceId_decorators = [n$5({ attribute: false })];
         _plantIds_decorators = [n$5({ attribute: false })];
-        _presets_decorators = [n$5({ attribute: false })];
         __view_decorators = [r$2()];
         __selectedPresetId_decorators = [r$2()];
         __notes_decorators = [r$2()];
         __editingPreset_decorators = [r$2()];
         __error_decorators = [r$2()];
         __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _dataService_decorators, { kind: "accessor", name: "dataService", static: false, private: false, access: { has: obj => "dataService" in obj, get: obj => obj.dataService, set: (obj, value) => { obj.dataService = value; } }, metadata: _metadata }, _dataService_initializers, _dataService_extraInitializers);
+        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
         __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
         __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
         __esDecorate(_classThis, null, _plantIds_decorators, { kind: "accessor", name: "plantIds", static: false, private: false, access: { has: obj => "plantIds" in obj, get: obj => obj.plantIds, set: (obj, value) => { obj.plantIds = value; } }, metadata: _metadata }, _plantIds_initializers, _plantIds_extraInitializers);
-        __esDecorate(_classThis, null, _presets_decorators, { kind: "accessor", name: "presets", static: false, private: false, access: { has: obj => "presets" in obj, get: obj => obj.presets, set: (obj, value) => { obj.presets = value; } }, metadata: _metadata }, _presets_initializers, _presets_extraInitializers);
         __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
         __esDecorate(_classThis, null, __selectedPresetId_decorators, { kind: "accessor", name: "_selectedPresetId", static: false, private: false, access: { has: obj => "_selectedPresetId" in obj, get: obj => obj._selectedPresetId, set: (obj, value) => { obj._selectedPresetId = value; } }, metadata: _metadata }, __selectedPresetId_initializers, __selectedPresetId_extraInitializers);
         __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
@@ -16957,12 +16979,11 @@ class GrowspaceLogbookController {
             return x `
     <nutrient-presets-editor
         .open=${true}
-            .hass = ${this.hass}
-            .dataService = ${this.store.dataService}
-            .presets = ${selectedDeviceData?.nutrient_presets || {}}
-@close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
-        > </nutrient-presets-editor>
+        .store=${this.store}
+        .hass=${this.hass}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this.store.refreshData()}
+    ></nutrient-presets-editor>
     `;
         }
         _renderTrainingDialog(active) {
@@ -16983,14 +17004,13 @@ class GrowspaceLogbookController {
             return x `
     <ipm-dialog
         .open=${true}
-            .hass = ${this.hass}
-            .dataService = ${this.store.dataService}
-            .growspaceId = ${dialogState.growspaceId}
-            .plantIds = ${dialogState.plantIds || []}
-            .presets = ${selectedDeviceData?.ipm_presets || {}}
-@close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()} 
-        > </ipm-dialog>
+        .store=${this.store}
+        .hass=${this.hass}
+        .growspaceId=${dialogState.growspaceId}
+        .plantIds=${dialogState.plantIds || []}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this.store.refreshData()}
+    ></ipm-dialog>
     `;
         }
         constructor() {
@@ -17839,11 +17859,12 @@ const plantCardStyles = i$6 `
                 return false;
             const growspaceId = this.plant.attributes.growspace_id;
             const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
-            if (!device || !device.nutrient_presets)
+            if (!device)
                 return false;
+            const nutrientPresets = this.store.data.$nutrientPresets.get();
             const currentStage = this.plant.attributes.stage;
             const daysInStage = this.plant.attributes.days_in_stage || 0;
-            return Object.values(device.nutrient_presets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
+            return Object.values(nutrientPresets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
         }
         // Placeholder for watering status, assuming it will be implemented elsewhere
         get _isRecentlyWatered() {
@@ -31329,6 +31350,18 @@ class GrowspaceDataStore {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "$nutrientPresets", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "$ipmPresets", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         /** Indicates if store has active subscribers (for lazy loading) */
         Object.defineProperty(this, "_isActive", {
             enumerable: true,
@@ -31343,6 +31376,8 @@ class GrowspaceDataStore {
         this.$wsDataCache = atom({});
         this.$selectedDevice = atom(null);
         this.$plantToDeviceMap = atom(new Map());
+        this.$nutrientPresets = atom({});
+        this.$ipmPresets = atom({});
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
             this._isActive = true;
@@ -31380,6 +31415,12 @@ class GrowspaceDataStore {
     }
     setStrainLibrary(library) {
         this.$strainLibrary.set(library);
+    }
+    setNutrientPresets(presets) {
+        this.$nutrientPresets.set(presets);
+    }
+    setIPMPresets(presets) {
+        this.$ipmPresets.set(presets);
     }
     setOptimisticDeletedPlantIds(ids) {
         this.$optimisticDeletedPlantIds.set(ids);
@@ -32820,6 +32861,9 @@ class GrowspaceStore {
             const data = await this.dataService.fetchGrowspaceData();
             this.data.setWsDataCache(data || {});
             this._updateDevicesState();
+            // Background fetch presets for better UX
+            this.fetchNutrientPresets();
+            this.fetchIPMPresets();
         }
         catch (e) {
             console.error('Failed to fetch growspace data', e);
@@ -32939,6 +32983,72 @@ class GrowspaceStore {
             catch (e) {
                 console.error('Failed to fetch strain library:', e);
             }
+        }
+    }
+    async fetchNutrientPresets(force = false) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_nutrient_presets';
+        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setNutrientPresets(cache.data);
+                    return;
+                }
+            }
+            catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+        try {
+            const result = await this.dataService.fetchNutrientPresets();
+            if (result) {
+                this.data.setNutrientPresets(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch nutrient presets:', e);
+        }
+    }
+    async fetchIPMPresets(force = false) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_ipm_presets';
+        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setIPMPresets(cache.data);
+                    return;
+                }
+            }
+            catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+        try {
+            const result = await this.dataService.fetchIPMPresets();
+            if (result) {
+                this.data.setIPMPresets(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch IPM presets:', e);
         }
     }
     handleKeyboardNavigation(key) {
@@ -33390,12 +33500,14 @@ class GrowspaceStore {
         }
     }
     openNutrientPresetsDialog() {
+        this.fetchNutrientPresets();
         this.ui.setActiveDialog({
             type: 'NUTRIENT_PRESETS',
             payload: {}
         });
     }
     openIPMDialog(context) {
+        this.fetchIPMPresets();
         // Fallback to selected device when no specific growspaceId or plantIds provided
         const growspaceId = context?.growspaceId ||
             (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);

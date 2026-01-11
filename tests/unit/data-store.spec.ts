@@ -8,10 +8,34 @@ describe('DataStore', () => {
         store = new GrowspaceDataStore();
     });
 
-    it('should set devices', () => {
-        const devices = [{ device_id: 'd1' }] as any[];
+    it('should set devices and rebuild plant map', () => {
+        const devices = [
+            {
+                device_id: 'd1',
+                plants: [
+                    { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' },
+                    { attributes: {}, entity_id: 'sensor.p2' } // Fallback to entity_id
+                ]
+            }
+        ] as any[];
         store.setDevices(devices);
         expect(store.$devices.get()).toEqual(devices);
+
+        const map = store.$plantToDeviceMap.get();
+        expect(map.get('p1')).toBe('d1');
+        expect(map.get('p2')).toBe('d1');
+    });
+
+    it('should set nutrient presets', () => {
+        const presets = { 'p1': { id: 'p1', name: 'Preset 1' } } as any;
+        store.setNutrientPresets(presets);
+        expect(store.$nutrientPresets.get()).toEqual(presets);
+    });
+
+    it('should set ipm presets', () => {
+        const presets = { 'p1': { id: 'p1', name: 'IPM 1' } } as any;
+        store.setIPMPresets(presets);
+        expect(store.$ipmPresets.get()).toEqual(presets);
     });
 
     it('should set selected device', () => {
@@ -150,6 +174,23 @@ describe('DataStore', () => {
 
             expect(store.$wsDataCache.get()).toBe(initialCache); // strict equality check for no change
         });
+    });
+
+    it('should skip devices with no plants in setDevices', () => {
+        const devices = [{ device_id: 'd1', plants: null }] as any[];
+        store.setDevices(devices);
+        expect(store.$devices.get()).toEqual(devices);
+        expect(store.$plantToDeviceMap.get().size).toBe(0);
+    });
+
+    it('should skip growspaces with no grid in removePlantFromWsCache', () => {
+        const initialCache = {
+            gs1: { grid: null }
+        } as any;
+        store.$wsDataCache.set(initialCache);
+
+        store.removePlantFromWsCache('p1');
+        expect(store.$wsDataCache.get()).toBe(initialCache);
     });
 
     describe('addPlantEvent', () => {

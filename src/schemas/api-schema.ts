@@ -90,28 +90,6 @@ export const GrowspaceAPIResponseSchema = z.object({
     granular_stage: z.string().optional().default('unknown'),
     is_day: z.boolean().optional().default(false),
     air_exchange: z.union([z.string(), z.number().transform(String)]).nullable().optional(), // Default handled by optionality
-    nutrient_presets: z.record(z.string(), z.object({
-        id: z.string(),
-        name: z.string(),
-        nutrients: z.array(z.object({
-            name: z.string(),
-            dose_ml_l: z.number(),
-        })),
-        stage: z.string().nullable().optional(),
-        min_days_in_stage: z.number().nullable().optional(),
-    }).passthrough()).optional().default({}),
-    ipm_presets: z.record(z.string(), z.object({
-        id: z.string(),
-        name: z.string(),
-        type: z.string(), // Use string to be resilient
-        items: z.array(z.object({
-            name: z.string(),
-            dose_amount: z.number(),
-            dose_unit: z.string(),
-        })),
-        stage: z.string().nullable().optional(),
-        min_days_in_stage: z.number().nullable().optional(),
-    }).passthrough()).optional().default({}),
 }).passthrough(); // Allow extra fields at root
 
 export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
@@ -147,6 +125,35 @@ export const StrainLibraryWrapperSchema = z.object({
 
 export type StrainLibrary = z.infer<typeof StrainLibrarySchema>;
 export type StrainLibraryResponse = z.infer<typeof StrainLibraryWrapperSchema>;
+
+export const NutrientPresetsSchema = z.record(z.string(), z.object({
+    id: z.string(),
+    name: z.string(),
+    nutrients: z.array(z.object({
+        name: z.string(),
+        dose_ml_l: z.number(),
+    })),
+    stage: z.string().nullish().transform(v => v || undefined),
+    min_days_in_stage: z.number().nullish().transform(v => v || undefined),
+}).passthrough());
+
+export const IPMPresetSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.enum(['foliar', 'drench', 'beneficials']),
+    items: z.array(z.object({
+        name: z.string(),
+        dose_amount: z.number(),
+        dose_unit: z.string(),
+    })),
+    stage: z.string().nullish().transform(v => v || undefined),
+    min_days_in_stage: z.number().nullish().transform(v => v || undefined),
+}).passthrough();
+
+export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
+
+export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
+export type IPMPresetsResponse = z.infer<typeof IPMPresetsSchema>;
 
 /**
  * API Validation Helpers - Corrupted data firewall at API boundary

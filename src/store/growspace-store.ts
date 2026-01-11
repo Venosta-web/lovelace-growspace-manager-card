@@ -211,6 +211,10 @@ export class GrowspaceStore {
             const data = await this.dataService.fetchGrowspaceData();
             this.data.setWsDataCache((data as Record<string, GrowspaceAPIResponse>) || {});
             this._updateDevicesState();
+
+            // Background fetch presets for better UX
+            this.fetchNutrientPresets();
+            this.fetchIPMPresets();
         } catch (e) {
             console.error('Failed to fetch growspace data', e);
         } finally {
@@ -343,6 +347,74 @@ export class GrowspaceStore {
             } catch (e) {
                 console.error('Failed to fetch strain library:', e);
             }
+        }
+    }
+
+    public async fetchNutrientPresets(force = false) {
+        if (!this.hass) return;
+
+        const CACHE_KEY = 'growspace_nutrient_presets';
+        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setNutrientPresets(cache.data);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+
+        try {
+            const result = await this.dataService.fetchNutrientPresets();
+            if (result) {
+                this.data.setNutrientPresets(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        } catch (e) {
+            console.error('Failed to fetch nutrient presets:', e);
+        }
+    }
+
+    public async fetchIPMPresets(force = false) {
+        if (!this.hass) return;
+
+        const CACHE_KEY = 'growspace_ipm_presets';
+        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setIPMPresets(cache.data);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+
+        try {
+            const result = await this.dataService.fetchIPMPresets();
+            if (result) {
+                this.data.setIPMPresets(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        } catch (e) {
+            console.error('Failed to fetch IPM presets:', e);
         }
     }
 
@@ -895,6 +967,7 @@ export class GrowspaceStore {
 
 
     openNutrientPresetsDialog() {
+        this.fetchNutrientPresets();
         this.ui.setActiveDialog({
             type: 'NUTRIENT_PRESETS',
             payload: {}
@@ -902,6 +975,7 @@ export class GrowspaceStore {
     }
 
     openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }) {
+        this.fetchIPMPresets();
         // Fallback to selected device when no specific growspaceId or plantIds provided
         const growspaceId = context?.growspaceId ||
             (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);

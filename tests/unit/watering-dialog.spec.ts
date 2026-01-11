@@ -60,9 +60,6 @@ describe('WateringDialog', () => {
     const mockDevice: Partial<GrowspaceDevice> = {
         device_id: 'gs1',
         name: 'Tent 1',
-        nutrient_presets: {
-            'veg1': mockPreset
-        },
         plants: [
             {
                 entity_id: 'sensor.plant1',
@@ -87,10 +84,23 @@ describe('WateringDialog', () => {
             data: {
                 $devices: {
                     get: () => [mockDevice]
+                },
+                $nutrientPresets: {
+                    get: () => ({ 'veg1': mockPreset })
+                },
+                $selectedDevice: {
+                    get: () => 'gs1'
+                },
+                $ipmPresets: {
+                    get: () => ({})
                 }
             },
             showToast: vi.fn(),
-            refreshData: vi.fn()
+            refreshData: vi.fn(),
+            dataService: {
+                fetchNutrientPresets: vi.fn(),
+                fetchIPMPresets: vi.fn()
+            }
         };
 
         element = new WateringDialog();
@@ -327,6 +337,7 @@ describe('WateringDialog', () => {
 
             // Refresh mock
             mockStore.data.$devices.get = () => [mockDevice];
+            mockStore.data.$nutrientPresets.get = () => ({ 'veg1': mockPreset });
 
             element.open = true;
             element.dialogState = {
@@ -455,18 +466,16 @@ describe('WateringDialog', () => {
 
         it('should handle preset with min_days_in_stage requirement', async () => {
             // Add a preset with min_days_in_stage
-            const originalPresets = mockDevice.nutrient_presets;
-            mockDevice.nutrient_presets = {
+            mockStore.data.$nutrientPresets.get = () => ({
                 'veg1': mockPreset,
                 'late-veg': {
                     id: 'late-veg',
                     name: 'Late Veg',
                     stage: 'veg',
                     nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
-                    // target_ec removed as it is not in NutrientPreset interface
                     min_days_in_stage: 20
                 }
-            };
+            });
 
             element.open = true;
             element.dialogState = {
@@ -485,7 +494,7 @@ describe('WateringDialog', () => {
             expect(lateVegOption?.textContent).not.toContain('⭐');
 
             // Restore
-            mockDevice.nutrient_presets = originalPresets;
+            mockStore.data.$nutrientPresets.get = () => ({ 'veg1': mockPreset });
         });
 
         it('should handle preset lookup when growspaceId is missing', async () => {
@@ -594,27 +603,25 @@ describe('WateringDialog', () => {
         });
 
         it('should skip devices without nutrient presets', () => {
-            const originalPresets = mockDevice.nutrient_presets;
-            mockDevice.nutrient_presets = undefined;
+            mockStore.data.$nutrientPresets.get = () => ({});
 
             const suggestions = (element as any)._getNutrientSuggestions();
             expect(suggestions).toEqual([]);
 
-            mockDevice.nutrient_presets = originalPresets;
+            mockStore.data.$nutrientPresets.get = () => ({ 'veg1': mockPreset });
         });
 
         it('should skip nutrients without names', () => {
-            const originalPresets = mockDevice.nutrient_presets;
-            mockDevice.nutrient_presets = {
+            mockStore.data.$nutrientPresets.get = () => ({
                 'bad-preset': {
                     nutrients: [{ name: '', dose_ml_l: 5 }]
                 }
-            } as any;
+            } as any);
 
             const suggestions = (element as any)._getNutrientSuggestions();
             expect(suggestions).toEqual([]);
 
-            mockDevice.nutrient_presets = originalPresets;
+            mockStore.data.$nutrientPresets.get = () => ({ 'veg1': mockPreset });
         });
     });
 

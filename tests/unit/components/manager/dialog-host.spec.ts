@@ -22,6 +22,8 @@ describe('DialogHost', () => {
     const $activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
     const $devices = atom<any[]>([]);
     const $selectedDevice = atom<string | null>(null);
+    const $nutrientPresets = atom<Record<string, any>>({});
+    const $ipmPresets = atom<Record<string, any>>({});
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -43,7 +45,9 @@ describe('DialogHost', () => {
             data: {
                 $devices: $devices,
                 $selectedDevice: $selectedDevice,
-                $strainLibrary: atom([])
+                $strainLibrary: atom([]),
+                $nutrientPresets: $nutrientPresets,
+                $ipmPresets: $ipmPresets
             },
             actions: {
                 plant: {
@@ -108,6 +112,8 @@ describe('DialogHost', () => {
         $activeDialog.set({ type: 'NONE' });
         $devices.set([]);
         $selectedDevice.set(null);
+        $nutrientPresets.set({});
+        $ipmPresets.set({});
     });
 
     afterEach(() => {
@@ -730,9 +736,9 @@ describe('DialogHost', () => {
     it('should render NUTRIENT_PRESETS dialog', async () => {
         $devices.set([{
             device_id: 'g1',
-            name: 'Grow 1',
-            nutrient_presets: { 'p1': { id: 'p1', name: 'Preset 1', nutrients: [] } }
+            name: 'Grow 1'
         } as any]);
+        $nutrientPresets.set({ 'p1': { id: 'p1', name: 'Preset 1', nutrients: [] } });
         $selectedDevice.set('g1');
         $activeDialog.set({
             type: 'NUTRIENT_PRESETS',
@@ -774,7 +780,8 @@ describe('DialogHost', () => {
     });
 
     it('should render IPM dialog and handle events', async () => {
-        $devices.set([{ device_id: 'g1', name: 'Grow 1', ipm_presets: {} } as any]);
+        $devices.set([{ device_id: 'g1', name: 'Grow 1' } as any]);
+        $ipmPresets.set({});
         $selectedDevice.set('g1');
         $activeDialog.set({
             type: 'IPM',
@@ -800,13 +807,13 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
         const ipm = element.shadowRoot?.querySelector('ipm-dialog') as any;
+        expect(ipm).toBeTruthy();
         expect(ipm.plantIds).toEqual([]);
-        expect(ipm.presets).toEqual({});
 
         $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
         await element.updateComplete;
         const np = element.shadowRoot?.querySelector('nutrient-presets-editor') as any;
-        expect(np.presets).toEqual({});
+        expect(np).toBeTruthy();
     });
 
     it('should guard STRAIN_LIBRARY close if dialog type changed', async () => {

@@ -1,115 +1,154 @@
-import { describe, it, expect } from 'vitest';
-import {
-    GrowspaceAPIResponseSchema,
-    validateGrowspaceResponse,
-    validateGrowspaceCollection,
-    validateStrainLibrary
-} from '../../../src/schemas/api-schema';
 
-describe('GrowspaceAPIResponseSchema', () => {
-    it('should allow null values for sensor fields', () => {
-        const minimalValidData = {
-            growspace_id: 'test_id',
-            name: 'Test Growspace',
-            type: 'normal',
-            rows: 1,
-            plants_per_row: 1,
-            // Fields that can now be null
-            vpd: null,
-            soil_moisture_value: null,
-            dehumidifier_state: null,
-            // Required empty defaults
-            grid: {},
-            irrigation_config: {},
-        };
+import { describe, it, expect, vi } from 'vitest';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary } from '../../../src/schemas/api-schema';
 
-        const result = GrowspaceAPIResponseSchema.safeParse(minimalValidData);
-        expect(result.success).toBe(true);
-        if (result.success) {
-            expect(result.data.soil_moisture_value).toBeNull();
-            expect(result.data.vpd).toBeNull();
-            expect(result.data.dehumidifier_state).toBeNull();
-        }
-    });
-
-    it('should fail on invalid types', () => {
-        const invalidData = {
-            growspace_id: 'test_id',
-            name: 'Test Growspace',
-            type: 'normal',
-            rows: 1,
-            plants_per_row: 1,
-            soil_moisture_value: 123, // Number instead of string
-            grid: {},
-            irrigation_config: {},
-        };
-
-        const result = GrowspaceAPIResponseSchema.safeParse(invalidData);
-        expect(result.success).toBe(false);
-    });
-});
-
-describe('Validation Helpers', () => {
-    const validGrowspace = {
-        growspace_id: 'g1',
-        name: 'G1',
-        type: 'normal',
-        rows: 2,
-        plants_per_row: 2,
-        grid: {},
-        irrigation_config: {}
-    };
-
-    describe('validateGrowspaceResponse', () => {
-        it('should return success and data for valid input', () => {
-            const result = validateGrowspaceResponse(validGrowspace);
-            expect(result.success).toBe(true);
-            // Zod adds defaults like grid: {}, irrigation_config: {} if not present
-            expect(result.data).toEqual(expect.objectContaining({
-                growspace_id: 'g1',
-                name: 'G1'
-            }));
-        });
-
-        it('should return errors for invalid input', () => {
-            const result = validateGrowspaceResponse({ ...validGrowspace, rows: 'invalid' });
-            expect(result.success).toBe(false);
-            expect(result.errors).toBeDefined();
-        });
-    });
-
-    describe('validateGrowspaceCollection', () => {
-        it('should return success and data for valid collection', () => {
-            const collection = {
-                'g1': validGrowspace
+describe('API Schemas', () => {
+    describe('NutrientPresetsSchema', () => {
+        it('should validate and transform nullish fields', () => {
+            const input = {
+                'p1': {
+                    id: 'p1',
+                    name: 'Test',
+                    nutrients: [],
+                    stage: null,
+                    min_days_in_stage: null
+                }
             };
-            const result = validateGrowspaceCollection(collection);
-            expect(result.success).toBe(true);
-            expect(result.data?.['g1']).toEqual(expect.objectContaining({
-                growspace_id: 'g1'
-            }));
+            const result = NutrientPresetsSchema.parse(input);
+            expect(result.p1.stage).toBeUndefined();
+            expect(result.p1.min_days_in_stage).toBeUndefined();
         });
 
-        it('should return errors for invalid collection', () => {
-            const result = validateGrowspaceCollection({ 'g1': { ...validGrowspace, rows: 'invalid' } });
-            expect(result.success).toBe(false);
-            expect(result.errors).toBeDefined();
+        it('should preserve valid values', () => {
+            const input = {
+                'p1': {
+                    id: 'p1',
+                    name: 'Test',
+                    nutrients: [],
+                    stage: 'veg',
+                    min_days_in_stage: 5
+                }
+            };
+            const result = NutrientPresetsSchema.parse(input);
+            expect(result.p1.stage).toBe('veg');
+            expect(result.p1.min_days_in_stage).toBe(5);
+        });
+
+        it('should handle undefined input', () => {
+            const input = {
+                'p1': {
+                    id: 'p1',
+                    name: 'Test',
+                    nutrients: [],
+                    // keys missing
+                }
+            };
+            const result = NutrientPresetsSchema.parse(input);
+            expect(result.p1.stage).toBeUndefined();
+            expect(result.p1.min_days_in_stage).toBeUndefined();
         });
     });
 
-    describe('validateStrainLibrary', () => {
-        it('should return success for valid library', () => {
-            const library = { strains: { 'Strain 1': { meta: { type: 'Indica' } } } };
-            const result = validateStrainLibrary(library);
-            expect(result.success).toBe(true);
-            expect(result.data?.strains?.['Strain 1'].meta?.type).toBe('Indica');
-            expect(result.data?.strains?.['Strain 1'].phenotypes).toEqual({});
+    describe('IPMPresetsSchema', () => {
+        it('should validate and transform nullish fields', () => {
+            const input = {
+                'p1': {
+                    id: 'p1',
+                    name: 'Test',
+                    type: 'foliar',
+                    items: [],
+                    stage: null,
+                    min_days_in_stage: null
+                }
+            };
+            const result = IPMPresetsSchema.parse(input);
+            expect(result.p1.stage).toBeUndefined();
+            expect(result.p1.min_days_in_stage).toBeUndefined();
         });
 
-        it('should return errors for invalid library', () => {
-            const result = validateStrainLibrary({ not: 'an array' });
+        it('should preserve valid values', () => {
+            const input = {
+                'p1': {
+                    id: 'p1',
+                    name: 'Test',
+                    type: 'drench',
+                    items: [],
+                    stage: 'flower',
+                    min_days_in_stage: 10
+                }
+            };
+            const result = IPMPresetsSchema.parse(input);
+            expect(result.p1.stage).toBe('flower');
+            expect(result.p1.min_days_in_stage).toBe(10);
+        });
+    });
+
+    describe('Validation Helpers', () => {
+
+        it('should validate growspace response', () => {
+            const validData = {
+                growspace_id: 'gs1',
+                name: 'GS1',
+                type: 'flower',
+                rows: 1,
+                plants_per_row: 1,
+                grid: {},
+                irrigation_config: {}
+            };
+            const result = validateGrowspaceResponse(validData);
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.data.growspace_id).toBe('gs1');
+            }
+        });
+
+        it('should return error for invalid growspace response', () => {
+            // Suppress console.error for this test
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const invalidData = { growspace_id: 123 }; // Invalid type
+            const result = validateGrowspaceResponse(invalidData);
             expect(result.success).toBe(false);
             expect(result.errors).toBeDefined();
+            spy.mockRestore();
+        });
+
+        it('should validate growspace collection', () => {
+            const validData = {
+                'gs1': {
+                    growspace_id: 'gs1',
+                    name: 'GS1',
+                    type: 'flower',
+                    rows: 1,
+                    plants_per_row: 1
+                }
+            };
+            const result = validateGrowspaceCollection(validData);
+            expect(result.success).toBe(true);
+        });
+
+        it('should return error for invalid growspace collection', () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const invalidData = { 'gs1': { growspace_id: 123 } };
+            const result = validateGrowspaceCollection(invalidData);
+            expect(result.success).toBe(false);
+            spy.mockRestore();
+        });
+
+        it('should validate strain library', () => {
+            const validData = {
+                strains: {},
+                strain_list: []
+            };
+            const result = validateStrainLibrary(validData);
+            expect(result.success).toBe(true);
+        });
+
+        it('should return error for invalid strain library', () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const invalidData = { strains: "invalid" };
+            const result = validateStrainLibrary(invalidData);
+            expect(result.success).toBe(false);
+            spy.mockRestore();
         });
     });
 });

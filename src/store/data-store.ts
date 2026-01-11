@@ -1,5 +1,5 @@
 import { atom, onMount, WritableAtom } from 'nanostores';
-import { GrowspaceDevice, StrainEntry, GrowspaceManagerCardConfig, GrowspaceAPIResponse } from '../types';
+import { GrowspaceDevice, StrainEntry, GrowspaceManagerCardConfig, GrowspaceAPIResponse, NutrientPreset, IPMPreset } from '../types';
 
 export class GrowspaceDataStore {
     // Domain Data Atoms
@@ -11,6 +11,8 @@ export class GrowspaceDataStore {
     public readonly $selectedDevice: WritableAtom<string | null>;
     /** Map from plantId to deviceId for O(1) lookups */
     public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
+    public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
+    public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
 
     /** Indicates if store has active subscribers (for lazy loading) */
     private _isActive = false;
@@ -23,6 +25,8 @@ export class GrowspaceDataStore {
         this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
         this.$selectedDevice = atom<string | null>(null);
         this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
+        this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
+        this.$ipmPresets = atom<Record<string, IPMPreset>>({});
 
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
@@ -66,6 +70,14 @@ export class GrowspaceDataStore {
 
     public setStrainLibrary(library: StrainEntry[]) {
         this.$strainLibrary.set(library);
+    }
+
+    public setNutrientPresets(presets: Record<string, NutrientPreset>) {
+        this.$nutrientPresets.set(presets);
+    }
+
+    public setIPMPresets(presets: Record<string, IPMPreset>) {
+        this.$ipmPresets.set(presets);
     }
 
     public setOptimisticDeletedPlantIds(ids: Set<string>) {

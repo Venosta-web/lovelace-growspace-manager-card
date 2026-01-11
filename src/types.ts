@@ -184,8 +184,6 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   grid: Record<string, RawPlantData | null>;
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy | null;
-  nutrient_presets?: Record<string, NutrientPreset>;
-  ipm_presets?: Record<string, IPMPreset>;
 }
 
 // --- Internal Frontend Models ---
@@ -211,8 +209,6 @@ export interface GrowspaceDevice {
 
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy;
-  nutrient_presets?: Record<string, NutrientPreset>;
-  ipm_presets?: Record<string, IPMPreset>;
 }
 
 export enum TrainingTechnique {
