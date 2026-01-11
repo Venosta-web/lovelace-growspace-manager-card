@@ -6,7 +6,8 @@ import { sharedStyles } from '../../styles/shared.styles';
 import {
   mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
   mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlaskOutline, mdiFlash,
-  mdiCupWater, mdiTag, mdiCameraPlus, mdiSend, mdiClose, mdiDelete, mdiDumbbell
+  mdiCupWater, mdiTag, mdiCameraPlus, mdiSend, mdiClose, mdiDelete, mdiDumbbell,
+  mdiFlower, mdiHairDryer, mdiCannabis
 } from '@mdi/js';
 
 @customElement('plant-timeline')
@@ -339,13 +340,27 @@ export class PlantTimeline extends LitElement {
     `
   ];
 
-  private _getIcon(type: string, action?: string) {
+  private _getIcon(event: PlantTimelineEvent) {
+    const { type } = event;
     switch (type) {
-      case 'stage_change': return mdiSprout;
+      case 'stage_change': {
+        const to = (event as any).to?.toLowerCase();
+        if (to === 'flower') return mdiFlower;
+        if (to === 'dry') return mdiHairDryer;
+        if (to === 'cure') return mdiCannabis;
+        return mdiSprout;
+      }
       case 'alert': return mdiAlertCircle;
       case 'note': return mdiNoteText;
-      case 'milestone': return mdiSprout;
+      case 'milestone': {
+        const label = (event as any).label?.toLowerCase() || '';
+        if (label.includes('flower')) return mdiFlower;
+        if (label.includes('dry')) return mdiHairDryer;
+        if (label.includes('cure')) return mdiCannabis;
+        return mdiSprout;
+      }
       case 'action':
+        const action = (event as any).action;
         if (action === 'water' || action === 'watering') return mdiWater;
         if (action === 'ipm') return mdiBug;
         if (action === 'training') return mdiDumbbell;
@@ -431,7 +446,7 @@ export class PlantTimeline extends LitElement {
       });
       this._noteText = '';
       this._noteImages = [];
-      
+
       // Allow time for recorder to write to DB
       await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -452,7 +467,7 @@ export class PlantTimeline extends LitElement {
 
   private async _confirmDeleteEvent() {
     if (this._deletingEventId === null) return;
-    
+
     try {
       await this.hass.callWS({
         type: 'growspace_manager/remove_timeline_event',
@@ -561,7 +576,7 @@ export class PlantTimeline extends LitElement {
         console.error('Error processing image:', err);
       }
     }
-    
+
     // Clear input to allow re-selecting same file if needed
     input.value = '';
   }
@@ -676,7 +691,7 @@ export class PlantTimeline extends LitElement {
       <div class="event type-${event.type} glass-surface">
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
-            <path d="${this._getIcon(event.type, (event as any).action)}" />
+            <path d="${this._getIcon(event)}" />
           </svg>
         </div>
         ${event.event_id ? html`

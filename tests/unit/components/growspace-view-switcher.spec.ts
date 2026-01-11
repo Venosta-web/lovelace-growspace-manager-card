@@ -124,4 +124,25 @@ describe('GrowspaceViewSwitcher', () => {
 
         expect(childMock.focusPlant).toHaveBeenCalledWith(3);
     });
+
+    it('propagates batch-add-plants event from standard view', async () => {
+        element.viewMode = 'standard';
+        await element.updateComplete;
+
+        const view = element.shadowRoot?.querySelector('growspace-view-standard');
+        expect(view).toBeTruthy();
+
+        const listener = vi.fn();
+        element.addEventListener('batch-add-plants', listener);
+
+        const eventDetail = { quantity: 5, strain: 'Test' };
+        view?.dispatchEvent(new CustomEvent('batch-add-plants', {
+            detail: eventDetail,
+            bubbles: false,
+            composed: false
+        }));
+
+        expect(listener).toHaveBeenCalledTimes(1);
+        expect(listener.mock.calls[0][0].detail).toEqual(eventDetail);
+    });
 });

@@ -9405,19 +9405,39 @@ const dialogStyles = [
         set _deletingEventId(value) { __classPrivateFieldSet(this, _PlantTimeline__deletingEventId_accessor_storage, value, "f"); }
         get _hoveredImage() { return __classPrivateFieldGet(this, _PlantTimeline__hoveredImage_accessor_storage, "f"); }
         set _hoveredImage(value) { __classPrivateFieldSet(this, _PlantTimeline__hoveredImage_accessor_storage, value, "f"); }
-        _getIcon(type, action) {
+        _getIcon(event) {
+            const { type } = event;
             switch (type) {
-                case 'stage_change': return mdiSprout;
+                case 'stage_change': {
+                    const to = event.to?.toLowerCase();
+                    if (to === 'flower')
+                        return mdiFlower;
+                    if (to === 'dry')
+                        return mdiHairDryer;
+                    if (to === 'cure')
+                        return mdiCannabis;
+                    return mdiSprout;
+                }
                 case 'alert': return mdiAlertCircle;
                 case 'note': return mdiNoteText;
-                case 'milestone': return mdiSprout;
+                case 'milestone': {
+                    const label = event.label?.toLowerCase() || '';
+                    if (label.includes('flower'))
+                        return mdiFlower;
+                    if (label.includes('dry'))
+                        return mdiHairDryer;
+                    if (label.includes('cure'))
+                        return mdiCannabis;
+                    return mdiSprout;
+                }
                 case 'action':
+                    const action = event.action;
                     if (action === 'water' || action === 'watering')
                         return mdiWater;
                     if (action === 'ipm')
                         return mdiBug;
-                    if (action === 'training')
-                        return mdiDumbbell;
+                    if (action === 'training' || action === 'pruning')
+                        return mdiContentCut;
                     return mdiLeaf;
                 default: return mdiLeaf;
             }
@@ -9743,7 +9763,7 @@ const dialogStyles = [
       <div class="event type-${event.type} glass-surface">
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
-            <path d="${this._getIcon(event.type, event.action)}" />
+            <path d="${this._getIcon(event)}" />
           </svg>
         </div>
         ${event.event_id ? x `

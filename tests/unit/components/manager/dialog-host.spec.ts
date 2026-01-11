@@ -4,6 +4,7 @@ import { DialogHost } from '../../../../src/components/manager/dialog-host';
 import { html } from 'lit';
 import { atom } from 'nanostores';
 import { ActiveDialogState } from '../../../../src/ui-state';
+import { GrowspaceDevice } from '../../../../src/types';
 
 // Mock styles
 vi.mock('../../../../src/styles/shared.styles', () => ({
@@ -78,6 +79,7 @@ describe('DialogHost', () => {
             },
             closeActiveDialog: vi.fn(),
             confirmAddPlant: vi.fn(),
+            confirmAddPlants: vi.fn(),
             updatePlantFromDialog: vi.fn(),
             handleDeletePlant: vi.fn(),
             harvestPlant: vi.fn(),
@@ -667,6 +669,8 @@ describe('DialogHost', () => {
     it('should return empty template for mismatched dialog types in render helpers', async () => {
         const wrongType: ActiveDialogState = { type: 'NONE' };
         expect((element as any)._renderAddPlantDialog(wrongType, [])).toEqual(html``);
+        expect((element as any)._renderAddPlantsDialog(wrongType, [], {})).toEqual(html``);
+
         expect((element as any)._renderPlantOverviewDialog(wrongType, {})).toEqual(html``);
         expect((element as any)._renderStrainLibraryDialog(wrongType, [])).toEqual(html``);
         expect((element as any)._renderConfigDialog(wrongType, {})).toEqual(html``);
@@ -873,5 +877,189 @@ describe('DialogHost', () => {
         $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, growspaceId: 'g1', response: null, mode: 'single' } }); // trigger re-render
         await element.updateComplete;
         expect(gm.personality).toBe('Helpful');
+    });
+
+    it('should render ADD_PLANTS dialog', async () => {
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+        expect(dialog).toBeTruthy();
+    });
+
+    it('should handle add-plants-submit event', async () => {
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+        const detail = { plants: [] };
+        dialog?.dispatchEvent(new CustomEvent('add-plants-submit', { detail }));
+
+        expect(mockStore.confirmAddPlants).toHaveBeenCalledWith(detail);
+    });
+
+    it('should handle close event on ADD_PLANTS dialog', async () => {
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+        dialog?.dispatchEvent(new CustomEvent('close'));
+
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should handle open-watering event on PLANT_OVERVIEW dialog', async () => {
+        $activeDialog.set({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: { entity_id: 'p1' } as any,
+                activeTab: 'dashboard',
+                editedAttributes: {},
+                selectedPlantIds: []
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const payload = { plantId: 'p1' };
+        dialog?.dispatchEvent(new CustomEvent('open-watering', { detail: payload }));
+
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'WATERING',
+            payload
+        });
+    });
+
+    it('should handle open-training event on PLANT_OVERVIEW dialog', async () => {
+        $activeDialog.set({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: { entity_id: 'p1' } as any,
+                activeTab: 'dashboard',
+                editedAttributes: {},
+                selectedPlantIds: []
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const payload = { plantId: 'p1' };
+        dialog?.dispatchEvent(new CustomEvent('open-training', { detail: payload }));
+
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'TRAINING',
+            payload
+        });
+    });
+
+    it('should handle open-ipm event on PLANT_OVERVIEW dialog', async () => {
+        $activeDialog.set({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: { entity_id: 'p1' } as any,
+                activeTab: 'dashboard',
+                editedAttributes: {},
+                selectedPlantIds: []
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const payload = { plantId: 'p1' };
+        dialog?.dispatchEvent(new CustomEvent('open-ipm', { detail: payload }));
+
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'IPM',
+            payload
+        });
+    });
+
+    it('should handle undefined strainLibrary', async () => {
+        $activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 1 } });
+        // @ts-ignore
+        element.strainLibrary = undefined;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
+        expect(dialog).toBeTruthy();
+        expect((dialog as any).strainLibrary).toEqual([]);
+    });
+
+    it('should guard PLANT_OVERVIEW close if dialog type changed', async () => {
+        $activeDialog.set({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: { entity_id: 'p1' } as any,
+                activeTab: 'dashboard',
+                editedAttributes: {},
+                selectedPlantIds: []
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+
+        // Change active dialog type
+        $activeDialog.set({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
+
+        // Dispatch close on the old dialog element
+        dialog?.dispatchEvent(new CustomEvent('close'));
+
+        expect(mockStore.ui.closeDialog).not.toHaveBeenCalled();
+    });
+
+    it('should extract personality when ai_settings present', async () => {
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, response: '', growspaceId: 'g1', mode: 'single' } });
+        const devices: GrowspaceDevice[] = [{ device_id: 'g1', name: 'Grow 1', sensors: {} } as any];
+        (mockStore.data.$devices as any).set(devices);
+        (mockStore.data.$selectedDevice as any).set('g1');
+
+        element.hass = {
+            states: {
+                'sensor.growspace_manager': {
+                    state: 'idle',
+                    attributes: {
+                        personality: 'Friendly',
+                        ai_settings: {}
+                    }
+                }
+            } as any
+        } as any;
+
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
+        expect((dialog as any).personality).toBe('Friendly');
+    });
+
+    it('should handle missing attributes in GROW_MASTER', async () => {
+        $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, response: '', growspaceId: 'g1', mode: 'single' } });
+        const devices: GrowspaceDevice[] = [{ device_id: 'g1', name: 'Grow 1', sensors: {} } as any];
+        (mockStore.data.$devices as any).set(devices);
+        (mockStore.data.$selectedDevice as any).set('g1');
+
+        element.hass = {
+            states: {
+                'sensor.growspace_manager': {
+                    state: 'idle',
+                    // attributes missing
+                }
+            } as any
+        } as any;
+
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
+        expect((dialog as any).personality).toBeUndefined();
     });
 });

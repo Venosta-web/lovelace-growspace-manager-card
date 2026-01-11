@@ -128,6 +128,7 @@ const mockDataServiceInstance = {
     updateGrowspace: vi.fn().mockResolvedValue({}),
     updatePlant: vi.fn().mockResolvedValue({}),
     addPlant: vi.fn().mockResolvedValue({}),
+    addPlants: vi.fn().mockResolvedValue({}),
     removePlant: vi.fn().mockResolvedValue({}),
     fetchGrowspaceData: vi.fn().mockResolvedValue({}),
     swapPlants: vi.fn().mockResolvedValue({}),
@@ -381,4 +382,269 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
     });
 
+
+
+    describe('Additional Coverage', () => {
+        it('should handle handleDrop swap logic', async () => {
+            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1 } } as any;
+            const target = { entity_id: 's2', attributes: { plant_id: 'p2', strain: 'S2', row: 2, col: 2 } } as any;
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            // Pass through plantActions real logic (which uses mocked service)
+            // or we might need to rely on the fact that plantActions calls service.
+            // But plantActions is not mocked here.
+            // We assume plantAction calls move/swap which calls service.
+
+            // Note: Since plantActions is not mocked, it will execute logic.
+            // We need to ensure dependencies for plantActions work.
+            // plantActions.handlePlantDrop calls swapPlants on service if target exists.
+
+            await store.handleDrop(2, 2, target, source);
+
+            // Verify undo action pushed
+            expect(store.canUndo).toBe(true);
+
+            // Undo (Swap back)
+            await store.undo();
+            expect(mockDataServiceInstance.swapPlants).toHaveBeenCalledWith('p1', 'p2');
+        });
+
+        it('should handle handleDrop move to empty logic', async () => {
+            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1 } } as any;
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.handleDrop(3, 3, null, source);
+
+            // Undo (Move back to 1,1)
+            await store.undo();
+            // plantActions.movePlantPosition -> service.updatePlant
+            expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledWith(expect.objectContaining({
+                plant_id: 'p1',
+                row: 1,
+                col: 1
+            }));
+        });
+
+        it('should handle _refreshGrowspaceData error and loading state', async () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            mockDataServiceInstance.fetchGrowspaceData.mockRejectedValue(new Error('Fetch API Fail'));
+
+            // Force loading check
+            (dataStore.$devices.get as any).mockReturnValue([]);
+
+            await store.refreshData();
+
+            expect(uiStore.setIsLoading).toHaveBeenCalledWith(true);
+            expect(spy).toHaveBeenCalledWith('Failed to fetch growspace data', expect.any(Error));
+            expect(uiStore.setIsLoading).toHaveBeenCalledWith(false);
+        });
+
+        it('should find next available slot in openAddPlantDialog', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            const plants = [
+                { attributes: { row: 1, col: 1, plant_id: 'p1' } }, // 0,0 occupied
+                // 0,1 empty
+            ];
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                rows: 2,
+                plants_per_row: 2,
+                plants
+            }]);
+
+            store.openAddPlantDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'ADD_PLANT',
+                payload: { row: 0, col: 1 }
+            });
+        });
+
+        it('should handle openBatchWateringDialog mixed growspaces', () => {
+            const selectedIds = new Set(['p1', 'p2']);
+            (uiStore.$selectedPlants.get as any).mockReturnValue(selectedIds);
+
+            const map = new Map();
+            map.set('p1', 'd1');
+            map.set('p2', 'd2'); // Mixed
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(map);
+
+            store.openBatchWateringDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'WATERING',
+                payload: expect.objectContaining({ growspaceId: undefined })
+            });
+        });
+
+        it('should handle getStrainRecommendation responses', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'STRAIN_RECOMMENDATION', payload: {} });
+
+            // 1. String response
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue('Just text');
+            await store.getStrainRecommendation('query');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Just text' })
+            }));
+
+            // 2. Object with response string
+            mockDataServiceInstance.getStrainRecommendation.mockResolvedValue({ response: 'Nested text' });
+            await store.getStrainRecommendation('query');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Nested text' })
+            }));
+        });
+
+        it('should handle openBatchTrainingDialog', () => {
+            const selectedIds = new Set(['p1']);
+            (uiStore.$selectedPlants.get as any).mockReturnValue(selectedIds);
+            const map = new Map();
+            map.set('p1', 'd1');
+            (dataStore.$plantToDeviceMap.get as any).mockReturnValue(map);
+
+            store.openBatchTrainingDialog();
+
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({
+                type: 'TRAINING',
+                payload: expect.objectContaining({
+                    isOpen: true,
+                    growspaceId: 'd1',
+                    plantIds: ['p1']
+                })
+            });
+        });
+        it('should handle addBatch action success', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue({});
+
+            await store.actions.plant.addBatch({ count: 5 });
+
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalledWith({ growspace_id: 'd1', count: 5 });
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle addBatch action failure', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            // showToast is mocked
+            mockDataServiceInstance.addPlants = vi.fn().mockRejectedValue(new Error('Batch Fail'));
+
+            await store.actions.plant.addBatch({ count: 5 });
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Error: Batch Fail', 'error', undefined);
+        });
+
+        it('should handle addBatch with no device selected', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            await store.actions.plant.addBatch({});
+            expect(uiStore.showToast).toHaveBeenCalledWith('No growspace selected', 'error', undefined);
+        });
+        it('should handle openIPMDialog defaults', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.openIPMDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'IPM',
+                payload: { growspaceId: 'd1', plantIds: undefined }
+            }));
+        });
+
+        it('should handle openIPMDialog with context', () => {
+            store.openIPMDialog({ growspaceId: 'd2' });
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'IPM',
+                payload: { growspaceId: 'd2' }
+            }));
+        });
+
+        it('should handle openIPMDialog with plantIds should not set growspaceId from selection', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.openIPMDialog({ plantIds: ['p1'] });
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'IPM',
+                payload: { growspaceId: undefined, plantIds: ['p1'] }
+            }));
+        });
+
+        it('should handle batchAction unknown error', async () => {
+            mockDataServiceInstance.callService.mockRejectedValue({}); // No message
+            await store.batchAction('remove', ['p1']);
+            expect(uiStore.showToast).toHaveBeenCalledWith('Batch remove failed: Unknown error', 'error', undefined);
+        });
+
+        it('should handle export library success', async () => {
+            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([{ name: 'S1' }]);
+
+            // Mock DOM methods
+            const clickMock = vi.fn();
+            const removeMock = vi.fn();
+            const setAttributeMock = vi.fn();
+
+            const elementMock = {
+                click: clickMock,
+                remove: removeMock,
+                setAttribute: setAttributeMock
+            } as any;
+
+            vi.spyOn(document, 'createElement').mockReturnValue(elementMock);
+            vi.spyOn(document.body, 'appendChild').mockImplementation(() => elementMock);
+
+            await store.handleExportLibrary();
+
+            expect(clickMock).toHaveBeenCalled();
+            expect(removeMock).toHaveBeenCalled();
+        });
+
+        it('should handle export library fail', async () => {
+            mockDataServiceInstance.fetchStrainLibrary.mockRejectedValue(new Error('Export Fail'));
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await store.handleExportLibrary();
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to export library', 'error', undefined);
+        });
+
+        it('should cover openNutrientPresetsDialog', () => {
+            store.openNutrientPresetsDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENT_PRESETS', payload: {} });
+        });
+
+        it('should cover openLogbookDialog', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.openLogbookDialog();
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith({ type: 'LOGBOOK', payload: { growspaceId: 'd1' } });
+        });
+        it('should handle handleDeletePlant with non-existent plant', async () => {
+            (dataStore.$devices.get as any).mockReturnValue([
+                { device_id: 'd1', plants: [] }
+            ]);
+            await store.handleDeletePlant('p-missing');
+            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p-missing');
+        });
+
+        it('should auto-expand view mode when enabling graph in header mode', () => {
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (uiStore.$viewMode.get as any).mockReturnValue('header');
+
+            store.toggleEnvGraph('temp');
+
+            expect(uiStore.setViewMode).toHaveBeenCalledWith('standard');
+        });
+
+        it('should not auto-expand view mode if graph disabled', () => {
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(false) };
+            (uiStore.$viewMode.get as any).mockReturnValue('header');
+
+            store.toggleEnvGraph('temp');
+
+            expect(uiStore.setViewMode).not.toHaveBeenCalled();
+        });
+
+        it('should not auto-expand if already in standard mode', () => {
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (uiStore.$viewMode.get as any).mockReturnValue('standard');
+
+            store.toggleEnvGraph('temp');
+
+            expect(uiStore.setViewMode).not.toHaveBeenCalled();
+        });
+    });
 });

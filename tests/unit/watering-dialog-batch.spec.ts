@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
+import { nothing } from 'lit';
 import { GrowspaceStore } from '../../src/store/growspace-store';
 import { DataService } from '../../src/data-service';
 
@@ -107,4 +108,48 @@ describe('WateringDialog Batch Submission', () => {
         expect(mockWaterGrowspace).toHaveBeenCalledWith('gs1', 1.0, undefined, undefined);
         expect(mockWaterPlant).not.toHaveBeenCalled();
     });
+    it('should show recommendations when plants match preset stage', async () => {
+        // Mock store with device and presets
+        const mockDevice = {
+            device_id: 'd1',
+            plants: [
+                { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', stage: 'flower', days_in_stage: 20 } },
+                { entity_id: 'sensor.p2', attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 25 } }
+            ]
+        };
+
+        const mockPresets = {
+            'pre1': { id: 'pre1', name: 'Veg', stage: 'veg', nutrients: [] },
+            'pre2': { id: 'pre2', name: 'Flower', stage: 'flower', min_days_in_stage: 10, nutrients: [] }
+        };
+
+        mockStore.data.$devices = { get: () => [mockDevice] };
+        mockStore.data.$selectedDevice = { get: () => 'd1' };
+        mockStore.data.$nutrientPresets = { get: () => mockPresets };
+
+        dialog.dialogState = {
+            mode: 'plant',
+            plantIds: ['p1', 'p2'],
+            growspaceId: undefined
+        };
+
+        // Trigger render logic for options
+        const options = (dialog as any)._renderPresetOptions();
+
+        // Use a temp container to render the TemplateResult
+        const div = document.createElement('div');
+        const { render } = await import('lit');
+        render(options, div);
+
+        expect(div.textContent).toContain('Flower ⭐ (Recommended)');
+        expect(div.textContent).not.toContain('Veg ⭐');
+    });
+
+    it('should handle missing store/data gracefully in _renderPresetOptions', async () => {
+        dialog.store = {} as any; // No data
+        const result = (dialog as any)._renderPresetOptions();
+        // Check for Lit's 'nothing' symbol
+        expect(result).toBe(nothing);
+    });
+
 });

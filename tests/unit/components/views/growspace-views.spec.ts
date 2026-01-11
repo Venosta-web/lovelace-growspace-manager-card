@@ -214,13 +214,28 @@ describe('Growspace Views', () => {
         });
 
         it('should render edit banner when isEditMode is true', async () => {
-            // Mock isEditMode to return true
-            (uiStore.$isEditMode.get as any).mockReturnValue(true);
             element.isEditMode = true;
             document.body.appendChild(element);
             await element.updateComplete;
 
             expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
+
+            document.body.removeChild(element);
+        });
+
+        it('should redispatch batch-add-plants event', async () => {
+            element.isEditMode = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('batch-add-plants', listener);
+
+            const banner = element.shadowRoot?.querySelector('growspace-edit-mode-banner');
+            banner?.dispatchEvent(new CustomEvent('batch-add-plants', { detail: 'data', bubbles: true, composed: true }));
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail).toBe('data');
 
             document.body.removeChild(element);
         });

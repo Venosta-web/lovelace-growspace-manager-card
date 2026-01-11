@@ -78,7 +78,7 @@ describe('PlantOverviewDialog', () => {
         element.plant = mockPlant;
         element.hass = {
             connection: {
-                subscribeEvents: vi.fn().mockResolvedValue(() => {})
+                subscribeEvents: vi.fn().mockResolvedValue(() => { })
             },
             callService: vi.fn(),
             callWS: vi.fn(),
@@ -793,16 +793,123 @@ describe('PlantOverviewDialog', () => {
         document.body.removeChild(element);
     });
 
-    it('should render read-only view when isEditing is false', async () => {
-        document.body.appendChild(element);
+    it('should handle read-only view dashboard', async () => {
+        element.plant = mockPlant;
         element.open = true;
         (element as any).isEditing = false;
+        document.body.appendChild(element);
         await element.updateComplete;
 
-        const statLabels = element.shadowRoot?.querySelectorAll('.stat-label');
-        const labels = Array.from(statLabels || []).map(l => l.textContent);
-        expect(labels).toContain('Strain');
-        expect(labels).toContain('Phenotype');
+        const statGrid = element.shadowRoot?.querySelector('.stat-grid');
+        expect(statGrid).toBeTruthy();
+
+        // Should not have inputs
+        const input = element.shadowRoot?.querySelector('md3-text-input');
+        expect(input).toBeNull();
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle _handleGrowspaceEvent for current plant', async () => {
+        element.open = true;
+        const fetchSpy = vi.spyOn(element as any, '_fetchLogbook').mockResolvedValue(undefined);
+
+        // Plant-specific event
+        (element as any)._handleGrowspaceEvent({ data: { type: 'plant_updated', plant_id: 'plant_1' } });
+        expect((element as any)._logbookEvents.length).toBeGreaterThan(0);
+
+        // Shared event
+        (element as any)._logbookEvents = [];
+        (element as any)._handleGrowspaceEvent({ data: { type: 'note_added', category: 'irrigation', growspace_id: mockPlant.attributes.growspace_id } });
+        expect((element as any)._logbookEvents.length).toBeGreaterThan(0);
+
+        // Other plant event (should not trigger prepend)
+        (element as any)._logbookEvents = [];
+        (element as any)._handleGrowspaceEvent({ data: { type: 'plant_updated', plant_id: 'other_plant' } });
+        expect((element as any)._logbookEvents.length).toBe(0);
+    });
+
+    it('should handle _fetchLogbook with optimistic events', async () => {
+        element.hass = {} as any;
+        element.plant = mockPlant;
+        element.open = true;
+        (element as any)._logbookEvents = [{ id: undefined, timestamp: new Date().toISOString(), type: 'note' }];
+
+        const controller = (element as any)._logbookController;
+        vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([{ event_id: 'db1', timestamp: new Date(Date.now() - 10000).toISOString(), type: 'milestone' }]);
+
+        await (element as any)._fetchLogbook();
+
+        expect((element as any)._logbookEvents.length).toBe(2);
+        expect((element as any)._logbookEvents[0].type).toBe('note'); // Optimistic should be first
+    });
+
+    it('should render action buttons in timeline tab', async () => {
+        (element as any)._activeTab = 'timeline';
+        element.plant = mockPlant;
+        element.hass = {
+            connection: {
+                subscribeEvents: vi.fn().mockResolvedValue(() => { })
+            }
+        } as any;
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const actionButtons = element.shadowRoot?.querySelectorAll('.event-actions button');
+        expect(actionButtons?.length).toBeGreaterThan(1);
+
+        const waterBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('Water'));
+        expect(waterBtn).toBeTruthy();
+
+        const openTrainingSpy = vi.spyOn(element as any, '_openTraining').mockImplementation(() => { });
+        const trainBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('Train'));
+        (trainBtn as HTMLElement).click();
+        expect(openTrainingSpy).toHaveBeenCalled();
+
+        const openIPMSpy = vi.spyOn(element as any, '_openIPM').mockImplementation(() => { });
+        const ipmBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('IPM'));
+        (ipmBtn as HTMLElement).click();
+        expect(openIPMSpy).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
+    it('should handle open actions when plant is present', async () => {
+        element.plant = mockPlant;
+        let event: any = null;
+        element.addEventListener('open-watering', (e) => event = e);
+        (element as any)._openWatering();
+        expect(event).toBeTruthy();
+
+        event = null;
+        element.addEventListener('open-training', (e) => event = e);
+        (element as any)._openTraining();
+        expect(event).toBeTruthy();
+
+        event = null;
+        element.addEventListener('open-ipm', (e) => event = e);
+        (element as any)._openIPM();
+        expect(event).toBeTruthy();
+    });
+
+    it('should handle @growspace-refresh event from timeline', async () => {
+        (element as any)._activeTab = 'timeline';
+        element.plant = mockPlant;
+        element.hass = {
+            connection: {
+                subscribeEvents: vi.fn().mockResolvedValue(() => { })
+            }
+        } as any;
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const fetchSpy = vi.spyOn(element as any, '_fetchLogbook').mockResolvedValue(undefined);
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        timeline?.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+
+        expect(fetchSpy).toHaveBeenCalled();
+
         document.body.removeChild(element);
     });
 

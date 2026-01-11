@@ -79,7 +79,8 @@ describe('GrowspaceAnalytics', () => {
                 loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
                 startAutoRefresh: vi.fn(),
                 stopAutoRefresh: vi.fn(),
-            }
+            },
+            toggleEnvGraph: toggleEnvGraph
         };
 
         hassMock = {

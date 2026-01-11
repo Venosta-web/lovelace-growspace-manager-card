@@ -214,7 +214,8 @@ describe('GrowspaceHeader', () => {
             fetchStrainLibrary: vi.fn(),
             openLogbookDialog: vi.fn(),
             openNutrientPresetsDialog: vi.fn(),
-            openIPMDialog: vi.fn()
+            openIPMDialog: vi.fn(),
+            toggleEnvGraph: vi.fn()
         };
 
         // Initialize Atoms based on mock state
@@ -267,7 +268,8 @@ describe('GrowspaceHeader', () => {
             fetchStrainLibrary: vi.fn(),
             openLogbookDialog: vi.fn(),
             openNutrientPresetsDialog: vi.fn(),
-            openIPMDialog: vi.fn()
+            openIPMDialog: vi.fn(),
+            toggleEnvGraph: vi.fn()
         };
 
         mockHass = { states: {}, callService: vi.fn() };
@@ -422,8 +424,9 @@ describe('GrowspaceHeader', () => {
         it('should toggle graph on hero card click', async () => {
             const card = element.shadowRoot?.querySelector('.hero-card') as HTMLElement;
             card.click();
+            await element.updateComplete;
 
-            expect(mockHistory.toggleEnvGraph).toHaveBeenCalledWith('temperature');
+            expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
         });
 
         it('should handle menu actions', async () => {
@@ -735,7 +738,7 @@ describe('GrowspaceHeader', () => {
     describe('Toggle Env Graph', () => {
         it('should toggle graph visibility using controller', () => {
             (element as any)._toggleEnvGraph('temp');
-            expect(mockHistory.toggleEnvGraph).toHaveBeenCalledWith('temp');
+            expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temp');
         });
     });
 
@@ -1012,8 +1015,8 @@ describe('GrowspaceHeader', () => {
             // Mock controller
             // Mock history store method
             // We can't reassign store.history because it's read-only, but we can spy on the method of the existing mock
-            // mockHistory is already assigned to store.history
-            const spy = vi.spyOn(mockHistory, 'toggleEnvGraph');
+            // mockHistory is already
+            const spy = vi.spyOn(mockStore, 'toggleEnvGraph');
             (element as any)._toggleEnvGraph('humidity');
             expect(spy).toHaveBeenCalledWith('humidity');
         });
