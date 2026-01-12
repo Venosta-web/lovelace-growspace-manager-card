@@ -791,6 +791,55 @@ describe('DataService', () => {
                 .rejects.toThrow('WS Fail');
         });
     });
+
+    describe('Coverage Improvements', () => {
+        it('should call callService wrapper correctly', async () => {
+            await service.callService('test_domain', 'test_service', { data: 1 });
+            expect(mockHass.callService).toHaveBeenCalledWith('test_domain', 'test_service', { data: 1 });
+        });
+
+        it('getStrainLibrary should handle sensor with null attributes', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': { attributes: null } as any
+                }
+            } as any;
+            expect(service.getStrainLibrary()).toEqual([]);
+        });
+
+        it('getStrainLibrary should handle undefined rawStrains (explicit verify)', () => {
+            service.hass = {
+                states: {
+                    'sensor.strains': { attributes: { strains: undefined } }
+                }
+            } as any;
+            expect(service.getStrainLibrary()).toEqual([]);
+        });
+    });
+
+    describe('Batch Plant Actions', () => {
+        it('should add multiple plants via addPlants', async () => {
+            await service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_plants', expect.objectContaining({
+                growspace_id: 'g1',
+                strain: 'X',
+                amount: 5
+            }));
+        });
+
+        it('should handle error in addPlants', async () => {
+            callServiceMock.mockRejectedValue(new Error('Batch Fail'));
+            await expect(service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 }))
+                .rejects.toThrow('Batch Fail');
+        });
+
+        it('should handle non-Error rejection in addPlants', async () => {
+            callServiceMock.mockRejectedValue('String Error');
+            await expect(service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 }))
+                .rejects.toThrow('Failed to add plants');
+        });
+    });
+
     describe('History Stats (WS)', () => {
         it('should fetch history stats via WS success', async () => {
             (mockHass.callWS as any).mockResolvedValue({

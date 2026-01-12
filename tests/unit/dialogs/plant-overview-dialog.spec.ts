@@ -1519,5 +1519,203 @@ describe('PlantOverviewDialog', () => {
         const result = (element as any)._renderPlantStats(emptyPlant);
         expect(typeof result).toBe('symbol'); // nothing
     });
+
+    it('should return early from actions if plant is missing', async () => {
+        element.open = true;
+        document.body.appendChild(element);
+        element.plant = undefined;
+        await element.updateComplete;
+
+        const dispatchSpy = vi.spyOn(element, 'dispatchEvent');
+
+        (element as any)._openWatering();
+        (element as any)._openTraining();
+        (element as any)._openIPM();
+
+        expect(dispatchSpy).not.toHaveBeenCalled();
+        document.body.removeChild(element);
+    });
+
+    it('should handle note events with fallback date and empty text', async () => {
+        const mockEvents = [
+            {
+                growspace_id: 'gs1',
+                category: 'note',
+                plant_id: 'plant_1',
+                start_time: '2023-01-05T15:00:00Z', // Fallback date
+                // notes missing -> fallback empty string
+                tags: []
+            }
+        ];
+        element.plant = mockPlant;
+        (element as any)._logbookEvents = mockEvents;
+        (element as any)._activeTab = 'timeline';
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const timeline = element.shadowRoot?.querySelector('plant-timeline');
+        const events = (timeline as any).events;
+        const noteEvent = events.find((e: any) => e.date === '2023-01-05T15:00:00Z');
+
+        expect(noteEvent).toBeTruthy();
+        expect(noteEvent.text).toBe('');
+        document.body.removeChild(element);
+    });
+
+
+    describe('Scroll Logic & Timeline Interactions', () => {
+        beforeEach(async () => {
+            // Mock container methods
+            const originalQuerySelector = element.shadowRoot?.querySelector;
+            // Ensure we are in timeline
+            (element as any)._activeTab = 'timeline';
+        });
+
+        it('should update scroll state when calculating scroll', async () => {
+            element.plant = mockPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Mock container with scrollable content
+            const container = element.shadowRoot?.querySelector('.event-actions') as HTMLElement;
+            if (container) {
+                Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
+                Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
+                Object.defineProperty(container, 'scrollLeft', { value: 100, configurable: true });
+
+                // Trigger check
+                (element as any)._checkScroll();
+
+                expect((element as any)._canScrollLeft).toBe(true);
+                expect((element as any)._canScrollRight).toBe(true);
+            }
+            document.body.removeChild(element);
+        });
+
+        it('should scroll actions when arrows clicked', async () => {
+            element.plant = mockPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const container = element.shadowRoot?.querySelector('.event-actions') as HTMLElement;
+            if (container) {
+                const scrollSpy = vi.fn();
+                container.scrollBy = scrollSpy;
+
+                // Force scroll state to show arrows
+                (element as any)._canScrollLeft = true;
+                (element as any)._canScrollRight = true;
+                await element.updateComplete;
+
+                const leftArrow = element.shadowRoot?.querySelectorAll('.scroll-arrow')[0] as HTMLElement;
+                if (leftArrow) leftArrow.click();
+                expect(scrollSpy).toHaveBeenCalledWith(expect.objectContaining({ left: -150 }));
+
+                const rightArrow = element.shadowRoot?.querySelectorAll('.scroll-arrow')[1] as HTMLElement;
+                if (rightArrow) rightArrow.click();
+                expect(scrollSpy).toHaveBeenCalledWith(expect.objectContaining({ left: 150 }));
+            }
+            document.body.removeChild(element);
+        });
+
+        it('should trigger timeline events (Water, Train, IPM)', async () => {
+            element.plant = mockPlant;
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const waterSpy = vi.fn();
+            const trainSpy = vi.fn();
+            const ipmSpy = vi.fn();
+
+            element.addEventListener('open-watering', waterSpy);
+            element.addEventListener('open-training', trainSpy);
+            element.addEventListener('open-ipm', ipmSpy);
+
+            // Buttons are inside .event-actions
+            const buttons = element.shadowRoot?.querySelectorAll('.event-actions button');
+            if (buttons && buttons.length >= 3) {
+                (buttons[0] as HTMLElement).click();
+                expect(waterSpy).toHaveBeenCalled();
+
+                (buttons[1] as HTMLElement).click();
+                expect(trainSpy).toHaveBeenCalled();
+
+                (buttons[2] as HTMLElement).click();
+                expect(ipmSpy).toHaveBeenCalled();
+            }
+            document.body.removeChild(element);
+        });
+    });
+
+    describe('Event Subscription Resilience', () => {
+        it('should resubscribe if hass changes and subscription missing', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Check initial subscription
+            expect((element as any)._unsubEvents).toBeDefined();
+
+            // Clear it
+            (element as any)._unsubEvents = undefined;
+
+            // Manually trigger willUpdate logic
+            (element as any).willUpdate(new Map([['hass', {}]]));
+
+            // Should have resubscribed
+            expect((element as any)._unsubEvents).toBeDefined();
+            document.body.removeChild(element);
+        });
+
+        it('should handle incoming logbook events', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const subscribeMock = element.hass.connection.subscribeEvents as any;
+            const callback = subscribeMock.mock.calls[0][0];
+
+            // Simulate event for this plant
+            callback({
+                data: {
+                    plant_id: 'plant_1',
+                    category: 'log',
+                    timestamp: new Date().toISOString()
+                }
+            });
+
+            expect((element as any)._logbookEvents.length).toBeGreaterThan(0);
+            expect((element as any)._logbookEvents[0].plant_id).toBe('plant_1');
+            document.body.removeChild(element);
+        });
+
+        it('should handle incoming growspace irrigation events (broadcast)', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const subscribeMock = element.hass.connection.subscribeEvents as any;
+            const callback = subscribeMock.mock.calls[0][0];
+
+            // Simulate irrigation event for this growspace (no plant_id)
+            callback({
+                data: {
+                    growspace_id: 'gs1',
+                    category: 'irrigation',
+                    timestamp: new Date().toISOString()
+                }
+            });
+
+            expect((element as any)._logbookEvents.length).toBeGreaterThan(0);
+            const evt = (element as any)._logbookEvents[0];
+            expect(evt.category).toBe('irrigation');
+            document.body.removeChild(element);
+        });
+    });
 });
+
 

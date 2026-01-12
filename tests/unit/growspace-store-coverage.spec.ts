@@ -647,4 +647,136 @@ describe('GrowspaceStore Branch Coverage', () => {
             expect(uiStore.setViewMode).not.toHaveBeenCalled();
         });
     });
+    describe('Coverage Top-up', () => {
+        it('should return early in fetchNutrientPresets if no hass', async () => {
+            store.hass = undefined as any;
+            await store.fetchNutrientPresets();
+            expect(mockDataServiceInstance.fetchNutrientPresets).not.toHaveBeenCalled();
+        });
+
+        it('should return early in fetchIPMPresets if no hass', async () => {
+            store.hass = undefined as any;
+            await store.fetchIPMPresets();
+            expect(mockDataServiceInstance.fetchIPMPresets).not.toHaveBeenCalled();
+        });
+
+        it('should return early in toggleEnvGraph if no history store', () => {
+            (store as any).history = undefined;
+            store.toggleEnvGraph('temp');
+            // No error, return
+        });
+
+        it('should handle handleDrop early returns', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null); // No device
+            await store.handleDrop(1, 1, null, {} as any);
+            // No calls
+            expect(mockDataServiceInstance.swapPlants).not.toHaveBeenCalled();
+            expect(mockDataServiceInstance.updatePlant).not.toHaveBeenCalled();
+
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1'); // Device exists
+            await store.handleDrop(1, 1, null, null); // No source
+            expect(mockDataServiceInstance.swapPlants).not.toHaveBeenCalled();
+        });
+
+        it('should handle analyzeGrowspace parsing logic', async () => {
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            // 1. String
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue('Advice string');
+            await store.analyzeGrowspace('q', false);
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Advice string' })
+            }));
+
+            // 2. Object with response key
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ response: 'Nested advice' });
+            await store.analyzeGrowspace('q', false);
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: 'Nested advice' })
+            }));
+
+            // 3. Object without response key
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ other: 'data' });
+            await store.analyzeGrowspace('q', false);
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"other":"data"}' })
+            }));
+
+            // 4. Object with null response - JSON stringify null is 'null'
+            mockDataServiceInstance.askGrowAdvice.mockResolvedValue({ response: null });
+            await store.analyzeGrowspace('q', false);
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ response: '{"response":null}' })
+            }));
+        });
+
+        it('should return early in _refreshGrowspaceData if hass missing', async () => {
+            store.hass = undefined as any;
+            await store.refreshData(); // calls _refreshGrowspaceData
+            expect(mockDataServiceInstance.fetchGrowspaceData).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Deep Branch Coverage', () => {
+        it('should handle selectAllPlants with missing device data', () => {
+            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd2' }]); // mismatch
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.selectAllPlants();
+            expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
+        });
+
+        it('should handle selectAllPlants with undefined plants array', () => {
+            const device = { device_id: 'd1', plants: undefined };
+            (dataStore.$devices.get as any).mockReturnValue([device]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.selectAllPlants();
+            expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
+        });
+
+        it('should updatePlantFromDialog without clearing selection if not in edit mode', async () => {
+            const dialogState = {
+                plant: { entity_id: 's.p1', attributes: { plant_id: 'p1' } },
+                editedAttributes: {},
+                selectedPlantIds: ['p1']
+            };
+            (uiStore.$isEditMode.get as any).mockReturnValue(false); // Key: Not in edit mode
+
+            await store.updatePlantFromDialog(dialogState as any);
+
+            expect(mockDataServiceInstance.updatePlant).toHaveBeenCalled();
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+            // Should NOT call these:
+            expect(uiStore.clearPlantSelection).not.toHaveBeenCalled();
+            expect(uiStore.setEditMode).not.toHaveBeenCalled();
+        });
+
+        it('should handle fetchStrainLibraryImpl early return if no hass', async () => {
+            store.hass = undefined as any;
+            await store.fetchStrainLibrary();
+            expect(mockDataServiceInstance.fetchStrainLibrary).not.toHaveBeenCalled();
+        });
+
+        it('should handle fetchStrainLibraryImpl invalid cache type', async () => {
+            // Cache exists but is not array data
+            const cache = { version: 2, timestamp: Date.now(), data: "not-array" };
+            localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
+
+            await store.fetchStrainLibrary(); // Should fall through to fetch
+
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should handle fetchIPMPresets API returning null/undefined', async () => {
+            mockDataServiceInstance.fetchIPMPresets.mockResolvedValue(null);
+            await store.fetchIPMPresets();
+            expect(dataStore.setIPMPresets).not.toHaveBeenCalled();
+        });
+
+        it('should handle fetchNutrientPresets API returning null/undefined', async () => {
+            mockDataServiceInstance.fetchNutrientPresets.mockResolvedValue(null);
+            await store.fetchNutrientPresets();
+            expect(dataStore.setNutrientPresets).not.toHaveBeenCalled();
+        });
+    });
 });

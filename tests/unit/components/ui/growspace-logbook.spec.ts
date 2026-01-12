@@ -396,7 +396,7 @@ describe('GrowspaceLogbook', () => {
 
         (element as any)._events = events;
         element.growspaceId = 'gs1';
-        
+
         // Set filter to notes
         (element as any)._activeFilter = 'notes';
         await element.updateComplete;
@@ -404,6 +404,73 @@ describe('GrowspaceLogbook', () => {
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(1);
         expect(cards?.[0].textContent).toContain('Plant Note');
+    });
+    describe('UI Rendering Detail Coverage', () => {
+        it('should hide probability for training events', async () => {
+            const trainingEvent = { ...mockEvents[0], category: 'training', severity: 0.9, sensor_type: 'topping' };
+            (element as any)._events = [trainingEvent];
+            await element.updateComplete;
+
+            const probDiv = element.shadowRoot?.querySelector('.event-probability');
+            expect(probDiv).toBeNull();
+        });
+
+        it('should hide probability for low severity non-alert events', async () => {
+            const lowSeverityEvent = { ...mockEvents[0], category: 'environment', severity: 0.4, sensor_type: 'temperature' };
+            (element as any)._events = [lowSeverityEvent];
+            await element.updateComplete;
+
+            const probDiv = element.shadowRoot?.querySelector('.event-probability');
+            expect(probDiv).toBeNull();
+        });
+
+        it('should show probability for high severity non-alert events', async () => {
+            const highSeverityEvent = { ...mockEvents[0], category: 'environment', severity: 0.8, sensor_type: 'temperature' };
+            (element as any)._events = [highSeverityEvent];
+            await element.updateComplete;
+
+            const probDiv = element.shadowRoot?.querySelector('.event-probability');
+            expect(probDiv).not.toBeNull();
+            expect(probDiv?.textContent).toContain('80%');
+        });
+
+        it('should hide duration pill if duration is 0', async () => {
+            const zeroDurationEvent = { ...mockEvents[0], duration_sec: 0 };
+            (element as any)._events = [zeroDurationEvent];
+            await element.updateComplete;
+
+            const durationDiv = element.shadowRoot?.querySelector('.event-duration');
+            expect(durationDiv).toBeNull();
+        });
+
+        it('should show duration pill if duration > 0', async () => {
+            const durationEvent = { ...mockEvents[0], duration_sec: 125 };
+            (element as any)._events = [durationEvent];
+            await element.updateComplete;
+
+            const durationDiv = element.shadowRoot?.querySelector('.event-duration');
+            expect(durationDiv).not.toBeNull();
+            expect(durationDiv?.textContent).toContain('2m 5s');
+        });
+
+        it('should handle image pluralization correctly', async () => {
+            // 1 Image
+            const singleImageEvent = { ...mockEvents[0], category: 'note', notes: 'test', images: ['img1.jpg'] };
+            (element as any)._events = [singleImageEvent];
+            await element.updateComplete;
+
+            let cardText = element.shadowRoot?.querySelector('.event-card')?.textContent;
+            expect(cardText).toContain('1 Image attached');
+            expect(cardText).not.toContain('Images attached');
+
+            // 2 Images
+            const multiImageEvent = { ...singleImageEvent, images: ['img1.jpg', 'img2.jpg'] };
+            (element as any)._events = [multiImageEvent];
+            await element.updateComplete;
+
+            cardText = element.shadowRoot?.querySelector('.event-card')?.textContent;
+            expect(cardText).toContain('2 Images attached');
+        });
     });
 });
 

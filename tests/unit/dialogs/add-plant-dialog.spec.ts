@@ -50,31 +50,31 @@ describe('AddPlantDialog', () => {
 
     it('should populate phenotype suggestions when strain is selected', async () => {
         const select = element.shadowRoot?.querySelector('md3-select') as any;
-        
+
         // Simulate strain selection
         select.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
         await element.updateComplete;
 
         const phenotypeInput = element.shadowRoot?.querySelector('md3-text-input') as any;
         expect(phenotypeInput).toBeTruthy();
-        
+
         // Should contain phenotypes for Blue Dream, sorted
         expect(phenotypeInput.suggestions).toEqual(['Indica Pheno', 'Sativa Dom']);
-        
+
         // Change strain to OG Kush (no phenotypes)
         select.dispatchEvent(new CustomEvent('change', { detail: 'OG Kush' }));
         await element.updateComplete;
-        
+
         expect(phenotypeInput.suggestions).toEqual([]);
     });
 
     it('should set initial state', async () => {
         element.setInitialState(2, 3);
         await element.updateComplete;
-        
+
         const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0] as any;
         const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1] as any;
-        
+
         // Inputs display 1-based index
         expect(rowInput.value).toBe(3);
         expect(colInput.value).toBe(4);
@@ -84,7 +84,7 @@ describe('AddPlantDialog', () => {
         it('should show veg/flower inputs for standard growspace', async () => {
             element.growspaceName = 'Main Tent';
             await element.updateComplete;
-            
+
             const dateInputs = element.shadowRoot?.querySelectorAll('md3-date-input');
             expect(dateInputs?.length).toBe(3);
             expect(dateInputs?.[0].getAttribute('label')).toBe('Seedling Start');
@@ -93,7 +93,7 @@ describe('AddPlantDialog', () => {
         it('should show mother input for mother growspace and handle change', async () => {
             element.growspaceName = 'Mother Tent';
             await element.updateComplete;
-            
+
             const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
             expect(dateInput?.getAttribute('label')).toBe('Mother Start');
 
@@ -104,7 +104,7 @@ describe('AddPlantDialog', () => {
         it('should show cure input for cure growspace and handle change', async () => {
             element.growspaceName = 'Cure Area';
             await element.updateComplete;
-            
+
             const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
             expect(dateInput?.getAttribute('label')).toBe('Cure Start');
 
@@ -115,7 +115,7 @@ describe('AddPlantDialog', () => {
         it('should show clone input for clone growspace and handle change', async () => {
             element.growspaceName = 'Clone Dome';
             await element.updateComplete;
-            
+
             const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
             expect(dateInput?.getAttribute('label')).toBe('Clone Start');
 
@@ -126,7 +126,7 @@ describe('AddPlantDialog', () => {
         it('should show dry input for dry growspace and handle change', async () => {
             element.growspaceName = 'Dry Tent';
             await element.updateComplete;
-            
+
             const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
             expect(dateInput?.getAttribute('label')).toBe('Dry Start');
 
@@ -143,9 +143,9 @@ describe('AddPlantDialog', () => {
             // User inputs 5 (means index 4)
             rowInput?.dispatchEvent(new CustomEvent('change', { detail: '5' }));
             colInput?.dispatchEvent(new CustomEvent('change', { detail: '10' }));
-            
+
             await element.updateComplete;
-            
+
             expect(element.row).toBe(4);
             expect(element.col).toBe(9);
         });
@@ -153,20 +153,20 @@ describe('AddPlantDialog', () => {
         it('should dispatch close event on cancel', async () => {
             const closeSpy = vi.fn();
             element.addEventListener('close', closeSpy);
-            
+
             const cancelBtn = element.shadowRoot?.querySelector('.tonal') as HTMLElement;
             cancelBtn.click();
-            
+
             expect(closeSpy).toHaveBeenCalled();
         });
 
         it('should dispatch close event on verify close button', async () => {
             const closeSpy = vi.fn();
             element.addEventListener('close', closeSpy);
-            
+
             const xBtn = element.shadowRoot?.querySelector('.dialog-header .text') as HTMLElement;
             xBtn.click();
-            
+
             expect(closeSpy).toHaveBeenCalled();
         });
     });
@@ -177,7 +177,7 @@ describe('AddPlantDialog', () => {
         // Simulate filling form via events or props
         const strainSelect = element.shadowRoot?.querySelector('md3-select');
         strainSelect?.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
-        
+
         const phenoInput = element.shadowRoot?.querySelector('md3-text-input');
         phenoInput?.dispatchEvent(new CustomEvent('change', { detail: 'Sativa Dom' }));
 
@@ -195,7 +195,7 @@ describe('AddPlantDialog', () => {
 
         expect(submitSpy).toHaveBeenCalled();
         const detail = submitSpy.mock.calls[0][0].detail;
-        
+
         expect(detail).toEqual(expect.objectContaining({
             row: 1,
             col: 1,
@@ -209,5 +209,31 @@ describe('AddPlantDialog', () => {
             dry_start: '',
             cure_start: ''
         }));
+    });
+
+    it('should handle seedling and flower start date changes', async () => {
+        element.growspaceName = 'Tent'; // Standard view
+        await element.updateComplete;
+
+        const seedlingInput = element.shadowRoot?.querySelector('md3-date-input[label="Seedling Start"]');
+        const flowerInput = element.shadowRoot?.querySelector('md3-date-input[label="Flower Start"]');
+
+        expect(seedlingInput).toBeTruthy();
+        expect(flowerInput).toBeTruthy();
+
+        seedlingInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-01-02' }));
+        flowerInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-02-01' }));
+
+        await element.updateComplete;
+
+        // Verify private state update via submission
+        const submitSpy = vi.fn();
+        element.addEventListener('add-plant-submit', submitSpy);
+
+        (element as any)._confirm(); // Trigger confirm to check payload
+
+        const detail = submitSpy.mock.calls[0][0].detail;
+        expect(detail.seedling_start).toBe('2023-01-02');
+        expect(detail.flower_start).toBe('2023-02-01');
     });
 });

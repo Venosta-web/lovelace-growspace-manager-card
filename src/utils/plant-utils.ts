@@ -10,6 +10,7 @@ import {
     PlantStage,
     CropMeta,
     GrowspaceType,
+    GrowspaceTypeEnum,
     GrowspaceDevice,
     StrainEntry,
     PlantDisplayData,
@@ -165,7 +166,12 @@ export class PlantUtils {
     }
 
     /** Growspace types that support dynamic row expansion */
-    private static readonly DYNAMIC_ROW_TYPES: GrowspaceType[] = ['dry', 'cure', 'mother', 'clone'];
+    private static readonly DYNAMIC_ROW_TYPES: GrowspaceType[] = [
+        GrowspaceTypeEnum.DRY,
+        GrowspaceTypeEnum.CURE,
+        GrowspaceTypeEnum.MOTHER,
+        GrowspaceTypeEnum.CLONE
+    ];
 
     static calculateEffectiveRows(device: GrowspaceDevice): number {
         const { type, plants, plants_per_row, rows } = device;

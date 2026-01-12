@@ -77,6 +77,254 @@ var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
 var mdiWhiteBalanceSunny = "M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13";
 
+var MetricKey;
+(function (MetricKey) {
+    MetricKey["TEMPERATURE"] = "temperature";
+    MetricKey["HUMIDITY"] = "humidity";
+    MetricKey["VPD"] = "vpd";
+    MetricKey["CO2"] = "co2";
+    MetricKey["SOIL_MOISTURE"] = "soil_moisture";
+    MetricKey["IRRIGATION"] = "irrigation";
+    MetricKey["DRAIN"] = "drain";
+    MetricKey["OPTIMAL"] = "optimal";
+    MetricKey["LIGHT"] = "light";
+    MetricKey["EXHAUST"] = "exhaust";
+    MetricKey["CIRCULATION_FAN"] = "circulation_fan";
+    MetricKey["HUMIDIFIER"] = "humidifier";
+    MetricKey["DEHUMIDIFIER"] = "dehumidifier";
+    MetricKey["CALCULATED_VPD"] = "calculated_vpd";
+    MetricKey["AIR_EXCHANGE"] = "air_exchange";
+})(MetricKey || (MetricKey = {}));
+const METRIC_SORT_ORDER = [
+    MetricKey.TEMPERATURE,
+    MetricKey.HUMIDITY,
+    MetricKey.VPD,
+    MetricKey.CO2,
+    MetricKey.SOIL_MOISTURE,
+    MetricKey.IRRIGATION,
+    MetricKey.DRAIN,
+    MetricKey.OPTIMAL,
+    MetricKey.LIGHT,
+    MetricKey.EXHAUST,
+    MetricKey.CIRCULATION_FAN,
+    MetricKey.HUMIDIFIER,
+    MetricKey.DEHUMIDIFIER,
+];
+var ChartType;
+(function (ChartType) {
+    ChartType["LINE"] = "line";
+    ChartType["STEP"] = "step";
+})(ChartType || (ChartType = {}));
+const METRIC_CONFIG = {
+    [MetricKey.TEMPERATURE]: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+    [MetricKey.HUMIDITY]: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
+    [MetricKey.VPD]: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
+    [MetricKey.CALCULATED_VPD]: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
+    [MetricKey.CO2]: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
+    [MetricKey.AIR_EXCHANGE]: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
+    [MetricKey.SOIL_MOISTURE]: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
+    [MetricKey.LIGHT]: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: ChartType.STEP },
+    [MetricKey.IRRIGATION]: {
+        color: '#03a9f4',
+        title: 'Irrigation',
+        unit: 'state',
+        icon: mdiWater,
+        type: ChartType.STEP,
+    },
+    [MetricKey.DRAIN]: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: ChartType.STEP },
+    [MetricKey.EXHAUST]: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
+    [MetricKey.CIRCULATION_FAN]: {
+        color: '#243491',
+        title: 'Circulation Fan',
+        unit: '',
+        icon: mdiFan,
+    },
+    [MetricKey.HUMIDIFIER]: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    [MetricKey.DEHUMIDIFIER]: {
+        color: '#009688',
+        title: 'Dehumidifier',
+        unit: 'state',
+        icon: mdiAirHumidifierOff,
+        type: ChartType.STEP,
+    },
+    [MetricKey.OPTIMAL]: {
+        color: '#4caf50',
+        title: 'Optimal Conditions',
+        unit: 'state',
+        icon: mdiRadioboxMarked,
+        type: ChartType.STEP,
+    },
+};
+var StatusLevel;
+(function (StatusLevel) {
+    StatusLevel["OPTIMAL"] = "optimal";
+    StatusLevel["WARNING"] = "warning";
+    StatusLevel["DANGER"] = "danger";
+})(StatusLevel || (StatusLevel = {}));
+const STATUS_COLORS = {
+    [StatusLevel.OPTIMAL]: '#4caf50',
+    [StatusLevel.WARNING]: '#ff9800',
+    [StatusLevel.DANGER]: '#f44336',
+};
+var ScrollDirection;
+(function (ScrollDirection) {
+    ScrollDirection["LEFT"] = "left";
+    ScrollDirection["RIGHT"] = "right";
+})(ScrollDirection || (ScrollDirection = {}));
+var ConfigTab;
+(function (ConfigTab) {
+    ConfigTab["ADD_GROWSPACE"] = "add_growspace";
+    ConfigTab["EDIT_GROWSPACE"] = "edit_growspace";
+    ConfigTab["ENVIRONMENT"] = "environment";
+    ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
+})(ConfigTab || (ConfigTab = {}));
+var ViewMode;
+(function (ViewMode) {
+    ViewMode["STANDARD"] = "standard";
+    ViewMode["COMPACT"] = "compact";
+    ViewMode["HEADER"] = "header";
+})(ViewMode || (ViewMode = {}));
+var GridOverlayMode;
+(function (GridOverlayMode) {
+    GridOverlayMode["NONE"] = "none";
+    GridOverlayMode["TEMPERATURE"] = "temperature";
+    GridOverlayMode["HUMIDITY"] = "humidity";
+    GridOverlayMode["VPD"] = "vpd";
+})(GridOverlayMode || (GridOverlayMode = {}));
+var GrowspaceType;
+(function (GrowspaceType) {
+    GrowspaceType["NORMAL"] = "normal";
+    GrowspaceType["MOTHER"] = "mother";
+    GrowspaceType["CLONE"] = "clone";
+    GrowspaceType["DRY"] = "dry";
+    GrowspaceType["CURE"] = "cure";
+    GrowspaceType["VEG"] = "veg";
+})(GrowspaceType || (GrowspaceType = {}));
+const STORAGE_KEYS = {
+    HISTORY_PREFIX: 'growspace_history_',
+};
+const DEFAULT_METRIC_CONFIG = {
+    color: '#fff',
+    title: 'Unknown',
+    unit: '',
+    icon: mdiMagnify,
+    type: ChartType.LINE,
+};
+const SENSOR_CHART_DEFAULTS = {
+    exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
+    humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
+    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' },
+};
+/**
+ * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
+ * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
+ */
+const METRIC_ENTITY_KEYS = {
+    [MetricKey.TEMPERATURE]: { primary: 'temperature_sensor' },
+    [MetricKey.HUMIDITY]: { primary: 'humidity_sensor' },
+    [MetricKey.VPD]: { primary: 'vpd_sensor' },
+    [MetricKey.CO2]: { primary: 'co2_sensor' },
+    [MetricKey.EXHAUST]: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
+    [MetricKey.HUMIDIFIER]: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
+    [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifier_entity' },
+    [MetricKey.CIRCULATION_FAN]: { primary: 'circulation_fan_entity' },
+    [MetricKey.LIGHT]: { primary: 'light_sensor' },
+    [MetricKey.SOIL_MOISTURE]: { primary: 'soil_moisture_sensor' },
+    [MetricKey.IRRIGATION]: { primary: 'irrigation_pump_entity', source: 'irrigation' },
+    [MetricKey.DRAIN]: { primary: 'drain_pump_entity', source: 'irrigation' },
+};
+const DOMAIN = 'growspace_manager';
+const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
+const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
+const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
+const SERVICES = {
+    GET_STRAIN_LIBRARY: 'get_strain_library',
+    ADD_PLANT: 'add_plant',
+    UPDATE_PLANT: 'update_plant',
+    REMOVE_PLANT: 'remove_plant',
+    HARVEST_PLANT: 'harvest_plant',
+    TAKE_CLONE: 'take_clone',
+    SWITCH_PLANTS: 'switch_plants',
+    MOVE_CLONE: 'move_clone',
+    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
+    ADD_IRRIGATION_TIME: 'add_irrigation_time',
+    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
+    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
+    ADD_DRAIN_TIME: 'add_drain_time',
+    REMOVE_DRAIN_TIME: 'remove_drain_time',
+    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
+    ADD_STRAIN: 'add_strain',
+    REMOVE_STRAIN: 'remove_strain',
+    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
+    ADD_GROWSPACE: 'add_growspace',
+    UPDATE_GROWSPACE: 'update_growspace',
+    REMOVE_GROWSPACE: 'remove_growspace',
+    CONFIGURE_ENVIRONMENT: 'configure_environment',
+    ASK_GROW_ADVICE: 'ask_grow_advice',
+    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
+    STRAIN_RECOMMENDATION: 'strain_recommendation',
+    ADD_PLANTS: 'add_plants',
+    WATER_PLANT: 'water_plant',
+    WATER_GROWSPACE: 'water_growspace',
+    SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
+    REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
+    SAVE_IPM_PRESET: 'save_ipm_preset',
+    REMOVE_IPM_PRESET: 'remove_ipm_preset',
+    APPLY_IPM: 'apply_ipm',
+};
+/**
+ * Default configuration values to replace magic numbers throughout the codebase.
+ */
+const DEFAULTS = {
+    /** Default number of plant rows in a growspace */
+    ROWS: 4,
+    /** Default number of plants per row */
+    PLANTS_PER_ROW: 4,
+    /** Default view mode for the card */
+    INITIAL_VIEW_MODE: 'standard',
+    /** VPD thresholds */
+    VPD: {
+        TARGET_MIN: 0.8,
+        TARGET_MAX: 1.2,
+        DANGER_MIN: 0.4,
+        DANGER_MAX: 1.6,
+    },
+    /** History chart defaults */
+    CHART: {
+        HOURS_RANGE: 24,
+        REFRESH_INTERVAL_MS: 60000,
+    },
+};
+var EntityState;
+(function (EntityState) {
+    EntityState["ON"] = "on";
+    EntityState["OFF"] = "off";
+    EntityState["UNAVAILABLE"] = "unavailable";
+    EntityState["UNKNOWN"] = "unknown";
+    EntityState["TRUE"] = "true";
+    EntityState["FALSE"] = "false";
+    EntityState["ACTIVE"] = "active";
+    EntityState["IDLE"] = "idle";
+})(EntityState || (EntityState = {}));
+const BINARY_ON_STATES = [
+    EntityState.ON,
+    EntityState.TRUE,
+    '1',
+    'heating',
+    'drying',
+    EntityState.ACTIVE,
+];
+[
+    EntityState.OFF,
+    EntityState.FALSE,
+    '0',
+    EntityState.IDLE,
+];
+
 // --- Enums ---
 var PlantStage;
 (function (PlantStage) {
@@ -88,6 +336,16 @@ var PlantStage;
     PlantStage["DRY"] = "dry";
     PlantStage["CURE"] = "cure";
 })(PlantStage || (PlantStage = {}));
+var DehumidifierStage;
+(function (DehumidifierStage) {
+    DehumidifierStage["SEEDLING"] = "seedling";
+    DehumidifierStage["VEG"] = "veg";
+    DehumidifierStage["EARLY_FLOWER"] = "early_flower";
+    DehumidifierStage["MID_FLOWER"] = "mid_flower";
+    DehumidifierStage["LATE_FLOWER"] = "late_flower";
+    DehumidifierStage["DRYING"] = "drying";
+    DehumidifierStage["CURING"] = "curing";
+})(DehumidifierStage || (DehumidifierStage = {}));
 // --- Configuration Constants ---
 const STAGE_CONFIG = {
     [PlantStage.SEEDLING]: { icon: mdiSprout, title: 'Seedling', colorVar: '--state-seedling-color' },
@@ -111,7 +369,7 @@ var TrainingTechnique;
 // --- Utils ---
 function createGrowspaceDevice(params) {
     return {
-        type: 'normal',
+        type: GrowspaceType.NORMAL,
         rows: 3,
         plants_per_row: 3,
         plants: [],
@@ -634,7 +892,12 @@ Object.defineProperty(PlantUtils, "DYNAMIC_ROW_TYPES", {
     enumerable: true,
     configurable: true,
     writable: true,
-    value: ['dry', 'cure', 'mother', 'clone']
+    value: [
+        GrowspaceType.DRY,
+        GrowspaceType.CURE,
+        GrowspaceType.MOTHER,
+        GrowspaceType.CLONE
+    ]
 });
 /** Date fields used for plant lifecycle */
 Object.defineProperty(PlantUtils, "DATE_FIELDS", {
@@ -751,158 +1014,6 @@ class GrowspaceAdapter {
         return [];
     }
 }
-
-const METRIC_SORT_ORDER = [
-    'temperature',
-    'humidity',
-    'vpd',
-    'co2',
-    'soil_moisture',
-    'irrigation',
-    'drain',
-    'optimal',
-    'light',
-    'exhaust',
-    'circulation_fan',
-    'humidifier',
-    'dehumidifier',
-];
-const METRIC_CONFIG = {
-    temperature: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
-    humidity: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
-    vpd: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-    calculated_vpd: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
-    co2: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-    air_exchange: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
-    soil_moisture: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-    light: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: 'step' },
-    irrigation: {
-        color: '#03a9f4',
-        title: 'Irrigation',
-        unit: 'state',
-        icon: mdiWater,
-        type: 'step',
-    },
-    drain: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: 'step' },
-    exhaust: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
-    circulation_fan: {
-        color: '#243491',
-        title: 'Circulation Fan',
-        unit: '',
-        icon: mdiFan,
-    },
-    humidifier: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
-    dehumidifier: {
-        color: '#009688',
-        title: 'Dehumidifier',
-        unit: 'state',
-        icon: mdiAirHumidifierOff,
-        type: 'step',
-    },
-    optimal: {
-        color: '#4caf50',
-        title: 'Optimal Conditions',
-        unit: 'state',
-        icon: mdiRadioboxMarked,
-        type: 'step',
-    },
-};
-const DEFAULT_METRIC_CONFIG = {
-    color: '#fff',
-    title: 'Unknown',
-    unit: '',
-    icon: mdiMagnify,
-    type: 'line',
-};
-const SENSOR_CHART_DEFAULTS = {
-    exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
-    humidifier: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    circulation_fan: { min: 0, max: 10, disablePadding: true, unit: 'state' },
-    optimizer: { min: 0, max: 1, disablePadding: true, binary: true, unit: 'state' },
-};
-/**
- * Maps metric keys to their entity attribute keys in GrowspaceDevice.environment_attributes
- * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
- */
-const METRIC_ENTITY_KEYS = {
-    temperature: { primary: 'temperature_sensor' },
-    humidity: { primary: 'humidity_sensor' },
-    vpd: { primary: 'vpd_sensor' },
-    co2: { primary: 'co2_sensor' },
-    exhaust: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
-    humidifier: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
-    dehumidifier: { primary: 'dehumidifier_entity' },
-    circulation_fan: { primary: 'circulation_fan_entity' },
-    light: { primary: 'light_sensor' },
-    soil_moisture: { primary: 'soil_moisture_sensor' },
-    irrigation: { primary: 'irrigation_pump_entity', source: 'irrigation' },
-    drain: { primary: 'drain_pump_entity', source: 'irrigation' },
-};
-const DOMAIN = 'growspace_manager';
-const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
-const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
-const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
-const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
-const SERVICES = {
-    GET_STRAIN_LIBRARY: 'get_strain_library',
-    ADD_PLANT: 'add_plant',
-    UPDATE_PLANT: 'update_plant',
-    REMOVE_PLANT: 'remove_plant',
-    HARVEST_PLANT: 'harvest_plant',
-    TAKE_CLONE: 'take_clone',
-    SWITCH_PLANTS: 'switch_plants',
-    MOVE_CLONE: 'move_clone',
-    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
-    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
-    ADD_IRRIGATION_TIME: 'add_irrigation_time',
-    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
-    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
-    ADD_DRAIN_TIME: 'add_drain_time',
-    REMOVE_DRAIN_TIME: 'remove_drain_time',
-    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
-    ADD_STRAIN: 'add_strain',
-    REMOVE_STRAIN: 'remove_strain',
-    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
-    ADD_GROWSPACE: 'add_growspace',
-    UPDATE_GROWSPACE: 'update_growspace',
-    REMOVE_GROWSPACE: 'remove_growspace',
-    CONFIGURE_ENVIRONMENT: 'configure_environment',
-    ASK_GROW_ADVICE: 'ask_grow_advice',
-    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
-    STRAIN_RECOMMENDATION: 'strain_recommendation',
-    ADD_PLANTS: 'add_plants',
-    WATER_PLANT: 'water_plant',
-    WATER_GROWSPACE: 'water_growspace',
-    SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
-    REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
-    SAVE_IPM_PRESET: 'save_ipm_preset',
-    REMOVE_IPM_PRESET: 'remove_ipm_preset',
-    APPLY_IPM: 'apply_ipm',
-};
-/**
- * Default configuration values to replace magic numbers throughout the codebase.
- */
-const DEFAULTS = {
-    /** Default number of plant rows in a growspace */
-    ROWS: 4,
-    /** Default number of plants per row */
-    PLANTS_PER_ROW: 4,
-    /** Default view mode for the card */
-    INITIAL_VIEW_MODE: 'standard',
-    /** VPD thresholds */
-    VPD: {
-        TARGET_MIN: 0.8,
-        TARGET_MAX: 1.2,
-        DANGER_MIN: 0.4,
-        DANGER_MAX: 1.6,
-    },
-    /** History chart defaults */
-    CHART: {
-        HOURS_RANGE: 24,
-        REFRESH_INTERVAL_MS: 60000,
-    },
-};
 
 var util;
 (function (util) {
@@ -6534,26 +6645,27 @@ class GraphDataTransformer {
         return dataPoints;
     }
     static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
-        if (metricKey === 'dehumidifier') {
+        if (metricKey === MetricKey.DEHUMIDIFIER) {
             if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
                 const state = overviewEntity.attributes.dehumidifier_state;
-                const val = state === 'on' || state === 'true' || state === '1' ? 1 : 0;
+                const val = BINARY_ON_STATES.includes(state) ? 1 : 0;
                 return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
             }
         }
-        else if (metricKey === 'exhaust' || metricKey === 'humidifier') {
-            const val = metricKey === 'exhaust'
+        else if (metricKey === MetricKey.EXHAUST || metricKey === MetricKey.HUMIDIFIER) {
+            const val = metricKey === MetricKey.EXHAUST
                 ? overviewEntity?.attributes?.exhaust_value
                 : overviewEntity?.attributes?.humidifier_value;
             if (val !== undefined) {
                 let numVal = parseFloat(val);
                 let meta;
                 if (isNaN(numVal)) {
-                    if (String(val).toLowerCase() === 'on' || String(val).toLowerCase() === 'active') {
+                    const lowerVal = String(val).toLowerCase();
+                    if (lowerVal === EntityState.ON || lowerVal === EntityState.ACTIVE) {
                         numVal = 1;
                         meta = { state: 'ON' };
                     }
-                    else if (String(val).toLowerCase() === 'off' || String(val).toLowerCase() === 'idle') {
+                    else if (lowerVal === EntityState.OFF || lowerVal === EntityState.IDLE) {
                         numVal = 0;
                         meta = { state: 'OFF' };
                     }
@@ -6571,16 +6683,16 @@ class GraphDataTransformer {
     }
     static normalizeSensorValue(ent, key) {
         const s = ent.state;
-        if (s === 'unavailable' || s === 'unknown')
+        if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
             return undefined;
-        if (key === 'dehumidifier') {
-            return s === 'on' || s === 'true' || s === '1' || s === 'heating' || s === 'drying' ? 1 : 0;
+        if (key === MetricKey.DEHUMIDIFIER) {
+            return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
         }
-        if (key === 'light') {
+        if (key === MetricKey.LIGHT) {
             // Text based check
-            if (s === 'on' || s === 'true')
+            if (s === EntityState.ON || s === EntityState.TRUE)
                 return 1;
-            if (s === 'off' || s === 'false')
+            if (s === EntityState.OFF || s === EntityState.FALSE)
                 return 0;
             // Numeric check for dimmers/percentages (0 = off, >0 = on)
             const val = parseFloat(s);
@@ -6676,7 +6788,7 @@ class GraphDataTransformer {
             _GrowspaceEnvChart_title_accessor_storage.set(this, (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _title_initializers, '')));
             _GrowspaceEnvChart_icon_accessor_storage.set(this, (__runInitializers(this, _title_extraInitializers), __runInitializers(this, _icon_initializers, mdiMagnify)));
             _GrowspaceEnvChart_range_accessor_storage.set(this, (__runInitializers(this, _icon_extraInitializers), __runInitializers(this, _range_initializers, '24h')));
-            _GrowspaceEnvChart_type_accessor_storage.set(this, (__runInitializers(this, _range_extraInitializers), __runInitializers(this, _type_initializers, 'line')));
+            _GrowspaceEnvChart_type_accessor_storage.set(this, (__runInitializers(this, _range_extraInitializers), __runInitializers(this, _type_initializers, ChartType.LINE)));
             _GrowspaceEnvChart_metrics_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _metrics_initializers, [])));
             _GrowspaceEnvChart_isCombined_accessor_storage.set(this, (__runInitializers(this, _metrics_extraInitializers), __runInitializers(this, _isCombined_initializers, false)));
             _GrowspaceEnvChart_metricConfig_accessor_storage.set(this, (__runInitializers(this, _isCombined_extraInitializers), __runInitializers(this, _metricConfig_initializers, {})));
@@ -6780,7 +6892,7 @@ class GraphDataTransformer {
         _scrollChips(direction) {
             const container = this._chipsContainerRef.value;
             if (container) {
-                container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
             }
         }
         _checkScroll() {
@@ -6888,18 +7000,13 @@ class GraphDataTransformer {
         _getVpdStatusForValue(value, thresholds, isDay) {
             const t = isDay ? thresholds.day : thresholds.night;
             if (value < t.dangerMin || value > t.dangerMax)
-                return 'danger';
+                return StatusLevel.DANGER;
             if (value < t.targetMin || value > t.targetMax)
-                return 'warning';
-            return 'optimal';
+                return StatusLevel.WARNING;
+            return StatusLevel.OPTIMAL;
         }
         _getVpdStatusColor(status) {
-            switch (status) {
-                case 'optimal': return '#4caf50';
-                case 'warning': return '#ff9800';
-                case 'danger': return '#f44336';
-                default: return '#9c27b0';
-            }
+            return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
         }
         _generateVpdSegments(points, thresholds, lightHistory) {
             if (points.length < 2)
@@ -6940,8 +7047,8 @@ class GraphDataTransformer {
             const nowMs = now.getTime();
             // Prepare Light History for VPD calculation if needed
             let lightHistoryPoints = [];
-            if (metricKeys.includes('vpd') && this.sensorHistory['light']) {
-                lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory['light'], 'light', startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
+            if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
+                lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT, startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
                 nowMs);
             }
             metricKeys.forEach((key) => {
@@ -6962,7 +7069,7 @@ class GraphDataTransformer {
                     initialState = h;
                 }
                 if (initialState) {
-                    const val = key === 'optimal' || initialState.state === 'on' ? (initialState.state === 'on' ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                    const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
                     if (val !== undefined)
                         dataPoints.push({ time: startTimeMs, value: val });
                 }
@@ -6973,8 +7080,8 @@ class GraphDataTransformer {
                     if (t <= startTimeMs)
                         continue;
                     let val;
-                    if (key === 'optimal') {
-                        val = h.state === 'on' ? 1 : 0;
+                    if (key === MetricKey.OPTIMAL) {
+                        val = h.state === EntityState.ON ? 1 : 0;
                         if (h.attributes?.reasons)
                             dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
                         else
@@ -7006,12 +7113,12 @@ class GraphDataTransformer {
                         sum += val;
                     }
                     const avg = sum / dataPoints.length;
-                    const isStep = config.type === 'step' || key === 'optimal' || key === 'dehumidifier' || key === 'light' || key === 'irrigation' || key === 'drain';
-                    if (key === 'exhaust' || key === 'humidifier' || key === 'circulation_fan') {
+                    const isStep = config.type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
+                    if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) {
                         min = 0;
                         max = 10;
                     }
-                    else if (key === 'dehumidifier') {
+                    else if (key === MetricKey.DEHUMIDIFIER) {
                         min = 0;
                         max = 1;
                     }
@@ -7028,12 +7135,12 @@ class GraphDataTransformer {
                         min, max,
                         startTime: startTimeMs,
                         endTime: startTimeMs + durationMillis,
-                        type: isStep ? 'step' : 'line',
+                        type: isStep ? ChartType.STEP : ChartType.LINE,
                         timeRange: this.range
                     });
                     let vpdSegments;
                     let seriesColor = config.color || '#fff';
-                    if (key === 'vpd') {
+                    if (key === MetricKey.VPD) {
                         const thresholds = this._getVpdThresholds();
                         const vpdPoints = dataPoints.map((p) => ({
                             x: ((p.time - startTimeMs) / durationMillis) * width,
@@ -7208,14 +7315,14 @@ class GraphDataTransformer {
                 }
                 let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
                 const defaults = SENSOR_CHART_DEFAULTS[s.id];
-                const isBinary = defaults?.binary || s.id === 'optimal' || s.id === 'dehumidifier' || s.unit === 'state';
+                const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
                 if (isBinary) {
-                    if (s.id === 'optimal')
+                    if (s.id === MetricKey.OPTIMAL)
                         valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
                     else
                         valStr = closest.value === 1 ? 'ON' : 'OFF';
                 }
-                else if ((s.id === 'exhaust' || s.id === 'humidifier') && closest.meta?.state) {
+                else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
                     valStr = closest.meta.state;
                 }
                 return { title: s.title, value: valStr, color: s.color };
@@ -7234,14 +7341,14 @@ class GraphDataTransformer {
             if (series.points.length > 0) {
                 const last = series.points[series.points.length - 1];
                 const defaults = SENSOR_CHART_DEFAULTS[series.id];
-                const isBinary = defaults?.binary || series.id === 'optimal' || series.id === 'dehumidifier' || series.id === 'light' || series.id === 'irrigation' || series.id === 'drain';
+                const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
                 if (isBinary) {
-                    if (series.id === 'optimal')
+                    if (series.id === MetricKey.OPTIMAL)
                         valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
                     else
                         valStr = last.value === 1 ? 'ON' : 'OFF';
                 }
-                else if ((series.id === 'exhaust' || series.id === 'humidifier') && last.meta?.state) {
+                else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
                     valStr = last.meta.state;
                 }
                 else {
@@ -7266,7 +7373,7 @@ class GraphDataTransformer {
             return x `
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft ? x `<div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips('left'); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
+          ${this._canScrollLeft ? x `<div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips(ScrollDirection.LEFT); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
           
           <div class="chips-scroll-container" ${n$2(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
             ${seriesList.map(s => x `
@@ -7279,7 +7386,7 @@ class GraphDataTransformer {
             `)}
           </div>
 
-          ${this._canScrollRight ? x `<div class="scroll-nav right" @click=${(e) => { e.stopPropagation(); this._scrollChips('right'); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
+          ${this._canScrollRight ? x `<div class="scroll-nav right" @click=${(e) => { e.stopPropagation(); this._scrollChips(ScrollDirection.RIGHT); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
            <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))} title="Unlink Graphs"></ha-icon-button>
@@ -13614,7 +13721,7 @@ class GrowspaceLogbookController {
             }
         }
         // Provide initial state setting from parent
-        setInitialState(currentTab = 'environment', environmentData) {
+        setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
             this.currentTab = currentTab;
             if (environmentData) {
                 this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
@@ -13775,29 +13882,29 @@ class GrowspaceLogbookController {
           <!-- Tabs -->
           <div class="config-tabs">
             <div
-              class="config-tab ${this.currentTab === 'add_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('add_growspace')}
+              class="config-tab ${this.currentTab === ConfigTab.ADD_GROWSPACE ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.ADD_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
               Add Growspace
             </div>
             <div
-              class="config-tab ${this.currentTab === 'edit_growspace' ? 'active' : ''}"
-              @click=${() => this._switchTab('edit_growspace')}
+              class="config-tab ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.EDIT_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
               Edit Growspace
             </div>
             <div
-              class="config-tab ${this.currentTab === 'environment' ? 'active' : ''}"
-              @click=${() => this._switchTab('environment')}
+              class="config-tab ${this.currentTab === ConfigTab.ENVIRONMENT ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.ENVIRONMENT)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
             </div>
             <div
-              class="config-tab ${this.currentTab === 'dehumidifier' ? 'active' : ''}"
-              @click=${() => this._switchTab('dehumidifier')}
+              class="config-tab ${this.currentTab === ConfigTab.DEHUMIDIFIER ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.DEHUMIDIFIER)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
@@ -13806,30 +13913,30 @@ class GrowspaceLogbookController {
 
           <!-- Content -->
           <div class="config-content">
-            ${this.currentTab === 'add_growspace' ? this.renderAddGrowspaceTab() : E}
-            ${this.currentTab === 'edit_growspace' ? this.renderEditGrowspaceTab() : E}
-            ${this.currentTab === 'environment' ? this.renderEnvironmentTab() : E}
-            ${this.currentTab === 'dehumidifier' ? this.renderDehumidifierTab() : E}
+            ${this.currentTab === ConfigTab.ADD_GROWSPACE ? this.renderAddGrowspaceTab() : E}
+            ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? this.renderEditGrowspaceTab() : E}
+            ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : E}
+            ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : E}
           </div>
 
           <!-- Actions -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            ${this.currentTab === 'add_growspace'
+            ${this.currentTab === ConfigTab.ADD_GROWSPACE
                 ? x `
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
                 : E}
-            ${['environment', 'dehumidifier'].includes(this.currentTab)
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
                 ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
                   </button>
                 `
                 : E}
-            ${this.currentTab === 'edit_growspace' && !this._showDeleteConfirm
+            ${this.currentTab === ConfigTab.EDIT_GROWSPACE && !this._showDeleteConfirm
                 ? x `
                   <button
                     class="md3-button tonal error"
@@ -14062,15 +14169,14 @@ class GrowspaceLogbookController {
             ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.target.value))}
             ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.target.value))}
           </div>
-
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.target.value))}
-            ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
+            ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.target.value))}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-             ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.target.value))}
-             ${this._renderEntitySelect('Light Source / Sensor', this.env_light_sensor, ['switch', 'light', 'input_boolean', 'sensor'], null, (e) => (this.env_light_sensor = e.target.value))}
+            ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.target.value))}
+            ${this._renderEntitySelect('Light Source / Sensor', this.env_light_sensor, ['switch', 'light', 'input_boolean', 'sensor'], null, (e) => (this.env_light_sensor = e.target.value))}
           </div>
         </div>
 
@@ -14082,13 +14188,13 @@ class GrowspaceLogbookController {
           </div>
 
           <div class="row-col-grid">
-             ${this._renderEntitySelect('Exhaust Fan / Switch', this.env_exhaust_entity, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_exhaust_entity = e.target.value))}
-             ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
+            ${this._renderEntitySelect('Exhaust Fan / Switch', this.env_exhaust_entity, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_exhaust_entity = e.target.value))}
+            ${this._renderEntitySelect('Circulation Fan / Switch', this.env_circulation_fan, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (e) => (this.env_circulation_fan = e.target.value))}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-             ${this._renderEntitySelect('Humidifier', this.env_humidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_humidifier_entity = e.target.value))}
-             ${this._renderEntitySelect('Dehumidifier', this.env_dehumidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (e) => (this.env_dehumidifier_entity = e.target.value))}
+            ${this._renderEntitySelect('Humidifier', this.env_humidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (e) => (this.env_humidifier_entity = e.target.value))}
+            ${this._renderEntitySelect('Dehumidifier', this.env_dehumidifier_entity, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (e) => (this.env_dehumidifier_entity = e.target.value))}
           </div>
           
           <div class="md3-input-group" style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;">
@@ -14170,13 +14276,13 @@ class GrowspaceLogbookController {
         renderDehumidifierTab() {
             // Define structure for rendering
             const stages = [
-                { id: 'seedling', label: 'Seedling' },
-                { id: 'veg', label: 'Vegetative' },
-                { id: 'early_flower', label: 'Early Flower' },
-                { id: 'mid_flower', label: 'Mid Flower' },
-                { id: 'late_flower', label: 'Late Flower' },
-                { id: 'drying', label: 'Drying' },
-                { id: 'curing', label: 'Curing' }
+                { id: DehumidifierStage.SEEDLING, label: 'Seedling' },
+                { id: DehumidifierStage.VEG, label: 'Vegetative' },
+                { id: DehumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
+                { id: DehumidifierStage.MID_FLOWER, label: 'Mid Flower' },
+                { id: DehumidifierStage.LATE_FLOWER, label: 'Late Flower' },
+                { id: DehumidifierStage.DRYING, label: 'Drying' },
+                { id: DehumidifierStage.CURING, label: 'Curing' }
             ];
             const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
             return x `
@@ -14297,8 +14403,8 @@ class GrowspaceLogbookController {
             _ConfigDialog_hass_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
             _ConfigDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
             _ConfigDialog_devices_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _devices_initializers, [])));
-            _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, 'environment')));
-            _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, 'environment')));
+            _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, ConfigTab.ENVIRONMENT)));
+            _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, ConfigTab.ENVIRONMENT)));
             _ConfigDialog_environmentData_accessor_storage.set(this, (__runInitializers(this, _currentTab_extraInitializers), __runInitializers(this, _environmentData_initializers, void 0)));
             Object.defineProperty(this, "_initialStateApplied", {
                 enumerable: true,
@@ -14330,7 +14436,7 @@ class GrowspaceLogbookController {
             _ConfigDialog_env_soil_moisture_sensor_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_entity_extraInitializers), __runInitializers(this, _env_soil_moisture_sensor_initializers, '')));
             _ConfigDialog_env_control_dehumidifier_accessor_storage.set(this, (__runInitializers(this, _env_soil_moisture_sensor_extraInitializers), __runInitializers(this, _env_control_dehumidifier_initializers, false)));
             _ConfigDialog_env_dehumidifier_thresholds_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, _env_dehumidifier_thresholds_initializers, {})));
-            _ConfigDialog__activeDehumidifierStage_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __activeDehumidifierStage_initializers, 'seedling')));
+            _ConfigDialog__activeDehumidifierStage_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __activeDehumidifierStage_initializers, DehumidifierStage.SEEDLING)));
             _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, __activeDehumidifierStage_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
             __runInitializers(this, __showDeleteConfirm_extraInitializers);
         }
@@ -28100,7 +28206,7 @@ class MetricsUtils {
         if (vpd === undefined || vpd === null) {
             if (envAttrs.vpd_sensor) {
                 const vpdState = hass.states[envAttrs.vpd_sensor];
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
                         vpd = val;
@@ -28121,14 +28227,14 @@ class MetricsUtils {
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 let vpdState = hass.states[calculatedId];
                 // 2. Try UUID-based ID (Old Legacy)
-                if (!vpdState || vpdState.state === 'unknown' || vpdState.state === 'unavailable') {
+                if (!vpdState || vpdState.state === EntityState.UNKNOWN || vpdState.state === EntityState.UNAVAILABLE) {
                     const oldId = `sensor.${device.device_id}_calculated_vpd`;
                     const oldState = hass.states[oldId];
-                    if (oldState && oldState.state !== 'unknown' && oldState.state !== 'unavailable') {
+                    if (oldState && oldState.state !== EntityState.UNKNOWN && oldState.state !== EntityState.UNAVAILABLE) {
                         vpdState = oldState;
                     }
                 }
-                if (vpdState && vpdState.state !== 'unknown' && vpdState.state !== 'unavailable') {
+                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
                         vpd = val;
@@ -28140,20 +28246,20 @@ class MetricsUtils {
         const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
         const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
         const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
-        if ((!vpdStatus || vpdStatus === 'unknown') &&
+        if ((!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
             vpd !== undefined && vpd !== null &&
             vpdTargetMin !== undefined &&
             vpdTargetMax !== undefined &&
             vpdDangerMin !== undefined &&
             vpdDangerMax !== undefined) {
             if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
-                vpdStatus = 'danger';
+                vpdStatus = StatusLevel.DANGER;
             }
             else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
-                vpdStatus = 'warning';
+                vpdStatus = StatusLevel.WARNING;
             }
             else {
-                vpdStatus = 'optimal';
+                vpdStatus = StatusLevel.OPTIMAL;
             }
         }
         const isSpecialGrowspace = isCure || isDry;
@@ -28188,21 +28294,21 @@ class MetricsUtils {
             return { key, icon, value, label, status, tooltip, active, linked, groupIndex };
         };
         const mainChips = [
-            createChipData('temperature', mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
-            createChipData('humidity', mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
-            createChipData('vpd', mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined
+            createChipData(MetricKey.TEMPERATURE, mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
+            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
+            createChipData(MetricKey.VPD, mdiCloudOutline, vpd !== undefined ? `${vpd} kPa` : undefined, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined
                 ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
                 : ''),
-            createChipData('co2', mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
-            createChipData('soil_moisture', mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
+            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
+            createChipData(MetricKey.SOIL_MOISTURE, mdiWaterPercent, this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
                 ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
                 : undefined, 'Moisture'),
-            createChipData('irrigation', mdiWater, nextIrrigation, 'Next'),
-            createChipData('drain', mdiWater, nextDrain, 'Next'),
+            createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, 'Next'),
+            createChipData(MetricKey.DRAIN, mdiWater, nextDrain, 'Next'),
             envEntity
-                ? createChipData('optimal', envEntity.state === 'on' ? mdiRadioboxMarked : mdiRadioboxBlank, envEntity.state === 'on'
+                ? createChipData(MetricKey.OPTIMAL, envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank, envEntity.state === EntityState.ON
                     ? 'Optimal Conditions'
-                    : envEntity.attributes.reasons || 'Not Optimal', undefined, envEntity.state === 'on' ? 'optimal' : 'warning')
+                    : envEntity.attributes.reasons || 'Not Optimal', undefined, envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING)
                 : null,
         ].filter((c) => c !== null);
         // Device Chips
@@ -28230,11 +28336,11 @@ class MetricsUtils {
             : undefined;
         const deviceChips = [
             // Moved light chip here per request
-            createChipData('light', isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
-            createChipData('exhaust', mdiFan, exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
-            createChipData('circulation_fan', mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
-            createChipData('humidifier', mdiAirHumidifier, humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
-            createChipData('dehumidifier', mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier'),
+            createChipData(MetricKey.LIGHT, isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined),
+            createChipData(MetricKey.EXHAUST, mdiFan, exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined, 'Exhaust'),
+            createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circulationFanId ? `${circulationFanState ?? '-'}` : undefined, 'Fan'),
+            createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined, 'Humidifier'),
+            createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined, 'Dehumidifier'),
         ].filter((c) => c !== null);
         return { mainChips, deviceChips, dominant, envAttrs };
     }
@@ -28461,19 +28567,19 @@ class MetricsUtils {
         _scrollChips(direction) {
             const container = this._chipsContainerRef.value;
             if (container) {
-                container.scrollBy({ left: direction === 'left' ? -200 : 200, behavior: 'smooth' });
+                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
             }
         }
         _scrollStage(direction) {
             const container = this._stageContainerRef.value;
             if (container) {
-                container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
             }
         }
         _scrollDeviceChips(direction) {
             const container = this._deviceChipsContainerRef.value;
             if (container) {
-                container.scrollBy({ left: direction === 'left' ? -100 : 100, behavior: 'smooth' });
+                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
             }
         }
         _checkScroll() {
@@ -28618,7 +28724,7 @@ class MetricsUtils {
                     this.store.ui.$activeDialog.set({
                         type: 'CONFIG',
                         payload: {
-                            currentTab: 'environment',
+                            currentTab: ConfigTab.ENVIRONMENT,
                             environmentData: {
                                 selectedGrowspaceId: this._selectedDeviceController.value || '',
                                 temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
@@ -28645,7 +28751,7 @@ class MetricsUtils {
                 case 'compact':
                     // Legacy mapping; now should set ViewMode
                     const currentMode = this._viewModeController.value;
-                    this.store.ui.setViewMode(currentMode === 'compact' ? 'standard' : 'compact');
+                    this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
                     break;
                 case 'strains':
                     this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
@@ -28736,7 +28842,7 @@ class MetricsUtils {
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
           <div class="header-actions">
               <div class="gs-device-chips-container">
-                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('left')}>
+                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.LEFT)}>
                       <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
                   </div>
                   <div class="gs-device-chips-header" ${n$2(this._deviceChipsContainerRef)}>
@@ -28758,7 +28864,7 @@ class MetricsUtils {
                         ></growspace-chip>
                     `)}
                   </div>
-                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips('right')}>
+                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.RIGHT)}>
                       <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                   </div>
               </div>
@@ -28784,7 +28890,7 @@ class MetricsUtils {
            <!-- Row 2 Left: Stage Chips -->
            <div class="header-stage-area-wrapper" style="grid-column: 1; grid-row: 2; display: flex; align-items: center; min-width: 0; position: relative;">
                <!-- Added arrows for stage if needed, using same logic or simplified -->
-                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage('left')}>
+                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.LEFT)}>
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
                 </div>
                <div class="header-stage-area" ${n$2(this._stageContainerRef)}>
@@ -28801,14 +28907,14 @@ class MetricsUtils {
                        `
                 : ''}
                </div>
-                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage('right')}>
+                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.RIGHT)}>
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
                 </div>
            </div>
 
           <!-- Row 2 Right: Secondary Strip -->
           <div class="secondary-strip-container">
-            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips('left')}>
+            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.LEFT)}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
             </div>
             
@@ -28835,7 +28941,7 @@ class MetricsUtils {
                 `)}
             </div>
 
-            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips('right')}>
+            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.RIGHT)}>
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
             </div>
           </div>
@@ -30097,7 +30203,7 @@ const variables = i$6 `
 
 // Helper to determine overlay color
 function getOverlayColor(mode, plant, store) {
-    if (mode === 'none')
+    if (mode === GridOverlayMode.NONE)
         return 'transparent';
     const growspaceId = plant.attributes.growspace_id;
     if (!growspaceId)
@@ -30105,13 +30211,13 @@ function getOverlayColor(mode, plant, store) {
     const device = store.data.$devices.get().find(d => d.device_id === growspaceId);
     if (!device)
         return 'transparent';
-    if (mode === 'vpd') {
+    if (mode === GridOverlayMode.VPD) {
         const status = device.biological_metrics.vpd_status;
         if (status === 'ok')
             return 'rgba(76, 175, 80, 0.15)'; // Green
-        if (status === 'warning')
+        if (status === StatusLevel.WARNING)
             return 'rgba(255, 152, 0, 0.15)'; // Orange
-        if (status === 'danger')
+        if (status === StatusLevel.DANGER)
             return 'rgba(244, 67, 54, 0.15)'; // Red
     }
     // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
@@ -30315,7 +30421,7 @@ function getOverlayColor(mode, plant, store) {
                     if (!plant) {
                         return this.renderEmptySlot(row, col);
                     }
-                    const overlayMode = this._overlayModeController?.value || 'none';
+                    const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
                     const overlayColor = getOverlayColor(overlayMode, plant, this.store);
                     return x `
                 <div class="grid-item-wrapper">
@@ -30328,7 +30434,7 @@ function getOverlayColor(mode, plant, store) {
                     @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
                     @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
                   ></growspace-plant-card>
-                  ${overlayMode !== 'none' ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
+                  ${overlayMode !== GridOverlayMode.NONE ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
                 </div>
                 `;
                 })
@@ -32151,7 +32257,7 @@ const growspaceCardStyles = i$6 `
               .title=${config.title}
               .icon=${config.icon}
               .range=${range}
-              .type=${config.type || 'line'}
+              .type=${config.type || ChartType.LINE}
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
           `;
@@ -32502,7 +32608,7 @@ const growspaceCardStyles = i$6 `
         render() {
             if (!this.device)
                 return x ``;
-            if (this.viewMode === 'compact') {
+            if (this.viewMode === ViewMode.COMPACT) {
                 return x `
         <growspace-view-compact
             .grid=${this.grid}
@@ -32512,7 +32618,7 @@ const growspaceCardStyles = i$6 `
         ></growspace-view-compact>
       `;
             }
-            if (this.viewMode === 'header') {
+            if (this.viewMode === ViewMode.HEADER) {
                 return x `
         <growspace-view-header
             .device=${this.device}
@@ -32539,7 +32645,7 @@ const growspaceCardStyles = i$6 `
         }
         constructor() {
             super(...arguments);
-            _GrowspaceViewSwitcher_viewMode_accessor_storage.set(this, __runInitializers(this, _viewMode_initializers, 'standard'));
+            _GrowspaceViewSwitcher_viewMode_accessor_storage.set(this, __runInitializers(this, _viewMode_initializers, ViewMode.STANDARD));
             _GrowspaceViewSwitcher_device_accessor_storage.set(this, (__runInitializers(this, _viewMode_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
             _GrowspaceViewSwitcher_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
             _GrowspaceViewSwitcher_grid_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _grid_initializers, [])));
@@ -33013,7 +33119,16 @@ class GrowspaceDataStore {
             removeFn(growspaceId);
         }
         else {
-            Object.keys(newCache).forEach(gsId => removeFn(gsId));
+            // Optimization: Look up growspace ID from map instead of scanning everything
+            this.$plantToDeviceMap.get().get(plantId);
+            const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
+            if (probableGrowspaceId && newCache[probableGrowspaceId]) {
+                removeFn(probableGrowspaceId);
+            }
+            else {
+                // Fallback if map fails or inconsistent
+                Object.keys(newCache).forEach(gsId => removeFn(gsId));
+            }
         }
         if (changed) {
             this.$wsDataCache.set(newCache);
@@ -33124,7 +33239,7 @@ class GrowspaceUIStore {
             writable: true,
             value: void 0
         });
-        this.$viewMode = atom('standard');
+        this.$viewMode = atom(ViewMode.STANDARD);
         this.$isLoading = atom(true);
         this.$activeDialog = atom({ type: 'NONE' });
         this.$isEditMode = atom(false);
@@ -33134,8 +33249,8 @@ class GrowspaceUIStore {
         this.$notification = atom(null);
         this.$error = atom(null);
         this.$defaultApplied = atom(false);
-        this.$gridOverlayMode = atom('none');
-        this.$isCompactView = computed(this.$viewMode, (mode) => mode === 'compact');
+        this.$gridOverlayMode = atom(GridOverlayMode.NONE);
+        this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
     }
     // Actions
     setViewMode(mode) {
@@ -33273,7 +33388,7 @@ class GrowspaceHistoryStore {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: 'growspace_history_'
+            value: STORAGE_KEYS.HISTORY_PREFIX
         });
         Object.defineProperty(this, "CACHE_VALIDITY_MS", {
             enumerable: true,
@@ -34452,18 +34567,18 @@ class GrowspaceStore {
     // State Setters
     setIsCompactView(value) {
         if (value) {
-            this.ui.setViewMode('compact');
+            this.ui.setViewMode(ViewMode.COMPACT);
         }
-        else if (this.ui.$viewMode.get() === 'compact') {
-            this.ui.setViewMode('standard');
+        else if (this.ui.$viewMode.get() === ViewMode.COMPACT) {
+            this.ui.setViewMode(ViewMode.STANDARD);
         }
     }
     toggleHeaderExpansion() {
-        if (this.ui.$viewMode.get() === 'header') {
-            this.ui.setViewMode('standard');
+        if (this.ui.$viewMode.get() === ViewMode.HEADER) {
+            this.ui.setViewMode(ViewMode.STANDARD);
         }
         else {
-            this.ui.setViewMode('header');
+            this.ui.setViewMode(ViewMode.HEADER);
         }
     }
     showToast(message, type = 'info', action) {
@@ -34807,7 +34922,7 @@ class GrowspaceStore {
         const isNowActive = this.history.toggleEnvGraph(metric);
         // Auto-expand if we just enabled a graph while in header mode
         if (isNowActive && this.ui.$viewMode.get() === 'header') {
-            this.ui.setViewMode('standard');
+            this.ui.setViewMode(ViewMode.STANDARD);
         }
     }
     async analyzeGrowspace(query, all) {
@@ -35366,7 +35481,7 @@ let GrowspaceManagerCard = (() => {
                 this.store.ui.setViewMode(this._config.initial_view_mode);
             }
             else if (this._config.compact !== undefined && this._config.compact) {
-                this.store.ui.setViewMode('compact');
+                this.store.ui.setViewMode(ViewMode.COMPACT);
             }
             // Initialize store config immediately to prevent race conditions with updateHass
             this.store.initializeSelectedDevice(this._config);
@@ -35767,5 +35882,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     GrowspaceManagerCardEditor: GrowspaceManagerCardEditor
 });
 
-export { DataService, GrowspaceManagerCard, PlantStage, PlantUtils, STAGE_CONFIG, TrainingTechnique, createGrowspaceDevice };
+export { DataService, DehumidifierStage, GridOverlayMode as GridOverlayModeEnum, GrowspaceManagerCard, GrowspaceType as GrowspaceTypeEnum, PlantStage, PlantUtils, STAGE_CONFIG, TrainingTechnique, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

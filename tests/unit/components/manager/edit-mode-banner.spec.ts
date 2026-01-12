@@ -10,7 +10,9 @@ describe('GrowspaceEditModeBanner', () => {
     });
 
     afterEach(() => {
-        document.body.removeChild(element);
+        if (element && element.parentNode === document.body) {
+            document.body.removeChild(element);
+        }
     });
 
     it('should be defined', () => {
@@ -109,6 +111,69 @@ describe('GrowspaceEditModeBanner', () => {
         expect(listener).toHaveBeenCalled();
     });
 
+    describe('Initialization & Resilience', () => {
+        it('should observe resize and check scroll on init', async () => {
+            vi.useFakeTimers();
+            const observeSpy = vi.fn();
+
+            // Mock ResizeController on the element prototype or instance if possible
+            // Since it's private/hard to reach, we rely on the fact that firstUpdated calls it.
+            // We can check if _checkScroll is called after timeout.
+
+            // Re-render to trigger firstUpdated
+            document.body.removeChild(element);
+            element = new EditModeBanner();
+            document.body.appendChild(element);
+
+            // Mock container ref if needed, but JSDOM handles it.
+            // We spy on the private _checkScroll method if we cast to any
+            const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
+
+            await element.updateComplete;
+
+            // Initial call might happen sync or async depending on lit lifecycle
+            // but the setTimeout one definitely needs ticking.
+            vi.runAllTimers();
+
+            expect(checkScrollSpy).toHaveBeenCalled();
+
+            vi.useRealTimers();
+        });
+
+        it('should handle missing container in _scrollActions gracefully', async () => {
+            // Force container ref to be null
+            Object.defineProperty((element as any)._actionsContainerRef, 'value', {
+                value: null,
+                writable: true
+            });
+
+            // Calling _scrollActions shouldn't throw
+            // We need to access private method
+            const scrollActions = (element as any)._scrollActions.bind(element);
+
+            expect(() => scrollActions('left')).not.toThrow();
+            expect(() => scrollActions('right')).not.toThrow();
+        });
+
+        it('should handle missing container in firstUpdated gracefully', async () => {
+            // We can't easily force it to be null during firstUpdated in a real DOM render 
+            // because firstUpdated happens after render where ref is assigned.
+            // However, if we manually call firstUpdated while ref is null:
+
+            element = new EditModeBanner();
+            // Don't append to body yet, so no render/ref ? 
+            // Actually firstUpdated runs after first update.
+
+            // Let's manually invoke firstUpdated on an instance where we blanked the ref
+            Object.defineProperty((element as any)._actionsContainerRef, 'value', {
+                value: null,
+                writable: true
+            });
+
+            expect(() => element.firstUpdated()).not.toThrow();
+        });
+    });
+
     describe('Scrolling Interactions', () => {
         let container: HTMLElement;
 
@@ -126,7 +191,7 @@ describe('GrowspaceEditModeBanner', () => {
 
             const leftArrow = element.shadowRoot?.querySelector('.scroll-arrow:first-child') as HTMLElement;
             expect(leftArrow.classList.contains('hidden')).toBe(false);
-            
+
             leftArrow.click();
             expect(container.scrollBy).toHaveBeenCalledWith({ left: -150, behavior: 'smooth' });
         });
@@ -153,7 +218,7 @@ describe('GrowspaceEditModeBanner', () => {
             // Using the resize controller callback is hard to reach directly without spying on the controller instance
             // But we can trigger the scroll event which is bound in firstUpdated
             container.dispatchEvent(new Event('scroll'));
-            
+
             await element.updateComplete;
 
             // scrollLeft > 1 => canScrollLeft = true
@@ -161,7 +226,7 @@ describe('GrowspaceEditModeBanner', () => {
             expect((element as any)._canScrollLeft).toBe(true);
             expect((element as any)._canScrollRight).toBe(true);
         });
-        
+
         it('should update scroll state when scrolled to start', async () => {
             Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
             Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });

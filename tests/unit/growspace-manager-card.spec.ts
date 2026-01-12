@@ -4,57 +4,60 @@ import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
 import { GrowspaceManagerCardConfig } from '../../src/types';
 import { HomeAssistant } from 'custom-card-helpers';
 import { LibraryExportReadyEvent } from '../../src/events';
+import { ViewMode } from '../../src/constants';
 
 import { atom, map } from 'nanostores';
+
+
 
 // Mock dependencies
 vi.mock('../../src/components/growspace-header', () => ({}));
 vi.mock('../../src/components/manager/dialog-host', () => ({}));
 vi.mock('../../src/components/growspace-view-switcher', () => ({}));
 
-// Local atoms
-const $devices = atom<any[]>([]);
-const $selectedDevice = atom<string | null>('gs1');
-const $strainLibrary = atom<any[]>([]);
-const $optimisticDeletedPlantIds = atom(new Set<string>());
-const $activeDevices = atom<any[]>([]);
-const $gridLayout = atom({ effectiveRows: 1, grid: [] });
-const $growspaceOptions = atom({});
-const $viewMode = atom('standard');
-const $isLoading = atom(false);
-const $activeDialog = atom<any>({ type: 'NONE' });
-const $isEditMode = atom(false);
-const $isCompactView = atom(false);
-const $selectedPlants = atom(new Set());
-const $focusedPlantIndex = atom(-1);
-const $menuOpen = atom(false);
-const $notification = atom(null);
+const atomMocks = vi.hoisted(() => ({
+    $devices: null as any,
+    $selectedDevice: null as any,
+    $strainLibrary: null as any,
+    $optimisticDeletedPlantIds: null as any,
+    $activeDevices: null as any,
+    $gridLayout: null as any,
+    $growspaceOptions: null as any,
+    $viewMode: null as any,
+    $isLoading: null as any,
+    $activeDialog: null as any,
+    $isEditMode: null as any,
+    $isCompactView: null as any,
+    $selectedPlants: null as any,
+    $focusedPlantIndex: null as any,
+    $menuOpen: null as any,
+    $notification: null as any,
+}));
 
 vi.mock('../../src/store/growspace-store', () => ({
     GrowspaceStore: class {
         host: any;
         dataService = {};
-        // Store properties directly on the instance for access
         data = {
-            $devices,
-            $selectedDevice,
-            $strainLibrary,
-            $optimisticDeletedPlantIds,
+            $devices: atomMocks.$devices,
+            $selectedDevice: atomMocks.$selectedDevice,
+            $strainLibrary: atomMocks.$strainLibrary,
+            $optimisticDeletedPlantIds: atomMocks.$optimisticDeletedPlantIds,
             // Add methods if needed
             fetchStrainLibrary: vi.fn(),
             initializeSelectedDevice: vi.fn(),
             handleDeviceChange: vi.fn(),
         };
         ui = {
-            $viewMode,
-            $isLoading,
-            $activeDialog,
-            $isEditMode,
-            $isCompactView,
-            $selectedPlants,
-            $focusedPlantIndex,
-            $menuOpen,
-            $notification,
+            $viewMode: atomMocks.$viewMode,
+            $isLoading: atomMocks.$isLoading,
+            $activeDialog: atomMocks.$activeDialog,
+            $isEditMode: atomMocks.$isEditMode,
+            $isCompactView: atomMocks.$isCompactView,
+            $selectedPlants: atomMocks.$selectedPlants,
+            $focusedPlantIndex: atomMocks.$focusedPlantIndex,
+            $menuOpen: atomMocks.$menuOpen,
+            $notification: atomMocks.$notification,
             setViewMode: vi.fn(),
             setEditMode: vi.fn(),
             clearPlantSelection: vi.fn(),
@@ -64,12 +67,12 @@ vi.mock('../../src/store/growspace-store', () => ({
             setActiveDialog: vi.fn(),
         };
         grid = {
-            $activeDevices,
-            $gridLayout,
-            $growspaceOptions,
+            $activeDevices: atomMocks.$activeDevices,
+            $gridLayout: atomMocks.$gridLayout,
+            $growspaceOptions: atomMocks.$growspaceOptions,
         };
         history = {
-            $historyCache: map({}),
+            $historyCache: {},
         };
 
         constructor(host: any) { this.host = host; }
@@ -92,6 +95,24 @@ describe('GrowspaceManagerCard', () => {
     let mockHass: HomeAssistant;
 
     beforeEach(() => {
+        // Init real atoms
+        atomMocks.$devices = atom<any[]>([]);
+        atomMocks.$selectedDevice = atom<string | null>('gs1');
+        atomMocks.$strainLibrary = atom<any[]>([]);
+        atomMocks.$optimisticDeletedPlantIds = atom(new Set<string>());
+        atomMocks.$activeDevices = atom<any[]>([]);
+        atomMocks.$gridLayout = atom({ effectiveRows: 1, grid: [] });
+        atomMocks.$growspaceOptions = atom({});
+        atomMocks.$viewMode = atom('standard');
+        atomMocks.$isLoading = atom(false);
+        atomMocks.$activeDialog = atom<any>({ type: 'NONE' });
+        atomMocks.$isEditMode = atom(false);
+        atomMocks.$isCompactView = atom(false);
+        atomMocks.$selectedPlants = atom(new Set());
+        atomMocks.$focusedPlantIndex = atom(-1);
+        atomMocks.$menuOpen = atom(false);
+        atomMocks.$notification = atom(null);
+
         element = new GrowspaceManagerCard();
         mockHass = {
             states: {},
@@ -100,13 +121,6 @@ describe('GrowspaceManagerCard', () => {
         } as any;
         element.hass = mockHass;
         vi.clearAllMocks();
-
-        // Reset defaults
-        // Reset defaults
-        $selectedDevice.set('gs1');
-        $devices.set([]);
-        $strainLibrary.set([]);
-        $isLoading.set(false);
     });
 
     afterEach(() => {
@@ -166,10 +180,10 @@ describe('GrowspaceManagerCard', () => {
         it('should set initial view mode from config', () => {
             const config: GrowspaceManagerCardConfig = {
                 type: 'custom:growspace-manager-card',
-                initial_view_mode: 'header'
+                initial_view_mode: ViewMode.HEADER
             };
             element.setConfig(config);
-            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('header');
+            expect(element.store.ui.setViewMode).toHaveBeenCalledWith(ViewMode.HEADER);
         });
 
         it('should not set compact mode if compact is false', () => {
@@ -206,6 +220,13 @@ describe('GrowspaceManagerCard', () => {
             expect(element.dataService).toBe(element.store.dataService);
             expect(element.devices).toEqual([]);
             expect(element.selectedDevice).toBe('gs1');
+        });
+
+        it('should sync strain library when controller updates', async () => {
+            // Trigger an update where the controller value has changed
+            (element as any)._strainLibraryController = { value: [{ strain: 'new' }] };
+            (element as any).updated(new Map());
+            expect((element as any)._strainLibrary).toEqual([{ strain: 'new' }]);
         });
 
         it('should add/remove event listeners', () => {
@@ -520,6 +541,38 @@ describe('GrowspaceManagerCard', () => {
             if (panel) {
                 panel.dispatchEvent(new CustomEvent('ipm-selected', { bubbles: true, composed: true }));
                 expect(spy).toHaveBeenCalled();
+            }
+        });
+
+        it('should handle batch add plants directly', () => {
+            const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
+            (element as any)._handleBatchAddPlants();
+            expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+        });
+
+        it('should trigger batch add plants dialog on batch-add-plants event', async () => {
+            const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
+
+            // Set up controllers
+            (element as any)._isLoadingController = { value: false };
+            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
+            (element as any)._selectedDeviceController = { value: 'gs1' };
+            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
+            (element as any)._growspaceOptionsController = { value: {} };
+            (element as any)._viewModeController = { value: 'standard' };
+            (element as any)._isCompactController = { value: false };
+            (element as any)._isEditModeController = { value: false };
+            (element as any)._focusedPlantIndexController = { value: -1 };
+            (element as any)._selectedPlantsController = { value: new Set() };
+            (element as any)._notificationController = { value: null };
+
+            document.body.appendChild(element);
+            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
+
+            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
+            if (panel) {
+                panel.dispatchEvent(new CustomEvent('batch-add-plants', { bubbles: true, composed: true }));
+                expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
             }
         });
     });

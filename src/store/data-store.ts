@@ -144,7 +144,16 @@ export class GrowspaceDataStore {
         if (growspaceId) {
             removeFn(growspaceId);
         } else {
-            Object.keys(newCache).forEach(gsId => removeFn(gsId));
+            // Optimization: Look up growspace ID from map instead of scanning everything
+            const deviceId = this.$plantToDeviceMap.get().get(plantId);
+
+            const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
+            if (probableGrowspaceId && newCache[probableGrowspaceId]) {
+                removeFn(probableGrowspaceId);
+            } else {
+                // Fallback if map fails or inconsistent
+                Object.keys(newCache).forEach(gsId => removeFn(gsId));
+            }
         }
 
         if (changed) {

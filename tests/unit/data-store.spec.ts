@@ -293,6 +293,27 @@ describe('DataStore', () => {
             expect(updated!.gs1.grid['1-1']).toBeNull();
             expect(updated!.gs1.grid['1-2']!.events).toHaveLength(1);
         });
+
+        it('should remove plant from ws cache using plant map optimization', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        '1-1': { plant_id: 'p1' }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            // Manually populate the map to simulate lookup capability
+            const map = new Map<string, string>();
+            map.set('p1', 'gs1');
+            store.$plantToDeviceMap.set(map);
+
+            store.removePlantFromWsCache('p1');
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs1.grid['1-1']).toBeNull();
+        });
     });
 
     describe('Lifecycle & Status', () => {

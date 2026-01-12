@@ -116,7 +116,8 @@ const mockDataServiceInstance = {
     takeClone: vi.fn().mockResolvedValue({}),
     callService: vi.fn().mockResolvedValue({}),
     fetchNutrientPresets: vi.fn().mockResolvedValue({}),
-    fetchIPMPresets: vi.fn().mockResolvedValue({})
+    fetchIPMPresets: vi.fn().mockResolvedValue({}),
+    addPlants: vi.fn().mockResolvedValue({})
 };
 
 vi.mock('../../src/data-service', () => {
@@ -2629,6 +2630,118 @@ describe('GrowspaceStore', () => {
                 expect(toggleSpy).toHaveBeenCalledWith('temperature');
                 expect(uiStore.setViewMode).not.toHaveBeenCalled();
             });
+        });
+    });
+
+    describe('Ultimate Coverage Gap Fillers', () => {
+        it('should handle fetchIPMPresets corrupt cache', async () => {
+            const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+            const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('invalid json');
+            const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+
+            // Force fetch implementation to run
+            mockDataServiceInstance.fetchIPMPresets.mockResolvedValue([]);
+
+            await store.fetchIPMPresets();
+
+            expect(removeItemSpy).toHaveBeenCalledWith('growspace_ipm_presets');
+            expect(store.dataService.fetchIPMPresets).toHaveBeenCalled();
+        });
+
+        it('should handle confirmAddPlants error toast', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            mockDataServiceInstance.addPlants = vi.fn().mockRejectedValue(new Error('Batch Fail'));
+
+            await store.confirmAddPlants({});
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Error: Batch Fail', 'error', undefined);
+        });
+
+        it('should handle confirmAddPlants success', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue(true);
+
+            await store.confirmAddPlants({ some: 'detail' });
+
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalledWith(expect.objectContaining({
+                growspace_id: 'd1', some: 'detail'
+            }));
+            expect(uiStore.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success', undefined);
+            expect(uiStore.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle confirmAddPlants with no device selected', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+
+            await store.confirmAddPlants({});
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('No growspace selected', 'error', undefined);
+            expect(mockDataServiceInstance.addPlants).not.toHaveBeenCalled();
+        });
+
+        it('should handle undo delete failure in reverse step', async () => {
+            // Setup a delete action to undo
+            const plant = {
+                entity_id: 's.p1',
+                attributes: { plant_id: 'p1', growspace_id: 'd1', strain: 'S1' }
+            };
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [plant]
+            }]);
+            mockDataServiceInstance.removePlant.mockResolvedValue(true);
+
+            // Execute delete to push to undo stack
+            await store.handleDeletePlant('p1');
+
+            // Verify undo stack has it
+            expect(store.canUndo).toBe(true);
+
+            // Mock addPlant failure for reverse
+            mockDataServiceInstance.addPlant.mockRejectedValue(new Error('Restore Fail'));
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await store.undo();
+
+            expect(consoleSpy).toHaveBeenCalledWith('[Undo failed]', expect.any(Error));
+            expect(uiStore.showToast).toHaveBeenCalledWith('Undo failed', 'error', undefined);
+        });
+
+        it('should handle analyzeGrowspace dialog type mismatch error', async () => {
+            // Dialog is NOT GROW_MASTER initially
+            (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'OTHER', payload: {} });
+            mockDataServiceInstance.analyzeAllGrowspaces.mockRejectedValue(new Error('Fail'));
+
+            await store.analyzeGrowspace('q', true);
+
+            // Should NOT set loading or error state on the dialog since type mismatch
+            expect(uiStore.$activeDialog.set).not.toHaveBeenCalled();
+        });
+
+        it('should handle analyzeGrowspace success with dialog type mismatch', async () => {
+            // Dialog is GROW_MASTER initially (for setting loading)
+            // But changes to OTHER during fetch (user closed it)
+            let currentDialog = { type: 'GROW_MASTER', payload: {} };
+            (uiStore.$activeDialog.get as any).mockImplementation(() => currentDialog);
+
+            mockDataServiceInstance.analyzeAllGrowspaces.mockImplementation(async () => {
+                currentDialog = { type: 'OTHER', payload: {} }; // simulate close
+                return { response: 'Advice' };
+            });
+
+            await store.analyzeGrowspace('q', true);
+
+            // First call sets loading=true
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                payload: expect.objectContaining({ isLoading: true })
+            }));
+
+            // Second call (success) should be skipped because type changed
+            // We can check calls count or arguments. 
+            // setActiveDialog is called via `this.ui.setActiveDialog` which calls `atoms.$activeDialog.set`
+            // The mock `setActiveDialog` calls `atoms.$activeDialog.set`.
+            // We expect exactly 1 call (the loading one)
+            expect(uiStore.setActiveDialog).toHaveBeenCalledTimes(1);
         });
     });
 });

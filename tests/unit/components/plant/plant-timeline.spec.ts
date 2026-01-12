@@ -827,9 +827,71 @@ describe('PlantTimeline', () => {
         };
         const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
         await el.updateComplete;
-
         expect(el.shadowRoot?.textContent).toContain('tag1');
         expect(el.shadowRoot?.textContent).toContain('tag2');
+    });
+
+    describe('Ultimate Coverage Gap Fillers', () => {
+        it('should handle confirmDeleteEvent early return if no event id', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            (el as any)._deletingEventId = null;
+            // No callWS mock needed as it shouldn't be called
+            await (el as any)._confirmDeleteEvent();
+            // Pass if no error thrown and execution finishes
+        });
+
+        it('should handle submitNote early return if empty', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            (el as any)._noteText = '';
+            (el as any)._noteImages = [];
+            const callWS = vi.fn();
+            el.hass = { callWS } as any;
+
+            await (el as any)._submitNote();
+            expect(callWS).not.toHaveBeenCalled();
+        });
+
+        it('should render images with relative paths correctly', async () => {
+            const event: PlantTimelineEvent = {
+                date: '2023-01-01',
+                type: 'note',
+                text: 'Img note',
+                images: ['my-image.jpg'] // Not base64
+            };
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const img = el.shadowRoot?.querySelector('.image-grid img');
+            expect(img?.getAttribute('src')).toBe('/api/growspace_manager/v1/images/my-image.jpg');
+        });
+
+        it('should handle renderHoverOverlay when null', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            (el as any)._hoveredImage = null;
+            await el.updateComplete;
+            expect(el.shadowRoot?.querySelector('.image-hover-overlay')).toBeNull();
+        });
+
+        it('should return nothing for empty metadata', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            // We can check the private method output or use a public render.
+            // Using public render with empty metadata event
+            const event: PlantTimelineEvent = {
+                date: '2023-01-01', type: 'action', action: 'water', metadata: {}
+            };
+            const elWithEvent: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await elWithEvent.updateComplete;
+            expect(elWithEvent.shadowRoot?.querySelector('.metadata-chips')).toBeNull();
+        });
+
+        it('should handle _getIcon branches for milestones', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+
+            // Specific milestones coverage
+            // We already tested flower/dry/cure, let's just ensure default falls through
+            const icon = (el as any)._getIcon({ type: 'milestone', label: 'Sprout' });
+            expect(icon).toBeDefined(); // Sprout icon
+        });
     });
 
 });
