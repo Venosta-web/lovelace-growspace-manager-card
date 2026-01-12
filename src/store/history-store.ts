@@ -237,6 +237,14 @@ export class GrowspaceHistoryStore {
         }
     }
 
+    public destroy() {
+        this.stopAutoRefresh();
+        if (this._selectedDeviceUnsub) {
+            this._selectedDeviceUnsub();
+            this._selectedDeviceUnsub = null;
+        }
+    }
+
     public getRange(): HistoryTimeRange {
         const deviceId = this.dataStore.$selectedDevice.get();
         return this.getGraphRange(deviceId);

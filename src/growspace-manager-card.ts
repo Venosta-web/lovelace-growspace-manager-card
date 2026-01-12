@@ -102,6 +102,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    this.store.destroy();
   }
 
   private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {

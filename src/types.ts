@@ -148,7 +148,7 @@ export interface TimelineEventMetadata {
   ph?: number;
   ec?: number;
   amount_ml?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface BaseTimelineEvent {
@@ -513,13 +513,13 @@ export type MetricType =
 export interface GraphDataPoint {
   time: number;
   value: number;
-  meta?: any;
+  meta?: unknown;
 }
 
 export interface HistorySensorState {
   entity_id: string;
   state: string;
-  attributes: any;
+  attributes: Record<string, unknown>;
   last_changed: string;
   last_updated?: string;
 }
@@ -570,7 +570,7 @@ export interface PlantDisplayData {
   strainName: string;
   pheno: string;
   imageUrl?: string;
-  imageCropMeta?: any;
+  imageCropMeta?: CropMeta;
   stages: StageDisplay[];
 }
 

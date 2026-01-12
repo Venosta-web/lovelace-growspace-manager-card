@@ -88,6 +88,7 @@ vi.mock('../../src/store/growspace-store', () => ({
         openBatchWateringDialog = vi.fn();
         openBatchTrainingDialog = vi.fn();
         openIPMDialog = vi.fn();
+        destroy = vi.fn();
     }
 }));
 

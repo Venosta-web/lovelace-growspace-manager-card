@@ -859,12 +859,22 @@ describe('DataService', () => {
             (mockHass.callWS as any).mockResolvedValue({
                 'sensor.temp': [{ bad_shape: true }]
             });
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+            // Mock fallback success
+            const fallbackSpy = vi.spyOn(service, 'getBatchHistory').mockResolvedValue({
+                'sensor.temp': [{ state: 'fallback', last_changed: 'time', entity_id: 'sensor.temp', attributes: {} }]
+            });
 
             const result = await service.getHistoryStats(['sensor.temp'], new Date(), new Date());
-            // It logs error but returns raw result
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Validation Failed'), expect.anything());
-            expect(result['sensor.temp']).toHaveLength(1);
+
+            // Check warning logged
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('History Stats Validation Failed'), expect.anything());
+
+            // Check fallback called
+            expect(fallbackSpy).toHaveBeenCalled();
+
+            // Check result comes from fallback
+            expect(result['sensor.temp'][0].state).toBe('fallback');
         });
 
         describe('Branch Coverage Specifics', () => {

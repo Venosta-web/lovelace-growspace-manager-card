@@ -155,6 +155,14 @@ export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
 export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
 export type IPMPresetsResponse = z.infer<typeof IPMPresetsSchema>;
 
+export const HistoryPointSchema = z.object({
+    s: z.union([z.string(), z.number()]).transform(String),
+    lu: z.union([z.string(), z.number()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))
+});
+
+export const HistoryStatsResponseSchema = z.record(z.string(), z.array(HistoryPointSchema));
+export type HistoryStatsResponse = z.infer<typeof HistoryStatsResponseSchema>;
+
 /**
  * API Validation Helpers - Corrupted data firewall at API boundary
  */

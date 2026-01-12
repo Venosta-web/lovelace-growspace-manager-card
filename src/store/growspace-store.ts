@@ -105,6 +105,12 @@ export class GrowspaceStore {
         this.grid = new GrowspaceGridStore(this.data);
     }
 
+    /** Cleanup all subscriptions and resources */
+    public destroy() {
+        this.history.destroy();
+        // Any other subscriptions would be cleared here
+    }
+
     // === Undo/Redo Methods ===
 
     /** Push an undoable action onto the stack, clearing redo stack and enforcing limit */
@@ -179,7 +185,11 @@ export class GrowspaceStore {
         if (this._watchedEntities.size > 0 && this._lastHassRef) {
             let hasChanged = false;
             for (const entityId of this._watchedEntities) {
-                if (this.hass.states[entityId] !== this._lastHassRef.states[entityId]) {
+                const newState = this.hass.states[entityId];
+                const oldState = this._lastHassRef.states[entityId];
+
+                // Fast reference check + check for missing/new states
+                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
                     hasChanged = true;
                     break;
                 }
@@ -230,11 +240,17 @@ export class GrowspaceStore {
 
     private _areDeviceArraysEqual(a: GrowspaceDevice[], b: GrowspaceDevice[]): boolean {
         if (a === b) return true;
+        if (!a || !b) return false;
         if (a.length !== b.length) return false;
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i]) return false;
+        if (a.length === 0) return true;
+
+        // Deep comparison using JSON.stringify is a fallback for complex structures.
+        // For performance, we could implement a manual shallow check for key props first.
+        try {
+            return JSON.stringify(a) === JSON.stringify(b);
+        } catch (e) {
+            return false;
         }
-        return true;
     }
 
     private _updateDevicesState() {

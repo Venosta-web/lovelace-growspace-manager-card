@@ -552,10 +552,10 @@ export class GrowspaceEnvChart extends LitElement {
       const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
 
       if (isBinary) {
-        if (s.id === MetricKey.OPTIMAL) valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
+        if (s.id === MetricKey.OPTIMAL) valStr = closest.value === 1 ? 'Optimal' : ((closest.meta as Record<string, unknown>)?.reasons as string || 'Not Optimal');
         else valStr = closest.value === 1 ? 'ON' : 'OFF';
-      } else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
-        valStr = closest.meta.state;
+      } else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && (closest.meta as Record<string, unknown>)?.state) {
+        valStr = (closest.meta as Record<string, unknown>).state as string;
       }
 
       return { title: s.title, value: valStr, color: s.color };
@@ -579,10 +579,10 @@ export class GrowspaceEnvChart extends LitElement {
       const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
 
       if (isBinary) {
-        if (series.id === MetricKey.OPTIMAL) valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
+        if (series.id === MetricKey.OPTIMAL) valStr = last.value === 1 ? 'Optimal' : ((last.meta as Record<string, unknown>)?.reasons as string || 'Not Optimal');
         else valStr = last.value === 1 ? 'ON' : 'OFF';
-      } else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
-        valStr = last.meta.state;
+      } else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && (last.meta as Record<string, unknown>)?.state) {
+        valStr = (last.meta as Record<string, unknown>).state as string;
       } else {
         valStr = `${last.value.toFixed(1)} ${series.unit}`;
       }

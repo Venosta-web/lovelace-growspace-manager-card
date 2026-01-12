@@ -99,6 +99,8 @@ export class GrowspaceDataStore {
     }
 
     public setWsDataCache(cache: Record<string, GrowspaceAPIResponse>) {
+        // Optimization: check if data changed before updating cache
+        if (JSON.stringify(this.$wsDataCache.get()) === JSON.stringify(cache)) return;
         this.$wsDataCache.set(cache);
     }
 

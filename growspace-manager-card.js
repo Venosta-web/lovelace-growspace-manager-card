@@ -4950,6 +4950,11 @@ const IPMPresetSchema = objectType({
     min_days_in_stage: numberType().nullish().transform(v => v || undefined),
 }).passthrough();
 const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
+const HistoryPointSchema = objectType({
+    s: unionType([stringType(), numberType()]).transform(String),
+    lu: unionType([stringType(), numberType()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))
+});
+const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
 
 class DataService {
     constructor(hass) {
@@ -5026,7 +5031,7 @@ class DataService {
     }
     getStrainLibrary() {
         const allStates = Object.values(this.hass.states);
-        const strainSensor = allStates.find((s) => s.attributes?.strains !== undefined && s.attributes?.strains !== null);
+        const strainSensor = allStates.find((s) => s.attributes && 'strains' in s.attributes);
         const rawStrains = strainSensor?.attributes?.strains;
         // If no sensor data, return empty (let dialog handle service call)
         if (!rawStrains) {
@@ -5235,9 +5240,15 @@ class DataService {
                 interval_minutes: intervalMinutes,
                 significant_changes_only: significantChangesOnly,
             });
+            const parsed = HistoryStatsResponseSchema.safeParse(result);
+            if (!parsed.success) {
+                console.warn('[DataService] History Stats Validation Failed:', parsed.error.format());
+                // Fallback or empty? Fallback to batch history might be better if WS returns garbage.
+                throw new Error('Validation Failed');
+            }
             // Map compact format back to standard formats for ChartUtils compatibility
             const mappedResult = {};
-            for (const [entityId, points] of Object.entries(result)) {
+            for (const [entityId, points] of Object.entries(parsed.data)) {
                 mappedResult[entityId] = points.map((p) => ({
                     entity_id: entityId,
                     state: p.s,
@@ -5629,7 +5640,8 @@ class DataService {
         }
         catch (err) {
             console.error('[DataService:askGrowAdvice] Error:', err);
-            throw new Error(err.message || 'Failed to get advice');
+            const message = err instanceof Error ? err.message : 'Failed to get advice';
+            throw new Error(message);
         }
     }
     async analyzeAllGrowspaces() {
@@ -30279,6 +30291,9 @@ class GrowspaceDataStore {
         }
     }
     setWsDataCache(cache) {
+        // Optimization: check if data changed before updating cache
+        if (JSON.stringify(this.$wsDataCache.get()) === JSON.stringify(cache))
+            return;
         this.$wsDataCache.set(cache);
     }
     updateWsDataCacheGrid(gsId, mutator) {
@@ -30629,6 +30644,13 @@ class GrowspaceHistoryStore {
         if (this._visibilityHandler) {
             document.removeEventListener('visibilitychange', this._visibilityHandler);
             this._visibilityHandler = null;
+        }
+    }
+    destroy() {
+        this.stopAutoRefresh();
+        if (this._selectedDeviceUnsub) {
+            this._selectedDeviceUnsub();
+            this._selectedDeviceUnsub = null;
         }
     }
     getRange() {
@@ -31385,6 +31407,11 @@ class GrowspaceStore {
         this.history = new GrowspaceHistoryStore(this.dataService, this.data);
         this.grid = new GrowspaceGridStore(this.data);
     }
+    /** Cleanup all subscriptions and resources */
+    destroy() {
+        this.history.destroy();
+        // Any other subscriptions would be cleared here
+    }
     // === Undo/Redo Methods ===
     /** Push an undoable action onto the stack, clearing redo stack and enforcing limit */
     pushUndoAction(action) {
@@ -31454,7 +31481,10 @@ class GrowspaceStore {
         if (this._watchedEntities.size > 0 && this._lastHassRef) {
             let hasChanged = false;
             for (const entityId of this._watchedEntities) {
-                if (this.hass.states[entityId] !== this._lastHassRef.states[entityId]) {
+                const newState = this.hass.states[entityId];
+                const oldState = this._lastHassRef.states[entityId];
+                // Fast reference check + check for missing/new states
+                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
                     hasChanged = true;
                     break;
                 }
@@ -31502,13 +31532,20 @@ class GrowspaceStore {
     _areDeviceArraysEqual(a, b) {
         if (a === b)
             return true;
+        if (!a || !b)
+            return false;
         if (a.length !== b.length)
             return false;
-        for (let i = 0; i < a.length; i++) {
-            if (a[i] !== b[i])
-                return false;
+        if (a.length === 0)
+            return true;
+        // Deep comparison using JSON.stringify is a fallback for complex structures.
+        // For performance, we could implement a manual shallow check for key props first.
+        try {
+            return JSON.stringify(a) === JSON.stringify(b);
         }
-        return true;
+        catch (e) {
+            return false;
+        }
     }
     _updateDevicesState() {
         const devices = this.dataService.getGrowspaceDevices(this.data.$wsDataCache.get());
@@ -32356,6 +32393,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        this.store.destroy();
     }
     updated(changedProps) {
         super.updated(changedProps);

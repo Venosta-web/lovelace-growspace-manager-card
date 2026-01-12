@@ -4,7 +4,7 @@ import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAP
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
 import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS, WS_TYPE_GET_NUTRIENT_PRESETS, WS_TYPE_GET_IPM_PRESETS } from './constants';
-import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary, NutrientPresetsSchema, IPMPresetsSchema, NutrientPresetsResponse, IPMPresetsResponse } from './schemas/api-schema';
+import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary, NutrientPresetsSchema, IPMPresetsSchema, NutrientPresetsResponse, IPMPresetsResponse, HistoryStatsResponseSchema } from './schemas/api-schema';
 
 /** Shape of raw phenotype data from strain sensor */
 interface RawPhenotypeData {
@@ -45,7 +45,7 @@ export class DataService {
   /**
    * Generic service call wrapper. Useful for batch actions and other dynamic calls.
    */
-  async callService(domain: string, service: string, serviceData: Record<string, any>): Promise<void> {
+  async callService(domain: string, service: string, serviceData: Record<string, unknown>): Promise<void> {
     console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
     await this.hass.callService(domain, service, serviceData);
   }
@@ -116,8 +116,8 @@ export class DataService {
   getStrainLibrary(): StrainEntry[] {
     const allStates = Object.values(this.hass.states);
     const strainSensor = allStates.find(
-      (s: any) => s.attributes?.strains !== undefined && s.attributes?.strains !== null
-    ) as HassEntity | undefined;
+      (s: HassEntity) => s.attributes && 'strains' in s.attributes
+    );
 
     const rawStrains = strainSensor?.attributes?.strains;
 
@@ -177,7 +177,7 @@ export class DataService {
     console.log('[DataService:fetchStrainLibrary] Fetching strain library via WebSocket API');
     try {
       // Use WebSocket API to bypass the 16KB attribute limit of state machine
-      const rawResponse: any = await this.hass.connection.sendMessagePromise({
+      const rawResponse = await this.hass.connection.sendMessagePromise<unknown>({
         type: 'growspace_manager/get_strain_library',
       });
 
@@ -185,7 +185,7 @@ export class DataService {
 
       // Remove legacy or wrapper 'response' key if present to pass legacy validation
       if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
-        delete rawResponse['response'];
+        delete (rawResponse as Record<string, unknown>)['response'];
       }
 
       // The WS API returns: { strains: { ... }, strain_list: [...] }
@@ -345,7 +345,7 @@ export class DataService {
     if (!this.hass || entityIds.length === 0) return {};
 
     try {
-      const result = await this.hass.callWS<Record<string, any[]>>({
+      const result = await this.hass.callWS<unknown>({
         type: WS_TYPE_GET_HISTORY_STATS,
         entity_ids: entityIds,
         start_time: startTime.toISOString(),
@@ -354,10 +354,17 @@ export class DataService {
         significant_changes_only: significantChangesOnly,
       });
 
+      const parsed = HistoryStatsResponseSchema.safeParse(result);
+      if (!parsed.success) {
+        console.warn('[DataService] History Stats Validation Failed:', parsed.error.format());
+        // Fallback or empty? Fallback to batch history might be better if WS returns garbage.
+        throw new Error('Validation Failed');
+      }
+
       // Map compact format back to standard formats for ChartUtils compatibility
       const mappedResult: Record<string, HistorySensorState[]> = {};
-      for (const [entityId, points] of Object.entries(result)) {
-        mappedResult[entityId] = points.map((p: any) => ({
+      for (const [entityId, points] of Object.entries(parsed.data)) {
+        mappedResult[entityId] = points.map((p) => ({
           entity_id: entityId,
           state: p.s,
           last_changed: p.lu,
@@ -430,7 +437,7 @@ export class DataService {
     }
   }
 
-  async updatePlant(params: { plant_id: string;[key: string]: any }): Promise<void> {
+  async updatePlant(params: { plant_id: string;[key: string]: unknown }): Promise<void> {
     console.log('[DataService:updatePlant] Sending payload:', params);
     try {
       await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
@@ -476,7 +483,7 @@ export class DataService {
     console.log('[DataService:takeClone] Cloning plant:', params);
     try {
       // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
-      const payload: Record<string, any> = { ...params };
+      const payload: Record<string, unknown> = { ...params };
       if (!payload.target_growspace_id) delete payload.target_growspace_id;
 
       await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
@@ -641,7 +648,7 @@ export class DataService {
   }): Promise<void> {
     console.log('[DataService:addStrain] Adding strain:', data);
     try {
-      const payload: Record<string, any> = { ...data };
+      const payload: Record<string, unknown> = { ...data };
 
       // Clean undefined keys
       Object.keys(payload).forEach((key) => {
@@ -763,7 +770,7 @@ export class DataService {
   }): Promise<void> {
     console.log('[DataService:updateGrowspace] Updating growspace:', data);
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         growspace_id: data.growspace_id,
       };
       if (data.name) payload.name = data.name;
@@ -842,9 +849,10 @@ export class DataService {
         },
         return_response: true,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[DataService:askGrowAdvice] Error:', err);
-      throw new Error(err.message || 'Failed to get advice');
+      const message = err instanceof Error ? err.message : 'Failed to get advice';
+      throw new Error(message);
     }
   }
 
@@ -895,7 +903,7 @@ export class DataService {
   ): Promise<void> {
     console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         plant_id: plantId,
         amount,
       };
@@ -966,7 +974,7 @@ export class DataService {
   ): Promise<void> {
     console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
     try {
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         growspace_id: growspaceId,
         amount_per_plant: amountPerPlant,
       };
