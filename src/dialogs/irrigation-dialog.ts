@@ -129,6 +129,23 @@ export class IrrigationDialog extends LitElement {
         justify-content: center;
         z-index: 10000;
       }
+
+      /* Tab Styles */
+      .tab-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        opacity: 0.7;
+        transition: all 0.2s;
+      }
+      .tab-item.active {
+        border-bottom-color: var(--stage-color, #2196F3) !important;
+        opacity: 1 !important;
+      }
+      .tab-item:hover {
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.05);
+      }
     `,
   ];
 
@@ -368,7 +385,6 @@ export class IrrigationDialog extends LitElement {
             </button>
           </div>
 
-          <!-- Tabs -->
           <div
             class="tabs-row"
             style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
@@ -376,24 +392,12 @@ export class IrrigationDialog extends LitElement {
             <div
               class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
               @click=${() => (this._activeTab = 'schedules')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
-              <style>
-                .tab-item.active {
-                  border-bottom-color: ${dialogColor} !important;
-                  opacity: 1 !important;
-                }
-                .tab-item:hover {
-                  opacity: 1 !important;
-                  background: rgba(255, 255, 255, 0.05);
-                }
-              </style>
               Schedules
             </div>
             <div
               class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
               @click=${() => (this._activeTab = 'steering')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
               Crop Steering (VWC)
             </div>
@@ -549,7 +553,7 @@ export class IrrigationDialog extends LitElement {
             @click=${(e: Event) => {
         const container = (e.target as HTMLElement)
           .closest('.detail-card')
-          ?.querySelector(`.${type}-time-bar`) as HTMLElement;
+          ?.querySelector('.' + type + '-time-bar') as HTMLElement;
         if (container) {
           const rect = container.getBoundingClientRect();
           type === 'irrigation'

@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { GrowspaceDevice } from '../../../src/types';
+import { GrowspaceType } from '../../../src/constants';
 
 // Mock dependencies
 vi.mock('../../../src/components/ui/md3-text-input', () => ({
@@ -53,7 +54,7 @@ describe('IrrigationDialog', () => {
     const mockDevice: GrowspaceDevice = {
         device_id: 'gs1',
         name: 'Growspace 1',
-        type: 'normal',
+        type: GrowspaceType.NORMAL,
         rows: 4,
         plants_per_row: 4,
         plants: [],
@@ -964,16 +965,48 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
-            // We expect one marker for irrigation
-            // The default duration for irrigation is 60 in mockDevice
-            const marker = markers?.[0];
-
-            // Check title or tooltip text content
-            // Tooltip is inside .chart-tooltip
-            const tooltip = marker?.querySelector('.chart-tooltip');
+            const tooltip = markers?.[0]?.querySelector('.chart-tooltip');
             expect(tooltip?.textContent).toContain('09:00 | 60s');
 
             document.body.removeChild(element);
+        });
+    });
+
+    describe('Branch Coverage (v2)', () => {
+        it('should handle willUpdate with various property changes', async () => {
+            document.body.appendChild(element);
+
+            // 1. open is true, but open prop didn't change (forced call)
+            element.open = true;
+            await element.updateComplete;
+
+            const initSpy = vi.spyOn(element as any, '_initializeState');
+
+            // Trigger update by changing a property that is NOT 'open' or 'device'
+            element.hass = { ...element.hass };
+            await element.updateComplete;
+            expect(initSpy).not.toHaveBeenCalled();
+
+            // 2. device changes
+            element.device = { ...mockDevice, name: 'New Name' };
+            await element.updateComplete;
+            expect(initSpy).toHaveBeenCalled();
+        });
+
+        it('should fallback to defaults in _initializeState when strategy fields are missing', async () => {
+            element.device = {
+                ...mockDevice,
+                irrigation_strategy: { enabled: true } as any // missing other fields
+            };
+            (element as any)._initializeState();
+
+            expect((element as any)._strategy.lights_on_time).toBe('06:00:00');
+            expect((element as any)._strategy.p0_duration_minutes).toBe(60);
+        });
+
+        it('should handle _updateStrategyField directly', () => {
+            (element as any)._updateStrategyField('enabled', true);
+            expect((element as any)._strategy.enabled).toBe(true);
         });
     });
 });

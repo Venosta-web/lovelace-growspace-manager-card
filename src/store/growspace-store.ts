@@ -64,10 +64,6 @@ export class GrowspaceStore {
         return this._baseActionContext;
     }
 
-    private get _plantActionContext(): plantActions.PlantActionContext {
-        return this.plantActionContext;
-    }
-
     /** Context object for strain action functions */
     private get _strainActionContext(): strainActions.StrainActionContext {
         return {
@@ -83,10 +79,6 @@ export class GrowspaceStore {
         return this._baseActionContext;
     }
 
-    private get _growspaceActionContext(): strainActions.GrowspaceActionContext {
-        return this.growspaceActionContext;
-    }
-
     /** Context object for keyboard action functions */
     private get _keyboardActionContext(): keyboardActions.KeyboardActionContext {
         return {
@@ -97,10 +89,6 @@ export class GrowspaceStore {
         };
     }
 
-    /**
-     * Centralized Action Dispatcher
-     * Provides a single entry point for all business logic actions.
-     */
     /**
      * Centralized Action Dispatcher
      * Provides a single entry point for all business logic actions.
@@ -558,7 +546,7 @@ export class GrowspaceStore {
     }
 
     async updatePlant(plantId: string, updates: Partial<PlantEntity['attributes']>) {
-        await plantActions.updatePlant(this._plantActionContext, plantId, updates);
+        await plantActions.updatePlant(this.plantActionContext, plantId, updates);
     }
 
     async handleDeletePlant(plantId: string | string[]) {
@@ -591,7 +579,7 @@ export class GrowspaceStore {
         });
 
         const success = await plantActions.deletePlants(
-            this._plantActionContext,
+            this.plantActionContext,
             ids,
             (id) => this.data.addOptimisticDeletedPlantId(id),
             (id) => this.data.removeOptimisticDeletedPlantId(id)
@@ -646,26 +634,26 @@ export class GrowspaceStore {
     }
 
     async handleMovePlantToNextStage(plant: PlantEntity): Promise<boolean> {
-        return await plantActions.movePlantToNextStage(this._plantActionContext, plant);
+        return await plantActions.movePlantToNextStage(this.plantActionContext, plant);
     }
 
     handleTakeClone = (motherPlant: PlantEntity, numClones?: number): Promise<boolean> => {
-        return plantActions.takeClone(this._plantActionContext, motherPlant, numClones);
+        return plantActions.takeClone(this.plantActionContext, motherPlant, numClones);
     };
 
     async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string): Promise<boolean> {
         const originalGrowspace = plant.attributes.growspace_id || 'unknown';
-        const success = await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+        const success = await plantActions.movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
 
         if (success) {
             this.pushUndoAction({
                 type: 'move',
                 description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
                 reverse: async () => {
-                    await plantActions.movePlantToGrowspace(this._plantActionContext, plant, originalGrowspace);
+                    await plantActions.movePlantToGrowspace(this.plantActionContext, plant, originalGrowspace);
                 },
                 redo: async () => {
-                    await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+                    await plantActions.movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
                 }
             });
         }
@@ -688,7 +676,7 @@ export class GrowspaceStore {
         }
 
         await plantActions.addPlant(
-            this._plantActionContext,
+            this.plantActionContext,
             selectedDevice,
             detail.row,
             detail.col,
@@ -704,14 +692,50 @@ export class GrowspaceStore {
             return;
         }
 
+        // Snapshot current plant IDs for identifying added ones later
+        const devices = this.data.$devices.get();
+        const beforeIds = new Set<string>();
+        devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
+
         try {
             await this.dataService.addPlants({
                 growspace_id: selectedDevice,
                 ...detail
             });
+
+            await this.refreshData();
+
+            // Identify added plant IDs
+            const afterDevices = this.data.$devices.get();
+            const addedIds: string[] = [];
+            afterDevices.forEach(d => d.plants?.forEach(p => {
+                const id = p.attributes.plant_id || '';
+                if (id && !beforeIds.has(id)) {
+                    addedIds.push(id);
+                }
+            }));
+
+            if (addedIds.length > 0) {
+                this.pushUndoAction({
+                    type: 'batch-delete',
+                    description: `Added ${addedIds.length} plants`,
+                    reverse: async () => {
+                        await plantActions.deletePlants(
+                            this.plantActionContext,
+                            addedIds,
+                            (id) => this.data.addOptimisticDeletedPlantId(id),
+                            (id) => this.data.removeOptimisticDeletedPlantId(id)
+                        );
+                        await this.refreshData();
+                    },
+                    redo: async () => {
+                        await this.confirmAddPlants(detail);
+                    }
+                });
+            }
+
             this.showToast('Batch plants added successfully', 'success');
             this.ui.closeDialog();
-            await this.refreshData();
         } catch (err: any) {
             this.showToast(`Error: ${err.message}`, 'error');
         }
@@ -806,7 +830,7 @@ export class GrowspaceStore {
         const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
 
         const success = await plantActions.handlePlantDrop(
-            this._plantActionContext,
+            this.plantActionContext,
             targetRow,
             targetCol,
             targetPlant,
@@ -821,7 +845,7 @@ export class GrowspaceStore {
                     if (targetPlant && targetId) {
                         await this.dataService.swapPlants(sourceId, targetId);
                     } else {
-                        await plantActions.movePlantPosition(this._plantActionContext, sourcePlant, originalRow, originalCol);
+                        await plantActions.movePlantPosition(this.plantActionContext, sourcePlant, originalRow, originalCol);
                     }
                     await this.refreshData();
                 },
@@ -835,7 +859,7 @@ export class GrowspaceStore {
     }
 
     async movePlant(plant: PlantEntity, newRow: number, newCol: number) {
-        const success = await plantActions.movePlantPosition(this._plantActionContext, plant, newRow, newCol);
+        const success = await plantActions.movePlantPosition(this.plantActionContext, plant, newRow, newCol);
         if (success) {
             this.updateGrid();
         }
@@ -843,7 +867,7 @@ export class GrowspaceStore {
 
     async handleAddGrowspace(detail: { name: string; rows?: number; plants_per_row?: number; notification_service?: string }) {
         await strainActions.addGrowspace(
-            this._growspaceActionContext,
+            this.growspaceActionContext,
             detail.name,
             detail.rows,
             detail.plants_per_row,
@@ -853,7 +877,7 @@ export class GrowspaceStore {
 
     async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plants_per_row: number }) {
         await strainActions.updateGrowspace(
-            this._growspaceActionContext,
+            this.growspaceActionContext,
             detail.growspace_id,
             detail.name,
             detail.rows,
@@ -875,7 +899,7 @@ export class GrowspaceStore {
 
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this._getCommonGrowspaceId(selectedIds);
+            growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
 
         this.ui.setActiveDialog({
@@ -894,7 +918,7 @@ export class GrowspaceStore {
 
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this._getCommonGrowspaceId(selectedIds);
+            growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
 
         this.ui.setActiveDialog({
@@ -907,7 +931,7 @@ export class GrowspaceStore {
         });
     }
 
-    private _getCommonGrowspaceId(plantIds: string[]): string | undefined {
+    public getCommonGrowspaceId(plantIds: string[]): string | undefined {
         const plantToDevice = this.data.$plantToDeviceMap.get();
         let commonGrowspaceId: string | undefined;
 

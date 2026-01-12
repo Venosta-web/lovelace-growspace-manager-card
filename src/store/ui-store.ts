@@ -38,7 +38,30 @@ export class GrowspaceUIStore {
         this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
 
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
+
+        this.$cardViewState = computed(
+            [this.$viewMode, this.$isLoading, this.$isEditMode, this.$isCompactView, this.$activeDialog, this.$notification, this.$focusedPlantIndex],
+            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+                viewMode,
+                isLoading,
+                isEditMode,
+                isCompact,
+                activeDialog,
+                notification,
+                focusedPlantIndex
+            })
+        );
     }
+
+    public readonly $cardViewState: ReadableAtom<{
+        viewMode: GrowspaceViewMode;
+        isLoading: boolean;
+        isEditMode: boolean;
+        isCompact: boolean;
+        activeDialog: ActiveDialogState;
+        notification: { message: string; type: 'info' | 'error' | 'success'; action?: { label: string; callback: () => void } } | null;
+        focusedPlantIndex: number;
+    }>;
 
     // Actions
     public setViewMode(mode: GrowspaceViewMode) {

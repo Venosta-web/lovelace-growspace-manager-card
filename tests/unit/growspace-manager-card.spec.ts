@@ -1,4 +1,3 @@
-
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
 import { GrowspaceManagerCardConfig } from '../../src/types';
@@ -6,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { LibraryExportReadyEvent } from '../../src/events';
 import { ViewMode } from '../../src/constants';
 
-import { atom, map } from 'nanostores';
+import { atom, computed } from 'nanostores';
 
 
 
@@ -32,6 +31,7 @@ const atomMocks = vi.hoisted(() => ({
     $focusedPlantIndex: null as any,
     $menuOpen: null as any,
     $notification: null as any,
+    $cardViewState: null as any,
 }));
 
 vi.mock('../../src/store/growspace-store', () => ({
@@ -58,6 +58,7 @@ vi.mock('../../src/store/growspace-store', () => ({
             $focusedPlantIndex: atomMocks.$focusedPlantIndex,
             $menuOpen: atomMocks.$menuOpen,
             $notification: atomMocks.$notification,
+            $cardViewState: atomMocks.$cardViewState,
             setViewMode: vi.fn(),
             setEditMode: vi.fn(),
             clearPlantSelection: vi.fn(),
@@ -109,9 +110,22 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$isEditMode = atom(false);
         atomMocks.$isCompactView = atom(false);
         atomMocks.$selectedPlants = atom(new Set());
-        atomMocks.$focusedPlantIndex = atom(-1);
-        atomMocks.$menuOpen = atom(false);
-        atomMocks.$notification = atom(null);
+        atomMocks.$focusedPlantIndex = atom<number>(-1);
+        atomMocks.$notification = atom<any>(null);
+
+        // Derived mock for consolidated state - matches implementation
+        atomMocks.$cardViewState = computed(
+            [atomMocks.$viewMode, atomMocks.$isLoading, atomMocks.$isEditMode, atomMocks.$isCompactView, atomMocks.$activeDialog, atomMocks.$notification, atomMocks.$focusedPlantIndex],
+            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+                viewMode,
+                isLoading,
+                isEditMode,
+                isCompact,
+                activeDialog,
+                notification,
+                focusedPlantIndex
+            })
+        );
 
         element = new GrowspaceManagerCard();
         mockHass = {
@@ -256,7 +270,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render loading spinner', async () => {
-            Object.defineProperty(element, '_isLoadingController', { value: { value: true } });
+            atomMocks.$isLoading.set(true);
             document.body.appendChild(element);
             await element.updateComplete;
             const spinner = element.shadowRoot?.querySelector('.loading-spinner');
@@ -264,8 +278,8 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render no data message if no devices', async () => {
-            Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
-            Object.defineProperty(element, '_activeDevicesController', { value: { value: [] } });
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([]);
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -276,9 +290,9 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render error if selected device is invalid', async () => {
-            Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
-            Object.defineProperty(element, '_activeDevicesController', { value: { value: [{ device_id: 'gs2' }] } });
-            Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs2' }]);
+            atomMocks.$selectedDevice.set('gs1');
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -289,49 +303,29 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should render main card with notification', async () => {
-            Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
+            atomMocks.$isLoading.set(false);
             const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 4 };
-            Object.defineProperty(element, '_activeDevicesController', { value: { value: [mockDevice] } });
-            Object.defineProperty(element, '_gridLayoutController', { value: { value: { effectiveRows: 1, grid: [] } } });
-            Object.defineProperty(element, '_growspaceOptionsController', { value: { value: { gs1: 'Tent' } } });
-            Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
-            Object.defineProperty(element, '_notificationController', { value: { value: { type: 'success', message: 'Test Notif' } } });
-
-            // Default explicit mocks for controllers to avoid undefined errors during render
-            Object.defineProperty(element, '_viewModeController', { value: { value: 'standard' } });
-            Object.defineProperty(element, '_isCompactController', { value: { value: false } });
-            Object.defineProperty(element, '_isEditModeController', { value: { value: false } });
-            Object.defineProperty(element, '_focusedPlantIndexController', { value: { value: -1 } });
-            Object.defineProperty(element, '_selectedPlantsController', { value: { value: new Set() } });
+            atomMocks.$activeDevices.set([mockDevice]);
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$notification.set({ type: 'success', message: 'Test Notif' });
 
             document.body.appendChild(element);
             await element.updateComplete;
 
             const toast = element.shadowRoot?.querySelector('growspace-toast');
             expect(toast).toBeTruthy();
-            // Since growspace-toast isolates its rendering, we might need to check its internal state or just presence.
-            // The test "should render main card with notification" can verified by checking if the component is rendered.
-            // If we want to check message, we might need access to its Shadow DOM if open,
-            // or assume if it's rendered it's working (unit tests for GrowspaceToast cover the internal rendering).
-            // Let's assert presence of the custom element.
             expect(toast).not.toBeNull();
         });
 
         it('should render wide card class', async () => {
-            Object.defineProperty(element, '_isLoadingController', { value: { value: false } });
+            atomMocks.$isLoading.set(false);
             const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 8 };
-            Object.defineProperty(element, '_activeDevicesController', { value: { value: [mockDevice] } });
-            Object.defineProperty(element, '_gridLayoutController', { value: { value: { effectiveRows: 1, grid: [] } } });
-            Object.defineProperty(element, '_growspaceOptionsController', { value: { value: { gs1: 'Tent' } } });
-            Object.defineProperty(element, '_selectedDeviceController', { value: { value: 'gs1' } });
-
-            // Defaults
-            Object.defineProperty(element, '_viewModeController', { value: { value: 'standard' } });
-            Object.defineProperty(element, '_isCompactController', { value: { value: false } });
-            Object.defineProperty(element, '_isEditModeController', { value: { value: false } });
-            Object.defineProperty(element, '_focusedPlantIndexController', { value: { value: -1 } });
-            Object.defineProperty(element, '_selectedPlantsController', { value: { value: new Set() } });
-            Object.defineProperty(element, '_notificationController', { value: { value: null } });
+            atomMocks.$activeDevices.set([mockDevice]);
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
+            atomMocks.$selectedDevice.set('gs1');
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -414,18 +408,11 @@ describe('GrowspaceManagerCard', () => {
         it('should trigger store action on DOM toggle-expansion event', async () => {
             const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
 
-            // Set up all controllers with minimal values to allow render to complete
-            (element as any)._isLoadingController = { value: false };
-            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
-            (element as any)._selectedDeviceController = { value: 'gs1' };
-            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
-            (element as any)._growspaceOptionsController = { value: {} };
-            (element as any)._viewModeController = { value: 'standard' };
-            (element as any)._isCompactController = { value: false };
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._focusedPlantIndexController = { value: -1 };
-            (element as any)._selectedPlantsController = { value: new Set() };
-            (element as any)._notificationController = { value: null };
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({});
 
             document.body.appendChild(element);
 
@@ -451,18 +438,11 @@ describe('GrowspaceManagerCard', () => {
         it('should trigger batch watering dialog on water-selected event', async () => {
             const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
 
-            // Set up controllers
-            (element as any)._isLoadingController = { value: false };
-            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
-            (element as any)._selectedDeviceController = { value: 'gs1' };
-            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
-            (element as any)._growspaceOptionsController = { value: {} };
-            (element as any)._viewModeController = { value: 'standard' };
-            (element as any)._isCompactController = { value: false };
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._focusedPlantIndexController = { value: -1 };
-            (element as any)._selectedPlantsController = { value: new Set() };
-            (element as any)._notificationController = { value: null };
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({});
 
             document.body.appendChild(element);
             await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
@@ -477,18 +457,11 @@ describe('GrowspaceManagerCard', () => {
         it('should trigger batch training dialog on training-selected event', async () => {
             const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
 
-            // Set up controllers
-            (element as any)._isLoadingController = { value: false };
-            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
-            (element as any)._selectedDeviceController = { value: 'gs1' };
-            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
-            (element as any)._growspaceOptionsController = { value: {} };
-            (element as any)._viewModeController = { value: 'standard' };
-            (element as any)._isCompactController = { value: false };
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._focusedPlantIndexController = { value: -1 };
-            (element as any)._selectedPlantsController = { value: new Set() };
-            (element as any)._notificationController = { value: null };
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({});
 
             document.body.appendChild(element);
             await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
@@ -521,18 +494,11 @@ describe('GrowspaceManagerCard', () => {
         it('should trigger ipm dialog on ipm-selected event', async () => {
             const spy = vi.spyOn(element.store, 'openIPMDialog');
 
-            // Set up controllers
-            (element as any)._isLoadingController = { value: false };
-            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
-            (element as any)._selectedDeviceController = { value: 'gs1' };
-            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
-            (element as any)._growspaceOptionsController = { value: {} };
-            (element as any)._viewModeController = { value: 'standard' };
-            (element as any)._isCompactController = { value: false };
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._focusedPlantIndexController = { value: -1 };
-            (element as any)._selectedPlantsController = { value: new Set() };
-            (element as any)._notificationController = { value: null };
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({});
 
             document.body.appendChild(element);
             await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
@@ -553,18 +519,11 @@ describe('GrowspaceManagerCard', () => {
         it('should trigger batch add plants dialog on batch-add-plants event', async () => {
             const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
 
-            // Set up controllers
-            (element as any)._isLoadingController = { value: false };
-            (element as any)._activeDevicesController = { value: [{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }] };
-            (element as any)._selectedDeviceController = { value: 'gs1' };
-            (element as any)._gridLayoutController = { value: { effectiveRows: 1, grid: [] } };
-            (element as any)._growspaceOptionsController = { value: {} };
-            (element as any)._viewModeController = { value: 'standard' };
-            (element as any)._isCompactController = { value: false };
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._focusedPlantIndexController = { value: -1 };
-            (element as any)._selectedPlantsController = { value: new Set() };
-            (element as any)._notificationController = { value: null };
+            atomMocks.$isLoading.set(false);
+            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
+            atomMocks.$growspaceOptions.set({});
 
             document.body.appendChild(element);
             await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);

@@ -70,8 +70,6 @@ export class StrainLibraryDialog extends LitElement {
       /* Layout Overrides */
       .strain-dialog-container {
         @apply .glass-dialog-container;
-        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
-        /* But we will use the class in render */
       }
 
       .glass-dialog-container {
@@ -569,7 +567,7 @@ export class StrainLibraryDialog extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
-        color: var(, #fff);
+        color: var(--primary-text-color, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -715,12 +713,14 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private renderBrowseView(): TemplateResult {
-    const query = this._searchQuery.toLowerCase();
+    const query = (this._searchQuery || '').toLowerCase();
+    const terms = query.split(/\s+/).filter(t => t.length > 0);
     const filteredStrains = this.strains.filter(
-      (s) =>
-        s.strain.toLowerCase().includes(query) ||
-        (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-        (s.phenotype && s.phenotype.toLowerCase().includes(query))
+      (s) => {
+        if (terms.length === 0) return true;
+        const searchText = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
+        return terms.every(term => searchText.includes(term));
+      }
     ).sort((a, b) => a.strain.localeCompare(b.strain));
 
     // Pagination Logic
@@ -795,7 +795,7 @@ export class StrainLibraryDialog extends LitElement {
 
         ${filteredStrains.length === 0
         ? html`
-              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+              <div class="empty-state" style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
                 <svg
                   style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
                   viewBox="0 0 24 24"

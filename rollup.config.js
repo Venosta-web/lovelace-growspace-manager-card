@@ -4,6 +4,8 @@ import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
+import minifyHTML from '@lit-labs/rollup-plugin-minify-html-literals';
+import summary from 'rollup-plugin-summary';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isCoverage = process.env.COVERAGE === 'true';
@@ -24,7 +26,9 @@ const plugins = [
 
 // Only minify in production and not when collecting coverage
 if (isProduction && !isCoverage) {
+  plugins.push(minifyHTML());
   plugins.push(terser());
+  plugins.push(summary());
 }
 
 export default {

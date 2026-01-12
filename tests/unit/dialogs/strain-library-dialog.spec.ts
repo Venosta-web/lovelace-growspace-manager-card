@@ -99,11 +99,20 @@ describe('StrainLibraryDialog', () => {
             expect(cards?.[0].textContent).toContain('Gorilla Glue');
         });
 
-        it('should show empty state when no matches', async () => {
-            (element as any)._searchQuery = 'NonExistentStrainXYZ';
+        it('should filter by combined search (breeder + strain)', async () => {
+            (element as any)._searchQuery = 'HSO Blue';
             await element.updateComplete;
-            const emptyState = element.shadowRoot?.querySelector('.sd-content div[style*="text-align:center"]');
-            expect(emptyState?.textContent?.toLowerCase()).toContain('no strains found matching "nonexistentstrainxyz"');
+            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            expect(cards?.length).toBe(1);
+            expect(cards?.[0].textContent).toContain('Blue Dream');
+        });
+
+        it('should filter by combined search (phenotype)', async () => {
+            (element as any)._searchQuery = 'Dream Original';
+            await element.updateComplete;
+            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            expect(cards?.length).toBe(1);
+            expect(cards?.[0].textContent).toContain('Blue Dream');
         });
     });
 
@@ -183,6 +192,24 @@ describe('StrainLibraryDialog', () => {
             const prevBtn = btns?.[0] as HTMLElement;
             prevBtn.click();
             await element.updateComplete;
+            expect((element as any)._currentPage).toBe(1);
+        });
+
+        it('should clamp page when items decrease', async () => {
+            // Setup 2 pages
+            const manyStrains = Array.from({ length: 20 }, (_, i) => ({
+                key: `${i}`, strain: `Strain ${i}`, type: 'Sativa', phenotype: ''
+            }));
+            element.strains = manyStrains;
+            await element.updateComplete;
+
+            (element as any)._currentPage = 2;
+            await element.updateComplete;
+
+            // Reduce to 1 page
+            element.strains = mockStrains;
+            await element.updateComplete;
+
             expect((element as any)._currentPage).toBe(1);
         });
     });
@@ -1455,5 +1482,55 @@ describe('StrainLibraryDialog', () => {
 
         // No errors should occur
         await element.updateComplete;
+    });
+
+    it('should render flowering days and breeder fallbacks', async () => {
+        (element as any)._searchQuery = '';
+        element.strains = [{
+            key: 'minimal',
+            strain: 'Minimal',
+            phenotype: '',
+            type: '', // Unknown type icon
+            flowering_days_min: 60,
+            // flowering_days_max missing -> should show ?
+            // breeder missing -> should show nothing
+        }];
+        await element.updateComplete;
+
+        const card = element.shadowRoot?.querySelector('.strain-card');
+        const text = card?.textContent?.replace(/\s+/g, ' ').trim();
+        expect(text).toContain('Flowering: 60-? Days');
+        expect(text).not.toContain('Breeder:');
+    });
+
+    it('should handle sativa input NaN/fallback', async () => {
+        (element as any)._startEdit({
+            ...mockStrains[0],
+            type: 'Hybrid'
+        });
+        await element.updateComplete;
+
+        const inputs = element.shadowRoot?.querySelectorAll('.hg-input-label input');
+        const sativaInput = inputs?.[1] as HTMLInputElement;
+
+        sativaInput.value = 'abc';
+        sativaInput.dispatchEvent(new Event('input'));
+        expect((element as any)._editorState.sativa_percentage).toBe(0);
+        expect((element as any)._editorState.indica_percentage).toBe(100);
+    });
+
+    it('should render nothing when open is false', async () => {
+        element.open = false;
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeNull();
+    });
+
+    it('should show empty state when no strains match', async () => {
+        element.open = true;
+        const query = 'nonexistent_strain_xyz';
+        (element as any)._searchQuery = query;
+        await element.updateComplete;
+        const emptyState = element.shadowRoot?.querySelector('.empty-state');
+        expect(emptyState?.textContent).toContain(`No strains found matching "${query}"`);
     });
 });

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GrowspaceUIStore } from '../../src/store/ui-store';
+import { ViewMode, GridOverlayMode } from '../../src/constants';
 
 describe('UI Store', () => {
     let store: GrowspaceUIStore;
@@ -26,37 +27,37 @@ describe('UI Store', () => {
         it('should compute $isCompactView correctly', () => {
             expect(store.$isCompactView.get()).toBe(false);
 
-            store.$viewMode.set('compact');
+            store.$viewMode.set(ViewMode.COMPACT);
             expect(store.$isCompactView.get()).toBe(true);
 
-            store.$viewMode.set('standard');
+            store.$viewMode.set(ViewMode.STANDARD);
             expect(store.$isCompactView.get()).toBe(false);
         });
     });
 
     describe('setViewMode', () => {
         it('should update $viewMode', () => {
-            store.setViewMode('compact');
-            expect(store.$viewMode.get()).toBe('compact');
+            store.setViewMode(ViewMode.COMPACT);
+            expect(store.$viewMode.get()).toBe(ViewMode.COMPACT);
 
-            store.setViewMode('header');
-            expect(store.$viewMode.get()).toBe('header');
+            store.setViewMode(ViewMode.HEADER);
+            expect(store.$viewMode.get()).toBe(ViewMode.HEADER);
 
-            store.setViewMode('standard');
-            expect(store.$viewMode.get()).toBe('standard');
+            store.setViewMode(ViewMode.STANDARD);
+            expect(store.$viewMode.get()).toBe(ViewMode.STANDARD);
         });
     });
 
     describe('setGridOverlayMode', () => {
         it('should update $gridOverlayMode', () => {
-            store.setGridOverlayMode('vpd');
-            expect(store.$gridOverlayMode.get()).toBe('vpd');
+            store.setGridOverlayMode(GridOverlayMode.VPD);
+            expect(store.$gridOverlayMode.get()).toBe(GridOverlayMode.VPD);
 
-            store.setGridOverlayMode('temperature');
-            expect(store.$gridOverlayMode.get()).toBe('temperature');
+            store.setGridOverlayMode(GridOverlayMode.TEMPERATURE);
+            expect(store.$gridOverlayMode.get()).toBe(GridOverlayMode.TEMPERATURE);
 
-            store.setGridOverlayMode('none');
-            expect(store.$gridOverlayMode.get()).toBe('none');
+            store.setGridOverlayMode(GridOverlayMode.NONE);
+            expect(store.$gridOverlayMode.get()).toBe(GridOverlayMode.NONE);
         });
     });
 
@@ -233,7 +234,8 @@ describe('UI Store', () => {
             const notification = store.$notification.get();
             expect(notification).toEqual({
                 message: 'Test message',
-                type: 'success'
+                type: 'success',
+                action: undefined
             });
         });
 
@@ -243,7 +245,8 @@ describe('UI Store', () => {
             const notification = store.$notification.get();
             expect(notification).toEqual({
                 message: 'Info message',
-                type: 'info'
+                type: 'info',
+                action: undefined
             });
         });
 
@@ -251,6 +254,50 @@ describe('UI Store', () => {
             store.showToast('Error occurred', 'error');
 
             expect(store.$notification.get()?.type).toBe('error');
+        });
+
+        it('should handle action parameter', () => {
+            const callback = vi.fn();
+            store.showToast('Message with action', 'info', { label: 'Click', callback });
+
+            const notification = store.$notification.get();
+            expect(notification?.action).toEqual({ label: 'Click', callback });
+
+            notification?.action?.callback();
+            expect(callback).toHaveBeenCalled();
+        });
+    });
+
+    describe('Computed Stores', () => {
+        it('should compute $cardViewState correctly', () => {
+            const state = store.$cardViewState.get();
+            expect(state).toEqual({
+                viewMode: 'standard',
+                isLoading: true,
+                isEditMode: false,
+                isCompact: false,
+                activeDialog: { type: 'NONE' },
+                notification: null,
+                focusedPlantIndex: -1
+            });
+        });
+
+        it('should update $cardViewState when dependencies change', () => {
+            store.setViewMode(ViewMode.COMPACT);
+            store.setIsLoading(false);
+            store.setEditMode(true);
+            store.setActiveDialog({ type: 'IPM', payload: { plantIds: ['p1'] } });
+            store.showToast('test', 'success');
+            store.setFocusedPlantIndex(2);
+
+            const state = store.$cardViewState.get();
+            expect(state.viewMode).toBe('compact');
+            expect(state.isLoading).toBe(false);
+            expect(state.isEditMode).toBe(true);
+            expect(state.isCompact).toBe(true);
+            expect(state.activeDialog.type).toBe('IPM');
+            expect(state.notification?.message).toBe('test');
+            expect(state.focusedPlantIndex).toBe(2);
         });
     });
 

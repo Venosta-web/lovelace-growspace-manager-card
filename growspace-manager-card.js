@@ -12971,8 +12971,6 @@ class GrowspaceLogbookController {
       /* Layout Overrides */
       .strain-dialog-container {
         @apply .glass-dialog-container;
-        /* Since we can't use @apply in standard css without processor, we must duplicate or rely on .glass-dialog-container class in render */
-        /* But we will use the class in render */
       }
 
       .glass-dialog-container {
@@ -13470,7 +13468,7 @@ class GrowspaceLogbookController {
         display: flex;
         align-items: center;
         gap: 12px;
-        color: var(, #fff);
+        color: var(--primary-text-color, #fff);
         cursor: pointer;
       }
       .mobile-menu-item:hover {
@@ -15488,7 +15486,6 @@ class GrowspaceLogbookController {
             </button>
           </div>
 
-          <!-- Tabs -->
           <div
             class="tabs-row"
             style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
@@ -15496,24 +15493,12 @@ class GrowspaceLogbookController {
             <div
               class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
               @click=${() => (this._activeTab = 'schedules')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
-              <style>
-                .tab-item.active {
-                  border-bottom-color: ${dialogColor} !important;
-                  opacity: 1 !important;
-                }
-                .tab-item:hover {
-                  opacity: 1 !important;
-                  background: rgba(255, 255, 255, 0.05);
-                }
-              </style>
               Schedules
             </div>
             <div
               class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
               @click=${() => (this._activeTab = 'steering')}
-              style="padding: 12px 16px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; transition: all 0.2s;"
             >
               Crop Steering (VWC)
             </div>
@@ -15636,7 +15621,7 @@ class GrowspaceLogbookController {
             @click=${(e) => {
                 const container = e.target
                     .closest('.detail-card')
-                    ?.querySelector(`.${type}-time-bar`);
+                    ?.querySelector('.' + type + '-time-bar');
                 if (container) {
                     const rect = container.getBoundingClientRect();
                     type === 'irrigation'
@@ -15952,6 +15937,23 @@ class GrowspaceLogbookController {
         align-items: center;
         justify-content: center;
         z-index: 10000;
+      }
+
+      /* Tab Styles */
+      .tab-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        opacity: 0.7;
+        transition: all 0.2s;
+      }
+      .tab-item.active {
+        border-bottom-color: var(--stage-color, #2196F3) !important;
+        opacity: 1 !important;
+      }
+      .tab-item:hover {
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.05);
       }
     `,
         ]
@@ -33201,6 +33203,12 @@ class GrowspaceUIStore {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "$cardViewState", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.$viewMode = atom(ViewMode.STANDARD);
         this.$isLoading = atom(true);
         this.$activeDialog = atom({ type: 'NONE' });
@@ -33213,6 +33221,15 @@ class GrowspaceUIStore {
         this.$defaultApplied = atom(false);
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
+        this.$cardViewState = computed([this.$viewMode, this.$isLoading, this.$isEditMode, this.$isCompactView, this.$activeDialog, this.$notification, this.$focusedPlantIndex], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+            viewMode,
+            isLoading,
+            isEditMode,
+            isCompact,
+            activeDialog,
+            notification,
+            focusedPlantIndex
+        }));
     }
     // Actions
     setViewMode(mode) {
@@ -34318,9 +34335,6 @@ class GrowspaceStore {
     get plantActionContext() {
         return this._baseActionContext;
     }
-    get _plantActionContext() {
-        return this.plantActionContext;
-    }
     /** Context object for strain action functions */
     get _strainActionContext() {
         return {
@@ -34333,9 +34347,6 @@ class GrowspaceStore {
     /** Context object for growspace action functions */
     get growspaceActionContext() {
         return this._baseActionContext;
-    }
-    get _growspaceActionContext() {
-        return this.growspaceActionContext;
     }
     /** Context object for keyboard action functions */
     get _keyboardActionContext() {
@@ -34426,10 +34437,6 @@ class GrowspaceStore {
          * Centralized Action Dispatcher
          * Provides a single entry point for all business logic actions.
          */
-        /**
-         * Centralized Action Dispatcher
-         * Provides a single entry point for all business logic actions.
-         */
         Object.defineProperty(this, "actions", {
             enumerable: true,
             configurable: true,
@@ -34441,7 +34448,7 @@ class GrowspaceStore {
             configurable: true,
             writable: true,
             value: (motherPlant, numClones) => {
-                return takeClone(this._plantActionContext, motherPlant, numClones);
+                return takeClone(this.plantActionContext, motherPlant, numClones);
             }
         });
         this.dataService = new DataService();
@@ -34850,7 +34857,7 @@ class GrowspaceStore {
         }
     }
     async updatePlant(plantId, updates) {
-        await updatePlant(this._plantActionContext, plantId, updates);
+        await updatePlant(this.plantActionContext, plantId, updates);
     }
     async handleDeletePlant(plantId) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
@@ -34879,7 +34886,7 @@ class GrowspaceStore {
                 }
             }
         });
-        const success = await deletePlants(this._plantActionContext, ids, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
+        const success = await deletePlants(this.plantActionContext, ids, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
         if (success) {
             // Push to Undo Stack
             this.pushUndoAction({
@@ -34920,20 +34927,20 @@ class GrowspaceStore {
         }
     }
     async handleMovePlantToNextStage(plant) {
-        return await movePlantToNextStage(this._plantActionContext, plant);
+        return await movePlantToNextStage(this.plantActionContext, plant);
     }
     async movePlantToGrowspace(plant, targetGrowspace) {
         const originalGrowspace = plant.attributes.growspace_id || 'unknown';
-        const success = await movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+        const success = await movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
         if (success) {
             this.pushUndoAction({
                 type: 'move',
                 description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
                 reverse: async () => {
-                    await movePlantToGrowspace(this._plantActionContext, plant, originalGrowspace);
+                    await movePlantToGrowspace(this.plantActionContext, plant, originalGrowspace);
                 },
                 redo: async () => {
-                    await movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
+                    await movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
                 }
             });
         }
@@ -34951,7 +34958,7 @@ class GrowspaceStore {
             this.showToast('No growspace selected', 'error');
             return;
         }
-        await addPlant(this._plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, detail.phenotype);
+        await addPlant(this.plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, detail.phenotype);
     }
     async confirmAddPlants(detail) {
         const selectedDevice = this.data.$selectedDevice.get();
@@ -34959,14 +34966,40 @@ class GrowspaceStore {
             this.showToast('No growspace selected', 'error');
             return;
         }
+        // Snapshot current plant IDs for identifying added ones later
+        const devices = this.data.$devices.get();
+        const beforeIds = new Set();
+        devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
         try {
             await this.dataService.addPlants({
                 growspace_id: selectedDevice,
                 ...detail
             });
+            await this.refreshData();
+            // Identify added plant IDs
+            const afterDevices = this.data.$devices.get();
+            const addedIds = [];
+            afterDevices.forEach(d => d.plants?.forEach(p => {
+                const id = p.attributes.plant_id || '';
+                if (id && !beforeIds.has(id)) {
+                    addedIds.push(id);
+                }
+            }));
+            if (addedIds.length > 0) {
+                this.pushUndoAction({
+                    type: 'batch-delete',
+                    description: `Added ${addedIds.length} plants`,
+                    reverse: async () => {
+                        await deletePlants(this.plantActionContext, addedIds, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
+                        await this.refreshData();
+                    },
+                    redo: async () => {
+                        await this.confirmAddPlants(detail);
+                    }
+                });
+            }
             this.showToast('Batch plants added successfully', 'success');
             this.ui.closeDialog();
-            await this.refreshData();
         }
         catch (err) {
             this.showToast(`Error: ${err.message}`, 'error');
@@ -35052,7 +35085,7 @@ class GrowspaceStore {
         const originalCol = sourcePlant.attributes.col;
         const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
         const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
-        const success = await handlePlantDrop(this._plantActionContext, targetRow, targetCol, targetPlant, sourcePlant);
+        const success = await handlePlantDrop(this.plantActionContext, targetRow, targetCol, targetPlant, sourcePlant);
         if (success) {
             this.pushUndoAction({
                 type: 'move',
@@ -35062,7 +35095,7 @@ class GrowspaceStore {
                         await this.dataService.swapPlants(sourceId, targetId);
                     }
                     else {
-                        await movePlantPosition(this._plantActionContext, sourcePlant, originalRow, originalCol);
+                        await movePlantPosition(this.plantActionContext, sourcePlant, originalRow, originalCol);
                     }
                     await this.refreshData();
                 },
@@ -35075,16 +35108,16 @@ class GrowspaceStore {
         return success;
     }
     async movePlant(plant, newRow, newCol) {
-        const success = await movePlantPosition(this._plantActionContext, plant, newRow, newCol);
+        const success = await movePlantPosition(this.plantActionContext, plant, newRow, newCol);
         if (success) {
             this.updateGrid();
         }
     }
     async handleAddGrowspace(detail) {
-        await addGrowspace(this._growspaceActionContext, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
+        await addGrowspace(this.growspaceActionContext, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
     }
     async handleUpdateGrowspace(detail) {
-        await updateGrowspace(this._growspaceActionContext, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
+        await updateGrowspace(this.growspaceActionContext, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
     }
     async harvestPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
@@ -35379,53 +35412,18 @@ let GrowspaceManagerCard = (() => {
                 value: (__runInitializers(this, _store_extraInitializers), new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass)))
             });
             // UI Store Controllers
-            Object.defineProperty(this, "_viewModeController", {
+            // Consolidated UI Controller
+            Object.defineProperty(this, "_cardViewController", {
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$viewMode)
+                value: new libExports.StoreController(this, this.store.ui.$cardViewState)
             });
-            Object.defineProperty(this, "_isLoadingController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$isLoading)
-            });
-            Object.defineProperty(this, "_focusedPlantIndexController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$focusedPlantIndex)
-            });
-            Object.defineProperty(this, "_activeDialogController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$activeDialog)
-            });
-            Object.defineProperty(this, "_isEditModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$isEditMode)
-            });
-            Object.defineProperty(this, "_isCompactController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$isCompactView)
-            }); // Computed
             Object.defineProperty(this, "_selectedPlantsController", {
                 enumerable: true,
                 configurable: true,
                 writable: true,
                 value: new libExports.StoreController(this, this.store.ui.$selectedPlants)
-            });
-            Object.defineProperty(this, "_notificationController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$notification)
             });
             // Data Store Controllers (for reactivity)
             Object.defineProperty(this, "_devicesController", {
@@ -35599,7 +35597,7 @@ let GrowspaceManagerCard = (() => {
             }
             const devices = this._activeDevicesController.value;
             // Show loading spinner if initially loading and no devices yet
-            if (this._isLoadingController.value) {
+            if (this._cardViewController.value.isLoading) {
                 return x `
         <ha-card>
           <div class="loading-container">
@@ -35640,17 +35638,17 @@ let GrowspaceManagerCard = (() => {
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
-            .viewMode=${this._viewModeController.value}
+            .viewMode=${this._cardViewController.value.viewMode}
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             .grid=${grid}
             .rows=${effectiveRows}
-            .isEditMode=${this._isEditModeController.value}
-            .isCompact=${this._isCompactController.value}
+            .isEditMode=${this._cardViewController.value.isEditMode}
+            .isCompact=${this._cardViewController.value.isCompact}
             .selectedCount=${this._selectedPlantsController.value.size}
             .config=${this._config}
-            .isLoading=${this._isLoadingController.value}
-            .focusedPlantIndex=${this._focusedPlantIndexController.value}
+            .isLoading=${this._cardViewController.value.isLoading}
+            .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
           ></growspace-view-switcher>
           
           <batch-action-bar></batch-action-bar>

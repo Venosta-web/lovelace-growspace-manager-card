@@ -21,6 +21,7 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
     "@open-wc/testing-helpers": "^3.0.1",
     "@playwright/test": "^1.56.1",
     "@rollup/plugin-commonjs": "^28.0.9",
@@ -46,6 +47,7 @@
     "prettier": "^3.7.4",
     "rollup": "^4.55.1",
     "rollup-plugin-css-only": "^4.5.5",
+    "rollup-plugin-summary": "^3.0.1",
     "source-map-support": "^0.5.21",
     "typescript": "^5.9.2",
     "vitest": "4.0.14"

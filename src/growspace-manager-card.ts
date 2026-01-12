@@ -44,14 +44,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   protected _subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
 
   // UI Store Controllers
-  protected _viewModeController = new StoreController(this, this.store.ui.$viewMode);
-  protected _isLoadingController = new StoreController(this, this.store.ui.$isLoading);
-  protected _focusedPlantIndexController = new StoreController(this, this.store.ui.$focusedPlantIndex);
-  protected _activeDialogController = new StoreController(this, this.store.ui.$activeDialog);
-  protected _isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
-  protected _isCompactController = new StoreController(this, this.store.ui.$isCompactView); // Computed
+  // Consolidated UI Controller
+  protected _cardViewController = new StoreController(this, this.store.ui.$cardViewState);
   protected _selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
-  protected _notificationController = new StoreController(this, this.store.ui.$notification);
 
   // Data Store Controllers (for reactivity)
   protected _devicesController = new StoreController(this, this.store.data.$devices);
@@ -225,7 +220,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const devices = this._activeDevicesController.value;
 
     // Show loading spinner if initially loading and no devices yet
-    if (this._isLoadingController.value) {
+    if (this._cardViewController.value.isLoading) {
       return html`
         <ha-card>
           <div class="loading-container">
@@ -270,17 +265,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @exit-edit-mode=${this._handleExitEditMode}
         >
           <growspace-view-switcher
-            .viewMode=${this._viewModeController.value}
+            .viewMode=${this._cardViewController.value.viewMode}
             .device=${selectedDeviceData}
             .growspaceOptions=${growspaceOptions}
             .grid=${grid}
             .rows=${effectiveRows}
-            .isEditMode=${this._isEditModeController.value}
-            .isCompact=${this._isCompactController.value}
+            .isEditMode=${this._cardViewController.value.isEditMode}
+            .isCompact=${this._cardViewController.value.isCompact}
             .selectedCount=${this._selectedPlantsController.value.size}
             .config=${this._config}
-            .isLoading=${this._isLoadingController.value}
-            .focusedPlantIndex=${this._focusedPlantIndexController.value}
+            .isLoading=${this._cardViewController.value.isLoading}
+            .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
           ></growspace-view-switcher>
           
           <batch-action-bar></batch-action-bar>

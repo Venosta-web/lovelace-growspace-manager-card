@@ -1,7 +1,8 @@
-
 import * as plantActions from './plant-actions';
 import * as strainActions from './strain-actions';
 import { PlantEntity, StrainEntry } from '../types';
+import { PlantActionContext } from './plant-actions';
+import { StrainActionContext, GrowspaceActionContext } from './strain-actions';
 
 interface IGrowspaceStore {
     updatePlant(id: string, updates: Partial<PlantEntity['attributes']>): Promise<void>;
@@ -19,8 +20,8 @@ interface IGrowspaceStore {
     redo(): Promise<void>;
     canUndo: boolean;
     canRedo: boolean;
-    plantActionContext: any;
-    growspaceActionContext: any;
+    plantActionContext: PlantActionContext;
+    growspaceActionContext: GrowspaceActionContext;
 }
 
 export class ActionDispatcher {
