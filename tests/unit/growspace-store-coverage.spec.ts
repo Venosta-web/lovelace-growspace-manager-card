@@ -156,6 +156,19 @@ vi.mock('../../src/data-service', () => {
     };
 });
 
+// Helper
+const createMockHass = () => ({
+    states: {},
+    services: {
+        call: vi.fn(),
+    },
+    connection: {
+        subscribeMessage: vi.fn(),
+        sendMessagePromise: vi.fn(),
+    },
+    callService: vi.fn(),
+} as any);
+
 describe('GrowspaceStore Branch Coverage', () => {
     let store: GrowspaceStore;
 
@@ -168,6 +181,96 @@ describe('GrowspaceStore Branch Coverage', () => {
         // Default mock behaviors needed for basic ops
         (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set());
         mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([]);
+    });
+
+    describe('Optimization Logic', () => {
+        it('should track environment sensor entities', async () => {
+            // 1. Mock DataService to return a device with env attributes
+            const mockDevices = [{
+                device_id: 'd1',
+                name: 'D1',
+                plants: [],
+                environment_attributes: {
+                    temperature_sensor: 'sensor.temp',
+                    humidity_sensor: 'sensor.hum',
+                    simple_value: 123
+                }
+            }];
+
+            (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
+            // Verify this fix: ensure cache is not empty so we skip "initial fetch" block
+            (store.data.$wsDataCache.get as any).mockReturnValue({ 'd1': {} });
+            store.data.setWsDataCache({ 'd1': {} } as any); // Trigger update logic path
+
+            // 2. Trigger update 
+            // We need to bypass the "no cache" check or ensure cache is populated
+            // _updateDevicesState is called when we updateHass if cache exists
+            const hass = createMockHass();
+            store.updateHass(hass);
+
+            // 3. Verify watched entities
+            // Accessed via private property casting
+            const watched = (store as any)._watchedEntities as Set<string>;
+            expect(watched.has('sensor.temp')).toBe(true);
+            expect(watched.has('sensor.hum')).toBe(true);
+            expect(watched.size).toBeGreaterThanOrEqual(2);
+        });
+
+        it('should skip update if watched entities have not changed', () => {
+            // Setup initial state with watched entity
+            const mockDevices = [{
+                device_id: 'd1',
+                plants: [{ entity_id: 'sensor.plant1', attributes: { plant_id: 'p1' } } as any],
+            }];
+            (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
+            store.data.setWsDataCache({ 'd1': {} } as any);
+
+            // Initial HASS
+            const hass1 = createMockHass();
+            hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
+            store.updateHass(hass1);
+
+            // Verify watched
+            const watched = (store as any)._watchedEntities as Set<string>;
+            expect(watched.has('sensor.plant1')).toBe(true);
+
+            // Spy on internal update
+            const updateSpy = vi.spyOn(store as any, '_updateDevicesState');
+
+            // Second HASS: Different ref, same state for watched entity
+            const hass2 = { ...hass1, states: { ...hass1.states } } as any; // Shallow copy
+            store.updateHass(hass2);
+
+            expect(updateSpy).not.toHaveBeenCalled();
+        });
+
+        it('should proceed with update if watched entity changed', () => {
+            // Setup
+            const mockDevices = [{
+                device_id: 'd1',
+                plants: [{ entity_id: 'sensor.plant1', attributes: { plant_id: 'p1' } } as any],
+            }];
+            (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
+            store.data.setWsDataCache({ 'd1': {} } as any);
+
+            const hass1 = createMockHass();
+            hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
+            store.updateHass(hass1);
+
+            const updateSpy = vi.spyOn(store as any, '_updateDevicesState');
+
+            // HASS 2: Change state
+            const hass2 = {
+                ...hass1,
+                states: {
+                    ...hass1.states,
+                    'sensor.plant1': { state: 'problem', last_updated: 't2' }
+                }
+            } as any;
+            store.updateHass(hass2);
+
+            expect(updateSpy).toHaveBeenCalled();
+        });
     });
 
     describe('Undo/Redo & State Handling', () => {

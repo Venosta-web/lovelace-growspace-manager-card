@@ -109,9 +109,9 @@ export enum StatusLevel {
 }
 
 export const STATUS_COLORS = {
-  [StatusLevel.OPTIMAL]: '#4caf50',
-  [StatusLevel.WARNING]: '#ff9800',
-  [StatusLevel.DANGER]: '#f44336',
+  [StatusLevel.OPTIMAL]: 'var(--success-color, #4caf50)',
+  [StatusLevel.WARNING]: 'var(--warning-color, #ff9800)',
+  [StatusLevel.DANGER]: 'var(--error-color, #f44336)',
 } as const;
 
 export enum ScrollDirection {

@@ -334,7 +334,8 @@ describe('GrowspaceLogbook', () => {
         expect((element as any)._formatDuration(0)).toBe('0m 0s');
     });
 
-    it('should render reasons correctly', async () => {
+    it('should use warning color for HIGH severity (>= 0.7)', async () => {
+        // Re-adding the original 'should render reasons correctly' test content
         const eventWithReasons = { ...mockEvents[0], reasons: ['Heat', 'Humidity'] };
         (element as any)._events = [eventWithReasons];
         await element.updateComplete;

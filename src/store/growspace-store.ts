@@ -11,6 +11,8 @@ import { GrowspaceUIStore } from './ui-store';
 import { GrowspaceHistoryStore } from './history-store';
 import { GrowspaceGridStore } from './grid-store';
 
+
+import { ActionDispatcher } from './action-dispatcher';
 import * as plantActions from './plant-actions';
 import * as strainActions from './strain-actions';
 import * as keyboardActions from './keyboard-actions';
@@ -38,6 +40,10 @@ export class GrowspaceStore {
 
     private _isFetchingWS = false;
 
+    // Performance Optimization
+    private _watchedEntities = new Set<string>();
+    private _lastHassRef: HomeAssistant | undefined;
+
     /** Undo/Redo stack for plant operations (max 3 actions) */
     private _undoStack: UndoableAction[] = [];
     private _redoStack: UndoableAction[] = [];
@@ -54,8 +60,12 @@ export class GrowspaceStore {
     }
 
     /** Context object for plant action functions */
-    private get _plantActionContext(): plantActions.PlantActionContext {
+    public get plantActionContext(): plantActions.PlantActionContext {
         return this._baseActionContext;
+    }
+
+    private get _plantActionContext(): plantActions.PlantActionContext {
+        return this.plantActionContext;
     }
 
     /** Context object for strain action functions */
@@ -69,8 +79,12 @@ export class GrowspaceStore {
     }
 
     /** Context object for growspace action functions */
-    private get _growspaceActionContext(): strainActions.GrowspaceActionContext {
+    public get growspaceActionContext(): strainActions.GrowspaceActionContext {
         return this._baseActionContext;
+    }
+
+    private get _growspaceActionContext(): strainActions.GrowspaceActionContext {
+        return this.growspaceActionContext;
     }
 
     /** Context object for keyboard action functions */
@@ -87,34 +101,11 @@ export class GrowspaceStore {
      * Centralized Action Dispatcher
      * Provides a single entry point for all business logic actions.
      */
-    public readonly actions = {
-        plant: {
-            update: (id: string, updates: Partial<PlantEntity['attributes']>) => this.updatePlant(id, updates),
-            delete: (id: string | string[]) => this.handleDeletePlant(id),
-            move: (plant: PlantEntity, growspace: string) => this.movePlantToGrowspace(plant, growspace),
-            drop: (row: number, col: number, target: PlantEntity | null, source: PlantEntity | null) => this.handleDrop(row, col, target, source),
-            nextStage: (plant: PlantEntity) => this.handleMovePlantToNextStage(plant),
-            takeClone: (mother: PlantEntity, num?: number) => this.handleTakeClone(mother, num),
-            updateFromDialog: (state: any) => plantActions.updatePlantsFromDialog(this._plantActionContext, state),
-            add: (gid: string, r: number, c: number, s: string, p?: string) => plantActions.addPlant(this._plantActionContext, gid, r, c, s, p),
-            addBatch: (detail: any) => this.confirmAddPlants(detail)
-        },
-        growspace: {
-            add: (detail: any) => this.handleAddGrowspace(detail),
-            update: (detail: any) => this.handleUpdateGrowspace(detail),
-            remove: (id: string) => strainActions.removeGrowspace(this._growspaceActionContext, id)
-        },
-        strain: {
-            add: (data: Partial<StrainEntry>) => this.addStrain(data),
-            remove: (key: string) => this.removeStrain(key)
-        },
-        history: {
-            undo: () => this.undo(),
-            redo: () => this.redo(),
-            canUndo: () => this.canUndo,
-            canRedo: () => this.canRedo
-        }
-    };
+    /**
+     * Centralized Action Dispatcher
+     * Provides a single entry point for all business logic actions.
+     */
+    public readonly actions = new ActionDispatcher(this);
 
     constructor() {
         this.dataService = new DataService();
@@ -182,6 +173,9 @@ export class GrowspaceStore {
     }
 
     updateHass(hass: HomeAssistant) {
+        // Optimization: Refencing check
+        if (this._lastHassRef === hass) return;
+
         this.hass = hass;
         this.dataService.updateHass(hass);
 
@@ -189,10 +183,28 @@ export class GrowspaceStore {
         const currentCache = this.data.$wsDataCache.get();
         if (Object.keys(currentCache).length === 0 && !this._isFetchingWS) {
             this._refreshGrowspaceData();
-        } else {
-            // Just re-calculate derived state (sync) because entities might have changed
-            this._updateDevicesState();
+            this._lastHassRef = hass;
+            return;
         }
+
+        // Deep Optimization: Only update if watched entities changed
+        if (this._watchedEntities.size > 0 && this._lastHassRef) {
+            let hasChanged = false;
+            for (const entityId of this._watchedEntities) {
+                if (this.hass.states[entityId] !== this._lastHassRef.states[entityId]) {
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (!hasChanged) {
+                this._lastHassRef = hass;
+                return;
+            }
+        }
+
+        // Just re-calculate derived state (sync) because entities might have changed
+        this._updateDevicesState();
+        this._lastHassRef = hass;
     }
 
     async refreshData() {
@@ -244,6 +256,27 @@ export class GrowspaceStore {
         if (!this._areDeviceArraysEqual(currentDevices, devices)) {
             this.data.setDevices(devices);
         }
+
+        // Populate watched entities for next update cycle
+        this._watchedEntities.clear();
+        devices.forEach(d => {
+            // Plants
+            (d.plants || []).forEach(p => {
+                const eid = p.entity_id;
+                if (eid) this._watchedEntities.add(eid);
+            });
+            // Irrigation Config
+            if (d.irrigation_config?.irrigation_pump_entity) this._watchedEntities.add(d.irrigation_config.irrigation_pump_entity);
+            if (d.irrigation_config?.drain_pump_entity) this._watchedEntities.add(d.irrigation_config.drain_pump_entity);
+            // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
+            if (d.environment_attributes) {
+                Object.values(d.environment_attributes).forEach(val => {
+                    if (typeof val === 'string' && val.includes('.')) {
+                        this._watchedEntities.add(val);
+                    }
+                });
+            }
+        });
 
         const selectedDevice = this.data.$selectedDevice.get();
         // Auto-select if needed
@@ -612,15 +645,15 @@ export class GrowspaceStore {
         }
     }
 
-    async handleMovePlantToNextStage(plant: PlantEntity) {
-        await plantActions.movePlantToNextStage(this._plantActionContext, plant);
+    async handleMovePlantToNextStage(plant: PlantEntity): Promise<boolean> {
+        return await plantActions.movePlantToNextStage(this._plantActionContext, plant);
     }
 
-    handleTakeClone = (motherPlant: PlantEntity, numClones?: number) => {
+    handleTakeClone = (motherPlant: PlantEntity, numClones?: number): Promise<boolean> => {
         return plantActions.takeClone(this._plantActionContext, motherPlant, numClones);
     };
 
-    async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string) {
+    async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string): Promise<boolean> {
         const originalGrowspace = plant.attributes.growspace_id || 'unknown';
         const success = await plantActions.movePlantToGrowspace(this._plantActionContext, plant, targetGrowspace);
 
@@ -636,6 +669,7 @@ export class GrowspaceStore {
                 }
             });
         }
+        return success;
     }
 
     async addStrain(strainData: Partial<StrainEntry>) {
@@ -762,9 +796,9 @@ export class GrowspaceStore {
         targetCol: number,
         targetPlant: PlantEntity | null,
         sourcePlant: PlantEntity | null
-    ) {
+    ): Promise<boolean> {
         const selectedDevice = this.data.$selectedDevice.get();
-        if (!sourcePlant || !selectedDevice) return;
+        if (!sourcePlant || !selectedDevice) return false;
 
         const originalRow = sourcePlant.attributes.row;
         const originalCol = sourcePlant.attributes.col;
@@ -797,6 +831,7 @@ export class GrowspaceStore {
             });
             this.updateGrid();
         }
+        return success;
     }
 
     async movePlant(plant: PlantEntity, newRow: number, newCol: number) {

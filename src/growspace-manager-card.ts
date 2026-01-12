@@ -254,6 +254,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div 
             class="unified-growspace-card glass-surface glass-panel" 
+            role="region"
+            aria-label="Growspace: ${selectedDeviceData.name}"
             tabindex="0" 
             @keydown=${this._handleKeyboardNav}
             @view-mode-changed=${this._handleViewModeChanged}

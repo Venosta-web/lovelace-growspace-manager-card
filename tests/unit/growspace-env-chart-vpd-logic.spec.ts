@@ -92,7 +92,7 @@ describe('GrowspaceEnvChart VPD Logic', () => {
         // Check the segment path stroke color
         const path = element.shadowRoot?.querySelector('path[stroke-width="2.5"]');
         expect(path).toBeTruthy();
-        expect(path?.getAttribute('stroke')).toBe('#f44336'); // Red/Danger
+        expect(path?.getAttribute('stroke')).toBe('var(--error-color, #f44336)'); // Red/Danger
     });
 
     it('should infer Day (optimal) when time is before first Light OFF event', async () => {
@@ -121,7 +121,7 @@ describe('GrowspaceEnvChart VPD Logic', () => {
 
         const path = element.shadowRoot?.querySelector('path[stroke-width="2.5"]');
         expect(path).toBeTruthy();
-        expect(path?.getAttribute('stroke')).toBe('#4caf50'); // Green/Optimal
+        expect(path?.getAttribute('stroke')).toBe('var(--success-color, #4caf50)'); // Green/Optimal
     });
 
     it('should handle dimmers (numeric state) correctly', async () => {
@@ -149,6 +149,6 @@ describe('GrowspaceEnvChart VPD Logic', () => {
         expect(path).toBeTruthy();
         // If first point is 10 (Day), we infer previous was Night.
         // Night targets (0.4-0.6), 1.5 is Danger.
-        expect(path?.getAttribute('stroke')).toBe('#f44336');
+        expect(path?.getAttribute('stroke')).toBe('var(--error-color, #f44336)');
     });
 });

@@ -451,7 +451,7 @@ describe('GrowspaceEnvChart', () => {
         expect(segments?.length).toBeGreaterThan(0);
 
         // Verify optimal color usage (green #4caf50)
-        const greenPath = elVpd.shadowRoot?.querySelector('path[stroke="#4caf50"]');
+        const greenPath = elVpd.shadowRoot?.querySelector('path[stroke="var(--success-color, #4caf50)"]');
         expect(greenPath).toBeTruthy();
     });
 
@@ -808,9 +808,9 @@ describe('GrowspaceEnvChart', () => {
             // End -> currentSegment=[P4] length < 2, ignored.
 
             expect(segments.length).toBe(3);
-            expect(segments[0].color).toBe('#4caf50'); // Green
-            expect(segments[1].color).toBe('#ff9800'); // Orange
-            expect(segments[2].color).toBe('#f44336'); // Red
+            expect(segments[0].color).toBe('var(--success-color, #4caf50)'); // Green
+            expect(segments[1].color).toBe('var(--warning-color, #ff9800)'); // Orange
+            expect(segments[2].color).toBe('var(--error-color, #f44336)'); // Red
         });
 
         it('should handle _generateVpdSegments with empty or single point inputs', async () => {
@@ -903,7 +903,7 @@ describe('GrowspaceEnvChart', () => {
 
         it('should verify _getVpdStatusColor fallback', () => {
             expect((element as any)._getVpdStatusColor('unknown')).toBe('#9c27b0');
-            expect((element as any)._getVpdStatusColor('danger')).toBe('#f44336');
+            expect((element as any)._getVpdStatusColor('danger')).toBe('var(--error-color, #f44336)');
         });
 
         it('should handle scroll event listener', async () => {
