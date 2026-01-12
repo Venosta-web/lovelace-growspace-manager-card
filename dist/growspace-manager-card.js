@@ -31348,6 +31348,208 @@ function handleKeyboardNavigation(ctx, key, uiStore, dataStore) {
     }
 }
 
+/**
+ * Service responsible for synchronizing data between Home Assistant and the local store.
+ * Handles caching, optimizing updates, and managing the initial data fetch.
+ */
+class SyncService {
+    constructor(dataService, dataStore, uiStore) {
+        this.dataService = dataService;
+        this.dataStore = dataStore;
+        this.uiStore = uiStore;
+        this._isFetchingWS = false;
+        this._watchedEntities = new Set();
+    }
+    /**
+     * Updates the Home Assistant reference and triggers data refresh if necessary.
+     * Implements optimization to avoid unnecessary processing.
+     */
+    updateHass(hass) {
+        // Optimization: Referencing check
+        if (this._lastHassRef === hass)
+            return;
+        this.dataService.updateHass(hass);
+        // If cache empty, fetch initial
+        const currentCache = this.dataStore.$wsDataCache.get();
+        if (Object.keys(currentCache).length === 0 && !this._isFetchingWS) {
+            this.refreshGrowspaceData();
+            this._lastHassRef = hass;
+            return;
+        }
+        // Deep Optimization: Only update if watched entities changed
+        if (this._watchedEntities.size > 0 && this._lastHassRef) {
+            let hasChanged = false;
+            for (const entityId of this._watchedEntities) {
+                const newState = hass.states[entityId];
+                const oldState = this._lastHassRef.states[entityId];
+                // Fast reference check + check for missing/new states
+                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
+                    hasChanged = true;
+                    break;
+                }
+            }
+            if (!hasChanged) {
+                this._lastHassRef = hass;
+                return;
+            }
+        }
+        // Just re-calculate derived state (sync) because entities might have changed
+        this.updateDevicesState();
+        this._lastHassRef = hass;
+    }
+    /**
+     * Refreshes growspace data from the WebSocket API.
+     * Manages loading state and error handling.
+     */
+    async refreshGrowspaceData() {
+        if (!this.dataService.hass || this._isFetchingWS)
+            return;
+        this._isFetchingWS = true;
+        // Show loading spinner if we have no devices yet
+        if (this.dataStore.$devices.get().length === 0) {
+            this.uiStore.setIsLoading(true);
+        }
+        try {
+            const data = await this.dataService.fetchGrowspaceData();
+            this.dataStore.setWsDataCache(data || {});
+            this.updateDevicesState();
+        }
+        catch (e) {
+            console.error('Failed to fetch growspace data', e);
+        }
+        finally {
+            this._isFetchingWS = false;
+            // Check if devices loaded or if a device is selected to turn off loading
+            if (this.dataStore.$devices.get().length === 0 || this.dataStore.$selectedDevice.get()) {
+                this.uiStore.setIsLoading(false);
+            }
+        }
+    }
+    /**
+     * Updates the devices state in the store based on cached data and current HA state.
+     * Also updates the list of watched entities for optimization.
+     */
+    updateDevicesState() {
+        const devices = this.dataService.getGrowspaceDevices(this.dataStore.$wsDataCache.get());
+        const currentDevices = this.dataStore.$devices.get();
+        if (!this._areDeviceArraysEqual(currentDevices, devices)) {
+            this.dataStore.setDevices(devices);
+        }
+        // Populate watched entities for next update cycle
+        this._watchedEntities.clear();
+        devices.forEach(d => {
+            // Plants
+            (d.plants || []).forEach(p => {
+                const eid = p.entity_id;
+                if (eid)
+                    this._watchedEntities.add(eid);
+            });
+            // Irrigation Config
+            if (d.irrigation_config?.irrigation_pump_entity)
+                this._watchedEntities.add(d.irrigation_config.irrigation_pump_entity);
+            if (d.irrigation_config?.drain_pump_entity)
+                this._watchedEntities.add(d.irrigation_config.drain_pump_entity);
+            // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
+            if (d.environment_attributes) {
+                Object.values(d.environment_attributes).forEach(val => {
+                    if (typeof val === 'string' && val.includes('.')) {
+                        this._watchedEntities.add(val);
+                    }
+                });
+            }
+        });
+        const selectedDevice = this.dataStore.$selectedDevice.get();
+        // Auto-select if needed
+        if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
+            const config = this.dataStore.$config.get();
+            // Default to true if not defined
+            // @ts-ignore
+            config?.auto_select_growspace ?? true;
+            if (this.uiStore.$defaultApplied.get())
+                return;
+            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
+            if (defaultDevice) {
+                this.dataStore.setSelectedDevice(defaultDevice.device_id);
+                this.uiStore.setDefaultApplied(true);
+                return;
+            }
+            // Fallback to first device
+            this.dataStore.setSelectedDevice(devices[0].device_id);
+        }
+    }
+    _areDeviceArraysEqual(a, b) {
+        if (a === b)
+            return true;
+        if (!a || !b)
+            return false;
+        if (a.length !== b.length)
+            return false;
+        if (a.length === 0)
+            return true;
+        try {
+            return JSON.stringify(a) === JSON.stringify(b);
+        }
+        catch (e) {
+            return false;
+        }
+    }
+}
+
+class UndoRedoManager {
+    constructor(showToast) {
+        this.showToast = showToast;
+        this._undoStack = [];
+        this._redoStack = [];
+        this.MAX_UNDO_ACTIONS = 3;
+    }
+    pushAction(action) {
+        this._undoStack.push(action);
+        if (this._undoStack.length > this.MAX_UNDO_ACTIONS) {
+            this._undoStack.shift(); // Remove oldest
+        }
+        this._redoStack = []; // Clear redo on new action
+        // Show toast with Undo button
+        this.showToast(action.description, 'success', {
+            label: 'Undo',
+            callback: () => this.undo()
+        });
+    }
+    get canUndo() {
+        return this._undoStack.length > 0;
+    }
+    get canRedo() {
+        return this._redoStack.length > 0;
+    }
+    async undo() {
+        const action = this._undoStack.pop();
+        if (!action)
+            return;
+        try {
+            await action.reverse();
+            this._redoStack.push(action);
+            this.showToast(`Undone: ${action.description}`, 'info');
+        }
+        catch (err) {
+            console.error('[Undo failed]', err);
+            this.showToast('Undo failed', 'error');
+        }
+    }
+    async redo() {
+        const action = this._redoStack.pop();
+        if (!action)
+            return;
+        try {
+            await action.redo();
+            this._undoStack.push(action);
+            this.showToast(`Redone: ${action.description}`, 'info');
+        }
+        catch (err) {
+            console.error('[Redo failed]', err);
+            this.showToast('Redo failed', 'error');
+        }
+    }
+}
+
 class GrowspaceStore {
     /** Base context with common action dependencies */
     get _baseActionContext() {
@@ -31385,13 +31587,6 @@ class GrowspaceStore {
         };
     }
     constructor() {
-        this._isFetchingWS = false;
-        // Performance Optimization
-        this._watchedEntities = new Set();
-        /** Undo/Redo stack for plant operations (max 3 actions) */
-        this._undoStack = [];
-        this._redoStack = [];
-        this.MAX_UNDO_ACTIONS = 3;
         /**
          * Centralized Action Dispatcher
          * Provides a single entry point for all business logic actions.
@@ -31406,192 +31601,37 @@ class GrowspaceStore {
         this.ui = new GrowspaceUIStore();
         this.history = new GrowspaceHistoryStore(this.dataService, this.data);
         this.grid = new GrowspaceGridStore(this.data);
+        // Initialize services
+        this.syncService = new SyncService(this.dataService, this.data, this.ui);
+        this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
     }
     /** Cleanup all subscriptions and resources */
     destroy() {
         this.history.destroy();
-        // Any other subscriptions would be cleared here
     }
     // === Undo/Redo Methods ===
-    /** Push an undoable action onto the stack, clearing redo stack and enforcing limit */
     pushUndoAction(action) {
-        this._undoStack.push(action);
-        if (this._undoStack.length > this.MAX_UNDO_ACTIONS) {
-            this._undoStack.shift(); // Remove oldest
-        }
-        this._redoStack = []; // Clear redo on new action
-        // Show toast with Undo button
-        this.showToast(action.description, 'success', {
-            label: 'Undo',
-            callback: () => this.undo()
-        });
+        this.undoRedoManager.pushAction(action);
     }
-    /** Check if undo is available */
     get canUndo() {
-        return this._undoStack.length > 0;
+        return this.undoRedoManager.canUndo;
     }
-    /** Check if redo is available */
     get canRedo() {
-        return this._redoStack.length > 0;
+        return this.undoRedoManager.canRedo;
     }
-    /** Undo the last action */
     async undo() {
-        const action = this._undoStack.pop();
-        if (!action)
-            return;
-        try {
-            await action.reverse();
-            this._redoStack.push(action);
-            this.showToast(`Undone: ${action.description}`, 'info');
-        }
-        catch (err) {
-            console.error('[Undo failed]', err);
-            this.showToast('Undo failed', 'error');
-        }
+        await this.undoRedoManager.undo();
     }
-    /** Redo the last undone action */
     async redo() {
-        const action = this._redoStack.pop();
-        if (!action)
-            return;
-        try {
-            await action.redo();
-            this._undoStack.push(action);
-            this.showToast(`Redone: ${action.description}`, 'info');
-        }
-        catch (err) {
-            console.error('[Redo failed]', err);
-            this.showToast('Redo failed', 'error');
-        }
+        await this.undoRedoManager.redo();
     }
     updateHass(hass) {
-        // Optimization: Refencing check
-        if (this._lastHassRef === hass)
-            return;
         this.hass = hass;
-        this.dataService.updateHass(hass);
-        // If cache empty, fetch initial
-        const currentCache = this.data.$wsDataCache.get();
-        if (Object.keys(currentCache).length === 0 && !this._isFetchingWS) {
-            this._refreshGrowspaceData();
-            this._lastHassRef = hass;
-            return;
-        }
-        // Deep Optimization: Only update if watched entities changed
-        if (this._watchedEntities.size > 0 && this._lastHassRef) {
-            let hasChanged = false;
-            for (const entityId of this._watchedEntities) {
-                const newState = this.hass.states[entityId];
-                const oldState = this._lastHassRef.states[entityId];
-                // Fast reference check + check for missing/new states
-                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
-                    hasChanged = true;
-                    break;
-                }
-            }
-            if (!hasChanged) {
-                this._lastHassRef = hass;
-                return;
-            }
-        }
-        // Just re-calculate derived state (sync) because entities might have changed
-        this._updateDevicesState();
-        this._lastHassRef = hass;
+        this.syncService.updateHass(hass);
     }
     async refreshData() {
-        await this._refreshGrowspaceData();
+        await this.syncService.refreshGrowspaceData();
         this.pruneOptimisticDeletions();
-    }
-    async _refreshGrowspaceData() {
-        if (!this.hass || this._isFetchingWS)
-            return;
-        this._isFetchingWS = true;
-        // Show loading spinner if we have no devices yet
-        if (this.data.$devices.get().length === 0) {
-            this.ui.setIsLoading(true);
-        }
-        try {
-            const data = await this.dataService.fetchGrowspaceData();
-            this.data.setWsDataCache(data || {});
-            this._updateDevicesState();
-            // Background fetch presets for better UX
-            this.fetchNutrientPresets();
-            this.fetchIPMPresets();
-        }
-        catch (e) {
-            console.error('Failed to fetch growspace data', e);
-        }
-        finally {
-            this._isFetchingWS = false;
-            // Check if devices loaded or if a device is selected to turn off loading
-            if (this.data.$devices.get().length === 0 || this.data.$selectedDevice.get()) {
-                this.ui.setIsLoading(false);
-            }
-        }
-    }
-    _areDeviceArraysEqual(a, b) {
-        if (a === b)
-            return true;
-        if (!a || !b)
-            return false;
-        if (a.length !== b.length)
-            return false;
-        if (a.length === 0)
-            return true;
-        // Deep comparison using JSON.stringify is a fallback for complex structures.
-        // For performance, we could implement a manual shallow check for key props first.
-        try {
-            return JSON.stringify(a) === JSON.stringify(b);
-        }
-        catch (e) {
-            return false;
-        }
-    }
-    _updateDevicesState() {
-        const devices = this.dataService.getGrowspaceDevices(this.data.$wsDataCache.get());
-        const currentDevices = this.data.$devices.get();
-        if (!this._areDeviceArraysEqual(currentDevices, devices)) {
-            this.data.setDevices(devices);
-        }
-        // Populate watched entities for next update cycle
-        this._watchedEntities.clear();
-        devices.forEach(d => {
-            // Plants
-            (d.plants || []).forEach(p => {
-                const eid = p.entity_id;
-                if (eid)
-                    this._watchedEntities.add(eid);
-            });
-            // Irrigation Config
-            if (d.irrigation_config?.irrigation_pump_entity)
-                this._watchedEntities.add(d.irrigation_config.irrigation_pump_entity);
-            if (d.irrigation_config?.drain_pump_entity)
-                this._watchedEntities.add(d.irrigation_config.drain_pump_entity);
-            // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
-            if (d.environment_attributes) {
-                Object.values(d.environment_attributes).forEach(val => {
-                    if (typeof val === 'string' && val.includes('.')) {
-                        this._watchedEntities.add(val);
-                    }
-                });
-            }
-        });
-        const selectedDevice = this.data.$selectedDevice.get();
-        // Auto-select if needed
-        if ((!selectedDevice || !this.ui.$defaultApplied.get()) && devices.length > 0) {
-            const config = this.data.$config.get();
-            config?.auto_select_growspace ?? true;
-            if (this.ui.$defaultApplied.get())
-                return;
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
-            if (defaultDevice) {
-                this.data.setSelectedDevice(defaultDevice.device_id);
-                this.ui.setDefaultApplied(true);
-                return;
-            }
-            // Fallback to first device
-            this.data.setSelectedDevice(devices[0].device_id);
-        }
     }
     // --- Actions / Logic ---
     // State Setters
@@ -31620,8 +31660,8 @@ class GrowspaceStore {
         if (config?.initial_view_mode) {
             this.ui.setViewMode(config.initial_view_mode);
         }
-        // Trigger update logic in case devices are already loaded
-        this._updateDevicesState();
+        // Trigger update logic via sync service
+        this.syncService.updateDevicesState();
     }
     fetchStrainLibrary(force = false) {
         return this._fetchStrainLibraryImpl(force);
@@ -31631,7 +31671,6 @@ class GrowspaceStore {
             return;
         const CACHE_KEY = 'growspace_strain_library_v2';
         const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        // 1. Try to load from cache
         const cachedRaw = localStorage.getItem(CACHE_KEY);
         let usedCache = false;
         if (!force && cachedRaw) {
@@ -31645,16 +31684,14 @@ class GrowspaceStore {
             }
             catch (e) {
                 console.warn('Failed to parse cached strain library', e);
-                localStorage.removeItem(CACHE_KEY); // Clear bad cache
+                localStorage.removeItem(CACHE_KEY);
             }
         }
-        // 2. Fetch from backend if no cache or invalid
         if (!usedCache) {
             try {
                 const currentStrains = await this.dataService.fetchStrainLibrary();
                 if (Array.isArray(currentStrains)) {
                     this.data.setStrainLibrary(currentStrains);
-                    // Update cache
                     const cacheData = {
                         version: 2,
                         timestamp: Date.now(),
@@ -31760,7 +31797,6 @@ class GrowspaceStore {
                     allIds.push(pId);
                 }
             });
-            // Sync atom
             this.ui.selectAllPlants(allIds);
         }
     }
@@ -31825,7 +31861,6 @@ class GrowspaceStore {
     }
     async handleDeletePlant(plantId) {
         const ids = Array.isArray(plantId) ? plantId : [plantId];
-        // Capture plant state for Undo
         const plantsToRestore = [];
         const devices = this.data.$devices.get();
         ids.forEach(id => {
@@ -31852,7 +31887,6 @@ class GrowspaceStore {
         });
         const success = await deletePlants(this.plantActionContext, ids, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
         if (success) {
-            // Push to Undo Stack
             this.pushUndoAction({
                 type: ids.length > 1 ? 'batch-delete' : 'delete',
                 description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
@@ -31930,7 +31964,6 @@ class GrowspaceStore {
             this.showToast('No growspace selected', 'error');
             return;
         }
-        // Snapshot current plant IDs for identifying added ones later
         const devices = this.data.$devices.get();
         const beforeIds = new Set();
         devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
@@ -31940,7 +31973,6 @@ class GrowspaceStore {
                 ...detail
             });
             await this.refreshData();
-            // Identify added plant IDs
             const afterDevices = this.data.$devices.get();
             const addedIds = [];
             afterDevices.forEach(d => d.plants?.forEach(p => {
@@ -31969,15 +32001,10 @@ class GrowspaceStore {
             this.showToast(`Error: ${err.message}`, 'error');
         }
     }
-    /**
-     * Toggles an environment graph on/off.
-     * If the graph is turned ON while in 'header' view mode, automatically expands to 'standard' mode.
-     */
     toggleEnvGraph(metric) {
         if (!this.history)
             return;
         const isNowActive = this.history.toggleEnvGraph(metric);
-        // Auto-expand if we just enabled a graph while in header mode
         if (isNowActive && this.ui.$viewMode.get() === 'header') {
             this.ui.setViewMode(ViewMode.STANDARD);
         }
@@ -32001,7 +32028,6 @@ class GrowspaceStore {
                     throw new Error("No device selected");
                 response = await this.dataService.askGrowAdvice(selectedDevice, query);
             }
-            // Handle various response formats from the API
             const extractText = (res) => {
                 if (typeof res === 'string')
                     return res;
@@ -32009,7 +32035,6 @@ class GrowspaceStore {
                     return JSON.stringify(res);
                 if (typeof res.response === 'string')
                     return res.response;
-                // res.response is an object - check if it has its own 'response' string property
                 const nested = res.response;
                 if ('response' in nested && typeof nested.response === 'string') {
                     return nested.response;
@@ -32093,7 +32118,6 @@ class GrowspaceStore {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
         if (selectedIds.length === 0 && !growspaceId)
             return;
-        // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
             growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
@@ -32110,7 +32134,6 @@ class GrowspaceStore {
         const selectedIds = Array.from(this.ui.$selectedPlants.get());
         if (selectedIds.length === 0 && !growspaceId)
             return;
-        // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
             growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
@@ -32205,7 +32228,6 @@ class GrowspaceStore {
         }
         try {
             const res = await this.dataService.getStrainRecommendation(userQuery);
-            // Handle various response formats from the API
             const extractText = (res) => {
                 if (typeof res === 'string')
                     return res;
@@ -32213,7 +32235,6 @@ class GrowspaceStore {
                     return JSON.stringify(res);
                 if (typeof res.response === 'string')
                     return res.response;
-                // res.response is an object - check if it has its own 'response' string property
                 const nested = res.response;
                 if ('response' in nested && typeof nested.response === 'string') {
                     return nested.response;
@@ -32251,7 +32272,6 @@ class GrowspaceStore {
     }
     openIPMDialog(context) {
         this.fetchIPMPresets();
-        // Fallback to selected device when no specific growspaceId or plantIds provided
         const growspaceId = context?.growspaceId ||
             (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);
         this.ui.setActiveDialog({
@@ -32310,15 +32330,9 @@ class GrowspaceStore {
             this.showToast('Import failed: ' + e.message, 'error');
         }
     }
-    /**
-     * Batch Action: perform an action on multiple plants
-     * Supports 'remove', 'transition', 'harvest' actions.
-     * Applies optimistic UI updates and calls backend service.
-     */
     async batchAction(action, entityIds, data) {
         if (entityIds.length === 0)
             return;
-        // Optimistic UI: for 'remove', mark them as deleted immediately
         if (action === 'remove') {
             entityIds.forEach(id => this.data.addOptimisticDeletedPlantId(id));
         }
@@ -32329,16 +32343,13 @@ class GrowspaceStore {
                 data: data || {}
             });
             this.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
-            // Clear selection and exit edit mode
             this.ui.clearPlantSelection();
             this.ui.setEditMode(false);
-            // Refresh data to get server-confirmed state
             await this.refreshData();
         }
         catch (err) {
             console.error(`Batch ${action} failed:`, err);
             this.showToast(`Batch ${action} failed: ${err.message || 'Unknown error'}`, 'error');
-            // Rollback optimistic updates on error
             if (action === 'remove') {
                 entityIds.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
             }

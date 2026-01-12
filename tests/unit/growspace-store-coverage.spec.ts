@@ -117,14 +117,14 @@ vi.mock('../../src/store/data-store', () => {
 });
 
 // Mock DataService
-const mockDataServiceInstance = {
+const mockDataServiceInstance: any = {
     getGrowspaceDevices: vi.fn(),
     harvestPlant: vi.fn().mockResolvedValue({}),
     moveClone: vi.fn().mockResolvedValue({}),
     fetchStrainLibrary: vi.fn().mockResolvedValue([]),
     addStrain: vi.fn().mockResolvedValue({}),
     removeStrain: vi.fn().mockResolvedValue({}),
-    updateHass: vi.fn(),
+    updateHass: vi.fn(function(this: any, h) { this.hass = h; }),
     updateGrowspace: vi.fn().mockResolvedValue({}),
     updatePlant: vi.fn().mockResolvedValue({}),
     addPlant: vi.fn().mockResolvedValue({}),
@@ -143,7 +143,8 @@ const mockDataServiceInstance = {
     takeClone: vi.fn().mockResolvedValue({}),
     callService: vi.fn().mockResolvedValue({}),
     fetchNutrientPresets: vi.fn().mockResolvedValue({}),
-    fetchIPMPresets: vi.fn().mockResolvedValue({})
+    fetchIPMPresets: vi.fn().mockResolvedValue({}),
+    hass: { connection: {} } // Default to avoid early returns
 };
 
 vi.mock('../../src/data-service', () => {
@@ -204,13 +205,13 @@ describe('GrowspaceStore Branch Coverage', () => {
 
             // 2. Trigger update 
             // We need to bypass the "no cache" check or ensure cache is populated
-            // _updateDevicesState is called when we updateHass if cache exists
+            // updateDevicesState is called when we updateHass if cache exists
             const hass = createMockHass();
             store.updateHass(hass);
 
             // 3. Verify watched entities
-            // Accessed via private property casting
-            const watched = (store as any)._watchedEntities as Set<string>;
+            // Accessed via private property casting on syncService
+            const watched = (store.syncService as any)._watchedEntities as Set<string>;
             expect(watched.has('sensor.temp')).toBe(true);
             expect(watched.has('sensor.hum')).toBe(true);
             expect(watched.size).toBeGreaterThanOrEqual(2);
@@ -230,12 +231,12 @@ describe('GrowspaceStore Branch Coverage', () => {
             hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
             store.updateHass(hass1);
 
-            // Verify watched
-            const watched = (store as any)._watchedEntities as Set<string>;
+            // Verify watched on syncService
+            const watched = (store.syncService as any)._watchedEntities as Set<string>;
             expect(watched.has('sensor.plant1')).toBe(true);
 
-            // Spy on internal update
-            const updateSpy = vi.spyOn(store as any, '_updateDevicesState');
+            // Spy on internal update on syncService
+            const updateSpy = vi.spyOn(store.syncService as any, 'updateDevicesState');
 
             // Second HASS: Different ref, same state for watched entity
             const hass2 = { ...hass1, states: { ...hass1.states } } as any; // Shallow copy
@@ -257,7 +258,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
             store.updateHass(hass1);
 
-            const updateSpy = vi.spyOn(store as any, '_updateDevicesState');
+            const updateSpy = vi.spyOn(store.syncService as any, 'updateDevicesState');
 
             // HASS 2: Change state
             const hass2 = {
@@ -333,7 +334,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should execute undo callback from toast', () => {
-            const undoSpy = vi.spyOn(store, 'undo').mockImplementation(async () => { });
+            const undoSpy = vi.spyOn(store.undoRedoManager, 'undo').mockImplementation(async () => { });
             store.pushUndoAction({ type: 'move', description: 'Action', reverse: async () => { }, redo: async () => { } });
 
             // Capture the toast call
@@ -816,7 +817,8 @@ describe('GrowspaceStore Branch Coverage', () => {
 
         it('should return early in _refreshGrowspaceData if hass missing', async () => {
             store.hass = undefined as any;
-            await store.refreshData(); // calls _refreshGrowspaceData
+            mockDataServiceInstance.hass = undefined; // SyncService checks this
+            await store.refreshData(); // calls refreshGrowspaceData
             expect(mockDataServiceInstance.fetchGrowspaceData).not.toHaveBeenCalled();
         });
     });

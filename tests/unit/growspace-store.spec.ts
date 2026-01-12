@@ -125,14 +125,14 @@ vi.mock('../../src/store/data-store', () => {
 });
 
 // Mock DataService
-const mockDataServiceInstance = {
+const mockDataServiceInstance: any = {
     getGrowspaceDevices: vi.fn(),
     harvestPlant: vi.fn().mockResolvedValue({}),
     moveClone: vi.fn().mockResolvedValue({}),
     fetchStrainLibrary: vi.fn().mockResolvedValue([]),
     addStrain: vi.fn().mockResolvedValue({}),
     removeStrain: vi.fn().mockResolvedValue({}),
-    updateHass: vi.fn(),
+    updateHass: vi.fn(function(this: any, h) { this.hass = h; }),
     updateGrowspace: vi.fn().mockResolvedValue({}),
     updatePlant: vi.fn().mockResolvedValue({}),
     addPlant: vi.fn().mockResolvedValue({}),
@@ -151,7 +151,8 @@ const mockDataServiceInstance = {
     callService: vi.fn().mockResolvedValue({}),
     fetchNutrientPresets: vi.fn().mockResolvedValue({}),
     fetchIPMPresets: vi.fn().mockResolvedValue({}),
-    addPlants: vi.fn().mockResolvedValue({})
+    addPlants: vi.fn().mockResolvedValue({}),
+    hass: { connection: {} } // Default to avoid early returns
 };
 
 vi.mock('../../src/data-service', () => {
@@ -915,7 +916,7 @@ describe('GrowspaceStore', () => {
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
 
             const spy = vi.spyOn(dataStore, 'setDevices');
-            (store as any)._updateDevicesState();
+            (store.syncService as any).updateDevicesState();
             expect(spy).not.toHaveBeenCalled();
         });
 
@@ -924,7 +925,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue(undefined);
             (uiStore.$defaultApplied.get as any).mockReturnValue(true);
 
-            (store as any)._updateDevicesState();
+            (store.syncService as any).updateDevicesState();
             expect(dataStore.setSelectedDevice).not.toHaveBeenCalled();
         });
 
@@ -937,7 +938,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$config.get as any).mockReturnValue({ default_growspace: 'non-existent' });
             (uiStore.$defaultApplied.get as any).mockReturnValue(false);
 
-            (store as any)._updateDevicesState();
+            (store.syncService as any).updateDevicesState();
             expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
         });
 
@@ -1058,7 +1059,7 @@ describe('GrowspaceStore', () => {
         it('should handle _areDeviceArraysEqual false on content mismatch', () => {
             const a = [{ device_id: 'd1' }] as any;
             const b = [{ device_id: 'd2' }] as any; // Same length, diff content
-            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+            expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
         });
 
         it('should fetch strain library using cache if valid', async () => {
@@ -1151,14 +1152,14 @@ describe('GrowspaceStore', () => {
         });
 
         it('should return early in _refreshGrowspaceData if already fetching', async () => {
-            (store as any)._isFetchingWS = true;
+            (store.syncService as any)._isFetchingWS = true;
             await store.refreshData();
             expect(store.dataService.fetchGrowspaceData).not.toHaveBeenCalled();
         });
 
         it('should return early in _refreshGrowspaceData if no hass', async () => {
-            (store as any).hass = undefined;
-            (store as any)._isFetchingWS = false;
+            (store.syncService as any)._isFetchingWS = false;
+            mockDataServiceInstance.hass = undefined;
             await store.refreshData();
             expect(store.dataService.fetchGrowspaceData).not.toHaveBeenCalled();
         });
@@ -1363,19 +1364,19 @@ describe('GrowspaceStore', () => {
     describe('_areDeviceArraysEqual', () => {
         it('should return true for same reference', () => {
             const devices: any[] = [{ device_id: 'd1' }];
-            expect((store as any)._areDeviceArraysEqual(devices, devices)).toBe(true);
+            expect((store.syncService as any)._areDeviceArraysEqual(devices, devices)).toBe(true);
         });
 
         it('should return false for different lengths', () => {
             const a: any[] = [{ device_id: 'd1' }];
             const b: any[] = [{ device_id: 'd1' }, { device_id: 'd2' }];
-            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+            expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
         });
 
         it('should return false for different elements', () => {
             const a: any[] = [{ device_id: 'd1' }];
             const b: any[] = [{ device_id: 'd2' }];
-            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(false);
+            expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
         });
 
         it('should return true for identical arrays', () => {
@@ -1384,7 +1385,7 @@ describe('GrowspaceStore', () => {
             // Same objects in both arrays
             const a: any[] = [d1];
             const b: any[] = [d1];
-            expect((store as any)._areDeviceArraysEqual(a, b)).toBe(true);
+            expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(true);
         });
     });
 
@@ -1935,7 +1936,7 @@ describe('GrowspaceStore', () => {
             (uiStore.$defaultApplied.get as any).mockReturnValue(false);
             (dataStore.$config.get as any).mockReturnValue({ auto_select_growspace: true });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([{ device_id: 'd1' }]);
-            (store as any)._updateDevicesState();
+            (store.syncService as any).updateDevicesState();
             expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
         });
 
@@ -2294,7 +2295,7 @@ describe('GrowspaceStore', () => {
             await store.actions.plant.nextStage({} as any);
             expect(nextStageSpy).toHaveBeenCalled();
 
-            const undoSpy = vi.spyOn(store, 'undo').mockResolvedValue();
+            const undoSpy = vi.spyOn(store.undoRedoManager, 'undo').mockResolvedValue();
             await store.actions.history.undo();
             expect(undoSpy).toHaveBeenCalled();
 
@@ -2949,7 +2950,7 @@ describe('GrowspaceStore', () => {
             });
 
             // Covering defaults from optional chain fallbacks
-            it('should use default auto-select behavior in _updateDevicesState', () => {
+            it('should use default auto-select behavior in updateDevicesState', () => {
                 (dataStore.$selectedDevice.get as any).mockReturnValue(null);
                 (uiStore.$defaultApplied.get as any).mockReturnValue(false);
                 (dataStore.$config.get as any).mockReturnValue(null); // No config
