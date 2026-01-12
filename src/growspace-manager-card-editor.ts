@@ -7,9 +7,9 @@ import { HassSubscriptionController } from './controllers/hass-subscription-cont
 
 @customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
-  @property({ attribute: false }) public accessor hass: any | undefined;
-  @property({ attribute: false }) private accessor _config: GrowspaceManagerCardConfig | undefined;
-  @state() private accessor _growspaceOptions: { id: string; name: string }[] = [];
+  @property({ attribute: false }) public hass: any | undefined;
+  @property({ attribute: false }) private _config: GrowspaceManagerCardConfig | undefined;
+  @state() private _growspaceOptions: { id: string; name: string }[] = [];
 
   private _subscriptionController = new HassSubscriptionController(this);
   private _hasSubscription = false;

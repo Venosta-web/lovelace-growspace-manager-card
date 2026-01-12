@@ -40,11 +40,11 @@ function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: Grows
 @customElement('growspace-grid')
 export class GrowspaceGrid extends LitElement {
   @consume({ context: storeContext })
-  private accessor store!: GrowspaceStore;
+  private store!: GrowspaceStore;
 
-  @property({ type: Array }) accessor plants: (PlantEntity | null)[][] = [];
-  @property({ type: Number }) accessor rows: number = 3;
-  @property({ type: Number }) accessor cols: number = 3;
+  @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) rows: number = 3;
+  @property({ type: Number }) cols: number = 3;
 
   // UI state via StoreController - direct subscription to atoms
   private _isEditModeController!: StoreController<boolean>;

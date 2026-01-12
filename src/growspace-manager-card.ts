@@ -39,7 +39,7 @@ import { StoreController } from '@nanostores/lit';
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
-  accessor store = new GrowspaceStore();
+  store = new GrowspaceStore();
 
   protected _subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
 
@@ -65,7 +65,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   @provide({ context: strainLibraryContext })
   @state()
-  accessor _strainLibrary: StrainEntry[] = [];
+  _strainLibrary: StrainEntry[] = [];
 
   // Getter to satisfy GrowspaceCardHost interface and allow external access
   get dataService() {
@@ -79,11 +79,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   @provide({ context: hassContext })
   @property({ attribute: false })
-  accessor hass!: HomeAssistant;
+  hass!: HomeAssistant;
 
   @provide({ context: configContext })
   @property({ attribute: false })
-  accessor _config!: GrowspaceManagerCardConfig;
+  _config!: GrowspaceManagerCardConfig;
 
   static styles: CSSResultGroup = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 

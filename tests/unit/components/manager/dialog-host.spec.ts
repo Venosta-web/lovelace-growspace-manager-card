@@ -6,13 +6,8 @@ import { atom } from 'nanostores';
 import { ActiveDialogState } from '../../../../src/ui-state';
 import { GrowspaceDevice } from '../../../../src/types';
 
-// Mock styles
-vi.mock('../../../../src/styles/shared.styles', () => ({
-    sharedStyles: { cssText: '' }
-}));
-vi.mock('../../../../src/styles/variables', () => ({
-    variables: { cssText: '' }
-}));
+// Styles used natively in browser tests
+
 
 describe('DialogHost', () => {
     let element: DialogHost;

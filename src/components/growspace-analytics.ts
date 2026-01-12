@@ -18,12 +18,12 @@ import { StoreController } from '@nanostores/lit';
 @customElement('growspace-analytics')
 export class GrowspaceAnalytics extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  accessor hass!: HomeAssistant;
+  hass!: HomeAssistant;
 
   @consume({ context: storeContext })
-  private accessor store!: GrowspaceStore;
+  private store!: GrowspaceStore;
 
-  @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) device: GrowspaceDevice | undefined;
 
   static styles = [
     growspaceCardStyles,
@@ -43,7 +43,7 @@ export class GrowspaceAnalytics extends LitElement {
     `,
   ];
 
-  @state() private accessor _itemsToRender: {
+  @state() private _itemsToRender: {
     type: 'group' | 'single';
     metrics: string[];
     sortIndex: number;

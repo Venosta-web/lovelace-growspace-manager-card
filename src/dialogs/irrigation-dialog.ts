@@ -14,22 +14,22 @@ import '../components/ui/md3-switch';
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
-  @property({ type: Boolean }) public accessor open = false;
-  @property({ attribute: false }) public accessor device: GrowspaceDevice | undefined;
+  @property({ type: Boolean }) public open = false;
+  @property({ attribute: false }) public device: GrowspaceDevice | undefined;
 
-  @property({ type: String }) public accessor growspaceName = '';
+  @property({ type: String }) public growspaceName = '';
 
-  @state() private accessor _irrigation_pump_entity = '';
-  @state() private accessor _drain_pump_entity = '';
-  @state() private accessor _irrigation_duration = 60;
-  @state() private accessor _drain_duration = 60;
-  @state() private accessor _irrigation_times: IrrigationTime[] = [];
-  @state() private accessor _drain_times: IrrigationTime[] = [];
+  @state() private _irrigation_pump_entity = '';
+  @state() private _drain_pump_entity = '';
+  @state() private _irrigation_duration = 60;
+  @state() private _drain_duration = 60;
+  @state() private _irrigation_times: IrrigationTime[] = [];
+  @state() private _drain_times: IrrigationTime[] = [];
 
-  @state() private accessor _adding_irrigation_time: { time: string; duration: number } | undefined;
-  @state() private accessor _adding_drain_time: { time: string; duration: number } | undefined;
+  @state() private _adding_irrigation_time: { time: string; duration: number } | undefined;
+  @state() private _adding_drain_time: { time: string; duration: number } | undefined;
 
   private _dataService?: DataService;
 
@@ -149,8 +149,8 @@ export class IrrigationDialog extends LitElement {
     `,
   ];
 
-  @state() private accessor _activeTab: 'schedules' | 'steering' = 'schedules';
-  @state() private accessor _strategy: Partial<IrrigationStrategy> = {};
+  @state() private _activeTab: 'schedules' | 'steering' = 'schedules';
+  @state() private _strategy: Partial<IrrigationStrategy> = {};
 
   protected willUpdate(changedProps: PropertyValues): void {
     if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {

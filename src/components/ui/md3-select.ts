@@ -6,9 +6,9 @@ export type SelectOption = string | { label: string; value: string };
 
 @customElement('md3-select')
 export class Md3Select extends LitElement {
-  @property() accessor label = '';
-  @property() accessor value = '';
-  @property({ type: Array }) accessor options: SelectOption[] = [];
+  @property() label = '';
+  @property() value = '';
+  @property({ type: Array }) options: SelectOption[] = [];
 
   static styles = [
     dialogStyles,

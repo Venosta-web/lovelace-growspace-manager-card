@@ -10,7 +10,7 @@ import { sharedStyles } from '../../styles/shared.styles';
 @customElement('batch-action-bar')
 export class BatchActionBar extends LitElement {
   @consume({ context: storeContext })
-  private accessor store!: GrowspaceStore;
+  private store!: GrowspaceStore;
 
   private _selectedPlantsController!: StoreController<Set<string>>;
 

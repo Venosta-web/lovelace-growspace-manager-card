@@ -10,10 +10,10 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-compact')
 export class GrowspaceViewCompact extends LitElement {
-  @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
-  @property({ type: Number }) accessor rows = 0;
-  @property({ type: Number }) accessor cols = 0;
-  @property({ type: Boolean }) accessor isLoading = false;
+  @property({ attribute: false }) grid: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) rows = 0;
+  @property({ type: Number }) cols = 0;
+  @property({ type: Boolean }) isLoading = false;
 
   public focusPlant(index: number) {
     const grid = this.shadowRoot?.querySelector('growspace-grid');

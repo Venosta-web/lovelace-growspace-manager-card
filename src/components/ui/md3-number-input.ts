@@ -4,11 +4,11 @@ import { dialogStyles } from '../../styles/dialog.styles';
 
 @customElement('md3-number-input')
 export class Md3NumberInput extends LitElement {
-  @property() accessor label = '';
-  @property({ type: Number }) accessor value = 0;
-  @property({ type: Number }) accessor min = 0;
-  @property({ type: Number }) accessor max: number | undefined;
-  @property() accessor placeholder = '';
+  @property() label = '';
+  @property({ type: Number }) value = 0;
+  @property({ type: Number }) min = 0;
+  @property({ type: Number }) max: number | undefined;
+  @property() placeholder = '';
 
   static styles = [
     dialogStyles,
@@ -20,7 +20,7 @@ export class Md3NumberInput extends LitElement {
     `,
   ];
 
-  @property() accessor unit = '';
+  @property() unit = '';
 
   private _handleInput(e: Event) {
     const value = (e.target as HTMLInputElement).value;

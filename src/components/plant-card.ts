@@ -30,15 +30,15 @@ import { sharedStyles } from '../styles/shared.styles';
 
 @customElement('growspace-plant-card')
 export class GrowspacePlantCard extends LitElement implements DragDropHost {
-  @property({ attribute: false }) accessor plant!: PlantEntity;
-  @property({ type: Number }) accessor row!: number;
-  @property({ type: Number }) accessor col!: number;
+  @property({ attribute: false }) plant!: PlantEntity;
+  @property({ type: Number }) row!: number;
+  @property({ type: Number }) col!: number;
 
   @consume({ context: strainLibraryContext, subscribe: true })
-  accessor strainLibrary: StrainEntry[] = [];
+  strainLibrary: StrainEntry[] = [];
 
   @consume({ context: storeContext })
-  private accessor store!: GrowspaceStore;
+  private store!: GrowspaceStore;
 
   // UI state via StoreController - direct subscription to atoms
   private _isEditModeController!: StoreController<boolean>;

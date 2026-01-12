@@ -20,17 +20,17 @@ import { GrowspaceStore } from '../../store/growspace-store';
 @customElement('nutrient-presets-editor')
 export class NutrientPresetsEditor extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
-  public accessor store!: GrowspaceStore;
+  public store!: GrowspaceStore;
 
-  @property({ type: Boolean }) accessor open = false;
+  @property({ type: Boolean }) open = false;
 
-  @state() private accessor _view: 'LIST' | 'EDIT' = 'LIST';
-  @state() private accessor _editingPreset: Partial<NutrientPreset> | null = null;
-  @state() private accessor _error: string | null = null;
+  @state() private _view: 'LIST' | 'EDIT' = 'LIST';
+  @state() private _editingPreset: Partial<NutrientPreset> | null = null;
+  @state() private _error: string | null = null;
 
   static styles = [
     dialogStyles,

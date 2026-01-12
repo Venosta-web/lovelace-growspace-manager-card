@@ -12,57 +12,57 @@ import { ConfigTab } from '../constants';
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
-  @property({ type: Boolean, reflect: true }) accessor open = false;
+  @property({ type: Boolean, reflect: true }) open = false;
 
   @property({ attribute: false })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @property({ type: Object })
-  accessor growspaceOptions: Record<string, string> = {};
+  growspaceOptions: Record<string, string> = {};
 
   @property({ attribute: false })
-  public accessor devices: GrowspaceDevice[] = [];
+  public devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) accessor initialTab: ConfigTab =
+  @property({ type: String }) initialTab: ConfigTab =
     ConfigTab.ENVIRONMENT;
   @property({ type: String })
-  public accessor currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
+  public currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
   @property({ attribute: false })
-  public accessor environmentData: any;
+  public environmentData: any;
 
   private _initialStateApplied = false;
 
   // Add Growspace Data
-  @state() private accessor add_name = '';
-  @state() private accessor add_rows = 4;
-  @state() private accessor add_plants_per_row = 4;
-  @state() private accessor add_notification_service = 'mobile_app_notify';
+  @state() private add_name = '';
+  @state() private add_rows = 4;
+  @state() private add_plants_per_row = 4;
+  @state() private add_notification_service = 'mobile_app_notify';
 
   // Edit Growspace Data
-  @state() private accessor edit_selectedId = '';
-  @state() private accessor edit_name = '';
-  @state() private accessor edit_rows = 0;
-  @state() private accessor edit_plants_per_row = 0;
-  @state() private accessor edit_notification_service = '';
+  @state() private edit_selectedId = '';
+  @state() private edit_name = '';
+  @state() private edit_rows = 0;
+  @state() private edit_plants_per_row = 0;
+  @state() private edit_notification_service = '';
 
   // Environment Data
-  @state() private accessor env_selectedGrowspaceId = '';
-  @state() private accessor env_temp_sensor = '';
-  @state() private accessor env_humidity_sensor = '';
-  @state() private accessor env_vpd_sensor = '';
-  @state() private accessor env_co2_sensor = '';
-  @state() private accessor env_circulation_fan = '';
-  @state() private accessor env_stress_threshold = 0.8;
-  @state() private accessor env_mold_threshold = 0.8;
-  @state() private accessor env_light_sensor = '';
-  @state() private accessor env_exhaust_entity = '';
-  @state() private accessor env_humidifier_entity = '';
-  @state() private accessor env_dehumidifier_entity = '';
-  @state() private accessor env_soil_moisture_sensor = '';
-  @state() private accessor env_control_dehumidifier = false;
-  @state() private accessor env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
-  @state() private accessor _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
+  @state() private env_selectedGrowspaceId = '';
+  @state() private env_temp_sensor = '';
+  @state() private env_humidity_sensor = '';
+  @state() private env_vpd_sensor = '';
+  @state() private env_co2_sensor = '';
+  @state() private env_circulation_fan = '';
+  @state() private env_stress_threshold = 0.8;
+  @state() private env_mold_threshold = 0.8;
+  @state() private env_light_sensor = '';
+  @state() private env_exhaust_entity = '';
+  @state() private env_humidifier_entity = '';
+  @state() private env_dehumidifier_entity = '';
+  @state() private env_soil_moisture_sensor = '';
+  @state() private env_control_dehumidifier = false;
+  @state() private env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
+  @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
 
   static styles = [
     dialogStyles,
@@ -262,7 +262,7 @@ export class ConfigDialog extends LitElement {
     );
   }
 
-  @state() private accessor _showDeleteConfirm = false;
+  @state() private _showDeleteConfirm = false;
 
   private _submitEditGrowspace() {
     if (!this.edit_selectedId) return;

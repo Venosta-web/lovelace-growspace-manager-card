@@ -10,20 +10,20 @@ import './views/growspace-view-standard';
 
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
-    @property({ type: String }) accessor viewMode: string = ViewMode.STANDARD;
-    @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
-    @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
-    @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
-    @property({ type: Number }) accessor rows = 0;
+    @property({ type: String }) viewMode: string = ViewMode.STANDARD;
+    @property({ attribute: false }) device: GrowspaceDevice | undefined;
+    @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
+    @property({ attribute: false }) grid: (PlantEntity | null)[][] = [];
+    @property({ type: Number }) rows = 0;
 
     // View specific props
-    @property({ type: Boolean }) accessor isLoading = false;
-    @property({ type: Boolean }) accessor isEditMode = false;
-    @property({ type: Boolean }) accessor isCompact = false;
-    @property({ type: Number }) accessor selectedCount = 0;
-    @property({ attribute: false }) accessor config: GrowspaceManagerCardConfig | undefined;
+    @property({ type: Boolean }) isLoading = false;
+    @property({ type: Boolean }) isEditMode = false;
+    @property({ type: Boolean }) isCompact = false;
+    @property({ type: Number }) selectedCount = 0;
+    @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
-    @property({ type: Number }) accessor focusedPlantIndex = -1;
+    @property({ type: Number }) focusedPlantIndex = -1;
 
     protected updated(changedProps: Map<string | number | symbol, unknown>): void {
         super.updated(changedProps);

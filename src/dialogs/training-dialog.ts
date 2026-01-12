@@ -14,14 +14,14 @@ import { GrowspaceStore } from '../store/growspace-store';
 @customElement('training-dialog')
 export class TrainingDialog extends LitElement {
     @consume({ context: hassContext, subscribe: true })
-    public accessor hass!: HomeAssistant;
+    public hass!: HomeAssistant;
 
-    @property({ type: Boolean }) public accessor open = false;
-    @property({ attribute: false }) public accessor store!: GrowspaceStore;
+    @property({ type: Boolean }) public open = false;
+    @property({ attribute: false }) public store!: GrowspaceStore;
 
-    @state() private accessor _technique: string = '';
-    @state() private accessor _notes: string = '';
-    @state() private accessor _submitting = false;
+    @state() private _technique: string = '';
+    @state() private _notes: string = '';
+    @state() private _submitting = false;
 
 
 

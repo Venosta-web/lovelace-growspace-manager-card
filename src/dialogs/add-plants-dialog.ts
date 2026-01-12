@@ -14,24 +14,24 @@ import '../components/ui/md3-date-input';
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {
     @consume({ context: hassContext, subscribe: true })
-    accessor hass!: HomeAssistant;
+    hass!: HomeAssistant;
 
-    @property({ type: Array }) accessor strainLibrary: StrainEntry[] = [];
-    @property({ type: String }) accessor growspaceName = '';
-    @property({ type: Boolean, reflect: true }) accessor open = false;
+    @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+    @property({ type: String }) growspaceName = '';
+    @property({ type: Boolean, reflect: true }) open = false;
 
-    @state() private accessor strain = '';
-    @state() private accessor amount = 1;
-    @state() private accessor start_number = 1;
+    @state() private strain = '';
+    @state() private amount = 1;
+    @state() private start_number = 1;
 
     // Date fields
-    @state() private accessor veg_start = '';
-    @state() private accessor flower_start = '';
-    @state() private accessor seedling_start = '';
-    @state() private accessor mother_start = '';
-    @state() private accessor clone_start = '';
-    @state() private accessor dry_start = '';
-    @state() private accessor cure_start = '';
+    @state() private veg_start = '';
+    @state() private flower_start = '';
+    @state() private seedling_start = '';
+    @state() private mother_start = '';
+    @state() private clone_start = '';
+    @state() private dry_start = '';
+    @state() private cure_start = '';
 
     static styles = [
         dialogStyles,

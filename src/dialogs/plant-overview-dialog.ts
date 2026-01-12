@@ -50,26 +50,26 @@ import { GrowspaceEvent, PlantTimelineEvent } from '../types';
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  accessor hass!: HomeAssistant;
+  hass!: HomeAssistant;
 
   private _logbookController = new GrowspaceLogbookController();
   private _unsubEvents?: Promise<() => Promise<void>>;
 
-  @property({ type: Boolean, reflect: true }) accessor open = false;
-  @property({ attribute: false }) accessor dialog: PlantOverviewDialogState | undefined;
-  @property({ type: Object }) accessor plant: PlantEntity | undefined;
-  @property({ type: Object }) accessor growspaceOptions: Record<string, string> = {};
+  @property({ type: Boolean, reflect: true }) open = false;
+  @property({ attribute: false }) dialog: PlantOverviewDialogState | undefined;
+  @property({ type: Object }) plant: PlantEntity | undefined;
+  @property({ type: Object }) growspaceOptions: Record<string, string> = {};
 
-  @property({ attribute: false }) accessor editedAttributes: PlantOverviewEditedAttributes | undefined;
-  @state() private accessor isEditing = true;
-  @state() private accessor showAllDates = false;
-  @state() private accessor cloneTargetId = '';
-  @state() private accessor _showDeleteConfirmation = false;
-  @state() private accessor _activeTab: 'dashboard' | 'timeline' = 'dashboard';
-  @state() private accessor _logbookEvents: GrowspaceEvent[] = [];
+  @property({ attribute: false }) editedAttributes: PlantOverviewEditedAttributes | undefined;
+  @state() private isEditing = true;
+  @state() private showAllDates = false;
+  @state() private cloneTargetId = '';
+  @state() private _showDeleteConfirmation = false;
+  @state() private _activeTab: 'dashboard' | 'timeline' = 'dashboard';
+  @state() private _logbookEvents: GrowspaceEvent[] = [];
 
-  @state() private accessor _canScrollLeft = false;
-  @state() private accessor _canScrollRight = false;
+  @state() private _canScrollLeft = false;
+  @state() private _canScrollRight = false;
   private _actionsContainer: HTMLDivElement | undefined;
   private _resizeController = new ResizeController(this, () => this._checkScroll());
 

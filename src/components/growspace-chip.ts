@@ -5,13 +5,13 @@ import { sharedStyles } from '../styles/shared.styles';
 
 @customElement('growspace-chip')
 export class GrowspaceChip extends LitElement {
-  @property({ type: String }) accessor icon = '';
-  @property({ type: String }) accessor label = '';
-  @property({ type: String }) accessor value: string | number | undefined = undefined;
-  @property({ type: String }) accessor status: 'optimal' | 'warning' | 'danger' | '' = '';
-  @property({ type: Boolean, reflect: true }) accessor active = false;
-  @property({ type: Boolean }) accessor linked = false;
-  @property({ type: String }) accessor tooltip = '';
+  @property({ type: String }) icon = '';
+  @property({ type: String }) label = '';
+  @property({ type: String }) value: string | number | undefined = undefined;
+  @property({ type: String }) status: 'optimal' | 'warning' | 'danger' | '' = '';
+  @property({ type: Boolean, reflect: true }) active = false;
+  @property({ type: Boolean }) linked = false;
+  @property({ type: String }) tooltip = '';
 
   static styles = [
     sharedStyles,

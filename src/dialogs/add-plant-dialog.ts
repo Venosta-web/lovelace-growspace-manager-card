@@ -14,26 +14,26 @@ import '../components/ui/md3-date-input';
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  accessor hass!: HomeAssistant;
+  hass!: HomeAssistant;
 
-  @property({ type: Array }) accessor strainLibrary: StrainEntry[] = [];
-  @property({ type: String }) accessor growspaceName = '';
-  @property({ type: Boolean, reflect: true }) accessor open = false;
+  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+  @property({ type: String }) growspaceName = '';
+  @property({ type: Boolean, reflect: true }) open = false;
 
   // Initialize with values passed via methods or defaults
-  @state() private accessor strain = '';
-  @state() private accessor phenotype = '';
-  @property({ type: Number }) accessor row = 0;
-  @property({ type: Number }) accessor col = 0;
+  @state() private strain = '';
+  @state() private phenotype = '';
+  @property({ type: Number }) row = 0;
+  @property({ type: Number }) col = 0;
 
   // Date fields
-  @state() private accessor veg_start = '';
-  @state() private accessor flower_start = '';
-  @state() private accessor seedling_start = '';
-  @state() private accessor mother_start = '';
-  @state() private accessor clone_start = '';
-  @state() private accessor dry_start = '';
-  @state() private accessor cure_start = '';
+  @state() private veg_start = '';
+  @state() private flower_start = '';
+  @state() private seedling_start = '';
+  @state() private mother_start = '';
+  @state() private clone_start = '';
+  @state() private dry_start = '';
+  @state() private cure_start = '';
 
   static styles = [
     dialogStyles,

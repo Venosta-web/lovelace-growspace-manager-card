@@ -3,10 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Target the decorators directly to avoid ReferenceErrors during component import
 
-// Mock styles to avoid imports failing
-vi.mock('../../../../src/styles/shared.styles', () => ({ sharedStyles: { cssText: '' } }));
-vi.mock('../../../../src/styles/variables', () => ({ variables: { cssText: '' } }));
-vi.mock('../../../../src/styles/dialog.styles', () => ({ dialogStyles: { cssText: '' } }));
+// Styles used natively in browser tests
+
 
 import { IPMDialog } from '../../../../src/components/manager/ipm-dialog';
 

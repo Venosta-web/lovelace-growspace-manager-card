@@ -4,32 +4,13 @@ import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog'
 import { StrainEntry } from '../../../src/types';
 import { PlantUtils } from '../../../src/utils/plant-utils';
 
-// Mock dependencies
-vi.mock('../../../src/components/ui/md3-text-input', () => ({
-    Md3TextInput: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
-    }
-}));
-vi.mock('../../../src/components/ui/md3-number-input', () => ({
-    Md3NumberInput: class extends HTMLElement {
-        get value() { return this.getAttribute('value') || ''; }
-        set value(v) { this.setAttribute('value', v); }
-    }
-}));
-
-// Mock PlantUtils
+// Mock PlantUtils for logic isolation in browser testing
 vi.mock('../../../src/utils/plant-utils', () => ({
     PlantUtils: {
         compressImage: vi.fn().mockResolvedValue('base64string')
     }
 }));
 
-// Mock ha-dialog
-class HaDialogMock extends HTMLElement {
-    open = false;
-}
-customElements.define('ha-dialog', HaDialogMock);
 
 describe('StrainLibraryDialog', () => {
     let element: StrainLibraryDialog;

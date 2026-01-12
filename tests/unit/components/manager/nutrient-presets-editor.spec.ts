@@ -3,10 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Target the decorators directly to avoid ReferenceErrors during component import
 
-// Mock styles
-vi.mock('../../../../src/styles/shared.styles', () => ({ sharedStyles: { cssText: '' } }));
-vi.mock('../../../../src/styles/variables', () => ({ variables: { cssText: '' } }));
-vi.mock('../../../../src/styles/dialog.styles', () => ({ dialogStyles: { cssText: '' } }));
+// Shared styles used natively
+
+// Styles used natively in browser tests
+
 
 import { NutrientPresetsEditor } from '../../../../src/components/manager/nutrient-presets-editor';
 

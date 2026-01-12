@@ -37,30 +37,30 @@ import type { GrowspaceStore } from '../store/growspace-store';
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @consume({ context: storeContext, subscribe: true })
-  public accessor store!: GrowspaceStore;
+  public store!: GrowspaceStore;
 
   @consume({ context: configContext, subscribe: true })
   @property({ attribute: false })
-  public accessor config!: GrowspaceManagerCardConfig;
+  public config!: GrowspaceManagerCardConfig;
 
-  @property({ attribute: false }) public accessor device!: GrowspaceDevice;
-  @property({ type: Boolean }) public accessor compact = false;
-  @property({ type: Boolean }) public accessor isEditMode = false;
+  @property({ attribute: false }) public device!: GrowspaceDevice;
+  @property({ type: Boolean }) public compact = false;
+  @property({ type: Boolean }) public isEditMode = false;
   // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
-  @property({ attribute: false }) public accessor growspaceOptions: Record<string, string> = {};
-  @property({ attribute: false }) public accessor historyData: any[] | null = null;
+  @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) public historyData: any[] | null = null;
 
-  @state() private accessor _canScrollLeft = false;
-  @state() private accessor _canScrollRight = false;
-  @state() private accessor _canScrollStageLeft = false;
-  @state() private accessor _canScrollStageRight = false;
-  @state() private accessor _canScrollDeviceLeft = false;
-  @state() private accessor _canScrollDeviceRight = false;
-  @state() private accessor _menuOpen = false;
-  @state() private accessor _mobileLink = false;
+  @state() private _canScrollLeft = false;
+  @state() private _canScrollRight = false;
+  @state() private _canScrollStageLeft = false;
+  @state() private _canScrollStageRight = false;
+  @state() private _canScrollDeviceLeft = false;
+  @state() private _canScrollDeviceRight = false;
+  @state() private _menuOpen = false;
+  @state() private _mobileLink = false;
 
   // Reactivity Controllers
   private _viewModeController!: StoreController<string>;

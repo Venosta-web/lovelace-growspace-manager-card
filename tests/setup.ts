@@ -1,25 +1,7 @@
+// tests/setup.ts for browser mode
+// Mocks for JSDOM are likely unnecessary or harmful in real browsers.
+// We only keep mocks that are absolutely required for logic isolation.
 import { vi } from 'vitest';
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation(query => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(), // deprecated
-        removeListener: vi.fn(), // deprecated
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-    })),
-});
-
-// Mock ResizeObserver
-class ResizeObserverMock {
-    observe = vi.fn();
-    unobserve = vi.fn();
-    disconnect = vi.fn();
-}
-
-vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+// Only mock native APIs if the browser doesn't have them or we need to force a state.
+// Chromium has matchMedia and ResizeObserver natively.

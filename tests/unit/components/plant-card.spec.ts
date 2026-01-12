@@ -5,31 +5,11 @@ import { GrowspacePlantCard } from '../../../src/components/plant-card';
 import { PlantEntity } from '../../../src/types';
 import { atom } from 'nanostores';
 
-// Mock shared styles
-vi.mock('../../../src/styles/shared.styles', () => ({
-    sharedStyles: { cssText: '' }
-}));
-vi.mock('../../../src/styles/variables', () => ({
-    variables: { cssText: '' }
-}));
+// Shared styles used natively in browser tests
 
-// Polyfill DragEvent
-if (!globalThis.DragEvent) {
-    Object.defineProperty(globalThis, 'DragEvent', {
-        value: class DragEvent extends Event {
-            public dataTransfer: any;
-            constructor(type: string, eventInitDict: any = {}) {
-                super(type, eventInitDict);
-                this.dataTransfer = eventInitDict.dataTransfer || {
-                    setData: vi.fn(),
-                    getData: vi.fn(),
-                    effectAllowed: 'none',
-                    dropEffect: 'none'
-                };
-            }
-        }
-    });
-}
+
+// DragEvent is native in browser
+
 
 describe('PlantCard', () => {
     let element: GrowspacePlantCard;
@@ -289,7 +269,7 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
             // Touch Start
-            const touch = { clientX: 10, clientY: 10 } as Touch;
+            const touch = new Touch({ identifier: 0, target: card, clientX: 10, clientY: 10 });
             const evt = new TouchEvent('touchstart', { touches: [touch], bubbles: true, composed: true });
             card.dispatchEvent(evt);
 
@@ -306,10 +286,16 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
             // Start
-            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch], bubbles: true, composed: true }));
+            card.dispatchEvent(new TouchEvent('touchstart', {
+                touches: [new Touch({ identifier: 0, target: card, clientX: 10, clientY: 10 })],
+                bubbles: true, composed: true
+            }));
 
             // Move significantly (delta > 10)
-            card.dispatchEvent(new TouchEvent('touchmove', { touches: [{ clientX: 50, clientY: 50 } as Touch], bubbles: true, composed: true }));
+            card.dispatchEvent(new TouchEvent('touchmove', {
+                touches: [new Touch({ identifier: 0, target: card, clientX: 50, clientY: 50 })],
+                bubbles: true, composed: true
+            }));
 
             vi.advanceTimersByTime(600);
 
@@ -322,15 +308,18 @@ describe('PlantCard', () => {
             const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
 
             // Start & Drag
-            card.dispatchEvent(new TouchEvent('touchstart', { touches: [{ clientX: 10, clientY: 10 } as Touch], bubbles: true, composed: true }));
+            card.dispatchEvent(new TouchEvent('touchstart', {
+                touches: [new Touch({ identifier: 0, target: card, clientX: 10, clientY: 10 })],
+                bubbles: true, composed: true
+            }));
             vi.advanceTimersByTime(600); // Trigger start
 
             // End
             card.dispatchEvent(new TouchEvent('touchend', {
-                changedTouches: [{ clientX: 100, clientY: 100 } as Touch],
+                changedTouches: [new Touch({ identifier: 0, target: card, clientX: 100, clientY: 100 })],
                 bubbles: true,
                 composed: true
-            } as any));
+            }));
 
             expect(listener).toHaveBeenCalled();
             expect(listener.mock.calls[0][0].detail).toEqual(expect.objectContaining({

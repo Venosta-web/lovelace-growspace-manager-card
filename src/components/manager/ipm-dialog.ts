@@ -25,23 +25,23 @@ import '../../components/ui'; // Ensure MD3 components are registered
 @customElement('ipm-dialog')
 export class IPMDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
-  public accessor store!: GrowspaceStore;
+  public store!: GrowspaceStore;
 
-  @property({ type: Boolean }) accessor open = false;
-  @property({ attribute: false }) accessor growspaceId: string | undefined = undefined;
-  @property({ attribute: false }) accessor plantIds: string[] = [];
+  @property({ type: Boolean }) open = false;
+  @property({ attribute: false }) growspaceId: string | undefined = undefined;
+  @property({ attribute: false }) plantIds: string[] = [];
 
-  @state() private accessor _view: 'APPLY' | 'LIST' | 'EDIT' = 'APPLY';
-  @state() private accessor _selectedPresetId: string | null = null;
-  @state() private accessor _notes: string = '';
+  @state() private _view: 'APPLY' | 'LIST' | 'EDIT' = 'APPLY';
+  @state() private _selectedPresetId: string | null = null;
+  @state() private _notes: string = '';
 
   // Edit mode state
-  @state() private accessor _editingPreset: Partial<IPMPreset> | null = null;
-  @state() private accessor _error: string | null = null;
+  @state() private _editingPreset: Partial<IPMPreset> | null = null;
+  @state() private _error: string | null = null;
 
   static styles = [
     dialogStyles,

@@ -16,17 +16,8 @@ beforeAll(() => {
         } as any;
     }
 
-    if (!(globalThis as any).TouchEvent) {
-        (globalThis as any).TouchEvent = class extends Event {
-            touches: any[] = [];
-            changedTouches: any[] = [];
-            constructor(type: string, init?: any) {
-                super(type, init);
-                this.touches = init?.touches || [];
-                this.changedTouches = init?.changedTouches || [];
-            }
-        } as any;
-    }
+    // TouchEvent is native in browser
+
 
     if (!(globalThis as any).DataTransfer) {
         (globalThis as any).DataTransfer = class {
@@ -199,7 +190,7 @@ describe('DragDropController', () => {
         it('should ignore touch start in edit mode', () => {
             mockHost.isEditMode = true;
             const e = new TouchEvent('touchstart', {
-                touches: [{ clientX: 100, clientY: 100 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 })]
             });
 
             controller.handleTouchStart(e);
@@ -211,9 +202,9 @@ describe('DragDropController', () => {
         it('should ignore multi-touch', () => {
             const e = new TouchEvent('touchstart', {
                 touches: [
-                    { clientX: 100, clientY: 100 },
-                    { clientX: 200, clientY: 200 }
-                ] as any
+                    new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 }),
+                    new Touch({ identifier: 1, target: mockCard, clientX: 200, clientY: 200 })
+                ]
             });
 
             controller.handleTouchStart(e);
@@ -224,7 +215,7 @@ describe('DragDropController', () => {
         it('should start long press timer on single touch', () => {
             vi.useFakeTimers();
             const e = new TouchEvent('touchstart', {
-                touches: [{ clientX: 100, clientY: 100 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 })]
             });
 
             controller.handleTouchStart(e);
@@ -236,14 +227,14 @@ describe('DragDropController', () => {
         it('should cancel long press on significant movement', () => {
             vi.useFakeTimers();
             const startE = new TouchEvent('touchstart', {
-                touches: [{ clientX: 100, clientY: 100 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 })]
             });
 
             controller.handleTouchStart(startE);
 
             // Move beyond threshold (> 10px)
             const moveE = new TouchEvent('touchmove', {
-                touches: [{ clientX: 120, clientY: 100 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 120, clientY: 100 })]
             });
 
             controller.handleTouchMove(moveE);
@@ -262,7 +253,7 @@ describe('DragDropController', () => {
         it('should trigger mobile drag after long press delay', () => {
             vi.useFakeTimers();
             const e = new TouchEvent('touchstart', {
-                touches: [{ clientX: 100, clientY: 100 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 })]
             });
 
             controller.handleTouchStart(e);
@@ -296,7 +287,7 @@ describe('DragDropController', () => {
             (controller as any)._startY = 100;
 
             const e = new TouchEvent('touchmove', {
-                touches: [{ clientX: 150, clientY: 120 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 150, clientY: 120 })]
             });
             const preventSpy = vi.spyOn(e, 'preventDefault');
 
@@ -315,7 +306,7 @@ describe('DragDropController', () => {
             mockCard.style.transform = 'translate(50px, 20px) scale(1.05)';
 
             const e = new TouchEvent('touchend', {
-                changedTouches: [{ clientX: 150, clientY: 120 }] as any
+                changedTouches: [new Touch({ identifier: 0, target: mockCard, clientX: 150, clientY: 120 })]
             });
 
             controller.handleTouchEnd(e);
@@ -350,7 +341,7 @@ describe('DragDropController', () => {
             // 1. Touch Start
             const touchStartSpy = vi.spyOn(controller, 'handleTouchStart');
             const touchStartEvent = new TouchEvent('touchstart', {
-                touches: [{ clientX: 0, clientY: 0 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 0, clientY: 0 })]
             });
             eventMap['touchstart'](touchStartEvent);
             expect(touchStartSpy).toHaveBeenCalledWith(touchStartEvent);
@@ -358,7 +349,7 @@ describe('DragDropController', () => {
             // 2. Touch Move
             const touchMoveSpy = vi.spyOn(controller, 'handleTouchMove');
             const touchMoveEvent = new TouchEvent('touchmove', {
-                touches: [{ clientX: 0, clientY: 0 }] as any
+                touches: [new Touch({ identifier: 0, target: mockCard, clientX: 0, clientY: 0 })]
             });
             eventMap['touchmove'](touchMoveEvent);
             expect(touchMoveSpy).toHaveBeenCalledWith(touchMoveEvent);
@@ -366,7 +357,7 @@ describe('DragDropController', () => {
             // 3. Touch End
             const touchEndSpy = vi.spyOn(controller, 'handleTouchEnd');
             const touchEndEvent = new TouchEvent('touchend', {
-                changedTouches: [{ clientX: 0, clientY: 0 }] as any
+                changedTouches: [new Touch({ identifier: 0, target: mockCard, clientX: 0, clientY: 0 })]
             });
             eventMap['touchend'](touchEndEvent);
             expect(touchEndSpy).toHaveBeenCalledWith(touchEndEvent);
@@ -459,7 +450,7 @@ describe('DragDropController', () => {
                 });
 
                 const e = new TouchEvent('touchmove', {
-                    touches: [{ clientX: 150, clientY: 150 }] as any
+                    touches: [new Touch({ identifier: 0, target: mockCard, clientX: 150, clientY: 150 })]
                 });
 
                 controller.handleTouchMove(e);
@@ -476,7 +467,9 @@ describe('DragDropController', () => {
                 // Multi-touch already tested
                 // Let's verify no side effects for edit mode specifically again just to be sure
                 mockHost.isEditMode = true;
-                const e = new TouchEvent('touchstart', { touches: [{}] as any });
+                const e = new TouchEvent('touchstart', {
+                    touches: [new Touch({ identifier: 0, target: mockCard, clientX: 0, clientY: 0 })]
+                });
                 controller.handleTouchStart(e);
                 expect((controller as any)._longPressTimer).toBeUndefined();
             });
@@ -503,7 +496,7 @@ describe('DragDropController', () => {
                 // Direct call to _endMobileDrag
                 // Need changedTouches for the event
                 const endE = new TouchEvent('touchend', {
-                    changedTouches: [{ clientX: 100, clientY: 100 }] as any
+                    changedTouches: [new Touch({ identifier: 0, target: mockCard, clientX: 100, clientY: 100 })]
                 });
 
                 (controller as any)._endMobileDrag(endE);
@@ -528,7 +521,7 @@ describe('DragDropController', () => {
                 (mockHost.shadowRoot!.querySelector as any).mockReturnValue(null);
 
                 const e = new TouchEvent('touchend', {
-                    changedTouches: [{ clientX: 10, clientY: 10 }] as any
+                    changedTouches: [new Touch({ identifier: 0, target: mockCard, clientX: 10, clientY: 10 })]
                 });
 
                 (controller as any)._endMobileDrag(e);

@@ -11,13 +11,13 @@ import { hassContext } from '../../context';
 @customElement('growspace-logbook')
 export class GrowspaceLogbook extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  accessor hass!: HomeAssistant;
+  hass!: HomeAssistant;
 
-  @property({ type: String }) accessor growspaceId!: string;
+  @property({ type: String }) growspaceId!: string;
 
-  @state() private accessor _events: GrowspaceEvent[] = [];
-  @state() private accessor _isLoading = false;
-  @state() private accessor _activeFilter = 'all';
+  @state() private _events: GrowspaceEvent[] = [];
+  @state() private _isLoading = false;
+  @state() private _activeFilter = 'all';
 
   private _controller?: GrowspaceLogbookController;
 

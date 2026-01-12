@@ -5,14 +5,14 @@ import { dialogStyles } from '../styles/dialog.styles';
 
 @customElement('grow-master-dialog')
 export class GrowMasterDialog extends LitElement {
-  @property({ type: Boolean, reflect: true }) accessor open = false;
+  @property({ type: Boolean, reflect: true }) open = false;
 
   // Props from parent
-  @property({ type: Boolean }) accessor isStressed = false;
-  @property({ type: String }) accessor personality: string | undefined;
-  @property({ type: Boolean }) accessor isLoading = false;
-  @property({ type: String }) accessor response: string | null = null;
-  @state() private accessor userQuery = '';
+  @property({ type: Boolean }) isStressed = false;
+  @property({ type: String }) personality: string | undefined;
+  @property({ type: Boolean }) isLoading = false;
+  @property({ type: String }) response: string | null = null;
+  @state() private userQuery = '';
 
   static styles = [
     dialogStyles,

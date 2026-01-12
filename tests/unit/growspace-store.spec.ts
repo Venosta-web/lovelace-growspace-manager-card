@@ -9,8 +9,41 @@ const uiStore = _uiStore as any;
 const dataStore = _dataStore as any;
 
 import * as plantActions from '../../src/store/plant-actions';
+
+vi.mock('../../src/store/plant-actions', async (importOriginal) => {
+    const mod = await importOriginal<typeof import('../../src/store/plant-actions')>();
+    return {
+        ...mod,
+        handlePlantDrop: vi.fn(mod.handlePlantDrop),
+        movePlantPosition: vi.fn(mod.movePlantPosition),
+        movePlantToGrowspace: vi.fn(mod.movePlantToGrowspace),
+        updatePlantsFromDialog: vi.fn(mod.updatePlantsFromDialog),
+        addPlant: vi.fn(mod.addPlant),
+    };
+});
 import * as strainActions from '../../src/store/strain-actions';
+
+vi.mock('../../src/store/strain-actions', async (importOriginal) => {
+    const mod = await importOriginal<typeof import('../../src/store/strain-actions')>();
+    return {
+        ...mod,
+        addStrain: vi.fn(mod.addStrain),
+        removeStrain: vi.fn(mod.removeStrain),
+        addGrowspace: vi.fn(mod.addGrowspace),
+        updateGrowspace: vi.fn(mod.updateGrowspace),
+        removeGrowspace: vi.fn(mod.removeGrowspace),
+        analyzeGrowspace: vi.fn(mod.analyzeGrowspace),
+    };
+});
 import * as keyboardActions from '../../src/store/keyboard-actions';
+
+vi.mock('../../src/store/keyboard-actions', async (importOriginal) => {
+    const mod = await importOriginal<typeof import('../../src/store/keyboard-actions')>();
+    return {
+        ...mod,
+        handleKeyDown: vi.fn(mod.handleKeyDown),
+    };
+});
 
 
 // Mock ui-store
@@ -1703,7 +1736,7 @@ describe('GrowspaceStore', () => {
         } as any;
 
         beforeEach(() => {
-            vi.spyOn(plantActions, 'handlePlantDrop').mockImplementation(async () => true);
+            (plantActions.handlePlantDrop as any).mockImplementation(async () => true);
         });
 
         it('should return early if sourcePlant is null', async () => {
@@ -1868,13 +1901,13 @@ describe('GrowspaceStore', () => {
 
 
         it('should handle handleDrop with no sourcePlant', async () => {
-            vi.spyOn(plantActions, 'handlePlantDrop');
+            (plantActions.handlePlantDrop as any);
             await store.handleDrop(0, 0, {} as any, null);
             expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
         });
 
         it('should handle handleDrop with no selectedDevice', async () => {
-            vi.spyOn(plantActions, 'handlePlantDrop');
+            (plantActions.handlePlantDrop as any);
             (dataStore.$selectedDevice.get as any).mockReturnValue(null);
             await store.handleDrop(0, 0, {} as any, {} as any);
             expect(plantActions.handlePlantDrop).not.toHaveBeenCalled();
@@ -2217,7 +2250,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
             mockDataServiceInstance.updatePlant.mockResolvedValue({ success: true });
-            const spy = vi.spyOn(plantActions, 'handlePlantDrop').mockResolvedValue(true);
+            const spy = (plantActions.handlePlantDrop as any).mockResolvedValue(true);
 
             await store.handleDrop(2, 2, null, source);
             expect(spy).toHaveBeenCalledTimes(1);
@@ -2278,7 +2311,7 @@ describe('GrowspaceStore', () => {
             await store.actions.strain.remove('s1');
             expect(removeStrainSpy).toHaveBeenCalledWith('s1');
 
-            const removeGrowspaceSpy = vi.spyOn(strainActions, 'removeGrowspace').mockResolvedValue(true as any);
+            const removeGrowspaceSpy = (strainActions.removeGrowspace as any).mockResolvedValue(true as any);
             await store.actions.growspace.remove('gs1');
             expect(removeGrowspaceSpy).toHaveBeenCalled();
 
@@ -2290,11 +2323,11 @@ describe('GrowspaceStore', () => {
             await store.actions.plant.takeClone({} as any, 2);
             expect(cloneSpy).toHaveBeenCalledWith({}, 2);
 
-            const updateDialogSpy = vi.spyOn(plantActions, 'updatePlantsFromDialog').mockResolvedValue(true as any);
+            const updateDialogSpy = (plantActions.updatePlantsFromDialog as any).mockResolvedValue(true as any);
             await store.actions.plant.updateFromDialog({});
             expect(updateDialogSpy).toHaveBeenCalled();
 
-            const addPlantActionSpy = vi.spyOn(plantActions, 'addPlant').mockResolvedValue(true as any);
+            const addPlantActionSpy = (plantActions.addPlant as any).mockResolvedValue(true as any);
             await store.actions.plant.add('gs1', 1, 1, 'strain');
             expect(addPlantActionSpy).toHaveBeenCalled();
 
@@ -2405,7 +2438,7 @@ describe('GrowspaceStore', () => {
 
         it('should cover redo logic for plant move', async () => {
             const plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1', strain: 'S1' } } as any;
-            const moveSpy = vi.spyOn(plantActions, 'movePlantToGrowspace').mockResolvedValue(true);
+            const moveSpy = (plantActions.movePlantToGrowspace as any).mockResolvedValue(true);
 
             await store.movePlantToGrowspace(plant, 'gs2');
             expect(moveSpy).toHaveBeenCalledTimes(1);
@@ -2453,7 +2486,7 @@ describe('GrowspaceStore', () => {
             const source = { entity_id: 'sensor.p1_entity', attributes: { strain: 'S1', row: 1, col: 1 } } as any;
             const target = { entity_id: 'sensor.p2_entity', attributes: { strain: 'S2', row: 2, col: 2 } } as any;
 
-            vi.spyOn(plantActions, 'handlePlantDrop').mockResolvedValue(true);
+            (plantActions.handlePlantDrop as any).mockResolvedValue(true);
             mockDataServiceInstance.swapPlants.mockResolvedValue({ success: true });
 
             await store.handleDrop(2, 2, target, source);

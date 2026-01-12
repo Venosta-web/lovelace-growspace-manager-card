@@ -7,7 +7,7 @@ import { plantStatsStyles } from '../../styles/plant-stats.styles';
 
 @customElement('growspace-plant-stats')
 export class GrowspacePlantStats extends LitElement {
-    @property({ attribute: false }) accessor stages: StageDisplay[] = [];
+    @property({ attribute: false }) stages: StageDisplay[] = [];
 
     static styles = [plantStatsStyles];
 

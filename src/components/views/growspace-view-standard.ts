@@ -13,16 +13,16 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-standard')
 export class GrowspaceViewStandard extends LitElement {
-  @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
-  @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
-  @property({ attribute: false }) accessor grid: (PlantEntity | null)[][] = [];
-  @property({ type: Number }) accessor rows = 0;
-  @property({ type: Number }) accessor cols = 0;
-  @property({ type: Boolean }) accessor isLoading = false;
-  @property({ type: Boolean }) accessor isEditMode = false;
-  @property({ type: Boolean }) accessor isCompact = false;
-  @property({ type: Number }) accessor selectedCount = 0;
-  @property({ attribute: false }) accessor config: GrowspaceManagerCardConfig | undefined;
+  @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) grid: (PlantEntity | null)[][] = [];
+  @property({ type: Number }) rows = 0;
+  @property({ type: Number }) cols = 0;
+  @property({ type: Boolean }) isLoading = false;
+  @property({ type: Boolean }) isEditMode = false;
+  @property({ type: Boolean }) isCompact = false;
+  @property({ type: Number }) selectedCount = 0;
+  @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
   public focusPlant(index: number) {
     const grid = this.shadowRoot?.querySelector('growspace-grid');

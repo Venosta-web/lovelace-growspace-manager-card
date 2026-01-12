@@ -12,16 +12,16 @@ import {
 
 @customElement('plant-timeline')
 export class PlantTimeline extends LitElement {
-  @property({ attribute: false }) accessor hass!: HomeAssistant;
-  @property({ type: String }) accessor plant_id!: string;
-  @property({ type: Array }) accessor events: PlantTimelineEvent[] = [];
+  @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ type: String }) plant_id!: string;
+  @property({ type: Array }) events: PlantTimelineEvent[] = [];
 
-  @state() private accessor _noteText = '';
-  @state() private accessor _noteImages: string[] = [];
-  @state() private accessor _isSaving = false;
-  @state() private accessor _showDeleteConfirmation = false;
-  @state() private accessor _deletingEventId: string | number | null = null;
-  @state() private accessor _hoveredImage: string | null = null;
+  @state() private _noteText = '';
+  @state() private _noteImages: string[] = [];
+  @state() private _isSaving = false;
+  @state() private _showDeleteConfirmation = false;
+  @state() private _deletingEventId: string | number | null = null;
+  @state() private _hoveredImage: string | null = null;
 
   static styles = [
     sharedStyles,

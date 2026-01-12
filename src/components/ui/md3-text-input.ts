@@ -4,12 +4,12 @@ import { dialogStyles } from '../../styles/dialog.styles';
 
 @customElement('md3-text-input')
 export class Md3TextInput extends LitElement {
-  @property() accessor label = '';
-  @property() accessor value = '';
-  @property() accessor type = 'text';
-  @property() accessor placeholder = '';
-  @property({ type: Array }) accessor suggestions: string[] = [];
-  @property() accessor list = '';
+  @property() label = '';
+  @property() value = '';
+  @property() type = 'text';
+  @property() placeholder = '';
+  @property({ type: Array }) suggestions: string[] = [];
+  @property() list = '';
 
   private _listId = `datalist-${Math.random().toString(36).substr(2, 9)}`;
 

@@ -10,7 +10,7 @@ import { classMap } from 'lit/directives/class-map.js';
 @customElement('growspace-toast')
 export class GrowspaceToast extends LitElement {
     @consume({ context: storeContext })
-    private accessor store!: GrowspaceStore;
+    private store!: GrowspaceStore;
 
     private _notificationController!: StoreController<{
         message: string;

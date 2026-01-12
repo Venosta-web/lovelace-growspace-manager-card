@@ -10,12 +10,12 @@ import { hassContext } from '../context';
 @customElement('strain-recommendation-dialog')
 export class StrainRecommendationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
-  @property({ type: Boolean }) public accessor open = false;
-  @property({ type: Boolean }) public accessor isLoading = false;
-  @property({ attribute: false }) public accessor response: string | null = null;
-  @property({ type: String }) public accessor userQuery: string = '';
+  @property({ type: Boolean }) public open = false;
+  @property({ type: Boolean }) public isLoading = false;
+  @property({ attribute: false }) public response: string | null = null;
+  @property({ type: String }) public userQuery: string = '';
 
   static styles = [
     dialogStyles,

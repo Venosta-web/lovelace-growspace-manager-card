@@ -872,7 +872,7 @@ describe('Coverage Gap Fillers', () => {
     describe('Date Constructor Errors', () => {
         it('should handle Date constructor throwing error', () => {
             // Save original
-            const OriginalDate = global.Date;
+            const OriginalDate = globalThis.Date;
 
             // Mock causing error only when specific invalid string is passed
             // so we don't break other internal Date calls if possible
@@ -884,7 +884,7 @@ describe('Coverage Gap Fillers', () => {
                     return new (target as any)(...args);
                 }
             });
-            global.Date = MockDate as any;
+            (globalThis as any).Date = MockDate as any;
 
             try {
                 expect(PlantUtils.parseDateTimeLocal('FORCE_ERROR')).toBeUndefined();
@@ -892,7 +892,7 @@ describe('Coverage Gap Fillers', () => {
                 // toDateTimeLocal returns '' on error
                 expect(PlantUtils.toDateTimeLocal('FORCE_ERROR')).toBe('');
             } finally {
-                global.Date = OriginalDate;
+                (globalThis as any).Date = OriginalDate;
             }
         });
     });

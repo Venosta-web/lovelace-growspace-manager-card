@@ -24,10 +24,8 @@ if (!customElements.get('context-wrapper')) {
     customElements.define('context-wrapper', ContextWrapper);
 }
 
-// Mock Shared Styles to avoid potential issues (optional but good practice)
-vi.mock('../../../src/styles/shared.styles', () => ({
-    sharedStyles: { cssText: '' }
-}));
+// Styles used natively in browser tests
+
 
 // Helper to wait for updates
 const waitForUpdates = async (el: HTMLElement) => {

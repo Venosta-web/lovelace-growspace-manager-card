@@ -14,20 +14,20 @@ import type { GrowspaceStore } from '../store/growspace-store';
 @customElement('watering-dialog')
 export class WateringDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
-  public accessor hass!: HomeAssistant;
+  public hass!: HomeAssistant;
 
   @consume({ context: storeContext, subscribe: true })
-  public accessor store!: GrowspaceStore;
+  public store!: GrowspaceStore;
 
-  @property({ type: Boolean }) public accessor open = false;
-  @property({ attribute: false }) public accessor dialogState: WateringDialogState | undefined;
-  @property({ type: String }) public accessor growspaceName = '';
+  @property({ type: Boolean }) public open = false;
+  @property({ attribute: false }) public dialogState: WateringDialogState | undefined;
+  @property({ type: String }) public growspaceName = '';
 
   // Form state
-  @state() private accessor _volume = 1.0; // Liters
-  @state() private accessor _nutrients: NutrientEntry[] = [];
-  @state() private accessor _selectedPresetId = '';
-  @state() private accessor _isSubmitting = false;
+  @state() private _volume = 1.0; // Liters
+  @state() private _nutrients: NutrientEntry[] = [];
+  @state() private _selectedPresetId = '';
+  @state() private _isSubmitting = false;
 
   private _dataService?: DataService;
 

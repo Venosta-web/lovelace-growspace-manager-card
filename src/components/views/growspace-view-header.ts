@@ -10,8 +10,8 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-header')
 export class GrowspaceViewHeader extends LitElement {
-    @property({ attribute: false }) accessor device: GrowspaceDevice | undefined;
-    @property({ attribute: false }) accessor growspaceOptions: Record<string, string> = {};
+    @property({ attribute: false }) device: GrowspaceDevice | undefined;
+    @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
 
     static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 

@@ -155,16 +155,13 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should get config element', async () => {
-            // Mock the dynamic import which is what would happen naturally or if we mock it
-            vi.stubGlobal('import', vi.fn().mockResolvedValue({}));
-
             try {
                 const el = await GrowspaceManagerCard.getConfigElement();
                 expect(el.tagName.toLowerCase()).toBe('growspace-manager-card-editor');
             } catch (e) {
                 // Ignore errors from missing editor file in test env
             }
-            vi.unstubAllGlobals();
+
         });
     });
 
@@ -371,7 +368,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should handle file download when export event received', () => {
             const a = document.createElement('a');
-            const clickSpy = vi.spyOn(a, 'click');
+            const clickSpy = vi.spyOn(a, 'click').mockImplementation(() => { });
             const appendSpy = vi.spyOn(document.body, 'appendChild');
             const removeChildSpy = vi.spyOn(document.body, 'removeChild');
 
@@ -389,9 +386,11 @@ describe('GrowspaceManagerCard', () => {
 
         it('should fallback to export.zip if URL has no segments', () => {
             const a = document.createElement('a');
+            vi.spyOn(a, 'click').mockImplementation(() => { });
             vi.spyOn(document, 'createElement').mockReturnValue(a);
             vi.spyOn(document.body, 'appendChild').mockImplementation(() => a);
             vi.spyOn(document.body, 'removeChild').mockImplementation(() => a);
+
 
             (element as any)._downloadFile('http://test.com/');
             expect(a.download).toBe('export.zip');

@@ -19,10 +19,10 @@ import { ResizeController } from '../../controllers/resize-controller';
 
 @customElement('growspace-edit-mode-banner')
 export class EditModeBanner extends LitElement {
-  @property({ type: Number }) accessor selectedCount = 0;
+  @property({ type: Number }) selectedCount = 0;
 
-  @state() private accessor _canScrollLeft = false;
-  @state() private accessor _canScrollRight = false;
+  @state() private _canScrollLeft = false;
+  @state() private _canScrollRight = false;
 
   private _actionsContainerRef: Ref<HTMLDivElement> = createRef();
   private _resizeController = new ResizeController(this, () => this._checkScroll());
