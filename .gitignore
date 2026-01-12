@@ -55,3 +55,5 @@ playwright-report/.auth/*
 # Verification scratchpad
 verification/
 
+tests/unit/__screenshots__/
+tests/unit/components/manager/__screenshots__/nutrient-presets-editor.spec.ts/NutrientPresetsEditor-should-render-preset-details--stage--days--1.png

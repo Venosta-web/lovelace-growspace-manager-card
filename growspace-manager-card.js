@@ -847,61 +847,41 @@ class PlantUtils {
         };
     }
 }
-Object.defineProperty(PlantUtils, "stageColors", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: {
-        [PlantStage.MOTHER]: '#E91E63',
-        [PlantStage.CLONE]: '#FF5722',
-        [PlantStage.SEEDLING]: '#4CAF50',
-        [PlantStage.VEG]: '#8BC34A',
-        [PlantStage.FLOWER]: '#FF9800',
-        [PlantStage.DRY]: '#795548',
-        [PlantStage.CURE]: '#9C27B0',
-    }
-});
-Object.defineProperty(PlantUtils, "stageIcons", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: {
-        [PlantStage.MOTHER]: mdiSprout,
-        [PlantStage.CLONE]: mdiSprout,
-        [PlantStage.SEEDLING]: mdiSprout,
-        [PlantStage.VEG]: mdiSprout,
-        [PlantStage.FLOWER]: mdiFlower,
-        [PlantStage.DRY]: mdiHairDryer,
-        [PlantStage.CURE]: mdiCannabis,
-    }
-});
+PlantUtils.stageColors = {
+    [PlantStage.MOTHER]: '#E91E63',
+    [PlantStage.CLONE]: '#FF5722',
+    [PlantStage.SEEDLING]: '#4CAF50',
+    [PlantStage.VEG]: '#8BC34A',
+    [PlantStage.FLOWER]: '#FF9800',
+    [PlantStage.DRY]: '#795548',
+    [PlantStage.CURE]: '#9C27B0',
+};
+PlantUtils.stageIcons = {
+    [PlantStage.MOTHER]: mdiSprout,
+    [PlantStage.CLONE]: mdiSprout,
+    [PlantStage.SEEDLING]: mdiSprout,
+    [PlantStage.VEG]: mdiSprout,
+    [PlantStage.FLOWER]: mdiFlower,
+    [PlantStage.DRY]: mdiHairDryer,
+    [PlantStage.CURE]: mdiCannabis,
+};
 /** Growspace types that support dynamic row expansion */
-Object.defineProperty(PlantUtils, "DYNAMIC_ROW_TYPES", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: [
-        GrowspaceType.DRY,
-        GrowspaceType.CURE,
-        GrowspaceType.MOTHER,
-        GrowspaceType.CLONE
-    ]
-});
+PlantUtils.DYNAMIC_ROW_TYPES = [
+    GrowspaceType.DRY,
+    GrowspaceType.CURE,
+    GrowspaceType.MOTHER,
+    GrowspaceType.CLONE
+];
 /** Date fields used for plant lifecycle */
-Object.defineProperty(PlantUtils, "DATE_FIELDS", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: [
-        'seedling_start',
-        'mother_start',
-        'clone_start',
-        'veg_start',
-        'flower_start',
-        'dry_start',
-        'cure_start',
-    ]
-});
+PlantUtils.DATE_FIELDS = [
+    'seedling_start',
+    'mother_start',
+    'clone_start',
+    'veg_start',
+    'flower_start',
+    'dry_start',
+    'cure_start',
+];
 
 // Define keys for automatic extraction (DRY)
 // These must match the keys produced by serializers.py
@@ -4973,12 +4953,6 @@ const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
 
 class DataService {
     constructor(hass) {
-        Object.defineProperty(this, "hass", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         if (hass) {
             this.hass = hass;
         }
@@ -5812,55 +5786,11 @@ PERFORMANCE OF THIS SOFTWARE.
 /* global Reflect, Promise, SuppressedError, Symbol, Iterator */
 
 
-function __esDecorate(ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
-    }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
-}
-function __runInitializers(thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
-}
-function __setFunctionName(f, name, prefix) {
-    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
-    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
-}
-function __classPrivateFieldGet(receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
-}
-
-function __classPrivateFieldSet(receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+function __decorate(decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 }
 
 typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
@@ -5965,36 +5895,6 @@ const storeContext = n$4('store');
 
 class SubscriptionController {
     constructor(host, dataStore, onUpdate) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_unsubEvents", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_hass", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_onUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "dataStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.host = host;
         this.dataStore = dataStore;
         this._onUpdate = onUpdate;
@@ -6684,512 +6584,371 @@ class GraphDataTransformer {
     }
 }
 
-(() => {
-    var _GrowspaceEnvChart_hass_accessor_storage, _GrowspaceEnvChart_device_accessor_storage, _GrowspaceEnvChart_sensorHistory_accessor_storage, _GrowspaceEnvChart_metricKey_accessor_storage, _GrowspaceEnvChart_unit_accessor_storage, _GrowspaceEnvChart_color_accessor_storage, _GrowspaceEnvChart_title_accessor_storage, _GrowspaceEnvChart_icon_accessor_storage, _GrowspaceEnvChart_range_accessor_storage, _GrowspaceEnvChart_type_accessor_storage, _GrowspaceEnvChart_metrics_accessor_storage, _GrowspaceEnvChart_isCombined_accessor_storage, _GrowspaceEnvChart_metricConfig_accessor_storage, _GrowspaceEnvChart__activeTooltip_accessor_storage, _GrowspaceEnvChart__hoverTime_accessor_storage, _GrowspaceEnvChart__canScrollLeft_accessor_storage, _GrowspaceEnvChart__canScrollRight_accessor_storage, _GrowspaceEnvChart__renderSeries_accessor_storage;
-    let _classDecorators = [t$2('growspace-env-chart')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _sensorHistory_decorators;
-    let _sensorHistory_initializers = [];
-    let _sensorHistory_extraInitializers = [];
-    let _metricKey_decorators;
-    let _metricKey_initializers = [];
-    let _metricKey_extraInitializers = [];
-    let _unit_decorators;
-    let _unit_initializers = [];
-    let _unit_extraInitializers = [];
-    let _color_decorators;
-    let _color_initializers = [];
-    let _color_extraInitializers = [];
-    let _title_decorators;
-    let _title_initializers = [];
-    let _title_extraInitializers = [];
-    let _icon_decorators;
-    let _icon_initializers = [];
-    let _icon_extraInitializers = [];
-    let _range_decorators;
-    let _range_initializers = [];
-    let _range_extraInitializers = [];
-    let _type_decorators;
-    let _type_initializers = [];
-    let _type_extraInitializers = [];
-    let _metrics_decorators;
-    let _metrics_initializers = [];
-    let _metrics_extraInitializers = [];
-    let _isCombined_decorators;
-    let _isCombined_initializers = [];
-    let _isCombined_extraInitializers = [];
-    let _metricConfig_decorators;
-    let _metricConfig_initializers = [];
-    let _metricConfig_extraInitializers = [];
-    let __activeTooltip_decorators;
-    let __activeTooltip_initializers = [];
-    let __activeTooltip_extraInitializers = [];
-    let __hoverTime_decorators;
-    let __hoverTime_initializers = [];
-    let __hoverTime_extraInitializers = [];
-    let __canScrollLeft_decorators;
-    let __canScrollLeft_initializers = [];
-    let __canScrollLeft_extraInitializers = [];
-    let __canScrollRight_decorators;
-    let __canScrollRight_initializers = [];
-    let __canScrollRight_extraInitializers = [];
-    let __renderSeries_decorators;
-    let __renderSeries_initializers = [];
-    let __renderSeries_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceEnvChart_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _GrowspaceEnvChart_device_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
-            _GrowspaceEnvChart_sensorHistory_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _sensorHistory_initializers, {})));
-            _GrowspaceEnvChart_metricKey_accessor_storage.set(this, (__runInitializers(this, _sensorHistory_extraInitializers), __runInitializers(this, _metricKey_initializers, '')));
-            _GrowspaceEnvChart_unit_accessor_storage.set(this, (__runInitializers(this, _metricKey_extraInitializers), __runInitializers(this, _unit_initializers, '')));
-            _GrowspaceEnvChart_color_accessor_storage.set(this, (__runInitializers(this, _unit_extraInitializers), __runInitializers(this, _color_initializers, '#ffffff')));
-            _GrowspaceEnvChart_title_accessor_storage.set(this, (__runInitializers(this, _color_extraInitializers), __runInitializers(this, _title_initializers, '')));
-            _GrowspaceEnvChart_icon_accessor_storage.set(this, (__runInitializers(this, _title_extraInitializers), __runInitializers(this, _icon_initializers, mdiMagnify)));
-            _GrowspaceEnvChart_range_accessor_storage.set(this, (__runInitializers(this, _icon_extraInitializers), __runInitializers(this, _range_initializers, '24h')));
-            _GrowspaceEnvChart_type_accessor_storage.set(this, (__runInitializers(this, _range_extraInitializers), __runInitializers(this, _type_initializers, ChartType.LINE)));
-            _GrowspaceEnvChart_metrics_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _metrics_initializers, [])));
-            _GrowspaceEnvChart_isCombined_accessor_storage.set(this, (__runInitializers(this, _metrics_extraInitializers), __runInitializers(this, _isCombined_initializers, false)));
-            _GrowspaceEnvChart_metricConfig_accessor_storage.set(this, (__runInitializers(this, _isCombined_extraInitializers), __runInitializers(this, _metricConfig_initializers, {})));
-            _GrowspaceEnvChart__activeTooltip_accessor_storage.set(this, (__runInitializers(this, _metricConfig_extraInitializers), __runInitializers(this, __activeTooltip_initializers, null)));
-            _GrowspaceEnvChart__hoverTime_accessor_storage.set(this, (__runInitializers(this, __activeTooltip_extraInitializers), __runInitializers(this, __hoverTime_initializers, null)));
-            _GrowspaceEnvChart__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, __hoverTime_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
-            _GrowspaceEnvChart__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
-            _GrowspaceEnvChart__renderSeries_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __renderSeries_initializers, [])));
-            Object.defineProperty(this, "_chipsContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, __renderSeries_extraInitializers), e$1())
-            });
-            Object.defineProperty(this, "_chartContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: e$1()
-            });
-            Object.defineProperty(this, "_scrollCheckTimeout", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            // Optimization: Cache bounding rect for tooltip
-            Object.defineProperty(this, "_cachedChartRect", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-            Object.defineProperty(this, "_tooltipRafId", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-            Object.defineProperty(this, "_resizeObserver", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_invalidateRectCacheBound", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: () => this._invalidateRectCache()
-            });
-            Object.defineProperty(this, "_onMouseLeave", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: () => {
-                    if (this._tooltipRafId)
-                        cancelAnimationFrame(this._tooltipRafId);
-                    this._activeTooltip = null;
-                    this._hoverTime = null;
-                }
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_hass_accessor_storage, value, "f"); }
-        get device() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_device_accessor_storage, value, "f"); }
-        get sensorHistory() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_sensorHistory_accessor_storage, "f"); }
-        set sensorHistory(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_sensorHistory_accessor_storage, value, "f"); }
-        get metricKey() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metricKey_accessor_storage, "f"); }
-        set metricKey(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metricKey_accessor_storage, value, "f"); }
-        get unit() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_unit_accessor_storage, "f"); }
-        set unit(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_unit_accessor_storage, value, "f"); }
-        get color() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_color_accessor_storage, "f"); }
-        set color(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_color_accessor_storage, value, "f"); }
-        get title() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_title_accessor_storage, "f"); }
-        set title(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_title_accessor_storage, value, "f"); }
-        get icon() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_icon_accessor_storage, "f"); }
-        set icon(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_icon_accessor_storage, value, "f"); }
-        get range() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_range_accessor_storage, "f"); }
-        set range(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_range_accessor_storage, value, "f"); }
-        get type() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_type_accessor_storage, "f"); }
-        set type(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_type_accessor_storage, value, "f"); }
+let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.sensorHistory = {};
+        this.metricKey = '';
+        this.unit = '';
+        this.color = '#ffffff';
+        this.title = '';
+        this.icon = mdiMagnify;
+        this.range = '24h';
+        this.type = ChartType.LINE;
         // For combined graphs
-        get metrics() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metrics_accessor_storage, "f"); }
-        set metrics(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metrics_accessor_storage, value, "f"); }
-        get isCombined() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_isCombined_accessor_storage, "f"); }
-        set isCombined(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_isCombined_accessor_storage, value, "f"); }
-        get metricConfig() { return __classPrivateFieldGet(this, _GrowspaceEnvChart_metricConfig_accessor_storage, "f"); }
-        set metricConfig(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart_metricConfig_accessor_storage, value, "f"); }
-        get _activeTooltip() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__activeTooltip_accessor_storage, "f"); }
-        set _activeTooltip(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__activeTooltip_accessor_storage, value, "f"); }
-        get _hoverTime() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__hoverTime_accessor_storage, "f"); }
-        set _hoverTime(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__hoverTime_accessor_storage, value, "f"); }
-        get _canScrollLeft() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__canScrollLeft_accessor_storage, "f"); }
-        set _canScrollLeft(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__canScrollLeft_accessor_storage, value, "f"); }
-        get _canScrollRight() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__canScrollRight_accessor_storage, "f"); }
-        set _canScrollRight(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__canScrollRight_accessor_storage, value, "f"); }
-        get _renderSeries() { return __classPrivateFieldGet(this, _GrowspaceEnvChart__renderSeries_accessor_storage, "f"); }
-        set _renderSeries(value) { __classPrivateFieldSet(this, _GrowspaceEnvChart__renderSeries_accessor_storage, value, "f"); }
-        _scrollChips(direction) {
-            const container = this._chipsContainerRef.value;
-            if (container) {
-                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
-            }
-        }
-        _checkScroll() {
-            const container = this._chipsContainerRef.value;
-            if (container) {
-                this._canScrollLeft = container.scrollLeft > 1;
-                this._canScrollRight =
-                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-            }
-        }
-        firstUpdated() {
-            // Chips container is always present in combined view, or we need to handle it safely
-            // Actually chips container is ONLY in combined view. logic in firstUpdated for it is also potentially flawed if we start single and switch to combined.
-            this._setupObservers();
-        }
-        updated(changedProperties) {
-            super.updated(changedProperties);
-            // Re-check observers if structure changed
-            if (changedProperties.has('isCombined') || changedProperties.has('_renderSeries')) {
-                this._setupObservers();
-            }
-        }
-        _setupObservers() {
-            // Chips Container
-            const container = this._chipsContainerRef.value;
-            if (container && !this._resizeObserver) {
-                container.addEventListener('scroll', () => this._checkScroll());
-                this._resizeObserver = new ResizeObserver(() => {
-                    this._checkScroll();
-                    this._invalidateRectCache();
-                });
-                this._resizeObserver.observe(container);
-                this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
-            }
-            else if (!container && this._resizeObserver) {
-                // Disconnect if element gone
-                this._resizeObserver.disconnect();
-                this._resizeObserver = undefined;
-            }
-            // Chart Container
-            const chartContainer = this._chartContainerRef.value;
-            // We store the chart observer on the instance to track it
-            if (chartContainer && !this._chartObserver) {
-                const chartObserver = new ResizeObserver(() => {
-                    this._invalidateRectCache();
-                });
-                chartObserver.observe(chartContainer);
-                this._chartObserver = chartObserver;
-                window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
-                window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
-            }
-            else if (!chartContainer && this._chartObserver) {
-                this._chartObserver.disconnect();
-                this._chartObserver = undefined;
-                window.removeEventListener('scroll', this._invalidateRectCacheBound);
-                window.removeEventListener('resize', this._invalidateRectCacheBound);
-            }
-        }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            if (this._resizeObserver)
-                this._resizeObserver.disconnect();
-            if (this._chartObserver)
-                this._chartObserver.disconnect();
-            if (this._scrollCheckTimeout)
-                clearTimeout(this._scrollCheckTimeout);
+        this.metrics = [];
+        this.isCombined = false;
+        this.metricConfig = {};
+        this._activeTooltip = null;
+        this._hoverTime = null;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._renderSeries = [];
+        this._chipsContainerRef = e$1();
+        this._chartContainerRef = e$1();
+        // Optimization: Cache bounding rect for tooltip
+        this._cachedChartRect = null;
+        this._tooltipRafId = null;
+        this._invalidateRectCacheBound = () => this._invalidateRectCache();
+        this._onMouseLeave = () => {
             if (this._tooltipRafId)
                 cancelAnimationFrame(this._tooltipRafId);
+            this._activeTooltip = null;
+            this._hoverTime = null;
+        };
+    }
+    _scrollChips(direction) {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
+        }
+    }
+    _checkScroll() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
+        }
+    }
+    firstUpdated() {
+        // Chips container is always present in combined view, or we need to handle it safely
+        // Actually chips container is ONLY in combined view. logic in firstUpdated for it is also potentially flawed if we start single and switch to combined.
+        this._setupObservers();
+    }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Re-check observers if structure changed
+        if (changedProperties.has('isCombined') || changedProperties.has('_renderSeries')) {
+            this._setupObservers();
+        }
+    }
+    _setupObservers() {
+        // Chips Container
+        const container = this._chipsContainerRef.value;
+        if (container && !this._resizeObserver) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeObserver = new ResizeObserver(() => {
+                this._checkScroll();
+                this._invalidateRectCache();
+            });
+            this._resizeObserver.observe(container);
+            this._scrollCheckTimeout = window.setTimeout(() => this._checkScroll(), 100);
+        }
+        else if (!container && this._resizeObserver) {
+            // Disconnect if element gone
+            this._resizeObserver.disconnect();
+            this._resizeObserver = undefined;
+        }
+        // Chart Container
+        const chartContainer = this._chartContainerRef.value;
+        // We store the chart observer on the instance to track it
+        if (chartContainer && !this._chartObserver) {
+            const chartObserver = new ResizeObserver(() => {
+                this._invalidateRectCache();
+            });
+            chartObserver.observe(chartContainer);
+            this._chartObserver = chartObserver;
+            window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
+            window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
+        }
+        else if (!chartContainer && this._chartObserver) {
+            this._chartObserver.disconnect();
+            this._chartObserver = undefined;
             window.removeEventListener('scroll', this._invalidateRectCacheBound);
             window.removeEventListener('resize', this._invalidateRectCacheBound);
         }
-        _invalidateRectCache() {
-            this._cachedChartRect = null;
-        }
-        _getVpdThresholds() {
-            const defaultThresholds = {
-                targetMin: DEFAULTS.VPD.TARGET_MIN,
-                targetMax: DEFAULTS.VPD.TARGET_MAX,
-                dangerMin: DEFAULTS.VPD.DANGER_MIN,
-                dangerMax: DEFAULTS.VPD.DANGER_MAX,
-            };
-            const overviewEntity = this.device?.overview_entity_id
-                ? this.hass?.states[this.device.overview_entity_id]
-                : null;
-            if (!overviewEntity?.attributes)
-                return { day: defaultThresholds, night: defaultThresholds };
-            const attrs = overviewEntity.attributes;
-            // Day targets
-            const day = {
-                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
-                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
-                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
-                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
-            };
-            // Night targets - use day values as sensible defaults if night not explicitly configured
-            // This is intentional default behavior, not backward compatibility
-            const night = {
-                targetMin: attrs.night_vpd_target_min ?? day.targetMin,
-                targetMax: attrs.night_vpd_target_max ?? day.targetMax,
-                dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
-                dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
-            };
-            return { day, night };
-        }
-        _getVpdStatusForValue(value, thresholds, isDay) {
-            const t = isDay ? thresholds.day : thresholds.night;
-            if (value < t.dangerMin || value > t.dangerMax)
-                return StatusLevel.DANGER;
-            if (value < t.targetMin || value > t.targetMax)
-                return StatusLevel.WARNING;
-            return StatusLevel.OPTIMAL;
-        }
-        _getVpdStatusColor(status) {
-            return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
-        }
-        _generateVpdSegments(points, thresholds, lightHistory) {
-            if (points.length < 2)
-                return [];
-            const segments = [];
-            let currentSegment = [];
-            // Helper to determine day/night at a specific time
-            // using ChartUtils.getIsDay to ensure consistent logic with sparklines
-            let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
-            let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
-            for (let i = 0; i < points.length; i++) {
-                const p = points[i];
-                const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
-                const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
-                if (status === currentStatus) {
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._resizeObserver)
+            this._resizeObserver.disconnect();
+        if (this._chartObserver)
+            this._chartObserver.disconnect();
+        if (this._scrollCheckTimeout)
+            clearTimeout(this._scrollCheckTimeout);
+        if (this._tooltipRafId)
+            cancelAnimationFrame(this._tooltipRafId);
+        window.removeEventListener('scroll', this._invalidateRectCacheBound);
+        window.removeEventListener('resize', this._invalidateRectCacheBound);
+    }
+    _invalidateRectCache() {
+        this._cachedChartRect = null;
+    }
+    _getVpdThresholds() {
+        const defaultThresholds = {
+            targetMin: DEFAULTS.VPD.TARGET_MIN,
+            targetMax: DEFAULTS.VPD.TARGET_MAX,
+            dangerMin: DEFAULTS.VPD.DANGER_MIN,
+            dangerMax: DEFAULTS.VPD.DANGER_MAX,
+        };
+        const overviewEntity = this.device?.overview_entity_id
+            ? this.hass?.states[this.device.overview_entity_id]
+            : null;
+        if (!overviewEntity?.attributes)
+            return { day: defaultThresholds, night: defaultThresholds };
+        const attrs = overviewEntity.attributes;
+        // Day targets
+        const day = {
+            targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? DEFAULTS.VPD.TARGET_MIN,
+            targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? DEFAULTS.VPD.TARGET_MAX,
+            dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? DEFAULTS.VPD.DANGER_MIN,
+            dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? DEFAULTS.VPD.DANGER_MAX,
+        };
+        // Night targets - use day values as sensible defaults if night not explicitly configured
+        // This is intentional default behavior, not backward compatibility
+        const night = {
+            targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+            targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+            dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+            dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+        };
+        return { day, night };
+    }
+    _getVpdStatusForValue(value, thresholds, isDay) {
+        const t = isDay ? thresholds.day : thresholds.night;
+        if (value < t.dangerMin || value > t.dangerMax)
+            return StatusLevel.DANGER;
+        if (value < t.targetMin || value > t.targetMax)
+            return StatusLevel.WARNING;
+        return StatusLevel.OPTIMAL;
+    }
+    _getVpdStatusColor(status) {
+        return STATUS_COLORS[status] || METRIC_CONFIG.vpd.color;
+    }
+    _generateVpdSegments(points, thresholds, lightHistory) {
+        if (points.length < 2)
+            return [];
+        const segments = [];
+        let currentSegment = [];
+        // Helper to determine day/night at a specific time
+        // using ChartUtils.getIsDay to ensure consistent logic with sparklines
+        let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
+        let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            const pIsDay = ChartUtils.getIsDay(p.time, lightHistory);
+            const status = this._getVpdStatusForValue(p.value, thresholds, pIsDay);
+            if (status === currentStatus) {
+                currentSegment.push(p);
+            }
+            else {
+                if (currentSegment.length >= 1) {
                     currentSegment.push(p);
+                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
+                }
+                currentSegment = [p];
+                currentStatus = status;
+            }
+        }
+        if (currentSegment.length >= 2) {
+            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
+        }
+        return segments;
+    }
+    _computeGraphSeries(width, height, startTime, durationMillis, now) {
+        const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+        const seriesList = [];
+        const startTimeMs = startTime.getTime();
+        const nowMs = now.getTime();
+        // Prepare Light History for VPD calculation if needed
+        let lightHistoryPoints = [];
+        if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
+            lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT, startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
+            nowMs);
+        }
+        metricKeys.forEach((key) => {
+            const config = this.metricConfig[key] || {
+                color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
+                title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
+                unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
+                icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
+            };
+            const historySource = this.sensorHistory[key] || [];
+            if (historySource.length === 0)
+                return;
+            const dataPoints = [];
+            let initialState = historySource[0];
+            for (const h of historySource) {
+                if (new Date(h.last_changed).getTime() > startTimeMs)
+                    break;
+                initialState = h;
+            }
+            if (initialState) {
+                const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                if (val !== undefined)
+                    dataPoints.push({ time: startTimeMs, value: val });
+            }
+            const len = historySource.length;
+            for (let i = 0; i < len; i++) {
+                const h = historySource[i];
+                const t = new Date(h.last_changed).getTime();
+                if (t <= startTimeMs)
+                    continue;
+                let val;
+                if (key === MetricKey.OPTIMAL) {
+                    val = h.state === EntityState.ON ? 1 : 0;
+                    if (h.attributes?.reasons)
+                        dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
+                    else
+                        dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    if (currentSegment.length >= 1) {
-                        currentSegment.push(p);
-                        const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                        segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-                    }
-                    currentSegment = [p];
-                    currentStatus = status;
-                }
-            }
-            if (currentSegment.length >= 2) {
-                const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
-                segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
-            }
-            return segments;
-        }
-        _computeGraphSeries(width, height, startTime, durationMillis, now) {
-            const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-            const seriesList = [];
-            const startTimeMs = startTime.getTime();
-            const nowMs = now.getTime();
-            // Prepare Light History for VPD calculation if needed
-            let lightHistoryPoints = [];
-            if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
-                lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT, startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
-                nowMs);
-            }
-            metricKeys.forEach((key) => {
-                const config = this.metricConfig[key] || {
-                    color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
-                    title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
-                    unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
-                    icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
-                };
-                const historySource = this.sensorHistory[key] || [];
-                if (historySource.length === 0)
-                    return;
-                const dataPoints = [];
-                let initialState = historySource[0];
-                for (const h of historySource) {
-                    if (new Date(h.last_changed).getTime() > startTimeMs)
-                        break;
-                    initialState = h;
-                }
-                if (initialState) {
-                    const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                    val = GraphDataTransformer.normalizeSensorValue(h, key);
                     if (val !== undefined)
-                        dataPoints.push({ time: startTimeMs, value: val });
-                }
-                const len = historySource.length;
-                for (let i = 0; i < len; i++) {
-                    const h = historySource[i];
-                    const t = new Date(h.last_changed).getTime();
-                    if (t <= startTimeMs)
-                        continue;
-                    let val;
-                    if (key === MetricKey.OPTIMAL) {
-                        val = h.state === EntityState.ON ? 1 : 0;
-                        if (h.attributes?.reasons)
-                            dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
-                        else
-                            dataPoints.push({ time: t, value: val });
-                    }
-                    else {
-                        val = GraphDataTransformer.normalizeSensorValue(h, key);
-                        if (val !== undefined)
-                            dataPoints.push({ time: t, value: val });
-                    }
-                }
-                if (dataPoints.length > 0) {
-                    const last = dataPoints[dataPoints.length - 1];
-                    dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
-                }
-                if (dataPoints.length > 0) {
-                    // ⚡ BOLT OPTIMIZATION: Single-pass min/max/sum calculation
-                    // Combines 3 separate iterations into one O(n) pass
-                    // Also avoids spread operator which can cause stack overflow for large arrays
-                    let min = dataPoints[0].value;
-                    let max = dataPoints[0].value;
-                    let sum = 0;
-                    for (let i = 0; i < dataPoints.length; i++) {
-                        const val = dataPoints[i].value;
-                        if (val < min)
-                            min = val;
-                        if (val > max)
-                            max = val;
-                        sum += val;
-                    }
-                    const avg = sum / dataPoints.length;
-                    const isStep = config.type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
-                    if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) {
-                        min = 0;
-                        max = 10;
-                    }
-                    else if (key === MetricKey.DEHUMIDIFIER) {
-                        min = 0;
-                        max = 1;
-                    }
-                    else if (isStep) {
-                        min = 0;
-                        max = 1;
-                    }
-                    if (!this.isCombined && max === min && !isStep) {
-                        max += 1;
-                        min -= 1;
-                    }
-                    const paddedRange = max - min || 1;
-                    const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
-                        min, max,
-                        startTime: startTimeMs,
-                        endTime: startTimeMs + durationMillis,
-                        type: isStep ? ChartType.STEP : ChartType.LINE,
-                        timeRange: this.range
-                    });
-                    let vpdSegments;
-                    let seriesColor = config.color || '#fff';
-                    if (key === MetricKey.VPD) {
-                        const thresholds = this._getVpdThresholds();
-                        const vpdPoints = dataPoints.map((p) => ({
-                            x: ((p.time - startTimeMs) / durationMillis) * width,
-                            y: height - ((p.value - min) / paddedRange) * height,
-                            value: p.value,
-                            time: p.time
-                        }));
-                        vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
-                        if (dataPoints.length > 0) {
-                            // Determine current status (last point)
-                            const lastPoint = dataPoints[dataPoints.length - 1];
-                            // Get current light state for last point color
-                            // Or just rely on current environment active state? 
-                            // Better to match the graph logic:
-                            let isDay = true;
-                            if (lightHistoryPoints.length > 0) {
-                                const lastLight = lightHistoryPoints[lightHistoryPoints.length - 1];
-                                // If last light point is recent enough... usually it covers 'now'
-                                isDay = lastLight.value === 1;
-                            }
-                            seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(lastPoint.value, thresholds, isDay));
-                        }
-                    }
-                    seriesList.push({
-                        id: key,
-                        title: config.title || key,
-                        color: seriesColor,
-                        unit: config.unit || '',
-                        icon: config.icon || '',
-                        points: dataPoints,
-                        min, max, avg, path: pathStr,
-                        fillType: this.isCombined ? 'flat' : 'gradient',
-                        vpdSegments,
-                    });
-                }
-            });
-            return seriesList;
-        }
-        willUpdate(changedProperties) {
-            if (changedProperties.has('device') ||
-                changedProperties.has('sensorHistory') ||
-                changedProperties.has('range') ||
-                changedProperties.has('metricKey') ||
-                changedProperties.has('metrics') ||
-                changedProperties.has('isCombined')) {
-                let needsUpdate = true;
-                if (changedProperties.has('sensorHistory') && changedProperties.size === 1) {
-                    const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
-                    const oldHist = changedProperties.get('sensorHistory');
-                    if (oldHist) {
-                        let allSame = true;
-                        for (const k of metricKeys) {
-                            if (this.sensorHistory[k] !== oldHist[k]) {
-                                allSame = false;
-                                break;
-                            }
-                        }
-                        if (allSame)
-                            needsUpdate = false;
-                    }
-                }
-                if (needsUpdate) {
-                    const durationMillis = this._getDurationMillis(this.range);
-                    const now = new Date();
-                    const startTime = new Date(now.getTime() - durationMillis);
-                    this._renderSeries = this._computeGraphSeries(800, 200, startTime, durationMillis, now);
+                        dataPoints.push({ time: t, value: val });
                 }
             }
+            if (dataPoints.length > 0) {
+                const last = dataPoints[dataPoints.length - 1];
+                dataPoints.push({ time: nowMs, value: last.value, meta: last.meta });
+            }
+            if (dataPoints.length > 0) {
+                // ⚡ BOLT OPTIMIZATION: Single-pass min/max/sum calculation
+                // Combines 3 separate iterations into one O(n) pass
+                // Also avoids spread operator which can cause stack overflow for large arrays
+                let min = dataPoints[0].value;
+                let max = dataPoints[0].value;
+                let sum = 0;
+                for (let i = 0; i < dataPoints.length; i++) {
+                    const val = dataPoints[i].value;
+                    if (val < min)
+                        min = val;
+                    if (val > max)
+                        max = val;
+                    sum += val;
+                }
+                const avg = sum / dataPoints.length;
+                const isStep = config.type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
+                if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) {
+                    min = 0;
+                    max = 10;
+                }
+                else if (key === MetricKey.DEHUMIDIFIER) {
+                    min = 0;
+                    max = 1;
+                }
+                else if (isStep) {
+                    min = 0;
+                    max = 1;
+                }
+                if (!this.isCombined && max === min && !isStep) {
+                    max += 1;
+                    min -= 1;
+                }
+                const paddedRange = max - min || 1;
+                const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
+                    min, max,
+                    startTime: startTimeMs,
+                    endTime: startTimeMs + durationMillis,
+                    type: isStep ? ChartType.STEP : ChartType.LINE,
+                    timeRange: this.range
+                });
+                let vpdSegments;
+                let seriesColor = config.color || '#fff';
+                if (key === MetricKey.VPD) {
+                    const thresholds = this._getVpdThresholds();
+                    const vpdPoints = dataPoints.map((p) => ({
+                        x: ((p.time - startTimeMs) / durationMillis) * width,
+                        y: height - ((p.value - min) / paddedRange) * height,
+                        value: p.value,
+                        time: p.time
+                    }));
+                    vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
+                    if (dataPoints.length > 0) {
+                        // Determine current status (last point)
+                        const lastPoint = dataPoints[dataPoints.length - 1];
+                        // Get current light state for last point color
+                        // Or just rely on current environment active state? 
+                        // Better to match the graph logic:
+                        let isDay = true;
+                        if (lightHistoryPoints.length > 0) {
+                            const lastLight = lightHistoryPoints[lightHistoryPoints.length - 1];
+                            // If last light point is recent enough... usually it covers 'now'
+                            isDay = lastLight.value === 1;
+                        }
+                        seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(lastPoint.value, thresholds, isDay));
+                    }
+                }
+                seriesList.push({
+                    id: key,
+                    title: config.title || key,
+                    color: seriesColor,
+                    unit: config.unit || '',
+                    icon: config.icon || '',
+                    points: dataPoints,
+                    min, max, avg, path: pathStr,
+                    fillType: this.isCombined ? 'flat' : 'gradient',
+                    vpdSegments,
+                });
+            }
+        });
+        return seriesList;
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('device') ||
+            changedProperties.has('sensorHistory') ||
+            changedProperties.has('range') ||
+            changedProperties.has('metricKey') ||
+            changedProperties.has('metrics') ||
+            changedProperties.has('isCombined')) {
+            let needsUpdate = true;
+            if (changedProperties.has('sensorHistory') && changedProperties.size === 1) {
+                const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+                const oldHist = changedProperties.get('sensorHistory');
+                if (oldHist) {
+                    let allSame = true;
+                    for (const k of metricKeys) {
+                        if (this.sensorHistory[k] !== oldHist[k]) {
+                            allSame = false;
+                            break;
+                        }
+                    }
+                    if (allSame)
+                        needsUpdate = false;
+                }
+            }
+            if (needsUpdate) {
+                const durationMillis = this._getDurationMillis(this.range);
+                const now = new Date();
+                const startTime = new Date(now.getTime() - durationMillis);
+                this._renderSeries = this._computeGraphSeries(800, 200, startTime, durationMillis, now);
+            }
         }
-        render() {
-            if (!this.device)
-                return x ``;
-            const width = 800;
-            const height = 200;
-            const durationMillis = this._getDurationMillis(this.range);
-            const now = new Date();
-            const startTime = new Date(now.getTime() - durationMillis);
-            const series = this._renderSeries;
-            if (series.length === 0) {
-                return x `
+    }
+    render() {
+        if (!this.device)
+            return x ``;
+        const width = 800;
+        const height = 200;
+        const durationMillis = this._getDurationMillis(this.range);
+        const now = new Date();
+        const startTime = new Date(now.getTime() - durationMillis);
+        const series = this._renderSeries;
+        if (series.length === 0) {
+            return x `
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
              <div style="display:flex; align-items:center; gap:8px;">
@@ -7201,8 +6960,8 @@ class GraphDataTransformer {
           <div class="gs-env-chart-container empty">No history data available for ${this.range}</div>
         </div>
       `;
-            }
-            return x `
+        }
+        return x `
       <div class="gs-env-graph-card">
         ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
 
@@ -7219,112 +6978,112 @@ class GraphDataTransformer {
           <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
             ${this._renderGrid(width, height)}
             ${series.map((s) => {
-                // Handle VPD segments separately (they have their own path validation)
-                if (s.vpdSegments?.length) {
-                    return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
-                }
-                // Skip rendering regular paths if no valid path data
-                if (!s.path || s.path.trim() === '' || s.points.length === 0) {
-                    return b ``;
-                }
-                return b `
+            // Handle VPD segments separately (they have their own path validation)
+            if (s.vpdSegments?.length) {
+                return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+            }
+            // Skip rendering regular paths if no valid path data
+            if (!s.path || s.path.trim() === '' || s.points.length === 0) {
+                return b ``;
+            }
+            return b `
                  ${s.fillType === 'gradient' ? b `<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
                  ${s.fillType === 'gradient'
-                    ? b `<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-                    : b `<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`}
+                ? b `<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
+                : b `<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`}
                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
               `;
-            })}
+        })}
           </svg>
         </div>
       </div>
     `;
+    }
+    _onMouseMove(e, seriesList, startTime, durationMillis) {
+        if (this._tooltipRafId)
+            cancelAnimationFrame(this._tooltipRafId);
+        this._tooltipRafId = requestAnimationFrame(() => {
+            this._handleGraphHover(e, seriesList, startTime, durationMillis);
+            this._tooltipRafId = null;
+        });
+    }
+    _handleGraphHover(e, seriesList, startTime, durationMillis) {
+        if (!this._cachedChartRect) {
+            const container = this._chartContainerRef.value;
+            if (!container)
+                return;
+            this._cachedChartRect = container.getBoundingClientRect();
         }
-        _onMouseMove(e, seriesList, startTime, durationMillis) {
-            if (this._tooltipRafId)
-                cancelAnimationFrame(this._tooltipRafId);
-            this._tooltipRafId = requestAnimationFrame(() => {
-                this._handleGraphHover(e, seriesList, startTime, durationMillis);
-                this._tooltipRafId = null;
-            });
-        }
-        _handleGraphHover(e, seriesList, startTime, durationMillis) {
-            if (!this._cachedChartRect) {
-                const container = this._chartContainerRef.value;
-                if (!container)
-                    return;
-                this._cachedChartRect = container.getBoundingClientRect();
-            }
-            const rect = this._cachedChartRect;
-            const contentWidth = rect.width - 90;
-            const mouseX = e.clientX - rect.left;
-            const relX = Math.max(0, Math.min(1, (mouseX - 50) / contentWidth));
-            const hoverTime = startTime.getTime() + relX * durationMillis;
-            const items = seriesList.map((s) => {
-                let closest = s.points[0];
-                let minDiff = Number.MAX_VALUE;
-                let lo = 0;
-                let hi = s.points.length - 1;
-                if (s.points.length > 0) {
-                    while (lo < hi) {
-                        const mid = Math.floor((lo + hi) / 2);
-                        if (s.points[mid].time < hoverTime)
-                            lo = mid + 1;
-                        else
-                            hi = mid;
-                    }
-                    for (let i = Math.max(0, lo - 1); i <= Math.min(s.points.length - 1, lo + 1); i++) {
-                        const p = s.points[i];
-                        const diff = Math.abs(p.time - hoverTime);
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            closest = p;
-                        }
-                    }
-                }
-                let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
-                const defaults = SENSOR_CHART_DEFAULTS[s.id];
-                const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
-                if (isBinary) {
-                    if (s.id === MetricKey.OPTIMAL)
-                        valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
+        const rect = this._cachedChartRect;
+        const contentWidth = rect.width - 90;
+        const mouseX = e.clientX - rect.left;
+        const relX = Math.max(0, Math.min(1, (mouseX - 50) / contentWidth));
+        const hoverTime = startTime.getTime() + relX * durationMillis;
+        const items = seriesList.map((s) => {
+            let closest = s.points[0];
+            let minDiff = Number.MAX_VALUE;
+            let lo = 0;
+            let hi = s.points.length - 1;
+            if (s.points.length > 0) {
+                while (lo < hi) {
+                    const mid = Math.floor((lo + hi) / 2);
+                    if (s.points[mid].time < hoverTime)
+                        lo = mid + 1;
                     else
-                        valStr = closest.value === 1 ? 'ON' : 'OFF';
+                        hi = mid;
                 }
-                else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
-                    valStr = closest.meta.state;
-                }
-                return { title: s.title, value: valStr, color: s.color };
-            });
-            const locale = this.hass?.locale?.language || undefined;
-            this._activeTooltip = {
-                id: 'hover',
-                x: mouseX,
-                time: new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
-                items,
-            };
-            this._hoverTime = hoverTime;
-        }
-        _renderSingleHeader(series) {
-            let valStr = '-';
-            if (series.points.length > 0) {
-                const last = series.points[series.points.length - 1];
-                const defaults = SENSOR_CHART_DEFAULTS[series.id];
-                const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
-                if (isBinary) {
-                    if (series.id === MetricKey.OPTIMAL)
-                        valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
-                    else
-                        valStr = last.value === 1 ? 'ON' : 'OFF';
-                }
-                else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
-                    valStr = last.meta.state;
-                }
-                else {
-                    valStr = `${last.value.toFixed(1)} ${series.unit}`;
+                for (let i = Math.max(0, lo - 1); i <= Math.min(s.points.length - 1, lo + 1); i++) {
+                    const p = s.points[i];
+                    const diff = Math.abs(p.time - hoverTime);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = p;
+                    }
                 }
             }
-            return x `
+            let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
+            const defaults = SENSOR_CHART_DEFAULTS[s.id];
+            const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
+            if (isBinary) {
+                if (s.id === MetricKey.OPTIMAL)
+                    valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
+                else
+                    valStr = closest.value === 1 ? 'ON' : 'OFF';
+            }
+            else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
+                valStr = closest.meta.state;
+            }
+            return { title: s.title, value: valStr, color: s.color };
+        });
+        const locale = this.hass?.locale?.language || undefined;
+        this._activeTooltip = {
+            id: 'hover',
+            x: mouseX,
+            time: new Date(hoverTime).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }),
+            items,
+        };
+        this._hoverTime = hoverTime;
+    }
+    _renderSingleHeader(series) {
+        let valStr = '-';
+        if (series.points.length > 0) {
+            const last = series.points[series.points.length - 1];
+            const defaults = SENSOR_CHART_DEFAULTS[series.id];
+            const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
+            if (isBinary) {
+                if (series.id === MetricKey.OPTIMAL)
+                    valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
+                else
+                    valStr = last.value === 1 ? 'ON' : 'OFF';
+            }
+            else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
+                valStr = last.meta.state;
+            }
+            else {
+                valStr = `${last.value.toFixed(1)} ${series.unit}`;
+            }
+        }
+        return x `
       <div class="gs-env-graph-header" @click=${() => this._toggleEnvGraph()}>
         <div style="display:flex; align-items:center; gap:8px;">
           <div style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;">
@@ -7337,9 +7096,9 @@ class GraphDataTransformer {
         </div>
       </div>
     `;
-        }
-        _renderCombinedHeader(seriesList) {
-            return x `
+    }
+    _renderCombinedHeader(seriesList) {
+        return x `
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
           ${this._canScrollLeft ? x `<div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips(ScrollDirection.LEFT); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
@@ -7362,12 +7121,12 @@ class GraphDataTransformer {
         </div>
       </div>
     `;
-        }
-        _renderTooltip() {
-            if (!this._activeTooltip)
-                return x ``;
-            const { x: x$1, time, items } = this._activeTooltip;
-            return x `
+    }
+    _renderTooltip() {
+        if (!this._activeTooltip)
+            return x ``;
+        const { x: x$1, time, items } = this._activeTooltip;
+        return x `
       <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
         <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;">${time}</div>
         ${items.map(i => x `
@@ -7379,114 +7138,49 @@ class GraphDataTransformer {
       </div>
       <div class="gs-cursor-line" style=${o({ left: `${x$1}px`, height: '100%', top: '0', position: 'absolute', borderLeft: '1px dashed rgba(255,255,255,0.3)', pointerEvents: 'none' })}></div>
     `;
-        }
-        _renderGrid(width, height) {
-            return b `
+    }
+    _renderGrid(width, height) {
+        return b `
         <line x1="0" y1="${height}" x2="${width}" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
         <line x1="0" y1="0" x2="0" y2="${height}" stroke="var(--divider-color, #333)" stroke-width="1" />
         <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}" stroke="var(--divider-color, #333)" stroke-width="0.5" stroke-dasharray="4 4" />
     `;
-        }
-        _renderGradient(key, color) {
-            return b `
+    }
+    _renderGradient(key, color) {
+        return b `
         <linearGradient id="grad-${key}" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stop-color="${color}" stop-opacity="0.4" />
             <stop offset="100%" stop-color="${color}" stop-opacity="0" />
         </linearGradient>
     `;
+    }
+    _renderXAxisHTML(range) {
+        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
+        return x `<div style="${labelStyle} left: 50px;">-${range}</div><div style="${labelStyle} right: 40px;">Now</div>`;
+    }
+    _renderYAxisHTML(min, max, unit) {
+        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
+        if (unit === 'state' || (max === 1 && min === 0)) {
+            return x `<div style="${labelStyle} top: 20px;">ON</div><div style="${labelStyle} bottom: 30px;">OFF</div>`;
         }
-        _renderXAxisHTML(range) {
-            const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-            return x `<div style="${labelStyle} left: 50px;">-${range}</div><div style="${labelStyle} right: 40px;">Now</div>`;
-        }
-        _renderYAxisHTML(min, max, unit) {
-            const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
-            if (unit === 'state' || (max === 1 && min === 0)) {
-                return x `<div style="${labelStyle} top: 20px;">ON</div><div style="${labelStyle} bottom: 30px;">OFF</div>`;
-            }
-            return x `
+        return x `
       <div style="${labelStyle} top: 20px;">${max.toFixed(0)}${unit}</div>
       <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
       <div style="${labelStyle} bottom: 30px;">${min.toFixed(0)}${unit}</div>
     `;
-        }
-        _getDurationMillis(range) {
-            if (range === '1h')
-                return 3600000;
-            if (range === '6h')
-                return 21600000;
-            if (range === '7d')
-                return 604800000;
-            return 86400000;
-        }
-        _toggleEnvGraph() { this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })); }
-    };
-    _GrowspaceEnvChart_hass_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_device_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_sensorHistory_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_metricKey_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_unit_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_color_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_title_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_icon_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_range_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_type_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_metrics_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_isCombined_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart_metricConfig_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart__activeTooltip_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart__hoverTime_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart__canScrollLeft_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart__canScrollRight_accessor_storage = new WeakMap();
-    _GrowspaceEnvChart__renderSeries_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceEnvChart");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _device_decorators = [n$5({ attribute: false })];
-        _sensorHistory_decorators = [n$5({ attribute: false })];
-        _metricKey_decorators = [n$5({ type: String })];
-        _unit_decorators = [n$5({ type: String })];
-        _color_decorators = [n$5({ type: String })];
-        _title_decorators = [n$5({ type: String })];
-        _icon_decorators = [n$5({ type: String })];
-        _range_decorators = [n$5({ type: String })];
-        _type_decorators = [n$5({ type: String })];
-        _metrics_decorators = [n$5({ type: Array })];
-        _isCombined_decorators = [n$5({ type: Boolean })];
-        _metricConfig_decorators = [n$5({ type: Object })];
-        __activeTooltip_decorators = [r$2()];
-        __hoverTime_decorators = [r$2()];
-        __canScrollLeft_decorators = [r$2()];
-        __canScrollRight_decorators = [r$2()];
-        __renderSeries_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _sensorHistory_decorators, { kind: "accessor", name: "sensorHistory", static: false, private: false, access: { has: obj => "sensorHistory" in obj, get: obj => obj.sensorHistory, set: (obj, value) => { obj.sensorHistory = value; } }, metadata: _metadata }, _sensorHistory_initializers, _sensorHistory_extraInitializers);
-        __esDecorate(_classThis, null, _metricKey_decorators, { kind: "accessor", name: "metricKey", static: false, private: false, access: { has: obj => "metricKey" in obj, get: obj => obj.metricKey, set: (obj, value) => { obj.metricKey = value; } }, metadata: _metadata }, _metricKey_initializers, _metricKey_extraInitializers);
-        __esDecorate(_classThis, null, _unit_decorators, { kind: "accessor", name: "unit", static: false, private: false, access: { has: obj => "unit" in obj, get: obj => obj.unit, set: (obj, value) => { obj.unit = value; } }, metadata: _metadata }, _unit_initializers, _unit_extraInitializers);
-        __esDecorate(_classThis, null, _color_decorators, { kind: "accessor", name: "color", static: false, private: false, access: { has: obj => "color" in obj, get: obj => obj.color, set: (obj, value) => { obj.color = value; } }, metadata: _metadata }, _color_initializers, _color_extraInitializers);
-        __esDecorate(_classThis, null, _title_decorators, { kind: "accessor", name: "title", static: false, private: false, access: { has: obj => "title" in obj, get: obj => obj.title, set: (obj, value) => { obj.title = value; } }, metadata: _metadata }, _title_initializers, _title_extraInitializers);
-        __esDecorate(_classThis, null, _icon_decorators, { kind: "accessor", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, get: obj => obj.icon, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, _icon_initializers, _icon_extraInitializers);
-        __esDecorate(_classThis, null, _range_decorators, { kind: "accessor", name: "range", static: false, private: false, access: { has: obj => "range" in obj, get: obj => obj.range, set: (obj, value) => { obj.range = value; } }, metadata: _metadata }, _range_initializers, _range_extraInitializers);
-        __esDecorate(_classThis, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
-        __esDecorate(_classThis, null, _metrics_decorators, { kind: "accessor", name: "metrics", static: false, private: false, access: { has: obj => "metrics" in obj, get: obj => obj.metrics, set: (obj, value) => { obj.metrics = value; } }, metadata: _metadata }, _metrics_initializers, _metrics_extraInitializers);
-        __esDecorate(_classThis, null, _isCombined_decorators, { kind: "accessor", name: "isCombined", static: false, private: false, access: { has: obj => "isCombined" in obj, get: obj => obj.isCombined, set: (obj, value) => { obj.isCombined = value; } }, metadata: _metadata }, _isCombined_initializers, _isCombined_extraInitializers);
-        __esDecorate(_classThis, null, _metricConfig_decorators, { kind: "accessor", name: "metricConfig", static: false, private: false, access: { has: obj => "metricConfig" in obj, get: obj => obj.metricConfig, set: (obj, value) => { obj.metricConfig = value; } }, metadata: _metadata }, _metricConfig_initializers, _metricConfig_extraInitializers);
-        __esDecorate(_classThis, null, __activeTooltip_decorators, { kind: "accessor", name: "_activeTooltip", static: false, private: false, access: { has: obj => "_activeTooltip" in obj, get: obj => obj._activeTooltip, set: (obj, value) => { obj._activeTooltip = value; } }, metadata: _metadata }, __activeTooltip_initializers, __activeTooltip_extraInitializers);
-        __esDecorate(_classThis, null, __hoverTime_decorators, { kind: "accessor", name: "_hoverTime", static: false, private: false, access: { has: obj => "_hoverTime" in obj, get: obj => obj._hoverTime, set: (obj, value) => { obj._hoverTime = value; } }, metadata: _metadata }, __hoverTime_initializers, __hoverTime_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
-        __esDecorate(_classThis, null, __renderSeries_decorators, { kind: "accessor", name: "_renderSeries", static: false, private: false, access: { has: obj => "_renderSeries" in obj, get: obj => obj._renderSeries, set: (obj, value) => { obj._renderSeries = value; } }, metadata: _metadata }, __renderSeries_initializers, __renderSeries_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: i$6 `
+    }
+    _getDurationMillis(range) {
+        if (range === '1h')
+            return 3600000;
+        if (range === '6h')
+            return 21600000;
+        if (range === '7d')
+            return 604800000;
+        return 86400000;
+    }
+    _toggleEnvGraph() { this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })); }
+};
+GrowspaceEnvChart.styles = i$6 `
     :host { display: block; position: relative; }
     .gs-env-graph-card { margin-top: 12px; background: var(--card-background-color, #1a1a1a); border-radius: 12px; padding: 16px; contain: content; }
     .gs-env-graph-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
@@ -7512,13 +7206,64 @@ class GraphDataTransformer {
     .scroll-nav:hover { opacity: 1; }
     .scroll-nav svg { width: 24px; height: 24px; fill: currentColor; }
     @media (pointer: coarse) { .scroll-nav { display: none; } }
-  `
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+  `;
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceEnvChart.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceEnvChart.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceEnvChart.prototype, "sensorHistory", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "metricKey", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "unit", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "color", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "title", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "range", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceEnvChart.prototype, "type", void 0);
+__decorate([
+    n$5({ type: Array })
+], GrowspaceEnvChart.prototype, "metrics", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceEnvChart.prototype, "isCombined", void 0);
+__decorate([
+    n$5({ type: Object })
+], GrowspaceEnvChart.prototype, "metricConfig", void 0);
+__decorate([
+    r$2()
+], GrowspaceEnvChart.prototype, "_activeTooltip", void 0);
+__decorate([
+    r$2()
+], GrowspaceEnvChart.prototype, "_hoverTime", void 0);
+__decorate([
+    r$2()
+], GrowspaceEnvChart.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2()
+], GrowspaceEnvChart.prototype, "_canScrollRight", void 0);
+__decorate([
+    r$2()
+], GrowspaceEnvChart.prototype, "_renderSeries", void 0);
+GrowspaceEnvChart = __decorate([
+    t$2('growspace-env-chart')
+], GrowspaceEnvChart);
 
 var lib = {};
 
@@ -8248,67 +7993,25 @@ const dialogStyles = [
 `
 ];
 
-(() => {
-    var _Md3TextInput_label_accessor_storage, _Md3TextInput_value_accessor_storage, _Md3TextInput_type_accessor_storage, _Md3TextInput_placeholder_accessor_storage, _Md3TextInput_suggestions_accessor_storage, _Md3TextInput_list_accessor_storage;
-    let _classDecorators = [t$2('md3-text-input')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _label_decorators;
-    let _label_initializers = [];
-    let _label_extraInitializers = [];
-    let _value_decorators;
-    let _value_initializers = [];
-    let _value_extraInitializers = [];
-    let _type_decorators;
-    let _type_initializers = [];
-    let _type_extraInitializers = [];
-    let _placeholder_decorators;
-    let _placeholder_initializers = [];
-    let _placeholder_extraInitializers = [];
-    let _suggestions_decorators;
-    let _suggestions_initializers = [];
-    let _suggestions_extraInitializers = [];
-    let _list_decorators;
-    let _list_initializers = [];
-    let _list_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _Md3TextInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
-            _Md3TextInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
-            _Md3TextInput_type_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _type_initializers, 'text')));
-            _Md3TextInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _type_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
-            _Md3TextInput_suggestions_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _suggestions_initializers, [])));
-            _Md3TextInput_list_accessor_storage.set(this, (__runInitializers(this, _suggestions_extraInitializers), __runInitializers(this, _list_initializers, '')));
-            Object.defineProperty(this, "_listId", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, _list_extraInitializers), `datalist-${Math.random().toString(36).substr(2, 9)}`)
-            });
-        }
-        get label() { return __classPrivateFieldGet(this, _Md3TextInput_label_accessor_storage, "f"); }
-        set label(value) { __classPrivateFieldSet(this, _Md3TextInput_label_accessor_storage, value, "f"); }
-        get value() { return __classPrivateFieldGet(this, _Md3TextInput_value_accessor_storage, "f"); }
-        set value(value) { __classPrivateFieldSet(this, _Md3TextInput_value_accessor_storage, value, "f"); }
-        get type() { return __classPrivateFieldGet(this, _Md3TextInput_type_accessor_storage, "f"); }
-        set type(value) { __classPrivateFieldSet(this, _Md3TextInput_type_accessor_storage, value, "f"); }
-        get placeholder() { return __classPrivateFieldGet(this, _Md3TextInput_placeholder_accessor_storage, "f"); }
-        set placeholder(value) { __classPrivateFieldSet(this, _Md3TextInput_placeholder_accessor_storage, value, "f"); }
-        get suggestions() { return __classPrivateFieldGet(this, _Md3TextInput_suggestions_accessor_storage, "f"); }
-        set suggestions(value) { __classPrivateFieldSet(this, _Md3TextInput_suggestions_accessor_storage, value, "f"); }
-        get list() { return __classPrivateFieldGet(this, _Md3TextInput_list_accessor_storage, "f"); }
-        set list(value) { __classPrivateFieldSet(this, _Md3TextInput_list_accessor_storage, value, "f"); }
-        _handleInput(e) {
-            const value = e.target.value;
-            this.value = value;
-            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-        }
-        render() {
-            const listId = this.suggestions.length > 0 ? this._listId : this.list;
-            return x `
+let Md3TextInput = class Md3TextInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.type = 'text';
+        this.placeholder = '';
+        this.suggestions = [];
+        this.list = '';
+        this._listId = `datalist-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        const listId = this.suggestions.length > 0 ? this._listId : this.list;
+        return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <input
@@ -8320,106 +8023,63 @@ const dialogStyles = [
           @input=${this._handleInput}
         />
         ${this.suggestions.length > 0
-                ? x `
+            ? x `
               <datalist id=${this._listId}>
                 ${this.suggestions.map((s) => x `<option value=${s}></option>`)}
               </datalist>
             `
-                : E}
+            : E}
       </div>
     `;
-        }
-    };
-    _Md3TextInput_label_accessor_storage = new WeakMap();
-    _Md3TextInput_value_accessor_storage = new WeakMap();
-    _Md3TextInput_type_accessor_storage = new WeakMap();
-    _Md3TextInput_placeholder_accessor_storage = new WeakMap();
-    _Md3TextInput_suggestions_accessor_storage = new WeakMap();
-    _Md3TextInput_list_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "Md3TextInput");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _label_decorators = [n$5()];
-        _value_decorators = [n$5()];
-        _type_decorators = [n$5()];
-        _placeholder_decorators = [n$5()];
-        _suggestions_decorators = [n$5({ type: Array })];
-        _list_decorators = [n$5()];
-        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
-        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
-        __esDecorate(_classThis, null, _type_decorators, { kind: "accessor", name: "type", static: false, private: false, access: { has: obj => "type" in obj, get: obj => obj.type, set: (obj, value) => { obj.type = value; } }, metadata: _metadata }, _type_initializers, _type_extraInitializers);
-        __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
-        __esDecorate(_classThis, null, _suggestions_decorators, { kind: "accessor", name: "suggestions", static: false, private: false, access: { has: obj => "suggestions" in obj, get: obj => obj.suggestions, set: (obj, value) => { obj.suggestions = value; } }, metadata: _metadata }, _suggestions_initializers, _suggestions_extraInitializers);
-        __esDecorate(_classThis, null, _list_decorators, { kind: "accessor", name: "list", static: false, private: false, access: { has: obj => "list" in obj, get: obj => obj.list, set: (obj, value) => { obj.list = value; } }, metadata: _metadata }, _list_initializers, _list_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+Md3TextInput.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "value", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "type", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3TextInput.prototype, "suggestions", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "list", void 0);
+Md3TextInput = __decorate([
+    t$2('md3-text-input')
+], Md3TextInput);
 
-(() => {
-    var _Md3NumberInput_label_accessor_storage, _Md3NumberInput_value_accessor_storage, _Md3NumberInput_min_accessor_storage, _Md3NumberInput_max_accessor_storage, _Md3NumberInput_placeholder_accessor_storage, _Md3NumberInput_unit_accessor_storage;
-    let _classDecorators = [t$2('md3-number-input')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _label_decorators;
-    let _label_initializers = [];
-    let _label_extraInitializers = [];
-    let _value_decorators;
-    let _value_initializers = [];
-    let _value_extraInitializers = [];
-    let _min_decorators;
-    let _min_initializers = [];
-    let _min_extraInitializers = [];
-    let _max_decorators;
-    let _max_initializers = [];
-    let _max_extraInitializers = [];
-    let _placeholder_decorators;
-    let _placeholder_initializers = [];
-    let _placeholder_extraInitializers = [];
-    let _unit_decorators;
-    let _unit_initializers = [];
-    let _unit_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get label() { return __classPrivateFieldGet(this, _Md3NumberInput_label_accessor_storage, "f"); }
-        set label(value) { __classPrivateFieldSet(this, _Md3NumberInput_label_accessor_storage, value, "f"); }
-        get value() { return __classPrivateFieldGet(this, _Md3NumberInput_value_accessor_storage, "f"); }
-        set value(value) { __classPrivateFieldSet(this, _Md3NumberInput_value_accessor_storage, value, "f"); }
-        get min() { return __classPrivateFieldGet(this, _Md3NumberInput_min_accessor_storage, "f"); }
-        set min(value) { __classPrivateFieldSet(this, _Md3NumberInput_min_accessor_storage, value, "f"); }
-        get max() { return __classPrivateFieldGet(this, _Md3NumberInput_max_accessor_storage, "f"); }
-        set max(value) { __classPrivateFieldSet(this, _Md3NumberInput_max_accessor_storage, value, "f"); }
-        get placeholder() { return __classPrivateFieldGet(this, _Md3NumberInput_placeholder_accessor_storage, "f"); }
-        set placeholder(value) { __classPrivateFieldSet(this, _Md3NumberInput_placeholder_accessor_storage, value, "f"); }
-        get unit() { return __classPrivateFieldGet(this, _Md3NumberInput_unit_accessor_storage, "f"); }
-        set unit(value) { __classPrivateFieldSet(this, _Md3NumberInput_unit_accessor_storage, value, "f"); }
-        _handleInput(e) {
-            const value = e.target.value;
-            this.value = Number(value);
-            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-        }
-        render() {
-            return x `
+let Md3NumberInput = class Md3NumberInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = 0;
+        this.min = 0;
+        this.placeholder = '';
+        this.unit = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = Number(value);
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <div style="display: flex; align-items: center;">
@@ -8434,7 +8094,7 @@ const dialogStyles = [
                style="${this.unit ? 'padding-bottom: 16px;' : ''}"
              />
              ${this.unit
-                ? x `<span 
+            ? x `<span 
                     style="
                       position: absolute;
                       right: 12px;
@@ -8443,191 +8103,114 @@ const dialogStyles = [
                       font-size: 0.9em;
                     "
                   >${this.unit}</span>`
-                : E}
+            : E}
         </div>
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _Md3NumberInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
-            _Md3NumberInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, 0)));
-            _Md3NumberInput_min_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _min_initializers, 0)));
-            _Md3NumberInput_max_accessor_storage.set(this, (__runInitializers(this, _min_extraInitializers), __runInitializers(this, _max_initializers, void 0)));
-            _Md3NumberInput_placeholder_accessor_storage.set(this, (__runInitializers(this, _max_extraInitializers), __runInitializers(this, _placeholder_initializers, '')));
-            _Md3NumberInput_unit_accessor_storage.set(this, (__runInitializers(this, _placeholder_extraInitializers), __runInitializers(this, _unit_initializers, '')));
-            __runInitializers(this, _unit_extraInitializers);
-        }
-    };
-    _Md3NumberInput_label_accessor_storage = new WeakMap();
-    _Md3NumberInput_value_accessor_storage = new WeakMap();
-    _Md3NumberInput_min_accessor_storage = new WeakMap();
-    _Md3NumberInput_max_accessor_storage = new WeakMap();
-    _Md3NumberInput_placeholder_accessor_storage = new WeakMap();
-    _Md3NumberInput_unit_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "Md3NumberInput");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _label_decorators = [n$5()];
-        _value_decorators = [n$5({ type: Number })];
-        _min_decorators = [n$5({ type: Number })];
-        _max_decorators = [n$5({ type: Number })];
-        _placeholder_decorators = [n$5()];
-        _unit_decorators = [n$5()];
-        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
-        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
-        __esDecorate(_classThis, null, _min_decorators, { kind: "accessor", name: "min", static: false, private: false, access: { has: obj => "min" in obj, get: obj => obj.min, set: (obj, value) => { obj.min = value; } }, metadata: _metadata }, _min_initializers, _min_extraInitializers);
-        __esDecorate(_classThis, null, _max_decorators, { kind: "accessor", name: "max", static: false, private: false, access: { has: obj => "max" in obj, get: obj => obj.max, set: (obj, value) => { obj.max = value; } }, metadata: _metadata }, _max_initializers, _max_extraInitializers);
-        __esDecorate(_classThis, null, _placeholder_decorators, { kind: "accessor", name: "placeholder", static: false, private: false, access: { has: obj => "placeholder" in obj, get: obj => obj.placeholder, set: (obj, value) => { obj.placeholder = value; } }, metadata: _metadata }, _placeholder_initializers, _placeholder_extraInitializers);
-        __esDecorate(_classThis, null, _unit_decorators, { kind: "accessor", name: "unit", static: false, private: false, access: { has: obj => "unit" in obj, get: obj => obj.unit, set: (obj, value) => { obj.unit = value; } }, metadata: _metadata }, _unit_initializers, _unit_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+Md3NumberInput.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "label", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "min", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "max", void 0);
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "unit", void 0);
+Md3NumberInput = __decorate([
+    t$2('md3-number-input')
+], Md3NumberInput);
 
-(() => {
-    var _Md3Select_label_accessor_storage, _Md3Select_value_accessor_storage, _Md3Select_options_accessor_storage;
-    let _classDecorators = [t$2('md3-select')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _label_decorators;
-    let _label_initializers = [];
-    let _label_extraInitializers = [];
-    let _value_decorators;
-    let _value_initializers = [];
-    let _value_extraInitializers = [];
-    let _options_decorators;
-    let _options_initializers = [];
-    let _options_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get label() { return __classPrivateFieldGet(this, _Md3Select_label_accessor_storage, "f"); }
-        set label(value) { __classPrivateFieldSet(this, _Md3Select_label_accessor_storage, value, "f"); }
-        get value() { return __classPrivateFieldGet(this, _Md3Select_value_accessor_storage, "f"); }
-        set value(value) { __classPrivateFieldSet(this, _Md3Select_value_accessor_storage, value, "f"); }
-        get options() { return __classPrivateFieldGet(this, _Md3Select_options_accessor_storage, "f"); }
-        set options(value) { __classPrivateFieldSet(this, _Md3Select_options_accessor_storage, value, "f"); }
-        _handleChange(e) {
-            const value = e.target.value;
-            this.value = value;
-            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-        }
-        render() {
-            return x `
+let Md3Select = class Md3Select extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.options = [];
+    }
+    _handleChange(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
           <option value="">Select...</option>
           ${this.options.map((opt) => {
-                const label = typeof opt === 'string' ? opt : opt.label;
-                const val = typeof opt === 'string' ? opt : opt.value;
-                return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-            })}
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+        })}
         </select>
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _Md3Select_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
-            _Md3Select_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
-            _Md3Select_options_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _options_initializers, [])));
-            __runInitializers(this, _options_extraInitializers);
-        }
-    };
-    _Md3Select_label_accessor_storage = new WeakMap();
-    _Md3Select_value_accessor_storage = new WeakMap();
-    _Md3Select_options_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "Md3Select");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _label_decorators = [n$5()];
-        _value_decorators = [n$5()];
-        _options_decorators = [n$5({ type: Array })];
-        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
-        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
-        __esDecorate(_classThis, null, _options_decorators, { kind: "accessor", name: "options", static: false, private: false, access: { has: obj => "options" in obj, get: obj => obj.options, set: (obj, value) => { obj.options = value; } }, metadata: _metadata }, _options_initializers, _options_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+Md3Select.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5()
+], Md3Select.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3Select.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3Select.prototype, "options", void 0);
+Md3Select = __decorate([
+    t$2('md3-select')
+], Md3Select);
 
-(() => {
-    var _Md3DateInput_label_accessor_storage, _Md3DateInput_value_accessor_storage, _Md3DateInput_time_accessor_storage;
-    let _classDecorators = [t$2('md3-date-input')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _label_decorators;
-    let _label_initializers = [];
-    let _label_extraInitializers = [];
-    let _value_decorators;
-    let _value_initializers = [];
-    let _value_extraInitializers = [];
-    let _time_decorators;
-    let _time_initializers = [];
-    let _time_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get label() { return __classPrivateFieldGet(this, _Md3DateInput_label_accessor_storage, "f"); }
-        set label(value) { __classPrivateFieldSet(this, _Md3DateInput_label_accessor_storage, value, "f"); }
-        get value() { return __classPrivateFieldGet(this, _Md3DateInput_value_accessor_storage, "f"); }
-        set value(value) { __classPrivateFieldSet(this, _Md3DateInput_value_accessor_storage, value, "f"); }
-        get time() { return __classPrivateFieldGet(this, _Md3DateInput_time_accessor_storage, "f"); } // if true, uses datetime-local
-        set time(value) { __classPrivateFieldSet(this, _Md3DateInput_time_accessor_storage, value, "f"); }
-        _handleInput(e) {
-            const value = e.target.value;
-            this.value = value;
-            this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+let Md3DateInput = class Md3DateInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.time = false; // if true, uses datetime-local
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        let formattedValue = this.value;
+        if (this.time) {
+            formattedValue = PlantUtils.toDateTimeLocal(this.value);
         }
-        render() {
-            let formattedValue = this.value;
-            if (this.time) {
-                formattedValue = PlantUtils.toDateTimeLocal(this.value);
-            }
-            else {
-                formattedValue = this.value ? this.value.split('T')[0] : '';
-            }
-            return x `
+        else {
+            formattedValue = this.value ? this.value.split('T')[0] : '';
+        }
+        return x `
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <input
@@ -8639,186 +8222,100 @@ const dialogStyles = [
         />
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _Md3DateInput_label_accessor_storage.set(this, __runInitializers(this, _label_initializers, ''));
-            _Md3DateInput_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, '')));
-            _Md3DateInput_time_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _time_initializers, false)));
-            __runInitializers(this, _time_extraInitializers);
-        }
-    };
-    _Md3DateInput_label_accessor_storage = new WeakMap();
-    _Md3DateInput_value_accessor_storage = new WeakMap();
-    _Md3DateInput_time_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "Md3DateInput");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _label_decorators = [n$5()];
-        _value_decorators = [n$5()];
-        _time_decorators = [n$5({ type: Boolean })];
-        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
-        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
-        __esDecorate(_classThis, null, _time_decorators, { kind: "accessor", name: "time", static: false, private: false, access: { has: obj => "time" in obj, get: obj => obj.time, set: (obj, value) => { obj.time = value; } }, metadata: _metadata }, _time_initializers, _time_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+Md3DateInput.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
         width: 100%;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5()
+], Md3DateInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3DateInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], Md3DateInput.prototype, "time", void 0);
+Md3DateInput = __decorate([
+    t$2('md3-date-input')
+], Md3DateInput);
 
-(() => {
-    var _AddPlantDialog_hass_accessor_storage, _AddPlantDialog_strainLibrary_accessor_storage, _AddPlantDialog_growspaceName_accessor_storage, _AddPlantDialog_open_accessor_storage, _AddPlantDialog_strain_accessor_storage, _AddPlantDialog_phenotype_accessor_storage, _AddPlantDialog_row_accessor_storage, _AddPlantDialog_col_accessor_storage, _AddPlantDialog_veg_start_accessor_storage, _AddPlantDialog_flower_start_accessor_storage, _AddPlantDialog_seedling_start_accessor_storage, _AddPlantDialog_mother_start_accessor_storage, _AddPlantDialog_clone_start_accessor_storage, _AddPlantDialog_dry_start_accessor_storage, _AddPlantDialog_cure_start_accessor_storage;
-    let _classDecorators = [t$2('add-plant-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _strainLibrary_decorators;
-    let _strainLibrary_initializers = [];
-    let _strainLibrary_extraInitializers = [];
-    let _growspaceName_decorators;
-    let _growspaceName_initializers = [];
-    let _growspaceName_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _strain_decorators;
-    let _strain_initializers = [];
-    let _strain_extraInitializers = [];
-    let _phenotype_decorators;
-    let _phenotype_initializers = [];
-    let _phenotype_extraInitializers = [];
-    let _row_decorators;
-    let _row_initializers = [];
-    let _row_extraInitializers = [];
-    let _col_decorators;
-    let _col_initializers = [];
-    let _col_extraInitializers = [];
-    let _veg_start_decorators;
-    let _veg_start_initializers = [];
-    let _veg_start_extraInitializers = [];
-    let _flower_start_decorators;
-    let _flower_start_initializers = [];
-    let _flower_start_extraInitializers = [];
-    let _seedling_start_decorators;
-    let _seedling_start_initializers = [];
-    let _seedling_start_extraInitializers = [];
-    let _mother_start_decorators;
-    let _mother_start_initializers = [];
-    let _mother_start_extraInitializers = [];
-    let _clone_start_decorators;
-    let _clone_start_initializers = [];
-    let _clone_start_extraInitializers = [];
-    let _dry_start_decorators;
-    let _dry_start_initializers = [];
-    let _dry_start_extraInitializers = [];
-    let _cure_start_decorators;
-    let _cure_start_initializers = [];
-    let _cure_start_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _AddPlantDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _AddPlantDialog_hass_accessor_storage, value, "f"); }
-        get strainLibrary() { return __classPrivateFieldGet(this, _AddPlantDialog_strainLibrary_accessor_storage, "f"); }
-        set strainLibrary(value) { __classPrivateFieldSet(this, _AddPlantDialog_strainLibrary_accessor_storage, value, "f"); }
-        get growspaceName() { return __classPrivateFieldGet(this, _AddPlantDialog_growspaceName_accessor_storage, "f"); }
-        set growspaceName(value) { __classPrivateFieldSet(this, _AddPlantDialog_growspaceName_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _AddPlantDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _AddPlantDialog_open_accessor_storage, value, "f"); }
+let AddPlantDialog = class AddPlantDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
         // Initialize with values passed via methods or defaults
-        get strain() { return __classPrivateFieldGet(this, _AddPlantDialog_strain_accessor_storage, "f"); }
-        set strain(value) { __classPrivateFieldSet(this, _AddPlantDialog_strain_accessor_storage, value, "f"); }
-        get phenotype() { return __classPrivateFieldGet(this, _AddPlantDialog_phenotype_accessor_storage, "f"); }
-        set phenotype(value) { __classPrivateFieldSet(this, _AddPlantDialog_phenotype_accessor_storage, value, "f"); }
-        get row() { return __classPrivateFieldGet(this, _AddPlantDialog_row_accessor_storage, "f"); }
-        set row(value) { __classPrivateFieldSet(this, _AddPlantDialog_row_accessor_storage, value, "f"); }
-        get col() { return __classPrivateFieldGet(this, _AddPlantDialog_col_accessor_storage, "f"); }
-        set col(value) { __classPrivateFieldSet(this, _AddPlantDialog_col_accessor_storage, value, "f"); }
+        this.strain = '';
+        this.phenotype = '';
+        this.row = 0;
+        this.col = 0;
         // Date fields
-        get veg_start() { return __classPrivateFieldGet(this, _AddPlantDialog_veg_start_accessor_storage, "f"); }
-        set veg_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_veg_start_accessor_storage, value, "f"); }
-        get flower_start() { return __classPrivateFieldGet(this, _AddPlantDialog_flower_start_accessor_storage, "f"); }
-        set flower_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_flower_start_accessor_storage, value, "f"); }
-        get seedling_start() { return __classPrivateFieldGet(this, _AddPlantDialog_seedling_start_accessor_storage, "f"); }
-        set seedling_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_seedling_start_accessor_storage, value, "f"); }
-        get mother_start() { return __classPrivateFieldGet(this, _AddPlantDialog_mother_start_accessor_storage, "f"); }
-        set mother_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_mother_start_accessor_storage, value, "f"); }
-        get clone_start() { return __classPrivateFieldGet(this, _AddPlantDialog_clone_start_accessor_storage, "f"); }
-        set clone_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_clone_start_accessor_storage, value, "f"); }
-        get dry_start() { return __classPrivateFieldGet(this, _AddPlantDialog_dry_start_accessor_storage, "f"); }
-        set dry_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_dry_start_accessor_storage, value, "f"); }
-        get cure_start() { return __classPrivateFieldGet(this, _AddPlantDialog_cure_start_accessor_storage, "f"); }
-        set cure_start(value) { __classPrivateFieldSet(this, _AddPlantDialog_cure_start_accessor_storage, value, "f"); }
-        // Provide a method to set initial data from parent if needed
-        setInitialState(row, col, strain = '', phenotype = '') {
-            this.row = row;
-            this.col = col;
-            this.strain = strain;
-            this.phenotype = phenotype;
-            // resetting dates
-            this.veg_start = '';
-            this.flower_start = '';
-            this.seedling_start = '';
-            this.mother_start = '';
-            this.clone_start = '';
-            this.dry_start = '';
-            this.cure_start = '';
-        }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-        }
-        _confirm() {
-            const payload = {
-                row: this.row + 1,
-                col: this.col + 1,
-                strain: this.strain,
-                phenotype: this.phenotype,
-                veg_start: this.veg_start,
-                flower_start: this.flower_start,
-                seedling_start: this.seedling_start,
-                mother_start: this.mother_start,
-                clone_start: this.clone_start,
-                dry_start: this.dry_start,
-                cure_start: this.cure_start,
-            };
-            this.dispatchEvent(new CustomEvent('add-plant-submit', {
-                detail: payload,
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
-            if (!this.open)
-                return x ``;
-            const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-            // Filter phenotypes based on selected strain
-            const relevantPhenotypes = this.strain
-                ? [...new Set(this.strainLibrary
-                        .filter(s => s.strain === this.strain && s.phenotype)
-                        .map(s => s.phenotype))].sort()
-                : [];
-            return x `
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    // Provide a method to set initial data from parent if needed
+    setInitialState(row, col, strain = '', phenotype = '') {
+        this.row = row;
+        this.col = col;
+        this.strain = strain;
+        this.phenotype = phenotype;
+        // resetting dates
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _confirm() {
+        const payload = {
+            row: this.row + 1,
+            col: this.col + 1,
+            strain: this.strain,
+            phenotype: this.phenotype,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+        };
+        this.dispatchEvent(new CustomEvent('add-plant-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        // Filter phenotypes based on selected strain
+        const relevantPhenotypes = this.strain
+            ? [...new Set(this.strainLibrary
+                    .filter(s => s.strain === this.strain && s.phenotype)
+                    .map(s => s.phenotype))].sort()
+            : [];
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -8899,39 +8396,39 @@ const dialogStyles = [
         </div>
       </ha-dialog>
     `;
-        }
-        renderTimelineContent() {
-            const name = this.growspaceName.toLowerCase();
-            if (name.includes('mother')) {
-                return x `<md3-date-input
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
         label="Mother Start"
         .value=${this.mother_start}
         @change=${(e) => (this.mother_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('clone')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
         label="Clone Start"
         .value=${this.clone_start}
         @change=${(e) => (this.clone_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('dry')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
         label="Dry Start"
         .value=${this.dry_start}
         @change=${(e) => (this.dry_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('cure')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
         label="Cure Start"
         .value=${this.cure_start}
         @change=${(e) => (this.cure_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else {
-                return x `
+        }
+        else {
+            return x `
         <md3-date-input
           label="Seedling Start"
           .value=${this.seedling_start}
@@ -8948,87 +8445,12 @@ const dialogStyles = [
           @change=${(e) => (this.flower_start = e.detail)}
         ></md3-date-input>
       `;
-            }
         }
-        constructor() {
-            super(...arguments);
-            _AddPlantDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _AddPlantDialog_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
-            _AddPlantDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
-            _AddPlantDialog_open_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _AddPlantDialog_strain_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strain_initializers, '')));
-            _AddPlantDialog_phenotype_accessor_storage.set(this, (__runInitializers(this, _strain_extraInitializers), __runInitializers(this, _phenotype_initializers, '')));
-            _AddPlantDialog_row_accessor_storage.set(this, (__runInitializers(this, _phenotype_extraInitializers), __runInitializers(this, _row_initializers, 0)));
-            _AddPlantDialog_col_accessor_storage.set(this, (__runInitializers(this, _row_extraInitializers), __runInitializers(this, _col_initializers, 0)));
-            _AddPlantDialog_veg_start_accessor_storage.set(this, (__runInitializers(this, _col_extraInitializers), __runInitializers(this, _veg_start_initializers, '')));
-            _AddPlantDialog_flower_start_accessor_storage.set(this, (__runInitializers(this, _veg_start_extraInitializers), __runInitializers(this, _flower_start_initializers, '')));
-            _AddPlantDialog_seedling_start_accessor_storage.set(this, (__runInitializers(this, _flower_start_extraInitializers), __runInitializers(this, _seedling_start_initializers, '')));
-            _AddPlantDialog_mother_start_accessor_storage.set(this, (__runInitializers(this, _seedling_start_extraInitializers), __runInitializers(this, _mother_start_initializers, '')));
-            _AddPlantDialog_clone_start_accessor_storage.set(this, (__runInitializers(this, _mother_start_extraInitializers), __runInitializers(this, _clone_start_initializers, '')));
-            _AddPlantDialog_dry_start_accessor_storage.set(this, (__runInitializers(this, _clone_start_extraInitializers), __runInitializers(this, _dry_start_initializers, '')));
-            _AddPlantDialog_cure_start_accessor_storage.set(this, (__runInitializers(this, _dry_start_extraInitializers), __runInitializers(this, _cure_start_initializers, '')));
-            __runInitializers(this, _cure_start_extraInitializers);
-        }
-    };
-    _AddPlantDialog_hass_accessor_storage = new WeakMap();
-    _AddPlantDialog_strainLibrary_accessor_storage = new WeakMap();
-    _AddPlantDialog_growspaceName_accessor_storage = new WeakMap();
-    _AddPlantDialog_open_accessor_storage = new WeakMap();
-    _AddPlantDialog_strain_accessor_storage = new WeakMap();
-    _AddPlantDialog_phenotype_accessor_storage = new WeakMap();
-    _AddPlantDialog_row_accessor_storage = new WeakMap();
-    _AddPlantDialog_col_accessor_storage = new WeakMap();
-    _AddPlantDialog_veg_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_flower_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_seedling_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_mother_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_clone_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_dry_start_accessor_storage = new WeakMap();
-    _AddPlantDialog_cure_start_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "AddPlantDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _strainLibrary_decorators = [n$5({ type: Array })];
-        _growspaceName_decorators = [n$5({ type: String })];
-        _open_decorators = [n$5({ type: Boolean, reflect: true })];
-        _strain_decorators = [r$2()];
-        _phenotype_decorators = [r$2()];
-        _row_decorators = [n$5({ type: Number })];
-        _col_decorators = [n$5({ type: Number })];
-        _veg_start_decorators = [r$2()];
-        _flower_start_decorators = [r$2()];
-        _seedling_start_decorators = [r$2()];
-        _mother_start_decorators = [r$2()];
-        _clone_start_decorators = [r$2()];
-        _dry_start_decorators = [r$2()];
-        _cure_start_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _strain_decorators, { kind: "accessor", name: "strain", static: false, private: false, access: { has: obj => "strain" in obj, get: obj => obj.strain, set: (obj, value) => { obj.strain = value; } }, metadata: _metadata }, _strain_initializers, _strain_extraInitializers);
-        __esDecorate(_classThis, null, _phenotype_decorators, { kind: "accessor", name: "phenotype", static: false, private: false, access: { has: obj => "phenotype" in obj, get: obj => obj.phenotype, set: (obj, value) => { obj.phenotype = value; } }, metadata: _metadata }, _phenotype_initializers, _phenotype_extraInitializers);
-        __esDecorate(_classThis, null, _row_decorators, { kind: "accessor", name: "row", static: false, private: false, access: { has: obj => "row" in obj, get: obj => obj.row, set: (obj, value) => { obj.row = value; } }, metadata: _metadata }, _row_initializers, _row_extraInitializers);
-        __esDecorate(_classThis, null, _col_decorators, { kind: "accessor", name: "col", static: false, private: false, access: { has: obj => "col" in obj, get: obj => obj.col, set: (obj, value) => { obj.col = value; } }, metadata: _metadata }, _col_initializers, _col_extraInitializers);
-        __esDecorate(_classThis, null, _veg_start_decorators, { kind: "accessor", name: "veg_start", static: false, private: false, access: { has: obj => "veg_start" in obj, get: obj => obj.veg_start, set: (obj, value) => { obj.veg_start = value; } }, metadata: _metadata }, _veg_start_initializers, _veg_start_extraInitializers);
-        __esDecorate(_classThis, null, _flower_start_decorators, { kind: "accessor", name: "flower_start", static: false, private: false, access: { has: obj => "flower_start" in obj, get: obj => obj.flower_start, set: (obj, value) => { obj.flower_start = value; } }, metadata: _metadata }, _flower_start_initializers, _flower_start_extraInitializers);
-        __esDecorate(_classThis, null, _seedling_start_decorators, { kind: "accessor", name: "seedling_start", static: false, private: false, access: { has: obj => "seedling_start" in obj, get: obj => obj.seedling_start, set: (obj, value) => { obj.seedling_start = value; } }, metadata: _metadata }, _seedling_start_initializers, _seedling_start_extraInitializers);
-        __esDecorate(_classThis, null, _mother_start_decorators, { kind: "accessor", name: "mother_start", static: false, private: false, access: { has: obj => "mother_start" in obj, get: obj => obj.mother_start, set: (obj, value) => { obj.mother_start = value; } }, metadata: _metadata }, _mother_start_initializers, _mother_start_extraInitializers);
-        __esDecorate(_classThis, null, _clone_start_decorators, { kind: "accessor", name: "clone_start", static: false, private: false, access: { has: obj => "clone_start" in obj, get: obj => obj.clone_start, set: (obj, value) => { obj.clone_start = value; } }, metadata: _metadata }, _clone_start_initializers, _clone_start_extraInitializers);
-        __esDecorate(_classThis, null, _dry_start_decorators, { kind: "accessor", name: "dry_start", static: false, private: false, access: { has: obj => "dry_start" in obj, get: obj => obj.dry_start, set: (obj, value) => { obj.dry_start = value; } }, metadata: _metadata }, _dry_start_initializers, _dry_start_extraInitializers);
-        __esDecorate(_classThis, null, _cure_start_decorators, { kind: "accessor", name: "cure_start", static: false, private: false, access: { has: obj => "cure_start" in obj, get: obj => obj.cure_start, set: (obj, value) => { obj.cure_start = value; } }, metadata: _metadata }, _cure_start_initializers, _cure_start_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+AddPlantDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -9047,132 +8469,113 @@ const dialogStyles = [
         }
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], AddPlantDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], AddPlantDialog.prototype, "open", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "strain", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "phenotype", void 0);
+__decorate([
+    n$5({ type: Number })
+], AddPlantDialog.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number })
+], AddPlantDialog.prototype, "col", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "veg_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "flower_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "seedling_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "mother_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "clone_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "dry_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "cure_start", void 0);
+AddPlantDialog = __decorate([
+    t$2('add-plant-dialog')
+], AddPlantDialog);
 
-(() => {
-    var _AddPlantsDialog_hass_accessor_storage, _AddPlantsDialog_strainLibrary_accessor_storage, _AddPlantsDialog_growspaceName_accessor_storage, _AddPlantsDialog_open_accessor_storage, _AddPlantsDialog_strain_accessor_storage, _AddPlantsDialog_amount_accessor_storage, _AddPlantsDialog_start_number_accessor_storage, _AddPlantsDialog_veg_start_accessor_storage, _AddPlantsDialog_flower_start_accessor_storage, _AddPlantsDialog_seedling_start_accessor_storage, _AddPlantsDialog_mother_start_accessor_storage, _AddPlantsDialog_clone_start_accessor_storage, _AddPlantsDialog_dry_start_accessor_storage, _AddPlantsDialog_cure_start_accessor_storage;
-    let _classDecorators = [t$2('add-plants-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _strainLibrary_decorators;
-    let _strainLibrary_initializers = [];
-    let _strainLibrary_extraInitializers = [];
-    let _growspaceName_decorators;
-    let _growspaceName_initializers = [];
-    let _growspaceName_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _strain_decorators;
-    let _strain_initializers = [];
-    let _strain_extraInitializers = [];
-    let _amount_decorators;
-    let _amount_initializers = [];
-    let _amount_extraInitializers = [];
-    let _start_number_decorators;
-    let _start_number_initializers = [];
-    let _start_number_extraInitializers = [];
-    let _veg_start_decorators;
-    let _veg_start_initializers = [];
-    let _veg_start_extraInitializers = [];
-    let _flower_start_decorators;
-    let _flower_start_initializers = [];
-    let _flower_start_extraInitializers = [];
-    let _seedling_start_decorators;
-    let _seedling_start_initializers = [];
-    let _seedling_start_extraInitializers = [];
-    let _mother_start_decorators;
-    let _mother_start_initializers = [];
-    let _mother_start_extraInitializers = [];
-    let _clone_start_decorators;
-    let _clone_start_initializers = [];
-    let _clone_start_extraInitializers = [];
-    let _dry_start_decorators;
-    let _dry_start_initializers = [];
-    let _dry_start_extraInitializers = [];
-    let _cure_start_decorators;
-    let _cure_start_initializers = [];
-    let _cure_start_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _AddPlantsDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _AddPlantsDialog_hass_accessor_storage, value, "f"); }
-        get strainLibrary() { return __classPrivateFieldGet(this, _AddPlantsDialog_strainLibrary_accessor_storage, "f"); }
-        set strainLibrary(value) { __classPrivateFieldSet(this, _AddPlantsDialog_strainLibrary_accessor_storage, value, "f"); }
-        get growspaceName() { return __classPrivateFieldGet(this, _AddPlantsDialog_growspaceName_accessor_storage, "f"); }
-        set growspaceName(value) { __classPrivateFieldSet(this, _AddPlantsDialog_growspaceName_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _AddPlantsDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _AddPlantsDialog_open_accessor_storage, value, "f"); }
-        get strain() { return __classPrivateFieldGet(this, _AddPlantsDialog_strain_accessor_storage, "f"); }
-        set strain(value) { __classPrivateFieldSet(this, _AddPlantsDialog_strain_accessor_storage, value, "f"); }
-        get amount() { return __classPrivateFieldGet(this, _AddPlantsDialog_amount_accessor_storage, "f"); }
-        set amount(value) { __classPrivateFieldSet(this, _AddPlantsDialog_amount_accessor_storage, value, "f"); }
-        get start_number() { return __classPrivateFieldGet(this, _AddPlantsDialog_start_number_accessor_storage, "f"); }
-        set start_number(value) { __classPrivateFieldSet(this, _AddPlantsDialog_start_number_accessor_storage, value, "f"); }
+let AddPlantsDialog = class AddPlantsDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        this.strain = '';
+        this.amount = 1;
+        this.start_number = 1;
         // Date fields
-        get veg_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_veg_start_accessor_storage, "f"); }
-        set veg_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_veg_start_accessor_storage, value, "f"); }
-        get flower_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_flower_start_accessor_storage, "f"); }
-        set flower_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_flower_start_accessor_storage, value, "f"); }
-        get seedling_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_seedling_start_accessor_storage, "f"); }
-        set seedling_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_seedling_start_accessor_storage, value, "f"); }
-        get mother_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_mother_start_accessor_storage, "f"); }
-        set mother_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_mother_start_accessor_storage, value, "f"); }
-        get clone_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_clone_start_accessor_storage, "f"); }
-        set clone_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_clone_start_accessor_storage, value, "f"); }
-        get dry_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_dry_start_accessor_storage, "f"); }
-        set dry_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_dry_start_accessor_storage, value, "f"); }
-        get cure_start() { return __classPrivateFieldGet(this, _AddPlantsDialog_cure_start_accessor_storage, "f"); }
-        set cure_start(value) { __classPrivateFieldSet(this, _AddPlantsDialog_cure_start_accessor_storage, value, "f"); }
-        setInitialState(strain = '') {
-            this.strain = strain;
-            this.amount = 1;
-            this.start_number = 1;
-            this.veg_start = '';
-            this.flower_start = '';
-            this.seedling_start = '';
-            this.mother_start = '';
-            this.clone_start = '';
-            this.dry_start = '';
-            this.cure_start = '';
-        }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-        }
-        _confirm() {
-            const payload = {
-                strain: this.strain,
-                amount: this.amount,
-                start_number: this.start_number,
-                veg_start: this.veg_start,
-                flower_start: this.flower_start,
-                seedling_start: this.seedling_start,
-                mother_start: this.mother_start,
-                clone_start: this.clone_start,
-                dry_start: this.dry_start,
-                cure_start: this.cure_start,
-            };
-            this.dispatchEvent(new CustomEvent('add-plants-submit', {
-                detail: payload,
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            if (!this.open)
-                return x ``;
-            const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-            return x `
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    setInitialState(strain = '') {
+        this.strain = strain;
+        this.amount = 1;
+        this.start_number = 1;
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _confirm() {
+        const payload = {
+            strain: this.strain,
+            amount: this.amount,
+            start_number: this.start_number,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+        };
+        this.dispatchEvent(new CustomEvent('add-plants-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -9261,39 +8664,39 @@ const dialogStyles = [
         </div>
       </ha-dialog>
     `;
-        }
-        renderTimelineContent() {
-            const name = this.growspaceName.toLowerCase();
-            if (name.includes('mother')) {
-                return x `<md3-date-input
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
         label="Mother Start"
         .value=${this.mother_start}
         @change=${(e) => (this.mother_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('clone')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
         label="Clone Start"
         .value=${this.clone_start}
         @change=${(e) => (this.clone_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('dry')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
         label="Dry Start"
         .value=${this.dry_start}
         @change=${(e) => (this.dry_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else if (name.includes('cure')) {
-                return x `<md3-date-input
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
         label="Cure Start"
         .value=${this.cure_start}
         @change=${(e) => (this.cure_start = e.detail)}
       ></md3-date-input>`;
-            }
-            else {
-                return x `
+        }
+        else {
+            return x `
         <md3-date-input
           label="Seedling Start"
           .value=${this.seedling_start}
@@ -9310,83 +8713,12 @@ const dialogStyles = [
           @change=${(e) => (this.flower_start = e.detail)}
         ></md3-date-input>
       `;
-            }
         }
-        constructor() {
-            super(...arguments);
-            _AddPlantsDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _AddPlantsDialog_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
-            _AddPlantsDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
-            _AddPlantsDialog_open_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _AddPlantsDialog_strain_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strain_initializers, '')));
-            _AddPlantsDialog_amount_accessor_storage.set(this, (__runInitializers(this, _strain_extraInitializers), __runInitializers(this, _amount_initializers, 1)));
-            _AddPlantsDialog_start_number_accessor_storage.set(this, (__runInitializers(this, _amount_extraInitializers), __runInitializers(this, _start_number_initializers, 1)));
-            _AddPlantsDialog_veg_start_accessor_storage.set(this, (__runInitializers(this, _start_number_extraInitializers), __runInitializers(this, _veg_start_initializers, '')));
-            _AddPlantsDialog_flower_start_accessor_storage.set(this, (__runInitializers(this, _veg_start_extraInitializers), __runInitializers(this, _flower_start_initializers, '')));
-            _AddPlantsDialog_seedling_start_accessor_storage.set(this, (__runInitializers(this, _flower_start_extraInitializers), __runInitializers(this, _seedling_start_initializers, '')));
-            _AddPlantsDialog_mother_start_accessor_storage.set(this, (__runInitializers(this, _seedling_start_extraInitializers), __runInitializers(this, _mother_start_initializers, '')));
-            _AddPlantsDialog_clone_start_accessor_storage.set(this, (__runInitializers(this, _mother_start_extraInitializers), __runInitializers(this, _clone_start_initializers, '')));
-            _AddPlantsDialog_dry_start_accessor_storage.set(this, (__runInitializers(this, _clone_start_extraInitializers), __runInitializers(this, _dry_start_initializers, '')));
-            _AddPlantsDialog_cure_start_accessor_storage.set(this, (__runInitializers(this, _dry_start_extraInitializers), __runInitializers(this, _cure_start_initializers, '')));
-            __runInitializers(this, _cure_start_extraInitializers);
-        }
-    };
-    _AddPlantsDialog_hass_accessor_storage = new WeakMap();
-    _AddPlantsDialog_strainLibrary_accessor_storage = new WeakMap();
-    _AddPlantsDialog_growspaceName_accessor_storage = new WeakMap();
-    _AddPlantsDialog_open_accessor_storage = new WeakMap();
-    _AddPlantsDialog_strain_accessor_storage = new WeakMap();
-    _AddPlantsDialog_amount_accessor_storage = new WeakMap();
-    _AddPlantsDialog_start_number_accessor_storage = new WeakMap();
-    _AddPlantsDialog_veg_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_flower_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_seedling_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_mother_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_clone_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_dry_start_accessor_storage = new WeakMap();
-    _AddPlantsDialog_cure_start_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "AddPlantsDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _strainLibrary_decorators = [n$5({ type: Array })];
-        _growspaceName_decorators = [n$5({ type: String })];
-        _open_decorators = [n$5({ type: Boolean, reflect: true })];
-        _strain_decorators = [r$2()];
-        _amount_decorators = [r$2()];
-        _start_number_decorators = [r$2()];
-        _veg_start_decorators = [r$2()];
-        _flower_start_decorators = [r$2()];
-        _seedling_start_decorators = [r$2()];
-        _mother_start_decorators = [r$2()];
-        _clone_start_decorators = [r$2()];
-        _dry_start_decorators = [r$2()];
-        _cure_start_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _strain_decorators, { kind: "accessor", name: "strain", static: false, private: false, access: { has: obj => "strain" in obj, get: obj => obj.strain, set: (obj, value) => { obj.strain = value; } }, metadata: _metadata }, _strain_initializers, _strain_extraInitializers);
-        __esDecorate(_classThis, null, _amount_decorators, { kind: "accessor", name: "amount", static: false, private: false, access: { has: obj => "amount" in obj, get: obj => obj.amount, set: (obj, value) => { obj.amount = value; } }, metadata: _metadata }, _amount_initializers, _amount_extraInitializers);
-        __esDecorate(_classThis, null, _start_number_decorators, { kind: "accessor", name: "start_number", static: false, private: false, access: { has: obj => "start_number" in obj, get: obj => obj.start_number, set: (obj, value) => { obj.start_number = value; } }, metadata: _metadata }, _start_number_initializers, _start_number_extraInitializers);
-        __esDecorate(_classThis, null, _veg_start_decorators, { kind: "accessor", name: "veg_start", static: false, private: false, access: { has: obj => "veg_start" in obj, get: obj => obj.veg_start, set: (obj, value) => { obj.veg_start = value; } }, metadata: _metadata }, _veg_start_initializers, _veg_start_extraInitializers);
-        __esDecorate(_classThis, null, _flower_start_decorators, { kind: "accessor", name: "flower_start", static: false, private: false, access: { has: obj => "flower_start" in obj, get: obj => obj.flower_start, set: (obj, value) => { obj.flower_start = value; } }, metadata: _metadata }, _flower_start_initializers, _flower_start_extraInitializers);
-        __esDecorate(_classThis, null, _seedling_start_decorators, { kind: "accessor", name: "seedling_start", static: false, private: false, access: { has: obj => "seedling_start" in obj, get: obj => obj.seedling_start, set: (obj, value) => { obj.seedling_start = value; } }, metadata: _metadata }, _seedling_start_initializers, _seedling_start_extraInitializers);
-        __esDecorate(_classThis, null, _mother_start_decorators, { kind: "accessor", name: "mother_start", static: false, private: false, access: { has: obj => "mother_start" in obj, get: obj => obj.mother_start, set: (obj, value) => { obj.mother_start = value; } }, metadata: _metadata }, _mother_start_initializers, _mother_start_extraInitializers);
-        __esDecorate(_classThis, null, _clone_start_decorators, { kind: "accessor", name: "clone_start", static: false, private: false, access: { has: obj => "clone_start" in obj, get: obj => obj.clone_start, set: (obj, value) => { obj.clone_start = value; } }, metadata: _metadata }, _clone_start_initializers, _clone_start_extraInitializers);
-        __esDecorate(_classThis, null, _dry_start_decorators, { kind: "accessor", name: "dry_start", static: false, private: false, access: { has: obj => "dry_start" in obj, get: obj => obj.dry_start, set: (obj, value) => { obj.dry_start = value; } }, metadata: _metadata }, _dry_start_initializers, _dry_start_extraInitializers);
-        __esDecorate(_classThis, null, _cure_start_decorators, { kind: "accessor", name: "cure_start", static: false, private: false, access: { has: obj => "cure_start" in obj, get: obj => obj.cure_start, set: (obj, value) => { obj.cure_start = value; } }, metadata: _metadata }, _cure_start_initializers, _cure_start_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+AddPlantsDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -9420,58 +8752,58 @@ const dialogStyles = [
         }
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], AddPlantsDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantsDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], AddPlantsDialog.prototype, "open", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "strain", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "amount", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "start_number", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "veg_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "flower_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "seedling_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "mother_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "clone_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "dry_start", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "cure_start", void 0);
+AddPlantsDialog = __decorate([
+    t$2('add-plants-dialog')
+], AddPlantsDialog);
 
 class ResizeController {
     constructor(host, callback) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "isMobile", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "hasTouch", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "_resizeObserver", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_elementToObserve", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_callback", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_checkMobileBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this._checkMobile()
-        });
+        this.isMobile = false;
+        this.hasTouch = false;
+        this._checkMobileBound = () => this._checkMobile();
         this.host = host;
         this._callback = callback;
         host.addController(this);
@@ -9518,223 +8850,181 @@ class ResizeController {
     }
 }
 
-(() => {
-    var _PlantTimeline_hass_accessor_storage, _PlantTimeline_plant_id_accessor_storage, _PlantTimeline_events_accessor_storage, _PlantTimeline__noteText_accessor_storage, _PlantTimeline__noteImages_accessor_storage, _PlantTimeline__isSaving_accessor_storage, _PlantTimeline__showDeleteConfirmation_accessor_storage, _PlantTimeline__deletingEventId_accessor_storage, _PlantTimeline__hoveredImage_accessor_storage;
-    let _classDecorators = [t$2('plant-timeline')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _plant_id_decorators;
-    let _plant_id_initializers = [];
-    let _plant_id_extraInitializers = [];
-    let _events_decorators;
-    let _events_initializers = [];
-    let _events_extraInitializers = [];
-    let __noteText_decorators;
-    let __noteText_initializers = [];
-    let __noteText_extraInitializers = [];
-    let __noteImages_decorators;
-    let __noteImages_initializers = [];
-    let __noteImages_extraInitializers = [];
-    let __isSaving_decorators;
-    let __isSaving_initializers = [];
-    let __isSaving_extraInitializers = [];
-    let __showDeleteConfirmation_decorators;
-    let __showDeleteConfirmation_initializers = [];
-    let __showDeleteConfirmation_extraInitializers = [];
-    let __deletingEventId_decorators;
-    let __deletingEventId_initializers = [];
-    let __deletingEventId_extraInitializers = [];
-    let __hoveredImage_decorators;
-    let __hoveredImage_initializers = [];
-    let __hoveredImage_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _PlantTimeline_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _PlantTimeline_hass_accessor_storage, value, "f"); }
-        get plant_id() { return __classPrivateFieldGet(this, _PlantTimeline_plant_id_accessor_storage, "f"); }
-        set plant_id(value) { __classPrivateFieldSet(this, _PlantTimeline_plant_id_accessor_storage, value, "f"); }
-        get events() { return __classPrivateFieldGet(this, _PlantTimeline_events_accessor_storage, "f"); }
-        set events(value) { __classPrivateFieldSet(this, _PlantTimeline_events_accessor_storage, value, "f"); }
-        get _noteText() { return __classPrivateFieldGet(this, _PlantTimeline__noteText_accessor_storage, "f"); }
-        set _noteText(value) { __classPrivateFieldSet(this, _PlantTimeline__noteText_accessor_storage, value, "f"); }
-        get _noteImages() { return __classPrivateFieldGet(this, _PlantTimeline__noteImages_accessor_storage, "f"); }
-        set _noteImages(value) { __classPrivateFieldSet(this, _PlantTimeline__noteImages_accessor_storage, value, "f"); }
-        get _isSaving() { return __classPrivateFieldGet(this, _PlantTimeline__isSaving_accessor_storage, "f"); }
-        set _isSaving(value) { __classPrivateFieldSet(this, _PlantTimeline__isSaving_accessor_storage, value, "f"); }
-        get _showDeleteConfirmation() { return __classPrivateFieldGet(this, _PlantTimeline__showDeleteConfirmation_accessor_storage, "f"); }
-        set _showDeleteConfirmation(value) { __classPrivateFieldSet(this, _PlantTimeline__showDeleteConfirmation_accessor_storage, value, "f"); }
-        get _deletingEventId() { return __classPrivateFieldGet(this, _PlantTimeline__deletingEventId_accessor_storage, "f"); }
-        set _deletingEventId(value) { __classPrivateFieldSet(this, _PlantTimeline__deletingEventId_accessor_storage, value, "f"); }
-        get _hoveredImage() { return __classPrivateFieldGet(this, _PlantTimeline__hoveredImage_accessor_storage, "f"); }
-        set _hoveredImage(value) { __classPrivateFieldSet(this, _PlantTimeline__hoveredImage_accessor_storage, value, "f"); }
-        _getIcon(event) {
-            const { type } = event;
-            switch (type) {
-                case 'stage_change': {
-                    const to = event.to?.toLowerCase();
-                    if (to === 'flower')
-                        return mdiFlower;
-                    if (to === 'dry')
-                        return mdiHairDryer;
-                    if (to === 'cure')
-                        return mdiCannabis;
-                    return mdiSprout;
-                }
-                case 'alert': return mdiAlertCircle;
-                case 'note': return mdiNoteText;
-                case 'milestone': {
-                    const label = event.label?.toLowerCase() || '';
-                    if (label.includes('flower'))
-                        return mdiFlower;
-                    if (label.includes('dry'))
-                        return mdiHairDryer;
-                    if (label.includes('cure'))
-                        return mdiCannabis;
-                    return mdiSprout;
-                }
-                case 'action':
-                    const action = event.action;
-                    if (action === 'water' || action === 'watering')
-                        return mdiWater;
-                    if (action === 'ipm')
-                        return mdiBug;
-                    if (action === 'training')
-                        return mdiDumbbell;
-                    return mdiLeaf;
-                default: return mdiLeaf;
+let PlantTimeline = class PlantTimeline extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.events = [];
+        this._noteText = '';
+        this._noteImages = [];
+        this._isSaving = false;
+        this._showDeleteConfirmation = false;
+        this._deletingEventId = null;
+        this._hoveredImage = null;
+    }
+    _getIcon(event) {
+        const { type } = event;
+        switch (type) {
+            case 'stage_change': {
+                const to = event.to?.toLowerCase();
+                if (to === 'flower')
+                    return mdiFlower;
+                if (to === 'dry')
+                    return mdiHairDryer;
+                if (to === 'cure')
+                    return mdiCannabis;
+                return mdiSprout;
             }
-        }
-        _getStageColor(stage) {
-            switch (stage?.toLowerCase()) {
-                case 'flower': return '#e91e63';
-                case 'veg': return '#4caf50';
-                case 'seedling': return '#8bc34a';
-                case 'clone': return '#66bb6a';
-                case 'mother': return '#2e7d32';
-                case 'dry': return '#ff9800';
-                case 'cure': return '#795548';
-                default: return 'var(--divider-color)';
+            case 'alert': return mdiAlertCircle;
+            case 'note': return mdiNoteText;
+            case 'milestone': {
+                const label = event.label?.toLowerCase() || '';
+                if (label.includes('flower'))
+                    return mdiFlower;
+                if (label.includes('dry'))
+                    return mdiHairDryer;
+                if (label.includes('cure'))
+                    return mdiCannabis;
+                return mdiSprout;
             }
+            case 'action':
+                const action = event.action;
+                if (action === 'water' || action === 'watering')
+                    return mdiWater;
+                if (action === 'ipm')
+                    return mdiBug;
+                if (action === 'training')
+                    return mdiDumbbell;
+                return mdiLeaf;
+            default: return mdiLeaf;
         }
-        _isCorrelated(event, allEvents) {
-            if (event.type !== 'note')
+    }
+    _getStageColor(stage) {
+        switch (stage?.toLowerCase()) {
+            case 'flower': return '#e91e63';
+            case 'veg': return '#4caf50';
+            case 'seedling': return '#8bc34a';
+            case 'clone': return '#66bb6a';
+            case 'mother': return '#2e7d32';
+            case 'dry': return '#ff9800';
+            case 'cure': return '#795548';
+            default: return 'var(--divider-color)';
+        }
+    }
+    _isCorrelated(event, allEvents) {
+        if (event.type !== 'note')
+            return false;
+        const noteTime = new Date(event.date).getTime();
+        // Check for alerts within 2 hours before this note
+        return allEvents.some(e => {
+            if (e.type !== 'alert')
                 return false;
-            const noteTime = new Date(event.date).getTime();
-            // Check for alerts within 2 hours before this note
-            return allEvents.some(e => {
-                if (e.type !== 'alert')
-                    return false;
-                const alertTime = new Date(e.date).getTime();
-                const diff = noteTime - alertTime;
-                return diff > 0 && diff < 2 * 60 * 60 * 1000;
+            const alertTime = new Date(e.date).getTime();
+            const diff = noteTime - alertTime;
+            return diff > 0 && diff < 2 * 60 * 60 * 1000;
+        });
+    }
+    _formatDayHeader(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime()))
+                throw new Error();
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (date.toDateString() === today.toDateString())
+                return 'Today';
+            if (date.toDateString() === yesterday.toDateString())
+                return 'Yesterday';
+            return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        catch {
+            return dateStr;
+        }
+    }
+    _formatTime(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime()))
+                throw new Error();
+            return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        }
+        catch {
+            return dateStr;
+        }
+    }
+    _getDateKey(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime()))
+                throw new Error();
+            return date.toDateString();
+        }
+        catch {
+            return dateStr;
+        }
+    }
+    _formatDate(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime()))
+                throw new Error();
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        catch {
+            return dateStr;
+        }
+    }
+    async _submitNote() {
+        if (!this._noteText.trim() && !this._noteImages.length)
+            return;
+        this._isSaving = true;
+        try {
+            await this.hass.callWS({
+                type: 'growspace_manager/add_timeline_note',
+                plant_id: this.plant_id,
+                notes: this._noteText,
+                images: this._noteImages,
+                transition_date: new Date().toISOString()
             });
+            this._noteText = '';
+            this._noteImages = [];
+            // Allow time for recorder to write to DB
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Fire refresh event
+            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
-        _formatDayHeader(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime()))
-                    throw new Error();
-                const today = new Date();
-                const yesterday = new Date(today);
-                yesterday.setDate(yesterday.getDate() - 1);
-                if (date.toDateString() === today.toDateString())
-                    return 'Today';
-                if (date.toDateString() === yesterday.toDateString())
-                    return 'Yesterday';
-                return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-            }
-            catch {
-                return dateStr;
-            }
+        catch (e) {
+            console.error(e);
         }
-        _formatTime(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime()))
-                    throw new Error();
-                return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-            }
-            catch {
-                return dateStr;
-            }
+        finally {
+            this._isSaving = false;
         }
-        _getDateKey(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime()))
-                    throw new Error();
-                return date.toDateString();
-            }
-            catch {
-                return dateStr;
-            }
+    }
+    _deleteEvent(e, eventId) {
+        e.stopPropagation();
+        this._deletingEventId = eventId;
+        this._showDeleteConfirmation = true;
+    }
+    async _confirmDeleteEvent() {
+        if (this._deletingEventId === null)
+            return;
+        try {
+            await this.hass.callWS({
+                type: 'growspace_manager/remove_timeline_event',
+                event_id: this._deletingEventId
+            });
+            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
-        _formatDate(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime()))
-                    throw new Error();
-                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-            }
-            catch {
-                return dateStr;
-            }
+        catch (err) {
+            console.error('Error deleting event:', err);
         }
-        async _submitNote() {
-            if (!this._noteText.trim() && !this._noteImages.length)
-                return;
-            this._isSaving = true;
-            try {
-                await this.hass.callWS({
-                    type: 'growspace_manager/add_timeline_note',
-                    plant_id: this.plant_id,
-                    notes: this._noteText,
-                    images: this._noteImages,
-                    transition_date: new Date().toISOString()
-                });
-                this._noteText = '';
-                this._noteImages = [];
-                // Allow time for recorder to write to DB
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                // Fire refresh event
-                this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
-            }
-            catch (e) {
-                console.error(e);
-            }
-            finally {
-                this._isSaving = false;
-            }
+        finally {
+            this._showDeleteConfirmation = false;
+            this._deletingEventId = null;
         }
-        _deleteEvent(e, eventId) {
-            e.stopPropagation();
-            this._deletingEventId = eventId;
-            this._showDeleteConfirmation = true;
-        }
-        async _confirmDeleteEvent() {
-            if (this._deletingEventId === null)
-                return;
-            try {
-                await this.hass.callWS({
-                    type: 'growspace_manager/remove_timeline_event',
-                    event_id: this._deletingEventId
-                });
-                this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
-            }
-            catch (err) {
-                console.error('Error deleting event:', err);
-            }
-            finally {
-                this._showDeleteConfirmation = false;
-                this._deletingEventId = null;
-            }
-        }
-        _renderDeleteOverlay() {
-            return x `
+    }
+    _renderDeleteOverlay() {
+        return x `
       <div class="dialog-overlay" @click=${() => this._showDeleteConfirmation = false}>
         <div class="overlay-content" @click=${(e) => e.stopPropagation()}>
           <h2 style="margin: 0 0 12px 0; font-size: 1.25rem;">Confirm Deletion</h2>
@@ -9755,98 +9045,98 @@ class ResizeController {
         </div>
       </div>
     `;
-        }
-        _renderHoverOverlay() {
-            if (!this._hoveredImage)
-                return E;
-            return x `
+    }
+    _renderHoverOverlay() {
+        if (!this._hoveredImage)
+            return E;
+        return x `
       <div class="image-hover-overlay">
         <img src=${this._hoveredImage} />
       </div>
     `;
-        }
-        async _resizeImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        if (!ctx) {
-                            reject(new Error('Could not get canvas context'));
-                            return;
+    }
+    async _resizeImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Could not get canvas context'));
+                        return;
+                    }
+                    // Max dimensions
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
                         }
-                        // Max dimensions
-                        const MAX_WIDTH = 1024;
-                        const MAX_HEIGHT = 1024;
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > height) {
-                            if (width > MAX_WIDTH) {
-                                height *= MAX_WIDTH / width;
-                                width = MAX_WIDTH;
-                            }
+                    }
+                    else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
                         }
-                        else {
-                            if (height > MAX_HEIGHT) {
-                                width *= MAX_HEIGHT / height;
-                                height = MAX_HEIGHT;
-                            }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        ctx.drawImage(img, 0, 0, width, height);
-                        // Compress to JPEG 0.8
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        resolve(dataUrl);
-                    };
-                    img.onerror = (e) => reject(e);
-                    img.src = e.target?.result;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG 0.8
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
                 };
-                reader.onerror = (e) => reject(e);
-                reader.readAsDataURL(file);
-            });
-        }
-        async _handleFileSelect(e) {
-            const input = e.target;
-            if (!input.files)
-                return;
-            // Process files sequentially or in parallel, but await them
-            const files = Array.from(input.files);
-            for (const file of files) {
-                try {
-                    const resized = await this._resizeImage(file);
-                    this._noteImages = [...this._noteImages, resized];
-                }
-                catch (err) {
-                    console.error('Error processing image:', err);
-                }
+                img.onerror = (e) => reject(e);
+                img.src = e.target?.result;
+            };
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+        });
+    }
+    async _handleFileSelect(e) {
+        const input = e.target;
+        if (!input.files)
+            return;
+        // Process files sequentially or in parallel, but await them
+        const files = Array.from(input.files);
+        for (const file of files) {
+            try {
+                const resized = await this._resizeImage(file);
+                this._noteImages = [...this._noteImages, resized];
             }
-            // Clear input to allow re-selecting same file if needed
-            input.value = '';
-        }
-        _removeImage(index) {
-            this._noteImages = this._noteImages.filter((_, i) => i !== index);
-        }
-        render() {
-            // Sort events descending
-            const sortedEvents = [...(this.events || [])]
-                .filter(e => e.date)
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            // Group by day
-            const groupedByDay = new Map();
-            for (const event of sortedEvents) {
-                const dayKey = this._getDateKey(event.date);
-                if (!groupedByDay.has(dayKey)) {
-                    groupedByDay.set(dayKey, []);
-                }
-                groupedByDay.get(dayKey).push(event);
+            catch (err) {
+                console.error('Error processing image:', err);
             }
-            const latestStageEvent = sortedEvents.find(e => e.type === 'stage_change' || e.type === 'milestone');
-            const currentStage = latestStageEvent?.to || latestStageEvent?.label;
-            const stageColor = this._getStageColor(currentStage);
-            return x `
+        }
+        // Clear input to allow re-selecting same file if needed
+        input.value = '';
+    }
+    _removeImage(index) {
+        this._noteImages = this._noteImages.filter((_, i) => i !== index);
+    }
+    render() {
+        // Sort events descending
+        const sortedEvents = [...(this.events || [])]
+            .filter(e => e.date)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Group by day
+        const groupedByDay = new Map();
+        for (const event of sortedEvents) {
+            const dayKey = this._getDateKey(event.date);
+            if (!groupedByDay.has(dayKey)) {
+                groupedByDay.set(dayKey, []);
+            }
+            groupedByDay.get(dayKey).push(event);
+        }
+        const latestStageEvent = sortedEvents.find(e => e.type === 'stage_change' || e.type === 'milestone');
+        const currentStage = latestStageEvent?.to || latestStageEvent?.label;
+        const stageColor = this._getStageColor(currentStage);
+        return x `
       <div class="timeline" style="--stage-color: ${stageColor}">
         ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
         ${this._renderHoverOverlay()}
@@ -9903,9 +9193,9 @@ class ResizeController {
             No entries for this plant yet.
           </div>
         ` : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
-                const alerts = dayEvents.filter(e => e.type === 'alert');
-                const others = dayEvents.filter(e => e.type !== 'alert');
-                return x `
+            const alerts = dayEvents.filter(e => e.type === 'alert');
+            const others = dayEvents.filter(e => e.type !== 'alert');
+            return x `
               <div class="day-group">
                 <div class="day-header">${this._formatDayHeader(dayEvents[0].date)}</div>
                 
@@ -9919,13 +9209,13 @@ class ResizeController {
                 ${others.map(event => this._renderEvent(event, sortedEvents))}
               </div>
             `;
-            })}
+        })}
       </div>
     `;
-        }
-        _renderEvent(event, allEvents) {
-            const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
-            return x `
+    }
+    _renderEvent(event, allEvents) {
+        const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
+        return x `
       <div class="event type-${event.type} glass-surface">
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
@@ -9949,75 +9239,75 @@ class ResizeController {
         ${this._renderTags(event.tags)}
       </div>
     `;
-        }
-        _renderEventContent(event) {
-            switch (event.type) {
-                case 'stage_change':
-                    return x `
+    }
+    _renderEventContent(event) {
+        switch (event.type) {
+            case 'stage_change':
+                return x `
             <div class="content">Stage Changed</div>
             <div class="details">Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
         `;
-                case 'milestone':
-                    return x `
+            case 'milestone':
+                return x `
             <div class="content">${event.label} Started</div>
             <div class="details">Agricultural milestone reached.</div>
         `;
-                case 'action':
-                    const label = event.action === 'ipm' ? 'IPM' :
-                        event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                    return x `
+            case 'action':
+                const label = event.action === 'ipm' ? 'IPM' :
+                    event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                return x `
             <div class="content">${label}</div>
             ${event.details ? x `<div class="details">${event.details}</div>` : E}
         `;
-                case 'alert':
-                    return x `
+            case 'alert':
+                return x `
             <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
             <div class="details">Severity: ${event.severity}</div>
         `;
-                case 'note':
-                    return x `
+            case 'note':
+                return x `
             <div class="content">Note</div>
             <div class="details">${event.text}</div>
         `;
-            }
         }
-        _renderMetadata(metadata) {
-            if (!metadata || Object.keys(metadata).length === 0)
-                return E;
-            const items = [
-                { key: 'temperature', icon: mdiThermometer, label: '°C' },
-                { key: 'humidity', icon: mdiWaterPercent, label: '%' },
-                { key: 'vpd', icon: mdiGauge, label: ' kPa' },
-                { key: 'ph', icon: mdiFlaskOutline, label: 'pH ', prefix: true },
-                { key: 'ec', icon: mdiFlash, label: 'EC ', prefix: true },
-                { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
-            ];
-            return x `
+    }
+    _renderMetadata(metadata) {
+        if (!metadata || Object.keys(metadata).length === 0)
+            return E;
+        const items = [
+            { key: 'temperature', icon: mdiThermometer, label: '°C' },
+            { key: 'humidity', icon: mdiWaterPercent, label: '%' },
+            { key: 'vpd', icon: mdiGauge, label: ' kPa' },
+            { key: 'ph', icon: mdiFlaskOutline, label: 'pH ', prefix: true },
+            { key: 'ec', icon: mdiFlash, label: 'EC ', prefix: true },
+            { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
+        ];
+        return x `
       <div class="metadata-chips">
         ${items.map(item => {
-                const val = metadata[item.key];
-                if (val === undefined || val === null)
-                    return E;
-                const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
-                return x `
+            const val = metadata[item.key];
+            if (val === undefined || val === null)
+                return E;
+            const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
+            return x `
             <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
               <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
               <span>${display}</span>
             </div>
           `;
-            })}
+        })}
       </div>
     `;
-        }
-        _renderImages(images) {
-            if (!images || images.length === 0)
-                return E;
-            return x `
+    }
+    _renderImages(images) {
+        if (!images || images.length === 0)
+            return E;
+        return x `
       <div class="image-grid">
         ${images.map(img => {
-                // If it's a relative path, prefix with /api/growspace_manager/v1/images/
-                const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
-                return x `
+            // If it's a relative path, prefix with /api/growspace_manager/v1/images/
+            const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
+            return x `
         <img 
           src=${src} 
           @click=${() => this._openImage(src)}
@@ -10025,14 +9315,14 @@ class ResizeController {
           @mouseleave=${() => this._hoveredImage = null}
         />
       `;
-            })}
+        })}
       </div>
     `;
-        }
-        _renderTags(tags) {
-            if (!tags || tags.length === 0)
-                return E;
-            return x `
+    }
+    _renderTags(tags) {
+        if (!tags || tags.length === 0)
+            return E;
+        return x `
       <div class="tags">
         ${tags.map(tag => x `
           <div class="tag">
@@ -10042,65 +9332,14 @@ class ResizeController {
         `)}
       </div>
     `;
-        }
-        _openImage(src) {
-            window.open(src, '_blank');
-        }
-        constructor() {
-            super(...arguments);
-            _PlantTimeline_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _PlantTimeline_plant_id_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _plant_id_initializers, void 0)));
-            _PlantTimeline_events_accessor_storage.set(this, (__runInitializers(this, _plant_id_extraInitializers), __runInitializers(this, _events_initializers, [])));
-            _PlantTimeline__noteText_accessor_storage.set(this, (__runInitializers(this, _events_extraInitializers), __runInitializers(this, __noteText_initializers, '')));
-            _PlantTimeline__noteImages_accessor_storage.set(this, (__runInitializers(this, __noteText_extraInitializers), __runInitializers(this, __noteImages_initializers, [])));
-            _PlantTimeline__isSaving_accessor_storage.set(this, (__runInitializers(this, __noteImages_extraInitializers), __runInitializers(this, __isSaving_initializers, false)));
-            _PlantTimeline__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, __isSaving_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
-            _PlantTimeline__deletingEventId_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __deletingEventId_initializers, null)));
-            _PlantTimeline__hoveredImage_accessor_storage.set(this, (__runInitializers(this, __deletingEventId_extraInitializers), __runInitializers(this, __hoveredImage_initializers, null)));
-            __runInitializers(this, __hoveredImage_extraInitializers);
-        }
-    };
-    _PlantTimeline_hass_accessor_storage = new WeakMap();
-    _PlantTimeline_plant_id_accessor_storage = new WeakMap();
-    _PlantTimeline_events_accessor_storage = new WeakMap();
-    _PlantTimeline__noteText_accessor_storage = new WeakMap();
-    _PlantTimeline__noteImages_accessor_storage = new WeakMap();
-    _PlantTimeline__isSaving_accessor_storage = new WeakMap();
-    _PlantTimeline__showDeleteConfirmation_accessor_storage = new WeakMap();
-    _PlantTimeline__deletingEventId_accessor_storage = new WeakMap();
-    _PlantTimeline__hoveredImage_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "PlantTimeline");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [n$5({ attribute: false })];
-        _plant_id_decorators = [n$5({ type: String })];
-        _events_decorators = [n$5({ type: Array })];
-        __noteText_decorators = [r$2()];
-        __noteImages_decorators = [r$2()];
-        __isSaving_decorators = [r$2()];
-        __showDeleteConfirmation_decorators = [r$2()];
-        __deletingEventId_decorators = [r$2()];
-        __hoveredImage_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _plant_id_decorators, { kind: "accessor", name: "plant_id", static: false, private: false, access: { has: obj => "plant_id" in obj, get: obj => obj.plant_id, set: (obj, value) => { obj.plant_id = value; } }, metadata: _metadata }, _plant_id_initializers, _plant_id_extraInitializers);
-        __esDecorate(_classThis, null, _events_decorators, { kind: "accessor", name: "events", static: false, private: false, access: { has: obj => "events" in obj, get: obj => obj.events, set: (obj, value) => { obj.events = value; } }, metadata: _metadata }, _events_initializers, _events_extraInitializers);
-        __esDecorate(_classThis, null, __noteText_decorators, { kind: "accessor", name: "_noteText", static: false, private: false, access: { has: obj => "_noteText" in obj, get: obj => obj._noteText, set: (obj, value) => { obj._noteText = value; } }, metadata: _metadata }, __noteText_initializers, __noteText_extraInitializers);
-        __esDecorate(_classThis, null, __noteImages_decorators, { kind: "accessor", name: "_noteImages", static: false, private: false, access: { has: obj => "_noteImages" in obj, get: obj => obj._noteImages, set: (obj, value) => { obj._noteImages = value; } }, metadata: _metadata }, __noteImages_initializers, __noteImages_extraInitializers);
-        __esDecorate(_classThis, null, __isSaving_decorators, { kind: "accessor", name: "_isSaving", static: false, private: false, access: { has: obj => "_isSaving" in obj, get: obj => obj._isSaving, set: (obj, value) => { obj._isSaving = value; } }, metadata: _metadata }, __isSaving_initializers, __isSaving_extraInitializers);
-        __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
-        __esDecorate(_classThis, null, __deletingEventId_decorators, { kind: "accessor", name: "_deletingEventId", static: false, private: false, access: { has: obj => "_deletingEventId" in obj, get: obj => obj._deletingEventId, set: (obj, value) => { obj._deletingEventId = value; } }, metadata: _metadata }, __deletingEventId_initializers, __deletingEventId_extraInitializers);
-        __esDecorate(_classThis, null, __hoveredImage_decorators, { kind: "accessor", name: "_hoveredImage", static: false, private: false, access: { has: obj => "_hoveredImage" in obj, get: obj => obj._hoveredImage, set: (obj, value) => { obj._hoveredImage = value; } }, metadata: _metadata }, __hoveredImage_initializers, __hoveredImage_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            i$6 `
+    }
+    _openImage(src) {
+        window.open(src, '_blank');
+    }
+};
+PlantTimeline.styles = [
+    sharedStyles,
+    i$6 `
       :host {
         display: block;
         padding: var(--spacing-md, 16px);
@@ -10413,14 +9652,78 @@ class ResizeController {
         object-fit: contain;
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantTimeline.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], PlantTimeline.prototype, "plant_id", void 0);
+__decorate([
+    n$5({ type: Array })
+], PlantTimeline.prototype, "events", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_noteText", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_noteImages", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_isSaving", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_showDeleteConfirmation", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_deletingEventId", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_hoveredImage", void 0);
+PlantTimeline = __decorate([
+    t$2('plant-timeline')
+], PlantTimeline);
 
+class PlantClickEvent extends CustomEvent {
+    constructor(plant) {
+        super(PlantClickEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantClickEvent.TYPE = 'plant-click';
+class AddPlantClickEvent extends CustomEvent {
+    constructor(row, col) {
+        super(AddPlantClickEvent.TYPE, {
+            detail: { row, col },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+AddPlantClickEvent.TYPE = 'add-plant-click';
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
 class UpdatePlantEvent extends CustomEvent {
     constructor(updates) {
         super(UpdatePlantEvent.TYPE, {
@@ -10430,12 +9733,7 @@ class UpdatePlantEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(UpdatePlantEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'update-plant'
-});
+UpdatePlantEvent.TYPE = 'update-plant';
 class DeletePlantEvent extends CustomEvent {
     constructor(plantId) {
         super(DeletePlantEvent.TYPE, {
@@ -10445,12 +9743,7 @@ class DeletePlantEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(DeletePlantEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'delete-plant'
-});
+DeletePlantEvent.TYPE = 'delete-plant';
 class HarvestPlantEvent extends CustomEvent {
     constructor(plant) {
         super(HarvestPlantEvent.TYPE, {
@@ -10460,12 +9753,7 @@ class HarvestPlantEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(HarvestPlantEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'harvest-plant'
-});
+HarvestPlantEvent.TYPE = 'harvest-plant';
 class FinishDryingEvent extends CustomEvent {
     constructor(plant) {
         super(FinishDryingEvent.TYPE, {
@@ -10475,12 +9763,7 @@ class FinishDryingEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(FinishDryingEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'finish-drying'
-});
+FinishDryingEvent.TYPE = 'finish-drying';
 class TakeCloneEvent extends CustomEvent {
     constructor(plant, numClones) {
         super(TakeCloneEvent.TYPE, {
@@ -10490,12 +9773,7 @@ class TakeCloneEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(TakeCloneEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'take-clone'
-});
+TakeCloneEvent.TYPE = 'take-clone';
 class MoveCloneEvent extends CustomEvent {
     constructor(plant, targetGrowspace) {
         super(MoveCloneEvent.TYPE, {
@@ -10505,12 +9783,7 @@ class MoveCloneEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(MoveCloneEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'move-clone'
-});
+MoveCloneEvent.TYPE = 'move-clone';
 class LibraryExportReadyEvent extends CustomEvent {
     constructor(url) {
         super(LibraryExportReadyEvent.TYPE, {
@@ -10520,12 +9793,7 @@ class LibraryExportReadyEvent extends CustomEvent {
         });
     }
 }
-Object.defineProperty(LibraryExportReadyEvent, "TYPE", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: 'library-export-ready'
-});
+LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
 class GrowspaceLogbookController {
     async fetchEventLog(hass, growspaceId, limit) {
@@ -10548,418 +9816,305 @@ class GrowspaceLogbookController {
     }
 }
 
-(() => {
-    var _PlantOverviewDialog_hass_accessor_storage, _PlantOverviewDialog_open_accessor_storage, _PlantOverviewDialog_dialog_accessor_storage, _PlantOverviewDialog_plant_accessor_storage, _PlantOverviewDialog_growspaceOptions_accessor_storage, _PlantOverviewDialog_editedAttributes_accessor_storage, _PlantOverviewDialog_isEditing_accessor_storage, _PlantOverviewDialog_showAllDates_accessor_storage, _PlantOverviewDialog_cloneTargetId_accessor_storage, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, _PlantOverviewDialog__activeTab_accessor_storage, _PlantOverviewDialog__logbookEvents_accessor_storage, _PlantOverviewDialog__canScrollLeft_accessor_storage, _PlantOverviewDialog__canScrollRight_accessor_storage;
-    let _classDecorators = [t$2('plant-overview-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _dialog_decorators;
-    let _dialog_initializers = [];
-    let _dialog_extraInitializers = [];
-    let _plant_decorators;
-    let _plant_initializers = [];
-    let _plant_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    let _editedAttributes_decorators;
-    let _editedAttributes_initializers = [];
-    let _editedAttributes_extraInitializers = [];
-    let _isEditing_decorators;
-    let _isEditing_initializers = [];
-    let _isEditing_extraInitializers = [];
-    let _showAllDates_decorators;
-    let _showAllDates_initializers = [];
-    let _showAllDates_extraInitializers = [];
-    let _cloneTargetId_decorators;
-    let _cloneTargetId_initializers = [];
-    let _cloneTargetId_extraInitializers = [];
-    let __showDeleteConfirmation_decorators;
-    let __showDeleteConfirmation_initializers = [];
-    let __showDeleteConfirmation_extraInitializers = [];
-    let __activeTab_decorators;
-    let __activeTab_initializers = [];
-    let __activeTab_extraInitializers = [];
-    let __logbookEvents_decorators;
-    let __logbookEvents_initializers = [];
-    let __logbookEvents_extraInitializers = [];
-    let __canScrollLeft_decorators;
-    let __canScrollLeft_initializers = [];
-    let __canScrollLeft_extraInitializers = [];
-    let __canScrollRight_decorators;
-    let __canScrollRight_initializers = [];
-    let __canScrollRight_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _PlantOverviewDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            Object.defineProperty(this, "_logbookController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, _hass_extraInitializers), new GrowspaceLogbookController())
-            });
-            Object.defineProperty(this, "_unsubEvents", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            _PlantOverviewDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _PlantOverviewDialog_dialog_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialog_initializers, void 0)));
-            _PlantOverviewDialog_plant_accessor_storage.set(this, (__runInitializers(this, _dialog_extraInitializers), __runInitializers(this, _plant_initializers, void 0)));
-            _PlantOverviewDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _PlantOverviewDialog_editedAttributes_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _editedAttributes_initializers, void 0)));
-            _PlantOverviewDialog_isEditing_accessor_storage.set(this, (__runInitializers(this, _editedAttributes_extraInitializers), __runInitializers(this, _isEditing_initializers, true)));
-            _PlantOverviewDialog_showAllDates_accessor_storage.set(this, (__runInitializers(this, _isEditing_extraInitializers), __runInitializers(this, _showAllDates_initializers, false)));
-            _PlantOverviewDialog_cloneTargetId_accessor_storage.set(this, (__runInitializers(this, _showAllDates_extraInitializers), __runInitializers(this, _cloneTargetId_initializers, '')));
-            _PlantOverviewDialog__showDeleteConfirmation_accessor_storage.set(this, (__runInitializers(this, _cloneTargetId_extraInitializers), __runInitializers(this, __showDeleteConfirmation_initializers, false)));
-            _PlantOverviewDialog__activeTab_accessor_storage.set(this, (__runInitializers(this, __showDeleteConfirmation_extraInitializers), __runInitializers(this, __activeTab_initializers, 'dashboard')));
-            _PlantOverviewDialog__logbookEvents_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __logbookEvents_initializers, [])));
-            _PlantOverviewDialog__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, __logbookEvents_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
-            _PlantOverviewDialog__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
-            Object.defineProperty(this, "_actionsContainer", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __canScrollRight_extraInitializers)
-            });
-            Object.defineProperty(this, "_resizeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new ResizeController(this, () => this._checkScroll())
-            });
-            Object.defineProperty(this, "_setActionsRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (el) => {
-                    this._actionsContainer = el;
-                    if (el) {
-                        el.addEventListener('scroll', this._checkScroll);
-                        this._resizeController.observe(el);
-                        setTimeout(() => this._checkScroll(), 0);
-                    }
-                }
-            });
-            Object.defineProperty(this, "_checkScroll", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: () => {
-                    const container = this._actionsContainer;
-                    if (container) {
-                        this._canScrollLeft = container.scrollLeft > 1;
-                        this._canScrollRight =
-                            container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-                    }
-                }
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _PlantOverviewDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_hass_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _PlantOverviewDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_open_accessor_storage, value, "f"); }
-        get dialog() { return __classPrivateFieldGet(this, _PlantOverviewDialog_dialog_accessor_storage, "f"); }
-        set dialog(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_dialog_accessor_storage, value, "f"); }
-        get plant() { return __classPrivateFieldGet(this, _PlantOverviewDialog_plant_accessor_storage, "f"); }
-        set plant(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_plant_accessor_storage, value, "f"); }
-        get growspaceOptions() { return __classPrivateFieldGet(this, _PlantOverviewDialog_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_growspaceOptions_accessor_storage, value, "f"); }
-        get editedAttributes() { return __classPrivateFieldGet(this, _PlantOverviewDialog_editedAttributes_accessor_storage, "f"); }
-        set editedAttributes(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_editedAttributes_accessor_storage, value, "f"); }
-        get isEditing() { return __classPrivateFieldGet(this, _PlantOverviewDialog_isEditing_accessor_storage, "f"); }
-        set isEditing(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_isEditing_accessor_storage, value, "f"); }
-        get showAllDates() { return __classPrivateFieldGet(this, _PlantOverviewDialog_showAllDates_accessor_storage, "f"); }
-        set showAllDates(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_showAllDates_accessor_storage, value, "f"); }
-        get cloneTargetId() { return __classPrivateFieldGet(this, _PlantOverviewDialog_cloneTargetId_accessor_storage, "f"); }
-        set cloneTargetId(value) { __classPrivateFieldSet(this, _PlantOverviewDialog_cloneTargetId_accessor_storage, value, "f"); }
-        get _showDeleteConfirmation() { return __classPrivateFieldGet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, "f"); }
-        set _showDeleteConfirmation(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__showDeleteConfirmation_accessor_storage, value, "f"); }
-        get _activeTab() { return __classPrivateFieldGet(this, _PlantOverviewDialog__activeTab_accessor_storage, "f"); }
-        set _activeTab(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__activeTab_accessor_storage, value, "f"); }
-        get _logbookEvents() { return __classPrivateFieldGet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, "f"); }
-        set _logbookEvents(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__logbookEvents_accessor_storage, value, "f"); }
-        get _canScrollLeft() { return __classPrivateFieldGet(this, _PlantOverviewDialog__canScrollLeft_accessor_storage, "f"); }
-        set _canScrollLeft(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__canScrollLeft_accessor_storage, value, "f"); }
-        get _canScrollRight() { return __classPrivateFieldGet(this, _PlantOverviewDialog__canScrollRight_accessor_storage, "f"); }
-        set _canScrollRight(value) { __classPrivateFieldSet(this, _PlantOverviewDialog__canScrollRight_accessor_storage, value, "f"); }
-        _scrollActions(direction) {
+let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._logbookController = new GrowspaceLogbookController();
+        this.open = false;
+        this.growspaceOptions = {};
+        this.isEditing = true;
+        this.showAllDates = false;
+        this.cloneTargetId = '';
+        this._showDeleteConfirmation = false;
+        this._activeTab = 'dashboard';
+        this._logbookEvents = [];
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._resizeController = new ResizeController(this, () => this._checkScroll());
+        this._setActionsRef = (el) => {
+            this._actionsContainer = el;
+            if (el) {
+                el.addEventListener('scroll', this._checkScroll);
+                this._resizeController.observe(el);
+                setTimeout(() => this._checkScroll(), 0);
+            }
+        };
+        this._checkScroll = () => {
             const container = this._actionsContainer;
             if (container) {
-                container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
+                this._canScrollLeft = container.scrollLeft > 1;
+                this._canScrollRight =
+                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
             }
+        };
+    }
+    _scrollActions(direction) {
+        const container = this._actionsContainer;
+        if (container) {
+            container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
         }
-        connectedCallback() {
-            super.connectedCallback();
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._subscribeToEvents();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this._unsubEvents) {
+            this._unsubEvents.then((unsub) => unsub && unsub());
+            this._unsubEvents = undefined;
+        }
+    }
+    async _subscribeToEvents() {
+        if (!this.hass)
+            return;
+        // Subscribe if not already subscribed
+        if (!this._unsubEvents) {
+            this._unsubEvents = this.hass.connection.subscribeEvents((event) => this._handleGrowspaceEvent(event), 'growspace_manager_log_entry');
+        }
+    }
+    _handleGrowspaceEvent(event) {
+        const data = event.data;
+        const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
+        const growspaceId = this.plant?.attributes?.growspace_id;
+        // Check if relevant to this plant (direct match)
+        const isForThisPlant = data.plant_id === plantId;
+        // Check if relevant to this growspace (e.g. irrigation)
+        const isForThisGrowspace = data.growspace_id === growspaceId;
+        const isSharedEvent = data.category === 'irrigation' && !data.plant_id;
+        if (isForThisPlant || (isForThisGrowspace && isSharedEvent)) {
+            // Prepend to list for instant update
+            // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
+            // but _renderTimeline mapping logic handles both.
+            this._logbookEvents = [data, ...this._logbookEvents];
+        }
+    }
+    willUpdate(changedProps) {
+        // Retry subscription if hass becomes available later
+        if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
             this._subscribeToEvents();
         }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            if (this._unsubEvents) {
-                this._unsubEvents.then((unsub) => unsub && unsub());
-                this._unsubEvents = undefined;
+        // Handle dialog state object if passed (legacy/alternative usage)
+        if (changedProps.has('dialog') && this.dialog) {
+            this.plant = this.dialog.plant;
+            this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
+            this.cloneTargetId = '';
+            if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
+                this._activeTab = this.dialog.activeTab;
             }
+            // Fetch logbook when dialog is set
+            this._fetchLogbook();
         }
-        async _subscribeToEvents() {
-            if (!this.hass)
-                return;
-            // Subscribe if not already subscribed
-            if (!this._unsubEvents) {
-                this._unsubEvents = this.hass.connection.subscribeEvents((event) => this._handleGrowspaceEvent(event), 'growspace_manager_log_entry');
-            }
+        // Handle direct prop injection (DialogHost usage)
+        // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
+        if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
+            this.editedAttributes = this._getAttributesFromPlant();
         }
-        _handleGrowspaceEvent(event) {
-            const data = event.data;
-            const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
-            const growspaceId = this.plant?.attributes?.growspace_id;
-            // Check if relevant to this plant (direct match)
-            const isForThisPlant = data.plant_id === plantId;
-            // Check if relevant to this growspace (e.g. irrigation)
-            const isForThisGrowspace = data.growspace_id === growspaceId;
-            const isSharedEvent = data.category === 'irrigation' && !data.plant_id;
-            if (isForThisPlant || (isForThisGrowspace && isSharedEvent)) {
-                // Prepend to list for instant update
-                // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
-                // but _renderTimeline mapping logic handles both.
-                this._logbookEvents = [data, ...this._logbookEvents];
-            }
+        // Fetch logbook when plant changes (direct prop usage)
+        if (changedProps.has('plant') && this.plant) {
+            this._fetchLogbook();
         }
-        willUpdate(changedProps) {
-            // Retry subscription if hass becomes available later
-            if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
-                this._subscribeToEvents();
-            }
-            // Handle dialog state object if passed (legacy/alternative usage)
-            if (changedProps.has('dialog') && this.dialog) {
-                this.plant = this.dialog.plant;
-                this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
-                this.cloneTargetId = '';
-                if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
-                    this._activeTab = this.dialog.activeTab;
-                }
-                // Fetch logbook when dialog is set
-                this._fetchLogbook();
-            }
-            // Handle direct prop injection (DialogHost usage)
-            // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
-            if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
-                this.editedAttributes = this._getAttributesFromPlant();
-            }
-            // Fetch logbook when plant changes (direct prop usage)
-            if (changedProps.has('plant') && this.plant) {
-                this._fetchLogbook();
-            }
-        }
-        async _fetchLogbook() {
-            if (!this.plant?.attributes?.growspace_id || !this.hass)
-                return;
-            const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
-            // Identify optimistic events (no event_id, recent timestamp) to preserve
-            // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
-            const now = new Date().getTime();
-            const optimisticEvents = this._logbookEvents.filter(e => {
-                const evt = e;
-                if (evt.event_id)
-                    return false; // Already from DB
-                // Check if recent (< 60 seconds)
-                const ts = evt.timestamp || evt.start_time;
-                if (!ts)
-                    return false;
-                const time = new Date(ts).getTime();
-                return (now - time) < 60000;
-            });
-            // Merge: Put optimistic events first, then fetched events
-            this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
-        }
-        _getAttributesFromPlant() {
-            if (!this.plant)
-                return {};
-            return {
-                strain: this.plant?.attributes?.strain,
-                phenotype: this.plant?.attributes?.phenotype,
-                row: this.plant?.attributes?.row,
-                col: this.plant?.attributes?.col,
-                stage: this.plant?.state,
-                veg_start: this.plant?.attributes?.veg_start,
-                flower_start: this.plant?.attributes?.flower_start,
-                seedling_start: this.plant?.attributes?.seedling_start,
-                mother_start: this.plant?.attributes?.mother_start,
-                clone_start: this.plant?.attributes?.clone_start,
-                dry_start: this.plant?.attributes?.dry_start,
-                cure_start: this.plant?.attributes?.cure_start,
-            };
-        }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close'));
-        }
-        _update() {
-            if (!this.editedAttributes)
-                return;
-            this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
-        }
-        _delete(plantId) {
-            this._showDeleteConfirmation = true;
-        }
-        _confirmDelete() {
-            if (this.plant) {
-                const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-                this.dispatchEvent(new DeletePlantEvent(plantId));
-                this._showDeleteConfirmation = false;
-                this._close();
-            }
-        }
-        _cancelDelete() {
+    }
+    async _fetchLogbook() {
+        if (!this.plant?.attributes?.growspace_id || !this.hass)
+            return;
+        const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+        // Identify optimistic events (no event_id, recent timestamp) to preserve
+        // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
+        const now = new Date().getTime();
+        const optimisticEvents = this._logbookEvents.filter(e => {
+            const evt = e;
+            if (evt.event_id)
+                return false; // Already from DB
+            // Check if recent (< 60 seconds)
+            const ts = evt.timestamp || evt.start_time;
+            if (!ts)
+                return false;
+            const time = new Date(ts).getTime();
+            return (now - time) < 60000;
+        });
+        // Merge: Put optimistic events first, then fetched events
+        this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
+    }
+    _getAttributesFromPlant() {
+        if (!this.plant)
+            return {};
+        return {
+            strain: this.plant?.attributes?.strain,
+            phenotype: this.plant?.attributes?.phenotype,
+            row: this.plant?.attributes?.row,
+            col: this.plant?.attributes?.col,
+            stage: this.plant?.state,
+            veg_start: this.plant?.attributes?.veg_start,
+            flower_start: this.plant?.attributes?.flower_start,
+            seedling_start: this.plant?.attributes?.seedling_start,
+            mother_start: this.plant?.attributes?.mother_start,
+            clone_start: this.plant?.attributes?.clone_start,
+            dry_start: this.plant?.attributes?.dry_start,
+            cure_start: this.plant?.attributes?.cure_start,
+        };
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    _update() {
+        if (!this.editedAttributes)
+            return;
+        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
+    }
+    _delete(plantId) {
+        this._showDeleteConfirmation = true;
+    }
+    _confirmDelete() {
+        if (this.plant) {
+            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+            this.dispatchEvent(new DeletePlantEvent(plantId));
             this._showDeleteConfirmation = false;
+            this._close();
         }
-        _harvest(plant) {
-            this.dispatchEvent(new HarvestPlantEvent(plant));
+    }
+    _cancelDelete() {
+        this._showDeleteConfirmation = false;
+    }
+    _harvest(plant) {
+        this.dispatchEvent(new HarvestPlantEvent(plant));
+    }
+    _finishDrying(plant) {
+        this.dispatchEvent(new FinishDryingEvent(plant));
+    }
+    _takeClone(plant, numClones) {
+        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
+    }
+    _moveClone(plant) {
+        if (!this.cloneTargetId) {
+            // alert is not ideal but keeping for now as per previous logic
+            alert('Select a growspace');
+            return;
         }
-        _finishDrying(plant) {
-            this.dispatchEvent(new FinishDryingEvent(plant));
-        }
-        _takeClone(plant, numClones) {
-            this.dispatchEvent(new TakeCloneEvent(plant, numClones));
-        }
-        _moveClone(plant) {
-            if (!this.cloneTargetId) {
-                // alert is not ideal but keeping for now as per previous logic
-                alert('Select a growspace');
-                return;
-            }
-            this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
-        }
-        _attributeChange(key, value) {
-            this.editedAttributes = { ...this.editedAttributes, [key]: value };
-            this.requestUpdate();
-        }
-        _toggleShowAllDates() {
-            this.showAllDates = !this.showAllDates;
-        }
-        _openWatering() {
-            if (!this.plant)
-                return;
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            const growspaceId = this.plant.attributes?.growspace_id;
-            this.dispatchEvent(new CustomEvent('open-watering', {
-                detail: {
-                    mode: 'plant',
-                    plantIds: [plantId],
-                    growspaceId: growspaceId
-                },
-                bubbles: true,
-                composed: true
-            }));
-        }
-        _openTraining() {
-            if (!this.plant)
-                return;
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            const growspaceId = this.plant.attributes?.growspace_id;
-            this.dispatchEvent(new CustomEvent('open-training', {
-                detail: {
-                    isOpen: true,
-                    plantIds: [plantId],
-                    growspaceId: growspaceId
-                },
-                bubbles: true,
-                composed: true
-            }));
-        }
-        _openIPM() {
-            if (!this.plant)
-                return;
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            const growspaceId = this.plant.attributes?.growspace_id;
-            this.dispatchEvent(new CustomEvent('open-ipm', {
-                detail: {
-                    growspaceId: growspaceId,
-                    plantIds: [plantId]
-                },
-                bubbles: true,
-                composed: true
-            }));
-        }
-        _renderStatItem(label, value, unit = '') {
-            if (value === undefined || value === null || value === '')
-                return E;
-            return x `
+        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
+    }
+    _attributeChange(key, value) {
+        this.editedAttributes = { ...this.editedAttributes, [key]: value };
+        this.requestUpdate();
+    }
+    _toggleShowAllDates() {
+        this.showAllDates = !this.showAllDates;
+    }
+    _openWatering() {
+        if (!this.plant)
+            return;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const growspaceId = this.plant.attributes?.growspace_id;
+        this.dispatchEvent(new CustomEvent('open-watering', {
+            detail: {
+                mode: 'plant',
+                plantIds: [plantId],
+                growspaceId: growspaceId
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _openTraining() {
+        if (!this.plant)
+            return;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const growspaceId = this.plant.attributes?.growspace_id;
+        this.dispatchEvent(new CustomEvent('open-training', {
+            detail: {
+                isOpen: true,
+                plantIds: [plantId],
+                growspaceId: growspaceId
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _openIPM() {
+        if (!this.plant)
+            return;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const growspaceId = this.plant.attributes?.growspace_id;
+        this.dispatchEvent(new CustomEvent('open-ipm', {
+            detail: {
+                growspaceId: growspaceId,
+                plantIds: [plantId]
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
+    _renderStatItem(label, value, unit = '') {
+        if (value === undefined || value === null || value === '')
+            return E;
+        return x `
       <div class="stat-item">
         <span class="stat-value">${value} ${unit}</span>
         <span class="stat-label">${label}</span>
       </div>
     `;
-        }
-        _renderPlantStats(plant) {
-            if (!plant.attributes)
-                return E;
-            const currentStage = (plant.state || '').toLowerCase();
-            const normalize = (s) => {
-                if (s === 'veg' || s === 'vegetative')
-                    return PlantStage.VEG;
-                if (s === 'mom')
-                    return PlantStage.MOTHER;
-                return s;
-            };
-            const normCurrent = normalize(currentStage);
-            const stats = [
-                {
-                    label: 'Vegetative Stage',
-                    value: plant.attributes.veg_days,
-                    unit: 'days',
-                    stage: PlantStage.VEG,
-                },
-                {
-                    label: 'Flowering Stage',
-                    value: plant.attributes.flower_days,
-                    unit: 'days',
-                    stage: PlantStage.FLOWER,
-                },
-                {
-                    label: 'Mother Stage',
-                    value: plant.attributes.mom_days,
-                    unit: 'days',
-                    stage: PlantStage.MOTHER,
-                },
-                {
-                    label: 'Clone Stage',
-                    value: plant.attributes.clone_days,
-                    unit: 'days',
-                    stage: PlantStage.CLONE,
-                },
-                {
-                    label: 'Drying Stage',
-                    value: plant.attributes.dry_days,
-                    unit: 'days',
-                    stage: PlantStage.DRY,
-                },
-                {
-                    label: 'Curing Stage',
-                    value: plant.attributes.cure_days,
-                    unit: 'days',
-                    stage: PlantStage.CURE,
-                },
-            ].filter((s) => {
-                if (s.value === undefined || s.value === null)
-                    return false;
-                const val = Number(s.value);
-                if (val > 0)
-                    return true;
-                // Show if 0 but it's the current stage
-                return s.stage === normCurrent;
-            });
-            if (stats.length === 0)
-                return E;
-            return x `
+    }
+    _renderPlantStats(plant) {
+        if (!plant.attributes)
+            return E;
+        const currentStage = (plant.state || '').toLowerCase();
+        const normalize = (s) => {
+            if (s === 'veg' || s === 'vegetative')
+                return PlantStage.VEG;
+            if (s === 'mom')
+                return PlantStage.MOTHER;
+            return s;
+        };
+        const normCurrent = normalize(currentStage);
+        const stats = [
+            {
+                label: 'Vegetative Stage',
+                value: plant.attributes.veg_days,
+                unit: 'days',
+                stage: PlantStage.VEG,
+            },
+            {
+                label: 'Flowering Stage',
+                value: plant.attributes.flower_days,
+                unit: 'days',
+                stage: PlantStage.FLOWER,
+            },
+            {
+                label: 'Mother Stage',
+                value: plant.attributes.mom_days,
+                unit: 'days',
+                stage: PlantStage.MOTHER,
+            },
+            {
+                label: 'Clone Stage',
+                value: plant.attributes.clone_days,
+                unit: 'days',
+                stage: PlantStage.CLONE,
+            },
+            {
+                label: 'Drying Stage',
+                value: plant.attributes.dry_days,
+                unit: 'days',
+                stage: PlantStage.DRY,
+            },
+            {
+                label: 'Curing Stage',
+                value: plant.attributes.cure_days,
+                unit: 'days',
+                stage: PlantStage.CURE,
+            },
+        ].filter((s) => {
+            if (s.value === undefined || s.value === null)
+                return false;
+            const val = Number(s.value);
+            if (val > 0)
+                return true;
+            // Show if 0 but it's the current stage
+            return s.stage === normCurrent;
+        });
+        if (stats.length === 0)
+            return E;
+        return x `
       <div class="detail-card">
         <h3>Days in Stage</h3>
         <div class="stat-grid">
@@ -10967,9 +10122,9 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        _renderDeleteOverlay() {
-            return x `
+    }
+    _renderDeleteOverlay() {
+        return x `
       <div
         class="dialog-overlay"
         style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
@@ -10996,15 +10151,15 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        render() {
-            if (!this.plant || !this.editedAttributes)
-                return x ``;
-            const attributes = this.editedAttributes;
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-            const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
-            return x `
+    }
+    render() {
+        if (!this.plant || !this.editedAttributes)
+            return x ``;
+        const attributes = this.editedAttributes;
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -11064,7 +10219,7 @@ class GrowspaceLogbookController {
           <!-- ACTIONS -->
           <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
              ${this._activeTab === 'timeline'
-                ? x `
+            ? x `
                  <!-- EVENT ACTIONS (TIMELINE TAB) -->
                  <div class="event-actions-wrapper" style="width: 100%; display: flex; align-items: center; position: relative;">
                      <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
@@ -11091,7 +10246,7 @@ class GrowspaceLogbookController {
                      </div>
                  </div>
                `
-                : x `
+            : x `
                  <!-- STANDARD ACTIONS (OVERVIEW TAB) -->
                  <div class="standard-actions" style="display:flex; gap:12px;">
                      <button class="md3-button danger" @click=${() => this._delete(plantId)}>
@@ -11115,12 +10270,12 @@ class GrowspaceLogbookController {
                           ></md3-number-input>
                           <button class="md3-button primary"
                             @click=${(e) => {
-                    const container = e.currentTarget.closest('.take-clone-container');
-                    const input = container?.querySelector('#clone-count-input');
-                    const val = input ? parseInt(input.value, 10) : 1;
-                    const numClones = isNaN(val) ? 1 : val;
-                    this._takeClone(this.plant, numClones);
-                }}
+                const container = e.currentTarget.closest('.take-clone-container');
+                const input = container?.querySelector('#clone-count-input');
+                const val = input ? parseInt(input.value, 10) : 1;
+                const numClones = isNaN(val) ? 1 : val;
+                this._takeClone(this.plant, numClones);
+            }}
                           >
                             <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                             Take Clone
@@ -11172,14 +10327,14 @@ class GrowspaceLogbookController {
 
       </ha-dialog>
     `;
-        }
-        _renderDashboard(attributes) {
-            return x `
+    }
+    _renderDashboard(attributes) {
+        return x `
             <!-- IDENTITY & LOCATION CARD -->
             <div class="detail-card">
               <h3>Identity & Location</h3>
               ${this.isEditing
-                ? x `
+            ? x `
                     <md3-text-input
                       label="Strain Name"
                       .value=${attributes.strain || ''}
@@ -11204,7 +10359,7 @@ class GrowspaceLogbookController {
                       ></md3-number-input>
                     </div>
                   `
-                : x `
+            : x `
                     <div class="stat-grid">
                       <div class="stat-item">
                         <span class="stat-value">${this.plant.attributes?.strain}</span>
@@ -11246,7 +10401,7 @@ class GrowspaceLogbookController {
               </div>
 
               ${this.showAllDates
-                ? x `
+            ? x `
                     <md3-date-input
                       label="Seedling Start"
                       .value=${attributes.seedling_start ?? ''}
@@ -11290,9 +10445,9 @@ class GrowspaceLogbookController {
                       @change=${(e) => this._attributeChange('cure_start', e.detail)}
                     ></md3-date-input>
                   `
-                : x `
+            : x `
                     ${attributes.stage === PlantStage.MOTHER
-                    ? x `
+                ? x `
                           <md3-date-input
                             label="Mother Start"
                             .value=${attributes.mother_start ?? ''}
@@ -11300,9 +10455,9 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('mother_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                     ${attributes.stage === PlantStage.CLONE
-                    ? x `
+                ? x `
                           <md3-date-input
                             label="Clone Start"
                             .value=${attributes.clone_start ?? ''}
@@ -11310,10 +10465,10 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('clone_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                     ${attributes.stage === PlantStage.VEG ||
-                    attributes.stage === PlantStage.FLOWER
-                    ? x `
+                attributes.stage === PlantStage.FLOWER
+                ? x `
                           <md3-date-input
                             label="Vegetative Start"
                             .value=${attributes.veg_start ?? ''}
@@ -11321,9 +10476,9 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('veg_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                     ${attributes.stage === PlantStage.FLOWER
-                    ? x `
+                ? x `
                           <md3-date-input
                             label="Flower Start"
                             .value=${attributes.flower_start ?? ''}
@@ -11331,10 +10486,10 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('flower_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                     ${attributes.stage === PlantStage.DRY ||
-                    attributes.stage === PlantStage.CURE
-                    ? x `
+                attributes.stage === PlantStage.CURE
+                ? x `
                           <md3-date-input
                             label="Dry Start"
                             .value=${attributes.dry_start ?? ''}
@@ -11342,9 +10497,9 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('dry_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                     ${attributes.stage === PlantStage.CURE
-                    ? x `
+                ? x `
                           <md3-date-input
                             label="Cure Start"
                             .value=${attributes.cure_start ?? ''}
@@ -11352,110 +10507,110 @@ class GrowspaceLogbookController {
                             @change=${(e) => this._attributeChange('cure_start', e.detail)}
                           ></md3-date-input>
                         `
-                    : E}
+                : E}
                   `}
             </div>
     `;
-        }
-        _renderTimeline() {
-            if (!this.plant)
-                return E;
-            const recordedEvents = this.plant.attributes?.events || [];
-            // 1. Extract Milestones
-            const milestones = [];
-            const milestoneFields = [
-                { key: 'planted_date', label: 'Planted' },
-                { key: 'seedling_start', label: 'Seedling' },
-                { key: 'mother_start', label: 'Mother' },
-                { key: 'clone_start', label: 'Clone' },
-                { key: 'veg_start', label: 'Vegetative' },
-                { key: 'flower_start', label: 'Flowering' },
-                { key: 'dry_start', label: 'Drying' },
-                { key: 'cure_start', label: 'Curing' },
-                { key: 'harvest_date', label: 'Harvested' }
-            ];
-            milestoneFields.forEach(field => {
-                const date = this.plant?.attributes?.[field.key];
-                if (date) {
-                    milestones.push({
-                        type: 'milestone',
-                        date: String(date),
-                        label: field.label
-                    });
-                }
-            });
-            // 2. Add Logbook Events (Watering, Training)
-            const normalize = (s) => s?.toLowerCase().trim() || '';
-            const plantId = this.plant?.attributes?.plant_id || this.plant.entity_id?.split('.')[1] || '';
-            const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
-            const logbookEvents = this._logbookEvents
-                .filter(e => {
-                const cat = normalize(e.category);
-                const type = normalize(e.sensor_type);
-                const reasons = (e.reasons || []);
-                // 1. Check if it's a watering/irrigation event
-                const isWatering = cat === 'irrigation' ||
-                    (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
-                    ['irrigation', 'drain', 'water'].includes(type) ||
-                    type.includes('water');
-                // 2. Check if it's a training event
-                const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
-                // 3. Check if it's an IPM event
-                const isIPM = cat === 'ipm' || type.startsWith('ipm_');
-                // 4. Check if it's a note event
-                const isNote = cat === 'note';
-                if (!isWatering && !isTraining && !isIPM && !isNote)
-                    return false;
-                // 5. Filter by plant_id
-                // For notes, check the direct plant_id field
-                if (isNote) {
-                    const eventPlantId = e.plant_id;
-                    return eventPlantId && eventPlantId === plantId;
-                }
-                // For others, check growspace-wide or reasons
-                // Include if it's an automated irrigation event (growspace-wide)
-                if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
-                    return true;
-                }
-                // Backend format: "plant_id:uuid-here"
-                const mentionsThisPlant = reasons.some(r => {
-                    const rLower = r.toLowerCase();
-                    if (rLower.startsWith('plant_id:')) {
-                        const eventPlantId = rLower.replace('plant_id:', '').trim();
-                        return eventPlantId === plantId.toLowerCase();
-                    }
-                    return false;
+    }
+    _renderTimeline() {
+        if (!this.plant)
+            return E;
+        const recordedEvents = this.plant.attributes?.events || [];
+        // 1. Extract Milestones
+        const milestones = [];
+        const milestoneFields = [
+            { key: 'planted_date', label: 'Planted' },
+            { key: 'seedling_start', label: 'Seedling' },
+            { key: 'mother_start', label: 'Mother' },
+            { key: 'clone_start', label: 'Clone' },
+            { key: 'veg_start', label: 'Vegetative' },
+            { key: 'flower_start', label: 'Flowering' },
+            { key: 'dry_start', label: 'Drying' },
+            { key: 'cure_start', label: 'Curing' },
+            { key: 'harvest_date', label: 'Harvested' }
+        ];
+        milestoneFields.forEach(field => {
+            const date = this.plant?.attributes?.[field.key];
+            if (date) {
+                milestones.push({
+                    type: 'milestone',
+                    date: String(date),
+                    label: field.label
                 });
-                return mentionsThisPlant;
-            })
-                .map(e => {
-                const cat = normalize(e.category);
-                if (cat === 'note') {
-                    return {
-                        type: 'note',
-                        date: e.timestamp || e.start_time,
-                        text: e.notes || '',
-                        images: e.images,
-                        tags: e.tags,
-                        metadata: e.metadata,
-                        event_id: e.event_id
-                    };
+            }
+        });
+        // 2. Add Logbook Events (Watering, Training)
+        const normalize = (s) => s?.toLowerCase().trim() || '';
+        const plantId = this.plant?.attributes?.plant_id || this.plant.entity_id?.split('.')[1] || '';
+        const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+        const logbookEvents = this._logbookEvents
+            .filter(e => {
+            const cat = normalize(e.category);
+            const type = normalize(e.sensor_type);
+            const reasons = (e.reasons || []);
+            // 1. Check if it's a watering/irrigation event
+            const isWatering = cat === 'irrigation' ||
+                (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+                ['irrigation', 'drain', 'water'].includes(type) ||
+                type.includes('water');
+            // 2. Check if it's a training event
+            const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
+            // 3. Check if it's an IPM event
+            const isIPM = cat === 'ipm' || type.startsWith('ipm_');
+            // 4. Check if it's a note event
+            const isNote = cat === 'note';
+            if (!isWatering && !isTraining && !isIPM && !isNote)
+                return false;
+            // 5. Filter by plant_id
+            // For notes, check the direct plant_id field
+            if (isNote) {
+                const eventPlantId = e.plant_id;
+                return eventPlantId && eventPlantId === plantId;
+            }
+            // For others, check growspace-wide or reasons
+            // Include if it's an automated irrigation event (growspace-wide)
+            if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
+                return true;
+            }
+            // Backend format: "plant_id:uuid-here"
+            const mentionsThisPlant = reasons.some(r => {
+                const rLower = r.toLowerCase();
+                if (rLower.startsWith('plant_id:')) {
+                    const eventPlantId = rLower.replace('plant_id:', '').trim();
+                    return eventPlantId === plantId.toLowerCase();
                 }
+                return false;
+            });
+            return mentionsThisPlant;
+        })
+            .map(e => {
+            const cat = normalize(e.category);
+            if (cat === 'note') {
                 return {
-                    type: 'action',
-                    date: e.start_time,
-                    action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
-                    // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-                    details: (e.reasons || []).filter(r => {
-                        const rLower = r.toLowerCase();
-                        return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-                    }).join(', '),
+                    type: 'note',
+                    date: e.timestamp || e.start_time,
+                    text: e.notes || '',
+                    images: e.images,
+                    tags: e.tags,
+                    metadata: e.metadata,
                     event_id: e.event_id
                 };
-            });
-            // Combine all
-            const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
-            return x `
+            }
+            return {
+                type: 'action',
+                date: e.start_time,
+                action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+                // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
+                details: (e.reasons || []).filter(r => {
+                    const rLower = r.toLowerCase();
+                    return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+                }).join(', '),
+                event_id: e.event_id
+            };
+        });
+        // Combine all
+        const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
+        return x `
         <div style="grid-column: 1 / -1;">
             <plant-timeline 
               .hass=${this.hass} 
@@ -11465,64 +10620,11 @@ class GrowspaceLogbookController {
             ></plant-timeline>
         </div>
     `;
-        }
-    };
-    _PlantOverviewDialog_hass_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_open_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_dialog_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_plant_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_growspaceOptions_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_editedAttributes_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_isEditing_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_showAllDates_accessor_storage = new WeakMap();
-    _PlantOverviewDialog_cloneTargetId_accessor_storage = new WeakMap();
-    _PlantOverviewDialog__showDeleteConfirmation_accessor_storage = new WeakMap();
-    _PlantOverviewDialog__activeTab_accessor_storage = new WeakMap();
-    _PlantOverviewDialog__logbookEvents_accessor_storage = new WeakMap();
-    _PlantOverviewDialog__canScrollLeft_accessor_storage = new WeakMap();
-    _PlantOverviewDialog__canScrollRight_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "PlantOverviewDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean, reflect: true })];
-        _dialog_decorators = [n$5({ attribute: false })];
-        _plant_decorators = [n$5({ type: Object })];
-        _growspaceOptions_decorators = [n$5({ type: Object })];
-        _editedAttributes_decorators = [n$5({ attribute: false })];
-        _isEditing_decorators = [r$2()];
-        _showAllDates_decorators = [r$2()];
-        _cloneTargetId_decorators = [r$2()];
-        __showDeleteConfirmation_decorators = [r$2()];
-        __activeTab_decorators = [r$2()];
-        __logbookEvents_decorators = [r$2()];
-        __canScrollLeft_decorators = [r$2()];
-        __canScrollRight_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _dialog_decorators, { kind: "accessor", name: "dialog", static: false, private: false, access: { has: obj => "dialog" in obj, get: obj => obj.dialog, set: (obj, value) => { obj.dialog = value; } }, metadata: _metadata }, _dialog_initializers, _dialog_extraInitializers);
-        __esDecorate(_classThis, null, _plant_decorators, { kind: "accessor", name: "plant", static: false, private: false, access: { has: obj => "plant" in obj, get: obj => obj.plant, set: (obj, value) => { obj.plant = value; } }, metadata: _metadata }, _plant_initializers, _plant_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(_classThis, null, _editedAttributes_decorators, { kind: "accessor", name: "editedAttributes", static: false, private: false, access: { has: obj => "editedAttributes" in obj, get: obj => obj.editedAttributes, set: (obj, value) => { obj.editedAttributes = value; } }, metadata: _metadata }, _editedAttributes_initializers, _editedAttributes_extraInitializers);
-        __esDecorate(_classThis, null, _isEditing_decorators, { kind: "accessor", name: "isEditing", static: false, private: false, access: { has: obj => "isEditing" in obj, get: obj => obj.isEditing, set: (obj, value) => { obj.isEditing = value; } }, metadata: _metadata }, _isEditing_initializers, _isEditing_extraInitializers);
-        __esDecorate(_classThis, null, _showAllDates_decorators, { kind: "accessor", name: "showAllDates", static: false, private: false, access: { has: obj => "showAllDates" in obj, get: obj => obj.showAllDates, set: (obj, value) => { obj.showAllDates = value; } }, metadata: _metadata }, _showAllDates_initializers, _showAllDates_extraInitializers);
-        __esDecorate(_classThis, null, _cloneTargetId_decorators, { kind: "accessor", name: "cloneTargetId", static: false, private: false, access: { has: obj => "cloneTargetId" in obj, get: obj => obj.cloneTargetId, set: (obj, value) => { obj.cloneTargetId = value; } }, metadata: _metadata }, _cloneTargetId_initializers, _cloneTargetId_extraInitializers);
-        __esDecorate(_classThis, null, __showDeleteConfirmation_decorators, { kind: "accessor", name: "_showDeleteConfirmation", static: false, private: false, access: { has: obj => "_showDeleteConfirmation" in obj, get: obj => obj._showDeleteConfirmation, set: (obj, value) => { obj._showDeleteConfirmation = value; } }, metadata: _metadata }, __showDeleteConfirmation_initializers, __showDeleteConfirmation_extraInitializers);
-        __esDecorate(_classThis, null, __activeTab_decorators, { kind: "accessor", name: "_activeTab", static: false, private: false, access: { has: obj => "_activeTab" in obj, get: obj => obj._activeTab, set: (obj, value) => { obj._activeTab = value; } }, metadata: _metadata }, __activeTab_initializers, __activeTab_extraInitializers);
-        __esDecorate(_classThis, null, __logbookEvents_decorators, { kind: "accessor", name: "_logbookEvents", static: false, private: false, access: { has: obj => "_logbookEvents" in obj, get: obj => obj._logbookEvents, set: (obj, value) => { obj._logbookEvents = value; } }, metadata: _metadata }, __logbookEvents_initializers, __logbookEvents_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+PlantOverviewDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -11756,198 +10858,165 @@ class GrowspaceLogbookController {
         }
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], PlantOverviewDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], PlantOverviewDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantOverviewDialog.prototype, "dialog", void 0);
+__decorate([
+    n$5({ type: Object })
+], PlantOverviewDialog.prototype, "plant", void 0);
+__decorate([
+    n$5({ type: Object })
+], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantOverviewDialog.prototype, "editedAttributes", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "isEditing", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "showAllDates", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_logbookEvents", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_canScrollRight", void 0);
+PlantOverviewDialog = __decorate([
+    t$2('plant-overview-dialog')
+], PlantOverviewDialog);
 
-(() => {
-    var _StrainLibraryDialog_open_accessor_storage, _StrainLibraryDialog_strains_accessor_storage, _StrainLibraryDialog__view_accessor_storage, _StrainLibraryDialog__searchQuery_accessor_storage, _StrainLibraryDialog__editorState_accessor_storage, _StrainLibraryDialog__isCropping_accessor_storage, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, _StrainLibraryDialog__importDialogOpen_accessor_storage, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, _StrainLibraryDialog__importReplace_accessor_storage, _StrainLibraryDialog__currentPage_accessor_storage;
-    let _classDecorators = [t$2('strain-library-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _strains_decorators;
-    let _strains_initializers = [];
-    let _strains_extraInitializers = [];
-    let __view_decorators;
-    let __view_initializers = [];
-    let __view_extraInitializers = [];
-    let __searchQuery_decorators;
-    let __searchQuery_initializers = [];
-    let __searchQuery_extraInitializers = [];
-    let __editorState_decorators;
-    let __editorState_initializers = [];
-    let __editorState_extraInitializers = [];
-    let __isCropping_decorators;
-    let __isCropping_initializers = [];
-    let __isCropping_extraInitializers = [];
-    let __isImageSelectorOpen_decorators;
-    let __isImageSelectorOpen_initializers = [];
-    let __isImageSelectorOpen_extraInitializers = [];
-    let __importDialogOpen_decorators;
-    let __importDialogOpen_initializers = [];
-    let __importDialogOpen_extraInitializers = [];
-    let __mobileMenuOpen_decorators;
-    let __mobileMenuOpen_initializers = [];
-    let __mobileMenuOpen_extraInitializers = [];
-    let __pendingDeleteKey_decorators;
-    let __pendingDeleteKey_initializers = [];
-    let __pendingDeleteKey_extraInitializers = [];
-    let __importReplace_decorators;
-    let __importReplace_initializers = [];
-    let __importReplace_extraInitializers = [];
-    let __currentPage_decorators;
-    let __currentPage_initializers = [];
-    let __currentPage_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _StrainLibraryDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _StrainLibraryDialog_strains_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _strains_initializers, [])));
-            _StrainLibraryDialog__view_accessor_storage.set(this, (__runInitializers(this, _strains_extraInitializers), __runInitializers(this, __view_initializers, 'browse')));
-            _StrainLibraryDialog__searchQuery_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __searchQuery_initializers, '')));
-            _StrainLibraryDialog__editorState_accessor_storage.set(this, (__runInitializers(this, __searchQuery_extraInitializers), __runInitializers(this, __editorState_initializers, {})));
-            _StrainLibraryDialog__isCropping_accessor_storage.set(this, (__runInitializers(this, __editorState_extraInitializers), __runInitializers(this, __isCropping_initializers, false)));
-            _StrainLibraryDialog__isImageSelectorOpen_accessor_storage.set(this, (__runInitializers(this, __isCropping_extraInitializers), __runInitializers(this, __isImageSelectorOpen_initializers, false)));
-            _StrainLibraryDialog__importDialogOpen_accessor_storage.set(this, (__runInitializers(this, __isImageSelectorOpen_extraInitializers), __runInitializers(this, __importDialogOpen_initializers, false)));
-            _StrainLibraryDialog__mobileMenuOpen_accessor_storage.set(this, (__runInitializers(this, __importDialogOpen_extraInitializers), __runInitializers(this, __mobileMenuOpen_initializers, false)));
-            _StrainLibraryDialog__pendingDeleteKey_accessor_storage.set(this, (__runInitializers(this, __mobileMenuOpen_extraInitializers), __runInitializers(this, __pendingDeleteKey_initializers, null)));
-            _StrainLibraryDialog__importReplace_accessor_storage.set(this, (__runInitializers(this, __pendingDeleteKey_extraInitializers), __runInitializers(this, __importReplace_initializers, false)));
-            _StrainLibraryDialog__currentPage_accessor_storage.set(this, (__runInitializers(this, __importReplace_extraInitializers), __runInitializers(this, __currentPage_initializers, 1)));
-            Object.defineProperty(this, "ITEMS_PER_PAGE", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, __currentPage_extraInitializers), 15)
-            });
-        }
-        get open() { return __classPrivateFieldGet(this, _StrainLibraryDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _StrainLibraryDialog_open_accessor_storage, value, "f"); }
-        get strains() { return __classPrivateFieldGet(this, _StrainLibraryDialog_strains_accessor_storage, "f"); }
-        set strains(value) { __classPrivateFieldSet(this, _StrainLibraryDialog_strains_accessor_storage, value, "f"); }
-        get _view() { return __classPrivateFieldGet(this, _StrainLibraryDialog__view_accessor_storage, "f"); }
-        set _view(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__view_accessor_storage, value, "f"); }
-        get _searchQuery() { return __classPrivateFieldGet(this, _StrainLibraryDialog__searchQuery_accessor_storage, "f"); }
-        set _searchQuery(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__searchQuery_accessor_storage, value, "f"); }
-        get _editorState() { return __classPrivateFieldGet(this, _StrainLibraryDialog__editorState_accessor_storage, "f"); }
-        set _editorState(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__editorState_accessor_storage, value, "f"); }
-        get _isCropping() { return __classPrivateFieldGet(this, _StrainLibraryDialog__isCropping_accessor_storage, "f"); }
-        set _isCropping(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__isCropping_accessor_storage, value, "f"); }
-        get _isImageSelectorOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, "f"); }
-        set _isImageSelectorOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__isImageSelectorOpen_accessor_storage, value, "f"); }
-        get _importDialogOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__importDialogOpen_accessor_storage, "f"); }
-        set _importDialogOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__importDialogOpen_accessor_storage, value, "f"); }
-        get _mobileMenuOpen() { return __classPrivateFieldGet(this, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, "f"); }
-        set _mobileMenuOpen(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__mobileMenuOpen_accessor_storage, value, "f"); }
-        get _pendingDeleteKey() { return __classPrivateFieldGet(this, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, "f"); }
-        set _pendingDeleteKey(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__pendingDeleteKey_accessor_storage, value, "f"); }
-        get _importReplace() { return __classPrivateFieldGet(this, _StrainLibraryDialog__importReplace_accessor_storage, "f"); }
-        set _importReplace(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__importReplace_accessor_storage, value, "f"); }
+let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.strains = [];
+        this._view = 'browse';
+        this._searchQuery = '';
+        this._editorState = {};
+        this._isCropping = false;
+        this._isImageSelectorOpen = false;
+        this._importDialogOpen = false;
+        this._mobileMenuOpen = false;
+        this._pendingDeleteKey = null;
+        this._importReplace = false;
         // Pagination State
-        get _currentPage() { return __classPrivateFieldGet(this, _StrainLibraryDialog__currentPage_accessor_storage, "f"); }
-        set _currentPage(value) { __classPrivateFieldSet(this, _StrainLibraryDialog__currentPage_accessor_storage, value, "f"); }
-        _startEdit(strain) {
-            if (strain) {
-                this._editorState = { ...strain };
-            }
-            else {
-                this._editorState = {
-                    strain: '',
-                    phenotype: '',
-                    breeder: '',
-                    type: 'Hybrid',
-                    flowering_days_min: 60,
-                    flowering_days_max: 70,
-                    lineage: '',
-                    sex: 'Feminized',
-                    description: '',
-                    image: '',
-                    sativa_percentage: 50,
-                    indica_percentage: 50,
-                };
-            }
-            this._view = 'editor';
+        this._currentPage = 1;
+        this.ITEMS_PER_PAGE = 15;
+    }
+    _startEdit(strain) {
+        if (strain) {
+            this._editorState = { ...strain };
         }
-        _handleSave() {
-            if (!this._editorState.strain)
-                return;
-            this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-            this._view = 'browse';
+        else {
+            this._editorState = {
+                strain: '',
+                phenotype: '',
+                breeder: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                lineage: '',
+                sex: 'Feminized',
+                description: '',
+                image: '',
+                sativa_percentage: 50,
+                indica_percentage: 50,
+            };
         }
-        _handleDelete(key) {
-            this._pendingDeleteKey = key;
-        }
-        _confirmDelete() {
-            if (this._pendingDeleteKey) {
-                this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
-                this._pendingDeleteKey = null;
-            }
-        }
-        _cancelDelete() {
+        this._view = 'editor';
+    }
+    _handleSave() {
+        if (!this._editorState.strain)
+            return;
+        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
+        this._view = 'browse';
+    }
+    _handleDelete(key) {
+        this._pendingDeleteKey = key;
+    }
+    _confirmDelete() {
+        if (this._pendingDeleteKey) {
+            this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } }));
             this._pendingDeleteKey = null;
         }
-        _handleEditorChange(field, value) {
-            this._editorState = { ...this._editorState, [field]: value };
+    }
+    _cancelDelete() {
+        this._pendingDeleteKey = null;
+    }
+    _handleEditorChange(field, value) {
+        this._editorState = { ...this._editorState, [field]: value };
+    }
+    _toggleCropMode(active) {
+        this._isCropping = active;
+    }
+    _toggleImageSelector(isOpen) {
+        this._isImageSelectorOpen = isOpen;
+    }
+    _handleSelectLibraryImage(imageUrl) {
+        this._editorState = { ...this._editorState, image: imageUrl };
+        // Find existing crop meta
+        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
+        if (existing && existing.image_crop_meta) {
+            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
         }
-        _toggleCropMode(active) {
-            this._isCropping = active;
+        else {
+            delete this._editorState.image_crop_meta;
         }
-        _toggleImageSelector(isOpen) {
-            this._isImageSelectorOpen = isOpen;
-        }
-        _handleSelectLibraryImage(imageUrl) {
-            this._editorState = { ...this._editorState, image: imageUrl };
-            // Find existing crop meta
-            const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
-            if (existing && existing.image_crop_meta) {
-                this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+        this._isImageSelectorOpen = false;
+    }
+    _handleImportFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                this.dispatchEvent(new CustomEvent('import-library', {
+                    detail: { file, replace: this._importReplace },
+                }));
+                this._importDialogOpen = false;
             }
-            else {
-                delete this._editorState.image_crop_meta;
-            }
-            this._isImageSelectorOpen = false;
-        }
-        _handleImportFile() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.zip';
-            input.onchange = (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                    this.dispatchEvent(new CustomEvent('import-library', {
-                        detail: { file, replace: this._importReplace },
-                    }));
-                    this._importDialogOpen = false;
-                }
-            };
-            input.click();
-        }
-        getCropStyle(image, meta) {
-            if (!meta)
-                return `background-image: url('${image}')`;
-            return `
+        };
+        input.click();
+    }
+    getCropStyle(image, meta) {
+        if (!meta)
+            return `background-image: url('${image}')`;
+        return `
       background-image: url('${image}');
       background-size: ${meta.scale * 100}%;
       background-position: ${meta.x}% ${meta.y}%;
     `;
-        }
-        getImgStyle(meta) {
-            if (!meta)
-                return 'width: 100%; height: 100%; object-fit: cover;';
-            return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
-        }
-        render() {
-            if (!this.open)
-                return E;
-            return x `
+    }
+    getImgStyle(meta) {
+        if (!meta)
+            return 'width: 100%; height: 100%; object-fit: cover;';
+        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
       <ha-dialog
         open
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
@@ -11965,22 +11034,26 @@ class GrowspaceLogbookController {
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
       </ha-dialog>
     `;
+    }
+    renderBrowseView() {
+        const query = (this._searchQuery || '').toLowerCase();
+        const terms = query.split(/\s+/).filter(t => t.length > 0);
+        const filteredStrains = this.strains.filter((s) => {
+            if (terms.length === 0)
+                return true;
+            const searchText = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
+            return terms.every(term => searchText.includes(term));
+        }).sort((a, b) => a.strain.localeCompare(b.strain));
+        // Pagination Logic
+        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
+        if (this._currentPage > totalPages && totalPages > 0) {
+            this._currentPage = totalPages;
         }
-        renderBrowseView() {
-            const query = this._searchQuery.toLowerCase();
-            const filteredStrains = this.strains.filter((s) => s.strain.toLowerCase().includes(query) ||
-                (s.breeder && s.breeder.toLowerCase().includes(query)) ||
-                (s.phenotype && s.phenotype.toLowerCase().includes(query))).sort((a, b) => a.strain.localeCompare(b.strain));
-            // Pagination Logic
-            const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-            if (this._currentPage > totalPages && totalPages > 0) {
-                this._currentPage = totalPages;
-            }
-            if (this._currentPage < 1)
-                this._currentPage = 1;
-            const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-            const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
-            return x `
+        if (this._currentPage < 1)
+            this._currentPage = 1;
+        const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
+        const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
+        return x `
       <div class="dialog-header">
         <div class="dialog-icon">
           <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
@@ -12028,9 +11101,9 @@ class GrowspaceLogbookController {
               placeholder="Search Strains by Name, Breeder..."
               .value=${this._searchQuery}
               @change=${(e) => {
-                this._searchQuery = e.detail;
-                this._currentPage = 1;
-            }}
+            this._searchQuery = e.detail;
+            this._currentPage = 1;
+        }}
             ></md3-text-input>
           </div>
         </div>
@@ -12040,8 +11113,8 @@ class GrowspaceLogbookController {
         </div>
 
         ${filteredStrains.length === 0
-                ? x `
-              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+            ? x `
+              <div class="empty-state" style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
                 <svg
                   style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
                   viewBox="0 0 24 24"
@@ -12051,9 +11124,9 @@ class GrowspaceLogbookController {
                 <p>No strains found matching "${query}"</p>
               </div>
             `
-                : E}
+            : E}
         ${totalPages > 1
-                ? x `
+            ? x `
               <div class="pagination-container">
                 <button
                   class="pagination-btn"
@@ -12076,44 +11149,44 @@ class GrowspaceLogbookController {
                 </button>
               </div>
             `
-                : E}
+            : E}
       </div>
 
       <!-- Mobile Menu Dropdown -->
       ${this._mobileMenuOpen
-                ? x `
+            ? x `
             <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
             <div class="mobile-menu">
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                    this.dispatchEvent(new CustomEvent('get-recommendation'));
-                    this._mobileMenuOpen = false;
-                }}
+                this.dispatchEvent(new CustomEvent('get-recommendation'));
+                this._mobileMenuOpen = false;
+            }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                    this._importDialogOpen = true;
-                    this._mobileMenuOpen = false;
-                }}
+                this._importDialogOpen = true;
+                this._mobileMenuOpen = false;
+            }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                    this.dispatchEvent(new CustomEvent('export-library'));
-                    this._mobileMenuOpen = false;
-                }}
+                this.dispatchEvent(new CustomEvent('export-library'));
+                this._mobileMenuOpen = false;
+            }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
               </div>
             </div>
           `
-                : E}
+            : E}
 
       <!-- Mobile FAB -->
       <button class="fab-btn" @click=${() => this._startEdit()}>
@@ -12155,28 +11228,28 @@ class GrowspaceLogbookController {
         </button>
       </div>
     `;
-        }
-        renderStrainCard(strain) {
-            let typeIcon = mdiLeaf;
-            const typeLabel = strain.type || 'Unknown';
-            const lowerType = (strain.type || '').toLowerCase();
-            if (lowerType.includes('indica'))
-                typeIcon = mdiWeatherNight;
-            else if (lowerType.includes('sativa'))
-                typeIcon = mdiWeatherSunny;
-            else if (lowerType.includes('hybrid'))
-                typeIcon = mdiTuneVariant;
-            return x `
+    }
+    renderStrainCard(strain) {
+        let typeIcon = mdiLeaf;
+        const typeLabel = strain.type || 'Unknown';
+        const lowerType = (strain.type || '').toLowerCase();
+        if (lowerType.includes('indica'))
+            typeIcon = mdiWeatherNight;
+        else if (lowerType.includes('sativa'))
+            typeIcon = mdiWeatherSunny;
+        else if (lowerType.includes('hybrid'))
+            typeIcon = mdiTuneVariant;
+        return x `
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
           ${strain.image
-                ? x `<img
+            ? x `<img
                 src="${strain.image}"
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${this.getImgStyle(strain.image_crop_meta)}"
               />`
-                : x `<svg
+            : x `<svg
                 style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
                 viewBox="0 0 24 24"
               >
@@ -12186,9 +11259,9 @@ class GrowspaceLogbookController {
             <button
               class="sc-action-btn"
               @click=${(e) => {
-                e.stopPropagation();
-                this._handleDelete(strain.key);
-            }}
+            e.stopPropagation();
+            this._handleDelete(strain.key);
+        }}
             >
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiDelete}"></path>
@@ -12208,34 +11281,34 @@ class GrowspaceLogbookController {
           </div>
           <div class="sc-meta">
             ${strain.flowering_days_min
-                ? x `<span
+            ? x `<span
                   >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
                   Days</span
                 >`
-                : E}
+            : E}
             ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
           </div>
         </div>
       </div>
     `;
-        }
-        renderEditorView() {
-            const s = this._editorState;
-            const isEdit = !!s.strain &&
-                this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
-            const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
-            const uniqueBreeders = [
-                ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
-            ].sort();
-            const handleFileChange = (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                    PlantUtils.compressImage(file)
-                        .then((base64) => this._handleEditorChange('image', base64))
-                        .catch((err) => console.error('Error compressing image:', err));
-                }
-            };
-            return x `
+    }
+    renderEditorView() {
+        const s = this._editorState;
+        const isEdit = !!s.strain &&
+            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
+        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [
+            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
+        ].sort();
+        const handleFileChange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        };
+        return x `
       <datalist id="strain-suggestions">
         ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
       </datalist>
@@ -12278,33 +11351,33 @@ class GrowspaceLogbookController {
             <div
               class="photo-upload-area"
               @click=${(e) => {
-                const target = e.target;
-                if (!target.closest('.crop-btn') &&
-                    !target.closest('.select-library-btn') &&
-                    !target.closest('.md3-button')) {
-                    e.currentTarget.querySelector('input')?.click();
-                }
-            }}
+            const target = e.target;
+            if (!target.closest('.crop-btn') &&
+                !target.closest('.select-library-btn') &&
+                !target.closest('.md3-button')) {
+                e.currentTarget.querySelector('input')?.click();
+            }
+        }}
               @dragover=${(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'copy';
-            }}
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }}
               @drop=${(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer?.files[0];
-                if (file) {
-                    PlantUtils.compressImage(file)
-                        .then((base64) => this._handleEditorChange('image', base64))
-                        .catch((err) => console.error('Error compressing image:', err));
-                }
-            }}
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        }}
             >
               <button
                 class="select-library-btn"
                 @click=${(e) => {
-                e.stopPropagation();
-                this._toggleImageSelector(true);
-            }}
+            e.stopPropagation();
+            this._toggleImageSelector(true);
+        }}
               >
                 <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiViewDashboard}"></path>
@@ -12313,12 +11386,12 @@ class GrowspaceLogbookController {
               </button>
 
               ${s.image
-                ? x `
+            ? x `
                     ${s.image_crop_meta
-                    ? x `<div
+                ? x `<div
                           style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
                         ></div>`
-                    : x `<img
+                : x `<img
                           src="${s.image}"
                           style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
                         />`}
@@ -12328,9 +11401,9 @@ class GrowspaceLogbookController {
                         class="crop-btn"
                         style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
                         @click=${(e) => {
-                    e.stopPropagation();
-                    this._toggleCropMode(true);
-                }}
+                e.stopPropagation();
+                this._toggleCropMode(true);
+            }}
                         title="Crop Image"
                       >
                         <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -12346,7 +11419,7 @@ class GrowspaceLogbookController {
                       </div>
                     </div>
                   `
-                : x `
+            : x `
                     <div style="display: flex; gap: 16px; align-items: center;">
                       <div
                         style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
@@ -12354,7 +11427,7 @@ class GrowspaceLogbookController {
                         <button
                           class="md3-button tonal"
                           @click=${(e) => e.currentTarget
-                    .nextElementSibling.click()}
+                .nextElementSibling.click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -12379,7 +11452,7 @@ class GrowspaceLogbookController {
                         <button
                           class="md3-button tonal"
                           @click=${(e) => e.currentTarget
-                    .nextElementSibling.click()}
+                .nextElementSibling.click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -12443,15 +11516,15 @@ class GrowspaceLogbookController {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-                let icon = mdiLeaf;
-                if (t === 'Indica')
-                    icon = mdiWeatherNight;
-                if (t === 'Sativa')
-                    icon = mdiWeatherSunny;
-                if (t === 'Hybrid')
-                    icon = mdiTuneVariant;
-                const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-                return x `
+            let icon = mdiLeaf;
+            if (t === 'Indica')
+                icon = mdiWeatherNight;
+            if (t === 'Sativa')
+                icon = mdiWeatherSunny;
+            if (t === 'Hybrid')
+                icon = mdiTuneVariant;
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return x `
                     <div
                       class="type-option ${isActive ? 'active' : ''}"
                       @click=${() => this._handleEditorChange('type', t)}
@@ -12462,12 +11535,12 @@ class GrowspaceLogbookController {
                       >
                     </div>
                   `;
-            })}
+        })}
               </div>
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid'
-                ? x `
+            ? x `
                   <div style="margin-bottom: 20px;">
                     <label
                       class="md3-label"
@@ -12491,14 +11564,14 @@ class GrowspaceLogbookController {
                             max="100"
                             .value=${s.indica_percentage || 0}
                             @input=${(e) => {
-                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                    if (val < 0)
-                        val = 0;
-                    if (val > 100)
-                        val = 100;
-                    this._handleEditorChange('indica_percentage', val);
-                    this._handleEditorChange('sativa_percentage', 100 - val);
-                }}
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('indica_percentage', val);
+                this._handleEditorChange('sativa_percentage', 100 - val);
+            }}
                           />
                           <span>%</span>
                         </div>
@@ -12514,14 +11587,14 @@ class GrowspaceLogbookController {
                             max="100"
                             .value=${s.sativa_percentage || 0}
                             @input=${(e) => {
-                    let val = Math.floor(parseFloat(e.target.value)) || 0;
-                    if (val < 0)
-                        val = 0;
-                    if (val > 100)
-                        val = 100;
-                    this._handleEditorChange('sativa_percentage', val);
-                    this._handleEditorChange('indica_percentage', 100 - val);
-                }}
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('sativa_percentage', val);
+                this._handleEditorChange('indica_percentage', 100 - val);
+            }}
                           />
                           <span>%</span>
                         </div>
@@ -12530,16 +11603,16 @@ class GrowspaceLogbookController {
                       <div
                         class="hg-bar-track"
                         @click=${(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    let percent = Math.round((x / rect.width) * 100);
-                    if (percent < 0)
-                        percent = 0;
-                    if (percent > 100)
-                        percent = 100;
-                    this._handleEditorChange('indica_percentage', percent);
-                    this._handleEditorChange('sativa_percentage', 100 - percent);
-                }}
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                let percent = Math.round((x / rect.width) * 100);
+                if (percent < 0)
+                    percent = 0;
+                if (percent > 100)
+                    percent = 100;
+                this._handleEditorChange('indica_percentage', percent);
+                this._handleEditorChange('sativa_percentage', 100 - percent);
+            }}
                       >
                         <div
                           class="hg-bar-indica"
@@ -12553,7 +11626,7 @@ class GrowspaceLogbookController {
                     </div>
                   </div>
                 `
-                : E}
+            : E}
 
             <div class="sd-form-group">
               <label class="sd-label">Flowering Time (Days)</label>
@@ -12619,7 +11692,7 @@ class GrowspaceLogbookController {
 
       <div class="sd-footer" style="justify-content: space-between;">
         ${s.key
-                ? x `
+            ? x `
               <button
                 class="md3-button text"
                 style="color: var(--error-color, #f44336);"
@@ -12631,7 +11704,7 @@ class GrowspaceLogbookController {
                 Delete
               </button>
             `
-                : x `<div></div>`}
+            : x `<div></div>`}
 
         <div style="display:flex; gap:12px;">
           <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
@@ -12644,38 +11717,38 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        renderCropOverlay() {
-            const s = this._editorState;
-            if (!s.image)
-                return E;
-            const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
-            const handleWheel = (e) => {
-                e.preventDefault();
-                const delta = e.deltaY * -1e-3;
-                const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-                this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+    }
+    renderCropOverlay() {
+        const s = this._editorState;
+        if (!s.image)
+            return E;
+        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+        const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -1e-3;
+            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+        };
+        const handleMouseDown = (e) => {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMetaX = meta.x;
+            const startMetaY = meta.y;
+            const onMouseMove = (ev) => {
+                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
             };
-            const handleMouseDown = (e) => {
-                const startX = e.clientX;
-                const startY = e.clientY;
-                const startMetaX = meta.x;
-                const startMetaY = meta.y;
-                const onMouseMove = (ev) => {
-                    const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-                    const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                    const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                    const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
-                    this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
-                };
-                const onMouseUp = () => {
-                    window.removeEventListener('mousemove', onMouseMove);
-                    window.removeEventListener('mouseup', onMouseUp);
-                };
-                window.addEventListener('mousemove', onMouseMove);
-                window.addEventListener('mouseup', onMouseUp);
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
             };
-            return x `
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        };
+        return x `
       <div class="crop-overlay">
         <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
         <div
@@ -12706,9 +11779,9 @@ class GrowspaceLogbookController {
             step="0.1"
             .value=${meta.scale.toString()}
             @input=${(e) => this._handleEditorChange('image_crop_meta', {
-                ...meta,
-                scale: parseFloat(e.target.value),
-            })}
+            ...meta,
+            scale: parseFloat(e.target.value),
+        })}
           />
 
           <div style="display:flex; gap:12px; margin-top:12px;">
@@ -12726,18 +11799,18 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        renderImageSelector() {
-            const imageMap = new Map();
-            this.strains.forEach((s) => {
-                if (s.image) {
-                    if (!imageMap.has(s.image)) {
-                        imageMap.set(s.image, []);
-                    }
-                    imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
+    }
+    renderImageSelector() {
+        const imageMap = new Map();
+        this.strains.forEach((s) => {
+            if (s.image) {
+                if (!imageMap.has(s.image)) {
+                    imageMap.set(s.image, []);
                 }
-            });
-            return x `
+                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
+            }
+        });
+        return x `
       <div class="crop-overlay">
         <div
           class="glass-dialog-container"
@@ -12771,8 +11844,8 @@ class GrowspaceLogbookController {
                       ${infoList.map((info, index) => x `
                           <div
                             style="${index < infoList.length - 1
-                ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-                : ''}"
+            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+            : ''}"
                           >
                             <div style="font-weight: 700;">Strain: ${info.strain}</div>
                             <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
@@ -12783,19 +11856,19 @@ class GrowspaceLogbookController {
                 `)}
             </div>
             ${imageMap.size === 0
-                ? x `<p
+            ? x `<p
                   style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
                 >
                   No images found in library.
                 </p>`
-                : E}
+            : E}
           </div>
         </div>
       </div>
     `;
-        }
-        renderImportDialog() {
-            return x `
+    }
+    renderImportDialog() {
+        return x `
       <div class="crop-overlay">
         <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
           <div class="dialog-header">
@@ -12872,9 +11945,9 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        renderDeleteConfirmation() {
-            return x `
+    }
+    renderDeleteConfirmation() {
+        return x `
       <div class="crop-overlay">
         <div
           class="glass-dialog-container"
@@ -12901,58 +11974,11 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-    };
-    _StrainLibraryDialog_open_accessor_storage = new WeakMap();
-    _StrainLibraryDialog_strains_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__view_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__searchQuery_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__editorState_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__isCropping_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__isImageSelectorOpen_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__importDialogOpen_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__mobileMenuOpen_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__pendingDeleteKey_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__importReplace_accessor_storage = new WeakMap();
-    _StrainLibraryDialog__currentPage_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "StrainLibraryDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _open_decorators = [n$5({ type: Boolean })];
-        _strains_decorators = [n$5({ type: Array })];
-        __view_decorators = [r$2()];
-        __searchQuery_decorators = [r$2()];
-        __editorState_decorators = [r$2()];
-        __isCropping_decorators = [r$2()];
-        __isImageSelectorOpen_decorators = [r$2()];
-        __importDialogOpen_decorators = [r$2()];
-        __mobileMenuOpen_decorators = [r$2()];
-        __pendingDeleteKey_decorators = [r$2()];
-        __importReplace_decorators = [r$2()];
-        __currentPage_decorators = [r$2()];
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _strains_decorators, { kind: "accessor", name: "strains", static: false, private: false, access: { has: obj => "strains" in obj, get: obj => obj.strains, set: (obj, value) => { obj.strains = value; } }, metadata: _metadata }, _strains_initializers, _strains_extraInitializers);
-        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
-        __esDecorate(_classThis, null, __searchQuery_decorators, { kind: "accessor", name: "_searchQuery", static: false, private: false, access: { has: obj => "_searchQuery" in obj, get: obj => obj._searchQuery, set: (obj, value) => { obj._searchQuery = value; } }, metadata: _metadata }, __searchQuery_initializers, __searchQuery_extraInitializers);
-        __esDecorate(_classThis, null, __editorState_decorators, { kind: "accessor", name: "_editorState", static: false, private: false, access: { has: obj => "_editorState" in obj, get: obj => obj._editorState, set: (obj, value) => { obj._editorState = value; } }, metadata: _metadata }, __editorState_initializers, __editorState_extraInitializers);
-        __esDecorate(_classThis, null, __isCropping_decorators, { kind: "accessor", name: "_isCropping", static: false, private: false, access: { has: obj => "_isCropping" in obj, get: obj => obj._isCropping, set: (obj, value) => { obj._isCropping = value; } }, metadata: _metadata }, __isCropping_initializers, __isCropping_extraInitializers);
-        __esDecorate(_classThis, null, __isImageSelectorOpen_decorators, { kind: "accessor", name: "_isImageSelectorOpen", static: false, private: false, access: { has: obj => "_isImageSelectorOpen" in obj, get: obj => obj._isImageSelectorOpen, set: (obj, value) => { obj._isImageSelectorOpen = value; } }, metadata: _metadata }, __isImageSelectorOpen_initializers, __isImageSelectorOpen_extraInitializers);
-        __esDecorate(_classThis, null, __importDialogOpen_decorators, { kind: "accessor", name: "_importDialogOpen", static: false, private: false, access: { has: obj => "_importDialogOpen" in obj, get: obj => obj._importDialogOpen, set: (obj, value) => { obj._importDialogOpen = value; } }, metadata: _metadata }, __importDialogOpen_initializers, __importDialogOpen_extraInitializers);
-        __esDecorate(_classThis, null, __mobileMenuOpen_decorators, { kind: "accessor", name: "_mobileMenuOpen", static: false, private: false, access: { has: obj => "_mobileMenuOpen" in obj, get: obj => obj._mobileMenuOpen, set: (obj, value) => { obj._mobileMenuOpen = value; } }, metadata: _metadata }, __mobileMenuOpen_initializers, __mobileMenuOpen_extraInitializers);
-        __esDecorate(_classThis, null, __pendingDeleteKey_decorators, { kind: "accessor", name: "_pendingDeleteKey", static: false, private: false, access: { has: obj => "_pendingDeleteKey" in obj, get: obj => obj._pendingDeleteKey, set: (obj, value) => { obj._pendingDeleteKey = value; } }, metadata: _metadata }, __pendingDeleteKey_initializers, __pendingDeleteKey_extraInitializers);
-        __esDecorate(_classThis, null, __importReplace_decorators, { kind: "accessor", name: "_importReplace", static: false, private: false, access: { has: obj => "_importReplace" in obj, get: obj => obj._importReplace, set: (obj, value) => { obj._importReplace = value; } }, metadata: _metadata }, __importReplace_initializers, __importReplace_extraInitializers);
-        __esDecorate(_classThis, null, __currentPage_decorators, { kind: "accessor", name: "_currentPage", static: false, private: false, access: { has: obj => "_currentPage" in obj, get: obj => obj._currentPage, set: (obj, value) => { obj._currentPage = value; } }, metadata: _metadata }, __currentPage_initializers, __currentPage_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+StrainLibraryDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         --accent-green: #4caf50;
         /* Using dialogStyles variables where possible */
@@ -13485,337 +12511,233 @@ class GrowspaceLogbookController {
         z-index: 25;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ type: Boolean })
+], StrainLibraryDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Array })
+], StrainLibraryDialog.prototype, "strains", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_view", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_searchQuery", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_editorState", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_isCropping", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_importReplace", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_currentPage", void 0);
+StrainLibraryDialog = __decorate([
+    t$2('strain-library-dialog')
+], StrainLibraryDialog);
 
-(() => {
-    var _ConfigDialog_open_accessor_storage, _ConfigDialog_hass_accessor_storage, _ConfigDialog_growspaceOptions_accessor_storage, _ConfigDialog_devices_accessor_storage, _ConfigDialog_initialTab_accessor_storage, _ConfigDialog_currentTab_accessor_storage, _ConfigDialog_environmentData_accessor_storage, _ConfigDialog_add_name_accessor_storage, _ConfigDialog_add_rows_accessor_storage, _ConfigDialog_add_plants_per_row_accessor_storage, _ConfigDialog_add_notification_service_accessor_storage, _ConfigDialog_edit_selectedId_accessor_storage, _ConfigDialog_edit_name_accessor_storage, _ConfigDialog_edit_rows_accessor_storage, _ConfigDialog_edit_plants_per_row_accessor_storage, _ConfigDialog_edit_notification_service_accessor_storage, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, _ConfigDialog_env_temp_sensor_accessor_storage, _ConfigDialog_env_humidity_sensor_accessor_storage, _ConfigDialog_env_vpd_sensor_accessor_storage, _ConfigDialog_env_co2_sensor_accessor_storage, _ConfigDialog_env_circulation_fan_accessor_storage, _ConfigDialog_env_stress_threshold_accessor_storage, _ConfigDialog_env_mold_threshold_accessor_storage, _ConfigDialog_env_light_sensor_accessor_storage, _ConfigDialog_env_exhaust_entity_accessor_storage, _ConfigDialog_env_humidifier_entity_accessor_storage, _ConfigDialog_env_dehumidifier_entity_accessor_storage, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, _ConfigDialog_env_control_dehumidifier_accessor_storage, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, _ConfigDialog__activeDehumidifierStage_accessor_storage, _ConfigDialog__showDeleteConfirm_accessor_storage;
-    let _classDecorators = [t$2('config-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    let _devices_decorators;
-    let _devices_initializers = [];
-    let _devices_extraInitializers = [];
-    let _initialTab_decorators;
-    let _initialTab_initializers = [];
-    let _initialTab_extraInitializers = [];
-    let _currentTab_decorators;
-    let _currentTab_initializers = [];
-    let _currentTab_extraInitializers = [];
-    let _environmentData_decorators;
-    let _environmentData_initializers = [];
-    let _environmentData_extraInitializers = [];
-    let _add_name_decorators;
-    let _add_name_initializers = [];
-    let _add_name_extraInitializers = [];
-    let _add_rows_decorators;
-    let _add_rows_initializers = [];
-    let _add_rows_extraInitializers = [];
-    let _add_plants_per_row_decorators;
-    let _add_plants_per_row_initializers = [];
-    let _add_plants_per_row_extraInitializers = [];
-    let _add_notification_service_decorators;
-    let _add_notification_service_initializers = [];
-    let _add_notification_service_extraInitializers = [];
-    let _edit_selectedId_decorators;
-    let _edit_selectedId_initializers = [];
-    let _edit_selectedId_extraInitializers = [];
-    let _edit_name_decorators;
-    let _edit_name_initializers = [];
-    let _edit_name_extraInitializers = [];
-    let _edit_rows_decorators;
-    let _edit_rows_initializers = [];
-    let _edit_rows_extraInitializers = [];
-    let _edit_plants_per_row_decorators;
-    let _edit_plants_per_row_initializers = [];
-    let _edit_plants_per_row_extraInitializers = [];
-    let _edit_notification_service_decorators;
-    let _edit_notification_service_initializers = [];
-    let _edit_notification_service_extraInitializers = [];
-    let _env_selectedGrowspaceId_decorators;
-    let _env_selectedGrowspaceId_initializers = [];
-    let _env_selectedGrowspaceId_extraInitializers = [];
-    let _env_temp_sensor_decorators;
-    let _env_temp_sensor_initializers = [];
-    let _env_temp_sensor_extraInitializers = [];
-    let _env_humidity_sensor_decorators;
-    let _env_humidity_sensor_initializers = [];
-    let _env_humidity_sensor_extraInitializers = [];
-    let _env_vpd_sensor_decorators;
-    let _env_vpd_sensor_initializers = [];
-    let _env_vpd_sensor_extraInitializers = [];
-    let _env_co2_sensor_decorators;
-    let _env_co2_sensor_initializers = [];
-    let _env_co2_sensor_extraInitializers = [];
-    let _env_circulation_fan_decorators;
-    let _env_circulation_fan_initializers = [];
-    let _env_circulation_fan_extraInitializers = [];
-    let _env_stress_threshold_decorators;
-    let _env_stress_threshold_initializers = [];
-    let _env_stress_threshold_extraInitializers = [];
-    let _env_mold_threshold_decorators;
-    let _env_mold_threshold_initializers = [];
-    let _env_mold_threshold_extraInitializers = [];
-    let _env_light_sensor_decorators;
-    let _env_light_sensor_initializers = [];
-    let _env_light_sensor_extraInitializers = [];
-    let _env_exhaust_entity_decorators;
-    let _env_exhaust_entity_initializers = [];
-    let _env_exhaust_entity_extraInitializers = [];
-    let _env_humidifier_entity_decorators;
-    let _env_humidifier_entity_initializers = [];
-    let _env_humidifier_entity_extraInitializers = [];
-    let _env_dehumidifier_entity_decorators;
-    let _env_dehumidifier_entity_initializers = [];
-    let _env_dehumidifier_entity_extraInitializers = [];
-    let _env_soil_moisture_sensor_decorators;
-    let _env_soil_moisture_sensor_initializers = [];
-    let _env_soil_moisture_sensor_extraInitializers = [];
-    let _env_control_dehumidifier_decorators;
-    let _env_control_dehumidifier_initializers = [];
-    let _env_control_dehumidifier_extraInitializers = [];
-    let _env_dehumidifier_thresholds_decorators;
-    let _env_dehumidifier_thresholds_initializers = [];
-    let _env_dehumidifier_thresholds_extraInitializers = [];
-    let __activeDehumidifierStage_decorators;
-    let __activeDehumidifierStage_initializers = [];
-    let __activeDehumidifierStage_extraInitializers = [];
-    let __showDeleteConfirm_decorators;
-    let __showDeleteConfirm_initializers = [];
-    let __showDeleteConfirm_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get open() { return __classPrivateFieldGet(this, _ConfigDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _ConfigDialog_open_accessor_storage, value, "f"); }
-        get hass() { return __classPrivateFieldGet(this, _ConfigDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _ConfigDialog_hass_accessor_storage, value, "f"); }
-        get growspaceOptions() { return __classPrivateFieldGet(this, _ConfigDialog_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _ConfigDialog_growspaceOptions_accessor_storage, value, "f"); }
-        get devices() { return __classPrivateFieldGet(this, _ConfigDialog_devices_accessor_storage, "f"); }
-        set devices(value) { __classPrivateFieldSet(this, _ConfigDialog_devices_accessor_storage, value, "f"); }
-        get initialTab() { return __classPrivateFieldGet(this, _ConfigDialog_initialTab_accessor_storage, "f"); }
-        set initialTab(value) { __classPrivateFieldSet(this, _ConfigDialog_initialTab_accessor_storage, value, "f"); }
-        get currentTab() { return __classPrivateFieldGet(this, _ConfigDialog_currentTab_accessor_storage, "f"); }
-        set currentTab(value) { __classPrivateFieldSet(this, _ConfigDialog_currentTab_accessor_storage, value, "f"); }
-        get environmentData() { return __classPrivateFieldGet(this, _ConfigDialog_environmentData_accessor_storage, "f"); }
-        set environmentData(value) { __classPrivateFieldSet(this, _ConfigDialog_environmentData_accessor_storage, value, "f"); }
+let ConfigDialog = class ConfigDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceOptions = {};
+        this.devices = [];
+        this.initialTab = ConfigTab.ENVIRONMENT;
+        this.currentTab = ConfigTab.ENVIRONMENT;
+        this._initialStateApplied = false;
         // Add Growspace Data
-        get add_name() { return __classPrivateFieldGet(this, _ConfigDialog_add_name_accessor_storage, "f"); }
-        set add_name(value) { __classPrivateFieldSet(this, _ConfigDialog_add_name_accessor_storage, value, "f"); }
-        get add_rows() { return __classPrivateFieldGet(this, _ConfigDialog_add_rows_accessor_storage, "f"); }
-        set add_rows(value) { __classPrivateFieldSet(this, _ConfigDialog_add_rows_accessor_storage, value, "f"); }
-        get add_plants_per_row() { return __classPrivateFieldGet(this, _ConfigDialog_add_plants_per_row_accessor_storage, "f"); }
-        set add_plants_per_row(value) { __classPrivateFieldSet(this, _ConfigDialog_add_plants_per_row_accessor_storage, value, "f"); }
-        get add_notification_service() { return __classPrivateFieldGet(this, _ConfigDialog_add_notification_service_accessor_storage, "f"); }
-        set add_notification_service(value) { __classPrivateFieldSet(this, _ConfigDialog_add_notification_service_accessor_storage, value, "f"); }
+        this.add_name = '';
+        this.add_rows = 4;
+        this.add_plants_per_row = 4;
+        this.add_notification_service = 'mobile_app_notify';
         // Edit Growspace Data
-        get edit_selectedId() { return __classPrivateFieldGet(this, _ConfigDialog_edit_selectedId_accessor_storage, "f"); }
-        set edit_selectedId(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_selectedId_accessor_storage, value, "f"); }
-        get edit_name() { return __classPrivateFieldGet(this, _ConfigDialog_edit_name_accessor_storage, "f"); }
-        set edit_name(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_name_accessor_storage, value, "f"); }
-        get edit_rows() { return __classPrivateFieldGet(this, _ConfigDialog_edit_rows_accessor_storage, "f"); }
-        set edit_rows(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_rows_accessor_storage, value, "f"); }
-        get edit_plants_per_row() { return __classPrivateFieldGet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, "f"); }
-        set edit_plants_per_row(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_plants_per_row_accessor_storage, value, "f"); }
-        get edit_notification_service() { return __classPrivateFieldGet(this, _ConfigDialog_edit_notification_service_accessor_storage, "f"); }
-        set edit_notification_service(value) { __classPrivateFieldSet(this, _ConfigDialog_edit_notification_service_accessor_storage, value, "f"); }
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
+        this.edit_notification_service = '';
         // Environment Data
-        get env_selectedGrowspaceId() { return __classPrivateFieldGet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, "f"); }
-        set env_selectedGrowspaceId(value) { __classPrivateFieldSet(this, _ConfigDialog_env_selectedGrowspaceId_accessor_storage, value, "f"); }
-        get env_temp_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_temp_sensor_accessor_storage, "f"); }
-        set env_temp_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_temp_sensor_accessor_storage, value, "f"); }
-        get env_humidity_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_humidity_sensor_accessor_storage, "f"); }
-        set env_humidity_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_humidity_sensor_accessor_storage, value, "f"); }
-        get env_vpd_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_vpd_sensor_accessor_storage, "f"); }
-        set env_vpd_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_vpd_sensor_accessor_storage, value, "f"); }
-        get env_co2_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_co2_sensor_accessor_storage, "f"); }
-        set env_co2_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_co2_sensor_accessor_storage, value, "f"); }
-        get env_circulation_fan() { return __classPrivateFieldGet(this, _ConfigDialog_env_circulation_fan_accessor_storage, "f"); }
-        set env_circulation_fan(value) { __classPrivateFieldSet(this, _ConfigDialog_env_circulation_fan_accessor_storage, value, "f"); }
-        get env_stress_threshold() { return __classPrivateFieldGet(this, _ConfigDialog_env_stress_threshold_accessor_storage, "f"); }
-        set env_stress_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_stress_threshold_accessor_storage, value, "f"); }
-        get env_mold_threshold() { return __classPrivateFieldGet(this, _ConfigDialog_env_mold_threshold_accessor_storage, "f"); }
-        set env_mold_threshold(value) { __classPrivateFieldSet(this, _ConfigDialog_env_mold_threshold_accessor_storage, value, "f"); }
-        get env_light_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_light_sensor_accessor_storage, "f"); }
-        set env_light_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_light_sensor_accessor_storage, value, "f"); }
-        get env_exhaust_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_exhaust_entity_accessor_storage, "f"); }
-        set env_exhaust_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_exhaust_entity_accessor_storage, value, "f"); }
-        get env_humidifier_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_humidifier_entity_accessor_storage, "f"); }
-        set env_humidifier_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_humidifier_entity_accessor_storage, value, "f"); }
-        get env_dehumidifier_entity() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_entity_accessor_storage, "f"); }
-        set env_dehumidifier_entity(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_entity_accessor_storage, value, "f"); }
-        get env_soil_moisture_sensor() { return __classPrivateFieldGet(this, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, "f"); }
-        set env_soil_moisture_sensor(value) { __classPrivateFieldSet(this, _ConfigDialog_env_soil_moisture_sensor_accessor_storage, value, "f"); }
-        get env_control_dehumidifier() { return __classPrivateFieldGet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, "f"); }
-        set env_control_dehumidifier(value) { __classPrivateFieldSet(this, _ConfigDialog_env_control_dehumidifier_accessor_storage, value, "f"); }
-        get env_dehumidifier_thresholds() { return __classPrivateFieldGet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, "f"); }
-        set env_dehumidifier_thresholds(value) { __classPrivateFieldSet(this, _ConfigDialog_env_dehumidifier_thresholds_accessor_storage, value, "f"); }
-        get _activeDehumidifierStage() { return __classPrivateFieldGet(this, _ConfigDialog__activeDehumidifierStage_accessor_storage, "f"); }
-        set _activeDehumidifierStage(value) { __classPrivateFieldSet(this, _ConfigDialog__activeDehumidifierStage_accessor_storage, value, "f"); }
-        willUpdate(changedProperties) {
-            if (changedProperties.has('environmentData') && this.environmentData) {
-                this.setInitialState(this.currentTab, this.environmentData);
-            }
+        this.env_selectedGrowspaceId = '';
+        this.env_temp_sensor = '';
+        this.env_humidity_sensor = '';
+        this.env_vpd_sensor = '';
+        this.env_co2_sensor = '';
+        this.env_circulation_fan = '';
+        this.env_stress_threshold = 0.8;
+        this.env_mold_threshold = 0.8;
+        this.env_light_sensor = '';
+        this.env_exhaust_entity = '';
+        this.env_humidifier_entity = '';
+        this.env_dehumidifier_entity = '';
+        this.env_soil_moisture_sensor = '';
+        this.env_control_dehumidifier = false;
+        this.env_dehumidifier_thresholds = {};
+        this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
+        this._showDeleteConfirm = false;
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('environmentData') && this.environmentData) {
+            this.setInitialState(this.currentTab, this.environmentData);
         }
-        updated(changedProperties) {
-            super.updated(changedProperties);
-            // Apply initial tab state only once when dialog opens
-            if (changedProperties.has('open')) {
-                if (this.open) {
-                    if (!this._initialStateApplied) {
-                        this._initialStateApplied = true;
-                    }
-                }
-                else if (!this.open) {
-                    // Reset flag when dialog closes so next open respects initialTab again
-                    this._initialStateApplied = false;
+    }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Apply initial tab state only once when dialog opens
+        if (changedProperties.has('open')) {
+            if (this.open) {
+                if (!this._initialStateApplied) {
+                    this._initialStateApplied = true;
                 }
             }
-        }
-        // Provide initial state setting from parent
-        setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
-            this.currentTab = currentTab;
-            if (environmentData) {
-                this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-                this.env_temp_sensor = environmentData.temp_sensor;
-                this.env_humidity_sensor = environmentData.humidity_sensor;
-                this.env_vpd_sensor = environmentData.vpd_sensor;
-                this.env_co2_sensor = environmentData.co2_sensor;
-                this.env_circulation_fan = environmentData.circulation_fan;
-                this.env_stress_threshold = environmentData.stress_threshold;
-                this.env_mold_threshold = environmentData.mold_threshold;
-                this.env_light_sensor = environmentData.light_sensor;
-                this.env_exhaust_entity = environmentData.exhaust_entity;
-                this.env_humidifier_entity = environmentData.humidifier_entity;
-                this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
-                this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
-                this.env_control_dehumidifier = environmentData.control_dehumidifier;
-                this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
-                // Also pre-select for Edit/Delete actions
-                if (environmentData.selectedGrowspaceId) {
-                    console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
-                    this._populateEditFields(environmentData.selectedGrowspaceId);
-                }
+            else if (!this.open) {
+                // Reset flag when dialog closes so next open respects initialTab again
+                this._initialStateApplied = false;
             }
         }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-        }
-        _switchTab(tab) {
-            this.currentTab = tab;
-        }
-        // --- Submission Handlers ---
-        _submitAddGrowspace() {
-            this.dispatchEvent(new CustomEvent('add-growspace-submit', {
-                detail: {
-                    name: this.add_name,
-                    rows: this.add_rows,
-                    plants_per_row: this.add_plants_per_row,
-                    notification_service: this.add_notification_service,
-                },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _submitEnvironment() {
-            this.dispatchEvent(new CustomEvent('configure-environment-submit', {
-                detail: {
-                    selectedGrowspaceId: this.env_selectedGrowspaceId,
-                    temp_sensor: this.env_temp_sensor,
-                    humidity_sensor: this.env_humidity_sensor,
-                    vpd_sensor: this.env_vpd_sensor,
-                    co2_sensor: this.env_co2_sensor,
-                    circulation_fan: this.env_circulation_fan,
-                    stress_threshold: this.env_stress_threshold,
-                    mold_threshold: this.env_mold_threshold,
-                    light_sensor: this.env_light_sensor,
-                    exhaust_entity: this.env_exhaust_entity,
-                    humidifier_entity: this.env_humidifier_entity,
-                    dehumidifier_entity: this.env_dehumidifier_entity,
-                    dehumidifier_thresholds: this.env_dehumidifier_thresholds,
-                    soil_moisture_sensor: this.env_soil_moisture_sensor,
-                    control_dehumidifier: this.env_control_dehumidifier,
-                },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        get _showDeleteConfirm() { return __classPrivateFieldGet(this, _ConfigDialog__showDeleteConfirm_accessor_storage, "f"); }
-        set _showDeleteConfirm(value) { __classPrivateFieldSet(this, _ConfigDialog__showDeleteConfirm_accessor_storage, value, "f"); }
-        _submitEditGrowspace() {
-            if (!this.edit_selectedId)
-                return;
-            this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
-                detail: {
-                    growspace_id: this.edit_selectedId,
-                    name: this.edit_name,
-                    rows: this.edit_rows,
-                    plants_per_row: this.edit_plants_per_row,
-                    notification_service: this.edit_notification_service,
-                },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _submitDeleteGrowspace() {
-            if (!this.edit_selectedId)
-                return;
-            this._showDeleteConfirm = true;
-        }
-        _confirmDeleteGrowspace() {
-            this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
-                detail: {
-                    growspace_id: this.edit_selectedId,
-                },
-                bubbles: true,
-                composed: true,
-            }));
-            // Reset selection after delete
-            this.edit_selectedId = '';
-            this.edit_name = '';
-            this.edit_rows = 0;
-            this.edit_plants_per_row = 0;
-            this.edit_notification_service = '';
-            this._showDeleteConfirm = false;
-        }
-        _cancelDeleteGrowspace() {
-            this._showDeleteConfirm = false;
-        }
-        _populateEditFields(growspaceId) {
-            this.edit_selectedId = growspaceId;
-            if (growspaceId && this.devices) {
-                const device = this.devices.find((d) => d.device_id === growspaceId);
-                if (device) {
-                    this.edit_name = device.name;
-                    this.edit_rows = device.rows || 4;
-                    this.edit_plants_per_row = device.plants_per_row || 4;
-                    this.edit_notification_service = device.notification_target || '';
-                }
+    }
+    // Provide initial state setting from parent
+    setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
+        this.currentTab = currentTab;
+        if (environmentData) {
+            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
+            this.env_temp_sensor = environmentData.temp_sensor;
+            this.env_humidity_sensor = environmentData.humidity_sensor;
+            this.env_vpd_sensor = environmentData.vpd_sensor;
+            this.env_co2_sensor = environmentData.co2_sensor;
+            this.env_circulation_fan = environmentData.circulation_fan;
+            this.env_stress_threshold = environmentData.stress_threshold;
+            this.env_mold_threshold = environmentData.mold_threshold;
+            this.env_light_sensor = environmentData.light_sensor;
+            this.env_exhaust_entity = environmentData.exhaust_entity;
+            this.env_humidifier_entity = environmentData.humidifier_entity;
+            this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
+            this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
+            this.env_control_dehumidifier = environmentData.control_dehumidifier;
+            this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
+            // Also pre-select for Edit/Delete actions
+            if (environmentData.selectedGrowspaceId) {
+                console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
+                this._populateEditFields(environmentData.selectedGrowspaceId);
             }
         }
-        _handleEditSelection(e) {
-            const growspaceId = e.target.value;
-            this._populateEditFields(growspaceId);
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _switchTab(tab) {
+        this.currentTab = tab;
+    }
+    // --- Submission Handlers ---
+    _submitAddGrowspace() {
+        this.dispatchEvent(new CustomEvent('add-growspace-submit', {
+            detail: {
+                name: this.add_name,
+                rows: this.add_rows,
+                plants_per_row: this.add_plants_per_row,
+                notification_service: this.add_notification_service,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitEnvironment() {
+        this.dispatchEvent(new CustomEvent('configure-environment-submit', {
+            detail: {
+                selectedGrowspaceId: this.env_selectedGrowspaceId,
+                temp_sensor: this.env_temp_sensor,
+                humidity_sensor: this.env_humidity_sensor,
+                vpd_sensor: this.env_vpd_sensor,
+                co2_sensor: this.env_co2_sensor,
+                circulation_fan: this.env_circulation_fan,
+                stress_threshold: this.env_stress_threshold,
+                mold_threshold: this.env_mold_threshold,
+                light_sensor: this.env_light_sensor,
+                exhaust_entity: this.env_exhaust_entity,
+                humidifier_entity: this.env_humidifier_entity,
+                dehumidifier_entity: this.env_dehumidifier_entity,
+                dehumidifier_thresholds: this.env_dehumidifier_thresholds,
+                soil_moisture_sensor: this.env_soil_moisture_sensor,
+                control_dehumidifier: this.env_control_dehumidifier,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitEditGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId,
+                name: this.edit_name,
+                rows: this.edit_rows,
+                plants_per_row: this.edit_plants_per_row,
+                notification_service: this.edit_notification_service,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitDeleteGrowspace() {
+        if (!this.edit_selectedId)
+            return;
+        this._showDeleteConfirm = true;
+    }
+    _confirmDeleteGrowspace() {
+        this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+            detail: {
+                growspace_id: this.edit_selectedId,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        // Reset selection after delete
+        this.edit_selectedId = '';
+        this.edit_name = '';
+        this.edit_rows = 0;
+        this.edit_plants_per_row = 0;
+        this.edit_notification_service = '';
+        this._showDeleteConfirm = false;
+    }
+    _cancelDeleteGrowspace() {
+        this._showDeleteConfirm = false;
+    }
+    _populateEditFields(growspaceId) {
+        this.edit_selectedId = growspaceId;
+        if (growspaceId && this.devices) {
+            const device = this.devices.find((d) => d.device_id === growspaceId);
+            if (device) {
+                this.edit_name = device.name;
+                this.edit_rows = device.rows || 4;
+                this.edit_plants_per_row = device.plants_per_row || 4;
+                this.edit_notification_service = device.notification_target || '';
+            }
         }
-        render() {
-            if (!this.open)
-                return x ``;
-            return x `
+    }
+    _handleEditSelection(e) {
+        const growspaceId = e.target.value;
+        this._populateEditFields(growspaceId);
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -13890,21 +12812,21 @@ class GrowspaceLogbookController {
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
             ${this.currentTab === ConfigTab.ADD_GROWSPACE
-                ? x `
+            ? x `
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
-                : E}
+            : E}
             ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
-                ? x `
+            ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
                   </button>
                 `
-                : E}
+            : E}
             ${this.currentTab === ConfigTab.EDIT_GROWSPACE && !this._showDeleteConfirm
-                ? x `
+            ? x `
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
@@ -13926,14 +12848,14 @@ class GrowspaceLogbookController {
                     Save Changes
                   </button>
                 `
-                : E}
+            : E}
           </div>
         </div>
       </ha-dialog>
     `;
-        }
-        renderAddGrowspaceTab() {
-            return x `
+    }
+    renderAddGrowspaceTab() {
+        return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>New Growspace Details</h3>
@@ -13979,39 +12901,39 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        // Add helper to filter entities
-        _getEntities(domains, deviceClass) {
-            if (!this.hass)
-                return [];
-            return Object.values(this.hass.states)
-                .filter((stateObj) => {
-                const domain = stateObj.entity_id.split('.')[0];
-                if (!domains.includes(domain))
-                    return false;
-                // If deviceClass is provided, match strictly. If null, match any (or no) device class.
-                if (deviceClass !== null) {
-                    return stateObj.attributes.device_class === deviceClass;
-                }
-                return true;
-            })
-                .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
-        }
-        _getMobileAppNotifyServices() {
-            if (!this.hass || !this.hass.services || !this.hass.services.notify)
-                return [];
-            return Object.keys(this.hass.services.notify)
-                .filter((service) => service.startsWith('mobile_app_'))
-                .map((service) => ({
-                label: service.replace('mobile_app_', ''),
-                value: service, // Service name within notify domain
-            }))
-                .sort((a, b) => a.label.localeCompare(b.label));
-        }
-        // Add helper to render selects
-        _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
-            const entities = this._getEntities(domains, deviceClass);
-            return x `
+    }
+    // Add helper to filter entities
+    _getEntities(domains, deviceClass) {
+        if (!this.hass)
+            return [];
+        return Object.values(this.hass.states)
+            .filter((stateObj) => {
+            const domain = stateObj.entity_id.split('.')[0];
+            if (!domains.includes(domain))
+                return false;
+            // If deviceClass is provided, match strictly. If null, match any (or no) device class.
+            if (deviceClass !== null) {
+                return stateObj.attributes.device_class === deviceClass;
+            }
+            return true;
+        })
+            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+    }
+    _getMobileAppNotifyServices() {
+        if (!this.hass || !this.hass.services || !this.hass.services.notify)
+            return [];
+        return Object.keys(this.hass.services.notify)
+            .filter((service) => service.startsWith('mobile_app_'))
+            .map((service) => ({
+            label: service.replace('mobile_app_', ''),
+            value: service, // Service name within notify domain
+        }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }
+    // Add helper to render selects
+    _renderEntitySelect(label, value, domains, deviceClass, changeHandler) {
+        const entities = this._getEntities(domains, deviceClass);
+        return x `
       <div class="md3-input-group">
         <label class="md3-label">${label}</label>
         <select class="md3-input" .value=${value} @change=${changeHandler}>
@@ -14022,10 +12944,10 @@ class GrowspaceLogbookController {
         </select>
       </div>
     `;
-        }
-        renderEditGrowspaceTab() {
-            if (this._showDeleteConfirm) {
-                return x `
+    }
+    renderEditGrowspaceTab() {
+        if (this._showDeleteConfirm) {
+            return x `
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
@@ -14041,8 +12963,8 @@ class GrowspaceLogbookController {
           </div>
         </div>
       `;
-            }
-            return x `
+        }
+        return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>Select Growspace to Edit</h3>
@@ -14060,7 +12982,7 @@ class GrowspaceLogbookController {
         </div>
 
         ${this.edit_selectedId
-                ? x `
+            ? x `
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
@@ -14098,16 +13020,16 @@ class GrowspaceLogbookController {
                 </div>
               </div>
             `
-                : x `
+            : x `
               <div style="text-align:center; padding: 20px; color: var(--secondary-text-color);">
                 Please select a growspace to edit.
               </div>
             `}
       </div>
     `;
-        }
-        renderEnvironmentTab() {
-            return x `
+    }
+    renderEnvironmentTab() {
+        return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <!-- Target Selection -->
         <div class="detail-card">
@@ -14199,60 +13121,60 @@ class GrowspaceLogbookController {
 
       </div>
     `;
+    }
+    _handleEnvGrowspaceChange(e) {
+        const target = e.target;
+        const growspaceId = target.value;
+        this.env_selectedGrowspaceId = growspaceId;
+        // Find the device in the passed devices array (from store state upstream)
+        const device = this.devices.find((d) => d.device_id === growspaceId);
+        if (device && device.environment_attributes) {
+            const attrs = device.environment_attributes;
+            this.env_temp_sensor = attrs.temperature_sensor || '';
+            this.env_humidity_sensor = attrs.humidity_sensor || '';
+            this.env_vpd_sensor = attrs.vpd_sensor || '';
+            this.env_co2_sensor = attrs.co2_sensor || '';
+            this.env_circulation_fan = attrs.circulation_fan_entity || '';
+            this.env_light_sensor = attrs.light_sensor || '';
+            this.env_exhaust_entity = attrs.exhaust_entity || '';
+            this.env_humidifier_entity = attrs.humidifier_entity || '';
+            this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
+            this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
+            this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
+            this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
+            // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
+            this.env_stress_threshold = 0.8;
+            this.env_mold_threshold = 0.8;
         }
-        _handleEnvGrowspaceChange(e) {
-            const target = e.target;
-            const growspaceId = target.value;
-            this.env_selectedGrowspaceId = growspaceId;
-            // Find the device in the passed devices array (from store state upstream)
-            const device = this.devices.find((d) => d.device_id === growspaceId);
-            if (device && device.environment_attributes) {
-                const attrs = device.environment_attributes;
-                this.env_temp_sensor = attrs.temperature_sensor || '';
-                this.env_humidity_sensor = attrs.humidity_sensor || '';
-                this.env_vpd_sensor = attrs.vpd_sensor || '';
-                this.env_co2_sensor = attrs.co2_sensor || '';
-                this.env_circulation_fan = attrs.circulation_fan_entity || '';
-                this.env_light_sensor = attrs.light_sensor || '';
-                this.env_exhaust_entity = attrs.exhaust_entity || '';
-                this.env_humidifier_entity = attrs.humidifier_entity || '';
-                this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
-                this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
-                this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
-                this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
-                // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
-                this.env_stress_threshold = 0.8;
-                this.env_mold_threshold = 0.8;
-            }
-            else {
-                // Reset if no device or no attributes
-                this.env_temp_sensor = '';
-                this.env_humidity_sensor = '';
-                this.env_vpd_sensor = '';
-                this.env_co2_sensor = '';
-                this.env_circulation_fan = '';
-                this.env_light_sensor = '';
-                this.env_exhaust_entity = '';
-                this.env_humidifier_entity = '';
-                this.env_dehumidifier_entity = '';
-                this.env_soil_moisture_sensor = '';
-                this.env_control_dehumidifier = false;
-                this.env_dehumidifier_thresholds = {};
-            }
+        else {
+            // Reset if no device or no attributes
+            this.env_temp_sensor = '';
+            this.env_humidity_sensor = '';
+            this.env_vpd_sensor = '';
+            this.env_co2_sensor = '';
+            this.env_circulation_fan = '';
+            this.env_light_sensor = '';
+            this.env_exhaust_entity = '';
+            this.env_humidifier_entity = '';
+            this.env_dehumidifier_entity = '';
+            this.env_soil_moisture_sensor = '';
+            this.env_control_dehumidifier = false;
+            this.env_dehumidifier_thresholds = {};
         }
-        renderDehumidifierTab() {
-            // Define structure for rendering
-            const stages = [
-                { id: DehumidifierStage.SEEDLING, label: 'Seedling' },
-                { id: DehumidifierStage.VEG, label: 'Vegetative' },
-                { id: DehumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
-                { id: DehumidifierStage.MID_FLOWER, label: 'Mid Flower' },
-                { id: DehumidifierStage.LATE_FLOWER, label: 'Late Flower' },
-                { id: DehumidifierStage.DRYING, label: 'Drying' },
-                { id: DehumidifierStage.CURING, label: 'Curing' }
-            ];
-            const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
-            return x `
+    }
+    renderDehumidifierTab() {
+        // Define structure for rendering
+        const stages = [
+            { id: DehumidifierStage.SEEDLING, label: 'Seedling' },
+            { id: DehumidifierStage.VEG, label: 'Vegetative' },
+            { id: DehumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
+            { id: DehumidifierStage.MID_FLOWER, label: 'Mid Flower' },
+            { id: DehumidifierStage.LATE_FLOWER, label: 'Late Flower' },
+            { id: DehumidifierStage.DRYING, label: 'Drying' },
+            { id: DehumidifierStage.CURING, label: 'Curing' }
+        ];
+        const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
+        return x `
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>Select Target</h3>
@@ -14348,179 +13270,26 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        _getThresholdValue(stage, cycle, point) {
-            return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
-        }
-        _updateThreshold(stage, cycle, point, value) {
-            if (isNaN(value))
-                return;
-            // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref 
-            const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
-            if (!newThresholds[stage])
-                newThresholds[stage] = {};
-            if (!newThresholds[stage][cycle])
-                newThresholds[stage][cycle] = { on: 0, off: 0 };
-            newThresholds[stage][cycle][point] = value;
-            this.env_dehumidifier_thresholds = newThresholds;
-        }
-        constructor() {
-            super(...arguments);
-            _ConfigDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _ConfigDialog_hass_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
-            _ConfigDialog_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _ConfigDialog_devices_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _devices_initializers, [])));
-            _ConfigDialog_initialTab_accessor_storage.set(this, (__runInitializers(this, _devices_extraInitializers), __runInitializers(this, _initialTab_initializers, ConfigTab.ENVIRONMENT)));
-            _ConfigDialog_currentTab_accessor_storage.set(this, (__runInitializers(this, _initialTab_extraInitializers), __runInitializers(this, _currentTab_initializers, ConfigTab.ENVIRONMENT)));
-            _ConfigDialog_environmentData_accessor_storage.set(this, (__runInitializers(this, _currentTab_extraInitializers), __runInitializers(this, _environmentData_initializers, void 0)));
-            Object.defineProperty(this, "_initialStateApplied", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, _environmentData_extraInitializers), false)
-            });
-            _ConfigDialog_add_name_accessor_storage.set(this, __runInitializers(this, _add_name_initializers, ''));
-            _ConfigDialog_add_rows_accessor_storage.set(this, (__runInitializers(this, _add_name_extraInitializers), __runInitializers(this, _add_rows_initializers, 4)));
-            _ConfigDialog_add_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _add_rows_extraInitializers), __runInitializers(this, _add_plants_per_row_initializers, 4)));
-            _ConfigDialog_add_notification_service_accessor_storage.set(this, (__runInitializers(this, _add_plants_per_row_extraInitializers), __runInitializers(this, _add_notification_service_initializers, 'mobile_app_notify')));
-            _ConfigDialog_edit_selectedId_accessor_storage.set(this, (__runInitializers(this, _add_notification_service_extraInitializers), __runInitializers(this, _edit_selectedId_initializers, '')));
-            _ConfigDialog_edit_name_accessor_storage.set(this, (__runInitializers(this, _edit_selectedId_extraInitializers), __runInitializers(this, _edit_name_initializers, '')));
-            _ConfigDialog_edit_rows_accessor_storage.set(this, (__runInitializers(this, _edit_name_extraInitializers), __runInitializers(this, _edit_rows_initializers, 0)));
-            _ConfigDialog_edit_plants_per_row_accessor_storage.set(this, (__runInitializers(this, _edit_rows_extraInitializers), __runInitializers(this, _edit_plants_per_row_initializers, 0)));
-            _ConfigDialog_edit_notification_service_accessor_storage.set(this, (__runInitializers(this, _edit_plants_per_row_extraInitializers), __runInitializers(this, _edit_notification_service_initializers, '')));
-            _ConfigDialog_env_selectedGrowspaceId_accessor_storage.set(this, (__runInitializers(this, _edit_notification_service_extraInitializers), __runInitializers(this, _env_selectedGrowspaceId_initializers, '')));
-            _ConfigDialog_env_temp_sensor_accessor_storage.set(this, (__runInitializers(this, _env_selectedGrowspaceId_extraInitializers), __runInitializers(this, _env_temp_sensor_initializers, '')));
-            _ConfigDialog_env_humidity_sensor_accessor_storage.set(this, (__runInitializers(this, _env_temp_sensor_extraInitializers), __runInitializers(this, _env_humidity_sensor_initializers, '')));
-            _ConfigDialog_env_vpd_sensor_accessor_storage.set(this, (__runInitializers(this, _env_humidity_sensor_extraInitializers), __runInitializers(this, _env_vpd_sensor_initializers, '')));
-            _ConfigDialog_env_co2_sensor_accessor_storage.set(this, (__runInitializers(this, _env_vpd_sensor_extraInitializers), __runInitializers(this, _env_co2_sensor_initializers, '')));
-            _ConfigDialog_env_circulation_fan_accessor_storage.set(this, (__runInitializers(this, _env_co2_sensor_extraInitializers), __runInitializers(this, _env_circulation_fan_initializers, '')));
-            _ConfigDialog_env_stress_threshold_accessor_storage.set(this, (__runInitializers(this, _env_circulation_fan_extraInitializers), __runInitializers(this, _env_stress_threshold_initializers, 0.8)));
-            _ConfigDialog_env_mold_threshold_accessor_storage.set(this, (__runInitializers(this, _env_stress_threshold_extraInitializers), __runInitializers(this, _env_mold_threshold_initializers, 0.8)));
-            _ConfigDialog_env_light_sensor_accessor_storage.set(this, (__runInitializers(this, _env_mold_threshold_extraInitializers), __runInitializers(this, _env_light_sensor_initializers, '')));
-            _ConfigDialog_env_exhaust_entity_accessor_storage.set(this, (__runInitializers(this, _env_light_sensor_extraInitializers), __runInitializers(this, _env_exhaust_entity_initializers, '')));
-            _ConfigDialog_env_humidifier_entity_accessor_storage.set(this, (__runInitializers(this, _env_exhaust_entity_extraInitializers), __runInitializers(this, _env_humidifier_entity_initializers, '')));
-            _ConfigDialog_env_dehumidifier_entity_accessor_storage.set(this, (__runInitializers(this, _env_humidifier_entity_extraInitializers), __runInitializers(this, _env_dehumidifier_entity_initializers, '')));
-            _ConfigDialog_env_soil_moisture_sensor_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_entity_extraInitializers), __runInitializers(this, _env_soil_moisture_sensor_initializers, '')));
-            _ConfigDialog_env_control_dehumidifier_accessor_storage.set(this, (__runInitializers(this, _env_soil_moisture_sensor_extraInitializers), __runInitializers(this, _env_control_dehumidifier_initializers, false)));
-            _ConfigDialog_env_dehumidifier_thresholds_accessor_storage.set(this, (__runInitializers(this, _env_control_dehumidifier_extraInitializers), __runInitializers(this, _env_dehumidifier_thresholds_initializers, {})));
-            _ConfigDialog__activeDehumidifierStage_accessor_storage.set(this, (__runInitializers(this, _env_dehumidifier_thresholds_extraInitializers), __runInitializers(this, __activeDehumidifierStage_initializers, DehumidifierStage.SEEDLING)));
-            _ConfigDialog__showDeleteConfirm_accessor_storage.set(this, (__runInitializers(this, __activeDehumidifierStage_extraInitializers), __runInitializers(this, __showDeleteConfirm_initializers, false)));
-            __runInitializers(this, __showDeleteConfirm_extraInitializers);
-        }
-    };
-    _ConfigDialog_open_accessor_storage = new WeakMap();
-    _ConfigDialog_hass_accessor_storage = new WeakMap();
-    _ConfigDialog_growspaceOptions_accessor_storage = new WeakMap();
-    _ConfigDialog_devices_accessor_storage = new WeakMap();
-    _ConfigDialog_initialTab_accessor_storage = new WeakMap();
-    _ConfigDialog_currentTab_accessor_storage = new WeakMap();
-    _ConfigDialog_environmentData_accessor_storage = new WeakMap();
-    _ConfigDialog_add_name_accessor_storage = new WeakMap();
-    _ConfigDialog_add_rows_accessor_storage = new WeakMap();
-    _ConfigDialog_add_plants_per_row_accessor_storage = new WeakMap();
-    _ConfigDialog_add_notification_service_accessor_storage = new WeakMap();
-    _ConfigDialog_edit_selectedId_accessor_storage = new WeakMap();
-    _ConfigDialog_edit_name_accessor_storage = new WeakMap();
-    _ConfigDialog_edit_rows_accessor_storage = new WeakMap();
-    _ConfigDialog_edit_plants_per_row_accessor_storage = new WeakMap();
-    _ConfigDialog_edit_notification_service_accessor_storage = new WeakMap();
-    _ConfigDialog_env_selectedGrowspaceId_accessor_storage = new WeakMap();
-    _ConfigDialog_env_temp_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_humidity_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_vpd_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_co2_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_circulation_fan_accessor_storage = new WeakMap();
-    _ConfigDialog_env_stress_threshold_accessor_storage = new WeakMap();
-    _ConfigDialog_env_mold_threshold_accessor_storage = new WeakMap();
-    _ConfigDialog_env_light_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_exhaust_entity_accessor_storage = new WeakMap();
-    _ConfigDialog_env_humidifier_entity_accessor_storage = new WeakMap();
-    _ConfigDialog_env_dehumidifier_entity_accessor_storage = new WeakMap();
-    _ConfigDialog_env_soil_moisture_sensor_accessor_storage = new WeakMap();
-    _ConfigDialog_env_control_dehumidifier_accessor_storage = new WeakMap();
-    _ConfigDialog_env_dehumidifier_thresholds_accessor_storage = new WeakMap();
-    _ConfigDialog__activeDehumidifierStage_accessor_storage = new WeakMap();
-    _ConfigDialog__showDeleteConfirm_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "ConfigDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _open_decorators = [n$5({ type: Boolean, reflect: true })];
-        _hass_decorators = [n$5({ attribute: false })];
-        _growspaceOptions_decorators = [n$5({ type: Object })];
-        _devices_decorators = [n$5({ attribute: false })];
-        _initialTab_decorators = [n$5({ type: String })];
-        _currentTab_decorators = [n$5({ type: String })];
-        _environmentData_decorators = [n$5({ attribute: false })];
-        _add_name_decorators = [r$2()];
-        _add_rows_decorators = [r$2()];
-        _add_plants_per_row_decorators = [r$2()];
-        _add_notification_service_decorators = [r$2()];
-        _edit_selectedId_decorators = [r$2()];
-        _edit_name_decorators = [r$2()];
-        _edit_rows_decorators = [r$2()];
-        _edit_plants_per_row_decorators = [r$2()];
-        _edit_notification_service_decorators = [r$2()];
-        _env_selectedGrowspaceId_decorators = [r$2()];
-        _env_temp_sensor_decorators = [r$2()];
-        _env_humidity_sensor_decorators = [r$2()];
-        _env_vpd_sensor_decorators = [r$2()];
-        _env_co2_sensor_decorators = [r$2()];
-        _env_circulation_fan_decorators = [r$2()];
-        _env_stress_threshold_decorators = [r$2()];
-        _env_mold_threshold_decorators = [r$2()];
-        _env_light_sensor_decorators = [r$2()];
-        _env_exhaust_entity_decorators = [r$2()];
-        _env_humidifier_entity_decorators = [r$2()];
-        _env_dehumidifier_entity_decorators = [r$2()];
-        _env_soil_moisture_sensor_decorators = [r$2()];
-        _env_control_dehumidifier_decorators = [r$2()];
-        _env_dehumidifier_thresholds_decorators = [r$2()];
-        __activeDehumidifierStage_decorators = [r$2()];
-        __showDeleteConfirm_decorators = [r$2()];
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(_classThis, null, _devices_decorators, { kind: "accessor", name: "devices", static: false, private: false, access: { has: obj => "devices" in obj, get: obj => obj.devices, set: (obj, value) => { obj.devices = value; } }, metadata: _metadata }, _devices_initializers, _devices_extraInitializers);
-        __esDecorate(_classThis, null, _initialTab_decorators, { kind: "accessor", name: "initialTab", static: false, private: false, access: { has: obj => "initialTab" in obj, get: obj => obj.initialTab, set: (obj, value) => { obj.initialTab = value; } }, metadata: _metadata }, _initialTab_initializers, _initialTab_extraInitializers);
-        __esDecorate(_classThis, null, _currentTab_decorators, { kind: "accessor", name: "currentTab", static: false, private: false, access: { has: obj => "currentTab" in obj, get: obj => obj.currentTab, set: (obj, value) => { obj.currentTab = value; } }, metadata: _metadata }, _currentTab_initializers, _currentTab_extraInitializers);
-        __esDecorate(_classThis, null, _environmentData_decorators, { kind: "accessor", name: "environmentData", static: false, private: false, access: { has: obj => "environmentData" in obj, get: obj => obj.environmentData, set: (obj, value) => { obj.environmentData = value; } }, metadata: _metadata }, _environmentData_initializers, _environmentData_extraInitializers);
-        __esDecorate(_classThis, null, _add_name_decorators, { kind: "accessor", name: "add_name", static: false, private: false, access: { has: obj => "add_name" in obj, get: obj => obj.add_name, set: (obj, value) => { obj.add_name = value; } }, metadata: _metadata }, _add_name_initializers, _add_name_extraInitializers);
-        __esDecorate(_classThis, null, _add_rows_decorators, { kind: "accessor", name: "add_rows", static: false, private: false, access: { has: obj => "add_rows" in obj, get: obj => obj.add_rows, set: (obj, value) => { obj.add_rows = value; } }, metadata: _metadata }, _add_rows_initializers, _add_rows_extraInitializers);
-        __esDecorate(_classThis, null, _add_plants_per_row_decorators, { kind: "accessor", name: "add_plants_per_row", static: false, private: false, access: { has: obj => "add_plants_per_row" in obj, get: obj => obj.add_plants_per_row, set: (obj, value) => { obj.add_plants_per_row = value; } }, metadata: _metadata }, _add_plants_per_row_initializers, _add_plants_per_row_extraInitializers);
-        __esDecorate(_classThis, null, _add_notification_service_decorators, { kind: "accessor", name: "add_notification_service", static: false, private: false, access: { has: obj => "add_notification_service" in obj, get: obj => obj.add_notification_service, set: (obj, value) => { obj.add_notification_service = value; } }, metadata: _metadata }, _add_notification_service_initializers, _add_notification_service_extraInitializers);
-        __esDecorate(_classThis, null, _edit_selectedId_decorators, { kind: "accessor", name: "edit_selectedId", static: false, private: false, access: { has: obj => "edit_selectedId" in obj, get: obj => obj.edit_selectedId, set: (obj, value) => { obj.edit_selectedId = value; } }, metadata: _metadata }, _edit_selectedId_initializers, _edit_selectedId_extraInitializers);
-        __esDecorate(_classThis, null, _edit_name_decorators, { kind: "accessor", name: "edit_name", static: false, private: false, access: { has: obj => "edit_name" in obj, get: obj => obj.edit_name, set: (obj, value) => { obj.edit_name = value; } }, metadata: _metadata }, _edit_name_initializers, _edit_name_extraInitializers);
-        __esDecorate(_classThis, null, _edit_rows_decorators, { kind: "accessor", name: "edit_rows", static: false, private: false, access: { has: obj => "edit_rows" in obj, get: obj => obj.edit_rows, set: (obj, value) => { obj.edit_rows = value; } }, metadata: _metadata }, _edit_rows_initializers, _edit_rows_extraInitializers);
-        __esDecorate(_classThis, null, _edit_plants_per_row_decorators, { kind: "accessor", name: "edit_plants_per_row", static: false, private: false, access: { has: obj => "edit_plants_per_row" in obj, get: obj => obj.edit_plants_per_row, set: (obj, value) => { obj.edit_plants_per_row = value; } }, metadata: _metadata }, _edit_plants_per_row_initializers, _edit_plants_per_row_extraInitializers);
-        __esDecorate(_classThis, null, _edit_notification_service_decorators, { kind: "accessor", name: "edit_notification_service", static: false, private: false, access: { has: obj => "edit_notification_service" in obj, get: obj => obj.edit_notification_service, set: (obj, value) => { obj.edit_notification_service = value; } }, metadata: _metadata }, _edit_notification_service_initializers, _edit_notification_service_extraInitializers);
-        __esDecorate(_classThis, null, _env_selectedGrowspaceId_decorators, { kind: "accessor", name: "env_selectedGrowspaceId", static: false, private: false, access: { has: obj => "env_selectedGrowspaceId" in obj, get: obj => obj.env_selectedGrowspaceId, set: (obj, value) => { obj.env_selectedGrowspaceId = value; } }, metadata: _metadata }, _env_selectedGrowspaceId_initializers, _env_selectedGrowspaceId_extraInitializers);
-        __esDecorate(_classThis, null, _env_temp_sensor_decorators, { kind: "accessor", name: "env_temp_sensor", static: false, private: false, access: { has: obj => "env_temp_sensor" in obj, get: obj => obj.env_temp_sensor, set: (obj, value) => { obj.env_temp_sensor = value; } }, metadata: _metadata }, _env_temp_sensor_initializers, _env_temp_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_humidity_sensor_decorators, { kind: "accessor", name: "env_humidity_sensor", static: false, private: false, access: { has: obj => "env_humidity_sensor" in obj, get: obj => obj.env_humidity_sensor, set: (obj, value) => { obj.env_humidity_sensor = value; } }, metadata: _metadata }, _env_humidity_sensor_initializers, _env_humidity_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_vpd_sensor_decorators, { kind: "accessor", name: "env_vpd_sensor", static: false, private: false, access: { has: obj => "env_vpd_sensor" in obj, get: obj => obj.env_vpd_sensor, set: (obj, value) => { obj.env_vpd_sensor = value; } }, metadata: _metadata }, _env_vpd_sensor_initializers, _env_vpd_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_co2_sensor_decorators, { kind: "accessor", name: "env_co2_sensor", static: false, private: false, access: { has: obj => "env_co2_sensor" in obj, get: obj => obj.env_co2_sensor, set: (obj, value) => { obj.env_co2_sensor = value; } }, metadata: _metadata }, _env_co2_sensor_initializers, _env_co2_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_circulation_fan_decorators, { kind: "accessor", name: "env_circulation_fan", static: false, private: false, access: { has: obj => "env_circulation_fan" in obj, get: obj => obj.env_circulation_fan, set: (obj, value) => { obj.env_circulation_fan = value; } }, metadata: _metadata }, _env_circulation_fan_initializers, _env_circulation_fan_extraInitializers);
-        __esDecorate(_classThis, null, _env_stress_threshold_decorators, { kind: "accessor", name: "env_stress_threshold", static: false, private: false, access: { has: obj => "env_stress_threshold" in obj, get: obj => obj.env_stress_threshold, set: (obj, value) => { obj.env_stress_threshold = value; } }, metadata: _metadata }, _env_stress_threshold_initializers, _env_stress_threshold_extraInitializers);
-        __esDecorate(_classThis, null, _env_mold_threshold_decorators, { kind: "accessor", name: "env_mold_threshold", static: false, private: false, access: { has: obj => "env_mold_threshold" in obj, get: obj => obj.env_mold_threshold, set: (obj, value) => { obj.env_mold_threshold = value; } }, metadata: _metadata }, _env_mold_threshold_initializers, _env_mold_threshold_extraInitializers);
-        __esDecorate(_classThis, null, _env_light_sensor_decorators, { kind: "accessor", name: "env_light_sensor", static: false, private: false, access: { has: obj => "env_light_sensor" in obj, get: obj => obj.env_light_sensor, set: (obj, value) => { obj.env_light_sensor = value; } }, metadata: _metadata }, _env_light_sensor_initializers, _env_light_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_exhaust_entity_decorators, { kind: "accessor", name: "env_exhaust_entity", static: false, private: false, access: { has: obj => "env_exhaust_entity" in obj, get: obj => obj.env_exhaust_entity, set: (obj, value) => { obj.env_exhaust_entity = value; } }, metadata: _metadata }, _env_exhaust_entity_initializers, _env_exhaust_entity_extraInitializers);
-        __esDecorate(_classThis, null, _env_humidifier_entity_decorators, { kind: "accessor", name: "env_humidifier_entity", static: false, private: false, access: { has: obj => "env_humidifier_entity" in obj, get: obj => obj.env_humidifier_entity, set: (obj, value) => { obj.env_humidifier_entity = value; } }, metadata: _metadata }, _env_humidifier_entity_initializers, _env_humidifier_entity_extraInitializers);
-        __esDecorate(_classThis, null, _env_dehumidifier_entity_decorators, { kind: "accessor", name: "env_dehumidifier_entity", static: false, private: false, access: { has: obj => "env_dehumidifier_entity" in obj, get: obj => obj.env_dehumidifier_entity, set: (obj, value) => { obj.env_dehumidifier_entity = value; } }, metadata: _metadata }, _env_dehumidifier_entity_initializers, _env_dehumidifier_entity_extraInitializers);
-        __esDecorate(_classThis, null, _env_soil_moisture_sensor_decorators, { kind: "accessor", name: "env_soil_moisture_sensor", static: false, private: false, access: { has: obj => "env_soil_moisture_sensor" in obj, get: obj => obj.env_soil_moisture_sensor, set: (obj, value) => { obj.env_soil_moisture_sensor = value; } }, metadata: _metadata }, _env_soil_moisture_sensor_initializers, _env_soil_moisture_sensor_extraInitializers);
-        __esDecorate(_classThis, null, _env_control_dehumidifier_decorators, { kind: "accessor", name: "env_control_dehumidifier", static: false, private: false, access: { has: obj => "env_control_dehumidifier" in obj, get: obj => obj.env_control_dehumidifier, set: (obj, value) => { obj.env_control_dehumidifier = value; } }, metadata: _metadata }, _env_control_dehumidifier_initializers, _env_control_dehumidifier_extraInitializers);
-        __esDecorate(_classThis, null, _env_dehumidifier_thresholds_decorators, { kind: "accessor", name: "env_dehumidifier_thresholds", static: false, private: false, access: { has: obj => "env_dehumidifier_thresholds" in obj, get: obj => obj.env_dehumidifier_thresholds, set: (obj, value) => { obj.env_dehumidifier_thresholds = value; } }, metadata: _metadata }, _env_dehumidifier_thresholds_initializers, _env_dehumidifier_thresholds_extraInitializers);
-        __esDecorate(_classThis, null, __activeDehumidifierStage_decorators, { kind: "accessor", name: "_activeDehumidifierStage", static: false, private: false, access: { has: obj => "_activeDehumidifierStage" in obj, get: obj => obj._activeDehumidifierStage, set: (obj, value) => { obj._activeDehumidifierStage = value; } }, metadata: _metadata }, __activeDehumidifierStage_initializers, __activeDehumidifierStage_extraInitializers);
-        __esDecorate(_classThis, null, __showDeleteConfirm_decorators, { kind: "accessor", name: "_showDeleteConfirm", static: false, private: false, access: { has: obj => "_showDeleteConfirm" in obj, get: obj => obj._showDeleteConfirm, set: (obj, value) => { obj._showDeleteConfirm = value; } }, metadata: _metadata }, __showDeleteConfirm_initializers, __showDeleteConfirm_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+    _getThresholdValue(stage, cycle, point) {
+        return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
+    }
+    _updateThreshold(stage, cycle, point, value) {
+        if (isNaN(value))
+            return;
+        // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref 
+        const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
+        if (!newThresholds[stage])
+            newThresholds[stage] = {};
+        if (!newThresholds[stage][cycle])
+            newThresholds[stage][cycle] = { on: 0, off: 0 };
+        newThresholds[stage][cycle][point] = value;
+        this.env_dehumidifier_thresholds = newThresholds;
+    }
+};
+ConfigDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -14594,76 +13363,143 @@ class GrowspaceLogbookController {
         }
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], ConfigDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ConfigDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Object })
+], ConfigDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ConfigDialog.prototype, "devices", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfigDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfigDialog.prototype, "currentTab", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ConfigDialog.prototype, "environmentData", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "add_name", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "add_rows", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "add_plants_per_row", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "add_notification_service", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "edit_selectedId", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "edit_name", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "edit_rows", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "edit_plants_per_row", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "edit_notification_service", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_temp_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_humidity_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_vpd_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_co2_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_circulation_fan", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_stress_threshold", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_mold_threshold", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_light_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_exhaust_entity", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_humidifier_entity", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_dehumidifier_entity", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_soil_moisture_sensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_control_dehumidifier", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "env_dehumidifier_thresholds", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
+ConfigDialog = __decorate([
+    t$2('config-dialog')
+], ConfigDialog);
 
-(() => {
-    var _GrowMasterDialog_open_accessor_storage, _GrowMasterDialog_isStressed_accessor_storage, _GrowMasterDialog_personality_accessor_storage, _GrowMasterDialog_isLoading_accessor_storage, _GrowMasterDialog_response_accessor_storage, _GrowMasterDialog_userQuery_accessor_storage;
-    let _classDecorators = [t$2('grow-master-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _isStressed_decorators;
-    let _isStressed_initializers = [];
-    let _isStressed_extraInitializers = [];
-    let _personality_decorators;
-    let _personality_initializers = [];
-    let _personality_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
-    let _response_decorators;
-    let _response_initializers = [];
-    let _response_extraInitializers = [];
-    let _userQuery_decorators;
-    let _userQuery_initializers = [];
-    let _userQuery_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get open() { return __classPrivateFieldGet(this, _GrowMasterDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _GrowMasterDialog_open_accessor_storage, value, "f"); }
+let GrowMasterDialog = class GrowMasterDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
         // Props from parent
-        get isStressed() { return __classPrivateFieldGet(this, _GrowMasterDialog_isStressed_accessor_storage, "f"); }
-        set isStressed(value) { __classPrivateFieldSet(this, _GrowMasterDialog_isStressed_accessor_storage, value, "f"); }
-        get personality() { return __classPrivateFieldGet(this, _GrowMasterDialog_personality_accessor_storage, "f"); }
-        set personality(value) { __classPrivateFieldSet(this, _GrowMasterDialog_personality_accessor_storage, value, "f"); }
-        get isLoading() { return __classPrivateFieldGet(this, _GrowMasterDialog_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _GrowMasterDialog_isLoading_accessor_storage, value, "f"); }
-        get response() { return __classPrivateFieldGet(this, _GrowMasterDialog_response_accessor_storage, "f"); }
-        set response(value) { __classPrivateFieldSet(this, _GrowMasterDialog_response_accessor_storage, value, "f"); }
-        get userQuery() { return __classPrivateFieldGet(this, _GrowMasterDialog_userQuery_accessor_storage, "f"); }
-        set userQuery(value) { __classPrivateFieldSet(this, _GrowMasterDialog_userQuery_accessor_storage, value, "f"); }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-        }
-        _analyze() {
-            this.dispatchEvent(new CustomEvent('analyze-growspace', {
-                detail: { query: this.userQuery },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _analyzeAll() {
-            this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
-                detail: { query: this.userQuery },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            if (!this.open)
-                return x ``;
-            const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
-            const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
-            return x `
+        this.isStressed = false;
+        this.isLoading = false;
+        this.response = null;
+        this.userQuery = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _analyze() {
+        this.dispatchEvent(new CustomEvent('analyze-growspace', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _analyzeAll() {
+        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+        const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -14729,7 +13565,7 @@ class GrowspaceLogbookController {
 
             <!-- Response Area -->
             ${this.isLoading
-                ? x `
+            ? x `
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -14737,62 +13573,23 @@ class GrowspaceLogbookController {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-                : E}
+            : E}
             ${!this.isLoading && this.response
-                ? x `
+            ? x `
                   <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
                   </div>
                 `
-                : E}
+            : E}
           </div>
         </div>
       </ha-dialog>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _GrowMasterDialog_open_accessor_storage.set(this, __runInitializers(this, _open_initializers, false));
-            _GrowMasterDialog_isStressed_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _isStressed_initializers, false)));
-            _GrowMasterDialog_personality_accessor_storage.set(this, (__runInitializers(this, _isStressed_extraInitializers), __runInitializers(this, _personality_initializers, void 0)));
-            _GrowMasterDialog_isLoading_accessor_storage.set(this, (__runInitializers(this, _personality_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            _GrowMasterDialog_response_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _response_initializers, null)));
-            _GrowMasterDialog_userQuery_accessor_storage.set(this, (__runInitializers(this, _response_extraInitializers), __runInitializers(this, _userQuery_initializers, '')));
-            __runInitializers(this, _userQuery_extraInitializers);
-        }
-    };
-    _GrowMasterDialog_open_accessor_storage = new WeakMap();
-    _GrowMasterDialog_isStressed_accessor_storage = new WeakMap();
-    _GrowMasterDialog_personality_accessor_storage = new WeakMap();
-    _GrowMasterDialog_isLoading_accessor_storage = new WeakMap();
-    _GrowMasterDialog_response_accessor_storage = new WeakMap();
-    _GrowMasterDialog_userQuery_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowMasterDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _open_decorators = [n$5({ type: Boolean, reflect: true })];
-        _isStressed_decorators = [n$5({ type: Boolean })];
-        _personality_decorators = [n$5({ type: String })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
-        _response_decorators = [n$5({ type: String })];
-        _userQuery_decorators = [r$2()];
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _isStressed_decorators, { kind: "accessor", name: "isStressed", static: false, private: false, access: { has: obj => "isStressed" in obj, get: obj => obj.isStressed, set: (obj, value) => { obj.isStressed = value; } }, metadata: _metadata }, _isStressed_initializers, _isStressed_extraInitializers);
-        __esDecorate(_classThis, null, _personality_decorators, { kind: "accessor", name: "personality", static: false, private: false, access: { has: obj => "personality" in obj, get: obj => obj.personality, set: (obj, value) => { obj.personality = value; } }, metadata: _metadata }, _personality_initializers, _personality_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
-        __esDecorate(_classThis, null, _response_decorators, { kind: "accessor", name: "response", static: false, private: false, access: { has: obj => "response" in obj, get: obj => obj.response, set: (obj, value) => { obj.response = value; } }, metadata: _metadata }, _response_initializers, _response_extraInitializers);
-        __esDecorate(_classThis, null, _userQuery_decorators, { kind: "accessor", name: "userQuery", static: false, private: false, access: { has: obj => "userQuery" in obj, get: obj => obj.userQuery, set: (obj, value) => { obj.userQuery = value; } }, metadata: _metadata }, _userQuery_initializers, _userQuery_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+GrowMasterDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -14852,61 +13649,51 @@ class GrowspaceLogbookController {
         flex-direction: column;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], GrowMasterDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowMasterDialog.prototype, "isStressed", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowMasterDialog.prototype, "personality", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowMasterDialog.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowMasterDialog.prototype, "response", void 0);
+__decorate([
+    r$2()
+], GrowMasterDialog.prototype, "userQuery", void 0);
+GrowMasterDialog = __decorate([
+    t$2('grow-master-dialog')
+], GrowMasterDialog);
 
-(() => {
-    var _StrainRecommendationDialog_hass_accessor_storage, _StrainRecommendationDialog_open_accessor_storage, _StrainRecommendationDialog_isLoading_accessor_storage, _StrainRecommendationDialog_response_accessor_storage, _StrainRecommendationDialog_userQuery_accessor_storage;
-    let _classDecorators = [t$2('strain-recommendation-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
-    let _response_decorators;
-    let _response_initializers = [];
-    let _response_extraInitializers = [];
-    let _userQuery_decorators;
-    let _userQuery_initializers = [];
-    let _userQuery_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_hass_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_open_accessor_storage, value, "f"); }
-        get isLoading() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_isLoading_accessor_storage, value, "f"); }
-        get response() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_response_accessor_storage, "f"); }
-        set response(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_response_accessor_storage, value, "f"); }
-        get userQuery() { return __classPrivateFieldGet(this, _StrainRecommendationDialog_userQuery_accessor_storage, "f"); }
-        set userQuery(value) { __classPrivateFieldSet(this, _StrainRecommendationDialog_userQuery_accessor_storage, value, "f"); }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-        }
-        _handleGetRecommendation() {
-            this.dispatchEvent(new CustomEvent('get-recommendation', {
-                detail: { query: this.userQuery },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            if (!this.open)
-                return E;
-            return x `
+let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.isLoading = false;
+        this.response = null;
+        this.userQuery = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _handleGetRecommendation() {
+        this.dispatchEvent(new CustomEvent('get-recommendation', {
+            detail: { query: this.userQuery },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -14962,7 +13749,7 @@ class GrowspaceLogbookController {
             </div>
 
             ${this.isLoading
-                ? x `
+            ? x `
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -14970,54 +13757,19 @@ class GrowspaceLogbookController {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-                : E}
+            : E}
             ${!this.isLoading && this.response
-                ? x ` <div class="gm-response-box">${this.response}</div> `
-                : E}
+            ? x ` <div class="gm-response-box">${this.response}</div> `
+            : E}
           </div>
         </div>
       </ha-dialog>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _StrainRecommendationDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _StrainRecommendationDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _StrainRecommendationDialog_isLoading_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            _StrainRecommendationDialog_response_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _response_initializers, null)));
-            _StrainRecommendationDialog_userQuery_accessor_storage.set(this, (__runInitializers(this, _response_extraInitializers), __runInitializers(this, _userQuery_initializers, '')));
-            __runInitializers(this, _userQuery_extraInitializers);
-        }
-    };
-    _StrainRecommendationDialog_hass_accessor_storage = new WeakMap();
-    _StrainRecommendationDialog_open_accessor_storage = new WeakMap();
-    _StrainRecommendationDialog_isLoading_accessor_storage = new WeakMap();
-    _StrainRecommendationDialog_response_accessor_storage = new WeakMap();
-    _StrainRecommendationDialog_userQuery_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "StrainRecommendationDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
-        _response_decorators = [n$5({ attribute: false })];
-        _userQuery_decorators = [n$5({ type: String })];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
-        __esDecorate(_classThis, null, _response_decorators, { kind: "accessor", name: "response", static: false, private: false, access: { has: obj => "response" in obj, get: obj => obj.response, set: (obj, value) => { obj.response = value; } }, metadata: _metadata }, _response_initializers, _response_extraInitializers);
-        __esDecorate(_classThis, null, _userQuery_decorators, { kind: "accessor", name: "userQuery", static: false, private: false, access: { has: obj => "userQuery" in obj, get: obj => obj.userQuery, set: (obj, value) => { obj.userQuery = value; } }, metadata: _metadata }, _userQuery_initializers, _userQuery_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+StrainRecommendationDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -15070,44 +13822,44 @@ class GrowspaceLogbookController {
         margin-top: 16px;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], StrainRecommendationDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], StrainRecommendationDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], StrainRecommendationDialog.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainRecommendationDialog.prototype, "response", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainRecommendationDialog.prototype, "userQuery", void 0);
+StrainRecommendationDialog = __decorate([
+    t$2('strain-recommendation-dialog')
+], StrainRecommendationDialog);
 
-(() => {
-    var _Md3Switch_checked_accessor_storage, _Md3Switch_disabled_accessor_storage;
-    let _classDecorators = [t$2('md3-switch')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _checked_decorators;
-    let _checked_initializers = [];
-    let _checked_extraInitializers = [];
-    let _disabled_decorators;
-    let _disabled_initializers = [];
-    let _disabled_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get checked() { return __classPrivateFieldGet(this, _Md3Switch_checked_accessor_storage, "f"); }
-        set checked(value) { __classPrivateFieldSet(this, _Md3Switch_checked_accessor_storage, value, "f"); }
-        get disabled() { return __classPrivateFieldGet(this, _Md3Switch_disabled_accessor_storage, "f"); }
-        set disabled(value) { __classPrivateFieldSet(this, _Md3Switch_disabled_accessor_storage, value, "f"); }
-        _handleClick() {
-            if (this.disabled)
-                return;
-            this.checked = !this.checked;
-            this.dispatchEvent(new CustomEvent('change', {
-                detail: { checked: this.checked },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            return x `
+let Md3Switch = class Md3Switch extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        return x `
       <button
         role="switch"
         aria-checked=${this.checked}
@@ -15117,32 +13869,9 @@ class GrowspaceLogbookController {
         <div class="handle"></div>
       </button>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _Md3Switch_checked_accessor_storage.set(this, __runInitializers(this, _checked_initializers, false));
-            _Md3Switch_disabled_accessor_storage.set(this, (__runInitializers(this, _checked_extraInitializers), __runInitializers(this, _disabled_initializers, false)));
-            __runInitializers(this, _disabled_extraInitializers);
-        }
-    };
-    _Md3Switch_checked_accessor_storage = new WeakMap();
-    _Md3Switch_disabled_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "Md3Switch");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _checked_decorators = [n$5({ type: Boolean })];
-        _disabled_decorators = [n$5({ type: Boolean })];
-        __esDecorate(_classThis, null, _checked_decorators, { kind: "accessor", name: "checked", static: false, private: false, access: { has: obj => "checked" in obj, get: obj => obj.checked, set: (obj, value) => { obj.checked = value; } }, metadata: _metadata }, _checked_initializers, _checked_extraInitializers);
-        __esDecorate(_classThis, null, _disabled_decorators, { kind: "accessor", name: "disabled", static: false, private: false, access: { has: obj => "disabled" in obj, get: obj => obj.disabled, set: (obj, value) => { obj.disabled = value; } }, metadata: _metadata }, _disabled_initializers, _disabled_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: i$6 `
+    }
+};
+Md3Switch.styles = i$6 `
     :host {
       display: inline-block;
       vertical-align: middle;
@@ -15188,275 +13917,214 @@ class GrowspaceLogbookController {
     :host([checked]) .handle {
       transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
     }
-  `
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+  `;
+__decorate([
+    n$5({ type: Boolean })
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t$2('md3-switch')
+], Md3Switch);
 
-(() => {
-    var _IrrigationDialog_hass_accessor_storage, _IrrigationDialog_open_accessor_storage, _IrrigationDialog_device_accessor_storage, _IrrigationDialog_growspaceName_accessor_storage, _IrrigationDialog__irrigation_pump_entity_accessor_storage, _IrrigationDialog__drain_pump_entity_accessor_storage, _IrrigationDialog__irrigation_duration_accessor_storage, _IrrigationDialog__drain_duration_accessor_storage, _IrrigationDialog__irrigation_times_accessor_storage, _IrrigationDialog__drain_times_accessor_storage, _IrrigationDialog__adding_irrigation_time_accessor_storage, _IrrigationDialog__adding_drain_time_accessor_storage, _IrrigationDialog__activeTab_accessor_storage, _IrrigationDialog__strategy_accessor_storage;
-    let _classDecorators = [t$2('irrigation-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _growspaceName_decorators;
-    let _growspaceName_initializers = [];
-    let _growspaceName_extraInitializers = [];
-    let __irrigation_pump_entity_decorators;
-    let __irrigation_pump_entity_initializers = [];
-    let __irrigation_pump_entity_extraInitializers = [];
-    let __drain_pump_entity_decorators;
-    let __drain_pump_entity_initializers = [];
-    let __drain_pump_entity_extraInitializers = [];
-    let __irrigation_duration_decorators;
-    let __irrigation_duration_initializers = [];
-    let __irrigation_duration_extraInitializers = [];
-    let __drain_duration_decorators;
-    let __drain_duration_initializers = [];
-    let __drain_duration_extraInitializers = [];
-    let __irrigation_times_decorators;
-    let __irrigation_times_initializers = [];
-    let __irrigation_times_extraInitializers = [];
-    let __drain_times_decorators;
-    let __drain_times_initializers = [];
-    let __drain_times_extraInitializers = [];
-    let __adding_irrigation_time_decorators;
-    let __adding_irrigation_time_initializers = [];
-    let __adding_irrigation_time_extraInitializers = [];
-    let __adding_drain_time_decorators;
-    let __adding_drain_time_initializers = [];
-    let __adding_drain_time_extraInitializers = [];
-    let __activeTab_decorators;
-    let __activeTab_initializers = [];
-    let __activeTab_extraInitializers = [];
-    let __strategy_decorators;
-    let __strategy_initializers = [];
-    let __strategy_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _IrrigationDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _IrrigationDialog_hass_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _IrrigationDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _IrrigationDialog_open_accessor_storage, value, "f"); }
-        get device() { return __classPrivateFieldGet(this, _IrrigationDialog_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _IrrigationDialog_device_accessor_storage, value, "f"); }
-        get growspaceName() { return __classPrivateFieldGet(this, _IrrigationDialog_growspaceName_accessor_storage, "f"); }
-        set growspaceName(value) { __classPrivateFieldSet(this, _IrrigationDialog_growspaceName_accessor_storage, value, "f"); }
-        get _irrigation_pump_entity() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_pump_entity_accessor_storage, "f"); }
-        set _irrigation_pump_entity(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_pump_entity_accessor_storage, value, "f"); }
-        get _drain_pump_entity() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_pump_entity_accessor_storage, "f"); }
-        set _drain_pump_entity(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_pump_entity_accessor_storage, value, "f"); }
-        get _irrigation_duration() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_duration_accessor_storage, "f"); }
-        set _irrigation_duration(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_duration_accessor_storage, value, "f"); }
-        get _drain_duration() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_duration_accessor_storage, "f"); }
-        set _drain_duration(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_duration_accessor_storage, value, "f"); }
-        get _irrigation_times() { return __classPrivateFieldGet(this, _IrrigationDialog__irrigation_times_accessor_storage, "f"); }
-        set _irrigation_times(value) { __classPrivateFieldSet(this, _IrrigationDialog__irrigation_times_accessor_storage, value, "f"); }
-        get _drain_times() { return __classPrivateFieldGet(this, _IrrigationDialog__drain_times_accessor_storage, "f"); }
-        set _drain_times(value) { __classPrivateFieldSet(this, _IrrigationDialog__drain_times_accessor_storage, value, "f"); }
-        get _adding_irrigation_time() { return __classPrivateFieldGet(this, _IrrigationDialog__adding_irrigation_time_accessor_storage, "f"); }
-        set _adding_irrigation_time(value) { __classPrivateFieldSet(this, _IrrigationDialog__adding_irrigation_time_accessor_storage, value, "f"); }
-        get _adding_drain_time() { return __classPrivateFieldGet(this, _IrrigationDialog__adding_drain_time_accessor_storage, "f"); }
-        set _adding_drain_time(value) { __classPrivateFieldSet(this, _IrrigationDialog__adding_drain_time_accessor_storage, value, "f"); }
-        get _activeTab() { return __classPrivateFieldGet(this, _IrrigationDialog__activeTab_accessor_storage, "f"); }
-        set _activeTab(value) { __classPrivateFieldSet(this, _IrrigationDialog__activeTab_accessor_storage, value, "f"); }
-        get _strategy() { return __classPrivateFieldGet(this, _IrrigationDialog__strategy_accessor_storage, "f"); }
-        set _strategy(value) { __classPrivateFieldSet(this, _IrrigationDialog__strategy_accessor_storage, value, "f"); }
-        willUpdate(changedProps) {
-            if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
-                this._initializeState();
-            }
-            if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-                this._dataService = new DataService(this.hass);
-            }
+let IrrigationDialog = class IrrigationDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+        this._irrigation_pump_entity = '';
+        this._drain_pump_entity = '';
+        this._irrigation_duration = 60;
+        this._drain_duration = 60;
+        this._irrigation_times = [];
+        this._drain_times = [];
+        this._activeTab = 'schedules';
+        this._strategy = {};
+    }
+    willUpdate(changedProps) {
+        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
+            this._initializeState();
         }
-        _initializeState() {
-            if (!this.device)
-                return;
-            const config = this.device.irrigation_config || {};
-            this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-            this._drain_pump_entity = config.drain_pump_entity || '';
-            this._irrigation_duration = config.irrigation_duration || 60;
-            this._drain_duration = config.drain_duration || 60;
-            this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
-            this._drain_times = this.device.irrigation_config?.drain_times || [];
-            console.log('[IrrigationDialog] Initializing State', {
-                device: this.device,
-                irrigation_times: this._irrigation_times,
-                drain_times: this._drain_times,
-                raw_config: config,
-            });
-            // Initialize Strategy
-            const strat = this.device.irrigation_strategy;
-            this._strategy = {
-                enabled: strat?.enabled || false,
-                lights_on_time: strat?.lights_on_time || '06:00:00',
-                p0_duration_minutes: strat?.p0_duration_minutes || 60,
-                p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-                target_vwc_percent: strat?.target_vwc_percent || 45.0,
-                maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-                shot_duration_seconds: strat?.shot_duration_seconds || 15,
-                shot_interval_minutes: strat?.shot_interval_minutes || 15,
+        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+            this._dataService = new DataService(this.hass);
+        }
+    }
+    _initializeState() {
+        if (!this.device)
+            return;
+        const config = this.device.irrigation_config || {};
+        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
+        this._drain_pump_entity = config.drain_pump_entity || '';
+        this._irrigation_duration = config.irrigation_duration || 60;
+        this._drain_duration = config.drain_duration || 60;
+        this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
+        this._drain_times = this.device.irrigation_config?.drain_times || [];
+        console.log('[IrrigationDialog] Initializing State', {
+            device: this.device,
+            irrigation_times: this._irrigation_times,
+            drain_times: this._drain_times,
+            raw_config: config,
+        });
+        // Initialize Strategy
+        const strat = this.device.irrigation_strategy;
+        this._strategy = {
+            enabled: strat?.enabled || false,
+            lights_on_time: strat?.lights_on_time || '06:00:00',
+            p0_duration_minutes: strat?.p0_duration_minutes || 60,
+            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
+            target_vwc_percent: strat?.target_vwc_percent || 45.0,
+            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
+            shot_duration_seconds: strat?.shot_duration_seconds || 15,
+            shot_interval_minutes: strat?.shot_interval_minutes || 15,
+        };
+    }
+    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
+    _parseScheduleString(scheduleString) {
+        if (Array.isArray(scheduleString))
+            return scheduleString;
+        if (!scheduleString)
+            return [];
+        return scheduleString.split(',').map((t) => {
+            const parts = t.trim().split('|');
+            return {
+                time: parts[0].trim(),
+                duration: parts[1] ? parseInt(parts[1].trim()) : undefined,
             };
-        }
-        // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
-        _parseScheduleString(scheduleString) {
-            if (Array.isArray(scheduleString))
-                return scheduleString;
-            if (!scheduleString)
-                return [];
-            return scheduleString.split(',').map((t) => {
-                const parts = t.trim().split('|');
-                return {
-                    time: parts[0].trim(),
-                    duration: parts[1] ? parseInt(parts[1].trim()) : undefined,
-                };
+        });
+    }
+    async _saveSettings() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationSettings({
+                growspace_id: this.device.device_id,
+                irrigation_pump_entity: this._irrigation_pump_entity,
+                drain_pump_entity: this._drain_pump_entity,
+                irrigation_duration: this._irrigation_duration,
+                drain_duration: this._drain_duration,
             });
         }
-        async _saveSettings() {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.setIrrigationSettings({
-                    growspace_id: this.device.device_id,
-                    irrigation_pump_entity: this._irrigation_pump_entity,
-                    drain_pump_entity: this._drain_pump_entity,
-                    irrigation_duration: this._irrigation_duration,
-                    drain_duration: this._drain_duration,
-                });
-            }
-            catch (e) {
-                console.error('Failed to save settings:', e);
-            }
+        catch (e) {
+            console.error('Failed to save settings:', e);
         }
-        async _addIrrigationTime(time, duration) {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.addIrrigationTime({
-                    growspace_id: this.device.device_id,
-                    time,
-                    duration: duration || this._irrigation_duration,
-                });
-                // Optimistic update
-                const newTime = { time, duration: duration || this._irrigation_duration };
-                this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-                this._adding_irrigation_time = undefined;
-                this._notifyDataChanged();
-            }
-            catch (e) {
-                console.error('Failed to add irrigation time:', e);
-            }
+    }
+    async _addIrrigationTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._irrigation_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._irrigation_duration };
+            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_irrigation_time = undefined;
+            this._notifyDataChanged();
         }
-        async _removeIrrigationTime(time) {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.removeIrrigationTime({
-                    growspace_id: this.device.device_id,
-                    time,
-                });
-                // Optimistic update
-                this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
-                this._notifyDataChanged();
-            }
-            catch (e) {
-                console.error('Failed to remove irrigation time:', e);
-            }
+        catch (e) {
+            console.error('Failed to add irrigation time:', e);
         }
-        async _addDrainTime(time, duration) {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.addDrainTime({
-                    growspace_id: this.device.device_id,
-                    time,
-                    duration: duration || this._drain_duration,
-                });
-                // Optimistic update
-                const newTime = { time, duration: duration || this._drain_duration };
-                this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-                this._adding_drain_time = undefined;
-                this._notifyDataChanged();
-            }
-            catch (e) {
-                console.error('Failed to add drain time:', e);
-            }
+    }
+    async _removeIrrigationTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeIrrigationTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+            this._notifyDataChanged();
         }
-        async _removeDrainTime(time) {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.removeDrainTime({
-                    growspace_id: this.device.device_id,
-                    time,
-                });
-                // Optimistic update
-                this._drain_times = this._drain_times.filter((t) => t.time !== time);
-                this._notifyDataChanged();
-            }
-            catch (e) {
-                console.error('Failed to remove drain time:', e);
-            }
+        catch (e) {
+            console.error('Failed to remove irrigation time:', e);
         }
-        _notifyDataChanged() {
-            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+    }
+    async _addDrainTime(time, duration) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.addDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+                duration: duration || this._drain_duration,
+            });
+            // Optimistic update
+            const newTime = { time, duration: duration || this._drain_duration };
+            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._adding_drain_time = undefined;
+            this._notifyDataChanged();
         }
-        _startAddingIrrigationTime(x, width) {
-            const percentage = x / width;
-            const totalMinutes = Math.round(percentage * 24 * 60);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            this._adding_irrigation_time = {
-                time: timeStr,
-                duration: this._irrigation_duration,
-            };
+        catch (e) {
+            console.error('Failed to add drain time:', e);
         }
-        _startAddingDrainTime(x, width) {
-            const percentage = x / width;
-            const totalMinutes = Math.round(percentage * 24 * 60);
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = totalMinutes % 60;
-            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-            this._adding_drain_time = {
-                time: timeStr,
-                duration: this._drain_duration,
-            };
+    }
+    async _removeDrainTime(time) {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.removeDrainTime({
+                growspace_id: this.device.device_id,
+                time,
+            });
+            // Optimistic update
+            this._drain_times = this._drain_times.filter((t) => t.time !== time);
+            this._notifyDataChanged();
         }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close'));
+        catch (e) {
+            console.error('Failed to remove drain time:', e);
         }
-        async _saveStrategy() {
-            if (!this.device?.device_id || !this._dataService)
-                return;
-            try {
-                await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
-            }
-            catch (e) {
-                console.error('Failed to save strategy:', e);
-            }
+    }
+    _notifyDataChanged() {
+        this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+    }
+    _startAddingIrrigationTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_irrigation_time = {
+            time: timeStr,
+            duration: this._irrigation_duration,
+        };
+    }
+    _startAddingDrainTime(x, width) {
+        const percentage = x / width;
+        const totalMinutes = Math.round(percentage * 24 * 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        this._adding_drain_time = {
+            time: timeStr,
+            duration: this._drain_duration,
+        };
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    async _saveStrategy() {
+        if (!this.device?.device_id || !this._dataService)
+            return;
+        try {
+            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
         }
-        _updateStrategyField(field, value) {
-            this._strategy = { ...this._strategy, [field]: value };
+        catch (e) {
+            console.error('Failed to save strategy:', e);
         }
-        render() {
-            if (!this.open)
-                return E;
-            const dialogColor = '#2196F3';
-            return x `
+    }
+    _updateStrategyField(field, value) {
+        this._strategy = { ...this._strategy, [field]: value };
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const dialogColor = '#2196F3';
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -15506,14 +14174,14 @@ class GrowspaceLogbookController {
 
           <div class="dialog-body">
             ${this._activeTab === 'schedules'
-                ? this._renderSchedulesTab(dialogColor)
-                : this._renderSteeringTab(dialogColor)}
+            ? this._renderSchedulesTab(dialogColor)
+            : this._renderSteeringTab(dialogColor)}
           </div>
 
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Close</button>
             ${this._activeTab === 'steering'
-                ? x `
+            ? x `
                   <button
                     class="md3-button primary"
                     style="background: ${dialogColor};"
@@ -15522,20 +14190,20 @@ class GrowspaceLogbookController {
                     Save Strategy
                   </button>
                 `
-                : ''}
+            : ''}
           </div>
         </div>
       </ha-dialog>
     `;
-        }
-        _renderSchedulesTab(color) {
-            return x `
+    }
+    _renderSchedulesTab(color) {
+        return x `
       ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
       ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
     `;
-        }
-        _renderSteeringTab(color) {
-            return x `
+    }
+    _renderSteeringTab(color) {
+        return x `
       <div class="detail-card">
         <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
         <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;">
@@ -15608,10 +14276,10 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        _renderScheduleSection(title, times, defaultDuration, type, color) {
-            const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
-            return x `
+    }
+    _renderScheduleSection(title, times, defaultDuration, type, color) {
+        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+        return x `
       <div class="detail-card">
         <div
           style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
@@ -15619,16 +14287,16 @@ class GrowspaceLogbookController {
           <h3 style="margin: 0;">${title}</h3>
           <button
             @click=${(e) => {
-                const container = e.target
-                    .closest('.detail-card')
-                    ?.querySelector('.' + type + '-time-bar');
-                if (container) {
-                    const rect = container.getBoundingClientRect();
-                    type === 'irrigation'
-                        ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
-                        : this._startAddingDrainTime(rect.width / 2, rect.width);
-                }
-            }}
+            const container = e.target
+                .closest('.detail-card')
+                ?.querySelector('.' + type + '-time-bar');
+            if (container) {
+                const rect = container.getBoundingClientRect();
+                type === 'irrigation'
+                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
+                    : this._startAddingDrainTime(rect.width / 2, rect.width);
+            }
+        }}
             class="md3-button primary"
             style="background: ${color};"
           >
@@ -15642,12 +14310,12 @@ class GrowspaceLogbookController {
         <div
           class="${type}-time-bar time-bar-container"
           @click=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                type === 'irrigation'
-                    ? this._startAddingIrrigationTime(x, rect.width)
-                    : this._startAddingDrainTime(x, rect.width);
-            }}
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            type === 'irrigation'
+                ? this._startAddingIrrigationTime(x, rect.width)
+                : this._startAddingDrainTime(x, rect.width);
+        }}
           style="border: 2px solid ${color}40;"
         >
           ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
@@ -15656,24 +14324,24 @@ class GrowspaceLogbookController {
                 style="left: ${(hour / 24) * 100}%;"
               >
                 ${hour % 3 === 0
-                ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
-                : ''}
+            ? x ` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+            : ''}
               </div>
             `)}
           ${times.map((t) => {
-                const [hours, minutes] = t.time.split(':').map(Number);
-                const position = ((hours + minutes / 60) / 24) * 100;
-                return x `
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return x `
               <div
                 class="chart-marker"
                 @click=${(e) => {
-                    e.stopPropagation();
-                    if (confirm(`Remove ${type} time ${t.time}?`)) {
-                        type === 'irrigation'
-                            ? this._removeIrrigationTime(t.time)
-                            : this._removeDrainTime(t.time);
-                    }
-                }}
+                e.stopPropagation();
+                if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    type === 'irrigation'
+                        ? this._removeIrrigationTime(t.time)
+                        : this._removeDrainTime(t.time);
+                }
+            }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
                 title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
               >
@@ -15682,17 +14350,17 @@ class GrowspaceLogbookController {
                 </div>
               </div>
             `;
-            })}
+        })}
         </div>
 
 
         ${addingTime
-                ? x `
+            ? x `
               <div
                 class="overlay-backdrop"
                 @click=${() => type === 'irrigation'
-                    ? (this._adding_irrigation_time = undefined)
-                    : (this._adding_drain_time = undefined)}
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
               >
                 <div
                   class="detail-card"
@@ -15706,15 +14374,15 @@ class GrowspaceLogbookController {
                     type="time"
                     .value=${addingTime.time}
                     @change=${(e) => {
-                    const val = e.target.value || e.detail; // md3-text-input uses detail
-                    if (type === 'irrigation' && this._adding_irrigation_time)
-                        this._adding_irrigation_time = {
-                            ...this._adding_irrigation_time,
-                            time: val,
-                        };
-                    if (type === 'drain' && this._adding_drain_time)
-                        this._adding_drain_time = { ...this._adding_drain_time, time: val };
-                }}
+                const val = e.target.value || e.detail; // md3-text-input uses detail
+                if (type === 'irrigation' && this._adding_irrigation_time)
+                    this._adding_irrigation_time = {
+                        ...this._adding_irrigation_time,
+                        time: val,
+                    };
+                if (type === 'drain' && this._adding_drain_time)
+                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
+            }}
                   ></md3-text-input>
 
                   <md3-number-input
@@ -15722,36 +14390,36 @@ class GrowspaceLogbookController {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e) => {
-                    console.log('DEBUG: Duration Change', e.detail);
-                    const val = parseInt(e.detail);
-                    if (!isNaN(val)) {
-                        if (type === 'irrigation' && this._adding_irrigation_time)
-                            this._adding_irrigation_time = {
-                                ...this._adding_irrigation_time,
-                                duration: val,
-                            };
-                        if (type === 'drain' && this._adding_drain_time)
-                            this._adding_drain_time = { ...this._adding_drain_time, duration: val };
-                    }
-                }}
+                console.log('DEBUG: Duration Change', e.detail);
+                const val = parseInt(e.detail);
+                if (!isNaN(val)) {
+                    if (type === 'irrigation' && this._adding_irrigation_time)
+                        this._adding_irrigation_time = {
+                            ...this._adding_irrigation_time,
+                            duration: val,
+                        };
+                    if (type === 'drain' && this._adding_drain_time)
+                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                }
+            }}
                   ></md3-number-input>
 
                   <div class="button-group">
                     <button
                       class="md3-button tonal"
                       @click=${() => type === 'irrigation'
-                    ? (this._adding_irrigation_time = undefined)
-                    : (this._adding_drain_time = undefined)}
+                ? (this._adding_irrigation_time = undefined)
+                : (this._adding_drain_time = undefined)}
                     >
                       Cancel
                     </button>
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                    type === 'irrigation'
-                        ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                        : this._addDrainTime(addingTime.time, addingTime.duration);
-                }}
+                type === 'irrigation'
+                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
+                    : this._addDrainTime(addingTime.time, addingTime.duration);
+            }}
                       style="background: ${color};"
                     >
                       Add Schedule
@@ -15760,91 +14428,14 @@ class GrowspaceLogbookController {
                 </div>
               </div>
             `
-                : ''}
+            : ''}
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _IrrigationDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _IrrigationDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _IrrigationDialog_device_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
-            _IrrigationDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
-            _IrrigationDialog__irrigation_pump_entity_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, __irrigation_pump_entity_initializers, '')));
-            _IrrigationDialog__drain_pump_entity_accessor_storage.set(this, (__runInitializers(this, __irrigation_pump_entity_extraInitializers), __runInitializers(this, __drain_pump_entity_initializers, '')));
-            _IrrigationDialog__irrigation_duration_accessor_storage.set(this, (__runInitializers(this, __drain_pump_entity_extraInitializers), __runInitializers(this, __irrigation_duration_initializers, 60)));
-            _IrrigationDialog__drain_duration_accessor_storage.set(this, (__runInitializers(this, __irrigation_duration_extraInitializers), __runInitializers(this, __drain_duration_initializers, 60)));
-            _IrrigationDialog__irrigation_times_accessor_storage.set(this, (__runInitializers(this, __drain_duration_extraInitializers), __runInitializers(this, __irrigation_times_initializers, [])));
-            _IrrigationDialog__drain_times_accessor_storage.set(this, (__runInitializers(this, __irrigation_times_extraInitializers), __runInitializers(this, __drain_times_initializers, [])));
-            _IrrigationDialog__adding_irrigation_time_accessor_storage.set(this, (__runInitializers(this, __drain_times_extraInitializers), __runInitializers(this, __adding_irrigation_time_initializers, void 0)));
-            _IrrigationDialog__adding_drain_time_accessor_storage.set(this, (__runInitializers(this, __adding_irrigation_time_extraInitializers), __runInitializers(this, __adding_drain_time_initializers, void 0)));
-            Object.defineProperty(this, "_dataService", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __adding_drain_time_extraInitializers)
-            });
-            _IrrigationDialog__activeTab_accessor_storage.set(this, __runInitializers(this, __activeTab_initializers, 'schedules'));
-            _IrrigationDialog__strategy_accessor_storage.set(this, (__runInitializers(this, __activeTab_extraInitializers), __runInitializers(this, __strategy_initializers, {})));
-            __runInitializers(this, __strategy_extraInitializers);
-        }
-    };
-    _IrrigationDialog_hass_accessor_storage = new WeakMap();
-    _IrrigationDialog_open_accessor_storage = new WeakMap();
-    _IrrigationDialog_device_accessor_storage = new WeakMap();
-    _IrrigationDialog_growspaceName_accessor_storage = new WeakMap();
-    _IrrigationDialog__irrigation_pump_entity_accessor_storage = new WeakMap();
-    _IrrigationDialog__drain_pump_entity_accessor_storage = new WeakMap();
-    _IrrigationDialog__irrigation_duration_accessor_storage = new WeakMap();
-    _IrrigationDialog__drain_duration_accessor_storage = new WeakMap();
-    _IrrigationDialog__irrigation_times_accessor_storage = new WeakMap();
-    _IrrigationDialog__drain_times_accessor_storage = new WeakMap();
-    _IrrigationDialog__adding_irrigation_time_accessor_storage = new WeakMap();
-    _IrrigationDialog__adding_drain_time_accessor_storage = new WeakMap();
-    _IrrigationDialog__activeTab_accessor_storage = new WeakMap();
-    _IrrigationDialog__strategy_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "IrrigationDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _device_decorators = [n$5({ attribute: false })];
-        _growspaceName_decorators = [n$5({ type: String })];
-        __irrigation_pump_entity_decorators = [r$2()];
-        __drain_pump_entity_decorators = [r$2()];
-        __irrigation_duration_decorators = [r$2()];
-        __drain_duration_decorators = [r$2()];
-        __irrigation_times_decorators = [r$2()];
-        __drain_times_decorators = [r$2()];
-        __adding_irrigation_time_decorators = [r$2()];
-        __adding_drain_time_decorators = [r$2()];
-        __activeTab_decorators = [r$2()];
-        __strategy_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
-        __esDecorate(_classThis, null, __irrigation_pump_entity_decorators, { kind: "accessor", name: "_irrigation_pump_entity", static: false, private: false, access: { has: obj => "_irrigation_pump_entity" in obj, get: obj => obj._irrigation_pump_entity, set: (obj, value) => { obj._irrigation_pump_entity = value; } }, metadata: _metadata }, __irrigation_pump_entity_initializers, __irrigation_pump_entity_extraInitializers);
-        __esDecorate(_classThis, null, __drain_pump_entity_decorators, { kind: "accessor", name: "_drain_pump_entity", static: false, private: false, access: { has: obj => "_drain_pump_entity" in obj, get: obj => obj._drain_pump_entity, set: (obj, value) => { obj._drain_pump_entity = value; } }, metadata: _metadata }, __drain_pump_entity_initializers, __drain_pump_entity_extraInitializers);
-        __esDecorate(_classThis, null, __irrigation_duration_decorators, { kind: "accessor", name: "_irrigation_duration", static: false, private: false, access: { has: obj => "_irrigation_duration" in obj, get: obj => obj._irrigation_duration, set: (obj, value) => { obj._irrigation_duration = value; } }, metadata: _metadata }, __irrigation_duration_initializers, __irrigation_duration_extraInitializers);
-        __esDecorate(_classThis, null, __drain_duration_decorators, { kind: "accessor", name: "_drain_duration", static: false, private: false, access: { has: obj => "_drain_duration" in obj, get: obj => obj._drain_duration, set: (obj, value) => { obj._drain_duration = value; } }, metadata: _metadata }, __drain_duration_initializers, __drain_duration_extraInitializers);
-        __esDecorate(_classThis, null, __irrigation_times_decorators, { kind: "accessor", name: "_irrigation_times", static: false, private: false, access: { has: obj => "_irrigation_times" in obj, get: obj => obj._irrigation_times, set: (obj, value) => { obj._irrigation_times = value; } }, metadata: _metadata }, __irrigation_times_initializers, __irrigation_times_extraInitializers);
-        __esDecorate(_classThis, null, __drain_times_decorators, { kind: "accessor", name: "_drain_times", static: false, private: false, access: { has: obj => "_drain_times" in obj, get: obj => obj._drain_times, set: (obj, value) => { obj._drain_times = value; } }, metadata: _metadata }, __drain_times_initializers, __drain_times_extraInitializers);
-        __esDecorate(_classThis, null, __adding_irrigation_time_decorators, { kind: "accessor", name: "_adding_irrigation_time", static: false, private: false, access: { has: obj => "_adding_irrigation_time" in obj, get: obj => obj._adding_irrigation_time, set: (obj, value) => { obj._adding_irrigation_time = value; } }, metadata: _metadata }, __adding_irrigation_time_initializers, __adding_irrigation_time_extraInitializers);
-        __esDecorate(_classThis, null, __adding_drain_time_decorators, { kind: "accessor", name: "_adding_drain_time", static: false, private: false, access: { has: obj => "_adding_drain_time" in obj, get: obj => obj._adding_drain_time, set: (obj, value) => { obj._adding_drain_time = value; } }, metadata: _metadata }, __adding_drain_time_initializers, __adding_drain_time_extraInitializers);
-        __esDecorate(_classThis, null, __activeTab_decorators, { kind: "accessor", name: "_activeTab", static: false, private: false, access: { has: obj => "_activeTab" in obj, get: obj => obj._activeTab, set: (obj, value) => { obj._activeTab = value; } }, metadata: _metadata }, __activeTab_initializers, __activeTab_extraInitializers);
-        __esDecorate(_classThis, null, __strategy_decorators, { kind: "accessor", name: "_strategy", static: false, private: false, access: { has: obj => "_strategy" in obj, get: obj => obj._strategy, set: (obj, value) => { obj._strategy = value; } }, metadata: _metadata }, __strategy_initializers, __strategy_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+IrrigationDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         --mdc-dialog-min-width: clamp(400px, 750px, 70vw);
       }
@@ -15956,199 +14547,198 @@ class GrowspaceLogbookController {
         background: rgba(255, 255, 255, 0.05);
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], IrrigationDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], IrrigationDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], IrrigationDialog.prototype, "device", void 0);
+__decorate([
+    n$5({ type: String })
+], IrrigationDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_irrigation_duration", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drain_duration", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_irrigation_times", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drain_times", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_strategy", void 0);
+IrrigationDialog = __decorate([
+    t$2('irrigation-dialog')
+], IrrigationDialog);
 
-(() => {
-    var _GrowspaceLogbook_hass_accessor_storage, _GrowspaceLogbook_growspaceId_accessor_storage, _GrowspaceLogbook__events_accessor_storage, _GrowspaceLogbook__isLoading_accessor_storage, _GrowspaceLogbook__activeFilter_accessor_storage;
-    let _classDecorators = [t$2('growspace-logbook')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _growspaceId_decorators;
-    let _growspaceId_initializers = [];
-    let _growspaceId_extraInitializers = [];
-    let __events_decorators;
-    let __events_initializers = [];
-    let __events_extraInitializers = [];
-    let __isLoading_decorators;
-    let __isLoading_initializers = [];
-    let __isLoading_extraInitializers = [];
-    let __activeFilter_decorators;
-    let __activeFilter_initializers = [];
-    let __activeFilter_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceLogbook_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _GrowspaceLogbook_growspaceId_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _growspaceId_initializers, void 0)));
-            _GrowspaceLogbook__events_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, __events_initializers, [])));
-            _GrowspaceLogbook__isLoading_accessor_storage.set(this, (__runInitializers(this, __events_extraInitializers), __runInitializers(this, __isLoading_initializers, false)));
-            _GrowspaceLogbook__activeFilter_accessor_storage.set(this, (__runInitializers(this, __isLoading_extraInitializers), __runInitializers(this, __activeFilter_initializers, 'all')));
-            Object.defineProperty(this, "_controller", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __activeFilter_extraInitializers)
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceLogbook_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceLogbook_hass_accessor_storage, value, "f"); }
-        get growspaceId() { return __classPrivateFieldGet(this, _GrowspaceLogbook_growspaceId_accessor_storage, "f"); }
-        set growspaceId(value) { __classPrivateFieldSet(this, _GrowspaceLogbook_growspaceId_accessor_storage, value, "f"); }
-        get _events() { return __classPrivateFieldGet(this, _GrowspaceLogbook__events_accessor_storage, "f"); }
-        set _events(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__events_accessor_storage, value, "f"); }
-        get _isLoading() { return __classPrivateFieldGet(this, _GrowspaceLogbook__isLoading_accessor_storage, "f"); }
-        set _isLoading(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__isLoading_accessor_storage, value, "f"); }
-        get _activeFilter() { return __classPrivateFieldGet(this, _GrowspaceLogbook__activeFilter_accessor_storage, "f"); }
-        set _activeFilter(value) { __classPrivateFieldSet(this, _GrowspaceLogbook__activeFilter_accessor_storage, value, "f"); }
-        firstUpdated() {
-            this._initController();
-        }
-        _getSeverityColor(severity, sensorType) {
-            if (sensorType?.toLowerCase() === 'optimal') {
-                if (severity >= 0.9)
-                    return 'var(--success-color, #4CAF50)';
-                if (severity >= 0.75)
-                    return 'var(--warning-color)';
-                return 'var(--error-color)';
-            }
-            // Default logic (High severity = Bad)
+let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._events = [];
+        this._isLoading = false;
+        this._activeFilter = 'all';
+    }
+    firstUpdated() {
+        this._initController();
+    }
+    _getSeverityColor(severity, sensorType) {
+        if (sensorType?.toLowerCase() === 'optimal') {
             if (severity >= 0.9)
-                return 'var(--error-color)';
+                return 'var(--success-color, #4CAF50)';
             if (severity >= 0.75)
                 return 'var(--warning-color)';
-            return 'var(--primary-text-color)';
+            return 'var(--error-color)';
         }
-        willUpdate(changedProps) {
-            if (changedProps.has('hass') && !this._controller) {
-                this._initController();
-            }
-            if (changedProps.has('growspaceId')) {
-                this._fetchEvents();
-            }
+        // Default logic (High severity = Bad)
+        if (severity >= 0.9)
+            return 'var(--error-color)';
+        if (severity >= 0.75)
+            return 'var(--warning-color)';
+        return 'var(--primary-text-color)';
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('hass') && !this._controller) {
+            this._initController();
         }
-        _initController() {
-            if (!this._controller) {
-                this._controller = new GrowspaceLogbookController();
-                this._fetchEvents();
-            }
+        if (changedProps.has('growspaceId')) {
+            this._fetchEvents();
         }
-        async _fetchEvents() {
-            if (!this._controller || !this.growspaceId || !this.hass)
-                return;
-            this._isLoading = true;
-            try {
-                this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
-            }
-            catch (e) {
-                console.error('Error fetching logbook events:', e);
-                this._events = [];
-            }
-            finally {
-                this._isLoading = false;
-            }
+    }
+    _initController() {
+        if (!this._controller) {
+            this._controller = new GrowspaceLogbookController();
+            this._fetchEvents();
         }
-        _formatDuration(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins}m ${secs}s`;
+    }
+    async _fetchEvents() {
+        if (!this._controller || !this.growspaceId || !this.hass)
+            return;
+        this._isLoading = true;
+        try {
+            this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
         }
-        _formatProb(val) {
-            if (val === undefined || val === null || isNaN(val)) {
-                return '--%';
-            }
-            return `${Math.round(Number(val) * 100)}%`;
+        catch (e) {
+            console.error('Error fetching logbook events:', e);
+            this._events = [];
         }
-        _formatTime(isoString) {
-            try {
-                const date = new Date(isoString);
-                if (isNaN(date.getTime()))
-                    throw new Error('Invalid Time');
-                return date.toLocaleString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-            }
-            catch {
-                return isoString;
-            }
+        finally {
+            this._isLoading = false;
         }
-        _setActiveFilter(filter) {
-            this._activeFilter = filter;
+    }
+    _formatDuration(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}m ${secs}s`;
+    }
+    _formatProb(val) {
+        if (val === undefined || val === null || isNaN(val)) {
+            return '--%';
         }
-        render() {
-            if (this._isLoading) {
-                return x `<div class="empty-state">Loading events...</div>`;
-            }
-            const allEvents = this._events || [];
-            const normalize = (s) => s?.toLowerCase().trim() || '';
-            // Filter logic
-            let filteredEvents = allEvents;
-            if (this._activeFilter === 'watering') {
-                filteredEvents = allEvents.filter(e => {
-                    const cat = normalize(e.category);
-                    const type = normalize(e.sensor_type);
-                    // Include 'environmental' category if sensor_type is irrigation/drain (manual watering creates this)
-                    return cat === 'irrigation' ||
-                        (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
-                        ['irrigation', 'drain', 'water'].includes(type) ||
-                        type.includes('water');
-                });
-            }
-            else if (this._activeFilter === 'training') {
-                const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
-                filteredEvents = allEvents.filter(e => {
-                    const cat = normalize(e.category);
-                    const type = normalize(e.sensor_type);
-                    return cat === 'training' || techniques.some(t => type.includes(t));
-                });
-            }
-            else if (this._activeFilter === 'alerts') {
-                filteredEvents = allEvents.filter(e => {
-                    const cat = normalize(e.category);
-                    return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
-                });
-            }
-            else if (this._activeFilter === 'environment') {
-                filteredEvents = allEvents.filter(e => {
-                    const type = normalize(e.sensor_type);
-                    return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
-                });
-            }
-            // 'all' case keeps filteredEvents as allEvents
-            if (this._activeFilter === 'notes') {
-                filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
-            }
-            // ⚡ Performance: Schwartzian transform for efficient sorting
-            // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
-            const sortedEvents = filteredEvents
-                .map(e => ({
-                event: e,
-                time: new Date(e.timestamp || e.start_time).getTime()
-            }))
-                .sort((a, b) => b.time - a.time)
-                .map(item => item.event);
-            const filters = [
-                { id: 'all', label: 'All' },
-                { id: 'notes', label: 'Notes' },
-                { id: 'alerts', label: 'Alerts' },
-                { id: 'watering', label: 'Watering/Nutrients' },
-                { id: 'environment', label: 'Environment' },
-                { id: 'training', label: 'Training' },
-            ];
-            return x `
+        return `${Math.round(Number(val) * 100)}%`;
+    }
+    _formatTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime()))
+                throw new Error('Invalid Time');
+            return date.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        }
+        catch {
+            return isoString;
+        }
+    }
+    _setActiveFilter(filter) {
+        this._activeFilter = filter;
+    }
+    render() {
+        if (this._isLoading) {
+            return x `<div class="empty-state">Loading events...</div>`;
+        }
+        const allEvents = this._events || [];
+        const normalize = (s) => s?.toLowerCase().trim() || '';
+        // Filter logic
+        let filteredEvents = allEvents;
+        if (this._activeFilter === 'watering') {
+            filteredEvents = allEvents.filter(e => {
+                const cat = normalize(e.category);
+                const type = normalize(e.sensor_type);
+                // Include 'environmental' category if sensor_type is irrigation/drain (manual watering creates this)
+                return cat === 'irrigation' ||
+                    (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+                    ['irrigation', 'drain', 'water'].includes(type) ||
+                    type.includes('water');
+            });
+        }
+        else if (this._activeFilter === 'training') {
+            const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+            filteredEvents = allEvents.filter(e => {
+                const cat = normalize(e.category);
+                const type = normalize(e.sensor_type);
+                return cat === 'training' || techniques.some(t => type.includes(t));
+            });
+        }
+        else if (this._activeFilter === 'alerts') {
+            filteredEvents = allEvents.filter(e => {
+                const cat = normalize(e.category);
+                return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
+            });
+        }
+        else if (this._activeFilter === 'environment') {
+            filteredEvents = allEvents.filter(e => {
+                const type = normalize(e.sensor_type);
+                return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
+            });
+        }
+        // 'all' case keeps filteredEvents as allEvents
+        if (this._activeFilter === 'notes') {
+            filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
+        }
+        // ⚡ Performance: Schwartzian transform for efficient sorting
+        // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
+        const sortedEvents = filteredEvents
+            .map(e => ({
+            event: e,
+            time: new Date(e.timestamp || e.start_time).getTime()
+        }))
+            .sort((a, b) => b.time - a.time)
+            .map(item => item.event);
+        const filters = [
+            { id: 'all', label: 'All' },
+            { id: 'notes', label: 'Notes' },
+            { id: 'alerts', label: 'Alerts' },
+            { id: 'watering', label: 'Watering/Nutrients' },
+            { id: 'environment', label: 'Environment' },
+            { id: 'training', label: 'Training' },
+        ];
+        return x `
       <div class="filter-bar">
         ${filters.map((filter) => x `
             <div
@@ -16162,14 +14752,14 @@ class GrowspaceLogbookController {
 
       <div class="log-container">
         ${sortedEvents.length > 0
-                ? sortedEvents.map((event) => {
-                    const cat = normalize(event.category);
-                    const isNote = cat === 'note';
-                    const type = isNote ? 'Plant Note' :
-                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
-                            (cat ? cat.replace(/_/g, ' ') : 'Event'));
-                    const startTime = event.timestamp || event.start_time;
-                    return x `
+            ? sortedEvents.map((event) => {
+                const cat = normalize(event.category);
+                const isNote = cat === 'note';
+                const type = isNote ? 'Plant Note' :
+                    (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
+                        (cat ? cat.replace(/_/g, ' ') : 'Event'));
+                const startTime = event.timestamp || event.start_time;
+                return x `
                 <div class="event-card">
                   <div class="event-header">
                     <div>
@@ -16177,8 +14767,8 @@ class GrowspaceLogbookController {
                       <div class="event-time">${this._formatTime(startTime)}</div>
                     </div>
                     ${event.duration_sec > 0
-                        ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
-                        : E}
+                    ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                    : E}
                   </div>
                   
                   <div class="event-details">
@@ -16200,12 +14790,12 @@ class GrowspaceLogbookController {
                           </div>
                         ` : E}
                       ` : (event.reasons && event.reasons.length > 0
-                        ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
-                        : E)}
+                    ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
+                    : E)}
                     </div>
                     
                     ${!isNote && event.severity > 0.5 && event.category !== 'training'
-                        ? x `
+                    ? x `
                           <div 
                             class="event-probability"
                             style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
@@ -16213,49 +14803,23 @@ class GrowspaceLogbookController {
                             ${this._formatProb(event.severity)}
                           </div>
                         `
-                        : E}
+                    : E}
                   </div>
                 </div>
               `;
-                })
-                : x `
+            })
+            : x `
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>
             `}
       </div>
     `;
-        }
-    };
-    _GrowspaceLogbook_hass_accessor_storage = new WeakMap();
-    _GrowspaceLogbook_growspaceId_accessor_storage = new WeakMap();
-    _GrowspaceLogbook__events_accessor_storage = new WeakMap();
-    _GrowspaceLogbook__isLoading_accessor_storage = new WeakMap();
-    _GrowspaceLogbook__activeFilter_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceLogbook");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _growspaceId_decorators = [n$5({ type: String })];
-        __events_decorators = [r$2()];
-        __isLoading_decorators = [r$2()];
-        __activeFilter_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
-        __esDecorate(_classThis, null, __events_decorators, { kind: "accessor", name: "_events", static: false, private: false, access: { has: obj => "_events" in obj, get: obj => obj._events, set: (obj, value) => { obj._events = value; } }, metadata: _metadata }, __events_initializers, __events_extraInitializers);
-        __esDecorate(_classThis, null, __isLoading_decorators, { kind: "accessor", name: "_isLoading", static: false, private: false, access: { has: obj => "_isLoading" in obj, get: obj => obj._isLoading, set: (obj, value) => { obj._isLoading = value; } }, metadata: _metadata }, __isLoading_initializers, __isLoading_extraInitializers);
-        __esDecorate(_classThis, null, __activeFilter_decorators, { kind: "accessor", name: "_activeFilter", static: false, private: false, access: { has: obj => "_activeFilter" in obj, get: obj => obj._activeFilter, set: (obj, value) => { obj._activeFilter = value; } }, metadata: _metadata }, __activeFilter_initializers, __activeFilter_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+GrowspaceLogbook.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         display: block;
         height: 100%;
@@ -16376,44 +14940,39 @@ class GrowspaceLogbookController {
         font-style: italic;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceLogbook.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceLogbook.prototype, "growspaceId", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbook.prototype, "_events", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbook.prototype, "_isLoading", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbook.prototype, "_activeFilter", void 0);
+GrowspaceLogbook = __decorate([
+    t$2('growspace-logbook')
+], GrowspaceLogbook);
 
-(() => {
-    var _LogbookDialog_hass_accessor_storage, _LogbookDialog_open_accessor_storage, _LogbookDialog_growspaceId_accessor_storage;
-    let _classDecorators = [t$2('logbook-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _growspaceId_decorators;
-    let _growspaceId_initializers = [];
-    let _growspaceId_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _LogbookDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _LogbookDialog_hass_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _LogbookDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _LogbookDialog_open_accessor_storage, value, "f"); }
-        get growspaceId() { return __classPrivateFieldGet(this, _LogbookDialog_growspaceId_accessor_storage, "f"); }
-        set growspaceId(value) { __classPrivateFieldSet(this, _LogbookDialog_growspaceId_accessor_storage, value, "f"); }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close'));
-        }
-        render() {
-            if (!this.open)
-                return x ``;
-            return x `
+let LogbookDialog = class LogbookDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
       <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
           <h2 class="dialog-title">Events Logbook</h2>
@@ -16436,38 +14995,11 @@ class GrowspaceLogbookController {
         </div>
       </ha-dialog>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _LogbookDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _LogbookDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _LogbookDialog_growspaceId_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _growspaceId_initializers, '')));
-            __runInitializers(this, _growspaceId_extraInitializers);
-        }
-    };
-    _LogbookDialog_hass_accessor_storage = new WeakMap();
-    _LogbookDialog_open_accessor_storage = new WeakMap();
-    _LogbookDialog_growspaceId_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "LogbookDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _growspaceId_decorators = [n$5({ type: String })];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+LogbookDialog.styles = [
+    dialogStyles,
+    i$6 `
       ha-dialog {
         --mdc-dialog-min-width: 90vw;
         --mdc-dialog-max-width: 90vw;
@@ -16503,183 +15035,128 @@ class GrowspaceLogbookController {
         margin-top: 16px;
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], LogbookDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], LogbookDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], LogbookDialog.prototype, "growspaceId", void 0);
+LogbookDialog = __decorate([
+    t$2('logbook-dialog')
+], LogbookDialog);
 
-(() => {
-    var _WateringDialog_hass_accessor_storage, _WateringDialog_store_accessor_storage, _WateringDialog_open_accessor_storage, _WateringDialog_dialogState_accessor_storage, _WateringDialog_growspaceName_accessor_storage, _WateringDialog__volume_accessor_storage, _WateringDialog__nutrients_accessor_storage, _WateringDialog__selectedPresetId_accessor_storage, _WateringDialog__isSubmitting_accessor_storage;
-    let _classDecorators = [t$2('watering-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _dialogState_decorators;
-    let _dialogState_initializers = [];
-    let _dialogState_extraInitializers = [];
-    let _growspaceName_decorators;
-    let _growspaceName_initializers = [];
-    let _growspaceName_extraInitializers = [];
-    let __volume_decorators;
-    let __volume_initializers = [];
-    let __volume_extraInitializers = [];
-    let __nutrients_decorators;
-    let __nutrients_initializers = [];
-    let __nutrients_extraInitializers = [];
-    let __selectedPresetId_decorators;
-    let __selectedPresetId_initializers = [];
-    let __selectedPresetId_extraInitializers = [];
-    let __isSubmitting_decorators;
-    let __isSubmitting_initializers = [];
-    let __isSubmitting_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _WateringDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _WateringDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _WateringDialog_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _WateringDialog_dialogState_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _dialogState_initializers, void 0)));
-            _WateringDialog_growspaceName_accessor_storage.set(this, (__runInitializers(this, _dialogState_extraInitializers), __runInitializers(this, _growspaceName_initializers, '')));
-            _WateringDialog__volume_accessor_storage.set(this, (__runInitializers(this, _growspaceName_extraInitializers), __runInitializers(this, __volume_initializers, 1.0)));
-            _WateringDialog__nutrients_accessor_storage.set(this, (__runInitializers(this, __volume_extraInitializers), __runInitializers(this, __nutrients_initializers, [])));
-            _WateringDialog__selectedPresetId_accessor_storage.set(this, (__runInitializers(this, __nutrients_extraInitializers), __runInitializers(this, __selectedPresetId_initializers, '')));
-            _WateringDialog__isSubmitting_accessor_storage.set(this, (__runInitializers(this, __selectedPresetId_extraInitializers), __runInitializers(this, __isSubmitting_initializers, false)));
-            Object.defineProperty(this, "_dataService", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __isSubmitting_extraInitializers)
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _WateringDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _WateringDialog_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _WateringDialog_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _WateringDialog_store_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _WateringDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _WateringDialog_open_accessor_storage, value, "f"); }
-        get dialogState() { return __classPrivateFieldGet(this, _WateringDialog_dialogState_accessor_storage, "f"); }
-        set dialogState(value) { __classPrivateFieldSet(this, _WateringDialog_dialogState_accessor_storage, value, "f"); }
-        get growspaceName() { return __classPrivateFieldGet(this, _WateringDialog_growspaceName_accessor_storage, "f"); }
-        set growspaceName(value) { __classPrivateFieldSet(this, _WateringDialog_growspaceName_accessor_storage, value, "f"); }
+let WateringDialog = class WateringDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
         // Form state
-        get _volume() { return __classPrivateFieldGet(this, _WateringDialog__volume_accessor_storage, "f"); } // Liters
-        set _volume(value) { __classPrivateFieldSet(this, _WateringDialog__volume_accessor_storage, value, "f"); }
-        get _nutrients() { return __classPrivateFieldGet(this, _WateringDialog__nutrients_accessor_storage, "f"); }
-        set _nutrients(value) { __classPrivateFieldSet(this, _WateringDialog__nutrients_accessor_storage, value, "f"); }
-        get _selectedPresetId() { return __classPrivateFieldGet(this, _WateringDialog__selectedPresetId_accessor_storage, "f"); }
-        set _selectedPresetId(value) { __classPrivateFieldSet(this, _WateringDialog__selectedPresetId_accessor_storage, value, "f"); }
-        get _isSubmitting() { return __classPrivateFieldGet(this, _WateringDialog__isSubmitting_accessor_storage, "f"); }
-        set _isSubmitting(value) { __classPrivateFieldSet(this, _WateringDialog__isSubmitting_accessor_storage, value, "f"); }
-        willUpdate(changedProps) {
-            if (changedProps.has('open') && this.open) {
-                this._resetForm();
-            }
-            if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-                this._dataService = new DataService(this.hass);
-            }
+        this._volume = 1.0; // Liters
+        this._nutrients = [];
+        this._selectedPresetId = '';
+        this._isSubmitting = false;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._resetForm();
         }
-        _resetForm() {
-            this._volume = 1.0;
+        if (this.hass && (changedProps.has('hass') || !this._dataService)) {
+            this._dataService = new DataService(this.hass);
+        }
+    }
+    _resetForm() {
+        this._volume = 1.0;
+        this._nutrients = [];
+        this._selectedPresetId = '';
+        this._isSubmitting = false;
+    }
+    _addNutrient(name = '', concentration = 0) {
+        this._nutrients = [...this._nutrients, { name, concentration }];
+    }
+    _updateNutrient(index, field, value) {
+        const updated = [...this._nutrients];
+        updated[index] = { ...updated[index], [field]: value };
+        this._nutrients = updated;
+    }
+    _removeNutrient(index) {
+        this._nutrients = this._nutrients.filter((_, i) => i !== index);
+        // If we manually remove a nutrient, we might be diverging from the preset
+        // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
+    }
+    _handlePresetChange(e) {
+        const presetId = e.target.value;
+        this._selectedPresetId = presetId;
+        if (!presetId) {
             this._nutrients = [];
-            this._selectedPresetId = '';
+            return;
+        }
+        const presets = this.store.data.$nutrientPresets.get();
+        if (presets && presets[presetId]) {
+            const preset = presets[presetId];
+            this._nutrients = preset.nutrients.map(n => ({
+                name: n.name,
+                concentration: n.dose_ml_l
+            }));
+        }
+    }
+    _calculateTotalMl(concentration) {
+        return this._volume * concentration;
+    }
+    _getTotalNutrientsMl() {
+        return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
+    }
+    async _submit() {
+        if (!this._dataService || !this.dialogState)
+            return;
+        this._isSubmitting = true;
+        try {
+            // Convert nutrients array to record
+            const nutrientsRecord = {};
+            for (const n of this._nutrients) {
+                if (n.name && n.concentration > 0) {
+                    nutrientsRecord[n.name] = n.concentration;
+                }
+            }
+            if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
+                // Water individual plants
+                for (const plantId of this.dialogState.plantIds) {
+                    await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
+                }
+                this.store?.showToast(`Watered ${this.dialogState.plantIds.length} plant(s)`, 'success');
+            }
+            else if (this.dialogState.growspaceId) {
+                // Water entire growspace
+                await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
+                this.store?.showToast('Watered all plants in growspace', 'success');
+            }
+            await this.store?.refreshData();
+            this._close();
+        }
+        catch (e) {
+            console.error('Failed to record watering:', e);
+            this.store?.showToast(`Error: ${e.message}`, 'error');
+        }
+        finally {
             this._isSubmitting = false;
         }
-        _addNutrient(name = '', concentration = 0) {
-            this._nutrients = [...this._nutrients, { name, concentration }];
-        }
-        _updateNutrient(index, field, value) {
-            const updated = [...this._nutrients];
-            updated[index] = { ...updated[index], [field]: value };
-            this._nutrients = updated;
-        }
-        _removeNutrient(index) {
-            this._nutrients = this._nutrients.filter((_, i) => i !== index);
-            // If we manually remove a nutrient, we might be diverging from the preset
-            // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
-        }
-        _handlePresetChange(e) {
-            const presetId = e.target.value;
-            this._selectedPresetId = presetId;
-            if (!presetId) {
-                this._nutrients = [];
-                return;
-            }
-            const presets = this.store.data.$nutrientPresets.get();
-            if (presets && presets[presetId]) {
-                const preset = presets[presetId];
-                this._nutrients = preset.nutrients.map(n => ({
-                    name: n.name,
-                    concentration: n.dose_ml_l
-                }));
-            }
-        }
-        _calculateTotalMl(concentration) {
-            return this._volume * concentration;
-        }
-        _getTotalNutrientsMl() {
-            return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
-        }
-        async _submit() {
-            if (!this._dataService || !this.dialogState)
-                return;
-            this._isSubmitting = true;
-            try {
-                // Convert nutrients array to record
-                const nutrientsRecord = {};
-                for (const n of this._nutrients) {
-                    if (n.name && n.concentration > 0) {
-                        nutrientsRecord[n.name] = n.concentration;
-                    }
-                }
-                if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
-                    // Water individual plants
-                    for (const plantId of this.dialogState.plantIds) {
-                        await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
-                    }
-                    this.store?.showToast(`Watered ${this.dialogState.plantIds.length} plant(s)`, 'success');
-                }
-                else if (this.dialogState.growspaceId) {
-                    // Water entire growspace
-                    await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
-                    this.store?.showToast('Watered all plants in growspace', 'success');
-                }
-                await this.store?.refreshData();
-                this._close();
-            }
-            catch (e) {
-                console.error('Failed to record watering:', e);
-                this.store?.showToast(`Error: ${e.message}`, 'error');
-            }
-            finally {
-                this._isSubmitting = false;
-            }
-        }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close'));
-        }
-        render() {
-            if (!this.open)
-                return E;
-            const dialogColor = '#2196F3';
-            const mode = this.dialogState?.mode || 'growspace';
-            const plantCount = this.dialogState?.plantIds?.length || 0;
-            const modeText = mode === 'plant' && plantCount > 0
-                ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
-                : `Watering all plants in ${this.growspaceName}`;
-            return x `
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const dialogColor = '#2196F3';
+        const mode = this.dialogState?.mode || 'growspace';
+        const plantCount = this.dialogState?.plantIds?.length || 0;
+        const modeText = mode === 'plant' && plantCount > 0
+            ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
+            : `Watering all plants in ${this.growspaceName}`;
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -16725,8 +15202,8 @@ class GrowspaceLogbookController {
                 .min=${0.1}
                 .step=${0.1}
                 @change=${(e) => {
-                this._volume = parseFloat(e.detail) || 0;
-            }}
+            this._volume = parseFloat(e.detail) || 0;
+        }}
               ></md3-number-input>
             </div>
 
@@ -16759,9 +15236,9 @@ class GrowspaceLogbookController {
                         .value=${nutrient.name}
                         .suggestions=${this._getNutrientSuggestions()}
                         @change=${(e) => {
-                const val = e.target.value || e.detail;
-                this._updateNutrient(index, 'name', val);
-            }}
+            const val = e.target.value || e.detail;
+            this._updateNutrient(index, 'name', val);
+        }}
                       ></md3-text-input>
                       <md3-number-input
                         label="ml/L"
@@ -16769,8 +15246,8 @@ class GrowspaceLogbookController {
                         .min=${0}
                         .step=${0.1}
                         @change=${(e) => {
-                this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
-            }}
+            this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
+        }}
                       ></md3-number-input>
                       <button
                         class="md3-button icon"
@@ -16792,12 +15269,12 @@ class GrowspaceLogbookController {
 
             <!-- Calculation Preview -->
             ${this._nutrients.length > 0
-                ? x `
+            ? x `
                   <div class="calculation-preview">
                     <h4 style="margin-top: 0; margin-bottom: 12px;">Calculation Preview</h4>
                     ${this._nutrients
-                    .filter((n) => n.name && n.concentration > 0)
-                    .map((nutrient) => x `
+                .filter((n) => n.name && n.concentration > 0)
+                .map((nutrient) => x `
                           <div class="calculation-row">
                             <span class="calculation-label">${nutrient.name}</span>
                             <span class="calculation-value">
@@ -16814,7 +15291,7 @@ class GrowspaceLogbookController {
                     </div>
                   </div>
                 `
-                : E}
+            : E}
           </div>
 
           <div class="button-group">
@@ -16833,105 +15310,67 @@ class GrowspaceLogbookController {
         </div>
       </ha-dialog>
     `;
-        }
-        _renderPresetOptions() {
-            if (!this.store || !this.store.data)
-                return E;
-            const presetsRecord = this.store.data.$nutrientPresets.get();
-            if (!presetsRecord)
-                return E;
-            const presets = Object.values(presetsRecord);
-            // Logic for recommendations
-            let currentStage;
-            let daysInStage = 0;
-            if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
-                const selectedDeviceId = this.store.data.$selectedDevice.get();
-                const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
-                if (selectedDevice) {
-                    // Check if all selected plants are in the same stage
-                    const selectedPlants = selectedDevice.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
-                    if (selectedPlants.length > 0) {
-                        // Use first plant as baseline
-                        const firstStage = selectedPlants[0].attributes.stage;
-                        const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
-                        if (isHomogeneous) {
-                            currentStage = firstStage;
-                            // Use minimum days in stage to be safe
-                            daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
-                        }
+    }
+    _renderPresetOptions() {
+        if (!this.store || !this.store.data)
+            return E;
+        const presetsRecord = this.store.data.$nutrientPresets.get();
+        if (!presetsRecord)
+            return E;
+        const presets = Object.values(presetsRecord);
+        // Logic for recommendations
+        let currentStage;
+        let daysInStage = 0;
+        if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
+            const selectedDeviceId = this.store.data.$selectedDevice.get();
+            const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
+            if (selectedDevice) {
+                // Check if all selected plants are in the same stage
+                const selectedPlants = selectedDevice.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
+                if (selectedPlants.length > 0) {
+                    // Use first plant as baseline
+                    const firstStage = selectedPlants[0].attributes.stage;
+                    const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+                    if (isHomogeneous) {
+                        currentStage = firstStage;
+                        // Use minimum days in stage to be safe
+                        daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
                     }
                 }
             }
-            return presets.map(p => {
-                let recommended = false;
-                // Exact match logic from backend
-                if (p.stage && p.stage === currentStage) {
-                    if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
-                        recommended = true;
-                    }
+        }
+        return presets.map(p => {
+            let recommended = false;
+            // Exact match logic from backend
+            if (p.stage && p.stage === currentStage) {
+                if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+                    recommended = true;
                 }
-                return x `
+            }
+            return x `
                 <option value="${p.id}" ?selected=${this._selectedPresetId === p.id}>
                     ${p.name} ${recommended ? '⭐ (Recommended)' : ''}
                 </option>
             `;
+        });
+    }
+    _getNutrientSuggestions() {
+        const nutrients = new Set();
+        if (!this.store || !this.store.data)
+            return [];
+        const presets = this.store.data.$nutrientPresets.get();
+        Object.values(presets).forEach(preset => {
+            preset.nutrients.forEach(n => {
+                if (n.name)
+                    nutrients.add(n.name);
             });
-        }
-        _getNutrientSuggestions() {
-            const nutrients = new Set();
-            if (!this.store || !this.store.data)
-                return [];
-            const presets = this.store.data.$nutrientPresets.get();
-            Object.values(presets).forEach(preset => {
-                preset.nutrients.forEach(n => {
-                    if (n.name)
-                        nutrients.add(n.name);
-                });
-            });
-            return Array.from(nutrients).sort();
-        }
-    };
-    _WateringDialog_hass_accessor_storage = new WeakMap();
-    _WateringDialog_store_accessor_storage = new WeakMap();
-    _WateringDialog_open_accessor_storage = new WeakMap();
-    _WateringDialog_dialogState_accessor_storage = new WeakMap();
-    _WateringDialog_growspaceName_accessor_storage = new WeakMap();
-    _WateringDialog__volume_accessor_storage = new WeakMap();
-    _WateringDialog__nutrients_accessor_storage = new WeakMap();
-    _WateringDialog__selectedPresetId_accessor_storage = new WeakMap();
-    _WateringDialog__isSubmitting_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "WateringDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _dialogState_decorators = [n$5({ attribute: false })];
-        _growspaceName_decorators = [n$5({ type: String })];
-        __volume_decorators = [r$2()];
-        __nutrients_decorators = [r$2()];
-        __selectedPresetId_decorators = [r$2()];
-        __isSubmitting_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _dialogState_decorators, { kind: "accessor", name: "dialogState", static: false, private: false, access: { has: obj => "dialogState" in obj, get: obj => obj.dialogState, set: (obj, value) => { obj.dialogState = value; } }, metadata: _metadata }, _dialogState_initializers, _dialogState_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceName_decorators, { kind: "accessor", name: "growspaceName", static: false, private: false, access: { has: obj => "growspaceName" in obj, get: obj => obj.growspaceName, set: (obj, value) => { obj.growspaceName = value; } }, metadata: _metadata }, _growspaceName_initializers, _growspaceName_extraInitializers);
-        __esDecorate(_classThis, null, __volume_decorators, { kind: "accessor", name: "_volume", static: false, private: false, access: { has: obj => "_volume" in obj, get: obj => obj._volume, set: (obj, value) => { obj._volume = value; } }, metadata: _metadata }, __volume_initializers, __volume_extraInitializers);
-        __esDecorate(_classThis, null, __nutrients_decorators, { kind: "accessor", name: "_nutrients", static: false, private: false, access: { has: obj => "_nutrients" in obj, get: obj => obj._nutrients, set: (obj, value) => { obj._nutrients = value; } }, metadata: _metadata }, __nutrients_initializers, __nutrients_extraInitializers);
-        __esDecorate(_classThis, null, __selectedPresetId_decorators, { kind: "accessor", name: "_selectedPresetId", static: false, private: false, access: { has: obj => "_selectedPresetId" in obj, get: obj => obj._selectedPresetId, set: (obj, value) => { obj._selectedPresetId = value; } }, metadata: _metadata }, __selectedPresetId_initializers, __selectedPresetId_extraInitializers);
-        __esDecorate(_classThis, null, __isSubmitting_decorators, { kind: "accessor", name: "_isSubmitting", static: false, private: false, access: { has: obj => "_isSubmitting" in obj, get: obj => obj._isSubmitting, set: (obj, value) => { obj._isSubmitting = value; } }, metadata: _metadata }, __isSubmitting_initializers, __isSubmitting_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+        });
+        return Array.from(nutrients).sort();
+    }
+};
+WateringDialog.styles = [
+    dialogStyles,
+    i$6 `
       :host {
         --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
@@ -17059,97 +15498,91 @@ class GrowspaceLogbookController {
           color: var(--primary-color);
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], WateringDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], WateringDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], WateringDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], WateringDialog.prototype, "dialogState", void 0);
+__decorate([
+    n$5({ type: String })
+], WateringDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2()
+], WateringDialog.prototype, "_volume", void 0);
+__decorate([
+    r$2()
+], WateringDialog.prototype, "_nutrients", void 0);
+__decorate([
+    r$2()
+], WateringDialog.prototype, "_selectedPresetId", void 0);
+__decorate([
+    r$2()
+], WateringDialog.prototype, "_isSubmitting", void 0);
+WateringDialog = __decorate([
+    t$2('watering-dialog')
+], WateringDialog);
 
-(() => {
-    var _TrainingDialog_hass_accessor_storage, _TrainingDialog_open_accessor_storage, _TrainingDialog_store_accessor_storage, _TrainingDialog__technique_accessor_storage, _TrainingDialog__notes_accessor_storage, _TrainingDialog__submitting_accessor_storage;
-    let _classDecorators = [t$2('training-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let __technique_decorators;
-    let __technique_initializers = [];
-    let __technique_extraInitializers = [];
-    let __notes_decorators;
-    let __notes_initializers = [];
-    let __notes_extraInitializers = [];
-    let __submitting_decorators;
-    let __submitting_initializers = [];
-    let __submitting_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _TrainingDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _TrainingDialog_hass_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _TrainingDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _TrainingDialog_open_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _TrainingDialog_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _TrainingDialog_store_accessor_storage, value, "f"); }
-        get _technique() { return __classPrivateFieldGet(this, _TrainingDialog__technique_accessor_storage, "f"); }
-        set _technique(value) { __classPrivateFieldSet(this, _TrainingDialog__technique_accessor_storage, value, "f"); }
-        get _notes() { return __classPrivateFieldGet(this, _TrainingDialog__notes_accessor_storage, "f"); }
-        set _notes(value) { __classPrivateFieldSet(this, _TrainingDialog__notes_accessor_storage, value, "f"); }
-        get _submitting() { return __classPrivateFieldGet(this, _TrainingDialog__submitting_accessor_storage, "f"); }
-        set _submitting(value) { __classPrivateFieldSet(this, _TrainingDialog__submitting_accessor_storage, value, "f"); }
-        get _techniques() {
-            return Object.values(TrainingTechnique).map(t => ({
-                value: t,
-                label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-            }));
-        }
-        _handleClose() {
-            this.store.ui.closeDialog();
-        }
-        async _save() {
-            if (!this._technique)
-                return;
-            this._submitting = true;
-            try {
-                const activeDialog = this.store.ui.$activeDialog.get();
-                if (activeDialog.type !== 'TRAINING')
-                    return;
-                const { plantIds, growspaceId } = activeDialog.payload;
-                await this.hass.callService('growspace_manager', 'log_training_event', {
-                    technique: this._technique,
-                    notes: this._notes || undefined,
-                    growspace_id: growspaceId,
-                    plant_id: plantIds && plantIds.length > 0 ? plantIds : undefined,
-                });
-                this.store.ui.showToast('Training logged successfully', 'success');
-                this._handleClose();
-            }
-            catch (e) {
-                console.error('Failed to log training:', e);
-                this.store.ui.showToast('Failed to log training', 'error');
-            }
-            finally {
-                this._submitting = false;
-            }
-        }
-        render() {
+let TrainingDialog = class TrainingDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._technique = '';
+        this._notes = '';
+        this._submitting = false;
+    }
+    get _techniques() {
+        return Object.values(TrainingTechnique).map(t => ({
+            value: t,
+            label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        }));
+    }
+    _handleClose() {
+        this.store.ui.closeDialog();
+    }
+    async _save() {
+        if (!this._technique)
+            return;
+        this._submitting = true;
+        try {
             const activeDialog = this.store.ui.$activeDialog.get();
             if (activeDialog.type !== 'TRAINING')
-                return E;
-            const { plantIds } = activeDialog.payload;
-            const count = plantIds ? plantIds.length : 0;
-            const title = count > 0
-                ? `Log Training (${count} plant${count !== 1 ? 's' : ''})`
-                : 'Log Training';
-            return x `
+                return;
+            const { plantIds, growspaceId } = activeDialog.payload;
+            await this.hass.callService('growspace_manager', 'log_training_event', {
+                technique: this._technique,
+                notes: this._notes || undefined,
+                growspace_id: growspaceId,
+                plant_id: plantIds && plantIds.length > 0 ? plantIds : undefined,
+            });
+            this.store.ui.showToast('Training logged successfully', 'success');
+            this._handleClose();
+        }
+        catch (e) {
+            console.error('Failed to log training:', e);
+            this.store.ui.showToast('Failed to log training', 'error');
+        }
+        finally {
+            this._submitting = false;
+        }
+    }
+    render() {
+        const activeDialog = this.store.ui.$activeDialog.get();
+        if (activeDialog.type !== 'TRAINING')
+            return E;
+        const { plantIds } = activeDialog.payload;
+        const count = plantIds ? plantIds.length : 0;
+        const title = count > 0
+            ? `Log Training (${count} plant${count !== 1 ? 's' : ''})`
+            : 'Log Training';
+        return x `
             <ha-dialog
                 .open=${this.open}
                 @closed=${this._handleClose}
@@ -17181,50 +15614,11 @@ class GrowspaceLogbookController {
                 </div>
             </ha-dialog>
         `;
-        }
-        constructor() {
-            super(...arguments);
-            _TrainingDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _TrainingDialog_open_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _TrainingDialog_store_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _TrainingDialog__technique_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, __technique_initializers, '')));
-            _TrainingDialog__notes_accessor_storage.set(this, (__runInitializers(this, __technique_extraInitializers), __runInitializers(this, __notes_initializers, '')));
-            _TrainingDialog__submitting_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __submitting_initializers, false)));
-            __runInitializers(this, __submitting_extraInitializers);
-        }
-    };
-    _TrainingDialog_hass_accessor_storage = new WeakMap();
-    _TrainingDialog_open_accessor_storage = new WeakMap();
-    _TrainingDialog_store_accessor_storage = new WeakMap();
-    _TrainingDialog__technique_accessor_storage = new WeakMap();
-    _TrainingDialog__notes_accessor_storage = new WeakMap();
-    _TrainingDialog__submitting_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "TrainingDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _store_decorators = [n$5({ attribute: false })];
-        __technique_decorators = [r$2()];
-        __notes_decorators = [r$2()];
-        __submitting_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, __technique_decorators, { kind: "accessor", name: "_technique", static: false, private: false, access: { has: obj => "_technique" in obj, get: obj => obj._technique, set: (obj, value) => { obj._technique = value; } }, metadata: _metadata }, __technique_initializers, __technique_extraInitializers);
-        __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
-        __esDecorate(_classThis, null, __submitting_decorators, { kind: "accessor", name: "_submitting", static: false, private: false, access: { has: obj => "_submitting" in obj, get: obj => obj._submitting, set: (obj, value) => { obj._submitting = value; } }, metadata: _metadata }, __submitting_initializers, __submitting_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            i$6 `
+    }
+};
+TrainingDialog.styles = [
+    sharedStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -17235,130 +15629,115 @@ class GrowspaceLogbookController {
         margin-top: 16px;
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], TrainingDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], TrainingDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], TrainingDialog.prototype, "store", void 0);
+__decorate([
+    r$2()
+], TrainingDialog.prototype, "_technique", void 0);
+__decorate([
+    r$2()
+], TrainingDialog.prototype, "_notes", void 0);
+__decorate([
+    r$2()
+], TrainingDialog.prototype, "_submitting", void 0);
+TrainingDialog = __decorate([
+    t$2('training-dialog')
+], TrainingDialog);
 
-(() => {
-    var _NutrientPresetsEditor_hass_accessor_storage, _NutrientPresetsEditor_store_accessor_storage, _NutrientPresetsEditor_open_accessor_storage, _NutrientPresetsEditor__view_accessor_storage, _NutrientPresetsEditor__editingPreset_accessor_storage, _NutrientPresetsEditor__error_accessor_storage;
-    let _classDecorators = [t$2('nutrient-presets-editor')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let __view_decorators;
-    let __view_initializers = [];
-    let __view_extraInitializers = [];
-    let __editingPreset_decorators;
-    let __editingPreset_initializers = [];
-    let __editingPreset_extraInitializers = [];
-    let __error_decorators;
-    let __error_initializers = [];
-    let __error_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_store_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _NutrientPresetsEditor_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor_open_accessor_storage, value, "f"); }
-        get _view() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__view_accessor_storage, "f"); }
-        set _view(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__view_accessor_storage, value, "f"); }
-        get _editingPreset() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__editingPreset_accessor_storage, "f"); }
-        set _editingPreset(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__editingPreset_accessor_storage, value, "f"); }
-        get _error() { return __classPrivateFieldGet(this, _NutrientPresetsEditor__error_accessor_storage, "f"); }
-        set _error(value) { __classPrivateFieldSet(this, _NutrientPresetsEditor__error_accessor_storage, value, "f"); }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._view = 'LIST';
+        this._editingPreset = null;
+        this._error = null;
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _startNew() {
+        this._editingPreset = {
+            name: '',
+            nutrients: [{ name: '', dose_ml_l: 0 }],
+            stage: '',
+            min_days_in_stage: 0
+        };
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    _editPreset(preset) {
+        this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    async _deletePreset(presetId) {
+        if (!confirm('Are you sure you want to delete this preset?'))
+            return;
+        try {
+            await this.store.dataService.removeNutrientPreset(presetId);
+            await this.store.fetchNutrientPresets(true);
         }
-        _startNew() {
-            this._editingPreset = {
-                name: '',
-                nutrients: [{ name: '', dose_ml_l: 0 }],
-                stage: '',
-                min_days_in_stage: 0
-            };
-            this._view = 'EDIT';
-            this._error = null;
+        catch (err) {
+            this._error = err.message;
         }
-        _editPreset(preset) {
-            this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
-            this._view = 'EDIT';
-            this._error = null;
+    }
+    _addNutrient() {
+        if (!this._editingPreset)
+            return;
+        const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
+        this._editingPreset = { ...this._editingPreset, nutrients };
+    }
+    _removeNutrient(index) {
+        if (!this._editingPreset)
+            return;
+        const nutrients = [...(this._editingPreset.nutrients || [])];
+        nutrients.splice(index, 1);
+        this._editingPreset = { ...this._editingPreset, nutrients };
+    }
+    _updateNutrient(index, updates) {
+        if (!this._editingPreset)
+            return;
+        const nutrients = [...(this._editingPreset.nutrients || [])];
+        nutrients[index] = { ...nutrients[index], ...updates };
+        this._editingPreset = { ...this._editingPreset, nutrients };
+    }
+    async _savePreset() {
+        if (!this._editingPreset || !this._editingPreset.name) {
+            this._error = 'Preset name is required';
+            return;
         }
-        async _deletePreset(presetId) {
-            if (!confirm('Are you sure you want to delete this preset?'))
-                return;
-            try {
-                await this.store.dataService.removeNutrientPreset(presetId);
-                await this.store.fetchNutrientPresets(true);
-            }
-            catch (err) {
-                this._error = err.message;
-            }
+        const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
+        if (nutrients.length === 0) {
+            this._error = 'At least one valid nutrient is required';
+            return;
         }
-        _addNutrient() {
-            if (!this._editingPreset)
-                return;
-            const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
-            this._editingPreset = { ...this._editingPreset, nutrients };
+        try {
+            await this.store.dataService.saveNutrientPreset({
+                preset_id: this._editingPreset.id,
+                name: this._editingPreset.name,
+                nutrients,
+                stage: this._editingPreset.stage || undefined,
+                min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
+            });
+            await this.store.fetchNutrientPresets(true);
+            this._view = 'LIST';
         }
-        _removeNutrient(index) {
-            if (!this._editingPreset)
-                return;
-            const nutrients = [...(this._editingPreset.nutrients || [])];
-            nutrients.splice(index, 1);
-            this._editingPreset = { ...this._editingPreset, nutrients };
+        catch (err) {
+            this._error = err.message;
         }
-        _updateNutrient(index, updates) {
-            if (!this._editingPreset)
-                return;
-            const nutrients = [...(this._editingPreset.nutrients || [])];
-            nutrients[index] = { ...nutrients[index], ...updates };
-            this._editingPreset = { ...this._editingPreset, nutrients };
-        }
-        async _savePreset() {
-            if (!this._editingPreset || !this._editingPreset.name) {
-                this._error = 'Preset name is required';
-                return;
-            }
-            const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
-            if (nutrients.length === 0) {
-                this._error = 'At least one valid nutrient is required';
-                return;
-            }
-            try {
-                await this.store.dataService.saveNutrientPreset({
-                    preset_id: this._editingPreset.id,
-                    name: this._editingPreset.name,
-                    nutrients,
-                    stage: this._editingPreset.stage || undefined,
-                    min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
-                });
-                await this.store.fetchNutrientPresets(true);
-                this._view = 'LIST';
-            }
-            catch (err) {
-                this._error = err.message;
-            }
-        }
-        render() {
-            if (!this.open)
-                return x ``;
-            return x `
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -17387,14 +15766,14 @@ class GrowspaceLogbookController {
 
           <div class="button-group">
             ${this._view === 'LIST'
-                ? x `
+            ? x `
                   <button class="md3-button tonal" @click=${this._close}>Close</button>
                   <button class="md3-button primary" @click=${this._startNew}>
                     <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
                     Add Preset
                   </button>
                 `
-                : x `
+            : x `
                   <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
                   <button class="md3-button primary" @click=${this._savePreset}>
                     <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
@@ -17405,20 +15784,20 @@ class GrowspaceLogbookController {
         </div>
       </ha-dialog>
     `;
-        }
-        _renderList() {
-            const presets = this.store.data.$nutrientPresets.get();
-            const presetEntries = Object.values(presets);
-            if (presetEntries.length === 0) {
-                return x `
+    }
+    _renderList() {
+        const presets = this.store.data.$nutrientPresets.get();
+        const presetEntries = Object.values(presets);
+        if (presetEntries.length === 0) {
+            return x `
         <div class="empty-state">
           <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
           <p>No nutrient presets defined yet.</p>
           <p style="font-size: 0.9rem;">Presets allow you to quickly apply recurring nutrient recipes while watering.</p>
         </div>
       `;
-            }
-            return x `
+        }
+        return x `
       <div class="presets-list">
         ${presetEntries.map(preset => x `
           <div class="preset-item">
@@ -17442,11 +15821,11 @@ class GrowspaceLogbookController {
         `)}
       </div>
     `;
-        }
-        _renderEdit() {
-            if (!this._editingPreset)
-                return E;
-            return x `
+    }
+    _renderEdit() {
+        if (!this._editingPreset)
+            return E;
+        return x `
       <div class="preset-form">
         <div class="form-section">
            <h3>General Info</h3>
@@ -17518,63 +15897,24 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        _getNutrientSuggestions() {
-            const nutrients = new Set();
-            const presets = this.store.data.$nutrientPresets.get();
-            Object.values(presets).forEach(preset => {
-                if (preset.nutrients) {
-                    preset.nutrients.forEach(n => {
-                        if (n.name)
-                            nutrients.add(n.name);
-                    });
-                }
-            });
-            return Array.from(nutrients).sort();
-        }
-        constructor() {
-            super(...arguments);
-            _NutrientPresetsEditor_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _NutrientPresetsEditor_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _NutrientPresetsEditor_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _NutrientPresetsEditor__view_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, __view_initializers, 'LIST')));
-            _NutrientPresetsEditor__editingPreset_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
-            _NutrientPresetsEditor__error_accessor_storage.set(this, (__runInitializers(this, __editingPreset_extraInitializers), __runInitializers(this, __error_initializers, null)));
-            __runInitializers(this, __error_extraInitializers);
-        }
-    };
-    _NutrientPresetsEditor_hass_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor_store_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor_open_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor__view_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor__editingPreset_accessor_storage = new WeakMap();
-    _NutrientPresetsEditor__error_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "NutrientPresetsEditor");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext, subscribe: true }), n$5({ attribute: false })];
-        _open_decorators = [n$5({ type: Boolean })];
-        __view_decorators = [r$2()];
-        __editingPreset_decorators = [r$2()];
-        __error_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
-        __esDecorate(_classThis, null, __editingPreset_decorators, { kind: "accessor", name: "_editingPreset", static: false, private: false, access: { has: obj => "_editingPreset" in obj, get: obj => obj._editingPreset, set: (obj, value) => { obj._editingPreset = value; } }, metadata: _metadata }, __editingPreset_initializers, __editingPreset_extraInitializers);
-        __esDecorate(_classThis, null, __error_decorators, { kind: "accessor", name: "_error", static: false, private: false, access: { has: obj => "_error" in obj, get: obj => obj._error, set: (obj, value) => { obj._error = value; } }, metadata: _metadata }, __error_initializers, __error_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+    _getNutrientSuggestions() {
+        const nutrients = new Set();
+        const presets = this.store.data.$nutrientPresets.get();
+        Object.values(presets).forEach(preset => {
+            if (preset.nutrients) {
+                preset.nutrients.forEach(n => {
+                    if (n.name)
+                        nutrients.add(n.name);
+                });
+            }
+        });
+        return Array.from(nutrients).sort();
+    }
+};
+NutrientPresetsEditor.styles = [
+    dialogStyles,
+    i$6 `
       .preset-item {
         display: flex;
         align-items: center;
@@ -17641,196 +15981,166 @@ class GrowspaceLogbookController {
           gap: 16px;
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], NutrientPresetsEditor.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
+], NutrientPresetsEditor.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientPresetsEditor.prototype, "open", void 0);
+__decorate([
+    r$2()
+], NutrientPresetsEditor.prototype, "_view", void 0);
+__decorate([
+    r$2()
+], NutrientPresetsEditor.prototype, "_editingPreset", void 0);
+__decorate([
+    r$2()
+], NutrientPresetsEditor.prototype, "_error", void 0);
+NutrientPresetsEditor = __decorate([
+    t$2('nutrient-presets-editor')
+], NutrientPresetsEditor);
 
-(() => {
-    var _IPMDialog_hass_accessor_storage, _IPMDialog_store_accessor_storage, _IPMDialog_open_accessor_storage, _IPMDialog_growspaceId_accessor_storage, _IPMDialog_plantIds_accessor_storage, _IPMDialog__view_accessor_storage, _IPMDialog__selectedPresetId_accessor_storage, _IPMDialog__notes_accessor_storage, _IPMDialog__editingPreset_accessor_storage, _IPMDialog__error_accessor_storage;
-    let _classDecorators = [t$2('ipm-dialog')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _open_decorators;
-    let _open_initializers = [];
-    let _open_extraInitializers = [];
-    let _growspaceId_decorators;
-    let _growspaceId_initializers = [];
-    let _growspaceId_extraInitializers = [];
-    let _plantIds_decorators;
-    let _plantIds_initializers = [];
-    let _plantIds_extraInitializers = [];
-    let __view_decorators;
-    let __view_initializers = [];
-    let __view_extraInitializers = [];
-    let __selectedPresetId_decorators;
-    let __selectedPresetId_initializers = [];
-    let __selectedPresetId_extraInitializers = [];
-    let __notes_decorators;
-    let __notes_initializers = [];
-    let __notes_extraInitializers = [];
-    let __editingPreset_decorators;
-    let __editingPreset_initializers = [];
-    let __editingPreset_extraInitializers = [];
-    let __error_decorators;
-    let __error_initializers = [];
-    let __error_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _IPMDialog_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _IPMDialog_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _IPMDialog_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _IPMDialog_store_accessor_storage, value, "f"); }
-        get open() { return __classPrivateFieldGet(this, _IPMDialog_open_accessor_storage, "f"); }
-        set open(value) { __classPrivateFieldSet(this, _IPMDialog_open_accessor_storage, value, "f"); }
-        get growspaceId() { return __classPrivateFieldGet(this, _IPMDialog_growspaceId_accessor_storage, "f"); }
-        set growspaceId(value) { __classPrivateFieldSet(this, _IPMDialog_growspaceId_accessor_storage, value, "f"); }
-        get plantIds() { return __classPrivateFieldGet(this, _IPMDialog_plantIds_accessor_storage, "f"); }
-        set plantIds(value) { __classPrivateFieldSet(this, _IPMDialog_plantIds_accessor_storage, value, "f"); }
-        get _view() { return __classPrivateFieldGet(this, _IPMDialog__view_accessor_storage, "f"); }
-        set _view(value) { __classPrivateFieldSet(this, _IPMDialog__view_accessor_storage, value, "f"); }
-        get _selectedPresetId() { return __classPrivateFieldGet(this, _IPMDialog__selectedPresetId_accessor_storage, "f"); }
-        set _selectedPresetId(value) { __classPrivateFieldSet(this, _IPMDialog__selectedPresetId_accessor_storage, value, "f"); }
-        get _notes() { return __classPrivateFieldGet(this, _IPMDialog__notes_accessor_storage, "f"); }
-        set _notes(value) { __classPrivateFieldSet(this, _IPMDialog__notes_accessor_storage, value, "f"); }
+let IPMDialog = class IPMDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = undefined;
+        this.plantIds = [];
+        this._view = 'APPLY';
+        this._selectedPresetId = null;
+        this._notes = '';
         // Edit mode state
-        get _editingPreset() { return __classPrivateFieldGet(this, _IPMDialog__editingPreset_accessor_storage, "f"); }
-        set _editingPreset(value) { __classPrivateFieldSet(this, _IPMDialog__editingPreset_accessor_storage, value, "f"); }
-        get _error() { return __classPrivateFieldGet(this, _IPMDialog__error_accessor_storage, "f"); }
-        set _error(value) { __classPrivateFieldSet(this, _IPMDialog__error_accessor_storage, value, "f"); }
-        updated(changedProps) {
-            if (changedProps.has('open') && this.open) {
-                if (!this._editingPreset) {
-                    this._view = 'APPLY';
-                    this._selectedPresetId = null;
-                    this._notes = '';
-                    this._error = null;
-                }
+        this._editingPreset = null;
+        this._error = null;
+    }
+    updated(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            if (!this._editingPreset) {
+                this._view = 'APPLY';
+                this._selectedPresetId = null;
+                this._notes = '';
+                this._error = null;
             }
         }
-        _close() {
-            this.dispatchEvent(new CustomEvent('close'));
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    // --- APPLY VIEW LOGIC ---
+    async _apply() {
+        if (!this._selectedPresetId)
+            return;
+        // Validate: at least one of growspaceId or plantIds must be provided
+        const hasPlants = this.plantIds && this.plantIds.length > 0;
+        const hasGrowspace = !!this.growspaceId;
+        if (!hasPlants && !hasGrowspace) {
+            this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
+            console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
+            return;
         }
-        // --- APPLY VIEW LOGIC ---
-        async _apply() {
-            if (!this._selectedPresetId)
-                return;
-            // Validate: at least one of growspaceId or plantIds must be provided
-            const hasPlants = this.plantIds && this.plantIds.length > 0;
-            const hasGrowspace = !!this.growspaceId;
-            if (!hasPlants && !hasGrowspace) {
-                this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
-                console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
-                return;
-            }
-            try {
-                await this.store.dataService.applyIPM({
-                    preset_id: this._selectedPresetId,
-                    growspace_id: !hasPlants ? this.growspaceId : undefined,
-                    plant_ids: hasPlants ? this.plantIds : undefined,
-                    notes: this._notes
-                });
-                this._close();
-            }
-            catch (e) {
-                console.error('Failed to apply IPM', e);
-                this._error = e.message || 'Failed to apply treatment';
-            }
+        try {
+            await this.store.dataService.applyIPM({
+                preset_id: this._selectedPresetId,
+                growspace_id: !hasPlants ? this.growspaceId : undefined,
+                plant_ids: hasPlants ? this.plantIds : undefined,
+                notes: this._notes
+            });
+            this._close();
         }
-        // --- EDIT VIEW LOGIC ---
-        _startNew() {
-            this._editingPreset = {
-                name: '',
-                type: 'foliar',
-                items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
-                stage: undefined,
-                min_days_in_stage: 0
-            };
-            this._view = 'EDIT';
-            this._error = null;
+        catch (e) {
+            console.error('Failed to apply IPM', e);
+            this._error = e.message || 'Failed to apply treatment';
         }
-        _editPreset(preset) {
-            this._editingPreset = JSON.parse(JSON.stringify(preset));
-            this._view = 'EDIT';
-            this._error = null;
+    }
+    // --- EDIT VIEW LOGIC ---
+    _startNew() {
+        this._editingPreset = {
+            name: '',
+            type: 'foliar',
+            items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
+            stage: undefined,
+            min_days_in_stage: 0
+        };
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    _editPreset(preset) {
+        this._editingPreset = JSON.parse(JSON.stringify(preset));
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    async _deletePreset(presetId) {
+        if (!confirm('Are you sure you want to delete this preset?'))
+            return;
+        try {
+            await this.store.dataService.removeIPMPreset(presetId);
+            await this.store.fetchIPMPresets(true);
         }
-        async _deletePreset(presetId) {
-            if (!confirm('Are you sure you want to delete this preset?'))
-                return;
-            try {
-                await this.store.dataService.removeIPMPreset(presetId);
-                await this.store.fetchIPMPresets(true);
-            }
-            catch (err) {
-                this._error = err.message;
-            }
+        catch (err) {
+            this._error = err.message;
         }
-        _addProduct() {
-            if (!this._editingPreset)
-                return;
-            const items = [...(this._editingPreset.items || []), { name: '', dose_amount: 0, dose_unit: 'ml/L' }];
-            this._editingPreset = { ...this._editingPreset, items };
+    }
+    _addProduct() {
+        if (!this._editingPreset)
+            return;
+        const items = [...(this._editingPreset.items || []), { name: '', dose_amount: 0, dose_unit: 'ml/L' }];
+        this._editingPreset = { ...this._editingPreset, items };
+    }
+    _removeProduct(index) {
+        if (!this._editingPreset)
+            return;
+        const items = [...(this._editingPreset.items || [])];
+        items.splice(index, 1);
+        this._editingPreset = { ...this._editingPreset, items };
+    }
+    _updateProduct(index, updates) {
+        if (!this._editingPreset)
+            return;
+        const items = [...(this._editingPreset.items || [])];
+        items[index] = { ...items[index], ...updates };
+        this._editingPreset = { ...this._editingPreset, items };
+    }
+    async _savePreset() {
+        if (!this._editingPreset || !this._editingPreset.name) {
+            this._error = 'Preset name is required';
+            return;
         }
-        _removeProduct(index) {
-            if (!this._editingPreset)
-                return;
-            const items = [...(this._editingPreset.items || [])];
-            items.splice(index, 1);
-            this._editingPreset = { ...this._editingPreset, items };
+        const items = (this._editingPreset.items || []).filter(i => i.name);
+        try {
+            await this.store.dataService.saveIPMPreset({
+                preset_id: this._editingPreset.id,
+                name: this._editingPreset.name,
+                type: this._editingPreset.type || 'foliar',
+                items: items,
+                stage: this._editingPreset.stage || undefined,
+                min_days_in_stage: this._editingPreset.min_days_in_stage || 0
+            });
+            await this.store.fetchIPMPresets(true);
+            this._view = 'LIST';
         }
-        _updateProduct(index, updates) {
-            if (!this._editingPreset)
-                return;
-            const items = [...(this._editingPreset.items || [])];
-            items[index] = { ...items[index], ...updates };
-            this._editingPreset = { ...this._editingPreset, items };
+        catch (err) {
+            this._error = err.message;
         }
-        async _savePreset() {
-            if (!this._editingPreset || !this._editingPreset.name) {
-                this._error = 'Preset name is required';
-                return;
-            }
-            const items = (this._editingPreset.items || []).filter(i => i.name);
-            try {
-                await this.store.dataService.saveIPMPreset({
-                    preset_id: this._editingPreset.id,
-                    name: this._editingPreset.name,
-                    type: this._editingPreset.type || 'foliar',
-                    items: items,
-                    stage: this._editingPreset.stage || undefined,
-                    min_days_in_stage: this._editingPreset.min_days_in_stage || 0
-                });
-                await this.store.fetchIPMPresets(true);
-                this._view = 'LIST';
-            }
-            catch (err) {
-                this._error = err.message;
-            }
+    }
+    render() {
+        if (!this.open)
+            return E;
+        let title = 'Integrated Pest Management';
+        let subtitle = 'Manage pests and pathogens';
+        if (this._view === 'LIST') {
+            title = 'Manage Presets';
+            subtitle = 'Configure IPM recipes';
         }
-        render() {
-            if (!this.open)
-                return E;
-            let title = 'Integrated Pest Management';
-            let subtitle = 'Manage pests and pathogens';
-            if (this._view === 'LIST') {
-                title = 'Manage Presets';
-                subtitle = 'Configure IPM recipes';
-            }
-            else if (this._view === 'EDIT') {
-                title = this._editingPreset?.id ? 'Edit Preset' : 'New Preset';
-                subtitle = 'Define treatment details';
-            }
-            return x `
+        else if (this._view === 'EDIT') {
+            title = this._editingPreset?.id ? 'Edit Preset' : 'New Preset';
+            subtitle = 'Define treatment details';
+        }
+        return x `
       <ha-dialog
         open
         @closed=${this._close}
@@ -17855,8 +16165,8 @@ class GrowspaceLogbookController {
             ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
             
             ${this._view === 'APPLY' ? this._renderApply() :
-                this._view === 'LIST' ? this._renderList() :
-                    this._renderEdit()}
+            this._view === 'LIST' ? this._renderList() :
+                this._renderEdit()}
           </div>
 
           <div class="button-group">
@@ -17865,43 +16175,43 @@ class GrowspaceLogbookController {
         </div>
       </ha-dialog>
     `;
-        }
-        _renderFooterButtons() {
-            if (this._view === 'APPLY') {
-                return x `
+    }
+    _renderFooterButtons() {
+        if (this._view === 'APPLY') {
+            return x `
         <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Manage Presets</button>
         <button class="md3-button primary" ?disabled=${!this._selectedPresetId} @click=${this._apply}>
           <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
           Apply Treatment
         </button>
       `;
-            }
-            else if (this._view === 'LIST') {
-                return x `
+        }
+        else if (this._view === 'LIST') {
+            return x `
         <button class="md3-button tonal" @click=${() => this._view = 'APPLY'}>Back to Apply</button>
         <button class="md3-button primary" @click=${this._startNew}>
           <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
           Add Preset
         </button>
       `;
-            }
-            else {
-                return x `
+        }
+        else {
+            return x `
         <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
         <button class="md3-button primary" @click=${this._savePreset}>
           <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
           Save Preset
         </button>
       `;
-            }
         }
-        _renderApply() {
-            const presets = this.store.data.$ipmPresets.get();
-            const presetList = Object.values(presets || {});
-            const targetText = (this.plantIds && this.plantIds.length > 0)
-                ? `${this.plantIds.length} Plants`
-                : `Entire Growspace`;
-            return x `
+    }
+    _renderApply() {
+        const presets = this.store.data.$ipmPresets.get();
+        const presetList = Object.values(presets || {});
+        const targetText = (this.plantIds && this.plantIds.length > 0)
+            ? `${this.plantIds.length} Plants`
+            : `Entire Growspace`;
+        return x `
       <div class="form-section">
         <h3>Treatment Selection</h3>
         <md3-select
@@ -17927,20 +16237,20 @@ class GrowspaceLogbookController {
         ></ha-textarea>
       </div>
     `;
-        }
-        _renderList() {
-            const presets = this.store.data.$ipmPresets.get();
-            const presetEntries = Object.values(presets || {});
-            if (presetEntries.length === 0) {
-                return x `
+    }
+    _renderList() {
+        const presets = this.store.data.$ipmPresets.get();
+        const presetEntries = Object.values(presets || {});
+        if (presetEntries.length === 0) {
+            return x `
         <div class="empty-state">
           <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
           <p>No IPM presets defined yet.</p>
           <p style="font-size: 0.9rem;">Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").</p>
         </div>
       `;
-            }
-            return x `
+        }
+        return x `
       <div class="presets-list">
         ${presetEntries.map(preset => x `
           <div class="preset-item">
@@ -17963,11 +16273,11 @@ class GrowspaceLogbookController {
         `)}
       </div>
     `;
-        }
-        _renderEdit() {
-            if (!this._editingPreset)
-                return E;
-            return x `
+    }
+    _renderEdit() {
+        if (!this._editingPreset)
+            return E;
+        return x `
       <div class="preset-form">
         <div class="form-section">
            <h3>General Info</h3>
@@ -18057,66 +16367,11 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _IPMDialog_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _IPMDialog_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _IPMDialog_open_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _open_initializers, false)));
-            _IPMDialog_growspaceId_accessor_storage.set(this, (__runInitializers(this, _open_extraInitializers), __runInitializers(this, _growspaceId_initializers, undefined)));
-            _IPMDialog_plantIds_accessor_storage.set(this, (__runInitializers(this, _growspaceId_extraInitializers), __runInitializers(this, _plantIds_initializers, [])));
-            _IPMDialog__view_accessor_storage.set(this, (__runInitializers(this, _plantIds_extraInitializers), __runInitializers(this, __view_initializers, 'APPLY')));
-            _IPMDialog__selectedPresetId_accessor_storage.set(this, (__runInitializers(this, __view_extraInitializers), __runInitializers(this, __selectedPresetId_initializers, null)));
-            _IPMDialog__notes_accessor_storage.set(this, (__runInitializers(this, __selectedPresetId_extraInitializers), __runInitializers(this, __notes_initializers, '')));
-            _IPMDialog__editingPreset_accessor_storage.set(this, (__runInitializers(this, __notes_extraInitializers), __runInitializers(this, __editingPreset_initializers, null)));
-            _IPMDialog__error_accessor_storage.set(this, (__runInitializers(this, __editingPreset_extraInitializers), __runInitializers(this, __error_initializers, null)));
-            __runInitializers(this, __error_extraInitializers);
-        }
-    };
-    _IPMDialog_hass_accessor_storage = new WeakMap();
-    _IPMDialog_store_accessor_storage = new WeakMap();
-    _IPMDialog_open_accessor_storage = new WeakMap();
-    _IPMDialog_growspaceId_accessor_storage = new WeakMap();
-    _IPMDialog_plantIds_accessor_storage = new WeakMap();
-    _IPMDialog__view_accessor_storage = new WeakMap();
-    _IPMDialog__selectedPresetId_accessor_storage = new WeakMap();
-    _IPMDialog__notes_accessor_storage = new WeakMap();
-    _IPMDialog__editingPreset_accessor_storage = new WeakMap();
-    _IPMDialog__error_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "IPMDialog");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext, subscribe: true }), n$5({ attribute: false })];
-        _open_decorators = [n$5({ type: Boolean })];
-        _growspaceId_decorators = [n$5({ attribute: false })];
-        _plantIds_decorators = [n$5({ attribute: false })];
-        __view_decorators = [r$2()];
-        __selectedPresetId_decorators = [r$2()];
-        __notes_decorators = [r$2()];
-        __editingPreset_decorators = [r$2()];
-        __error_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _open_decorators, { kind: "accessor", name: "open", static: false, private: false, access: { has: obj => "open" in obj, get: obj => obj.open, set: (obj, value) => { obj.open = value; } }, metadata: _metadata }, _open_initializers, _open_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceId_decorators, { kind: "accessor", name: "growspaceId", static: false, private: false, access: { has: obj => "growspaceId" in obj, get: obj => obj.growspaceId, set: (obj, value) => { obj.growspaceId = value; } }, metadata: _metadata }, _growspaceId_initializers, _growspaceId_extraInitializers);
-        __esDecorate(_classThis, null, _plantIds_decorators, { kind: "accessor", name: "plantIds", static: false, private: false, access: { has: obj => "plantIds" in obj, get: obj => obj.plantIds, set: (obj, value) => { obj.plantIds = value; } }, metadata: _metadata }, _plantIds_initializers, _plantIds_extraInitializers);
-        __esDecorate(_classThis, null, __view_decorators, { kind: "accessor", name: "_view", static: false, private: false, access: { has: obj => "_view" in obj, get: obj => obj._view, set: (obj, value) => { obj._view = value; } }, metadata: _metadata }, __view_initializers, __view_extraInitializers);
-        __esDecorate(_classThis, null, __selectedPresetId_decorators, { kind: "accessor", name: "_selectedPresetId", static: false, private: false, access: { has: obj => "_selectedPresetId" in obj, get: obj => obj._selectedPresetId, set: (obj, value) => { obj._selectedPresetId = value; } }, metadata: _metadata }, __selectedPresetId_initializers, __selectedPresetId_extraInitializers);
-        __esDecorate(_classThis, null, __notes_decorators, { kind: "accessor", name: "_notes", static: false, private: false, access: { has: obj => "_notes" in obj, get: obj => obj._notes, set: (obj, value) => { obj._notes = value; } }, metadata: _metadata }, __notes_initializers, __notes_extraInitializers);
-        __esDecorate(_classThis, null, __editingPreset_decorators, { kind: "accessor", name: "_editingPreset", static: false, private: false, access: { has: obj => "_editingPreset" in obj, get: obj => obj._editingPreset, set: (obj, value) => { obj._editingPreset = value; } }, metadata: _metadata }, __editingPreset_initializers, __editingPreset_extraInitializers);
-        __esDecorate(_classThis, null, __error_decorators, { kind: "accessor", name: "_error", static: false, private: false, access: { has: obj => "_error" in obj, get: obj => obj._error, set: (obj, value) => { obj._error = value; } }, metadata: _metadata }, __error_initializers, __error_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            dialogStyles,
-            i$6 `
+    }
+};
+IPMDialog.styles = [
+    dialogStyles,
+    i$6 `
       .preset-item {
         display: flex;
         align-items: center;
@@ -18189,97 +16444,107 @@ class GrowspaceLogbookController {
         color: var(--primary-color, #4caf50);
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], IPMDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
+], IPMDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], IPMDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], IPMDialog.prototype, "growspaceId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], IPMDialog.prototype, "plantIds", void 0);
+__decorate([
+    r$2()
+], IPMDialog.prototype, "_view", void 0);
+__decorate([
+    r$2()
+], IPMDialog.prototype, "_selectedPresetId", void 0);
+__decorate([
+    r$2()
+], IPMDialog.prototype, "_notes", void 0);
+__decorate([
+    r$2()
+], IPMDialog.prototype, "_editingPreset", void 0);
+__decorate([
+    r$2()
+], IPMDialog.prototype, "_error", void 0);
+IPMDialog = __decorate([
+    t$2('ipm-dialog')
+], IPMDialog);
 
-(() => {
-    var _DialogHost_hass_accessor_storage, _DialogHost_store_accessor_storage, _DialogHost_strainLibrary_accessor_storage;
-    let _classDecorators = [t$2('growspace-dialog-host')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _strainLibrary_decorators;
-    let _strainLibrary_initializers = [];
-    let _strainLibrary_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get hass() { return __classPrivateFieldGet(this, _DialogHost_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _DialogHost_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _DialogHost_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _DialogHost_store_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._activeDialogController = new libExports.StoreController(this, this.store.ui.$activeDialog);
-                this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-                this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-            }
+let DialogHost = class DialogHost extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._activeDialogController = new libExports.StoreController(this, this.store.ui.$activeDialog);
+            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
         }
-        get strainLibrary() { return __classPrivateFieldGet(this, _DialogHost_strainLibrary_accessor_storage, "f"); }
-        set strainLibrary(value) { __classPrivateFieldSet(this, _DialogHost_strainLibrary_accessor_storage, value, "f"); }
-        render() {
-            if (!this.store)
+    }
+    render() {
+        if (!this.store)
+            return x ``;
+        const active = this._activeDialogController.value;
+        const devices = this._devicesController.value;
+        const selectedDeviceId = this._selectedDeviceController.value;
+        console.log('[DialogHost] Rendering with active type:', active.type);
+        if (active.type === 'NONE')
+            return x ``;
+        const strainLibrary = this.strainLibrary || [];
+        const selectedDeviceData = devices.find((d) => d.device_id === selectedDeviceId);
+        // Prepare options for select dropdowns if needed
+        const growspaceOptions = {};
+        devices.forEach((d) => {
+            growspaceOptions[d.device_id] = d.name;
+        });
+        switch (active.type) {
+            case 'ADD_PLANT':
+                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+            case 'ADD_PLANTS':
+                return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
+            case 'PLANT_OVERVIEW':
+                return this._renderPlantOverviewDialog(active, growspaceOptions);
+            case 'STRAIN_LIBRARY':
+                return this._renderStrainLibraryDialog(active, strainLibrary);
+            case 'CONFIG':
+                return this._renderConfigDialog(active, growspaceOptions);
+            case 'GROW_MASTER':
+                return this._renderGrowMasterDialog(active);
+            case 'STRAIN_RECOMMENDATION':
+                return this._renderStrainRecommendationDialog(active);
+            case 'IRRIGATION':
+                return this._renderIrrigationDialog(active, selectedDeviceData);
+            case 'LOGBOOK':
+                return this._renderLogbookDialog(active);
+            case 'WATERING':
+                return this._renderWateringDialog(active, selectedDeviceData);
+            case 'NUTRIENT_PRESETS':
+                return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+            case 'TRAINING':
+                return this._renderTrainingDialog(active);
+            case 'IPM':
+                return this._renderIPMDialog(active, selectedDeviceData);
+            default:
                 return x ``;
-            const active = this._activeDialogController.value;
-            const devices = this._devicesController.value;
-            const selectedDeviceId = this._selectedDeviceController.value;
-            console.log('[DialogHost] Rendering with active type:', active.type);
-            if (active.type === 'NONE')
-                return x ``;
-            const strainLibrary = this.strainLibrary || [];
-            const selectedDeviceData = devices.find((d) => d.device_id === selectedDeviceId);
-            // Prepare options for select dropdowns if needed
-            const growspaceOptions = {};
-            devices.forEach((d) => {
-                growspaceOptions[d.device_id] = d.name;
-            });
-            switch (active.type) {
-                case 'ADD_PLANT':
-                    return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-                case 'ADD_PLANTS':
-                    return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
-                case 'PLANT_OVERVIEW':
-                    return this._renderPlantOverviewDialog(active, growspaceOptions);
-                case 'STRAIN_LIBRARY':
-                    return this._renderStrainLibraryDialog(active, strainLibrary);
-                case 'CONFIG':
-                    return this._renderConfigDialog(active, growspaceOptions);
-                case 'GROW_MASTER':
-                    return this._renderGrowMasterDialog(active);
-                case 'STRAIN_RECOMMENDATION':
-                    return this._renderStrainRecommendationDialog(active);
-                case 'IRRIGATION':
-                    return this._renderIrrigationDialog(active, selectedDeviceData);
-                case 'LOGBOOK':
-                    return this._renderLogbookDialog(active);
-                case 'WATERING':
-                    return this._renderWateringDialog(active, selectedDeviceData);
-                case 'NUTRIENT_PRESETS':
-                    return this._renderNutrientPresetsDialog(active, selectedDeviceData);
-                case 'TRAINING':
-                    return this._renderTrainingDialog(active);
-                case 'IPM':
-                    return this._renderIPMDialog(active, selectedDeviceData);
-                default:
-                    return x ``;
-            }
         }
-        _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
-            if (active.type !== 'ADD_PLANT')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
+        if (active.type !== 'ADD_PLANT')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
         <add-plant-dialog
             .open=${true}
             .strainLibrary=${strainLibrary}
@@ -18290,11 +16555,11 @@ class GrowspaceLogbookController {
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
         ></add-plant-dialog>
         `;
-        }
-        _renderAddPlantsDialog(active, strainLibrary, selectedDeviceData) {
-            if (active.type !== 'ADD_PLANTS')
-                return x ``;
-            return x `
+    }
+    _renderAddPlantsDialog(active, strainLibrary, selectedDeviceData) {
+        if (active.type !== 'ADD_PLANTS')
+            return x ``;
+        return x `
         <add-plants-dialog
             .open=${true}
             .strainLibrary=${strainLibrary}
@@ -18303,12 +16568,12 @@ class GrowspaceLogbookController {
             @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
         ></add-plants-dialog>
         `;
-        }
-        _renderPlantOverviewDialog(active, growspaceOptions) {
-            if (active.type !== 'PLANT_OVERVIEW')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderPlantOverviewDialog(active, growspaceOptions) {
+        if (active.type !== 'PLANT_OVERVIEW')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
         <plant-overview-dialog
             .open=${true}
             .plant=${dialogState.plant}
@@ -18317,48 +16582,48 @@ class GrowspaceLogbookController {
             .selectedPlantIds=${dialogState.selectedPlantIds}
             .growspaceOptions=${growspaceOptions}
             @close=${() => {
-                if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
-                    this.store.ui.closeDialog();
-                }
-            }}
+            if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                this.store.ui.closeDialog();
+            }
+        }}
             @update-plant=${(e) => this.store.updatePlantFromDialog({
-                plant: dialogState.plant,
-                editedAttributes: e.detail, // Event detail is the attributes object
-                selectedPlantIds: dialogState.selectedPlantIds
-            })}
+            plant: dialogState.plant,
+            editedAttributes: e.detail, // Event detail is the attributes object
+            selectedPlantIds: dialogState.selectedPlantIds
+        })}
             @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
             @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
             @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
             @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
             @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
             @open-watering=${(e) => this.store.ui.setActiveDialog({
-                type: 'WATERING',
-                payload: e.detail
-            })}
+            type: 'WATERING',
+            payload: e.detail
+        })}
             @open-training=${(e) => this.store.ui.setActiveDialog({
-                type: 'TRAINING',
-                payload: e.detail
-            })}
+            type: 'TRAINING',
+            payload: e.detail
+        })}
             @open-ipm=${(e) => this.store.ui.setActiveDialog({
-                type: 'IPM',
-                payload: e.detail
-            })}
+            type: 'IPM',
+            payload: e.detail
+        })}
         ></plant-overview-dialog>
         `;
-        }
-        _renderStrainLibraryDialog(active, strainLibrary) {
-            if (active.type !== 'STRAIN_LIBRARY')
-                return x ``;
-            return x `
+    }
+    _renderStrainLibraryDialog(active, strainLibrary) {
+        if (active.type !== 'STRAIN_LIBRARY')
+            return x ``;
+        return x `
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
             @close=${() => {
-                // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
-                if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
-                    this.store.ui.closeDialog();
-                }
-            }}
+            // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
+            if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
+                this.store.ui.closeDialog();
+            }
+        }}
             @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
             @delete-strain=${(e) => this.store.actions.strain.remove(e.detail.key)}
             @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
@@ -18366,23 +16631,23 @@ class GrowspaceLogbookController {
             @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
         ></strain-library-dialog>
         `;
+    }
+    async _performImport(file, replace) {
+        if (!file)
+            return;
+        try {
+            await this.store.performImport(file, replace);
         }
-        async _performImport(file, replace) {
-            if (!file)
-                return;
-            try {
-                await this.store.performImport(file, replace);
-            }
-            catch (err) {
-                console.error('Import failed:', err);
-                this.store.showToast(`Import failed: ${err.message}`, 'error');
-            }
+        catch (err) {
+            console.error('Import failed:', err);
+            this.store.showToast(`Import failed: ${err.message}`, 'error');
         }
-        _renderConfigDialog(active, growspaceOptions) {
-            if (active.type !== 'CONFIG')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderConfigDialog(active, growspaceOptions) {
+        if (active.type !== 'CONFIG')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
         <config-dialog
             .open=${true}
             .hass=${this.hass}
@@ -18396,66 +16661,66 @@ class GrowspaceLogbookController {
             @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
         ></config-dialog>
         `;
+    }
+    async _handleEnvironmentConfig(detail) {
+        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_thresholds, soil_moisture_sensor, control_dehumidifier, } = detail;
+        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+            this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+            return;
         }
-        async _handleEnvironmentConfig(detail) {
-            const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_thresholds, soil_moisture_sensor, control_dehumidifier, } = detail;
-            if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
-                this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
-                return;
-            }
-            try {
-                await this.store.dataService.configureEnvironment({
-                    growspace_id: selectedGrowspaceId,
-                    temperature_sensor: temp_sensor,
-                    humidity_sensor,
-                    vpd_sensor: vpd_sensor || undefined,
-                    co2_sensor: co2_sensor || undefined,
-                    circulation_fan_entity: circulation_fan || undefined,
-                    stress_threshold,
-                    mold_threshold,
-                    light_sensor: light_sensor || undefined,
-                    exhaust_entity: exhaust_entity || undefined,
-                    humidifier_entity: humidifier_entity || undefined,
-                    dehumidifier_entity: dehumidifier_entity || undefined,
-                    dehumidifier_thresholds, // Pass thresholds if provided
-                    soil_moisture_sensor: soil_moisture_sensor || undefined,
-                    control_dehumidifier,
-                });
-                this.store.showToast('Environment configured successfully!', 'success');
-                await this.store.refreshData();
-                this.store.ui.closeDialog();
-            }
-            catch (e) {
-                this.store.showToast(`Error: ${e.message}`, 'error');
-            }
+        try {
+            await this.store.dataService.configureEnvironment({
+                growspace_id: selectedGrowspaceId,
+                temperature_sensor: temp_sensor,
+                humidity_sensor,
+                vpd_sensor: vpd_sensor || undefined,
+                co2_sensor: co2_sensor || undefined,
+                circulation_fan_entity: circulation_fan || undefined,
+                stress_threshold,
+                mold_threshold,
+                light_sensor: light_sensor || undefined,
+                exhaust_entity: exhaust_entity || undefined,
+                humidifier_entity: humidifier_entity || undefined,
+                dehumidifier_entity: dehumidifier_entity || undefined,
+                dehumidifier_thresholds, // Pass thresholds if provided
+                soil_moisture_sensor: soil_moisture_sensor || undefined,
+                control_dehumidifier,
+            });
+            this.store.showToast('Environment configured successfully!', 'success');
+            await this.store.refreshData();
+            this.store.ui.closeDialog();
         }
-        _renderGrowMasterDialog(active) {
-            if (active.type !== 'GROW_MASTER')
-                return x ``;
-            const dialogState = active.payload;
-            let isStressed = false;
-            let personality;
-            const selectedDevice = this._selectedDeviceController.value;
-            if (selectedDevice && this.hass) {
-                const id = selectedDevice;
-                const stressEntityIds = [
-                    `binary_sensor.${id}_plants_under_stress`,
-                    `binary_sensor.${id}_stress`,
-                    `binary_sensor.growspace_manager_${id}_stress`,
-                ];
-                for (const eid of stressEntityIds) {
-                    const ent = this.hass.states[eid];
-                    if (ent && ent.state === 'on') {
-                        isStressed = true;
-                        break;
-                    }
-                }
-                const manager = this.hass.states['sensor.growspace_manager'];
-                if (manager && manager.attributes && manager.attributes.ai_settings) {
-                    personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+        catch (e) {
+            this.store.showToast(`Error: ${e.message}`, 'error');
+        }
+    }
+    _renderGrowMasterDialog(active) {
+        if (active.type !== 'GROW_MASTER')
+            return x ``;
+        const dialogState = active.payload;
+        let isStressed = false;
+        let personality;
+        const selectedDevice = this._selectedDeviceController.value;
+        if (selectedDevice && this.hass) {
+            const id = selectedDevice;
+            const stressEntityIds = [
+                `binary_sensor.${id}_plants_under_stress`,
+                `binary_sensor.${id}_stress`,
+                `binary_sensor.growspace_manager_${id}_stress`,
+            ];
+            for (const eid of stressEntityIds) {
+                const ent = this.hass.states[eid];
+                if (ent && ent.state === 'on') {
+                    isStressed = true;
+                    break;
                 }
             }
-            return x `
+            const manager = this.hass.states['sensor.growspace_manager'];
+            if (manager && manager.attributes && manager.attributes.ai_settings) {
+                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            }
+        }
+        return x `
         <grow-master-dialog
             .open=${true}
             .isStressed=${isStressed}
@@ -18467,12 +16732,12 @@ class GrowspaceLogbookController {
             @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
         ></grow-master-dialog>
     `;
-        }
-        _renderStrainRecommendationDialog(active) {
-            if (active.type !== 'STRAIN_RECOMMENDATION')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderStrainRecommendationDialog(active) {
+        if (active.type !== 'STRAIN_RECOMMENDATION')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
     <strain-recommendation-dialog
         .open=${true}
             .isLoading = ${dialogState.isLoading}
@@ -18481,11 +16746,11 @@ class GrowspaceLogbookController {
 @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
         > </strain-recommendation-dialog>
     `;
-        }
-        _renderIrrigationDialog(active, selectedDeviceData) {
-            if (active.type !== 'IRRIGATION')
-                return x ``;
-            return x `
+    }
+    _renderIrrigationDialog(active, selectedDeviceData) {
+        if (active.type !== 'IRRIGATION')
+            return x ``;
+        return x `
     <irrigation-dialog
         .open=${true}
             .device = ${selectedDeviceData}
@@ -18495,24 +16760,24 @@ class GrowspaceLogbookController {
 @data-changed=${() => this.store.refreshData()}
         > </irrigation-dialog>
     `;
-        }
-        _renderLogbookDialog(active) {
-            if (active.type !== 'LOGBOOK')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderLogbookDialog(active) {
+        if (active.type !== 'LOGBOOK')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
     <logbook-dialog
         .open=${true}
             .growspaceId = ${dialogState.growspaceId}
 @close=${() => this.store.ui.closeDialog()}
         > </logbook-dialog>
     `;
-        }
-        _renderWateringDialog(active, selectedDeviceData) {
-            if (active.type !== 'WATERING')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderWateringDialog(active, selectedDeviceData) {
+        if (active.type !== 'WATERING')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
     <watering-dialog
         .open=${true}
             .dialogState = ${dialogState}
@@ -18521,11 +16786,11 @@ class GrowspaceLogbookController {
 @data-changed=${() => this.store.refreshData()}
         > </watering-dialog>
     `;
-        }
-        _renderNutrientPresetsDialog(active, selectedDeviceData) {
-            if (active.type !== 'NUTRIENT_PRESETS')
-                return x ``;
-            return x `
+    }
+    _renderNutrientPresetsDialog(active, selectedDeviceData) {
+        if (active.type !== 'NUTRIENT_PRESETS')
+            return x ``;
+        return x `
     <nutrient-presets-editor
         .open=${true}
         .store=${this.store}
@@ -18534,23 +16799,23 @@ class GrowspaceLogbookController {
         @data-changed=${() => this.store.refreshData()}
     ></nutrient-presets-editor>
     `;
-        }
-        _renderTrainingDialog(active) {
-            if (active.type !== 'TRAINING')
-                return x ``;
-            return x `
+    }
+    _renderTrainingDialog(active) {
+        if (active.type !== 'TRAINING')
+            return x ``;
+        return x `
     <training-dialog
         .open=${true}
             .store = ${this.store}
 @close=${() => this.store.ui.closeDialog()}
         > </training-dialog>
     `;
-        }
-        _renderIPMDialog(active, selectedDeviceData) {
-            if (active.type !== 'IPM')
-                return x ``;
-            const dialogState = active.payload;
-            return x `
+    }
+    _renderIPMDialog(active, selectedDeviceData) {
+        if (active.type !== 'IPM')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
     <ipm-dialog
         .open=${true}
         .store=${this.store}
@@ -18561,119 +16826,54 @@ class GrowspaceLogbookController {
         @data-changed=${() => this.store.refreshData()}
     ></ipm-dialog>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _DialogHost_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _DialogHost_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            // Controllers
-            Object.defineProperty(this, "_activeDialogController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, _store_extraInitializers)
-            });
-            Object.defineProperty(this, "_devicesController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_selectedDeviceController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            _DialogHost_strainLibrary_accessor_storage.set(this, __runInitializers(this, _strainLibrary_initializers, []));
-            __runInitializers(this, _strainLibrary_extraInitializers);
-        }
-    };
-    _DialogHost_hass_accessor_storage = new WeakMap();
-    _DialogHost_store_accessor_storage = new WeakMap();
-    _DialogHost_strainLibrary_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "DialogHost");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
-        _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+};
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], DialogHost.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], DialogHost.prototype, "store", void 0);
+__decorate([
+    c$2({ context: strainLibraryContext, subscribe: true })
+], DialogHost.prototype, "strainLibrary", void 0);
+DialogHost = __decorate([
+    t$2('growspace-dialog-host')
+], DialogHost);
 
-(() => {
-    var _EditModeBanner_selectedCount_accessor_storage, _EditModeBanner__canScrollLeft_accessor_storage, _EditModeBanner__canScrollRight_accessor_storage;
-    let _classDecorators = [t$2('growspace-edit-mode-banner')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _selectedCount_decorators;
-    let _selectedCount_initializers = [];
-    let _selectedCount_extraInitializers = [];
-    let __canScrollLeft_decorators;
-    let __canScrollLeft_initializers = [];
-    let __canScrollLeft_extraInitializers = [];
-    let __canScrollRight_decorators;
-    let __canScrollRight_initializers = [];
-    let __canScrollRight_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _EditModeBanner_selectedCount_accessor_storage.set(this, __runInitializers(this, _selectedCount_initializers, 0));
-            _EditModeBanner__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
-            _EditModeBanner__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
-            Object.defineProperty(this, "_actionsContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, __canScrollRight_extraInitializers), e$1())
-            });
-            Object.defineProperty(this, "_resizeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new ResizeController(this, () => this._checkScroll())
-            });
+let EditModeBanner = class EditModeBanner extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.selectedCount = 0;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._actionsContainerRef = e$1();
+        this._resizeController = new ResizeController(this, () => this._checkScroll());
+    }
+    firstUpdated() {
+        const container = this._actionsContainerRef.value;
+        if (container) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeController.observe(container);
         }
-        get selectedCount() { return __classPrivateFieldGet(this, _EditModeBanner_selectedCount_accessor_storage, "f"); }
-        set selectedCount(value) { __classPrivateFieldSet(this, _EditModeBanner_selectedCount_accessor_storage, value, "f"); }
-        get _canScrollLeft() { return __classPrivateFieldGet(this, _EditModeBanner__canScrollLeft_accessor_storage, "f"); }
-        set _canScrollLeft(value) { __classPrivateFieldSet(this, _EditModeBanner__canScrollLeft_accessor_storage, value, "f"); }
-        get _canScrollRight() { return __classPrivateFieldGet(this, _EditModeBanner__canScrollRight_accessor_storage, "f"); }
-        set _canScrollRight(value) { __classPrivateFieldSet(this, _EditModeBanner__canScrollRight_accessor_storage, value, "f"); }
-        firstUpdated() {
-            const container = this._actionsContainerRef.value;
-            if (container) {
-                container.addEventListener('scroll', () => this._checkScroll());
-                this._resizeController.observe(container);
-            }
-            setTimeout(() => this._checkScroll(), 0);
+        setTimeout(() => this._checkScroll(), 0);
+    }
+    _scrollActions(direction) {
+        const container = this._actionsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
         }
-        _scrollActions(direction) {
-            const container = this._actionsContainerRef.value;
-            if (container) {
-                container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
-            }
+    }
+    _checkScroll() {
+        const container = this._actionsContainerRef.value;
+        if (container) {
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
         }
-        _checkScroll() {
-            const container = this._actionsContainerRef.value;
-            if (container) {
-                this._canScrollLeft = container.scrollLeft > 1;
-                this._canScrollRight =
-                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-            }
-        }
-        render() {
-            return x `
+    }
+    render() {
+        return x `
       <div class="edit-mode-banner">
         <div class="banner-content">
           <svg viewBox="0 0 24 24">
@@ -18724,35 +16924,15 @@ class GrowspaceLogbookController {
         </div>
       </div>
     `;
-        }
-        _dispatch(event) {
-            this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
-        }
-    };
-    _EditModeBanner_selectedCount_accessor_storage = new WeakMap();
-    _EditModeBanner__canScrollLeft_accessor_storage = new WeakMap();
-    _EditModeBanner__canScrollRight_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "EditModeBanner");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _selectedCount_decorators = [n$5({ type: Number })];
-        __canScrollLeft_decorators = [r$2()];
-        __canScrollRight_decorators = [r$2()];
-        __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            uiStyles,
-            i$6 `
+    }
+    _dispatch(event) {
+        this.dispatchEvent(new CustomEvent(event, { bubbles: true, composed: true }));
+    }
+};
+EditModeBanner.styles = [
+    sharedStyles,
+    uiStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -18868,13 +17048,19 @@ class GrowspaceLogbookController {
         }
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ type: Number })
+], EditModeBanner.prototype, "selectedCount", void 0);
+__decorate([
+    r$2()
+], EditModeBanner.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2()
+], EditModeBanner.prototype, "_canScrollRight", void 0);
+EditModeBanner = __decorate([
+    t$2('growspace-edit-mode-banner')
+], EditModeBanner);
 
 /**
  * Calculates the growth deviation (performance score) of a plant relative to its strain's genetic potential.
@@ -18919,93 +17105,20 @@ function calculateGrowthDeviation(plant, strain) {
 
 class DragDropController {
     constructor(host) {
-        Object.defineProperty(this, "host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // State for mobile gestures
-        Object.defineProperty(this, "_longPressTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_isDraggingMobile", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "_startX", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "_startY", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
+        this._isDraggingMobile = false;
+        this._startX = 0;
+        this._startY = 0;
         // Constants
-        Object.defineProperty(this, "LONG_PRESS_DELAY", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 500
-        });
-        Object.defineProperty(this, "DRAG_THRESHOLD", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 10
-        });
+        this.LONG_PRESS_DELAY = 500;
+        this.DRAG_THRESHOLD = 10;
         // Bind methods to preserve 'this'
-        Object.defineProperty(this, "_handleTouchStartBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleTouchStart(e)
-        });
-        Object.defineProperty(this, "_handleTouchMoveBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleTouchMove(e)
-        });
-        Object.defineProperty(this, "_handleTouchEndBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleTouchEnd(e)
-        });
-        Object.defineProperty(this, "handleDragStartBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleDragStart(e)
-        });
-        Object.defineProperty(this, "handleDragEndBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleDragEnd(e)
-        });
-        Object.defineProperty(this, "handleDropBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleDrop(e)
-        });
-        Object.defineProperty(this, "handleDragOverBound", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (e) => this.handleDragOver(e)
-        });
+        this._handleTouchStartBound = (e) => this.handleTouchStart(e);
+        this._handleTouchMoveBound = (e) => this.handleTouchMove(e);
+        this._handleTouchEndBound = (e) => this.handleTouchEnd(e);
+        this.handleDragStartBound = (e) => this.handleDragStart(e);
+        this.handleDragEndBound = (e) => this.handleDragEnd(e);
+        this.handleDropBound = (e) => this.handleDrop(e);
+        this.handleDragOverBound = (e) => this.handleDragOver(e);
         this.host = host;
         host.addController(this);
     }
@@ -19202,58 +17315,31 @@ const plantStatsStyles = i$6 `
   .current-stage {}
 `;
 
-(() => {
-    var _GrowspacePlantStats_stages_accessor_storage;
-    let _classDecorators = [t$2('growspace-plant-stats')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _stages_decorators;
-    let _stages_initializers = [];
-    let _stages_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get stages() { return __classPrivateFieldGet(this, _GrowspacePlantStats_stages_accessor_storage, "f"); }
-        set stages(value) { __classPrivateFieldSet(this, _GrowspacePlantStats_stages_accessor_storage, value, "f"); }
-        render() {
-            return x `
+let GrowspacePlantStats = class GrowspacePlantStats extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.stages = [];
+    }
+    render() {
+        return x `
       ${this.stages.map((d) => {
-                return x `
+            return x `
           <div class=${e({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
             <svg style=${o({ color: d.color })} viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
-            })}
+        })}
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspacePlantStats_stages_accessor_storage.set(this, __runInitializers(this, _stages_initializers, []));
-            __runInitializers(this, _stages_extraInitializers);
-        }
-    };
-    _GrowspacePlantStats_stages_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspacePlantStats");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _stages_decorators = [n$5({ attribute: false })];
-        __esDecorate(_classThis, null, _stages_decorators, { kind: "accessor", name: "stages", static: false, private: false, access: { has: obj => "stages" in obj, get: obj => obj.stages, set: (obj, value) => { obj.stages = value; } }, metadata: _metadata }, _stages_initializers, _stages_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [plantStatsStyles]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+};
+GrowspacePlantStats.styles = [plantStatsStyles];
+__decorate([
+    n$5({ attribute: false })
+], GrowspacePlantStats.prototype, "stages", void 0);
+GrowspacePlantStats = __decorate([
+    t$2('growspace-plant-stats')
+], GrowspacePlantStats);
 
 const plantCardStyles = i$6 `
   :host {
@@ -19470,162 +17556,108 @@ const plantCardStyles = i$6 `
   }
 `;
 
-(() => {
-    var _GrowspacePlantCard_plant_accessor_storage, _GrowspacePlantCard_row_accessor_storage, _GrowspacePlantCard_col_accessor_storage, _GrowspacePlantCard_strainLibrary_accessor_storage, _GrowspacePlantCard_store_accessor_storage;
-    let _classDecorators = [t$2('growspace-plant-card')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _plant_decorators;
-    let _plant_initializers = [];
-    let _plant_extraInitializers = [];
-    let _row_decorators;
-    let _row_initializers = [];
-    let _row_extraInitializers = [];
-    let _col_decorators;
-    let _col_initializers = [];
-    let _col_extraInitializers = [];
-    let _strainLibrary_decorators;
-    let _strainLibrary_initializers = [];
-    let _strainLibrary_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspacePlantCard_plant_accessor_storage.set(this, __runInitializers(this, _plant_initializers, void 0));
-            _GrowspacePlantCard_row_accessor_storage.set(this, (__runInitializers(this, _plant_extraInitializers), __runInitializers(this, _row_initializers, void 0)));
-            _GrowspacePlantCard_col_accessor_storage.set(this, (__runInitializers(this, _row_extraInitializers), __runInitializers(this, _col_initializers, void 0)));
-            _GrowspacePlantCard_strainLibrary_accessor_storage.set(this, (__runInitializers(this, _col_extraInitializers), __runInitializers(this, _strainLibrary_initializers, [])));
-            _GrowspacePlantCard_store_accessor_storage.set(this, (__runInitializers(this, _strainLibrary_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            // UI state via StoreController - direct subscription to atoms
-            Object.defineProperty(this, "_isEditModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, _store_extraInitializers)
-            });
-            Object.defineProperty(this, "_selectedPlantsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            // Instantiate controller
-            Object.defineProperty(this, "dragController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new DragDropController(this)
-            });
+let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        // Instantiate controller
+        this.dragController = new DragDropController(this);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (!this._isEditModeController && this.store) {
+            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
         }
-        get plant() { return __classPrivateFieldGet(this, _GrowspacePlantCard_plant_accessor_storage, "f"); }
-        set plant(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_plant_accessor_storage, value, "f"); }
-        get row() { return __classPrivateFieldGet(this, _GrowspacePlantCard_row_accessor_storage, "f"); }
-        set row(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_row_accessor_storage, value, "f"); }
-        get col() { return __classPrivateFieldGet(this, _GrowspacePlantCard_col_accessor_storage, "f"); }
-        set col(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_col_accessor_storage, value, "f"); }
-        get strainLibrary() { return __classPrivateFieldGet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, "f"); }
-        set strainLibrary(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_strainLibrary_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _GrowspacePlantCard_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspacePlantCard_store_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (!this._isEditModeController && this.store) {
-                this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-                this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            }
+    }
+    // Getters to satisfy DragDropHost interface
+    get isEditMode() {
+        return this._isEditModeController?.value ?? false;
+    }
+    get selected() {
+        const plantId = this.plant?.attributes?.plant_id;
+        return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
+    }
+    get growthDeviation() {
+        const strain = this.strainLibrary.find((s) => s.strain === this.plant.attributes.strain);
+        return calculateGrowthDeviation(this.plant, strain);
+    }
+    // Computed display data
+    get displayData() {
+        if (!this.plant)
+            return null;
+        return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
+    }
+    get _hasRecommendedPreset() {
+        if (!this.plant || !this.store)
+            return false;
+        const growspaceId = this.plant.attributes.growspace_id;
+        const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+        if (!device)
+            return false;
+        const nutrientPresets = this.store.data.$nutrientPresets.get();
+        const currentStage = this.plant.attributes.stage;
+        const daysInStage = this.plant.attributes.days_in_stage || 0;
+        return Object.values(nutrientPresets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
+    }
+    // Placeholder for watering status, assuming it will be implemented elsewhere
+    get _isRecentlyWatered() {
+        // Example logic: check if last watered within the last 24 hours
+        const lastWatered = this.plant.attributes.last_watered;
+        if (!lastWatered)
+            return false;
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+        return new Date(lastWatered) > twentyFourHoursAgo;
+    }
+    // --- Click Handlers ---
+    focus(options) {
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        if (card) {
+            card.focus(options);
         }
-        // Getters to satisfy DragDropHost interface
-        get isEditMode() {
-            return this._isEditModeController?.value ?? false;
+        else {
+            super.focus(options);
         }
-        get selected() {
-            const plantId = this.plant?.attributes?.plant_id;
-            return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
+    }
+    _handleClick() {
+        this.dispatchEvent(new CustomEvent('plant-click', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    /** Trigger HA haptic feedback for tactile mobile interactions */
+    _triggerHaptic(type = 'light') {
+        this.dispatchEvent(new CustomEvent('haptic', {
+            detail: type,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _toggleSelection(e) {
+        e.stopPropagation();
+        this._triggerHaptic('selection');
+        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        const data = this.displayData;
+        if (!this.plant || !data)
+            return x ``;
+        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = data;
+        // Construct srcset for responsive images
+        // If we have a WebP image, we assume a _small variant exists (generated by backend)
+        let srcset = '';
+        if (imageUrl && imageUrl.endsWith('.webp')) {
+            const smallUrl = imageUrl.replace('.webp', '_small.webp');
+            // Tell browser: use smallUrl if width <= 320px, otherwise imageUrl
+            srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
         }
-        get growthDeviation() {
-            const strain = this.strainLibrary.find((s) => s.strain === this.plant.attributes.strain);
-            return calculateGrowthDeviation(this.plant, strain);
-        }
-        // Computed display data
-        get displayData() {
-            if (!this.plant)
-                return null;
-            return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
-        }
-        get _hasRecommendedPreset() {
-            if (!this.plant || !this.store)
-                return false;
-            const growspaceId = this.plant.attributes.growspace_id;
-            const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
-            if (!device)
-                return false;
-            const nutrientPresets = this.store.data.$nutrientPresets.get();
-            const currentStage = this.plant.attributes.stage;
-            const daysInStage = this.plant.attributes.days_in_stage || 0;
-            return Object.values(nutrientPresets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
-        }
-        // Placeholder for watering status, assuming it will be implemented elsewhere
-        get _isRecentlyWatered() {
-            // Example logic: check if last watered within the last 24 hours
-            const lastWatered = this.plant.attributes.last_watered;
-            if (!lastWatered)
-                return false;
-            const twentyFourHoursAgo = new Date();
-            twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-            return new Date(lastWatered) > twentyFourHoursAgo;
-        }
-        // --- Click Handlers ---
-        focus(options) {
-            const card = this.shadowRoot?.querySelector('.plant-card-rich');
-            if (card) {
-                card.focus(options);
-            }
-            else {
-                super.focus(options);
-            }
-        }
-        _handleClick() {
-            this.dispatchEvent(new CustomEvent('plant-click', {
-                detail: { plant: this.plant },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        /** Trigger HA haptic feedback for tactile mobile interactions */
-        _triggerHaptic(type = 'light') {
-            this.dispatchEvent(new CustomEvent('haptic', {
-                detail: type,
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _toggleSelection(e) {
-            e.stopPropagation();
-            this._triggerHaptic('selection');
-            this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
-                detail: { plant: this.plant },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        render() {
-            const data = this.displayData;
-            if (!this.plant || !data)
-                return x ``;
-            const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = data;
-            // Construct srcset for responsive images
-            // If we have a WebP image, we assume a _small variant exists (generated by backend)
-            let srcset = '';
-            if (imageUrl && imageUrl.endsWith('.webp')) {
-                const smallUrl = imageUrl.replace('.webp', '_small.webp');
-                // Tell browser: use smallUrl if width <= 320px, otherwise imageUrl
-                srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
-            }
-            return x `
+        return x `
       <div
         class="plant-card-rich"
         style=${o({ '--stage-color': stageColor })}
@@ -19634,7 +17666,7 @@ const plantCardStyles = i$6 `
         @click=${this._handleClick}
       >
         ${imageUrl
-                ? x `
+            ? x `
               <img
                 class="plant-card-bg"
                 src="${imageUrl}"
@@ -19647,9 +17679,9 @@ const plantCardStyles = i$6 `
               />
               <div class="plant-card-overlay"></div>
             `
-                : E}
+            : E}
         ${this.isEditMode
-                ? x `
+            ? x `
               <div
                 class=${e({ 'plant-card-checkbox': true, 'selected': this.selected })}
                 @click=${this._toggleSelection}
@@ -19657,16 +17689,16 @@ const plantCardStyles = i$6 `
                 <svg
                   viewBox="0 0 24 24"
                   style=${o({
-                    width: '24px',
-                    height: '24px',
-                    fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
-                })}
+                width: '24px',
+                height: '24px',
+                fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
+            })}
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
               </div>
             `
-                : E}
+            : E}
         <div class="status-icons">
             ${this.plant.attributes.last_training_technique ? x `
               <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
@@ -19722,158 +17754,69 @@ const plantCardStyles = i$6 `
         </div>
       </div>
     `;
-        }
-    };
-    _GrowspacePlantCard_plant_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_row_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_col_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_strainLibrary_accessor_storage = new WeakMap();
-    _GrowspacePlantCard_store_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspacePlantCard");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _plant_decorators = [n$5({ attribute: false })];
-        _row_decorators = [n$5({ type: Number })];
-        _col_decorators = [n$5({ type: Number })];
-        _strainLibrary_decorators = [c$2({ context: strainLibraryContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext })];
-        __esDecorate(_classThis, null, _plant_decorators, { kind: "accessor", name: "plant", static: false, private: false, access: { has: obj => "plant" in obj, get: obj => obj.plant, set: (obj, value) => { obj.plant = value; } }, metadata: _metadata }, _plant_initializers, _plant_extraInitializers);
-        __esDecorate(_classThis, null, _row_decorators, { kind: "accessor", name: "row", static: false, private: false, access: { has: obj => "row" in obj, get: obj => obj.row, set: (obj, value) => { obj.row = value; } }, metadata: _metadata }, _row_initializers, _row_extraInitializers);
-        __esDecorate(_classThis, null, _col_decorators, { kind: "accessor", name: "col", static: false, private: false, access: { has: obj => "col" in obj, get: obj => obj.col, set: (obj, value) => { obj.col = value; } }, metadata: _metadata }, _col_initializers, _col_extraInitializers);
-        __esDecorate(_classThis, null, _strainLibrary_decorators, { kind: "accessor", name: "strainLibrary", static: false, private: false, access: { has: obj => "strainLibrary" in obj, get: obj => obj.strainLibrary, set: (obj, value) => { obj.strainLibrary = value; } }, metadata: _metadata }, _strainLibrary_initializers, _strainLibrary_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            plantCardStyles
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+};
+GrowspacePlantCard.styles = [
+    sharedStyles,
+    plantCardStyles
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspacePlantCard.prototype, "plant", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspacePlantCard.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspacePlantCard.prototype, "col", void 0);
+__decorate([
+    c$2({ context: strainLibraryContext, subscribe: true })
+], GrowspacePlantCard.prototype, "strainLibrary", void 0);
+__decorate([
+    c$2({ context: storeContext })
+], GrowspacePlantCard.prototype, "store", void 0);
+GrowspacePlantCard = __decorate([
+    t$2('growspace-plant-card')
+], GrowspacePlantCard);
 
-(() => {
-    var _GrowspaceChip_icon_accessor_storage, _GrowspaceChip_label_accessor_storage, _GrowspaceChip_value_accessor_storage, _GrowspaceChip_status_accessor_storage, _GrowspaceChip_active_accessor_storage, _GrowspaceChip_linked_accessor_storage, _GrowspaceChip_tooltip_accessor_storage;
-    let _classDecorators = [t$2('growspace-chip')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _icon_decorators;
-    let _icon_initializers = [];
-    let _icon_extraInitializers = [];
-    let _label_decorators;
-    let _label_initializers = [];
-    let _label_extraInitializers = [];
-    let _value_decorators;
-    let _value_initializers = [];
-    let _value_extraInitializers = [];
-    let _status_decorators;
-    let _status_initializers = [];
-    let _status_extraInitializers = [];
-    let _active_decorators;
-    let _active_initializers = [];
-    let _active_extraInitializers = [];
-    let _linked_decorators;
-    let _linked_initializers = [];
-    let _linked_extraInitializers = [];
-    let _tooltip_decorators;
-    let _tooltip_initializers = [];
-    let _tooltip_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get icon() { return __classPrivateFieldGet(this, _GrowspaceChip_icon_accessor_storage, "f"); }
-        set icon(value) { __classPrivateFieldSet(this, _GrowspaceChip_icon_accessor_storage, value, "f"); }
-        get label() { return __classPrivateFieldGet(this, _GrowspaceChip_label_accessor_storage, "f"); }
-        set label(value) { __classPrivateFieldSet(this, _GrowspaceChip_label_accessor_storage, value, "f"); }
-        get value() { return __classPrivateFieldGet(this, _GrowspaceChip_value_accessor_storage, "f"); }
-        set value(value) { __classPrivateFieldSet(this, _GrowspaceChip_value_accessor_storage, value, "f"); }
-        get status() { return __classPrivateFieldGet(this, _GrowspaceChip_status_accessor_storage, "f"); }
-        set status(value) { __classPrivateFieldSet(this, _GrowspaceChip_status_accessor_storage, value, "f"); }
-        get active() { return __classPrivateFieldGet(this, _GrowspaceChip_active_accessor_storage, "f"); }
-        set active(value) { __classPrivateFieldSet(this, _GrowspaceChip_active_accessor_storage, value, "f"); }
-        get linked() { return __classPrivateFieldGet(this, _GrowspaceChip_linked_accessor_storage, "f"); }
-        set linked(value) { __classPrivateFieldSet(this, _GrowspaceChip_linked_accessor_storage, value, "f"); }
-        get tooltip() { return __classPrivateFieldGet(this, _GrowspaceChip_tooltip_accessor_storage, "f"); }
-        set tooltip(value) { __classPrivateFieldSet(this, _GrowspaceChip_tooltip_accessor_storage, value, "f"); }
-        render() {
-            // Determine classes based on meaningful status string
-            const statusClass = this.status ? `status-${this.status}` : '';
-            return x `
+let GrowspaceChip = class GrowspaceChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.icon = '';
+        this.label = '';
+        this.value = undefined;
+        this.status = '';
+        this.active = false;
+        this.linked = false;
+        this.tooltip = '';
+    }
+    render() {
+        // Determine classes based on meaningful status string
+        const statusClass = this.status ? `status-${this.status}` : '';
+        return x `
       <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
         ${this.label ? x `${this.label}: ` : ''}${this.value}
         ${this.linked
-                ? x `
+            ? x `
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
             `
-                : ''}
+            : ''}
       </div>
     `;
-        }
-        _handleLinkClick(e) {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspaceChip_icon_accessor_storage.set(this, __runInitializers(this, _icon_initializers, ''));
-            _GrowspaceChip_label_accessor_storage.set(this, (__runInitializers(this, _icon_extraInitializers), __runInitializers(this, _label_initializers, '')));
-            _GrowspaceChip_value_accessor_storage.set(this, (__runInitializers(this, _label_extraInitializers), __runInitializers(this, _value_initializers, undefined)));
-            _GrowspaceChip_status_accessor_storage.set(this, (__runInitializers(this, _value_extraInitializers), __runInitializers(this, _status_initializers, '')));
-            _GrowspaceChip_active_accessor_storage.set(this, (__runInitializers(this, _status_extraInitializers), __runInitializers(this, _active_initializers, false)));
-            _GrowspaceChip_linked_accessor_storage.set(this, (__runInitializers(this, _active_extraInitializers), __runInitializers(this, _linked_initializers, false)));
-            _GrowspaceChip_tooltip_accessor_storage.set(this, (__runInitializers(this, _linked_extraInitializers), __runInitializers(this, _tooltip_initializers, '')));
-            __runInitializers(this, _tooltip_extraInitializers);
-        }
-    };
-    _GrowspaceChip_icon_accessor_storage = new WeakMap();
-    _GrowspaceChip_label_accessor_storage = new WeakMap();
-    _GrowspaceChip_value_accessor_storage = new WeakMap();
-    _GrowspaceChip_status_accessor_storage = new WeakMap();
-    _GrowspaceChip_active_accessor_storage = new WeakMap();
-    _GrowspaceChip_linked_accessor_storage = new WeakMap();
-    _GrowspaceChip_tooltip_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceChip");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _icon_decorators = [n$5({ type: String })];
-        _label_decorators = [n$5({ type: String })];
-        _value_decorators = [n$5({ type: String })];
-        _status_decorators = [n$5({ type: String })];
-        _active_decorators = [n$5({ type: Boolean, reflect: true })];
-        _linked_decorators = [n$5({ type: Boolean })];
-        _tooltip_decorators = [n$5({ type: String })];
-        __esDecorate(_classThis, null, _icon_decorators, { kind: "accessor", name: "icon", static: false, private: false, access: { has: obj => "icon" in obj, get: obj => obj.icon, set: (obj, value) => { obj.icon = value; } }, metadata: _metadata }, _icon_initializers, _icon_extraInitializers);
-        __esDecorate(_classThis, null, _label_decorators, { kind: "accessor", name: "label", static: false, private: false, access: { has: obj => "label" in obj, get: obj => obj.label, set: (obj, value) => { obj.label = value; } }, metadata: _metadata }, _label_initializers, _label_extraInitializers);
-        __esDecorate(_classThis, null, _value_decorators, { kind: "accessor", name: "value", static: false, private: false, access: { has: obj => "value" in obj, get: obj => obj.value, set: (obj, value) => { obj.value = value; } }, metadata: _metadata }, _value_initializers, _value_extraInitializers);
-        __esDecorate(_classThis, null, _status_decorators, { kind: "accessor", name: "status", static: false, private: false, access: { has: obj => "status" in obj, get: obj => obj.status, set: (obj, value) => { obj.status = value; } }, metadata: _metadata }, _status_initializers, _status_extraInitializers);
-        __esDecorate(_classThis, null, _active_decorators, { kind: "accessor", name: "active", static: false, private: false, access: { has: obj => "active" in obj, get: obj => obj.active, set: (obj, value) => { obj.active = value; } }, metadata: _metadata }, _active_initializers, _active_extraInitializers);
-        __esDecorate(_classThis, null, _linked_decorators, { kind: "accessor", name: "linked", static: false, private: false, access: { has: obj => "linked" in obj, get: obj => obj.linked, set: (obj, value) => { obj.linked = value; } }, metadata: _metadata }, _linked_initializers, _linked_extraInitializers);
-        __esDecorate(_classThis, null, _tooltip_decorators, { kind: "accessor", name: "tooltip", static: false, private: false, access: { has: obj => "tooltip" in obj, get: obj => obj.tooltip, set: (obj, value) => { obj.tooltip = value; } }, metadata: _metadata }, _tooltip_initializers, _tooltip_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            i$6 `
+    }
+    _handleLinkClick(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceChip.styles = [
+    sharedStyles,
+    i$6 `
     :host {
       display: inline-flex;
       vertical-align: middle;
@@ -19978,13 +17921,31 @@ const plantCardStyles = i$6 `
       fill: var(--primary-color, #03a9f4);
     }
   `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "label", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "value", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "status", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], GrowspaceChip.prototype, "active", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceChip.prototype, "linked", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "tooltip", void 0);
+GrowspaceChip = __decorate([
+    t$2('growspace-chip')
+], GrowspaceChip);
 
 // these aren't really private, but nor are they really useful to document
 
@@ -28317,477 +26278,289 @@ class MetricsUtils {
     }
 }
 
-(() => {
-    var _GrowspaceHeader_hass_accessor_storage, _GrowspaceHeader_store_accessor_storage, _GrowspaceHeader_config_accessor_storage, _GrowspaceHeader_device_accessor_storage, _GrowspaceHeader_compact_accessor_storage, _GrowspaceHeader_isEditMode_accessor_storage, _GrowspaceHeader_growspaceOptions_accessor_storage, _GrowspaceHeader_historyData_accessor_storage, _GrowspaceHeader__canScrollLeft_accessor_storage, _GrowspaceHeader__canScrollRight_accessor_storage, _GrowspaceHeader__canScrollStageLeft_accessor_storage, _GrowspaceHeader__canScrollStageRight_accessor_storage, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, _GrowspaceHeader__menuOpen_accessor_storage, _GrowspaceHeader__mobileLink_accessor_storage;
-    let _classDecorators = [t$2('growspace-header')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _config_decorators;
-    let _config_initializers = [];
-    let _config_extraInitializers = [];
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _compact_decorators;
-    let _compact_initializers = [];
-    let _compact_extraInitializers = [];
-    let _isEditMode_decorators;
-    let _isEditMode_initializers = [];
-    let _isEditMode_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    let _historyData_decorators;
-    let _historyData_initializers = [];
-    let _historyData_extraInitializers = [];
-    let __canScrollLeft_decorators;
-    let __canScrollLeft_initializers = [];
-    let __canScrollLeft_extraInitializers = [];
-    let __canScrollRight_decorators;
-    let __canScrollRight_initializers = [];
-    let __canScrollRight_extraInitializers = [];
-    let __canScrollStageLeft_decorators;
-    let __canScrollStageLeft_initializers = [];
-    let __canScrollStageLeft_extraInitializers = [];
-    let __canScrollStageRight_decorators;
-    let __canScrollStageRight_initializers = [];
-    let __canScrollStageRight_extraInitializers = [];
-    let __canScrollDeviceLeft_decorators;
-    let __canScrollDeviceLeft_initializers = [];
-    let __canScrollDeviceLeft_extraInitializers = [];
-    let __canScrollDeviceRight_decorators;
-    let __canScrollDeviceRight_initializers = [];
-    let __canScrollDeviceRight_extraInitializers = [];
-    let __menuOpen_decorators;
-    let __menuOpen_initializers = [];
-    let __menuOpen_extraInitializers = [];
-    let __mobileLink_decorators;
-    let __mobileLink_initializers = [];
-    let __mobileLink_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceHeader_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _GrowspaceHeader_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _GrowspaceHeader_config_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
-            _GrowspaceHeader_device_accessor_storage.set(this, (__runInitializers(this, _config_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
-            _GrowspaceHeader_compact_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _compact_initializers, false)));
-            _GrowspaceHeader_isEditMode_accessor_storage.set(this, (__runInitializers(this, _compact_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
-            _GrowspaceHeader_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _GrowspaceHeader_historyData_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _historyData_initializers, null)));
-            _GrowspaceHeader__canScrollLeft_accessor_storage.set(this, (__runInitializers(this, _historyData_extraInitializers), __runInitializers(this, __canScrollLeft_initializers, false)));
-            _GrowspaceHeader__canScrollRight_accessor_storage.set(this, (__runInitializers(this, __canScrollLeft_extraInitializers), __runInitializers(this, __canScrollRight_initializers, false)));
-            _GrowspaceHeader__canScrollStageLeft_accessor_storage.set(this, (__runInitializers(this, __canScrollRight_extraInitializers), __runInitializers(this, __canScrollStageLeft_initializers, false)));
-            _GrowspaceHeader__canScrollStageRight_accessor_storage.set(this, (__runInitializers(this, __canScrollStageLeft_extraInitializers), __runInitializers(this, __canScrollStageRight_initializers, false)));
-            _GrowspaceHeader__canScrollDeviceLeft_accessor_storage.set(this, (__runInitializers(this, __canScrollStageRight_extraInitializers), __runInitializers(this, __canScrollDeviceLeft_initializers, false)));
-            _GrowspaceHeader__canScrollDeviceRight_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceLeft_extraInitializers), __runInitializers(this, __canScrollDeviceRight_initializers, false)));
-            _GrowspaceHeader__menuOpen_accessor_storage.set(this, (__runInitializers(this, __canScrollDeviceRight_extraInitializers), __runInitializers(this, __menuOpen_initializers, false)));
-            _GrowspaceHeader__mobileLink_accessor_storage.set(this, (__runInitializers(this, __menuOpen_extraInitializers), __runInitializers(this, __mobileLink_initializers, false)));
-            // Reactivity Controllers
-            Object.defineProperty(this, "_viewModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __mobileLink_extraInitializers)
-            });
-            Object.defineProperty(this, "_isEditModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            // Data Store Controllers
-            Object.defineProperty(this, "_devicesController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_selectedDeviceController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            // History Store Controllers
-            Object.defineProperty(this, "_historyCacheController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_historyLoadingController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_activeEnvGraphsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_linkedGraphGroupsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_chipsContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: e$1()
-            });
-            Object.defineProperty(this, "_stageContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: e$1()
-            });
-            Object.defineProperty(this, "_deviceChipsContainerRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: e$1()
-            });
-            Object.defineProperty(this, "_resizeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new ResizeController(this, () => this._checkScroll())
-            });
-            // Cached metrics to avoid re-computation on every render
-            Object.defineProperty(this, "_mainChips", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: []
-            });
-            Object.defineProperty(this, "_deviceChips", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: []
-            });
-            Object.defineProperty(this, "_dominant", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_envAttrs", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: {}
-            });
-            Object.defineProperty(this, "_draggedMetric", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceHeader_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceHeader_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _GrowspaceHeader_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspaceHeader_store_accessor_storage, value, "f"); }
-        get config() { return __classPrivateFieldGet(this, _GrowspaceHeader_config_accessor_storage, "f"); }
-        set config(value) { __classPrivateFieldSet(this, _GrowspaceHeader_config_accessor_storage, value, "f"); }
-        get device() { return __classPrivateFieldGet(this, _GrowspaceHeader_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceHeader_device_accessor_storage, value, "f"); }
-        get compact() { return __classPrivateFieldGet(this, _GrowspaceHeader_compact_accessor_storage, "f"); }
-        set compact(value) { __classPrivateFieldSet(this, _GrowspaceHeader_compact_accessor_storage, value, "f"); }
-        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceHeader_isEditMode_accessor_storage, "f"); }
-        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceHeader_isEditMode_accessor_storage, value, "f"); }
+let GrowspaceHeader = class GrowspaceHeader extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.compact = false;
+        this.isEditMode = false;
         // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
-        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceHeader_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceHeader_growspaceOptions_accessor_storage, value, "f"); }
-        get historyData() { return __classPrivateFieldGet(this, _GrowspaceHeader_historyData_accessor_storage, "f"); }
-        set historyData(value) { __classPrivateFieldSet(this, _GrowspaceHeader_historyData_accessor_storage, value, "f"); }
-        get _canScrollLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollLeft_accessor_storage, "f"); }
-        set _canScrollLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollLeft_accessor_storage, value, "f"); }
-        get _canScrollRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollRight_accessor_storage, "f"); }
-        set _canScrollRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollRight_accessor_storage, value, "f"); }
-        get _canScrollStageLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollStageLeft_accessor_storage, "f"); }
-        set _canScrollStageLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageLeft_accessor_storage, value, "f"); }
-        get _canScrollStageRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, "f"); }
-        set _canScrollStageRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollStageRight_accessor_storage, value, "f"); }
-        get _canScrollDeviceLeft() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, "f"); }
-        set _canScrollDeviceLeft(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollDeviceLeft_accessor_storage, value, "f"); }
-        get _canScrollDeviceRight() { return __classPrivateFieldGet(this, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, "f"); }
-        set _canScrollDeviceRight(value) { __classPrivateFieldSet(this, _GrowspaceHeader__canScrollDeviceRight_accessor_storage, value, "f"); }
-        get _menuOpen() { return __classPrivateFieldGet(this, _GrowspaceHeader__menuOpen_accessor_storage, "f"); }
-        set _menuOpen(value) { __classPrivateFieldSet(this, _GrowspaceHeader__menuOpen_accessor_storage, value, "f"); }
-        get _mobileLink() { return __classPrivateFieldGet(this, _GrowspaceHeader__mobileLink_accessor_storage, "f"); }
-        set _mobileLink(value) { __classPrivateFieldSet(this, _GrowspaceHeader__mobileLink_accessor_storage, value, "f"); }
-        // Helper getters for clarity in render/compute
-        get activeEnvGraphs() {
-            return this._activeEnvGraphsController?.value || new Set();
+        this.growspaceOptions = {};
+        this.historyData = null;
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._canScrollStageLeft = false;
+        this._canScrollStageRight = false;
+        this._canScrollDeviceLeft = false;
+        this._canScrollDeviceRight = false;
+        this._menuOpen = false;
+        this._mobileLink = false;
+        this._chipsContainerRef = e$1();
+        this._stageContainerRef = e$1();
+        this._deviceChipsContainerRef = e$1();
+        this._resizeController = new ResizeController(this, () => this._checkScroll());
+        // Cached metrics to avoid re-computation on every render
+        this._mainChips = [];
+        this._deviceChips = [];
+        this._envAttrs = {};
+        this._draggedMetric = null;
+    }
+    // Helper getters for clarity in render/compute
+    get activeEnvGraphs() {
+        return this._activeEnvGraphsController?.value || new Set();
+    }
+    _scrollChips(direction) {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
         }
-        _scrollChips(direction) {
-            const container = this._chipsContainerRef.value;
-            if (container) {
-                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
-            }
+    }
+    _scrollStage(direction) {
+        const container = this._stageContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
         }
-        _scrollStage(direction) {
-            const container = this._stageContainerRef.value;
-            if (container) {
-                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
-            }
+    }
+    _scrollDeviceChips(direction) {
+        const container = this._deviceChipsContainerRef.value;
+        if (container) {
+            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
         }
-        _scrollDeviceChips(direction) {
-            const container = this._deviceChipsContainerRef.value;
-            if (container) {
-                container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
-            }
+    }
+    _checkScroll() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            // 1px buffer to handle subpixels
+            this._canScrollLeft = container.scrollLeft > 1;
+            this._canScrollRight =
+                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
         }
-        _checkScroll() {
-            const container = this._chipsContainerRef.value;
-            if (container) {
-                // 1px buffer to handle subpixels
-                this._canScrollLeft = container.scrollLeft > 1;
-                this._canScrollRight =
-                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-            }
-            const stageContainer = this._stageContainerRef.value;
-            if (stageContainer) {
-                this._canScrollStageLeft = stageContainer.scrollLeft > 1;
-                this._canScrollStageRight =
-                    stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
-            }
-            const deviceContainer = this._deviceChipsContainerRef.value;
-            if (deviceContainer) {
-                this._canScrollDeviceLeft = deviceContainer.scrollLeft > 1;
-                this._canScrollDeviceRight =
-                    deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
-            }
+        const stageContainer = this._stageContainerRef.value;
+        if (stageContainer) {
+            this._canScrollStageLeft = stageContainer.scrollLeft > 1;
+            this._canScrollStageRight =
+                stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
         }
-        /*
-         * Computes derived metrics for rendering.
-         * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
-         */
-        _updateMetrics() {
-            if (!this.device || !this.hass) {
-                this._mainChips = [];
-                this._deviceChips = [];
-                this._dominant = undefined;
-                this._envAttrs = {};
-                return;
-            }
-            const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
-            this._mainChips = mainChips;
-            this._deviceChips = deviceChips;
-            this._dominant = dominant;
-            this._envAttrs = envAttrs;
+        const deviceContainer = this._deviceChipsContainerRef.value;
+        if (deviceContainer) {
+            this._canScrollDeviceLeft = deviceContainer.scrollLeft > 1;
+            this._canScrollDeviceRight =
+                deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
         }
-        updated(changedProps) {
-            if (changedProps.has('device')) {
-                // Content might change size
-                setTimeout(() => this._checkScroll(), 0);
-            }
+    }
+    /*
+     * Computes derived metrics for rendering.
+     * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
+     */
+    _updateMetrics() {
+        if (!this.device || !this.hass) {
+            this._mainChips = [];
+            this._deviceChips = [];
+            this._dominant = undefined;
+            this._envAttrs = {};
+            return;
         }
-        firstUpdated() {
-            const container = this._chipsContainerRef.value;
-            if (container) {
-                container.addEventListener('scroll', () => this._checkScroll());
-                this._resizeController.observe(container);
-            }
-            const stageContainer = this._stageContainerRef.value;
-            if (stageContainer) {
-                stageContainer.addEventListener('scroll', () => this._checkScroll());
-                this._resizeController.observe(stageContainer);
-            }
-            const deviceContainer = this._deviceChipsContainerRef.value;
-            if (deviceContainer) {
-                deviceContainer.addEventListener('scroll', () => this._checkScroll());
-                this._resizeController.observe(deviceContainer);
-            }
-            // Initial check
+        const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
+        this._mainChips = mainChips;
+        this._deviceChips = deviceChips;
+        this._dominant = dominant;
+        this._envAttrs = envAttrs;
+    }
+    updated(changedProps) {
+        if (changedProps.has('device')) {
+            // Content might change size
             setTimeout(() => this._checkScroll(), 0);
         }
-        _handleDeviceChange(e) {
-            const target = e.target;
-            this.store.handleDeviceChange(target.value);
+    }
+    firstUpdated() {
+        const container = this._chipsContainerRef.value;
+        if (container) {
+            container.addEventListener('scroll', () => this._checkScroll());
+            this._resizeController.observe(container);
         }
-        _toggleEnvGraph(metric) {
-            if (!this.store)
-                return;
-            this.store.toggleEnvGraph(metric);
+        const stageContainer = this._stageContainerRef.value;
+        if (stageContainer) {
+            stageContainer.addEventListener('scroll', () => this._checkScroll());
+            this._resizeController.observe(stageContainer);
         }
-        _handleChipDragStart(e, metric) {
-            this._draggedMetric = metric;
-            if (e.dataTransfer) {
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', metric);
-            }
+        const deviceContainer = this._deviceChipsContainerRef.value;
+        if (deviceContainer) {
+            deviceContainer.addEventListener('scroll', () => this._checkScroll());
+            this._resizeController.observe(deviceContainer);
         }
-        _handleChipDrop(e, targetMetric) {
-            e.preventDefault();
-            if (!this._draggedMetric || this._draggedMetric === targetMetric) {
-                this._draggedMetric = null;
-                return;
-            }
-            if (this.store?.history) {
-                this.store.history.linkGraphs(this._draggedMetric, targetMetric);
-            }
+        // Initial check
+        setTimeout(() => this._checkScroll(), 0);
+    }
+    _handleDeviceChange(e) {
+        const target = e.target;
+        this.store.handleDeviceChange(target.value);
+    }
+    _toggleEnvGraph(metric) {
+        if (!this.store)
+            return;
+        this.store.toggleEnvGraph(metric);
+    }
+    _handleChipDragStart(e, metric) {
+        this._draggedMetric = metric;
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', metric);
+        }
+    }
+    _handleChipDrop(e, targetMetric) {
+        e.preventDefault();
+        if (!this._draggedMetric || this._draggedMetric === targetMetric) {
             this._draggedMetric = null;
+            return;
         }
-        _handleDragOver(e) {
-            if (this._draggedMetric) {
-                e.preventDefault();
-            }
+        if (this.store?.history) {
+            this.store.history.linkGraphs(this._draggedMetric, targetMetric);
         }
-        _unlinkGraphs(groupIndex) {
-            if (this.store?.history) {
-                this.store.history.unlinkGraphGroup(groupIndex);
-            }
+        this._draggedMetric = null;
+    }
+    _handleDragOver(e) {
+        if (this._draggedMetric) {
+            e.preventDefault();
         }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
-                this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-                this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-                this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-                this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
-                this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
-                this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
-                this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
-                // Trigger history loading for sparklines on initial load
-                this.store.history.loadHistoryOnDemand();
-            }
+    }
+    _unlinkGraphs(groupIndex) {
+        if (this.store?.history) {
+            this.store.history.unlinkGraphGroup(groupIndex);
+        }
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
+            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
+            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
+            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
+            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
+            // Trigger history loading for sparklines on initial load
+            this.store.history.loadHistoryOnDemand();
+        }
+        this._updateMetrics();
+    }
+    willUpdate(changedProperties) {
+        // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
+        if (changedProperties.has('device') ||
+            changedProperties.has('hass') ||
+            this._activeEnvGraphsController?.value) {
             this._updateMetrics();
         }
-        willUpdate(changedProperties) {
-            // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
-            if (changedProperties.has('device') ||
-                changedProperties.has('hass') ||
-                this._activeEnvGraphsController?.value) {
-                this._updateMetrics();
-            }
+    }
+    get _chipDraggable() {
+        if (this._resizeController.isMobile || this._resizeController.hasTouch) {
+            return this._mobileLink.toString();
         }
-        get _chipDraggable() {
-            if (this._resizeController.isMobile || this._resizeController.hasTouch) {
-                return this._mobileLink.toString();
-            }
-            return 'true';
-        }
-        _triggerAction(action) {
-            this._menuOpen = false;
-            // Direct store method calls
-            switch (action) {
-                case 'add_plant':
-                    this.store.openAddPlantDialog();
-                    break;
-                case 'config':
-                    this.store.ui.$activeDialog.set({
-                        type: 'CONFIG',
-                        payload: {
-                            currentTab: ConfigTab.ENVIRONMENT,
-                            environmentData: {
-                                selectedGrowspaceId: this._selectedDeviceController.value || '',
-                                temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
-                                humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
-                                vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
-                                co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
-                                circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
-                                stress_threshold: 0.8,
-                                mold_threshold: 0.8,
-                                light_sensor: this.device?.environment_attributes?.light_sensor || '',
-                                exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
-                                humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
-                                dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
-                                soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
-                                control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
-                                dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
-                            }
+        return 'true';
+    }
+    _triggerAction(action) {
+        this._menuOpen = false;
+        // Direct store method calls
+        switch (action) {
+            case 'add_plant':
+                this.store.openAddPlantDialog();
+                break;
+            case 'config':
+                this.store.ui.$activeDialog.set({
+                    type: 'CONFIG',
+                    payload: {
+                        currentTab: ConfigTab.ENVIRONMENT,
+                        environmentData: {
+                            selectedGrowspaceId: this._selectedDeviceController.value || '',
+                            temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
+                            humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
+                            vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
+                            co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
+                            circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
+                            stress_threshold: 0.8,
+                            mold_threshold: 0.8,
+                            light_sensor: this.device?.environment_attributes?.light_sensor || '',
+                            exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
+                            humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
+                            dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
+                            soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
+                            control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
+                            dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
                         }
-                    });
-                    break;
-                case 'edit':
-                    this.store.ui.setEditMode(!this._isEditModeController.value);
-                    break;
-                case 'compact':
-                    // Legacy mapping; now should set ViewMode
-                    const currentMode = this._viewModeController.value;
-                    this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
-                    break;
-                case 'strains':
-                    this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
-                    break;
-                case 'irrigation':
-                    if (this._selectedDeviceController.value) {
-                        this.store.ui.$activeDialog.set({ type: 'IRRIGATION', payload: {} });
                     }
-                    break;
-                case 'ai':
-                    this.store.ui.$activeDialog.set({
-                        type: 'GROW_MASTER',
-                        payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
-                    });
-                    break;
-                case 'logbook':
-                    this.store.openLogbookDialog();
-                    break;
-                case 'water': {
-                    const selectedPlants = this.store.ui.$selectedPlants.get();
-                    this.store.ui.$activeDialog.set({
-                        type: 'WATERING',
-                        payload: {
-                            plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-                            growspaceId: this._selectedDeviceController.value || undefined,
-                            mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
-                        }
-                    });
-                    break;
+                });
+                break;
+            case 'edit':
+                this.store.ui.setEditMode(!this._isEditModeController.value);
+                break;
+            case 'compact':
+                // Legacy mapping; now should set ViewMode
+                const currentMode = this._viewModeController.value;
+                this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
+                break;
+            case 'strains':
+                this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+                break;
+            case 'irrigation':
+                if (this._selectedDeviceController.value) {
+                    this.store.ui.$activeDialog.set({ type: 'IRRIGATION', payload: {} });
                 }
-                case 'nutrient_presets':
-                    this.store.openNutrientPresetsDialog();
-                    break;
-                case 'control_dehumidifier':
-                    // Implementation for dehumidifier toggle
-                    if (this.device?.overview_entity_id) {
-                        this.hass.callService('growspace_manager', 'update_environment_config', {
-                            growspace_id: this._selectedDeviceController.value,
-                            dehumidifier_control_enabled: !this._envAttrs.dehumidifier_control_enabled
-                        });
+                break;
+            case 'ai':
+                this.store.ui.$activeDialog.set({
+                    type: 'GROW_MASTER',
+                    payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
+                });
+                break;
+            case 'logbook':
+                this.store.openLogbookDialog();
+                break;
+            case 'water': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.ui.$activeDialog.set({
+                    type: 'WATERING',
+                    payload: {
+                        plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+                        growspaceId: this._selectedDeviceController.value || undefined,
+                        mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
                     }
-                    break;
-                case 'ipm':
-                    this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
-                    break;
+                });
+                break;
             }
+            case 'nutrient_presets':
+                this.store.openNutrientPresetsDialog();
+                break;
+            case 'control_dehumidifier':
+                // Implementation for dehumidifier toggle
+                if (this.device?.overview_entity_id) {
+                    this.hass.callService('growspace_manager', 'update_environment_config', {
+                        growspace_id: this._selectedDeviceController.value,
+                        dehumidifier_control_enabled: !this._envAttrs.dehumidifier_control_enabled
+                    });
+                }
+                break;
+            case 'ipm':
+                this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+                break;
         }
-        render() {
-            if (!this.device || !this.hass)
-                return x ``;
-            const dominant = this._dominant;
-            const devices = this._devicesController.value;
-            // ⚡ Performance: Single-pass partitioning with Set.has() O(1) instead of Array.includes() O(n)
-            // Reduces from 2 array iterations to 1, ~50% fewer iterations for chip splitting
-            const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
-            const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
-                if (heroKeySet.has(chip.key)) {
-                    acc.heroChips.push(chip);
-                }
-                else {
-                    acc.secondaryChips.push(chip);
-                }
-                return acc;
-            }, { heroChips: [], secondaryChips: [] });
-            return x `
+    }
+    render() {
+        if (!this.device || !this.hass)
+            return x ``;
+        const dominant = this._dominant;
+        const devices = this._devicesController.value;
+        // ⚡ Performance: Single-pass partitioning with Set.has() O(1) instead of Array.includes() O(n)
+        // Reduces from 2 array iterations to 1, ~50% fewer iterations for chip splitting
+        const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
+        const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
+            if (heroKeySet.has(chip.key)) {
+                acc.heroChips.push(chip);
+            }
+            else {
+                acc.secondaryChips.push(chip);
+            }
+            return acc;
+        }, { heroChips: [], secondaryChips: [] });
+        return x `
       <div class="gs-stats-container">
         
         <!-- TOP HEADER: Title + Actions -->
@@ -28796,7 +26569,7 @@ class MetricsUtils {
           <!-- Row 1 Left: Title/Select -->
           <div class="header-title-area">
             ${!this.config?.default_growspace
-                ? x `
+            ? x `
             <div class="select-wrapper">
                 <span class="select-sizer">${devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
                 <select
@@ -28807,7 +26580,7 @@ class MetricsUtils {
                     ${devices.map((d) => x `<option value=${d.device_id}>${d.name}</option>`)}
                 </select>
             </div>`
-                : x `<h1 class="gs-title">${this.device.name}</h1>`}
+            : x `<h1 class="gs-title">${this.device.name}</h1>`}
           </div>
 
           <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
@@ -28866,7 +26639,7 @@ class MetricsUtils {
                 </div>
                <div class="header-stage-area" ${n$2(this._stageContainerRef)}>
                  ${dominant
-                ? x `
+            ? x `
                          <div class="gs-stage-pill">
                              <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
                              ${dominant.daysLabel}
@@ -28876,7 +26649,7 @@ class MetricsUtils {
                              ${dominant.weeksLabel}
                          </div>
                        `
-                : ''}
+            : ''}
                </div>
                 <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.RIGHT)}>
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
@@ -28926,48 +26699,48 @@ class MetricsUtils {
         </div>
       </div>
     `;
+    }
+    _renderHeroCard(chip) {
+        const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
+        const val = match ? match[1] : chip.value;
+        const unit = match ? match[2] : '';
+        // Generate sparkline path for this metric
+        const sparklineWidth = 140; // Approximate card width
+        const sparklineHeight = 80; // Approximate card height minus padding
+        // Get current time range from controller
+        const timeRange = this.store?.history?.getRange() || '24h';
+        // For VPD, try multi-segment coloring first, fall back to standard if no segments
+        const isVpd = chip.key === 'vpd';
+        let vpdSegments = [];
+        if (isVpd && this.store?.history && this.device) {
+            const historyData = this._historyCacheController?.value?.['vpd'];
+            const lightHistory = this._historyCacheController?.value?.['light'] || [];
+            // Get VPD thresholds from device overview entity
+            const overviewEntity = this.device.overview_entity_id
+                ? this.hass?.states[this.device.overview_entity_id]
+                : null;
+            const attrs = overviewEntity?.attributes || {};
+            const day = {
+                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+            };
+            const night = {
+                targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+                targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+                dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+                dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+            };
+            vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, { day, night }, lightHistory, timeRange);
         }
-        _renderHeroCard(chip) {
-            const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
-            const val = match ? match[1] : chip.value;
-            const unit = match ? match[2] : '';
-            // Generate sparkline path for this metric
-            const sparklineWidth = 140; // Approximate card width
-            const sparklineHeight = 80; // Approximate card height minus padding
-            // Get current time range from controller
-            const timeRange = this.store?.history?.getRange() || '24h';
-            // For VPD, try multi-segment coloring first, fall back to standard if no segments
-            const isVpd = chip.key === 'vpd';
-            let vpdSegments = [];
-            if (isVpd && this.store?.history && this.device) {
-                const historyData = this._historyCacheController?.value?.['vpd'];
-                const lightHistory = this._historyCacheController?.value?.['light'] || [];
-                // Get VPD thresholds from device overview entity
-                const overviewEntity = this.device.overview_entity_id
-                    ? this.hass?.states[this.device.overview_entity_id]
-                    : null;
-                const attrs = overviewEntity?.attributes || {};
-                const day = {
-                    targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
-                    targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
-                    dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
-                    dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
-                };
-                const night = {
-                    targetMin: attrs.night_vpd_target_min ?? day.targetMin,
-                    targetMax: attrs.night_vpd_target_max ?? day.targetMax,
-                    dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
-                    dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
-                };
-                vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, { day, night }, lightHistory, timeRange);
-            }
-            const useVpdSegments = isVpd && vpdSegments.length > 0;
-            let sparklinePath = '';
-            if (!useVpdSegments && this.store?.history) {
-                sparklinePath = ChartUtils.generateSparklinePath(this._historyCacheController?.value?.[chip.key], sparklineWidth, sparklineHeight, timeRange);
-            }
-            const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
-            return x `
+        const useVpdSegments = isVpd && vpdSegments.length > 0;
+        let sparklinePath = '';
+        if (!useVpdSegments && this.store?.history) {
+            sparklinePath = ChartUtils.generateSparklinePath(this._historyCacheController?.value?.[chip.key], sparklineWidth, sparklineHeight, timeRange);
+        }
+        const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
+        return x `
         <div 
             class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
             draggable="${this._chipDraggable}"
@@ -29031,11 +26804,11 @@ class MetricsUtils {
             </div>
         </div>
     `;
-        }
-        _renderMenu() {
-            if (!this._menuOpen)
-                return '';
-            return x `
+    }
+    _renderMenu() {
+        if (!this._menuOpen)
+            return '';
+        return x `
       <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
         <div class="menu-header">Configuration</div>
         <div class="menu-item" @click=${() => this._triggerAction('config')}>
@@ -29099,68 +26872,9 @@ class MetricsUtils {
         </div>
       </div>
     `;
-        }
-    };
-    _GrowspaceHeader_hass_accessor_storage = new WeakMap();
-    _GrowspaceHeader_store_accessor_storage = new WeakMap();
-    _GrowspaceHeader_config_accessor_storage = new WeakMap();
-    _GrowspaceHeader_device_accessor_storage = new WeakMap();
-    _GrowspaceHeader_compact_accessor_storage = new WeakMap();
-    _GrowspaceHeader_isEditMode_accessor_storage = new WeakMap();
-    _GrowspaceHeader_growspaceOptions_accessor_storage = new WeakMap();
-    _GrowspaceHeader_historyData_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollLeft_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollRight_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollStageLeft_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollStageRight_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollDeviceLeft_accessor_storage = new WeakMap();
-    _GrowspaceHeader__canScrollDeviceRight_accessor_storage = new WeakMap();
-    _GrowspaceHeader__menuOpen_accessor_storage = new WeakMap();
-    _GrowspaceHeader__mobileLink_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceHeader");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext, subscribe: true })];
-        _config_decorators = [c$2({ context: configContext, subscribe: true }), n$5({ attribute: false })];
-        _device_decorators = [n$5({ attribute: false })];
-        _compact_decorators = [n$5({ type: Boolean })];
-        _isEditMode_decorators = [n$5({ type: Boolean })];
-        _growspaceOptions_decorators = [n$5({ attribute: false })];
-        _historyData_decorators = [n$5({ attribute: false })];
-        __canScrollLeft_decorators = [r$2()];
-        __canScrollRight_decorators = [r$2()];
-        __canScrollStageLeft_decorators = [r$2()];
-        __canScrollStageRight_decorators = [r$2()];
-        __canScrollDeviceLeft_decorators = [r$2()];
-        __canScrollDeviceRight_decorators = [r$2()];
-        __menuOpen_decorators = [r$2()];
-        __mobileLink_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _compact_decorators, { kind: "accessor", name: "compact", static: false, private: false, access: { has: obj => "compact" in obj, get: obj => obj.compact, set: (obj, value) => { obj.compact = value; } }, metadata: _metadata }, _compact_initializers, _compact_extraInitializers);
-        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(_classThis, null, _historyData_decorators, { kind: "accessor", name: "historyData", static: false, private: false, access: { has: obj => "historyData" in obj, get: obj => obj.historyData, set: (obj, value) => { obj.historyData = value; } }, metadata: _metadata }, _historyData_initializers, _historyData_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollLeft_decorators, { kind: "accessor", name: "_canScrollLeft", static: false, private: false, access: { has: obj => "_canScrollLeft" in obj, get: obj => obj._canScrollLeft, set: (obj, value) => { obj._canScrollLeft = value; } }, metadata: _metadata }, __canScrollLeft_initializers, __canScrollLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollRight_decorators, { kind: "accessor", name: "_canScrollRight", static: false, private: false, access: { has: obj => "_canScrollRight" in obj, get: obj => obj._canScrollRight, set: (obj, value) => { obj._canScrollRight = value; } }, metadata: _metadata }, __canScrollRight_initializers, __canScrollRight_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollStageLeft_decorators, { kind: "accessor", name: "_canScrollStageLeft", static: false, private: false, access: { has: obj => "_canScrollStageLeft" in obj, get: obj => obj._canScrollStageLeft, set: (obj, value) => { obj._canScrollStageLeft = value; } }, metadata: _metadata }, __canScrollStageLeft_initializers, __canScrollStageLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollStageRight_decorators, { kind: "accessor", name: "_canScrollStageRight", static: false, private: false, access: { has: obj => "_canScrollStageRight" in obj, get: obj => obj._canScrollStageRight, set: (obj, value) => { obj._canScrollStageRight = value; } }, metadata: _metadata }, __canScrollStageRight_initializers, __canScrollStageRight_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollDeviceLeft_decorators, { kind: "accessor", name: "_canScrollDeviceLeft", static: false, private: false, access: { has: obj => "_canScrollDeviceLeft" in obj, get: obj => obj._canScrollDeviceLeft, set: (obj, value) => { obj._canScrollDeviceLeft = value; } }, metadata: _metadata }, __canScrollDeviceLeft_initializers, __canScrollDeviceLeft_extraInitializers);
-        __esDecorate(_classThis, null, __canScrollDeviceRight_decorators, { kind: "accessor", name: "_canScrollDeviceRight", static: false, private: false, access: { has: obj => "_canScrollDeviceRight" in obj, get: obj => obj._canScrollDeviceRight, set: (obj, value) => { obj._canScrollDeviceRight = value; } }, metadata: _metadata }, __canScrollDeviceRight_initializers, __canScrollDeviceRight_extraInitializers);
-        __esDecorate(_classThis, null, __menuOpen_decorators, { kind: "accessor", name: "_menuOpen", static: false, private: false, access: { has: obj => "_menuOpen" in obj, get: obj => obj._menuOpen, set: (obj, value) => { obj._menuOpen = value; } }, metadata: _metadata }, __menuOpen_initializers, __menuOpen_extraInitializers);
-        __esDecorate(_classThis, null, __mobileLink_decorators, { kind: "accessor", name: "_mobileLink", static: false, private: false, access: { has: obj => "_mobileLink" in obj, get: obj => obj._mobileLink, set: (obj, value) => { obj._mobileLink = value; } }, metadata: _metadata }, __mobileLink_initializers, __mobileLink_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: i$6 `
+    }
+};
+GrowspaceHeader.styles = i$6 `
     :host {
       display: block;
     }
@@ -29645,110 +27359,118 @@ class MetricsUtils {
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-  `
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+  `;
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceHeader.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], GrowspaceHeader.prototype, "store", void 0);
+__decorate([
+    c$2({ context: configContext, subscribe: true }),
+    n$5({ attribute: false })
+], GrowspaceHeader.prototype, "config", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeader.prototype, "device", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeader.prototype, "compact", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeader.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeader.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeader.prototype, "historyData", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollRight", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollStageLeft", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollStageRight", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollDeviceLeft", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_canScrollDeviceRight", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_menuOpen", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeader.prototype, "_mobileLink", void 0);
+GrowspaceHeader = __decorate([
+    t$2('growspace-header')
+], GrowspaceHeader);
 
-(() => {
-    var _GrowspaceToast_store_accessor_storage;
-    let _classDecorators = [t$2('growspace-toast')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceToast_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, void 0));
-            Object.defineProperty(this, "_notificationController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, _store_extraInitializers)
-            });
-            Object.defineProperty(this, "_timeoutId", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
+let GrowspaceToast = class GrowspaceToast extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._timeoutId = null;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._notificationController = new libExports.StoreController(this, this.store.ui.$notification);
         }
-        get store() { return __classPrivateFieldGet(this, _GrowspaceToast_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspaceToast_store_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._notificationController = new libExports.StoreController(this, this.store.ui.$notification);
-            }
-        }
-        updated(changedProps) {
-            super.updated(changedProps);
-            const notification = this._notificationController?.value;
-            if (notification) {
-                this._resetTimeout();
-                // Longer duration for actions
-                const duration = notification.action ? 6000 : 3000;
-                this._timeoutId = window.setTimeout(() => {
-                    this.store.ui.clearToast();
-                }, duration);
-            }
-        }
-        _resetTimeout() {
-            if (this._timeoutId) {
-                window.clearTimeout(this._timeoutId);
-                this._timeoutId = null;
-            }
-        }
-        disconnectedCallback() {
-            super.disconnectedCallback();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        const notification = this._notificationController?.value;
+        if (notification) {
             this._resetTimeout();
+            // Longer duration for actions
+            const duration = notification.action ? 6000 : 3000;
+            this._timeoutId = window.setTimeout(() => {
+                this.store.ui.clearToast();
+            }, duration);
         }
-        render() {
-            if (!this._notificationController)
-                return x ``;
-            const notification = this._notificationController.value;
-            const isVisible = !!notification;
-            return x `
+    }
+    _resetTimeout() {
+        if (this._timeoutId) {
+            window.clearTimeout(this._timeoutId);
+            this._timeoutId = null;
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._resetTimeout();
+    }
+    render() {
+        if (!this._notificationController)
+            return x ``;
+        const notification = this._notificationController.value;
+        const isVisible = !!notification;
+        return x `
             <div class=${e({
-                'toast-notification': true,
-                'visible': isVisible,
-                [notification?.type || 'info']: true
-            })}>
+            'toast-notification': true,
+            'visible': isVisible,
+            [notification?.type || 'info']: true
+        })}>
                 <span class="toast-message">${notification?.message || ''}</span>
                 ${notification?.action ? x `
                     <button class="toast-action" @click=${() => {
-                notification.action?.callback();
-                this.store.ui.clearToast();
-            }}>
+            notification.action?.callback();
+            this.store.ui.clearToast();
+        }}>
                         ${notification.action.label}
                     </button>
                 ` : ''}
             </div>
         `;
-        }
-    };
-    _GrowspaceToast_store_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceToast");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [c$2({ context: storeContext })];
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: i$6 `
+    }
+};
+GrowspaceToast.styles = i$6 `
         :host {
             position: fixed;
             bottom: 24px;
@@ -29815,82 +27537,60 @@ class MetricsUtils {
         .toast-action:hover {
             background: rgba(var(--rgb-primary-color), 0.1);
         }
-    `
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    `;
+__decorate([
+    c$2({ context: storeContext })
+], GrowspaceToast.prototype, "store", void 0);
+GrowspaceToast = __decorate([
+    t$2('growspace-toast')
+], GrowspaceToast);
 
-(() => {
-    var _BatchActionBar_store_accessor_storage;
-    let _classDecorators = [t$2('batch-action-bar')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _BatchActionBar_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, void 0));
-            Object.defineProperty(this, "_selectedPlantsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, _store_extraInitializers)
-            });
+let BatchActionBar = class BatchActionBar extends i$3 {
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
         }
-        get store() { return __classPrivateFieldGet(this, _BatchActionBar_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _BatchActionBar_store_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            }
+    }
+    _handleWater() {
+        this.store.openBatchWateringDialog();
+    }
+    _handleStage() {
+        this.store.openBatchTrainingDialog();
+    }
+    _handleIPM() {
+        this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
+    }
+    _handleDelete() {
+        const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+        if (selectedIds.length === 0)
+            return;
+        if (confirm(`Delete ${selectedIds.length} plant(s)? This cannot be undone.`)) {
+            this.store.batchAction('remove', selectedIds);
         }
-        _handleWater() {
-            this.store.openBatchWateringDialog();
+    }
+    _handleHarvest() {
+        const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
+        if (selectedIds.length === 0)
+            return;
+        this.store.batchAction('harvest', selectedIds);
+    }
+    _handleClear() {
+        this.store.clearPlantSelection();
+        this.store.ui.setEditMode(false);
+    }
+    render() {
+        const selectedCount = this._selectedPlantsController?.value.size || 0;
+        // Toggle host attribute for CSS transition
+        if (selectedCount > 0) {
+            this.setAttribute('visible', '');
         }
-        _handleStage() {
-            this.store.openBatchTrainingDialog();
+        else {
+            this.removeAttribute('visible');
         }
-        _handleIPM() {
-            this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
-        }
-        _handleDelete() {
-            const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
-            if (selectedIds.length === 0)
-                return;
-            if (confirm(`Delete ${selectedIds.length} plant(s)? This cannot be undone.`)) {
-                this.store.batchAction('remove', selectedIds);
-            }
-        }
-        _handleHarvest() {
-            const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
-            if (selectedIds.length === 0)
-                return;
-            this.store.batchAction('harvest', selectedIds);
-        }
-        _handleClear() {
-            this.store.clearPlantSelection();
-            this.store.ui.setEditMode(false);
-        }
-        render() {
-            const selectedCount = this._selectedPlantsController?.value.size || 0;
-            // Toggle host attribute for CSS transition
-            if (selectedCount > 0) {
-                this.setAttribute('visible', '');
-            }
-            else {
-                this.removeAttribute('visible');
-            }
-            if (selectedCount === 0)
-                return E;
-            return x `
+        if (selectedCount === 0)
+            return E;
+        return x `
       <div class="batch-bar">
         <div class="count-badge">${selectedCount} Selected</div>
         
@@ -29928,25 +27628,11 @@ class MetricsUtils {
         </button>
       </div>
     `;
-        }
-    };
-    _BatchActionBar_store_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "BatchActionBar");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [c$2({ context: storeContext })];
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            sharedStyles,
-            i$6 `
+    }
+};
+BatchActionBar.styles = [
+    sharedStyles,
+    i$6 `
       :host {
         display: block;
         position: absolute;
@@ -30056,13 +27742,13 @@ class MetricsUtils {
         color: var(--primary-text-color);
       }
     `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: storeContext })
+], BatchActionBar.prototype, "store", void 0);
+BatchActionBar = __decorate([
+    t$2('batch-action-bar')
+], BatchActionBar);
 
 /**
  * @license
@@ -30195,188 +27881,119 @@ function getOverlayColor(mode, plant, store) {
     // For now, we only implement VPD visualization as it's the most "calculated" metric available
     return 'transparent';
 }
-(() => {
-    var _GrowspaceGrid_store_accessor_storage, _GrowspaceGrid_plants_accessor_storage, _GrowspaceGrid_rows_accessor_storage, _GrowspaceGrid_cols_accessor_storage;
-    let _classDecorators = [t$2('growspace-grid')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _plants_decorators;
-    let _plants_initializers = [];
-    let _plants_extraInitializers = [];
-    let _rows_decorators;
-    let _rows_initializers = [];
-    let _rows_extraInitializers = [];
-    let _cols_decorators;
-    let _cols_initializers = [];
-    let _cols_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceGrid_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, void 0));
-            _GrowspaceGrid_plants_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _plants_initializers, [])));
-            _GrowspaceGrid_rows_accessor_storage.set(this, (__runInitializers(this, _plants_extraInitializers), __runInitializers(this, _rows_initializers, 3)));
-            _GrowspaceGrid_cols_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _cols_initializers, 3)));
-            // UI state via StoreController - direct subscription to atoms
-            Object.defineProperty(this, "_isEditModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, _cols_extraInitializers)
-            });
-            Object.defineProperty(this, "_selectedPlantsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_isCompactController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_isLoadingController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_overlayModeController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_draggedPlant", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-            Object.defineProperty(this, "_gridRef", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: e$1()
-            });
+let GrowspaceGrid = class GrowspaceGrid extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.plants = [];
+        this.rows = 3;
+        this.cols = 3;
+        this._draggedPlant = null;
+        this._gridRef = e$1();
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+            this._isCompactController = new libExports.StoreController(this, this.store.ui.$isCompactView);
+            this._isLoadingController = new libExports.StoreController(this, this.store.ui.$isLoading);
+            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
         }
-        get store() { return __classPrivateFieldGet(this, _GrowspaceGrid_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspaceGrid_store_accessor_storage, value, "f"); }
-        get plants() { return __classPrivateFieldGet(this, _GrowspaceGrid_plants_accessor_storage, "f"); }
-        set plants(value) { __classPrivateFieldSet(this, _GrowspaceGrid_plants_accessor_storage, value, "f"); }
-        get rows() { return __classPrivateFieldGet(this, _GrowspaceGrid_rows_accessor_storage, "f"); }
-        set rows(value) { __classPrivateFieldSet(this, _GrowspaceGrid_rows_accessor_storage, value, "f"); }
-        get cols() { return __classPrivateFieldGet(this, _GrowspaceGrid_cols_accessor_storage, "f"); }
-        set cols(value) { __classPrivateFieldSet(this, _GrowspaceGrid_cols_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-                this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-                this._isCompactController = new libExports.StoreController(this, this.store.ui.$isCompactView);
-                this._isLoadingController = new libExports.StoreController(this, this.store.ui.$isLoading);
-                this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
-            }
+    }
+    focusPlant(index) {
+        const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
+        if (cards && cards[index]) {
+            cards[index].focus();
         }
-        focusPlant(index) {
-            const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
-            if (cards && cards[index]) {
-                cards[index].focus();
-            }
+    }
+    _handleDragStart(plant) {
+        this._draggedPlant = plant;
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
         }
-        _handleDragStart(plant) {
-            this._draggedPlant = plant;
-        }
-        _handleDragOver(e) {
+    }
+    _handleDrop(e, targetRow, targetCol, targetPlant) {
+        if (e)
             e.preventDefault();
-            if (e.dataTransfer) {
-                e.dataTransfer.dropEffect = 'move';
+        if (!this._draggedPlant)
+            return;
+        // Direct store call
+        this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
+        this._draggedPlant = null;
+    }
+    _handlePlantClick(plant) {
+        // Direct store call
+        this.store.handlePlantClick(plant);
+    }
+    _togglePlantSelection(plant) {
+        const plantId = plant.attributes.plant_id;
+        if (plantId) {
+            this.store.togglePlantSelection(plantId);
+        }
+    }
+    _handleMobileDrop(e) {
+        const { x, y, plant } = e.detail;
+        // Hide the dragged element temporarily so we can see what's underneath
+        // Note: The dragged element (avatar) usually follows pointer, but here 'plant' is the source data.
+        // The "ghost" or original card might be under the finger if we are not careful.
+        // However, usually pointer-events: none is set on the drag avatar.
+        // If we are dragging the actual card element via transform, it IS under the finger.
+        // WE MUST HIDE IT or use pointer-events.
+        // The DragDropController scales the card and moves it.
+        // We can't easily access the specific card DOM element here to hide it without traversing.
+        // But `document.elementsFromPoint` returns ALL elements.
+        // const elements = document.elementsFromPoint(x, y); // Removed unused call causing JSDOM error
+        // Look for a drop target
+        // We are looking for <growspace-plant-card> or <div class="plant-card-empty">
+        // But these are inside shadow roots potentially?
+        // "document.elementsFromPoint" does NOT penetrate shadow roots automatically in all browsers/modes,
+        // but usually "composed path" is needed.
+        // Actually, GrowspaceGrid is in Shadow DOM of GrowspaceManagerCard? No, it's a lit element.
+        // The plants are inside GrowspaceGrid's shadow root.
+        // elementsFromPoint on document might stop at GrowspaceGrid host.
+        // Better strategy: Use the ShadowRoot of this grid if possible, or recursive probing.
+        // But `this.shadowRoot.elementFromPoint(x, y)` exists!
+        const shadowRoot = this.shadowRoot;
+        if (!shadowRoot)
+            return;
+        const targetEl = shadowRoot.elementFromPoint(x, y);
+        if (!targetEl)
+            return;
+        // Traverse up from targetEl to find a slot or card
+        let current = targetEl;
+        let targetRow;
+        let targetCol;
+        let targetPlant = null;
+        while (current && current !== this) {
+            // Check for empty slot
+            if (current.classList?.contains('plant-card-empty')) {
+                targetRow = parseInt(current.getAttribute('data-row') || '0');
+                targetCol = parseInt(current.getAttribute('data-col') || '0');
+                break;
             }
-        }
-        _handleDrop(e, targetRow, targetCol, targetPlant) {
-            if (e)
-                e.preventDefault();
-            if (!this._draggedPlant)
-                return;
-            // Direct store call
-            this.store.handleDrop(targetRow, targetCol, targetPlant, this._draggedPlant);
-            this._draggedPlant = null;
-        }
-        _handlePlantClick(plant) {
-            // Direct store call
-            this.store.handlePlantClick(plant);
-        }
-        _togglePlantSelection(plant) {
-            const plantId = plant.attributes.plant_id;
-            if (plantId) {
-                this.store.togglePlantSelection(plantId);
+            // Check for populated card
+            if (current.tagName.toLowerCase() === 'growspace-plant-card') {
+                targetRow = current.row; // We set .row prop on it
+                targetCol = current.col;
+                targetPlant = current.plant;
+                break;
             }
+            current = current.parentElement;
         }
-        _handleMobileDrop(e) {
-            const { x, y, plant } = e.detail;
-            // Hide the dragged element temporarily so we can see what's underneath
-            // Note: The dragged element (avatar) usually follows pointer, but here 'plant' is the source data.
-            // The "ghost" or original card might be under the finger if we are not careful.
-            // However, usually pointer-events: none is set on the drag avatar.
-            // If we are dragging the actual card element via transform, it IS under the finger.
-            // WE MUST HIDE IT or use pointer-events.
-            // The DragDropController scales the card and moves it.
-            // We can't easily access the specific card DOM element here to hide it without traversing.
-            // But `document.elementsFromPoint` returns ALL elements.
-            // const elements = document.elementsFromPoint(x, y); // Removed unused call causing JSDOM error
-            // Look for a drop target
-            // We are looking for <growspace-plant-card> or <div class="plant-card-empty">
-            // But these are inside shadow roots potentially?
-            // "document.elementsFromPoint" does NOT penetrate shadow roots automatically in all browsers/modes,
-            // but usually "composed path" is needed.
-            // Actually, GrowspaceGrid is in Shadow DOM of GrowspaceManagerCard? No, it's a lit element.
-            // The plants are inside GrowspaceGrid's shadow root.
-            // elementsFromPoint on document might stop at GrowspaceGrid host.
-            // Better strategy: Use the ShadowRoot of this grid if possible, or recursive probing.
-            // But `this.shadowRoot.elementFromPoint(x, y)` exists!
-            const shadowRoot = this.shadowRoot;
-            if (!shadowRoot)
-                return;
-            const targetEl = shadowRoot.elementFromPoint(x, y);
-            if (!targetEl)
-                return;
-            // Traverse up from targetEl to find a slot or card
-            let current = targetEl;
-            let targetRow;
-            let targetCol;
-            let targetPlant = null;
-            while (current && current !== this) {
-                // Check for empty slot
-                if (current.classList?.contains('plant-card-empty')) {
-                    targetRow = parseInt(current.getAttribute('data-row') || '0');
-                    targetCol = parseInt(current.getAttribute('data-col') || '0');
-                    break;
-                }
-                // Check for populated card
-                if (current.tagName.toLowerCase() === 'growspace-plant-card') {
-                    targetRow = current.row; // We set .row prop on it
-                    targetCol = current.col;
-                    targetPlant = current.plant;
-                    break;
-                }
-                current = current.parentElement;
-            }
-            if (targetRow !== undefined && targetCol !== undefined) {
-                this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
-            }
+        if (targetRow !== undefined && targetCol !== undefined) {
+            this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
         }
-        render() {
-            const isListView = this.cols > 5; // Simplified check for inline style
-            const gridStyle = isListView
-                ? ''
-                : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
-            const flatGrid = this.plants.flat();
-            return x `
+    }
+    render() {
+        const isListView = this.cols > 5; // Simplified check for inline style
+        const gridStyle = isListView
+            ? ''
+            : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
+        const flatGrid = this.plants.flat();
+        return x `
       <div
         class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
         style="${gridStyle}"
@@ -30386,15 +28003,15 @@ function getOverlayColor(mode, plant, store) {
       >
         ${this._isLoadingController?.value ? this.renderSkeletonGrid() : ''}
         ${!this._isLoadingController?.value
-                ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
-                    const row = Math.floor(index / this.cols) + 1;
-                    const col = (index % this.cols) + 1;
-                    if (!plant) {
-                        return this.renderEmptySlot(row, col);
-                    }
-                    const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
-                    const overlayColor = getOverlayColor(overlayMode, plant, this.store);
-                    return x `
+            ? c(flatGrid, (plant, index) => plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`, (plant, index) => {
+                const row = Math.floor(index / this.cols) + 1;
+                const col = (index % this.cols) + 1;
+                if (!plant) {
+                    return this.renderEmptySlot(row, col);
+                }
+                const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
+                const overlayColor = getOverlayColor(overlayMode, plant, this.store);
+                return x `
                 <div class="grid-item-wrapper">
                   <growspace-plant-card
                     .plant=${plant}
@@ -30408,14 +28025,14 @@ function getOverlayColor(mode, plant, store) {
                   ${overlayMode !== GridOverlayMode.NONE ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
                 </div>
                 `;
-                })
-                : ''}
+            })
+            : ''}
       </div>
     `;
-        }
-        renderEmptySlot(row, col) {
-            // 0-based for API
-            return x `
+    }
+    renderEmptySlot(row, col) {
+        // 0-based for API
+        return x `
       <div
         class="plant-card-empty"
         data-row="${row}"
@@ -30435,41 +28052,18 @@ function getOverlayColor(mode, plant, store) {
         <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
-        }
-        renderSkeletonGrid() {
-            const count = this.rows * this.cols;
-            return Array(count)
-                .fill(0)
-                .map(() => x `<div class="skeleton-card"></div>`);
-        }
-    };
-    _GrowspaceGrid_store_accessor_storage = new WeakMap();
-    _GrowspaceGrid_plants_accessor_storage = new WeakMap();
-    _GrowspaceGrid_rows_accessor_storage = new WeakMap();
-    _GrowspaceGrid_cols_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceGrid");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [c$2({ context: storeContext })];
-        _plants_decorators = [n$5({ type: Array })];
-        _rows_decorators = [n$5({ type: Number })];
-        _cols_decorators = [n$5({ type: Number })];
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _plants_decorators, { kind: "accessor", name: "plants", static: false, private: false, access: { has: obj => "plants" in obj, get: obj => obj.plants, set: (obj, value) => { obj.plants = value; } }, metadata: _metadata }, _plants_initializers, _plants_extraInitializers);
-        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
-        __esDecorate(_classThis, null, _cols_decorators, { kind: "accessor", name: "cols", static: false, private: false, access: { has: obj => "cols" in obj, get: obj => obj.cols, set: (obj, value) => { obj.cols = value; } }, metadata: _metadata }, _cols_initializers, _cols_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            variables,
-            sharedStyles,
-            i$6 `
+    }
+    renderSkeletonGrid() {
+        const count = this.rows * this.cols;
+        return Array(count)
+            .fill(0)
+            .map(() => x `<div class="skeleton-card"></div>`);
+    }
+};
+GrowspaceGrid.styles = [
+    variables,
+    sharedStyles,
+    i$6 `
     :host {
       display: block;
       container-type: inline-size;
@@ -30775,13 +28369,22 @@ function getOverlayColor(mode, plant, store) {
       }
     }
   `
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: storeContext })
+], GrowspaceGrid.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Array })
+], GrowspaceGrid.prototype, "plants", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGrid.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGrid.prototype, "cols", void 0);
+GrowspaceGrid = __decorate([
+    t$2('growspace-grid')
+], GrowspaceGrid);
 
 const growspaceCardStyles = i$6 `
   :host {
@@ -31843,42 +29446,22 @@ const growspaceCardStyles = i$6 `
   }
 `;
 
-(() => {
-    var _GrowspaceViewCompact_grid_accessor_storage, _GrowspaceViewCompact_rows_accessor_storage, _GrowspaceViewCompact_cols_accessor_storage, _GrowspaceViewCompact_isLoading_accessor_storage;
-    let _classDecorators = [t$2('growspace-view-compact')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _grid_decorators;
-    let _grid_initializers = [];
-    let _grid_extraInitializers = [];
-    let _rows_decorators;
-    let _rows_initializers = [];
-    let _rows_extraInitializers = [];
-    let _cols_decorators;
-    let _cols_initializers = [];
-    let _cols_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get grid() { return __classPrivateFieldGet(this, _GrowspaceViewCompact_grid_accessor_storage, "f"); }
-        set grid(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_grid_accessor_storage, value, "f"); }
-        get rows() { return __classPrivateFieldGet(this, _GrowspaceViewCompact_rows_accessor_storage, "f"); }
-        set rows(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_rows_accessor_storage, value, "f"); }
-        get cols() { return __classPrivateFieldGet(this, _GrowspaceViewCompact_cols_accessor_storage, "f"); }
-        set cols(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_cols_accessor_storage, value, "f"); }
-        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceViewCompact_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceViewCompact_isLoading_accessor_storage, value, "f"); }
-        focusPlant(index) {
-            const grid = this.shadowRoot?.querySelector('growspace-grid');
-            if (grid) {
-                grid.focusPlant(index);
-            }
+let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.grid = [];
+        this.rows = 0;
+        this.cols = 0;
+        this.isLoading = false;
+    }
+    focusPlant(index) {
+        const grid = this.shadowRoot?.querySelector('growspace-grid');
+        if (grid) {
+            grid.focusPlant(index);
         }
-        render() {
-            return x `
+    }
+    render() {
+        return x `
       <div class="view-mode-container compact">
         <growspace-grid
           .plants=${this.grid}
@@ -31897,76 +29480,41 @@ const growspaceCardStyles = i$6 `
         </button>
       </div>
     `;
-        }
-        _dispatchModeChange(mode) {
-            this.dispatchEvent(new CustomEvent('view-mode-changed', {
-                detail: { mode },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspaceViewCompact_grid_accessor_storage.set(this, __runInitializers(this, _grid_initializers, []));
-            _GrowspaceViewCompact_rows_accessor_storage.set(this, (__runInitializers(this, _grid_extraInitializers), __runInitializers(this, _rows_initializers, 0)));
-            _GrowspaceViewCompact_cols_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _cols_initializers, 0)));
-            _GrowspaceViewCompact_isLoading_accessor_storage.set(this, (__runInitializers(this, _cols_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            __runInitializers(this, _isLoading_extraInitializers);
-        }
-    };
-    _GrowspaceViewCompact_grid_accessor_storage = new WeakMap();
-    _GrowspaceViewCompact_rows_accessor_storage = new WeakMap();
-    _GrowspaceViewCompact_cols_accessor_storage = new WeakMap();
-    _GrowspaceViewCompact_isLoading_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceViewCompact");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _grid_decorators = [n$5({ attribute: false })];
-        _rows_decorators = [n$5({ type: Number })];
-        _cols_decorators = [n$5({ type: Number })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
-        __esDecorate(_classThis, null, _grid_decorators, { kind: "accessor", name: "grid", static: false, private: false, access: { has: obj => "grid" in obj, get: obj => obj.grid, set: (obj, value) => { obj.grid = value; } }, metadata: _metadata }, _grid_initializers, _grid_extraInitializers);
-        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
-        __esDecorate(_classThis, null, _cols_decorators, { kind: "accessor", name: "cols", static: false, private: false, access: { has: obj => "cols" in obj, get: obj => obj.cols, set: (obj, value) => { obj.cols = value; } }, metadata: _metadata }, _cols_initializers, _cols_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+    _dispatchModeChange(mode) {
+        this.dispatchEvent(new CustomEvent('view-mode-changed', {
+            detail: { mode },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+GrowspaceViewCompact.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewCompact.prototype, "grid", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewCompact.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewCompact.prototype, "cols", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewCompact.prototype, "isLoading", void 0);
+GrowspaceViewCompact = __decorate([
+    t$2('growspace-view-compact')
+], GrowspaceViewCompact);
 
-(() => {
-    var _GrowspaceViewHeader_device_accessor_storage, _GrowspaceViewHeader_growspaceOptions_accessor_storage;
-    let _classDecorators = [t$2('growspace-view-header')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get device() { return __classPrivateFieldGet(this, _GrowspaceViewHeader_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceViewHeader_device_accessor_storage, value, "f"); }
-        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceViewHeader_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceViewHeader_growspaceOptions_accessor_storage, value, "f"); }
-        render() {
-            if (!this.device)
-                return x ``;
-            return x `
+let GrowspaceViewHeader = class GrowspaceViewHeader extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceOptions = {};
+    }
+    render() {
+        if (!this.device)
+            return x ``;
+        return x `
       <div class="view-mode-container header">
         <growspace-header
           .device=${this.device}
@@ -31980,208 +29528,115 @@ const growspaceCardStyles = i$6 `
         </button>
       </div>
     `;
-        }
-        _redispatch(e, type) {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent(type, {
-                detail: e.detail || e.target.value, // Fallback if it was a raw change event
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _dispatchToggle() {
-            this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspaceViewHeader_device_accessor_storage.set(this, __runInitializers(this, _device_initializers, void 0));
-            _GrowspaceViewHeader_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            __runInitializers(this, _growspaceOptions_extraInitializers);
-        }
-    };
-    _GrowspaceViewHeader_device_accessor_storage = new WeakMap();
-    _GrowspaceViewHeader_growspaceOptions_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceViewHeader");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _device_decorators = [n$5({ attribute: false })];
-        _growspaceOptions_decorators = [n$5({ attribute: false })];
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+    _redispatch(e, type) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent(type, {
+            detail: e.detail || e.target.value, // Fallback if it was a raw change event
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _dispatchToggle() {
+        this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceViewHeader.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewHeader.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewHeader.prototype, "growspaceOptions", void 0);
+GrowspaceViewHeader = __decorate([
+    t$2('growspace-view-header')
+], GrowspaceViewHeader);
 
 // Global imports removed
-(() => {
-    var _GrowspaceAnalytics_hass_accessor_storage, _GrowspaceAnalytics_store_accessor_storage, _GrowspaceAnalytics_device_accessor_storage, _GrowspaceAnalytics__itemsToRender_accessor_storage;
-    let _classDecorators = [t$2('growspace-analytics')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let __itemsToRender_decorators;
-    let __itemsToRender_initializers = [];
-    let __itemsToRender_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceAnalytics_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _GrowspaceAnalytics_store_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, _store_initializers, void 0)));
-            _GrowspaceAnalytics_device_accessor_storage.set(this, (__runInitializers(this, _store_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
-            _GrowspaceAnalytics__itemsToRender_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, __itemsToRender_initializers, [])));
-            // StoreController subscriptions for automatic reactivity
-            Object.defineProperty(this, "_historyCacheController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: __runInitializers(this, __itemsToRender_extraInitializers)
-            });
-            Object.defineProperty(this, "_historyLoadingController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_historyLoadedController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_activeEnvGraphsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_linkedGraphGroupsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_combinedHistoryController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_graphRangesController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
+let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._itemsToRender = [];
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
+            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
+            this._historyLoadedController = new libExports.StoreController(this, this.store.history.$historyLoaded);
+            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
+            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
+            this._combinedHistoryController = new libExports.StoreController(this, this.store.history.$combinedHistory);
+            this._graphRangesController = new libExports.StoreController(this, this.store.history.$graphRanges);
+            // OPTIMIZATION: Trigger lazy loading of history when component connects if needed
+            this.store.history.startAutoRefresh();
         }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_hass_accessor_storage, value, "f"); }
-        get store() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_store_accessor_storage, value, "f"); }
-        get device() { return __classPrivateFieldGet(this, _GrowspaceAnalytics_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics_device_accessor_storage, value, "f"); }
-        get _itemsToRender() { return __classPrivateFieldGet(this, _GrowspaceAnalytics__itemsToRender_accessor_storage, "f"); }
-        set _itemsToRender(value) { __classPrivateFieldSet(this, _GrowspaceAnalytics__itemsToRender_accessor_storage, value, "f"); }
-        connectedCallback() {
-            super.connectedCallback();
-            if (this.store) {
-                this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
-                this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
-                this._historyLoadedController = new libExports.StoreController(this, this.store.history.$historyLoaded);
-                this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
-                this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
-                this._combinedHistoryController = new libExports.StoreController(this, this.store.history.$combinedHistory);
-                this._graphRangesController = new libExports.StoreController(this, this.store.history.$graphRanges);
-                // OPTIMIZATION: Trigger lazy loading of history when component connects if needed
-                this.store.history.startAutoRefresh();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        if (this.store) {
+            this.store.history.stopAutoRefresh();
+        }
+    }
+    firstUpdated() {
+        // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
+        if (this.store?.history && !this._historyLoadedController.value) {
+            this.store.history.loadHistoryOnDemand();
+        }
+    }
+    willUpdate(changedProperties) {
+        // Trigger lazy load if history is not loaded and not currently loading
+        if (this.store?.history && !this._historyLoadedController.value && !this._historyLoadingController.value) {
+            this.store.history.loadHistoryOnDemand();
+        }
+        // Recompute items whenever update is requested (controller notifies)
+        this._computeItemsToRender();
+    }
+    _computeItemsToRender() {
+        if (!this.store?.history || !this._activeEnvGraphsController)
+            return;
+        const getSortIndex = (metric) => {
+            const index = METRIC_SORT_ORDER.indexOf(metric);
+            return index !== -1 ? index : 999;
+        };
+        const items = [];
+        const processedMetrics = new Set();
+        const activeEnvGraphs = this._activeEnvGraphsController.value;
+        const linkedGraphGroups = this._linkedGraphGroupsController.value;
+        // Process Linked Groups
+        linkedGraphGroups.forEach((group) => {
+            const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
+            if (activeMetricsInGroup.length > 0) {
+                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
+                items.push({
+                    type: 'group',
+                    metrics: activeMetricsInGroup,
+                    sortIndex: minIndex,
+                });
+                activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
             }
-        }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            if (this.store) {
-                this.store.history.stopAutoRefresh();
+        });
+        // Process Individual Metrics
+        activeEnvGraphs.forEach((metric) => {
+            if (!processedMetrics.has(metric)) {
+                items.push({
+                    type: 'single',
+                    metrics: [metric],
+                    sortIndex: getSortIndex(metric),
+                });
             }
-        }
-        firstUpdated() {
-            // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
-            if (this.store?.history && !this._historyLoadedController.value) {
-                this.store.history.loadHistoryOnDemand();
-            }
-        }
-        willUpdate(changedProperties) {
-            // Trigger lazy load if history is not loaded and not currently loading
-            if (this.store?.history && !this._historyLoadedController.value && !this._historyLoadingController.value) {
-                this.store.history.loadHistoryOnDemand();
-            }
-            // Recompute items whenever update is requested (controller notifies)
-            this._computeItemsToRender();
-        }
-        _computeItemsToRender() {
-            if (!this.store?.history || !this._activeEnvGraphsController)
-                return;
-            const getSortIndex = (metric) => {
-                const index = METRIC_SORT_ORDER.indexOf(metric);
-                return index !== -1 ? index : 999;
-            };
-            const items = [];
-            const processedMetrics = new Set();
-            const activeEnvGraphs = this._activeEnvGraphsController.value;
-            const linkedGraphGroups = this._linkedGraphGroupsController.value;
-            // Process Linked Groups
-            linkedGraphGroups.forEach((group) => {
-                const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
-                if (activeMetricsInGroup.length > 0) {
-                    const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                    items.push({
-                        type: 'group',
-                        metrics: activeMetricsInGroup,
-                        sortIndex: minIndex,
-                    });
-                    activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
-                }
-            });
-            // Process Individual Metrics
-            activeEnvGraphs.forEach((metric) => {
-                if (!processedMetrics.has(metric)) {
-                    items.push({
-                        type: 'single',
-                        metrics: [metric],
-                        sortIndex: getSortIndex(metric),
-                    });
-                }
-            });
-            items.sort((a, b) => a.sortIndex - b.sortIndex);
-            this._itemsToRender = items;
-        }
-        render() {
-            if (!this.store?.history || !this._activeEnvGraphsController || this._activeEnvGraphsController.value.size === 0)
-                return x ``;
-            if (!this.device)
-                return x ``;
-            // Show loading state while history is being fetched
-            if (this._historyLoadingController.value) {
-                return x `
+        });
+        items.sort((a, b) => a.sortIndex - b.sortIndex);
+        this._itemsToRender = items;
+    }
+    render() {
+        if (!this.store?.history || !this._activeEnvGraphsController || this._activeEnvGraphsController.value.size === 0)
+            return x ``;
+        if (!this.device)
+            return x ``;
+        // Show loading state while history is being fetched
+        if (this._historyLoadingController.value) {
+            return x `
         <div class="graphs-container">
           ${this.renderTimeRangeSelector(this.store.history.getRange())}
           <div style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);">
@@ -32190,16 +29645,16 @@ const growspaceCardStyles = i$6 `
           </div>
         </div>
       `;
-            }
-            const sensorHistory = this._combinedHistoryController.value;
-            const range = this.store.history.getRange();
-            const graphs = c(this._itemsToRender, 
-            // Key function: Unique ID for the item
-            (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
-            // Render function
-            (item) => {
-                if (item.type === 'group') {
-                    return x `
+        }
+        const sensorHistory = this._combinedHistoryController.value;
+        const range = this.store.history.getRange();
+        const graphs = c(this._itemsToRender, 
+        // Key function: Unique ID for the item
+        (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
+        // Render function
+        (item) => {
+            if (item.type === 'group') {
+                return x `
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
@@ -32213,11 +29668,11 @@ const growspaceCardStyles = i$6 `
               @unlink-graph=${this._handleUnlinkGraphMetric}
             ></growspace-env-chart>
           `;
-                }
-                else {
-                    const metric = item.metrics[0];
-                    const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
-                    return x `
+            }
+            else {
+                const metric = item.metrics[0];
+                const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
+                return x `
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
@@ -32232,13 +29687,13 @@ const growspaceCardStyles = i$6 `
               @toggle-graph=${this._handleToggleGraph}
             ></growspace-env-chart>
           `;
-                }
-            });
-            return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
-        }
-        renderTimeRangeSelector(currentRange) {
-            const ranges = ['1h', '6h', '24h', '7d'];
-            return x `
+            }
+        });
+        return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
+    }
+    renderTimeRangeSelector(currentRange) {
+        const ranges = ['1h', '6h', '24h', '7d'];
+        return x `
       <div class="time-range-selector">
         ${ranges.map((r) => x `
             <button
@@ -32250,59 +29705,36 @@ const growspaceCardStyles = i$6 `
           `)}
       </div>
     `;
+    }
+    _setGraphRange(range) {
+        if (this.device) {
+            this.store.history.setGraphRange(this.device.device_id, range);
+            this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
         }
-        _setGraphRange(range) {
-            if (this.device) {
-                this.store.history.setGraphRange(this.device.device_id, range);
-                this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
-            }
+    }
+    _handleToggleGraph(e) {
+        e.stopPropagation();
+        // Chart emits detail: metricKey (string)
+        const metric = e.detail;
+        if (metric && typeof metric === 'string' && this.store) {
+            this.store.toggleEnvGraph(metric);
         }
-        _handleToggleGraph(e) {
-            e.stopPropagation();
-            // Chart emits detail: metricKey (string)
-            const metric = e.detail;
-            if (metric && typeof metric === 'string' && this.store) {
-                this.store.toggleEnvGraph(metric);
-            }
-        }
-        _handleUnlinkGraphs(e) {
-            e.stopPropagation();
-            // detail is groupIndex
-            this.store.history.unlinkGraphGroup(e.detail);
-        }
-        _handleUnlinkGraphMetric(e) {
-            e.stopPropagation();
-            // detail is metric string
-            this.store.history.unlinkGraphMetric(e.detail);
-        }
-    };
-    _GrowspaceAnalytics_hass_accessor_storage = new WeakMap();
-    _GrowspaceAnalytics_store_accessor_storage = new WeakMap();
-    _GrowspaceAnalytics_device_accessor_storage = new WeakMap();
-    _GrowspaceAnalytics__itemsToRender_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceAnalytics");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [c$2({ context: hassContext, subscribe: true })];
-        _store_decorators = [c$2({ context: storeContext })];
-        _device_decorators = [n$5({ attribute: false })];
-        __itemsToRender_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, __itemsToRender_decorators, { kind: "accessor", name: "_itemsToRender", static: false, private: false, access: { has: obj => "_itemsToRender" in obj, get: obj => obj._itemsToRender, set: (obj, value) => { obj._itemsToRender = value; } }, metadata: _metadata }, __itemsToRender_initializers, __itemsToRender_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [
-            growspaceCardStyles,
-            sharedStyles,
-            i$6 `
+    }
+    _handleUnlinkGraphs(e) {
+        e.stopPropagation();
+        // detail is groupIndex
+        this.store.history.unlinkGraphGroup(e.detail);
+    }
+    _handleUnlinkGraphMetric(e) {
+        e.stopPropagation();
+        // detail is metric string
+        this.store.history.unlinkGraphMetric(e.detail);
+    }
+};
+GrowspaceAnalytics.styles = [
+    growspaceCardStyles,
+    sharedStyles,
+    i$6 `
       :host {
         display: block;
       }
@@ -32315,82 +29747,45 @@ const growspaceCardStyles = i$6 `
         to { transform: rotate(360deg); }
       }
     `,
-        ]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceAnalytics.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext })
+], GrowspaceAnalytics.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalytics.prototype, "device", void 0);
+__decorate([
+    r$2()
+], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
+GrowspaceAnalytics = __decorate([
+    t$2('growspace-analytics')
+], GrowspaceAnalytics);
 
-(() => {
-    var _GrowspaceViewStandard_device_accessor_storage, _GrowspaceViewStandard_growspaceOptions_accessor_storage, _GrowspaceViewStandard_grid_accessor_storage, _GrowspaceViewStandard_rows_accessor_storage, _GrowspaceViewStandard_cols_accessor_storage, _GrowspaceViewStandard_isLoading_accessor_storage, _GrowspaceViewStandard_isEditMode_accessor_storage, _GrowspaceViewStandard_isCompact_accessor_storage, _GrowspaceViewStandard_selectedCount_accessor_storage, _GrowspaceViewStandard_config_accessor_storage;
-    let _classDecorators = [t$2('growspace-view-standard')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    let _grid_decorators;
-    let _grid_initializers = [];
-    let _grid_extraInitializers = [];
-    let _rows_decorators;
-    let _rows_initializers = [];
-    let _rows_extraInitializers = [];
-    let _cols_decorators;
-    let _cols_initializers = [];
-    let _cols_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
-    let _isEditMode_decorators;
-    let _isEditMode_initializers = [];
-    let _isEditMode_extraInitializers = [];
-    let _isCompact_decorators;
-    let _isCompact_initializers = [];
-    let _isCompact_extraInitializers = [];
-    let _selectedCount_decorators;
-    let _selectedCount_initializers = [];
-    let _selectedCount_extraInitializers = [];
-    let _config_decorators;
-    let _config_initializers = [];
-    let _config_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get device() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_device_accessor_storage, value, "f"); }
-        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_growspaceOptions_accessor_storage, value, "f"); }
-        get grid() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_grid_accessor_storage, "f"); }
-        set grid(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_grid_accessor_storage, value, "f"); }
-        get rows() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_rows_accessor_storage, "f"); }
-        set rows(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_rows_accessor_storage, value, "f"); }
-        get cols() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_cols_accessor_storage, "f"); }
-        set cols(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_cols_accessor_storage, value, "f"); }
-        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_isLoading_accessor_storage, value, "f"); }
-        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_isEditMode_accessor_storage, "f"); }
-        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_isEditMode_accessor_storage, value, "f"); }
-        get isCompact() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_isCompact_accessor_storage, "f"); }
-        set isCompact(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_isCompact_accessor_storage, value, "f"); }
-        get selectedCount() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_selectedCount_accessor_storage, "f"); }
-        set selectedCount(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_selectedCount_accessor_storage, value, "f"); }
-        get config() { return __classPrivateFieldGet(this, _GrowspaceViewStandard_config_accessor_storage, "f"); }
-        set config(value) { __classPrivateFieldSet(this, _GrowspaceViewStandard_config_accessor_storage, value, "f"); }
-        focusPlant(index) {
-            const grid = this.shadowRoot?.querySelector('growspace-grid');
-            if (grid) {
-                grid.focusPlant(index);
-            }
+let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceOptions = {};
+        this.grid = [];
+        this.rows = 0;
+        this.cols = 0;
+        this.isLoading = false;
+        this.isEditMode = false;
+        this.isCompact = false;
+        this.selectedCount = 0;
+    }
+    focusPlant(index) {
+        const grid = this.shadowRoot?.querySelector('growspace-grid');
+        if (grid) {
+            grid.focusPlant(index);
         }
-        render() {
-            if (!this.device)
-                return x ``;
-            return x `
+    }
+    render() {
+        if (!this.device)
+            return x ``;
+        return x `
       <growspace-header
         .device=${this.device}
         .growspaceOptions=${this.growspaceOptions}
@@ -32400,13 +29795,13 @@ const growspaceCardStyles = i$6 `
       <growspace-analytics .device=${this.device}></growspace-analytics>
 
       ${this.isEditMode
-                ? x `
+            ? x `
             <growspace-edit-mode-banner
               .selectedCount=${this.selectedCount}
               @batch-add-plants=${(e) => this._redispatch(e, 'batch-add-plants')}
             ></growspace-edit-mode-banner>
           `
-                : ''}
+            : ''}
 
       <growspace-grid
         .plants=${this.grid}
@@ -32415,172 +29810,94 @@ const growspaceCardStyles = i$6 `
       ></growspace-grid>
 
       ${this.config?.initial_view_mode === 'header'
-                ? x `
+            ? x `
             <button class="collapse-handle" @click=${this._dispatchToggle}>
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
             </button>
           `
-                : ''}
+            : ''}
     `;
-        }
-        _redispatch(e, type) {
-            e.stopPropagation();
-            this.dispatchEvent(new CustomEvent(type, {
-                detail: e.detail || e.target.value,
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        _dispatchToggle() {
-            this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspaceViewStandard_device_accessor_storage.set(this, __runInitializers(this, _device_initializers, void 0));
-            _GrowspaceViewStandard_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _GrowspaceViewStandard_grid_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _grid_initializers, [])));
-            _GrowspaceViewStandard_rows_accessor_storage.set(this, (__runInitializers(this, _grid_extraInitializers), __runInitializers(this, _rows_initializers, 0)));
-            _GrowspaceViewStandard_cols_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _cols_initializers, 0)));
-            _GrowspaceViewStandard_isLoading_accessor_storage.set(this, (__runInitializers(this, _cols_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            _GrowspaceViewStandard_isEditMode_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
-            _GrowspaceViewStandard_isCompact_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _isCompact_initializers, false)));
-            _GrowspaceViewStandard_selectedCount_accessor_storage.set(this, (__runInitializers(this, _isCompact_extraInitializers), __runInitializers(this, _selectedCount_initializers, 0)));
-            _GrowspaceViewStandard_config_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
-            __runInitializers(this, _config_extraInitializers);
-        }
-    };
-    _GrowspaceViewStandard_device_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_growspaceOptions_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_grid_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_rows_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_cols_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_isLoading_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_isEditMode_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_isCompact_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_selectedCount_accessor_storage = new WeakMap();
-    _GrowspaceViewStandard_config_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceViewStandard");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _device_decorators = [n$5({ attribute: false })];
-        _growspaceOptions_decorators = [n$5({ attribute: false })];
-        _grid_decorators = [n$5({ attribute: false })];
-        _rows_decorators = [n$5({ type: Number })];
-        _cols_decorators = [n$5({ type: Number })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
-        _isEditMode_decorators = [n$5({ type: Boolean })];
-        _isCompact_decorators = [n$5({ type: Boolean })];
-        _selectedCount_decorators = [n$5({ type: Number })];
-        _config_decorators = [n$5({ attribute: false })];
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(_classThis, null, _grid_decorators, { kind: "accessor", name: "grid", static: false, private: false, access: { has: obj => "grid" in obj, get: obj => obj.grid, set: (obj, value) => { obj.grid = value; } }, metadata: _metadata }, _grid_initializers, _grid_extraInitializers);
-        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
-        __esDecorate(_classThis, null, _cols_decorators, { kind: "accessor", name: "cols", static: false, private: false, access: { has: obj => "cols" in obj, get: obj => obj.cols, set: (obj, value) => { obj.cols = value; } }, metadata: _metadata }, _cols_initializers, _cols_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
-        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
-        __esDecorate(_classThis, null, _isCompact_decorators, { kind: "accessor", name: "isCompact", static: false, private: false, access: { has: obj => "isCompact" in obj, get: obj => obj.isCompact, set: (obj, value) => { obj.isCompact = value; } }, metadata: _metadata }, _isCompact_initializers, _isCompact_extraInitializers);
-        __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
-        __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+    _redispatch(e, type) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent(type, {
+            detail: e.detail || e.target.value,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _dispatchToggle() {
+        this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceViewStandard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewStandard.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewStandard.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewStandard.prototype, "grid", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewStandard.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewStandard.prototype, "cols", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewStandard.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewStandard.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewStandard.prototype, "isCompact", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewStandard.prototype, "selectedCount", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewStandard.prototype, "config", void 0);
+GrowspaceViewStandard = __decorate([
+    t$2('growspace-view-standard')
+], GrowspaceViewStandard);
 
-(() => {
-    var _GrowspaceViewSwitcher_viewMode_accessor_storage, _GrowspaceViewSwitcher_device_accessor_storage, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, _GrowspaceViewSwitcher_grid_accessor_storage, _GrowspaceViewSwitcher_rows_accessor_storage, _GrowspaceViewSwitcher_isLoading_accessor_storage, _GrowspaceViewSwitcher_isEditMode_accessor_storage, _GrowspaceViewSwitcher_isCompact_accessor_storage, _GrowspaceViewSwitcher_selectedCount_accessor_storage, _GrowspaceViewSwitcher_config_accessor_storage, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage;
-    let _classDecorators = [t$2('growspace-view-switcher')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _viewMode_decorators;
-    let _viewMode_initializers = [];
-    let _viewMode_extraInitializers = [];
-    let _device_decorators;
-    let _device_initializers = [];
-    let _device_extraInitializers = [];
-    let _growspaceOptions_decorators;
-    let _growspaceOptions_initializers = [];
-    let _growspaceOptions_extraInitializers = [];
-    let _grid_decorators;
-    let _grid_initializers = [];
-    let _grid_extraInitializers = [];
-    let _rows_decorators;
-    let _rows_initializers = [];
-    let _rows_extraInitializers = [];
-    let _isLoading_decorators;
-    let _isLoading_initializers = [];
-    let _isLoading_extraInitializers = [];
-    let _isEditMode_decorators;
-    let _isEditMode_initializers = [];
-    let _isEditMode_extraInitializers = [];
-    let _isCompact_decorators;
-    let _isCompact_initializers = [];
-    let _isCompact_extraInitializers = [];
-    let _selectedCount_decorators;
-    let _selectedCount_initializers = [];
-    let _selectedCount_extraInitializers = [];
-    let _config_decorators;
-    let _config_initializers = [];
-    let _config_extraInitializers = [];
-    let _focusedPlantIndex_decorators;
-    let _focusedPlantIndex_initializers = [];
-    let _focusedPlantIndex_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        get viewMode() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, "f"); }
-        set viewMode(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_viewMode_accessor_storage, value, "f"); }
-        get device() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_device_accessor_storage, "f"); }
-        set device(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_device_accessor_storage, value, "f"); }
-        get growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, "f"); }
-        set growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_growspaceOptions_accessor_storage, value, "f"); }
-        get grid() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_grid_accessor_storage, "f"); }
-        set grid(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_grid_accessor_storage, value, "f"); }
-        get rows() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_rows_accessor_storage, "f"); }
-        set rows(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_rows_accessor_storage, value, "f"); }
+let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.viewMode = ViewMode.STANDARD;
+        this.growspaceOptions = {};
+        this.grid = [];
+        this.rows = 0;
         // View specific props
-        get isLoading() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isLoading_accessor_storage, "f"); }
-        set isLoading(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isLoading_accessor_storage, value, "f"); }
-        get isEditMode() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isEditMode_accessor_storage, "f"); }
-        set isEditMode(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isEditMode_accessor_storage, value, "f"); }
-        get isCompact() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_isCompact_accessor_storage, "f"); }
-        set isCompact(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_isCompact_accessor_storage, value, "f"); }
-        get selectedCount() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_selectedCount_accessor_storage, "f"); }
-        set selectedCount(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_selectedCount_accessor_storage, value, "f"); }
-        get config() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_config_accessor_storage, "f"); }
-        set config(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_config_accessor_storage, value, "f"); }
-        get focusedPlantIndex() { return __classPrivateFieldGet(this, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage, "f"); }
-        set focusedPlantIndex(value) { __classPrivateFieldSet(this, _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage, value, "f"); }
-        updated(changedProps) {
-            super.updated(changedProps);
-            if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
-                this.focusPlant(this.focusedPlantIndex);
-            }
+        this.isLoading = false;
+        this.isEditMode = false;
+        this.isCompact = false;
+        this.selectedCount = 0;
+        this.focusedPlantIndex = -1;
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
+            this.focusPlant(this.focusedPlantIndex);
         }
-        focusPlant(index) {
-            const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
-            if (activeView && 'focusPlant' in activeView) {
-                activeView.focusPlant(index);
-            }
+    }
+    focusPlant(index) {
+        const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
+        if (activeView && 'focusPlant' in activeView) {
+            activeView.focusPlant(index);
         }
-        render() {
-            if (!this.device)
-                return x ``;
-            if (this.viewMode === ViewMode.COMPACT) {
-                return x `
+    }
+    render() {
+        if (!this.device)
+            return x ``;
+        if (this.viewMode === ViewMode.COMPACT) {
+            return x `
         <growspace-view-compact
             .grid=${this.grid}
             .rows=${this.rows}
@@ -32588,17 +29905,17 @@ const growspaceCardStyles = i$6 `
             .isLoading=${this.isLoading}
         ></growspace-view-compact>
       `;
-            }
-            if (this.viewMode === ViewMode.HEADER) {
-                return x `
+        }
+        if (this.viewMode === ViewMode.HEADER) {
+            return x `
         <growspace-view-header
             .device=${this.device}
             .growspaceOptions=${this.growspaceOptions}
         ></growspace-view-header>
       `;
-            }
-            // Standard Mode
-            return x `
+        }
+        // Standard Mode
+        return x `
       <growspace-view-standard
         .device=${this.device}
         .growspaceOptions=${this.growspaceOptions}
@@ -32613,66 +29930,44 @@ const growspaceCardStyles = i$6 `
         @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
       ></growspace-view-standard>
     `;
-        }
-        constructor() {
-            super(...arguments);
-            _GrowspaceViewSwitcher_viewMode_accessor_storage.set(this, __runInitializers(this, _viewMode_initializers, ViewMode.STANDARD));
-            _GrowspaceViewSwitcher_device_accessor_storage.set(this, (__runInitializers(this, _viewMode_extraInitializers), __runInitializers(this, _device_initializers, void 0)));
-            _GrowspaceViewSwitcher_growspaceOptions_accessor_storage.set(this, (__runInitializers(this, _device_extraInitializers), __runInitializers(this, _growspaceOptions_initializers, {})));
-            _GrowspaceViewSwitcher_grid_accessor_storage.set(this, (__runInitializers(this, _growspaceOptions_extraInitializers), __runInitializers(this, _grid_initializers, [])));
-            _GrowspaceViewSwitcher_rows_accessor_storage.set(this, (__runInitializers(this, _grid_extraInitializers), __runInitializers(this, _rows_initializers, 0)));
-            _GrowspaceViewSwitcher_isLoading_accessor_storage.set(this, (__runInitializers(this, _rows_extraInitializers), __runInitializers(this, _isLoading_initializers, false)));
-            _GrowspaceViewSwitcher_isEditMode_accessor_storage.set(this, (__runInitializers(this, _isLoading_extraInitializers), __runInitializers(this, _isEditMode_initializers, false)));
-            _GrowspaceViewSwitcher_isCompact_accessor_storage.set(this, (__runInitializers(this, _isEditMode_extraInitializers), __runInitializers(this, _isCompact_initializers, false)));
-            _GrowspaceViewSwitcher_selectedCount_accessor_storage.set(this, (__runInitializers(this, _isCompact_extraInitializers), __runInitializers(this, _selectedCount_initializers, 0)));
-            _GrowspaceViewSwitcher_config_accessor_storage.set(this, (__runInitializers(this, _selectedCount_extraInitializers), __runInitializers(this, _config_initializers, void 0)));
-            _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage.set(this, (__runInitializers(this, _config_extraInitializers), __runInitializers(this, _focusedPlantIndex_initializers, -1)));
-            __runInitializers(this, _focusedPlantIndex_extraInitializers);
-        }
-    };
-    _GrowspaceViewSwitcher_viewMode_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_device_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_growspaceOptions_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_grid_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_rows_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_isLoading_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_isEditMode_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_isCompact_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_selectedCount_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_config_accessor_storage = new WeakMap();
-    _GrowspaceViewSwitcher_focusedPlantIndex_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceViewSwitcher");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _viewMode_decorators = [n$5({ type: String })];
-        _device_decorators = [n$5({ attribute: false })];
-        _growspaceOptions_decorators = [n$5({ attribute: false })];
-        _grid_decorators = [n$5({ attribute: false })];
-        _rows_decorators = [n$5({ type: Number })];
-        _isLoading_decorators = [n$5({ type: Boolean })];
-        _isEditMode_decorators = [n$5({ type: Boolean })];
-        _isCompact_decorators = [n$5({ type: Boolean })];
-        _selectedCount_decorators = [n$5({ type: Number })];
-        _config_decorators = [n$5({ attribute: false })];
-        _focusedPlantIndex_decorators = [n$5({ type: Number })];
-        __esDecorate(_classThis, null, _viewMode_decorators, { kind: "accessor", name: "viewMode", static: false, private: false, access: { has: obj => "viewMode" in obj, get: obj => obj.viewMode, set: (obj, value) => { obj.viewMode = value; } }, metadata: _metadata }, _viewMode_initializers, _viewMode_extraInitializers);
-        __esDecorate(_classThis, null, _device_decorators, { kind: "accessor", name: "device", static: false, private: false, access: { has: obj => "device" in obj, get: obj => obj.device, set: (obj, value) => { obj.device = value; } }, metadata: _metadata }, _device_initializers, _device_extraInitializers);
-        __esDecorate(_classThis, null, _growspaceOptions_decorators, { kind: "accessor", name: "growspaceOptions", static: false, private: false, access: { has: obj => "growspaceOptions" in obj, get: obj => obj.growspaceOptions, set: (obj, value) => { obj.growspaceOptions = value; } }, metadata: _metadata }, _growspaceOptions_initializers, _growspaceOptions_extraInitializers);
-        __esDecorate(_classThis, null, _grid_decorators, { kind: "accessor", name: "grid", static: false, private: false, access: { has: obj => "grid" in obj, get: obj => obj.grid, set: (obj, value) => { obj.grid = value; } }, metadata: _metadata }, _grid_initializers, _grid_extraInitializers);
-        __esDecorate(_classThis, null, _rows_decorators, { kind: "accessor", name: "rows", static: false, private: false, access: { has: obj => "rows" in obj, get: obj => obj.rows, set: (obj, value) => { obj.rows = value; } }, metadata: _metadata }, _rows_initializers, _rows_extraInitializers);
-        __esDecorate(_classThis, null, _isLoading_decorators, { kind: "accessor", name: "isLoading", static: false, private: false, access: { has: obj => "isLoading" in obj, get: obj => obj.isLoading, set: (obj, value) => { obj.isLoading = value; } }, metadata: _metadata }, _isLoading_initializers, _isLoading_extraInitializers);
-        __esDecorate(_classThis, null, _isEditMode_decorators, { kind: "accessor", name: "isEditMode", static: false, private: false, access: { has: obj => "isEditMode" in obj, get: obj => obj.isEditMode, set: (obj, value) => { obj.isEditMode = value; } }, metadata: _metadata }, _isEditMode_initializers, _isEditMode_extraInitializers);
-        __esDecorate(_classThis, null, _isCompact_decorators, { kind: "accessor", name: "isCompact", static: false, private: false, access: { has: obj => "isCompact" in obj, get: obj => obj.isCompact, set: (obj, value) => { obj.isCompact = value; } }, metadata: _metadata }, _isCompact_initializers, _isCompact_extraInitializers);
-        __esDecorate(_classThis, null, _selectedCount_decorators, { kind: "accessor", name: "selectedCount", static: false, private: false, access: { has: obj => "selectedCount" in obj, get: obj => obj.selectedCount, set: (obj, value) => { obj.selectedCount = value; } }, metadata: _metadata }, _selectedCount_initializers, _selectedCount_extraInitializers);
-        __esDecorate(_classThis, null, _config_decorators, { kind: "accessor", name: "config", static: false, private: false, access: { has: obj => "config" in obj, get: obj => obj.config, set: (obj, value) => { obj.config = value; } }, metadata: _metadata }, _config_initializers, _config_extraInitializers);
-        __esDecorate(_classThis, null, _focusedPlantIndex_decorators, { kind: "accessor", name: "focusedPlantIndex", static: false, private: false, access: { has: obj => "focusedPlantIndex" in obj, get: obj => obj.focusedPlantIndex, set: (obj, value) => { obj.focusedPlantIndex = value; } }, metadata: _metadata }, _focusedPlantIndex_initializers, _focusedPlantIndex_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+};
+__decorate([
+    n$5({ type: String })
+], GrowspaceViewSwitcher.prototype, "viewMode", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewSwitcher.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewSwitcher.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewSwitcher.prototype, "grid", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewSwitcher.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewSwitcher.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewSwitcher.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceViewSwitcher.prototype, "isCompact", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewSwitcher.prototype, "selectedCount", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceViewSwitcher.prototype, "config", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceViewSwitcher.prototype, "focusedPlantIndex", void 0);
+GrowspaceViewSwitcher = __decorate([
+    t$2('growspace-view-switcher')
+], GrowspaceViewSwitcher);
 
 let clean = Symbol('clean');
 
@@ -32913,69 +30208,8 @@ const map = (initial = {}) => {
 
 class GrowspaceDataStore {
     constructor() {
-        // Domain Data Atoms
-        Object.defineProperty(this, "$devices", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$strainLibrary", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$config", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$optimisticDeletedPlantIds", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$wsDataCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$selectedDevice", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Map from plantId to deviceId for O(1) lookups */
-        Object.defineProperty(this, "$plantToDeviceMap", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$nutrientPresets", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$ipmPresets", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         /** Indicates if store has active subscribers (for lazy loading) */
-        Object.defineProperty(this, "_isActive", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
+        this._isActive = false;
         this.$devices = atom([]);
         this.$strainLibrary = atom([]);
         this.$config = atom({});
@@ -33129,86 +30363,6 @@ class GrowspaceDataStore {
 
 class GrowspaceUIStore {
     constructor() {
-        // Definition of atoms
-        Object.defineProperty(this, "$viewMode", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$isLoading", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$activeDialog", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$isEditMode", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$selectedPlants", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$focusedPlantIndex", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$menuOpen", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$notification", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$error", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$defaultApplied", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$gridOverlayMode", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // Computed stores
-        Object.defineProperty(this, "$isCompactView", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$cardViewState", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.$viewMode = atom(ViewMode.STANDARD);
         this.$isLoading = atom(true);
         this.$activeDialog = atom({ type: 'NONE' });
@@ -33297,109 +30451,12 @@ class GrowspaceUIStore {
 
 class GrowspaceHistoryStore {
     constructor(dataService, dataStore) {
-        // --- Core History Cache ---
-        Object.defineProperty(this, "$historyCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$lastTimestamps", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // --- Loading/Error State ---
-        Object.defineProperty(this, "$historyLoading", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$historyLoaded", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$historyError", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // --- Time Range Selection ---
-        Object.defineProperty(this, "$graphRanges", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // --- Graph Configuration ---
-        Object.defineProperty(this, "$activeEnvGraphs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "$linkedGraphGroups", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // --- Dependencies ---
-        Object.defineProperty(this, "dataService", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "dataStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         // --- Internals ---
-        Object.defineProperty(this, "STORAGE_KEY_PREFIX", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: STORAGE_KEYS.HISTORY_PREFIX
-        });
-        Object.defineProperty(this, "CACHE_VALIDITY_MS", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 24 * 60 * 60 * 1000
-        });
-        Object.defineProperty(this, "_refreshInterval", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "_selectedDeviceUnsub", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "_visibilityHandler", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        // --- Computed Stores ---
-        Object.defineProperty(this, "$combinedHistory", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        this.STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
+        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
+        this._refreshInterval = null;
+        this._selectedDeviceUnsub = null;
+        this._visibilityHandler = null;
         this.dataService = dataService;
         this.dataStore = dataStore;
         this.$historyCache = map({});
@@ -33818,33 +30875,6 @@ class GrowspaceHistoryStore {
 
 class GrowspaceGridStore {
     constructor(dataStore) {
-        /**
-         * Derived list of devices whose plants exclude any optimistically deleted IDs.
-         */
-        Object.defineProperty(this, "$activeDevices", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /**
-         * Map of growspace device_id → device name for dropdown options, etc.
-         */
-        Object.defineProperty(this, "$growspaceOptions", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /**
-         * Computed grid layout for the currently selected device.
-         */
-        Object.defineProperty(this, "$gridLayout", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.$activeDevices = computed([dataStore.$devices, dataStore.$optimisticDeletedPlantIds], (devices, deletedIds) => {
             return devices.map((d) => ({
                 ...d,
@@ -34204,61 +31234,36 @@ async function removeGrowspace(ctx, growspaceId) {
 
 class ActionDispatcher {
     constructor(store) {
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: store
-        });
-        Object.defineProperty(this, "plant", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                update: (id, updates) => this.store.updatePlant(id, updates),
-                delete: (id) => this.store.handleDeletePlant(id),
-                move: (plant, growspace) => this.store.movePlantToGrowspace(plant, growspace),
-                drop: (row, col, target, source) => this.store.handleDrop(row, col, target, source),
-                nextStage: (plant) => this.store.handleMovePlantToNextStage(plant),
-                takeClone: (mother, num) => this.store.handleTakeClone(mother, num),
-                // These use the store's private context getter, which we'll need to expose or access differently.
-                // For now, we delegate back to store methods or access context if public.
-                // Assuming we keep delegation for methods that require complex store state (like undo stack).
-                updateFromDialog: (state) => updatePlantsFromDialog(this.store.plantActionContext, state),
-                add: (gid, r, c, s, p) => addPlant(this.store.plantActionContext, gid, r, c, s, p),
-                addBatch: (detail) => this.store.confirmAddPlants(detail)
-            }
-        });
-        Object.defineProperty(this, "growspace", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                add: (detail) => this.store.handleAddGrowspace(detail),
-                update: (detail) => this.store.handleUpdateGrowspace(detail),
-                remove: (id) => removeGrowspace(this.store.growspaceActionContext, id)
-            }
-        });
-        Object.defineProperty(this, "strain", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                add: (data) => this.store.addStrain(data),
-                remove: (key) => this.store.removeStrain(key)
-            }
-        });
-        Object.defineProperty(this, "history", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                undo: () => this.store.undo(),
-                redo: () => this.store.redo(),
-                canUndo: () => this.store.canUndo,
-                canRedo: () => this.store.canRedo
-            }
-        });
+        this.store = store;
+        this.plant = {
+            update: (id, updates) => this.store.updatePlant(id, updates),
+            delete: (id) => this.store.handleDeletePlant(id),
+            move: (plant, growspace) => this.store.movePlantToGrowspace(plant, growspace),
+            drop: (row, col, target, source) => this.store.handleDrop(row, col, target, source),
+            nextStage: (plant) => this.store.handleMovePlantToNextStage(plant),
+            takeClone: (mother, num) => this.store.handleTakeClone(mother, num),
+            // These use the store's private context getter, which we'll need to expose or access differently.
+            // For now, we delegate back to store methods or access context if public.
+            // Assuming we keep delegation for methods that require complex store state (like undo stack).
+            updateFromDialog: (state) => updatePlantsFromDialog(this.store.plantActionContext, state),
+            add: (gid, r, c, s, p) => addPlant(this.store.plantActionContext, gid, r, c, s, p),
+            addBatch: (detail) => this.store.confirmAddPlants(detail)
+        };
+        this.growspace = {
+            add: (detail) => this.store.handleAddGrowspace(detail),
+            update: (detail) => this.store.handleUpdateGrowspace(detail),
+            remove: (id) => removeGrowspace(this.store.growspaceActionContext, id)
+        };
+        this.strain = {
+            add: (data) => this.store.addStrain(data),
+            remove: (key) => this.store.removeStrain(key)
+        };
+        this.history = {
+            undo: () => this.store.undo(),
+            redo: () => this.store.redo(),
+            canUndo: () => this.store.canUndo,
+            canRedo: () => this.store.canRedo
+        };
     }
 }
 
@@ -34358,99 +31363,21 @@ class GrowspaceStore {
         };
     }
     constructor() {
-        Object.defineProperty(this, "dataService", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "hass", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // Instance-based stores
-        Object.defineProperty(this, "data", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "ui", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "history", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "grid", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_isFetchingWS", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
+        this._isFetchingWS = false;
         // Performance Optimization
-        Object.defineProperty(this, "_watchedEntities", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "_lastHassRef", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        this._watchedEntities = new Set();
         /** Undo/Redo stack for plant operations (max 3 actions) */
-        Object.defineProperty(this, "_undoStack", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
-        Object.defineProperty(this, "_redoStack", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
-        Object.defineProperty(this, "MAX_UNDO_ACTIONS", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 3
-        });
+        this._undoStack = [];
+        this._redoStack = [];
+        this.MAX_UNDO_ACTIONS = 3;
         /**
          * Centralized Action Dispatcher
          * Provides a single entry point for all business logic actions.
          */
-        Object.defineProperty(this, "actions", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new ActionDispatcher(this)
-        });
-        Object.defineProperty(this, "handleTakeClone", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (motherPlant, numClones) => {
-                return takeClone(this.plantActionContext, motherPlant, numClones);
-            }
-        });
+        this.actions = new ActionDispatcher(this);
+        this.handleTakeClone = (motherPlant, numClones) => {
+            return takeClone(this.plantActionContext, motherPlant, numClones);
+        };
         this.dataService = new DataService();
         // Initialize sub-stores
         this.data = new GrowspaceDataStore();
@@ -35131,7 +32058,7 @@ class GrowspaceStore {
             return;
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this._getCommonGrowspaceId(selectedIds);
+            growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
         this.ui.setActiveDialog({
             type: 'WATERING',
@@ -35148,7 +32075,7 @@ class GrowspaceStore {
             return;
         // Determine context if not provided
         if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this._getCommonGrowspaceId(selectedIds);
+            growspaceId = this.getCommonGrowspaceId(selectedIds);
         }
         this.ui.setActiveDialog({
             type: 'TRAINING',
@@ -35159,7 +32086,7 @@ class GrowspaceStore {
             }
         });
     }
-    _getCommonGrowspaceId(plantIds) {
+    getCommonGrowspaceId(plantIds) {
         const plantToDevice = this.data.$plantToDeviceMap.get();
         let commonGrowspaceId;
         for (const plantId of plantIds) {
@@ -35382,242 +32309,163 @@ class GrowspaceStore {
     }
 }
 
-let GrowspaceManagerCard = (() => {
-    var _GrowspaceManagerCard_store_accessor_storage, _GrowspaceManagerCard__strainLibrary_accessor_storage, _GrowspaceManagerCard_hass_accessor_storage, _GrowspaceManagerCard__config_accessor_storage;
-    let _classDecorators = [t$2('growspace-manager-card')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _store_decorators;
-    let _store_initializers = [];
-    let _store_extraInitializers = [];
-    let __strainLibrary_decorators;
-    let __strainLibrary_initializers = [];
-    let __strainLibrary_extraInitializers = [];
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let __config_decorators;
-    let __config_initializers = [];
-    let __config_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceManagerCard_store_accessor_storage.set(this, __runInitializers(this, _store_initializers, new GrowspaceStore()));
-            Object.defineProperty(this, "_subscriptionController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, _store_extraInitializers), new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass)))
-            });
-            // UI Store Controllers
-            // Consolidated UI Controller
-            Object.defineProperty(this, "_cardViewController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$cardViewState)
-            });
-            Object.defineProperty(this, "_selectedPlantsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.ui.$selectedPlants)
-            });
-            // Data Store Controllers (for reactivity)
-            Object.defineProperty(this, "_devicesController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.data.$devices)
-            });
-            Object.defineProperty(this, "_selectedDeviceController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.data.$selectedDevice)
-            });
-            Object.defineProperty(this, "_strainLibraryController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.data.$strainLibrary)
-            });
-            // Grid derived atoms
-            Object.defineProperty(this, "_activeDevicesController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.grid.$activeDevices)
-            });
-            Object.defineProperty(this, "_gridLayoutController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.grid.$gridLayout)
-            });
-            Object.defineProperty(this, "_growspaceOptionsController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new libExports.StoreController(this, this.store.grid.$growspaceOptions)
-            });
-            _GrowspaceManagerCard__strainLibrary_accessor_storage.set(this, __runInitializers(this, __strainLibrary_initializers, []));
-            _GrowspaceManagerCard_hass_accessor_storage.set(this, (__runInitializers(this, __strainLibrary_extraInitializers), __runInitializers(this, _hass_initializers, void 0)));
-            _GrowspaceManagerCard__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
-            Object.defineProperty(this, "_handleLibraryExportReady", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, __config_extraInitializers), (e) => {
-                    this._downloadFile(e.detail.url);
-                })
-            });
-        }
-        get store() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_store_accessor_storage, "f"); }
-        set store(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_store_accessor_storage, value, "f"); }
-        /* Getter for convenience/compatibility if needed, or update call sites */
-        get selectedDevice() {
-            return this._selectedDeviceController.value;
-        }
-        get _strainLibrary() { return __classPrivateFieldGet(this, _GrowspaceManagerCard__strainLibrary_accessor_storage, "f"); }
-        set _strainLibrary(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard__strainLibrary_accessor_storage, value, "f"); }
-        // Getter to satisfy GrowspaceCardHost interface and allow external access
-        get dataService() {
-            return this.store.dataService;
-        }
-        // Getter to provide pre-loaded devices to the history controller
-        get devices() {
-            return this._devicesController.value;
-        }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceManagerCard_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard_hass_accessor_storage, value, "f"); }
-        get _config() { return __classPrivateFieldGet(this, _GrowspaceManagerCard__config_accessor_storage, "f"); }
-        set _config(value) { __classPrivateFieldSet(this, _GrowspaceManagerCard__config_accessor_storage, value, "f"); }
-        firstUpdated() {
+let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.store = new GrowspaceStore();
+        this._subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
+        // UI Store Controllers
+        // Consolidated UI Controller
+        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
+        this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+        // Data Store Controllers (for reactivity)
+        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        this._strainLibraryController = new libExports.StoreController(this, this.store.data.$strainLibrary);
+        // Grid derived atoms
+        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
+        this._gridLayoutController = new libExports.StoreController(this, this.store.grid.$gridLayout);
+        this._growspaceOptionsController = new libExports.StoreController(this, this.store.grid.$growspaceOptions);
+        this._strainLibrary = [];
+        this._handleLibraryExportReady = (e) => {
+            this._downloadFile(e.detail.url);
+        };
+    }
+    /* Getter for convenience/compatibility if needed, or update call sites */
+    get selectedDevice() {
+        return this._selectedDeviceController.value;
+    }
+    // Getter to satisfy GrowspaceCardHost interface and allow external access
+    get dataService() {
+        return this.store.dataService;
+    }
+    // Getter to provide pre-loaded devices to the history controller
+    get devices() {
+        return this._devicesController.value;
+    }
+    firstUpdated() {
+        this.store.updateHass(this.hass);
+        this.store.initializeSelectedDevice(this._config);
+        this.store.fetchStrainLibrary();
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        // Listen for export ready events from store
+        this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
-            this.store.initializeSelectedDevice(this._config);
-            this.store.fetchStrainLibrary();
+            this._subscriptionController.updateHass(this.hass);
         }
-        connectedCallback() {
-            super.connectedCallback();
-            // Listen for export ready events from store
-            this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        // Sync strain library to context provider
+        if (this._strainLibraryController.value !== this._strainLibrary) {
+            this._strainLibrary = (this._strainLibraryController.value || []);
         }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    }
+    static async getConfigElement() {
+        // path must match where the editor JS is served relative to the card script
+        await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
+        const el = document.createElement('growspace-manager-card-editor');
+        return el;
+    }
+    static getStubConfig() {
+        return {
+            default_growspace: '4x4',
+            compact: true,
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error('Invalid configuration');
+        this._config = config;
+        if (this._config.initial_view_mode) {
+            this.store.ui.setViewMode(this._config.initial_view_mode);
         }
-        updated(changedProps) {
-            super.updated(changedProps);
-            if (changedProps.has('hass')) {
-                this.store.updateHass(this.hass);
-                this._subscriptionController.updateHass(this.hass);
-            }
-            // Sync strain library to context provider
-            if (this._strainLibraryController.value !== this._strainLibrary) {
-                this._strainLibrary = (this._strainLibraryController.value || []);
-            }
+        else if (this._config.compact !== undefined && this._config.compact) {
+            this.store.ui.setViewMode(ViewMode.COMPACT);
         }
-        static async getConfigElement() {
-            // path must match where the editor JS is served relative to the card script
-            await Promise.resolve().then(function () { return growspaceManagerCardEditor; });
-            const el = document.createElement('growspace-manager-card-editor');
-            return el;
+        // Initialize store config immediately to prevent race conditions with updateHass
+        this.store.initializeSelectedDevice(this._config);
+    }
+    getCardSize() {
+        return 4;
+    }
+    // Event handlers
+    _handleKeyboardNav(e) {
+        this.store.handleKeyboardNavigation(e.key);
+    }
+    _downloadFile(url) {
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = url.split('/').pop() || 'export.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    _handleViewModeChanged(e) {
+        this.store.ui.setViewMode(e.detail.mode);
+    }
+    _handleGrowspaceChanged(e) {
+        this.store.handleDeviceChange(e.detail);
+    }
+    _handleSelectAll() {
+        this.store.selectAllPlants();
+    }
+    _handleClearSelection() {
+        this.store.clearPlantSelection();
+    }
+    _handleWaterSelected() {
+        this.store.openBatchWateringDialog();
+    }
+    _handleExitEditMode() {
+        this.store.ui.setEditMode(false);
+    }
+    _handleIPMSelected() {
+        this.store.openIPMDialog();
+    }
+    _handleToggleExpansion() {
+        this.store.toggleHeaderExpansion();
+    }
+    _handleTrainingSelected() {
+        this.store.openBatchTrainingDialog();
+    }
+    _handleBatchAddPlants() {
+        this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
-        static getStubConfig() {
-            return {
-                default_growspace: '4x4',
-                compact: true,
-            };
-        }
-        setConfig(config) {
-            if (!config)
-                throw new Error('Invalid configuration');
-            this._config = config;
-            if (this._config.initial_view_mode) {
-                this.store.ui.setViewMode(this._config.initial_view_mode);
-            }
-            else if (this._config.compact !== undefined && this._config.compact) {
-                this.store.ui.setViewMode(ViewMode.COMPACT);
-            }
-            // Initialize store config immediately to prevent race conditions with updateHass
-            this.store.initializeSelectedDevice(this._config);
-        }
-        getCardSize() {
-            return 4;
-        }
-        // Event handlers
-        _handleKeyboardNav(e) {
-            this.store.handleKeyboardNavigation(e.key);
-        }
-        _downloadFile(url) {
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = url.split('/').pop() || 'export.zip';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-        _handleViewModeChanged(e) {
-            this.store.ui.setViewMode(e.detail.mode);
-        }
-        _handleGrowspaceChanged(e) {
-            this.store.handleDeviceChange(e.detail);
-        }
-        _handleSelectAll() {
-            this.store.selectAllPlants();
-        }
-        _handleClearSelection() {
-            this.store.clearPlantSelection();
-        }
-        _handleWaterSelected() {
-            this.store.openBatchWateringDialog();
-        }
-        _handleExitEditMode() {
-            this.store.ui.setEditMode(false);
-        }
-        _handleIPMSelected() {
-            this.store.openIPMDialog();
-        }
-        _handleToggleExpansion() {
-            this.store.toggleHeaderExpansion();
-        }
-        _handleTrainingSelected() {
-            this.store.openBatchTrainingDialog();
-        }
-        _handleBatchAddPlants() {
-            this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-        }
-        render() {
-            if (!this.hass) {
-                return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
-            }
-            const devices = this._activeDevicesController.value;
-            // Show loading spinner if initially loading and no devices yet
-            if (this._cardViewController.value.isLoading) {
-                return x `
+        const devices = this._activeDevicesController.value;
+        // Show loading spinner if initially loading and no devices yet
+        if (this._cardViewController.value.isLoading) {
+            return x `
         <ha-card>
           <div class="loading-container">
             <div class="loading-spinner"></div>
           </div>
         </ha-card>
       `;
-            }
-            if (!devices.length) {
-                return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
-            }
-            const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
-            if (!selectedDeviceData) {
-                return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
-            }
-            // Use memoized values from grid store atoms
-            const growspaceOptions = this._growspaceOptionsController.value;
-            const { effectiveRows, grid } = this._gridLayoutController.value;
-            const isWide = selectedDeviceData.plants_per_row > 7;
-            return x `
+        }
+        if (!devices.length) {
+            return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+        }
+        const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
+        if (!selectedDeviceData) {
+            return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
+        }
+        // Use memoized values from grid store atoms
+        const growspaceOptions = this._growspaceOptionsController.value;
+        const { effectiveRows, grid } = this._gridLayoutController.value;
+        const isWide = selectedDeviceData.plants_per_row > 7;
+        return x `
       <ha-card class=${isWide ? 'wide-growspace' : ''}>
         <div class="sr-only-announcer" aria-live="polite"></div>
         <div 
@@ -35658,58 +32506,36 @@ let GrowspaceManagerCard = (() => {
       <growspace-toast></growspace-toast>
       ${this.renderDialogs()}
     `;
-        }
-        renderDialogs() {
-            return x `<growspace-dialog-host
+    }
+    renderDialogs() {
+        return x `<growspace-dialog-host
       .devices=${this._devicesController.value}
     ></growspace-dialog-host>`;
-        }
-    };
-    _GrowspaceManagerCard_store_accessor_storage = new WeakMap();
-    _GrowspaceManagerCard__strainLibrary_accessor_storage = new WeakMap();
-    _GrowspaceManagerCard_hass_accessor_storage = new WeakMap();
-    _GrowspaceManagerCard__config_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceManagerCard");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _store_decorators = [e$3({ context: storeContext })];
-        __strainLibrary_decorators = [e$3({ context: strainLibraryContext }), r$2()];
-        _hass_decorators = [e$3({ context: hassContext }), n$5({ attribute: false })];
-        __config_decorators = [e$3({ context: configContext }), n$5({ attribute: false })];
-        __esDecorate(_classThis, null, _store_decorators, { kind: "accessor", name: "store", static: false, private: false, access: { has: obj => "store" in obj, get: obj => obj.store, set: (obj, value) => { obj.store = value; } }, metadata: _metadata }, _store_initializers, _store_extraInitializers);
-        __esDecorate(_classThis, null, __strainLibrary_decorators, { kind: "accessor", name: "_strainLibrary", static: false, private: false, access: { has: obj => "_strainLibrary" in obj, get: obj => obj._strainLibrary, set: (obj, value) => { obj._strainLibrary = value; } }, metadata: _metadata }, __strainLibrary_initializers, __strainLibrary_extraInitializers);
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, __config_decorators, { kind: "accessor", name: "_config", static: false, private: false, access: { has: obj => "_config" in obj, get: obj => obj._config, set: (obj, value) => { obj._config = value; } }, metadata: _metadata }, __config_initializers, __config_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: [variables, sharedStyles, uiStyles, growspaceCardStyles]
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+    }
+};
+GrowspaceManagerCard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceManagerCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: strainLibraryContext }),
+    r$2()
+], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
+__decorate([
+    e$3({ context: hassContext }),
+    n$5({ attribute: false })
+], GrowspaceManagerCard.prototype, "hass", void 0);
+__decorate([
+    e$3({ context: configContext }),
+    n$5({ attribute: false })
+], GrowspaceManagerCard.prototype, "_config", void 0);
+GrowspaceManagerCard = __decorate([
+    t$2('growspace-manager-card')
+], GrowspaceManagerCard);
 
 class HassSubscriptionController {
     constructor(host) {
-        Object.defineProperty(this, "_host", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_unsubscribes", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: []
-        });
+        this._unsubscribes = [];
         this._host = host;
         host.addController(this);
     }
@@ -35755,100 +32581,66 @@ class HassSubscriptionController {
     }
 }
 
-(() => {
-    var _GrowspaceManagerCardEditor_hass_accessor_storage, _GrowspaceManagerCardEditor__config_accessor_storage, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage;
-    let _classDecorators = [t$2('growspace-manager-card-editor')];
-    let _classDescriptor;
-    let _classExtraInitializers = [];
-    let _classThis;
-    let _classSuper = i$3;
-    let _hass_decorators;
-    let _hass_initializers = [];
-    let _hass_extraInitializers = [];
-    let __config_decorators;
-    let __config_initializers = [];
-    let __config_extraInitializers = [];
-    let __growspaceOptions_decorators;
-    let __growspaceOptions_initializers = [];
-    let __growspaceOptions_extraInitializers = [];
-    _classThis = class extends _classSuper {
-        constructor() {
-            super(...arguments);
-            _GrowspaceManagerCardEditor_hass_accessor_storage.set(this, __runInitializers(this, _hass_initializers, void 0));
-            _GrowspaceManagerCardEditor__config_accessor_storage.set(this, (__runInitializers(this, _hass_extraInitializers), __runInitializers(this, __config_initializers, void 0)));
-            _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage.set(this, (__runInitializers(this, __config_extraInitializers), __runInitializers(this, __growspaceOptions_initializers, [])));
-            Object.defineProperty(this, "_subscriptionController", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: (__runInitializers(this, __growspaceOptions_extraInitializers), new HassSubscriptionController(this))
-            });
-            Object.defineProperty(this, "_hasSubscription", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: false
-            });
-        }
-        get hass() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, "f"); }
-        set hass(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor_hass_accessor_storage, value, "f"); }
-        get _config() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor__config_accessor_storage, "f"); }
-        set _config(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor__config_accessor_storage, value, "f"); }
-        get _growspaceOptions() { return __classPrivateFieldGet(this, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage, "f"); }
-        set _growspaceOptions(value) { __classPrivateFieldSet(this, _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage, value, "f"); }
-        setConfig(config) {
-            this._config = config;
+let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._growspaceOptions = [];
+        this._subscriptionController = new HassSubscriptionController(this);
+        this._hasSubscription = false;
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
             this._loadGrowspaces();
+            this._subscribeToSensorUpdates();
         }
-        updated(changedProps) {
-            if (changedProps.has('hass') && this.hass) {
-                this._loadGrowspaces();
-                this._subscribeToSensorUpdates();
-            }
-        }
-        disconnectedCallback() {
-            super.disconnectedCallback();
-            this._hasSubscription = false;
-        }
-        async _subscribeToSensorUpdates() {
-            if (!this.hass || this._hasSubscription)
-                return;
-            this._hasSubscription = true;
-            await this._subscriptionController.subscribeEvents(this.hass, (event) => {
-                const newState = event.data.new_state;
-                if (newState?.entity_id === 'sensor.growspaces_list') {
-                    const gsObj = newState.attributes.growspaces;
-                    if (gsObj) {
-                        this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                            id,
-                            name: String(name),
-                        }));
-                    }
-                    else {
-                        this._growspaceOptions = [];
-                    }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._hasSubscription = false;
+    }
+    async _subscribeToSensorUpdates() {
+        if (!this.hass || this._hasSubscription)
+            return;
+        this._hasSubscription = true;
+        await this._subscriptionController.subscribeEvents(this.hass, (event) => {
+            const newState = event.data.new_state;
+            if (newState?.entity_id === 'sensor.growspaces_list') {
+                const gsObj = newState.attributes.growspaces;
+                if (gsObj) {
+                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                        id,
+                        name: String(name),
+                    }));
                 }
-            }, 'state_changed');
-        }
-        _loadGrowspaces() {
-            if (!this.hass)
-                return;
-            const entity = this.hass.states['sensor.growspaces_list'];
-            if (entity && entity.attributes?.growspaces) {
-                const gsObj = entity.attributes.growspaces;
-                this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                    id,
-                    name: String(name),
-                }));
+                else {
+                    this._growspaceOptions = [];
+                }
             }
-            else {
-                this._growspaceOptions = [];
-            }
+        }, 'state_changed');
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const entity = this.hass.states['sensor.growspaces_list'];
+        if (entity && entity.attributes?.growspaces) {
+            const gsObj = entity.attributes.growspaces;
+            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                id,
+                name: String(name),
+            }));
         }
-        render() {
-            if (!this._config)
-                return x ``;
-            return x `
+        else {
+            this._growspaceOptions = [];
+        }
+    }
+    render() {
+        if (!this._config)
+            return x ``;
+        return x `
       <div class="card-config">
         <div class="form-group">
           <label>Initial View Mode</label>
@@ -35874,39 +32666,19 @@ class HassSubscriptionController {
         </div>
       </div>
     `;
-        }
-        _valueChanged(key, value) {
-            if (!this._config)
-                return;
-            const newConfig = { ...this._config, [key]: value };
-            this.dispatchEvent(new CustomEvent('config-changed', {
-                detail: { config: newConfig },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-    };
-    _GrowspaceManagerCardEditor_hass_accessor_storage = new WeakMap();
-    _GrowspaceManagerCardEditor__config_accessor_storage = new WeakMap();
-    _GrowspaceManagerCardEditor__growspaceOptions_accessor_storage = new WeakMap();
-    __setFunctionName(_classThis, "GrowspaceManagerCardEditor");
-    (() => {
-        const _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(_classSuper[Symbol.metadata] ?? null) : void 0;
-        _hass_decorators = [n$5({ attribute: false })];
-        __config_decorators = [n$5({ attribute: false })];
-        __growspaceOptions_decorators = [r$2()];
-        __esDecorate(_classThis, null, _hass_decorators, { kind: "accessor", name: "hass", static: false, private: false, access: { has: obj => "hass" in obj, get: obj => obj.hass, set: (obj, value) => { obj.hass = value; } }, metadata: _metadata }, _hass_initializers, _hass_extraInitializers);
-        __esDecorate(_classThis, null, __config_decorators, { kind: "accessor", name: "_config", static: false, private: false, access: { has: obj => "_config" in obj, get: obj => obj._config, set: (obj, value) => { obj._config = value; } }, metadata: _metadata }, __config_initializers, __config_extraInitializers);
-        __esDecorate(_classThis, null, __growspaceOptions_decorators, { kind: "accessor", name: "_growspaceOptions", static: false, private: false, access: { has: obj => "_growspaceOptions" in obj, get: obj => obj._growspaceOptions, set: (obj, value) => { obj._growspaceOptions = value; } }, metadata: _metadata }, __growspaceOptions_initializers, __growspaceOptions_extraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-    })();
-    Object.defineProperty(_classThis, "styles", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: i$6 `
+    }
+    _valueChanged(key, value) {
+        if (!this._config)
+            return;
+        const newConfig = { ...this._config, [key]: value };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: newConfig },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+GrowspaceManagerCardEditor.styles = i$6 `
     .card-config {
       display: flex;
       flex-direction: column;
@@ -35930,16 +32702,23 @@ class HassSubscriptionController {
       color: var(--primary-text-color);
       font-size: 1rem;
     }
-  `
-    });
-    (() => {
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return _classThis;
-})();
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceManagerCardEditor.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceManagerCardEditor.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
+GrowspaceManagerCardEditor = __decorate([
+    t$2('growspace-manager-card-editor')
+], GrowspaceManagerCardEditor);
 
 var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
-    __proto__: null
+    __proto__: null,
+    get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
 export { DataService, DehumidifierStage, GridOverlayMode as GridOverlayModeEnum, GrowspaceManagerCard, GrowspaceType as GrowspaceTypeEnum, PlantStage, PlantUtils, STAGE_CONFIG, TrainingTechnique, createGrowspaceDevice };

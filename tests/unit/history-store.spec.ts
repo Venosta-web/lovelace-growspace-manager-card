@@ -574,6 +574,12 @@ describe('history-store', () => {
             expect((store as any).getEntityIdForMetric(device, 'vpd')).toBeNull();
         });
         it('should handle empty delta data in _fetchHistoryDelta', async () => {
+            dataStore.setDevices([{
+                device_id: 'd1', name: 'D1',
+                environment_attributes: { temperature_sensor: 'sensor.temp' }
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+
             store.setHistoryData('temperature', mockHistoryData);
             store.updateLastTimestamp('temperature', mockHistoryData);
 
@@ -689,6 +695,70 @@ describe('history-store', () => {
 
             expect(spy).not.toHaveBeenCalled();
             spy.mockRestore();
+        });
+
+        it('should handle unlinkGraphGroup with invalid index', () => {
+            store.linkGraphs('temperature', 'humidity');
+            const groupsBefore = store.$linkedGraphGroups.get();
+            store.unlinkGraphGroup(-1);
+            store.unlinkGraphGroup(99);
+            expect(store.$linkedGraphGroups.get()).toEqual(groupsBefore);
+        });
+
+        it('should handle loadHistoryOnDemand error with no message', async () => {
+            dataStore.setSelectedDevice('d1');
+            dataStore.setDevices([{ device_id: 'd1', name: 'D1' } as any]);
+            vi.mocked(mockDataService.getHistoryStats).mockRejectedValue({});
+            await store.loadHistoryOnDemand();
+            expect(store.$historyError.get()).toBe('Failed to load history');
+        });
+
+        it('should handle startAutoRefresh when already running', () => {
+            vi.spyOn(window, 'setInterval');
+            store.startAutoRefresh();
+            const firstId = (store as any)._refreshInterval;
+            store.startAutoRefresh();
+            expect(window.setInterval).toHaveBeenCalledTimes(1);
+            expect((store as any)._refreshInterval).toBe(firstId);
+            store.stopAutoRefresh();
+        });
+
+        it('should handle stopAutoRefresh when already stopped', () => {
+            vi.spyOn(window, 'clearInterval');
+            store.stopAutoRefresh();
+            expect(window.clearInterval).not.toHaveBeenCalled();
+        });
+
+        it('should return early in _fetchHistory if no device id', async () => {
+            dataStore.setSelectedDevice(null);
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+            await (store as any)._fetchHistory();
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('should return early in _fetchHistoryDelta if no device id', async () => {
+            dataStore.setSelectedDevice(null);
+            const spy = vi.spyOn(mockDataService, 'getHistoryStats');
+            await (store as any)._fetchHistoryDelta();
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        it('should handle missing entity in batchResults in _fetchHistoryDelta', async () => {
+            dataStore.setDevices([{
+                device_id: 'd1', name: 'D1',
+                environment_attributes: { temperature_sensor: 'sensor.temp' }
+            } as any]);
+            dataStore.setSelectedDevice('d1');
+            store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
+
+            // Return result without the expected entity id
+            vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({});
+
+            const mergeSpy = vi.spyOn(store as any, '_mergeDeltaData');
+            await (store as any)._fetchHistoryDelta();
+            expect(mergeSpy).not.toHaveBeenCalled();
         });
     });
 });

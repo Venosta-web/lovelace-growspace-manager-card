@@ -19,6 +19,7 @@ vi.mock('../../src/store/plant-actions', async (importOriginal) => {
         movePlantToGrowspace: vi.fn(mod.movePlantToGrowspace),
         updatePlantsFromDialog: vi.fn(mod.updatePlantsFromDialog),
         addPlant: vi.fn(mod.addPlant),
+        deletePlants: vi.fn(mod.deletePlants),
     };
 });
 import * as strainActions from '../../src/store/strain-actions';
@@ -41,7 +42,7 @@ vi.mock('../../src/store/keyboard-actions', async (importOriginal) => {
     const mod = await importOriginal<typeof import('../../src/store/keyboard-actions')>();
     return {
         ...mod,
-        handleKeyDown: vi.fn(mod.handleKeyDown),
+        handleKeyboardNavigation: vi.fn(mod.handleKeyboardNavigation),
     };
 });
 
@@ -2712,6 +2713,66 @@ describe('GrowspaceStore', () => {
             expect(mockDataServiceInstance.addPlants).not.toHaveBeenCalled();
         });
 
+        it('should handle confirmAddPlants success and setup undo/redo', async () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            // Initial plants
+            const initialDevices = [{
+                device_id: 'd1',
+                plants: [{ entity_id: 's.p1', attributes: { plant_id: 'p1', row: 1, col: 1 } }]
+            }];
+            (dataStore.$devices.get as any).mockReturnValue(initialDevices);
+
+            // Mock addPlants
+            mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue({ success: true });
+
+            // Mock refreshData to simulate plants being added
+            mockDataServiceInstance.getGrowspaceDevices.mockReturnValueOnce(initialDevices);
+            const afterDevices = [{
+                device_id: 'd1',
+                plants: [
+                    { entity_id: 's.p1', attributes: { plant_id: 'p1', row: 1, col: 1 } },
+                    { entity_id: 's.p2', attributes: { plant_id: 'p2', row: 1, col: 2 } }
+                ]
+            }];
+
+            // Implementation of refreshData in test context often relies on getGrowspaceDevices
+            // Let's mock dataStore.$devices.get to return afterDevices after the call
+            const refreshSpy = vi.spyOn(store, 'refreshData').mockImplementation(async () => {
+                (dataStore.$devices.get as any).mockReturnValue(afterDevices);
+            });
+
+            const deletePlantsSpy = (plantActions.deletePlants as any).mockImplementation(async (_ctx: any, _ids: string[], add: any, remove: any) => {
+                add('p2');
+                remove('p2');
+                return true;
+            });
+
+            // 1. Execute confirmAddPlants
+            await store.confirmAddPlants({ count: 1 });
+
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalled();
+            expect(uiStore.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success', undefined);
+
+            // 2. Verify Undo Action was pushed
+            expect(store.canUndo).toBe(true);
+
+            // 3. Test Undo
+            await store.undo();
+            expect(deletePlantsSpy).toHaveBeenCalledWith(
+                expect.anything(),
+                ['p2'],
+                expect.any(Function),
+                expect.any(Function)
+            );
+
+            // 4. Test Redo
+            // Clear mocks to verify redo calls confirmAddPlants again
+            mockDataServiceInstance.addPlants.mockClear();
+            await store.redo();
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalled();
+        });
+
         it('should handle undo delete failure in reverse step', async () => {
             // Setup a delete action to undo
             const plant = {
@@ -2775,6 +2836,132 @@ describe('GrowspaceStore', () => {
             // The mock `setActiveDialog` calls `atoms.$activeDialog.set`.
             // We expect exactly 1 call (the loading one)
             expect(uiStore.setActiveDialog).toHaveBeenCalledTimes(1);
+        });
+        describe('Coverage Improvements', () => {
+            it('should handle updateHass optimization (same ref)', () => {
+                const hass = { connection: {} } as any;
+                store.updateHass(hass); // First call sets lastHassRef
+                store.dataService.fetchGrowspaceData = vi.fn();
+                store.updateHass(hass); // Second call should return early
+                expect(store.dataService.fetchGrowspaceData).not.toHaveBeenCalled();
+            });
+
+            it('should handle updateHass watched entities logic', () => {
+                const stateObj = { state: 'on' };
+                const hass1 = { states: { 'sensor.p1': stateObj } } as any;
+                const hass2 = { states: { 'sensor.p1': stateObj } } as any; // No change (same ref)
+
+                // Setup watched entities by triggering an update with devices
+                const devices = [{
+                    device_id: 'd1',
+                    plants: [{ entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } }],
+                    irrigation_config: { irrigation_pump_entity: 'switch.irrigation', drain_pump_entity: 'switch.drain' },
+                    environment_attributes: { temp: 'sensor.temp' }
+                }] as any;
+                mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
+                (dataStore.$devices.get as any).mockReturnValue(devices);
+
+                store.updateHass(hass1);
+
+                // Reset mocks to track calls
+                mockDataServiceInstance.getGrowspaceDevices.mockClear();
+                store.data.setDevices = vi.fn();
+
+                // Call with same state
+                store.updateHass(hass2);
+
+                // Should optimize out device update
+                expect(mockDataServiceInstance.getGrowspaceDevices).not.toHaveBeenCalled();
+                expect(store.data.setDevices).not.toHaveBeenCalled();
+            });
+
+            it('should handle updateHass watched entities change', () => {
+                const hass1 = { states: { 'sensor.p1': { state: 'on' } } } as any;
+                const hass2 = { states: { 'sensor.p1': { state: 'off' } } } as any; // Change
+
+                const devices = [{
+                    device_id: 'd1',
+                    plants: [{ entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } }]
+                }] as any;
+                mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
+                (dataStore.$devices.get as any).mockReturnValue(devices);
+
+                store.updateHass(hass1);
+
+                mockDataServiceInstance.getGrowspaceDevices.mockClear();
+
+                store.updateHass(hass2);
+
+                // Should NOT optimize out
+                expect(mockDataServiceInstance.getGrowspaceDevices).toHaveBeenCalled();
+            });
+
+            it('should fail gracefully if fetchGrowspaceData returns null', async () => {
+                mockDataServiceInstance.fetchGrowspaceData.mockResolvedValue(null);
+                await store.refreshData();
+                expect(dataStore.setWsDataCache).toHaveBeenCalledWith({});
+            });
+
+            it('should handle fetchStrainLibrary cache (invalid/missing timestamp)', async () => {
+                // Mock localStorage
+                const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+                const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+
+                // 1. Invalid JSON
+                getItemSpy.mockReturnValue('invalid {');
+                await store.fetchStrainLibrary();
+                expect(removeItemSpy).toHaveBeenCalledWith('growspace_strain_library_v2');
+
+                // 2. Old cache
+                const oldCache = JSON.stringify({ version: 2, timestamp: Date.now() - 100000000, data: [] });
+                getItemSpy.mockReturnValue(oldCache);
+                mockDataServiceInstance.fetchStrainLibrary.mockClear();
+                await store.fetchStrainLibrary();
+                expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+            });
+
+            it('should handle confirmAddPlants with no new plants added', async () => {
+                (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+                const devices = [{
+                    device_id: 'd1',
+                    plants: [{ attributes: { plant_id: 'p1' } }]
+                }];
+                (dataStore.$devices.get as any).mockReturnValue(devices);
+
+                // Mock refreshData to NOT return any new plants (simulate failure or no-op)
+                // The method calls refreshData, which calls setDevices via updateDevicesState
+                // We just ensure the "after" logic sees same devices.
+
+                await store.confirmAddPlants({});
+
+                // Should verify undo action was NOT pushed
+                // Access private undo stack? Or verify showToast success
+                expect(uiStore.showToast).toHaveBeenLastCalledWith('Batch plants added successfully', 'success', undefined);
+            });
+
+            it('should openIPMDialog with no context', () => {
+                (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+                store.openIPMDialog();
+                expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'IPM',
+                    payload: { growspaceId: undefined, plantIds: undefined }
+                }));
+            });
+
+            // Covering defaults from optional chain fallbacks
+            it('should use default auto-select behavior in _updateDevicesState', () => {
+                (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+                (uiStore.$defaultApplied.get as any).mockReturnValue(false);
+                (dataStore.$config.get as any).mockReturnValue(null); // No config
+
+                const devices = [{ device_id: 'd1', name: 'G1' }];
+                mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
+
+                store.initializeSelectedDevice({} as any);
+
+                // Default auto select is true, so it should select d1
+                expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
+            });
         });
     });
 });

@@ -728,5 +728,114 @@ describe('MetricsUtils', () => {
             expect(dehumidifier).toBeDefined();
             expect(dehumidifier!.value).toBe('-');
         });
+
+        it('should handle isLightsOn branch for light chip', () => {
+            const hassOff = {
+                ...mockHass,
+                states: {
+                    ...mockHass.states,
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'on',
+                        attributes: { is_lights_on: false }
+                    }
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassOff, mockDevice, new Set(), []);
+            const lightChip = res.deviceChips.find(c => c.key === 'light');
+            expect(lightChip!.value).toBe('Off');
+        });
+
+        it('should handle circulationFanState if entity exists but state missing', () => {
+            const hassEmpty = { states: { 'fan.circulation': null } } as any;
+            const dev = {
+                ...mockDevice,
+                environment_attributes: { circulation_fan_entity: 'fan.circulation' }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassEmpty, dev, new Set(), []);
+            const fan = res.deviceChips.find(c => c.key === 'circulation_fan');
+            expect(fan!.value).toBe('-');
+        });
+
+        it('should cover isNaN check for vpd sensor state', () => {
+            const hassNaN = {
+                states: {
+                    'sensor.vpd': { state: 'not-a-number' }
+                }
+            } as any;
+            const dev = {
+                ...mockDevice,
+                environment_attributes: { vpd_sensor: 'sensor.vpd' }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassNaN, dev, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd).toBeUndefined();
+        });
+
+        it('should exclude CO2 from special growspaces even if value present', () => {
+            const dryHass = {
+                states: {
+                    'binary_sensor.dry_optimal_drying': {
+                        state: 'on',
+                        attributes: { co2: 800 }
+                    }
+                }
+            } as any;
+            const dryDevice = { name: 'Dry', environment_attributes: {} } as any;
+            const res = MetricsUtils.computeHeaderMetrics(dryHass, dryDevice, new Set(), []);
+            const co2 = res.mainChips.find(c => c.key === 'co2');
+            expect(co2).toBeUndefined();
+        });
+
+        it('should handle exhaustSensor fallback when exhaust_entity is missing', () => {
+            const hassExhaust = {
+                states: {
+                    'sensor.exhaust_state': { state: 'high' }
+                }
+            } as any;
+            const devExhaust = {
+                ...mockDevice,
+                environment_attributes: { exhaust_sensor: 'sensor.exhaust_state' }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassExhaust, devExhaust, new Set(), []);
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust!.value).toBe('high');
+        });
+
+        it('should cover vpd status optimal branch', () => {
+            const vpdHass = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'on',
+                        attributes: {
+                            temperature: 25,
+                            humidity: 50,
+                            vpd: 1.0 // Within target
+                        }
+                    },
+                    'sensor.test_room': {
+                        state: 'on',
+                        attributes: {
+                            vpd_status: 'unknown',
+                            vpd_target_min: 0.8,
+                            vpd_target_max: 1.2,
+                            vpd_danger_min: 0.5,
+                            vpd_danger_max: 1.5
+                        }
+                    }
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(vpdHass, mockDevice, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd?.status).toBe('optimal');
+        });
+
+        it('should handle getNextEvent with empty/null times', () => {
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, {
+                ...mockDevice,
+                irrigation_config: { irrigation_times: [], drain_times: null }
+            } as any, new Set(), []);
+            const irrigation = res.mainChips.find(c => c.key === 'irrigation');
+            expect(irrigation).toBeUndefined();
+        });
     });
 });

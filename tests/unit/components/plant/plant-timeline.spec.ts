@@ -887,10 +887,97 @@ describe('PlantTimeline', () => {
         it('should handle _getIcon branches for milestones', async () => {
             const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
 
-            // Specific milestones coverage
-            // We already tested flower/dry/cure, let's just ensure default falls through
+            // label.includes('cure')
+            const cureIcon = (el as any)._getIcon({ type: 'milestone', label: 'Cure process' });
+            expect(cureIcon).toBeDefined();
+
+            // label missing (falls to sprout)
+            const noLabelIcon = (el as any)._getIcon({ type: 'milestone' });
+            expect(noLabelIcon).toBeDefined();
+
+            // default falls through
             const icon = (el as any)._getIcon({ type: 'milestone', label: 'Sprout' });
             expect(icon).toBeDefined(); // Sprout icon
+        });
+
+        it('should render images with data: URIs correctly', async () => {
+            const event: PlantTimelineEvent = {
+                date: '2023-01-01',
+                type: 'note',
+                text: 'Base64 image',
+                images: ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==']
+            };
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const img = el.shadowRoot?.querySelector('.image-grid img');
+            expect(img?.getAttribute('src')).toContain('data:image/png;base64');
+        });
+
+        it('should cover all stage colors in _getStageColor', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            const stages = ['flower', 'veg', 'seedling', 'clone', 'mother', 'dry', 'cure', 'unknown'];
+            for (const stage of stages) {
+                const color = (el as any)._getStageColor(stage);
+                expect(color).toBeDefined();
+            }
+        });
+
+        it('resizes image with no constraints (small landscape)', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
+            vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
+            const mockImage = { onload: null as any, width: 500, height: 400 };
+            vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
+            const mockCanvas = { getContext: vi.fn(() => ({ drawImage: vi.fn() })), toDataURL: vi.fn(() => 'data:resized'), width: 100, height: 100 };
+            vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
+
+            try {
+                const resizePromise = (el as any)._resizeImage(new File([''], 'small.jpg'));
+                if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
+                if (mockImage.onload) mockImage.onload();
+
+                await resizePromise;
+                expect(mockCanvas.width).toBe(500); // Unchanged
+            } finally {
+                vi.unstubAllGlobals();
+                vi.restoreAllMocks();
+            }
+        });
+
+        it('resizes image with no constraints (small portrait)', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
+            vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
+            const mockImage = { onload: null as any, width: 400, height: 500 };
+            vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
+            const mockCanvas = { getContext: vi.fn(() => ({ drawImage: vi.fn() })), toDataURL: vi.fn(() => 'data:resized'), width: 100, height: 100 };
+            vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
+
+            try {
+                const resizePromise = (el as any)._resizeImage(new File([''], 'small.jpg'));
+                if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
+                if (mockImage.onload) mockImage.onload();
+
+                await resizePromise;
+                expect(mockCanvas.height).toBe(500); // Unchanged
+            } finally {
+                vi.unstubAllGlobals();
+                vi.restoreAllMocks();
+            }
+        });
+
+        it('handles file selection with no files', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
+            const event = { target: { files: null } } as unknown as Event;
+            await (el as any)._handleFileSelect(event);
+            // Pass if no error
+        });
+
+        it('handles undefined events in render', async () => {
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${undefined}></plant-timeline>`);
+            await el.updateComplete;
+            expect(el.shadowRoot?.textContent).toContain('No entries for this plant yet.');
         });
     });
 

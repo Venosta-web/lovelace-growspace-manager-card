@@ -346,5 +346,23 @@ describe('NutrientPresetsEditor', () => {
         // Better to check that the dialog element is NOT present
         expect(element.shadowRoot?.querySelector('ha-dialog')).toBeNull();
     });
-});
 
+
+    it('should render preset details (stage, days)', async () => {
+        const fullPreset = {
+            id: 'p_full',
+            name: 'Full Detail',
+            nutrients: [{ name: 'A', dose_ml_l: 1 }],
+            stage: 'veg',
+            min_days_in_stage: 14
+        };
+        mockStore.data.$nutrientPresets.get = () => ({ 'p_full': fullPreset });
+        (element as any)._view = 'LIST';
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const details = element.shadowRoot?.querySelector('.preset-details')?.textContent;
+        expect(details).toContain('veg');
+        expect(details).toContain('Day 14+');
+    });
+});

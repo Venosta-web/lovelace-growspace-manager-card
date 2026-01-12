@@ -1716,6 +1716,195 @@ describe('PlantOverviewDialog', () => {
             document.body.removeChild(element);
         });
     });
+
+    describe('Refined Coverage Gaps', () => {
+        it('should cleanup subscription on disconnectedCallback', async () => {
+            const unsubSpy = vi.fn().mockResolvedValue(undefined);
+            (element as any)._unsubEvents = Promise.resolve(unsubSpy);
+
+            element.disconnectedCallback();
+
+            // Wait for microtasks since it's a promise
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(unsubSpy).toHaveBeenCalled();
+        });
+
+        it('should handle shared irrigation events in _handleGrowspaceEvent', async () => {
+            element.plant = {
+                ...mockPlant,
+                attributes: { ...mockPlant.attributes, growspace_id: 'gs1', plant_id: 'p1' }
+            };
+            (element as any)._logbookEvents = [];
+
+            // Shared irrigation event (no plant_id)
+            (element as any)._handleGrowspaceEvent({
+                data: {
+                    category: 'irrigation',
+                    growspace_id: 'gs1',
+                    start_time: '2024-01-01T10:00:00Z'
+                }
+            });
+
+            expect((element as any)._logbookEvents.length).toBe(1);
+        });
+
+        it('should fallback to dashboard if invalid tab provided in willUpdate', () => {
+            element.dialog = {
+                plant: mockPlant,
+                activeTab: 'invalid' as any,
+                editedAttributes: {} as any // Satisfy type requirement
+            };
+            // Trigger willUpdate
+            element.willUpdate(new Map([['dialog', undefined]]));
+            expect((element as any)._activeTab).toBe('dashboard');
+        });
+
+        it('should re-init editedAttributes if strain is missing', () => {
+            element.plant = mockPlant;
+            element.editedAttributes = { strain: '' } as any;
+
+            // Trigger willUpdate with plant change
+            element.willUpdate(new Map([['plant', undefined]]));
+
+            expect(element.editedAttributes?.strain).toBe('Blue Dream');
+        });
+
+        it('should filter out logbook events without timestamps in _fetchLogbook', async () => {
+            (element as any)._logbookEvents = [
+                { category: 'note', notes: 'No timestamp' } as any
+            ];
+
+            const controller = (element as any)._logbookController;
+            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
+
+            await (element as any)._fetchLogbook();
+
+            expect((element as any)._logbookEvents.length).toBe(0);
+        });
+
+        it('should filter out old optimistic events in _fetchLogbook', async () => {
+            const oldTime = new Date(Date.now() - 70000).toISOString();
+            (element as any)._logbookEvents = [
+                { category: 'note', timestamp: oldTime } as any
+            ];
+
+            const controller = (element as any)._logbookController;
+            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
+
+            await (element as any)._fetchLogbook();
+
+            expect((element as any)._logbookEvents.length).toBe(0);
+        });
+
+        it('should include automated irrigation in timeline rendering', () => {
+            element.plant = {
+                ...mockPlant,
+                attributes: { ...mockPlant.attributes, plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            (element as any)._logbookEvents = [
+                {
+                    category: 'irrigation',
+                    start_time: '2024-01-01T10:00:00Z',
+                    reasons: [] // No plant_id mention
+                }
+            ];
+
+            const result = (element as any)._renderTimeline();
+            expect(result).toBeDefined();
+        });
+
+        it('should alert if moving clone without target', () => {
+            const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { });
+            (element as any).cloneTargetId = '';
+            (element as any).editedAttributes = {};
+            (element as any)._moveClone(mockPlant);
+            expect(alertSpy).toHaveBeenCalledWith('Select a growspace');
+            alertSpy.mockRestore();
+        });
+
+        it('should derive plant_id from entity_id in _renderTimeline if attribute missing', () => {
+            element.plant = {
+                entity_id: 'sensor.blue_dream_1',
+                attributes: {}
+            } as any;
+            (element as any)._logbookEvents = [
+                {
+                    category: 'note',
+                    plant_id: 'blue_dream_1',
+                    timestamp: '2024-01-01T10:00:00Z'
+                }
+            ];
+
+            const result = (element as any)._renderTimeline();
+            expect(result).toBeDefined();
+        });
+
+        it('should filter out notes with missing plant_id in timeline', () => {
+            element.plant = mockPlant;
+            (element as any)._logbookEvents = [
+                { category: 'note', notes: 'Hidden', timestamp: '2024-01-01T10:00:00Z' } // plant_id missing
+            ];
+
+            const result = (element as any)._renderTimeline();
+            expect(result).toBeDefined();
+        });
+
+        it('should handle unset ref in _setActionsRef', () => {
+            // Cover the else branch when el is undefined
+            (element as any)._setActionsRef(undefined);
+            expect((element as any)._actionsContainer).toBeUndefined();
+        });
+
+        it('should fallback to entity_id for action handlers when plant_id attribute is missing', () => {
+            const plantNoAttr = {
+                entity_id: 'sensor.fallback_plant',
+                attributes: { growspace_id: 'gs1' } // missing plant_id
+            } as any;
+            element.plant = plantNoAttr;
+
+            const dispatchSpy = vi.spyOn(element, 'dispatchEvent');
+
+            (element as any)._openWatering();
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                detail: expect.objectContaining({ plantIds: ['fallback_plant'] })
+            }));
+
+            (element as any)._openTraining();
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                detail: expect.objectContaining({ plantIds: ['fallback_plant'] })
+            }));
+
+            (element as any)._openIPM();
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                detail: expect.objectContaining({ plantIds: ['fallback_plant'] })
+            }));
+        });
+
+        it('should skip subscription if already subscribed in _subscribeToEvents', async () => {
+            (element as any)._unsubEvents = Promise.resolve(() => { });
+            const spy = vi.spyOn(element.hass.connection, 'subscribeEvents');
+
+            await (element as any)._subscribeToEvents();
+
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should handle disconnectedCallback when not subscribed', () => {
+            (element as any)._unsubEvents = undefined;
+            // Should not throw
+            element.disconnectedCallback();
+        });
+
+        it('should filter out events with event_id in _fetchLogbook (optimistic clean)', async () => {
+            (element as any)._logbookEvents = [
+                { event_id: 'existing', category: 'note' } as any
+            ];
+            const controller = (element as any)._logbookController;
+            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
+
+            await (element as any)._fetchLogbook();
+
+            expect((element as any)._logbookEvents.length).toBe(0);
+        });
+    });
 });
-
-

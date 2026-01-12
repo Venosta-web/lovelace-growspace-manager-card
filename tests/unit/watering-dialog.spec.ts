@@ -670,5 +670,43 @@ describe('WateringDialog', () => {
             nameInput.dispatchEvent(new CustomEvent('change', { detail: '' }));
             expect((element as any)._nutrients[0].name).toBe('TargetVal');
         });
+        it('should handle non-existent preset ID in _handlePresetChange', async () => {
+            element.open = true;
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+            select.value = 'non-existent';
+            select.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            // Should not crash and nutrients should remain empty (or unchanged from initial)
+            expect((element as any)._nutrients.length).toBe(0);
+        });
+
+        it('should render nothing in _renderPresetOptions if presets are missing', async () => {
+            mockStore.data.$nutrientPresets.get = () => null;
+            element.open = true;
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('select');
+            // If presets are null, only the "Manual" option should be there
+            expect(select?.querySelectorAll('option').length).toBe(1);
+        });
+
+        it('should handle missing selectedDevice in _renderPresetOptions', async () => {
+            mockStore.data.$devices.get = () => []; // No devices
+            element.open = true;
+            element.dialogState = {
+                growspaceId: 'gs1',
+                mode: 'plant',
+                plantIds: ['p1']
+            };
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('select');
+            expect(select).toBeTruthy();
+            // Should not crash and should not show recommendations
+            expect(select?.textContent).not.toContain('⭐');
+        });
     });
 });

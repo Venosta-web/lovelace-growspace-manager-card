@@ -284,5 +284,27 @@ describe('TrainingDialog', () => {
                 })
             );
         });
+        it('should exit early in _save if dialog type is not TRAINING', async () => {
+            // Set technique so it doesn't return on the first check
+            const techniqueSelect = element.shadowRoot?.querySelector('md3-select') as any;
+            techniqueSelect.value = 'topping';
+            techniqueSelect.dispatchEvent(new CustomEvent('change', { detail: 'topping' }));
+            await element.updateComplete;
+
+            // Change mock to return wrong type
+            vi.spyOn(mockStore.ui.$activeDialog, 'get').mockReturnValue({
+                type: 'WATERING',
+                payload: {}
+            });
+
+            const saveButton = element.shadowRoot?.querySelector('mwc-button') as HTMLElement;
+            saveButton.click();
+
+            // Wait for async actions
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should not have called the service because it returned early
+            expect(mockHass.callService).not.toHaveBeenCalled();
+        });
     });
 });

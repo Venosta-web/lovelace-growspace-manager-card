@@ -473,5 +473,80 @@ describe('GrowspaceLogbook', () => {
             expect(cardText).toContain('2 Images attached');
         });
     });
-});
 
+
+    describe('Coverage Improvements', () => {
+        it('should handle rendering fallbacks for title', async () => {
+             // 1. No sensor_type, has category -> formatted category
+             const event1 = { ...mockEvents[0], sensor_type: undefined, category: 'my_category' } as any;
+             // 2. No sensor_type, no category -> 'Event'
+             const event2 = { ...mockEvents[0], sensor_type: undefined, category: undefined } as any;
+             // 3. defined sensor_type with underscore -> 'fan speed'
+             const event3 = { ...mockEvents[0], sensor_type: 'fan_speed' } as any;
+             
+             (element as any)._events = [event1, event2, event3];
+             await element.updateComplete;
+             
+             const cards = element.shadowRoot?.querySelectorAll('.event-card');
+             const types = Array.from(cards || []).map(c => c.querySelector('.event-type')?.textContent?.trim());
+             
+             expect(types[0]).toBe('my category');
+             expect(types[1]).toBe('Event');
+             expect(types[2]).toBe('fan speed');
+        });
+
+        it('should handle undefined reasons gracefully', async () => {
+            const event = { ...mockEvents[0], reasons: undefined };
+            (element as any)._events = [event];
+            await element.updateComplete;
+            
+            // Should not throw and reasons section should be empty/safe
+            const reasonsDiv = element.shadowRoot?.querySelector('.event-reasons');
+            expect(reasonsDiv?.textContent?.trim()).toBe('');
+        });
+
+        it('should sort mixed event types (timestamp vs start_time) correctly', async () => {
+            const now = Date.now();
+            const noteEvent = { 
+                growspace_id: 'gs1', 
+                category: 'note', 
+                timestamp: new Date(now).toISOString() // Newer 
+            } as any;
+            const alertEvent = { 
+                growspace_id: 'gs1', 
+                category: 'alert', 
+                start_time: new Date(now - 1000).toISOString() // Older
+            } as any;
+            
+            (element as any)._events = [alertEvent, noteEvent]; // Generic order
+            await element.updateComplete;
+            
+            const cards = element.shadowRoot?.querySelectorAll('.event-card');
+            const types = Array.from(cards || []).map(c => c.querySelector('.event-type')?.textContent?.trim());
+            
+            // Note (Plant Note) should be first because it is newer
+            expect(types[0]).toBe('Plant Note');
+            expect(types[1]).toBe('alert'); // sensor_type undefined -> category 'alert'
+        });
+
+        it('should handle watering filter wildcard matching', async () => {
+             const leakerEvent = { ...mockEvents[0], sensor_type: 'water_leaker', category: 'alert' };
+             (element as any)._events = [leakerEvent];
+             (element as any)._activeFilter = 'watering';
+             await element.updateComplete;
+             
+             const cards = element.shadowRoot?.querySelectorAll('.event-card');
+             expect(cards?.length).toBe(1);
+        });
+
+        it('should return early in _fetchEvents if hass is missing', async () => {
+             element.hass = undefined as any;
+             mockControllerInstance.fetchEventLog.mockClear();
+             
+             // Trigger private method directly or via change (but change requires hass check in willUpdate)
+             await (element as any)._fetchEvents();
+             
+             expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
+        });
+    });
+});

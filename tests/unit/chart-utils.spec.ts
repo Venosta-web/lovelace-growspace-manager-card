@@ -689,5 +689,56 @@ describe('ChartUtils', () => {
             const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, thresholds, []);
             expect(segments.length).toBeGreaterThan(0);
         });
+        describe('Edge Case Coverage', () => {
+            it('should handle zero duration timeRangeVal in generateSparklinePath', () => {
+                const now = new Date().toISOString();
+                const data = [
+                    { state: '10', last_changed: now },
+                    { state: '20', last_changed: now }
+                ];
+                // timeRangeVal will be 0, falling back to 1
+                const path = ChartUtils.generateSparklinePath(data, 100, 50);
+                expect(path).toBeDefined();
+                expect(path).toContain('L');
+            });
+
+            it('should fallback to default color for unknown metric keys', () => {
+                const color = ChartUtils.getSparklineColor('unknown_metric');
+                expect(color).toBe('rgba(255, 255, 255, 0.3)');
+            });
+
+            it('should cover line 270 in generateVpdSparklineSegments where points are empty after valid filter', () => {
+                const data = [
+                    { state: 'unknown', last_changed: new Date().toISOString() },
+                    { state: 'unavailable', last_changed: new Date().toISOString() }
+                ];
+                const segments = ChartUtils.generateVpdSparklineSegments(data, 100, 50, {
+                    day: { targetMin: 0, targetMax: 1, dangerMin: 0, dangerMax: 2 },
+                    night: { targetMin: 0, targetMax: 1, dangerMin: 0, dangerMax: 2 }
+                }, []);
+                expect(segments).toEqual([]);
+            });
+
+            it('should cover line 144 in getIsDay by finding state in history', () => {
+                const history = [
+                    { time: 1000, value: 0 },
+                    { time: 2000, value: 1 }
+                ];
+                // time 1500 is between 1000 and 2000. Should find value 0 (Night).
+                expect(ChartUtils.getIsDay(1500, history)).toBe(false);
+                // time 2500 is after 2000. Should find value 1 (Day).
+                expect(ChartUtils.getIsDay(2500, history)).toBe(true);
+            });
+
+            it('should include meta in normalized history if attributes exist', () => {
+                const data = [{
+                    state: '10',
+                    last_changed: new Date().toISOString(),
+                    attributes: { some: 'attr' }
+                }];
+                const normalized = ChartUtils.normalizeHistory(data, 'temp', 0, Date.now());
+                expect(normalized[0].meta).toEqual({ some: 'attr' });
+            });
+        });
     });
 });
