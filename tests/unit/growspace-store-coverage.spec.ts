@@ -124,7 +124,7 @@ const mockDataServiceInstance: any = {
     fetchStrainLibrary: vi.fn().mockResolvedValue([]),
     addStrain: vi.fn().mockResolvedValue({}),
     removeStrain: vi.fn().mockResolvedValue({}),
-    updateHass: vi.fn(function(this: any, h) { this.hass = h; }),
+    updateHass: vi.fn(function (this: any, h) { this.hass = h; }),
     updateGrowspace: vi.fn().mockResolvedValue({}),
     updatePlant: vi.fn().mockResolvedValue({}),
     addPlant: vi.fn().mockResolvedValue({}),
@@ -882,6 +882,26 @@ describe('GrowspaceStore Branch Coverage', () => {
             mockDataServiceInstance.fetchNutrientPresets.mockResolvedValue(null);
             await store.fetchNutrientPresets();
             expect(dataStore.setNutrientPresets).not.toHaveBeenCalled();
+        });
+
+        it('should handle fetchIPMPresets cache hit', async () => {
+            const presets = { 'p1': { id: 'p1', name: 'Cached IPM' } };
+            const cache = { timestamp: Date.now(), data: presets };
+            localStorage.setItem('growspace_ipm_presets', JSON.stringify(cache));
+
+            mockDataServiceInstance.fetchIPMPresets.mockClear();
+            await store.fetchIPMPresets();
+
+            // Should use cache and NOT call service
+            expect(mockDataServiceInstance.fetchIPMPresets).not.toHaveBeenCalled();
+            expect(store.data.setIPMPresets).toHaveBeenCalledWith(presets);
+        });
+
+        it('should call history.destroy on store.destroy', () => {
+            // history is already mocked/instantiated in beforeEach
+            const historyDestroySpy = vi.spyOn(store.history, 'destroy');
+            store.destroy();
+            expect(historyDestroySpy).toHaveBeenCalled();
         });
     });
 });

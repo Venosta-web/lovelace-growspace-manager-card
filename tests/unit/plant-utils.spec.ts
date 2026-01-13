@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlantUtils } from '../../src/utils/plant-utils';
 import { PlantStage, PlantEntity } from '../../src/types';
-import { mdiSprout } from '@mdi/js';
+import { mdiSprout, mdiFlower } from '@mdi/js';
 
 // Mock current date for stable time-based tests
 const MOCK_DATE = new Date('2023-10-15T12:00:00');
@@ -798,6 +798,76 @@ describe('Coverage Gap Fillers', () => {
 
     it('should return null for getDominantStage with null plant list', () => {
         expect(PlantUtils.getDominantStage(null as any)).toBeNull();
+    });
+
+    describe('Final Coverage Top-off', () => {
+        it('should return correct icons in getPlantStageIcon', () => {
+            expect(PlantUtils.getPlantStageIcon(PlantStage.VEG)).toBe(mdiSprout);
+            expect(PlantUtils.getPlantStageIcon('veg')).toBe(mdiSprout);
+            expect(PlantUtils.getPlantStageIcon(PlantStage.FLOWER)).toBe(mdiFlower); // flower icon
+            expect(PlantUtils.getPlantStageIcon('flower')).toBe(mdiFlower);
+            expect(PlantUtils.getPlantStageIcon('invalid')).toBe(mdiSprout); // default
+            expect(PlantUtils.getPlantStageIcon(undefined)).toBe(mdiSprout);
+            expect(PlantUtils.getPlantStageIcon(null)).toBe(mdiSprout);
+        });
+
+        it('should handle calculatePlantAge invalid dates', () => {
+            const plant = {
+                attributes: {
+                    veg_start: 'invalid-date-string'
+                },
+                // Mock return of getPlantStage to ensure we hit the switch case for VEG
+                // or just rely on attributes logic inside getPlantStage if it looks at dates.
+                // getPlantStage checks "if (attrs.veg_start && new Date <= now)"
+                // invalid date <= now is false? "Invalid Date" <= now ?
+                // Actually new Date('invalid') returns Invalid Date.
+                // getPlantStage: if (attrs.veg_start && new Date(attrs.veg_start) <= now)
+                // new Date('invalid') is NaN. NaN <= now is false. 
+                // So it returns SEEDLING.
+                // Switch SEEDLING -> cases planted_date.
+            } as any;
+
+            // To hit lines 119-120 (isNaN check), we need a valid stage but invalid date string for it?
+            // If getPlantStage relies on date validity to determine stage, we might end up in SEEDLING.
+            // Let's force a stage by mocking getPlantStage temporarily? 
+            // Or use a stage that doesn't depend on date check? 
+            // CURE/DRY/MOTHER depend on existence of attribute (truthy check) in getPlantStage:
+            // "if (attrs.mom_start) return PlantStage.MOTHER;"
+
+            const plant2 = {
+                attributes: {
+                    mom_start: 'invalid-date-string'
+                }
+            } as any;
+            // getPlantStage sees mom_start is truthy -> returns MOTHER.
+            // calculatePlantAge switch MOTHER -> startStr = 'invalid-date-string'
+            // new Date('invalid') -> Invalid Date
+            // isNaN(start.getTime()) -> true -> returns 0.
+
+            expect(PlantUtils.calculatePlantAge(plant2)).toBe(0);
+        });
+
+        it('should handle calculateEffectiveRows with 0 plants', () => {
+            const device = {
+                type: 'mother', // dynamic type
+                rows: 5,
+                plants_per_row: 2,
+                plants: []
+            } as any;
+            // Should return 1
+            expect(PlantUtils.calculateEffectiveRows(device)).toBe(1);
+        });
+
+        it('should handle findFirstAvailableSlot with undefined row/col attributes', () => {
+            const plants = [
+                { attributes: { row: 1, col: 1 } },
+                { attributes: { plant_id: 'p2' } } // Missing row/col
+            ] as any[];
+
+            // Should ignore p2 and see 1,1 as occupied, find 1,2
+            const result = PlantUtils.findFirstAvailableSlot(plants, 2, 2);
+            expect(result).toEqual({ row: 1, col: 2 });
+        });
     });
 
     describe('Uncovered Utilities', () => {

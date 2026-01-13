@@ -94,7 +94,7 @@ export class MetricsUtils {
         // Fetch Environmental Data
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
         if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '');
+            slug = device.overview_entity_id.replace('sensor.', '').replace(/_overview$/, '');
         }
 
         let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
