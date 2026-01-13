@@ -316,6 +316,96 @@ describe('DataStore', () => {
         });
     });
 
+
+
+    describe('Optimization & Edge Cases', () => {
+        it('should use _ts for change comparison in setWsDataCache', () => {
+            const cacheA = {
+                gs1: { _ts: 123, grid: { '1': { id: 'p1' } } }
+            } as any;
+            const cacheB = {
+                gs1: { _ts: 123, grid: { '1': { id: 'p1' } } }
+            } as any;
+
+            store.$wsDataCache.set(cacheA);
+
+            // Same timestamp -> Should NOT update, even if object ref different
+            store.setWsDataCache(cacheB);
+            expect(store.$wsDataCache.get()).toBe(cacheA); // Strict equality check
+
+            // Same reference -> Should definitely return early
+            store.setWsDataCache(cacheA);
+            expect(store.$wsDataCache.get()).toBe(cacheA);
+
+            // Different timestamp -> Should update
+            const cacheC = {
+                gs1: { _ts: 124, grid: { '1': { id: 'p1' } } }
+            } as any;
+            store.setWsDataCache(cacheC);
+            expect(store.$wsDataCache.get()).toBe(cacheC);
+        });
+
+        it('should fallback to deep compare if _ts missing in setWsDataCache', () => {
+            const cacheA = { gs1: { grid: { a: 1 } } } as any;
+            const cacheB = { gs1: { grid: { a: 1 } } } as any;
+
+            store.$wsDataCache.set(cacheA);
+
+            // Deep equal -> Should NOT update
+            store.setWsDataCache(cacheB);
+            expect(store.$wsDataCache.get()).toBe(cacheA);
+
+            // Deep different -> Should update
+            const cacheC = { gs1: { grid: { a: 2 } } } as any;
+            store.setWsDataCache(cacheC);
+            expect(store.$wsDataCache.get()).toBe(cacheC);
+        });
+
+        it('should fallback to scan if plantToDeviceMap is inconsistent', () => {
+            const initialCache = {
+                gs1: { grid: { '1-1': { plant_id: 'p1' } } },
+                gs2: { grid: { '1-1': { plant_id: 'p1' } } } // p1 shouldn't be here ideally, but simulating duplication/error
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            // Map says p1 is in gs3 (which doesn't exist in cache)
+            const map = new Map<string, string>();
+            map.set('p1', 'gs3');
+            store.$plantToDeviceMap.set(map);
+
+            // Should fallback to scanning all growspaces and remove p1 from gs1 and gs2
+            store.removePlantFromWsCache('p1');
+
+            const updated = store.$wsDataCache.get();
+            expect(updated?.gs1?.grid['1-1']).toBeNull();
+            expect(updated?.gs2?.grid['1-1']).toBeNull();
+        });
+
+        it('should handle plant_id from attributes case in setDevices', () => {
+            const devices = [
+                {
+                    device_id: 'd100',
+                    plants: [
+                        { variables: {}, attributes: { plant_id: 'p100' }, entity_id: 'sensor.ignore_me' }
+                    ]
+                }
+            ] as any[];
+            store.setDevices(devices);
+            expect(store.$plantToDeviceMap.get().get('p100')).toBe('d100');
+        });
+
+        it('should detect changes when keys are different but count is same', () => {
+            // Covers lines 116-118
+            const cacheA = { gs1: { grid: {} } } as any;
+            const cacheB = { gs2: { grid: {} } } as any; // Different key, same length (1)
+
+            store.$wsDataCache.set(cacheA);
+            store.setWsDataCache(cacheB);
+
+            expect(store.$wsDataCache.get()).toBe(cacheB); // Should update
+        });
+    });
+
     describe('Lifecycle & Status', () => {
         beforeEach(() => {
             vi.useFakeTimers();
@@ -323,22 +413,25 @@ describe('DataStore', () => {
 
         afterEach(() => {
             vi.useRealTimers();
+            vi.restoreAllMocks();
         });
 
         it('should track active status based on subscribers', async () => {
-            expect(store.isActive).toBe(false);
+            const consoleSpy = vi.spyOn(console, 'debug');
 
-            // Subscribing should trigger onMount
+            // Subscribe
             const unsubscribe = store.$devices.subscribe(() => { });
             expect(store.isActive).toBe(true);
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Mounted'));
 
             // Unsubscribing all should trigger clean up
             unsubscribe();
 
-            // Fast-forward past nanostores stop delay (default 1000ms)
+            // Fast-forward past nanostores stop delay
             vi.advanceTimersByTime(1100);
 
             expect(store.isActive).toBe(false);
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unmounted'));
         });
     });
 });
