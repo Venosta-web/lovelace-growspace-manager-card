@@ -99,9 +99,44 @@ export class GrowspaceDataStore {
     }
 
     public setWsDataCache(cache: Record<string, GrowspaceAPIResponse>) {
-        // Optimization: check if data changed before updating cache
-        if (JSON.stringify(this.$wsDataCache.get()) === JSON.stringify(cache)) return;
-        this.$wsDataCache.set(cache);
+        const current = this.$wsDataCache.get();
+        if (current === cache) return;
+
+        const keysA = Object.keys(current);
+        const keysB = Object.keys(cache);
+
+        let changed = false;
+        if (keysA.length !== keysB.length) {
+            changed = true;
+        } else {
+            for (const key of keysB) {
+                const valA = current[key];
+                const valB = cache[key];
+
+                if (!valA) {
+                    changed = true;
+                    break;
+                }
+
+                // Optimization: Use scalar timestamp check if available (O(1))
+                if (valA._ts !== undefined && valB._ts !== undefined) {
+                    if (valA._ts !== valB._ts) {
+                        changed = true;
+                        break;
+                    }
+                } else {
+                    // Fallback: Deep comparison for legacy data or if _ts missing (O(N))
+                    if (JSON.stringify(valA) !== JSON.stringify(valB)) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (changed) {
+            this.$wsDataCache.set(cache);
+        }
     }
 
     public updateWsDataCacheGrid(gsId: string, mutator: (grid: Record<string, any>) => void) {

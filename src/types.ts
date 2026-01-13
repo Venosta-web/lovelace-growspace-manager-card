@@ -217,6 +217,7 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   grid: Record<string, RawPlantData | null>;
   irrigation_config: IrrigationConfig;
   irrigation_strategy?: IrrigationStrategy | null;
+  _ts?: number; // Backend serialization timestamp for efficient equality checks
 }
 
 // --- Internal Frontend Models ---

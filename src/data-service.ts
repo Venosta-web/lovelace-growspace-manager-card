@@ -114,16 +114,32 @@ export class DataService {
   }
 
   getStrainLibrary(): StrainEntry[] {
-    const allStates = Object.values(this.hass.states);
-    const strainSensor = allStates.find(
-      (s: HassEntity) => s.attributes && 'strains' in s.attributes
-    );
+    const knownIds = [
+      'sensor.strain_library',
+      'sensor.growspace_manager_strain_library',
+    ];
+    let rawStrains;
 
-    const rawStrains = strainSensor?.attributes?.strains;
+    // Direct O(1) Lookup
+    for (const id of knownIds) {
+      const entity = this.hass.states[id];
+      if (entity?.attributes?.strains) {
+        rawStrains = entity.attributes.strains;
+        break;
+      }
+    }
+
+    // Fallback: O(N) Scan (Legacy)
+    if (!rawStrains) {
+      const allStates = Object.values(this.hass.states);
+      const strainSensor = allStates.find(
+        (s: HassEntity) => s.attributes && 'strains' in s.attributes
+      );
+      rawStrains = strainSensor?.attributes?.strains;
+    }
 
     // If no sensor data, return empty (let dialog handle service call)
     if (!rawStrains) {
-      console.warn('[DataService] No strain data in sensor attributes');
       return [];
     }
 

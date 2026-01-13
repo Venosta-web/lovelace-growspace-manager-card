@@ -5030,12 +5030,27 @@ class DataService {
         return entity.attributes?.growspace_id || 'unknown';
     }
     getStrainLibrary() {
-        const allStates = Object.values(this.hass.states);
-        const strainSensor = allStates.find((s) => s.attributes && 'strains' in s.attributes);
-        const rawStrains = strainSensor?.attributes?.strains;
+        const knownIds = [
+            'sensor.strain_library',
+            'sensor.growspace_manager_strain_library',
+        ];
+        let rawStrains;
+        // Direct O(1) Lookup
+        for (const id of knownIds) {
+            const entity = this.hass.states[id];
+            if (entity?.attributes?.strains) {
+                rawStrains = entity.attributes.strains;
+                break;
+            }
+        }
+        // Fallback: O(N) Scan (Legacy)
+        if (!rawStrains) {
+            const allStates = Object.values(this.hass.states);
+            const strainSensor = allStates.find((s) => s.attributes && 'strains' in s.attributes);
+            rawStrains = strainSensor?.attributes?.strains;
+        }
         // If no sensor data, return empty (let dialog handle service call)
         if (!rawStrains) {
-            console.warn('[DataService] No strain data in sensor attributes');
             return [];
         }
         // Existing parsing logic...
@@ -30291,10 +30306,42 @@ class GrowspaceDataStore {
         }
     }
     setWsDataCache(cache) {
-        // Optimization: check if data changed before updating cache
-        if (JSON.stringify(this.$wsDataCache.get()) === JSON.stringify(cache))
+        const current = this.$wsDataCache.get();
+        if (current === cache)
             return;
-        this.$wsDataCache.set(cache);
+        const keysA = Object.keys(current);
+        const keysB = Object.keys(cache);
+        let changed = false;
+        if (keysA.length !== keysB.length) {
+            changed = true;
+        }
+        else {
+            for (const key of keysB) {
+                const valA = current[key];
+                const valB = cache[key];
+                if (!valA) {
+                    changed = true;
+                    break;
+                }
+                // Optimization: Use scalar timestamp check if available (O(1))
+                if (valA._ts !== undefined && valB._ts !== undefined) {
+                    if (valA._ts !== valB._ts) {
+                        changed = true;
+                        break;
+                    }
+                }
+                else {
+                    // Fallback: Deep comparison for legacy data or if _ts missing (O(N))
+                    if (JSON.stringify(valA) !== JSON.stringify(valB)) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (changed) {
+            this.$wsDataCache.set(cache);
+        }
     }
     updateWsDataCacheGrid(gsId, mutator) {
         const currentCache = this.$wsDataCache.get();
