@@ -62,7 +62,7 @@ export class GrowspaceViewStandard extends LitElement {
 
       ${this.config?.initial_view_mode === 'header'
         ? html`
-            <button class="collapse-handle" @click=${this._dispatchToggle}>
+            <button class="collapse-handle" @click=${this._dispatchToggle} aria-label="Toggle view expansion">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>

@@ -17671,6 +17671,11 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
             composed: true,
         }));
     }
+    _handleKeyDown(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            this._handleClick();
+        }
+    }
     render() {
         const data = this.displayData;
         if (!this.plant || !data)
@@ -17690,9 +17695,12 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         style=${o({ '--stage-color': stageColor })}
         draggable="true"
         tabindex="0"
+        role="button"
+        aria-label="${strainName} in ${this.plant.state || 'unknown'} stage"
         @click=${this._handleClick}
+        @keydown=${this._handleKeyDown}
       >
-        ${imageUrl
+      ${imageUrl
             ? x `
               <img
                 class="plant-card-bg"
@@ -17711,7 +17719,16 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
             ? x `
               <div
                 class=${e({ 'plant-card-checkbox': true, 'selected': this.selected })}
+                role="checkbox"
+                aria-checked=${this.selected ? 'true' : 'false'}
+                tabindex="0"
+                aria-label="Select ${strainName}"
                 @click=${this._toggleSelection}
+                @keydown=${(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    this._toggleSelection(e);
+                }
+            }}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -17726,27 +17743,27 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
               </div>
             `
             : E}
-        <div class="status-icons">
-            ${this.plant.attributes.last_training_technique ? x `
-              <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
+    <div class="status-icons" >
+      ${this.plant.attributes.last_training_technique ? x `
+              <div class="status-icon training" role="img" aria-label="Last trained with: ${this.plant.attributes.last_training_technique}" title="Last trained with: ${this.plant.attributes.last_training_technique}">
                 <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
               </div>
             ` : E}
 
             ${this.plant.attributes.last_ipm ? x `
-              <div class="status-icon ipm" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
+              <div class="status-icon ipm" role="img" aria-label="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
                 <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
               </div>
             ` : E}
 
             ${this._isRecentlyWatered ? x `
-              <div class="status-icon watering" title="Recently watered">
+              <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
                 <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
               </div>
             ` : E}
 
             ${this.plant.attributes.problem ? x `
-              <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
+              <div class="status-icon problem" role="img" aria-label="Problem detected: ${this.plant.attributes.problem}" title="Problem detected: ${this.plant.attributes.problem}">
                 <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
               </div>
             ` : E}
@@ -17754,16 +17771,18 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
             ${this.growthDeviation !== 0 ? x `
                 <div
                     class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
+                    role="img"
+                    aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                     title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                     style="background: ${this.growthDeviation > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'};"
                 >
                     <ha-svg-icon .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown} style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"></ha-svg-icon>
                 </div>
             ` : E}
-          </div>
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+    </div>
+      <div class="plant-card-content">
+        <div class="pc-info">
+          <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
@@ -29838,7 +29857,7 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
 
       ${this.config?.initial_view_mode === 'header'
             ? x `
-            <button class="collapse-handle" @click=${this._dispatchToggle}>
+            <button class="collapse-handle" @click=${this._dispatchToggle} aria-label="Toggle view expansion">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>

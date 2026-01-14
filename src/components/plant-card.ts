@@ -151,6 +151,12 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
     );
   }
 
+  private _handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      this._handleClick();
+    }
+  }
+
   render() {
     const data = this.displayData;
     if (!this.plant || !data) return html``;
@@ -172,9 +178,12 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
         style=${styleMap({ '--stage-color': stageColor })}
         draggable="true"
         tabindex="0"
+        role="button"
+        aria-label="${strainName} in ${this.plant.state || 'unknown'} stage"
         @click=${this._handleClick}
+        @keydown=${this._handleKeyDown}
       >
-        ${imageUrl
+      ${imageUrl
         ? html`
               <img
                 class="plant-card-bg"
@@ -188,64 +197,82 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
               />
               <div class="plant-card-overlay"></div>
             `
-        : nothing}
+        : nothing
+      }
         ${this.isEditMode
         ? html`
               <div
                 class=${classMap({ 'plant-card-checkbox': true, 'selected': this.selected })}
+                role="checkbox"
+                aria-checked=${this.selected ? 'true' : 'false'}
+                tabindex="0"
+                aria-label="Select ${strainName}"
                 @click=${this._toggleSelection}
+                @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              this._toggleSelection(e);
+            }
+          }}
               >
                 <svg
                   viewBox="0 0 24 24"
                   style=${styleMap({
-          width: '24px',
-          height: '24px',
-          fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
-        })}
+            width: '24px',
+            height: '24px',
+            fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
+          })}
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
               </div>
             `
-        : nothing}
-        <div class="status-icons">
-            ${this.plant.attributes.last_training_technique ? html`
-              <div class="status-icon training" title="Last trained with: ${this.plant.attributes.last_training_technique}">
+        : nothing
+      }
+    <div class="status-icons" >
+      ${this.plant.attributes.last_training_technique ? html`
+              <div class="status-icon training" role="img" aria-label="Last trained with: ${this.plant.attributes.last_training_technique}" title="Last trained with: ${this.plant.attributes.last_training_technique}">
                 <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
               </div>
-            ` : nothing}
+            ` : nothing
+      }
 
             ${this.plant.attributes.last_ipm ? html`
-              <div class="status-icon ipm" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
+              <div class="status-icon ipm" role="img" aria-label="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
                 <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
               </div>
-            ` : nothing}
+            ` : nothing
+      }
 
             ${this._isRecentlyWatered ? html`
-              <div class="status-icon watering" title="Recently watered">
+              <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
                 <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
               </div>
-            ` : nothing}
+            ` : nothing
+      }
 
             ${this.plant.attributes.problem ? html`
-              <div class="status-icon problem" title="Problem detected: ${this.plant.attributes.problem}">
+              <div class="status-icon problem" role="img" aria-label="Problem detected: ${this.plant.attributes.problem}" title="Problem detected: ${this.plant.attributes.problem}">
                 <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
               </div>
-            ` : nothing}
+            ` : nothing
+      }
 
             ${this.growthDeviation !== 0 ? html`
                 <div
                     class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
+                    role="img"
+                    aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                     title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                     style="background: ${this.growthDeviation > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'};"
                 >
                     <ha-svg-icon .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown} style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"></ha-svg-icon>
                 </div>
-            ` : nothing}
-          </div>
-        <div class="plant-card-content">
-          <div class="pc-info">
-            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+            ` : nothing
+      }
+    </div>
+      <div class="plant-card-content">
+        <div class="pc-info">
+          <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
             <div style="display: flex; align-items: center; gap: 8px;">
                <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
