@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -97,7 +97,7 @@ describe('API Schemas', () => {
             };
             const result = validateGrowspaceResponse(validData);
             expect(result.success).toBe(true);
-            if (result.success) {
+            if (result.success && result.data) {
                 expect(result.data.growspace_id).toBe('gs1');
             }
         });
@@ -149,6 +149,52 @@ describe('API Schemas', () => {
             const result = validateStrainLibrary(invalidData);
             expect(result.success).toBe(false);
             spy.mockRestore();
+        });
+    });
+
+    describe('HistoryPointSchema', () => {
+        it('should transform number timestamp to ISO string in lu field', () => {
+            const input = {
+                s: '25.5',
+                lu: 1704067200 // Unix timestamp (2024-01-01 00:00:00 UTC)
+            };
+            const result = HistoryPointSchema.parse(input);
+
+            expect(result.lu).toBe('2024-01-01T00:00:00.000Z');
+            expect(typeof result.lu).toBe('string');
+        });
+
+        it('should pass through string value in lu field', () => {
+            const input = {
+                s: '25.5',
+                lu: '2024-01-01T00:00:00.000Z'
+            };
+            const result = HistoryPointSchema.parse(input);
+
+            expect(result.lu).toBe('2024-01-01T00:00:00.000Z');
+            expect(typeof result.lu).toBe('string');
+        });
+
+        it('should transform number to string in s field', () => {
+            const input = {
+                s: 25.5,
+                lu: '2024-01-01T00:00:00.000Z'
+            };
+            const result = HistoryPointSchema.parse(input);
+
+            expect(result.s).toBe('25.5');
+            expect(typeof result.s).toBe('string');
+        });
+
+        it('should pass through string in s field', () => {
+            const input = {
+                s: '25.5',
+                lu: '2024-01-01T00:00:00.000Z'
+            };
+            const result = HistoryPointSchema.parse(input);
+
+            expect(result.s).toBe('25.5');
+            expect(typeof result.s).toBe('string');
         });
     });
 });

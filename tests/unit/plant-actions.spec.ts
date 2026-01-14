@@ -435,7 +435,7 @@ describe('plant-actions', () => {
 
     describe('addPlant', () => {
         it('should add plant successfully', async () => {
-            const result = await addPlant(ctx, 'growspace1', 2, 3, 'Blue Dream', 'Pheno A');
+            const result = await addPlant(ctx, 'growspace1', 2, 3, 'Blue Dream', { phenotype: 'Pheno A' });
 
             expect(result).toBe(true);
             expect(mockDataService.addPlant).toHaveBeenCalledWith({
@@ -447,6 +447,7 @@ describe('plant-actions', () => {
             });
             expect(ctx.closeDialog).toHaveBeenCalled();
             expect(ctx.showToast).toHaveBeenCalledWith('Plant added successfully', 'success');
+            expect(ctx.refreshData).toHaveBeenCalled();
         });
 
         it('should add plant without phenotype', async () => {
@@ -458,7 +459,24 @@ describe('plant-actions', () => {
                 row: 1,
                 col: 1,
                 strain: 'OG Kush',
-                phenotype: undefined,
+            });
+            expect(ctx.refreshData).toHaveBeenCalled();
+        });
+
+        it('should pass stage start dates correctly', async () => {
+            const result = await addPlant(ctx, 'growspace1', 1, 1, 'OG Kush', {
+                veg_start: '2024-01-01',
+                flower_start: '2024-02-01'
+            });
+
+            expect(result).toBe(true);
+            expect(mockDataService.addPlant).toHaveBeenCalledWith({
+                growspace_id: 'growspace1',
+                row: 1,
+                col: 1,
+                strain: 'OG Kush',
+                veg_start: '2024-01-01',
+                flower_start: '2024-02-01',
             });
         });
 

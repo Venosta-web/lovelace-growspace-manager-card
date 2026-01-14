@@ -13,6 +13,7 @@ export class GrowspaceDataStore {
     public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
     public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
     public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
+    public readonly $nutrientInventory: WritableAtom<import('../types').NutrientInventory | null>;
 
     /** Indicates if store has active subscribers (for lazy loading) */
     private _isActive = false;
@@ -27,6 +28,7 @@ export class GrowspaceDataStore {
         this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
         this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
         this.$ipmPresets = atom<Record<string, IPMPreset>>({});
+        this.$nutrientInventory = atom<import('../types').NutrientInventory | null>(null);
 
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
@@ -226,5 +228,9 @@ export class GrowspaceDataStore {
         if (changed) {
             this.$wsDataCache.set(newCache);
         }
+    }
+
+    public setNutrientInventory(inventory: import('../types').NutrientInventory | null) {
+        this.$nutrientInventory.set(inventory);
     }
 }

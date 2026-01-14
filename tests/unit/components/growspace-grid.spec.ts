@@ -95,7 +95,8 @@ describe('GrowspaceGrid', () => {
         // Force inject store property BEFORE connecting so connectedCallback views it
         Object.defineProperty(element, 'store', {
             value: mockStore,
-            writable: true
+            writable: true,
+            configurable: true
         });
 
         document.body.appendChild(element);
@@ -673,6 +674,109 @@ describe('GrowspaceGrid', () => {
         it('should return transparent for unknown vpd status', async () => {
             $gridOverlayMode.set('vpd');
             $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'unknown' } }]);
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            if (overlay) {
+                expect((overlay as HTMLElement).style.backgroundColor).toBe('transparent');
+            }
+        });
+    });
+    describe('Bio Status Overlay', () => {
+        let $devices: any;
+
+        beforeEach(() => {
+            $devices = atom([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+            mockStore.data = { $devices };
+            mockStore.hass = {
+                states: {}
+            };
+        });
+
+        it('should return red overlay when stress detected', async () => {
+            $gridOverlayMode.set('bio_status');
+            mockStore.hass.states['binary_sensor.gs1_plants_under_stress'] = { state: 'on' };
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('244, 67, 54'); // Red
+        });
+
+        it('should return red overlay when mold risk detected', async () => {
+            $gridOverlayMode.set('bio_status');
+            mockStore.hass.states['binary_sensor.gs1_high_mold_risk'] = { state: 'on' };
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('244, 67, 54'); // Red
+        });
+
+        it('should return green overlay when optimal conditions', async () => {
+            $gridOverlayMode.set('bio_status');
+            mockStore.hass.states['binary_sensor.gs1_optimal_conditions'] = { state: 'on' };
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('76, 175, 80'); // Green
+        });
+
+        it('should fallback to VPD warning color if no binary sensors active', async () => {
+            $gridOverlayMode.set('bio_status');
+            // No binary sensors on
+
+            // Set VPD warning
+            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'warning' } }]);
+            element.requestUpdate();
+
+            const plant: any = {
+                entity_id: 'p1',
+                state: 'ok',
+                attributes: { plant_id: 'p1', growspace_id: 'gs1' }
+            };
+            element.plants = [[plant]];
+            await waitForUpdates(element);
+
+            const overlay = element.shadowRoot?.querySelector('.grid-overlay');
+            expect(overlay).toBeTruthy();
+            expect((overlay as HTMLElement).style.backgroundColor).toContain('255, 152, 0'); // Amber
+        });
+
+        it('should return transparent if hass is undefined', async () => {
+            $gridOverlayMode.set('bio_status');
+            Object.defineProperty(element, 'store', {
+                get: () => ({ ...mockStore, hass: undefined })
+            });
 
             const plant: any = {
                 entity_id: 'p1',

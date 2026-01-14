@@ -26,6 +26,13 @@ vi.mock('../../../../src/controllers/growspace-logbook-controller', () => {
     };
 });
 
+// Mock virtualizer
+vi.mock('@lit-labs/virtualizer/virtualize.js', () => ({
+    virtualize: vi.fn(({ items, renderItem }) => {
+        return items ? items.map((item: any) => renderItem(item)) : [];
+    })
+}));
+
 // Import AFTER mock
 import { GrowspaceLogbookController } from '../../../../src/controllers/growspace-logbook-controller';
 
@@ -477,29 +484,29 @@ describe('GrowspaceLogbook', () => {
 
     describe('Coverage Improvements', () => {
         it('should handle rendering fallbacks for title', async () => {
-             // 1. No sensor_type, has category -> formatted category
-             const event1 = { ...mockEvents[0], sensor_type: undefined, category: 'my_category' } as any;
-             // 2. No sensor_type, no category -> 'Event'
-             const event2 = { ...mockEvents[0], sensor_type: undefined, category: undefined } as any;
-             // 3. defined sensor_type with underscore -> 'fan speed'
-             const event3 = { ...mockEvents[0], sensor_type: 'fan_speed' } as any;
-             
-             (element as any)._events = [event1, event2, event3];
-             await element.updateComplete;
-             
-             const cards = element.shadowRoot?.querySelectorAll('.event-card');
-             const types = Array.from(cards || []).map(c => c.querySelector('.event-type')?.textContent?.trim());
-             
-             expect(types[0]).toBe('my category');
-             expect(types[1]).toBe('Event');
-             expect(types[2]).toBe('fan speed');
+            // 1. No sensor_type, has category -> formatted category
+            const event1 = { ...mockEvents[0], sensor_type: undefined, category: 'my_category' } as any;
+            // 2. No sensor_type, no category -> 'Event'
+            const event2 = { ...mockEvents[0], sensor_type: undefined, category: undefined } as any;
+            // 3. defined sensor_type with underscore -> 'fan speed'
+            const event3 = { ...mockEvents[0], sensor_type: 'fan_speed' } as any;
+
+            (element as any)._events = [event1, event2, event3];
+            await element.updateComplete;
+
+            const cards = element.shadowRoot?.querySelectorAll('.event-card');
+            const types = Array.from(cards || []).map(c => c.querySelector('.event-type')?.textContent?.trim());
+
+            expect(types[0]).toBe('my category');
+            expect(types[1]).toBe('Event');
+            expect(types[2]).toBe('fan speed');
         });
 
         it('should handle undefined reasons gracefully', async () => {
             const event = { ...mockEvents[0], reasons: undefined };
             (element as any)._events = [event];
             await element.updateComplete;
-            
+
             // Should not throw and reasons section should be empty/safe
             const reasonsDiv = element.shadowRoot?.querySelector('.event-reasons');
             expect(reasonsDiv?.textContent?.trim()).toBe('');
@@ -507,46 +514,182 @@ describe('GrowspaceLogbook', () => {
 
         it('should sort mixed event types (timestamp vs start_time) correctly', async () => {
             const now = Date.now();
-            const noteEvent = { 
-                growspace_id: 'gs1', 
-                category: 'note', 
+            const noteEvent = {
+                growspace_id: 'gs1',
+                category: 'note',
                 timestamp: new Date(now).toISOString() // Newer 
             } as any;
-            const alertEvent = { 
-                growspace_id: 'gs1', 
-                category: 'alert', 
+            const alertEvent = {
+                growspace_id: 'gs1',
+                category: 'alert',
                 start_time: new Date(now - 1000).toISOString() // Older
             } as any;
-            
+
             (element as any)._events = [alertEvent, noteEvent]; // Generic order
             await element.updateComplete;
-            
+
             const cards = element.shadowRoot?.querySelectorAll('.event-card');
             const types = Array.from(cards || []).map(c => c.querySelector('.event-type')?.textContent?.trim());
-            
+
             // Note (Plant Note) should be first because it is newer
             expect(types[0]).toBe('Plant Note');
             expect(types[1]).toBe('alert'); // sensor_type undefined -> category 'alert'
         });
 
         it('should handle watering filter wildcard matching', async () => {
-             const leakerEvent = { ...mockEvents[0], sensor_type: 'water_leaker', category: 'alert' };
-             (element as any)._events = [leakerEvent];
-             (element as any)._activeFilter = 'watering';
-             await element.updateComplete;
-             
-             const cards = element.shadowRoot?.querySelectorAll('.event-card');
-             expect(cards?.length).toBe(1);
+            const leakerEvent = { ...mockEvents[0], sensor_type: 'water_leaker', category: 'alert' };
+            (element as any)._events = [leakerEvent];
+            (element as any)._activeFilter = 'watering';
+            await element.updateComplete;
+
+            const cards = element.shadowRoot?.querySelectorAll('.event-card');
+            expect(cards?.length).toBe(1);
         });
 
         it('should return early in _fetchEvents if hass is missing', async () => {
-             element.hass = undefined as any;
-             mockControllerInstance.fetchEventLog.mockClear();
-             
-             // Trigger private method directly or via change (but change requires hass check in willUpdate)
-             await (element as any)._fetchEvents();
-             
-             expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
+            element.hass = undefined as any;
+            mockControllerInstance.fetchEventLog.mockClear();
+
+            // Trigger private method directly or via change (but change requires hass check in willUpdate)
+            await (element as any)._fetchEvents();
+
+            expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('scrollToTimestamp', () => {
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        it('should scroll to closest event and highlight', async () => {
+            // Setup events
+            mockControllerInstance.fetchEventLog.mockResolvedValue(mockEvents);
+            element = new GrowspaceLogbook();
+            element.hass = {} as any;
+            element.growspaceId = 'gs1';
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Mock scrollIntoView
+            const mockScrollIntoView = vi.fn();
+
+            // Spy on querySelector of the container
+            const container = element.shadowRoot?.querySelector('.log-container');
+            if (container) {
+                vi.spyOn(container, 'querySelector').mockImplementation((selector) => {
+                    if (selector === '[data-event-index="0"]') { // Closest to now - 1 min (mockEvents[0])
+                        return {
+                            scrollIntoView: mockScrollIntoView
+                        } as any;
+                    }
+                    return null;
+                });
+            }
+
+            // Target timestamp: same as first event start_time
+            const targetTime = new Date(mockEvents[0].start_time).getTime();
+
+            element.scrollToTimestamp(targetTime);
+
+            // Trigger animation frame (RAF usually runs on next tick or small timeout)
+            await vi.advanceTimersByTimeAsync(100);
+
+            expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
+            expect((element as any)._highlightedTimestamp).toBe(targetTime);
+
+            // Fast forward to clear highlight (3000ms)
+            await vi.advanceTimersByTimeAsync(3000);
+            expect((element as any)._highlightedTimestamp).toBeNull();
+        });
+
+        it('should do nothing if no events', async () => {
+            mockControllerInstance.fetchEventLog.mockResolvedValue([]);
+            element = new GrowspaceLogbook();
+            element.hass = {} as any;
+            element.growspaceId = 'gs1';
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const timestamp = Date.now();
+            element.scrollToTimestamp(timestamp);
+
+            // Check that it's set initially (line 252)
+            expect((element as any)._highlightedTimestamp).toBe(timestamp);
+
+            // But since it returns early, no scroll happens (we can't easily check 'return' but we check no errors)
+            // And wait to ensure no side effects
+        });
+    });
+
+    describe('Severity Logic', () => {
+        it('should return correct colors for "optimal" sensor type', () => {
+            // Optimal: High severity = Good match (Success)
+            // Low severity = Bad match (Error)
+
+            // >= 0.9 -> success
+            expect((element as any)._getSeverityColor(0.9, 'optimal')).toContain('success');
+            expect((element as any)._getSeverityColor(1.0, 'Optimal')).toContain('success'); // Case insensitive
+
+            // >= 0.75 -> warning
+            expect((element as any)._getSeverityColor(0.8, 'optimal')).toContain('warning');
+            expect((element as any)._getSeverityColor(0.75, 'optimal')).toContain('warning');
+
+            // < 0.75 -> error
+            expect((element as any)._getSeverityColor(0.5, 'optimal')).toContain('error');
+            expect((element as any)._getSeverityColor(0, 'optimal')).toContain('error');
+        });
+
+        it('should return correct colors for default sensor types', () => {
+            // Default: High severity = Bad (Error)
+
+            // >= 0.9 -> error
+            expect((element as any)._getSeverityColor(0.9, 'other')).toContain('error');
+            expect((element as any)._getSeverityColor(0.9)).toContain('error'); // undefined type
+
+            // >= 0.75 -> warning
+            expect((element as any)._getSeverityColor(0.8, 'other')).toContain('warning');
+            expect((element as any)._getSeverityColor(0.75, 'other')).toContain('warning');
+
+            // < 0.75 -> primary text
+            expect((element as any)._getSeverityColor(0.5, 'other')).toContain('primary-text');
+            expect((element as any)._getSeverityColor(0, 'other')).toContain('primary-text');
+        });
+
+        it('should handle null event in renderItem gracefully', async () => {
+            // Mock virtualize to pass null event
+            const { virtualize } = await import('@lit-labs/virtualizer/virtualize.js');
+            (virtualize as any).mockImplementation(({ items, renderItem }: any) => {
+                return [renderItem(null), ...items.map((item: any) => renderItem(item))];
+            });
+
+            mockControllerInstance.fetchEventLog.mockResolvedValue(mockEvents);
+            element = new GrowspaceLogbook();
+            element.hass = {} as any;
+            element.growspaceId = 'gs1';
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Should not throw error
+            expect(element.shadowRoot).toBeTruthy();
+        });
+
+        it('should handle empty events array correctly', async () => {
+            mockControllerInstance.fetchEventLog.mockResolvedValue([]);
+            element = new GrowspaceLogbook();
+            element.hass = {} as any;
+            element.growspaceId = 'gs1';
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const emptyState = element.shadowRoot?.querySelector('.empty-state');
+            expect(emptyState).toBeTruthy();
+            expect(emptyState?.textContent).toContain('No events');
         });
     });
 });

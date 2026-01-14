@@ -27,6 +27,7 @@ export class NutrientPresetsEditor extends LitElement {
   public store!: GrowspaceStore;
 
   @property({ type: Boolean }) open = false;
+  @property({ type: Boolean }) embedded = false;
 
   @state() private _view: 'LIST' | 'EDIT' = 'LIST';
   @state() private _editingPreset: Partial<NutrientPreset> | null = null;
@@ -182,16 +183,11 @@ export class NutrientPresetsEditor extends LitElement {
   }
 
   render() {
-    if (!this.open) return html``;
+    if (!this.open && !this.embedded) return html``;
 
-    return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Nutrient Presets'}
-      >
-        <div class="glass-dialog-container">
+    const content = html`
+        <div class="glass-dialog-container" style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}">
+          ${!this.embedded ? html`
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
@@ -204,8 +200,9 @@ export class NutrientPresetsEditor extends LitElement {
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
+          ` : nothing}
 
-          <div class="dialog-content-grid" style="display: block;">
+          <div class="dialog-content-grid" style="display: block; ${this.embedded ? 'padding: 0;' : ''}">
             ${this._error ? html`<div class="error-bar">${this._error}</div>` : nothing}
             
             ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
@@ -214,7 +211,7 @@ export class NutrientPresetsEditor extends LitElement {
           <div class="button-group">
             ${this._view === 'LIST'
         ? html`
-                  <button class="md3-button tonal" @click=${this._close}>Close</button>
+                  ${!this.embedded ? html`<button class="md3-button tonal" @click=${this._close}>Close</button>` : nothing}
                   <button class="md3-button primary" @click=${this._startNew}>
                     <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
                     Add Preset
@@ -230,6 +227,20 @@ export class NutrientPresetsEditor extends LitElement {
       }
           </div>
         </div>
+    `;
+
+    if (this.embedded) {
+      return content;
+    }
+
+    return html`
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Nutrient Presets'}
+      >
+        ${content}
       </ha-dialog>
     `;
   }

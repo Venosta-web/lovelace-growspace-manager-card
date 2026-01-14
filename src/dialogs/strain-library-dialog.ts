@@ -33,6 +33,7 @@ import '../components/ui/md3-number-input';
 export class StrainLibraryDialog extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
+  @property({ type: Object }) editingStrain?: StrainEntry;
 
   @state() private _view: 'browse' | 'editor' = 'browse';
   @state() private _searchQuery = '';
@@ -48,6 +49,14 @@ export class StrainLibraryDialog extends LitElement {
   // Pagination State
   @state() private _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
+
+  willUpdate(changedProps: PropertyValues) {
+    super.willUpdate(changedProps);
+    // Auto-open editor if editingStrain is provided
+    if (changedProps.has('editingStrain') && this.editingStrain) {
+      this._startEdit(this.editingStrain);
+    }
+  }
 
   static styles = [
     dialogStyles,

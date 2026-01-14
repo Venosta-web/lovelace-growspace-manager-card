@@ -7,7 +7,7 @@ import { HassEntity } from 'home-assistant-js-websocket';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
-import { GrowspaceDevice, DehumidifierStage } from '../types';
+import { GrowspaceDevice, DehumidifierStage, EnvironmentConfigData } from '../types';
 import { ConfigTab } from '../constants';
 
 @customElement('config-dialog')
@@ -29,7 +29,7 @@ export class ConfigDialog extends LitElement {
   public currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
   @property({ attribute: false })
-  public environmentData: any;
+  public environmentData: EnvironmentConfigData | undefined;
 
   private _initialStateApplied = false;
 
@@ -157,7 +157,7 @@ export class ConfigDialog extends LitElement {
         if (!this._initialStateApplied) {
           this._initialStateApplied = true;
         }
-      } else if (!this.open) {
+      } else {
         // Reset flag when dialog closes so next open respects initialTab again
         this._initialStateApplied = false;
       }
@@ -167,23 +167,7 @@ export class ConfigDialog extends LitElement {
   // Provide initial state setting from parent
   public setInitialState(
     currentTab: ConfigTab = ConfigTab.ENVIRONMENT,
-    environmentData?: {
-      selectedGrowspaceId: string;
-      temp_sensor: string;
-      humidity_sensor: string;
-      vpd_sensor: string;
-      co2_sensor: string;
-      circulation_fan: string;
-      stress_threshold: number;
-      mold_threshold: number;
-      light_sensor: string;
-      exhaust_entity: string;
-      humidifier_entity: string;
-      dehumidifier_entity: string;
-      soil_moisture_sensor: string;
-      control_dehumidifier: boolean;
-      dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>>;
-    }
+    environmentData?: EnvironmentConfigData
   ) {
     this.currentTab = currentTab as any;
     if (environmentData) {

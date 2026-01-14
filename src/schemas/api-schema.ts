@@ -155,6 +155,20 @@ export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
 export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
 export type IPMPresetsResponse = z.infer<typeof IPMPresetsSchema>;
 
+export const NutrientStockSchema = z.object({
+    nutrient_id: z.string(),
+    name: z.string(),
+    current_ml: z.number(),
+    initial_ml: z.number(),
+    last_updated: z.string(),
+});
+
+export const NutrientInventorySchema = z.object({
+    stocks: z.record(z.string(), NutrientStockSchema)
+});
+
+export type NutrientInventoryResponse = z.infer<typeof NutrientInventorySchema>;
+
 export const HistoryPointSchema = z.object({
     s: z.union([z.string(), z.number()]).transform(String),
     lu: z.union([z.string(), z.number()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))

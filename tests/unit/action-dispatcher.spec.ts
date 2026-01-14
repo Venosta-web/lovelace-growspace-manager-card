@@ -87,7 +87,7 @@ describe('ActionDispatcher', () => {
             dispatcher.plant.add('gs1', 0, 0, 'strain', 'pheno');
             expect(plantActions.addPlant).toHaveBeenCalledWith(
                 mockStore.plantActionContext,
-                'gs1', 0, 0, 'strain', 'pheno'
+                'gs1', 0, 0, 'strain', { phenotype: 'pheno' }
             );
         });
 

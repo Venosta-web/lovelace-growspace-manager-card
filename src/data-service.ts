@@ -3,8 +3,8 @@ import { HassEntity } from 'home-assistant-js-websocket';
 import { GrowspaceDevice, StrainEntry, CropMeta, IrrigationStrategy, GrowspaceAPIResponse, HistorySensorState, GrowAdviceResponse, NutrientItem, NutrientPreset, IPMPreset } from './types';
 import { GrowspaceAdapter } from './adapters/growspace-adapter';
 import { noChange } from 'lit';
-import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS, WS_TYPE_GET_NUTRIENT_PRESETS, WS_TYPE_GET_IPM_PRESETS } from './constants';
-import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary, NutrientPresetsSchema, IPMPresetsSchema, NutrientPresetsResponse, IPMPresetsResponse, HistoryStatsResponseSchema } from './schemas/api-schema';
+import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_GET_HISTORY_STATS, WS_TYPE_GET_NUTRIENT_PRESETS, WS_TYPE_GET_IPM_PRESETS, WS_TYPE_GET_NUTRIENT_INVENTORY, WS_TYPE_UPDATE_NUTRIENT_STOCK, WS_TYPE_REMOVE_NUTRIENT_STOCK } from './constants';
+import { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema, GrowspaceAPICollection, StrainLibrarySchema, StrainLibraryWrapperSchema, StrainLibrary, NutrientPresetsSchema, IPMPresetsSchema, NutrientPresetsResponse, IPMPresetsResponse, HistoryStatsResponseSchema, NutrientInventorySchema, NutrientInventoryResponse } from './schemas/api-schema';
 
 /** Shape of raw phenotype data from strain sensor */
 interface RawPhenotypeData {
@@ -32,6 +32,10 @@ interface RawStrainData {
 export class DataService {
   public hass!: HomeAssistant;
 
+  // Cache storage for growspace data with TTL
+  private _cache = new Map<string, { data: GrowspaceAPIResponse | GrowspaceAPICollection; timestamp: number }>();
+  private static readonly CACHE_TTL_MS = 5000; // 5 seconds
+
   constructor(hass?: HomeAssistant) {
     if (hass) {
       this.hass = hass;
@@ -40,6 +44,29 @@ export class DataService {
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
+  }
+
+  /**
+   * Invalidate cache for a specific growspace or all growspaces.
+   * Call this when receiving GROWSPACE_UPDATED WebSocket events.
+   */
+  invalidateCache(growspaceId?: string): void {
+    if (growspaceId) {
+      this._cache.delete(growspaceId);
+      this._cache.delete('__all__'); // Also invalidate collection cache
+    } else {
+      this._cache.clear();
+    }
+    console.debug('[DataService] Cache invalidated:', growspaceId || 'all');
+  }
+
+  /**
+   * Check if cached data is still valid (within TTL).
+   */
+  private _isCacheValid(key: string): boolean {
+    const cached = this._cache.get(key);
+    if (!cached) return false;
+    return Date.now() - cached.timestamp < DataService.CACHE_TTL_MS;
   }
 
   /**
@@ -54,6 +81,15 @@ export class DataService {
 
   async fetchGrowspaceData(growspaceId?: string): Promise<GrowspaceAPIResponse | GrowspaceAPICollection | null> {
     if (!this.hass) return null;
+
+    // Check cache first
+    const cacheKey = growspaceId || '__all__';
+    if (this._isCacheValid(cacheKey)) {
+      const cached = this._cache.get(cacheKey);
+      console.debug(`[DataService] Returning cached data for ${cacheKey}`);
+      return cached!.data;
+    }
+
     try {
       const result = await this.hass.connection.sendMessagePromise<unknown>({
         type: WS_TYPE_GET_DATA,
@@ -66,9 +102,13 @@ export class DataService {
         const parsed = GrowspaceAPIResponseSchema.safeParse(result);
         if (!parsed.success) {
           console.error(`[DataService] API Validation Failed for ${growspaceId}: `, parsed.error.format());
-          return result as GrowspaceAPIResponse;
+          const data = result as GrowspaceAPIResponse;
+          this._cache.set(cacheKey, { data, timestamp: Date.now() });
+          return data;
         }
-        return parsed.data as unknown as GrowspaceAPIResponse;
+        const data = parsed.data as unknown as GrowspaceAPIResponse;
+        this._cache.set(cacheKey, { data, timestamp: Date.now() });
+        return data;
       } else {
         // Expect Collection (Record<string, GrowspaceAPIResponse>)
         const parsed = GrowspaceAPICollectionSchema.safeParse(result);
@@ -86,9 +126,13 @@ export class DataService {
           }
 
           // For resilience, return as collection.
-          return result as GrowspaceAPICollection;
+          const data = result as GrowspaceAPICollection;
+          this._cache.set(cacheKey, { data, timestamp: Date.now() });
+          return data;
         }
-        return parsed.data as unknown as GrowspaceAPICollection;
+        const data = parsed.data as unknown as GrowspaceAPICollection;
+        this._cache.set(cacheKey, { data, timestamp: Date.now() });
+        return data;
       }
 
     } catch (err) {
@@ -96,6 +140,7 @@ export class DataService {
       return null;
     }
   }
+
 
   /**
    * Pure transformation: converts WebSocket data map to GrowspaceDevice array.
@@ -107,10 +152,6 @@ export class DataService {
     return Object.values(wsDataMap)
       .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
       .filter((d): d is GrowspaceDevice => d !== null);
-  }
-
-  private getGrowspaceId(entity: HassEntity): string {
-    return entity.attributes?.growspace_id || 'unknown';
   }
 
   getStrainLibrary(): StrainEntry[] {
@@ -291,6 +332,56 @@ export class DataService {
     } catch (err) {
       console.error('[DataService:fetchIPMPresets] Error:', err);
       return null;
+    }
+  }
+
+  async fetchNutrientInventory(): Promise<NutrientInventoryResponse | null> {
+    if (!this.hass) return null;
+    try {
+      const result = await this.hass.connection.sendMessagePromise<unknown>({
+        type: WS_TYPE_GET_NUTRIENT_INVENTORY,
+      });
+
+      const parsed = NutrientInventorySchema.safeParse(result);
+      if (!parsed.success) {
+        console.error('[DataService] Nutrient Inventory Validation Failed:', parsed.error.format());
+        return result as NutrientInventoryResponse;
+      }
+      return parsed.data;
+    } catch (err) {
+      console.error('[DataService:fetchNutrientInventory] Error:', err);
+      return null;
+    }
+  }
+
+  async updateNutrientStock(nutrientId: string, name: string, currentMl: number, initialMl: number): Promise<void> {
+    if (!this.hass) return;
+    try {
+      await this.hass.connection.sendMessagePromise<void>({
+        type: WS_TYPE_UPDATE_NUTRIENT_STOCK,
+        nutrient_id: nutrientId,
+        name,
+        current_ml: currentMl,
+        initial_ml: initialMl
+      });
+      console.log(`[DataService] Updated stock: ${name}`);
+    } catch (err) {
+      console.error('[DataService:updateNutrientStock] Error:', err);
+      throw err;
+    }
+  }
+
+  async removeNutrientStock(nutrientId: string): Promise<void> {
+    if (!this.hass) return;
+    try {
+      await this.hass.connection.sendMessagePromise<void>({
+        type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
+        nutrient_id: nutrientId
+      });
+      console.log(`[DataService] Removed stock: ${nutrientId}`);
+    } catch (err) {
+      console.error('[DataService:removeNutrientStock] Error:', err);
+      throw err;
     }
   }
 

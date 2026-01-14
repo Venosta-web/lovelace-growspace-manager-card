@@ -22,6 +22,7 @@ describe('UI Store', () => {
             expect(store.$notification.get()).toBeNull();
             expect(store.$defaultApplied.get()).toBe(false);
             expect(store.$gridOverlayMode.get()).toBe('none');
+
         });
 
         it('should compute $isCompactView correctly', () => {
@@ -58,6 +59,8 @@ describe('UI Store', () => {
 
             store.setGridOverlayMode(GridOverlayMode.NONE);
             expect(store.$gridOverlayMode.get()).toBe(GridOverlayMode.NONE);
+
+
         });
     });
 
@@ -335,4 +338,5 @@ describe('UI Store', () => {
             expect(store.$error.get()).toBeNull();
         });
     });
+
 });

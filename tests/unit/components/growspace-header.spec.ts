@@ -48,6 +48,7 @@ vi.mock('../../../src/store/ui-store', () => ({
     $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
+    $gridOverlayMode: { get: vi.fn(() => 'none'), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     setEditMode: vi.fn(),
     setViewMode: vi.fn(),
@@ -129,6 +130,7 @@ describe('GrowspaceHeader', () => {
     const $activeEnvGraphs = atom(new Set<string>());
     const $linkedGraphGroups = atom<any[]>([]);
     const $combinedHistory = atom({ temperature: [], vpd: [] });
+    const $nutrientInventory = atom<any>(null);
 
     // UI Store atoms
     const $activeDialog = atom<any>({ type: 'NONE' });
@@ -136,6 +138,7 @@ describe('GrowspaceHeader', () => {
     const $selectedPlants = atom(new Set());
     const $isEditMode = atom(false);
     const $viewMode = atom('standard');
+    const $gridOverlayMode = atom<any>('none');
     const $defaultApplied = atom(false);
     const $isLoading = atom(false);
 
@@ -145,7 +148,9 @@ describe('GrowspaceHeader', () => {
         $selectedDevice.set(null);
         $historyCache.set({});
         $activeEnvGraphs.set(new Set());
+        $nutrientInventory.set(null);
         $isEditMode.set(false);
+        $gridOverlayMode.set('none');
         $viewMode.set('standard');
 
         vi.clearAllMocks();
@@ -192,6 +197,7 @@ describe('GrowspaceHeader', () => {
             data: {
                 $devices,
                 $selectedDevice,
+                $nutrientInventory,
             },
             ui: {
                 $viewMode,
@@ -200,6 +206,7 @@ describe('GrowspaceHeader', () => {
                 $activeDialog,
                 $focusedPlantIndex,
                 $selectedPlants,
+                $gridOverlayMode,
                 $defaultApplied,
                 setEditMode: vi.fn(),
                 setViewMode: vi.fn(),
@@ -246,6 +253,7 @@ describe('GrowspaceHeader', () => {
             data: {
                 $devices: $devices,
                 $selectedDevice: $selectedDevice,
+                $nutrientInventory: $nutrientInventory,
             },
             ui: {
                 $viewMode: $viewMode,
@@ -254,6 +262,7 @@ describe('GrowspaceHeader', () => {
                 $activeDialog: $activeDialog,
                 $focusedPlantIndex: $focusedPlantIndex,
                 $selectedPlants: $selectedPlants,
+                $gridOverlayMode: $gridOverlayMode,
                 $defaultApplied: $defaultApplied,
                 setEditMode: vi.fn(),
                 setViewMode: vi.fn(),
@@ -590,10 +599,9 @@ describe('GrowspaceHeader', () => {
             expect(mockHass.callService).not.toHaveBeenCalled();
         });
 
-        it('should handle nutrient_presets action', () => {
-            const spy = vi.spyOn(mockStore, 'openNutrientPresetsDialog');
-            (element as any)._triggerAction('nutrient_presets');
-            expect(spy).toHaveBeenCalled();
+        it('should handle nutrients action', () => {
+            (element as any)._triggerAction('nutrients');
+            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'NUTRIENTS' }));
         });
 
         it('should handle ai action with no selected device', () => {
@@ -901,9 +909,9 @@ describe('GrowspaceHeader', () => {
                 clickItem(6, 'ipm');
                 expect(triggerSpy).toHaveBeenCalledWith('ipm');
 
-                // 8. Nutrient Presets (Index 7)
-                clickItem(7, 'nutrient_presets');
-                expect(triggerSpy).toHaveBeenCalledWith('nutrient_presets');
+                // 8. Nutrients (Index 7)
+                clickItem(7, 'nutrients');
+                expect(triggerSpy).toHaveBeenCalledWith('nutrients');
 
                 // 9. Add Plant (Index 8)
                 clickItem(8, 'add_plant');

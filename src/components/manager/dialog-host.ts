@@ -21,6 +21,8 @@ import '../../dialogs/watering-dialog';
 import '../../dialogs/training-dialog';
 import './nutrient-presets-editor';
 import './ipm-dialog';
+import '../../dialogs/nutrient-inventory-dialog';
+import '../../dialogs/nutrient-dialog';
 
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -95,6 +97,10 @@ export class DialogHost extends LitElement {
                 return this._renderTrainingDialog(active);
             case 'IPM':
                 return this._renderIPMDialog(active, selectedDeviceData);
+            case 'NUTRIENT_INVENTORY':
+                return this._renderNutrientInventoryDialog(active);
+            case 'NUTRIENTS':
+                return this._renderNutrientDialog(active);
             default:
                 return html``;
         }
@@ -185,6 +191,44 @@ export class DialogHost extends LitElement {
                     type: 'IPM',
                     payload: e.detail
                 })}
+            @open-strain-editor=${(e: CustomEvent) => {
+                const { strain, phenotype } = e.detail;
+                const strainLibrary = this.store.data.$strainLibrary.get();
+
+                // Normalize empty strings, null, and undefined to compare properly
+                const normalizedPhenotype = phenotype || '';
+                let strainEntry = strainLibrary.find(s => {
+                    const entryPhenotype = s.phenotype || '';
+                    return s.strain === strain && entryPhenotype === normalizedPhenotype;
+                });
+
+                // If no match found, create a new entry for the user to complete
+                if (!strainEntry && strain) {
+                    const key = normalizedPhenotype
+                        ? `${strain}_${normalizedPhenotype}`
+                        : strain;
+                    strainEntry = {
+                        strain: strain,
+                        phenotype: normalizedPhenotype,
+                        key: key,
+                        breeder: '',
+                        type: 'Hybrid',
+                        flowering_days_min: 60,
+                        flowering_days_max: 70,
+                        lineage: '',
+                        sex: 'Feminized',
+                        description: '',
+                        image: '',
+                        sativa_percentage: 50,
+                        indica_percentage: 50,
+                    };
+                }
+
+                this.store.ui.setActiveDialog({
+                    type: 'STRAIN_LIBRARY',
+                    payload: { editingStrain: strainEntry }
+                });
+            }}
         ></plant-overview-dialog>
         `;
     }
@@ -195,10 +239,12 @@ export class DialogHost extends LitElement {
         strainLibrary: StrainEntry[]
     ): TemplateResult {
         if (active.type !== 'STRAIN_LIBRARY') return html``;
+        const payload = active.payload as any;
         return html`
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
+            .editingStrain=${payload?.editingStrain}
             @close=${() => {
                 // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
                 if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
@@ -448,4 +494,27 @@ export class DialogHost extends LitElement {
     ></ipm-dialog>
     `;
     }
+
+    private _renderNutrientInventoryDialog(active: ActiveDialogState): TemplateResult {
+        if (active.type !== 'NUTRIENT_INVENTORY') return html``;
+        return html`
+            <nutrient-inventory-dialog
+                .open=${true}
+                @close=${() => this.store.ui.closeDialog()}
+                @data-changed=${() => this.store.refreshData()}
+            ></nutrient-inventory-dialog>
+        `;
+    }
+
+    private _renderNutrientDialog(active: ActiveDialogState): TemplateResult {
+        if (active.type !== 'NUTRIENTS') return html``;
+        return html`
+            <nutrient-dialog
+                .open=${true}
+                @close=${() => this.store.ui.closeDialog()}
+                @data-changed=${() => this.store.refreshData()}
+            ></nutrient-dialog>
+        `;
+    }
 }
+

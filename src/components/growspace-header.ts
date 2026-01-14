@@ -24,11 +24,12 @@ import {
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { ConfigTab, ScrollDirection, MetricKey, ViewMode } from '../constants';
+import { ConfigTab, ScrollDirection, MetricKey, ViewMode, GridOverlayMode } from '../constants';
 import './growspace-chip';
+import './ui/nutrient-stock-chip';
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext } from '../context';
-import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime } from '../types';
+import { GrowspaceDevice, GrowspaceManagerCardConfig, IrrigationTime, NutrientStock, NutrientInventory } from '../types';
 import { MetricsUtils, HeaderChip, DominantStageInfo } from '../utils/metrics-utils';
 import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
@@ -75,6 +76,8 @@ export class GrowspaceHeader extends LitElement {
   private _historyLoadingController!: StoreController<boolean>;
   private _activeEnvGraphsController!: StoreController<Set<string>>;
   private _linkedGraphGroupsController!: StoreController<string[][]>;
+  private _nutrientInventoryController!: StoreController<NutrientInventory | null>;
+  private _overlayModeController!: StoreController<GridOverlayMode>;
 
   private _chipsContainerRef: Ref<HTMLDivElement> = createRef();
   private _stageContainerRef: Ref<HTMLDivElement> = createRef();
@@ -743,6 +746,8 @@ export class GrowspaceHeader extends LitElement {
       this._historyLoadingController = new StoreController(this, this.store.history.$historyLoading);
       this._activeEnvGraphsController = new StoreController(this, this.store.history.$activeEnvGraphs);
       this._linkedGraphGroupsController = new StoreController(this, this.store.history.$linkedGraphGroups);
+      this._nutrientInventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+      this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
 
       // Trigger history loading for sparklines on initial load
       this.store.history.loadHistoryOnDemand();
@@ -838,7 +843,8 @@ export class GrowspaceHeader extends LitElement {
         break;
       }
       case 'nutrient_presets':
-        this.store.openNutrientPresetsDialog();
+        // Redirect legacy action to new dialog
+        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
         break;
       case 'control_dehumidifier':
         // Implementation for dehumidifier toggle
@@ -851,6 +857,13 @@ export class GrowspaceHeader extends LitElement {
         break;
       case 'ipm':
         this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+        break;
+      case 'nutrient_inventory':
+        // Redirect legacy action to new dialog
+        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+        break;
+      case 'nutrients':
+        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
         break;
     }
   }
@@ -1002,6 +1015,17 @@ export class GrowspaceHeader extends LitElement {
                         @unlink=${(e: CustomEvent) => this._unlinkGraphs(chip.groupIndex)}
                     ></growspace-chip>
                 `)}
+                
+                ${this._nutrientInventoryController.value?.stocks
+        ? Object.values(this._nutrientInventoryController.value.stocks).map(stock => html`
+                        <nutrient-stock-chip
+                            .stock=${stock}
+                            .compact=${this.compact}
+                            @click=${() => this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} })}
+                            style="cursor: pointer;"
+                        ></nutrient-stock-chip>
+                    `)
+        : ''}
             </div>
 
             <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.RIGHT)}>
@@ -1193,9 +1217,9 @@ export class GrowspaceHeader extends LitElement {
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             <span class="menu-item-label">Log / Manage IPM</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrient_presets')}>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-            <span class="menu-item-label">Nutrient Presets</span>
+            <span class="menu-item-label">Nutrients</span>
         </div>
 
         <div class="menu-divider"></div>

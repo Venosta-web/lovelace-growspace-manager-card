@@ -238,6 +238,17 @@ export async function handlePlantDrop(
     }
 }
 
+export interface AddPlantOptions {
+    phenotype?: string;
+    veg_start?: string;
+    flower_start?: string;
+    seedling_start?: string;
+    mother_start?: string;
+    clone_start?: string;
+    dry_start?: string;
+    cure_start?: string;
+}
+
 /**
  * Add a new plant to a growspace.
  */
@@ -247,7 +258,7 @@ export async function addPlant(
     row: number,
     col: number,
     strain: string,
-    phenotype?: string
+    options: AddPlantOptions = {}
 ): Promise<boolean> {
     try {
         await ctx.dataService.addPlant({
@@ -255,9 +266,10 @@ export async function addPlant(
             row,
             col,
             strain,
-            phenotype: phenotype || undefined,
+            ...options
         });
         ctx.closeDialog();
+        await ctx.refreshData();
         ctx.showToast('Plant added successfully', 'success');
         return true;
     } catch (e: any) {

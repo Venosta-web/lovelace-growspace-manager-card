@@ -590,6 +590,16 @@ describe('PlantCard', () => {
             expect(icon?.getAttribute('title')).toContain('Yellow leaves');
         });
 
+        it('should render IPM icon when last_ipm is present', async () => {
+            element.plant = { attributes: { last_ipm: '2023-01-01', last_ipm_type: 'neem' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const icon = element.shadowRoot?.querySelector('.status-icon.ipm');
+            expect(icon).toBeTruthy();
+            expect(icon?.getAttribute('title')).toContain('neem');
+        });
+
         it('should render star icon when _hasRecommendedPreset is true', async () => {
             mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Grow 1' }]);
             mockStore.data.$nutrientPresets.set({ 'p1': { id: 'p1', stage: 'veg', nutrients: [] } });
@@ -637,6 +647,100 @@ describe('PlantCard', () => {
             const icon = element.shadowRoot?.querySelector('.status-icon.deviation.behind');
             expect(icon).toBeTruthy();
             expect(icon?.getAttribute('title')).toContain('-20%');
+        });
+    });
+
+    describe('Accessibility & Interactions', () => {
+        it('should trigger click on Enter key', async () => {
+            element.plant = { attributes: { plant_id: 'p1' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('plant-click', listener);
+
+            const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+            card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('should trigger click on Space key', async () => {
+            element.plant = { attributes: { plant_id: 'p1' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('plant-click', listener);
+
+            const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+            card.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+
+            expect(listener).toHaveBeenCalled();
+        });
+
+        it('should not trigger click on other keys', async () => {
+            element.plant = { attributes: { plant_id: 'p1' } } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('plant-click', listener);
+
+            const card = element.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
+            card.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }));
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it('should dispatch haptic feedback on selection', async () => {
+            const dispatchSpy = vi.spyOn(element, 'dispatchEvent');
+
+            // Directly invoke private method to test logic and avoid integration timeout issues
+            const mockEvent = { stopPropagation: vi.fn() } as any;
+            (element as any)._toggleSelection(mockEvent);
+
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'haptic',
+                detail: 'selection'
+            }));
+            expect(mockEvent.stopPropagation).toHaveBeenCalled();
+        });
+
+        it('should handle Enter key to toggle selection in edit mode', async () => {
+            $isEditMode.set(true);
+            element.plant = { attributes: { plant_id: 'p1', strain: 'Test' }, entity_id: 'sensor.p1' } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const checkbox = element.shadowRoot?.querySelector('.plant-card-checkbox') as HTMLElement;
+            expect(checkbox).toBeTruthy();
+
+            const toggleSpy = vi.spyOn(element as any, '_toggleSelection');
+
+            // Trigger keydown with Enter
+            const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+            checkbox.dispatchEvent(enterEvent);
+
+            expect(toggleSpy).toHaveBeenCalled();
+        });
+
+        it('should handle Space key to toggle selection in edit mode', async () => {
+            $isEditMode.set(true);
+            element.plant = { attributes: { plant_id: 'p1', strain: 'Test' }, entity_id: 'sensor.p1' } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const checkbox = element.shadowRoot?.querySelector('.plant-card-checkbox') as HTMLElement;
+            expect(checkbox).toBeTruthy();
+
+            const toggleSpy = vi.spyOn(element as any, '_toggleSelection');
+
+            // Trigger keydown with Space
+            const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+            checkbox.dispatchEvent(spaceEvent);
+
+            expect(toggleSpy).toHaveBeenCalled();
         });
     });
 });

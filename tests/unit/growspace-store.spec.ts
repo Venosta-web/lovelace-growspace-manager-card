@@ -99,6 +99,7 @@ vi.mock('../../src/store/data-store', () => {
         $plantToDeviceMap: { get: vi.fn(() => new Map()), set: vi.fn(), subscribe: vi.fn() },
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
+        $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -112,6 +113,7 @@ vi.mock('../../src/store/data-store', () => {
         removePlantFromWsCache: vi.fn(),
         setNutrientPresets: vi.fn((v) => atoms.$nutrientPresets.set(v)),
         setIPMPresets: vi.fn((v) => atoms.$ipmPresets.set(v)),
+        setNutrientInventory: vi.fn((v) => atoms.$nutrientInventory.set(v)),
     };
     const mocks = { ...atoms, ...actions };
     return {
@@ -132,7 +134,7 @@ const mockDataServiceInstance: any = {
     fetchStrainLibrary: vi.fn().mockResolvedValue([]),
     addStrain: vi.fn().mockResolvedValue({}),
     removeStrain: vi.fn().mockResolvedValue({}),
-    updateHass: vi.fn(function(this: any, h) { this.hass = h; }),
+    updateHass: vi.fn(function (this: any, h) { this.hass = h; }),
     updateGrowspace: vi.fn().mockResolvedValue({}),
     updatePlant: vi.fn().mockResolvedValue({}),
     addPlant: vi.fn().mockResolvedValue({}),
@@ -151,6 +153,9 @@ const mockDataServiceInstance: any = {
     callService: vi.fn().mockResolvedValue({}),
     fetchNutrientPresets: vi.fn().mockResolvedValue({}),
     fetchIPMPresets: vi.fn().mockResolvedValue({}),
+    fetchNutrientInventory: vi.fn().mockResolvedValue([]),
+    updateNutrientStock: vi.fn().mockResolvedValue({}),
+    removeNutrientStock: vi.fn().mockResolvedValue({}),
     addPlants: vi.fn().mockResolvedValue({}),
     hass: { connection: {} } // Default to avoid early returns
 };
@@ -444,6 +449,81 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             store.openLogbookDialog();
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'LOGBOOK' }));
+        });
+    });
+
+    describe('Nutrient Inventory', () => {
+        it('should fetch inventory success', async () => {
+            const inventory = [{ nutrient_id: 'n1' }];
+            mockDataServiceInstance.fetchNutrientInventory.mockResolvedValue(inventory);
+            await store.fetchNutrientInventory(true);
+            expect(dataStore.setNutrientInventory).toHaveBeenCalledWith(inventory);
+        });
+
+        it('should handle fetch inventory error', async () => {
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            mockDataServiceInstance.fetchNutrientInventory.mockRejectedValue(new Error('Fail'));
+            await store.fetchNutrientInventory(true);
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should use cache if valid', async () => {
+            const inventory = [{ nutrient_id: 'n1' }];
+            localStorage.setItem('growspace_nutrient_inventory', JSON.stringify({
+                timestamp: Date.now(),
+                data: inventory
+            }));
+            await store.fetchNutrientInventory(false);
+            expect(dataStore.setNutrientInventory).toHaveBeenCalledWith(inventory);
+            expect(mockDataServiceInstance.fetchNutrientInventory).not.toHaveBeenCalled();
+        });
+
+        it('should update stock success', async () => {
+            await store.updateNutrientStock('n1', 'N1', 100, 1000);
+            expect(mockDataServiceInstance.updateNutrientStock).toHaveBeenCalledWith('n1', 'N1', 100, 1000);
+            expect(mockDataServiceInstance.fetchNutrientInventory).toHaveBeenCalled(); // forced refresh
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Updated stock'), 'success', undefined);
+        });
+
+        it('should handle update stock error', async () => {
+            mockDataServiceInstance.updateNutrientStock.mockRejectedValue(new Error('Fail'));
+            await store.updateNutrientStock('n1', 'N1', 100, 1000);
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to update'), 'error', undefined);
+        });
+
+        it('should remove stock success', async () => {
+            await store.removeNutrientStock('n1');
+            expect(mockDataServiceInstance.removeNutrientStock).toHaveBeenCalledWith('n1');
+            expect(mockDataServiceInstance.fetchNutrientInventory).toHaveBeenCalled();
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Removed'), 'success', undefined);
+        });
+
+        it('should handle remove stock error', async () => {
+            mockDataServiceInstance.removeNutrientStock.mockRejectedValue(new Error('Fail'));
+            await store.removeNutrientStock('n1');
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to remove'), 'error', undefined);
+        });
+
+        it('should handle invalid JSON in inventory cache', async () => {
+            const spy = vi.spyOn(Storage.prototype, 'removeItem');
+            localStorage.setItem('growspace_nutrient_inventory', 'invalid{');
+            await store.fetchNutrientInventory(false);
+            expect(spy).toHaveBeenCalledWith('growspace_nutrient_inventory');
+            // Should proceed to fetch from API
+            expect(mockDataServiceInstance.fetchNutrientInventory).toHaveBeenCalled();
+        });
+    });
+
+    describe('IPM Presets', () => {
+        it('should fetch IPM presets success with cache hit', async () => {
+            const presets = { 'p1': {} };
+            localStorage.setItem('growspace_ipm_presets', JSON.stringify({
+                timestamp: Date.now(),
+                data: presets
+            }));
+            await store.fetchIPMPresets(false);
+            expect(dataStore.setIPMPresets).toHaveBeenCalledWith(presets);
+            expect(mockDataServiceInstance.fetchIPMPresets).not.toHaveBeenCalled();
         });
     });
 

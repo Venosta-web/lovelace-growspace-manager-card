@@ -470,10 +470,34 @@ describe('PlantOverviewDialog', () => {
         const spy = vi.fn();
         element.addEventListener('close', spy);
 
-        const closeBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button');
+        // Select the last button in the header (which is the close button)
+        // The first one is now the Edit Strain button
+        const closeBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button:last-of-type');
         (closeBtn as HTMLElement).click();
 
         expect(spy).toHaveBeenCalled();
+        document.body.removeChild(element);
+    });
+
+    it('should dispatch open-strain-editor event when DNA button is clicked', async () => {
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const spy = vi.fn();
+        element.addEventListener('open-strain-editor', spy);
+
+        // The Edit Strain button is the first button in the header (or identifiable by title)
+        const editBtn = element.shadowRoot?.querySelector('.dialog-header .md3-button[title="Edit Strain Library Entry"]');
+        expect(editBtn).toBeTruthy();
+        (editBtn as HTMLElement).click();
+
+        expect(spy).toHaveBeenCalled();
+        expect(spy.mock.calls[0][0].detail).toEqual({
+            strain: mockPlant.attributes.strain,
+            phenotype: mockPlant.attributes.phenotype
+        });
+
         document.body.removeChild(element);
     });
 

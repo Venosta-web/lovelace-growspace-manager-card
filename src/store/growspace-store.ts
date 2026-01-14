@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceManagerCardConfig, GrowAdviceResponse } from '../types';
-import { ViewMode } from '../constants';
+import { ViewMode, GridOverlayMode } from '../constants';
 import { DataService } from '../data-service';
 import { PlantUtils } from '../utils/plant-utils';
 
@@ -282,6 +282,60 @@ export class GrowspaceStore {
         }
     }
 
+    public async fetchNutrientInventory(force = false) {
+        if (!this.hass) return;
+
+        const CACHE_KEY = 'growspace_nutrient_inventory';
+        const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setNutrientInventory(cache.data);
+                    return;
+                }
+            } catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+
+        try {
+            const result = await this.dataService.fetchNutrientInventory();
+            if (result) {
+                this.data.setNutrientInventory(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        } catch (e) {
+            console.error('Failed to fetch nutrient inventory:', e);
+        }
+    }
+
+    public async updateNutrientStock(nutrientId: string, name: string, currentMl: number, initialMl: number) {
+        try {
+            await this.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+            await this.fetchNutrientInventory(true);
+            this.showToast(`Updated stock: ${name}`, 'success');
+        } catch (e: any) {
+            this.showToast(`Failed to update stock: ${e.message}`, 'error');
+        }
+    }
+
+    public async removeNutrientStock(nutrientId: string) {
+        try {
+            await this.dataService.removeNutrientStock(nutrientId);
+            await this.fetchNutrientInventory(true);
+            this.showToast('Removed nutrient stock', 'success');
+        } catch (e: any) {
+            this.showToast(`Failed to remove stock: ${e.message}`, 'error');
+        }
+    }
+
     handleKeyboardNavigation(key: string) {
         keyboardActions.handleKeyboardNavigation(this._keyboardActionContext, key, this.ui, this.data);
     }
@@ -506,7 +560,19 @@ export class GrowspaceStore {
         await strainActions.removeStrain(this._strainActionContext, strainKey);
     }
 
-    async confirmAddPlant(detail: { row: number; col: number; strain: string; phenotype: string }) {
+    async confirmAddPlant(detail: {
+        row: number;
+        col: number;
+        strain: string;
+        phenotype?: string;
+        veg_start?: string;
+        flower_start?: string;
+        seedling_start?: string;
+        mother_start?: string;
+        clone_start?: string;
+        dry_start?: string;
+        cure_start?: string;
+    }) {
         const selectedDevice = this.data.$selectedDevice.get();
         if (!selectedDevice) {
             this.showToast('No growspace selected', 'error');
@@ -519,7 +585,16 @@ export class GrowspaceStore {
             detail.row,
             detail.col,
             detail.strain,
-            detail.phenotype
+            {
+                phenotype: detail.phenotype,
+                veg_start: detail.veg_start,
+                flower_start: detail.flower_start,
+                seedling_start: detail.seedling_start,
+                mother_start: detail.mother_start,
+                clone_start: detail.clone_start,
+                dry_start: detail.dry_start,
+                cure_start: detail.cure_start,
+            }
         );
     }
 
@@ -576,6 +651,7 @@ export class GrowspaceStore {
             this.showToast(`Error: ${err.message}`, 'error');
         }
     }
+
 
     toggleEnvGraph(metric: string) {
         if (!this.history) return;

@@ -1,8 +1,8 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { createRef, ref } from 'lit/directives/ref.js';
-import { mdiPlus } from '@mdi/js';
+import { mdiPlus, mdiGrid, mdiCheck } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { StoreController } from '@nanostores/lit';
 import { PlantEntity, StrainEntry } from '../types';
@@ -29,6 +29,33 @@ function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: Grows
     if (status === 'ok') return 'rgba(76, 175, 80, 0.15)'; // Green
     if (status === StatusLevel.WARNING) return 'rgba(255, 152, 0, 0.15)'; // Orange
     if (status === StatusLevel.DANGER) return 'rgba(244, 67, 54, 0.15)'; // Red
+  }
+
+  if (mode === GridOverlayMode.BIO_STATUS) {
+    // Check Bayesian sensors for biological status
+    // Priority: optimal > stress/mold (danger) > warnings
+    const hass = store.hass;
+    if (!hass) return 'transparent';
+
+    const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
+    const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
+    const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
+
+    // Danger: Stress or mold detected
+    if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
+      return 'rgba(244, 67, 54, 0.2)'; // Red with higher opacity for alerts
+    }
+
+    // Optimal conditions
+    if (optimalEntity?.state === 'on') {
+      return 'rgba(76, 175, 80, 0.15)'; // Green
+    }
+
+    // Warning: VPD out of range but not critical
+    const vpdStatus = device.biological_metrics.vpd_status;
+    if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
+      return 'rgba(255, 152, 0, 0.15)'; // Amber
+    }
   }
 
   // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
@@ -383,6 +410,33 @@ export class GrowspaceGrid extends LitElement {
         flex-direction: row;
       }
     }
+
+    /* Ghost Plant Styling */
+    .ghost-plant {
+      position: absolute;
+      inset: 0;
+      border: 2px dashed var(--primary-color, #4caf50);
+      border-radius: var(--border-radius-lg, 16px);
+      background: rgba(76, 175, 80, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      pointer-events: none;
+      animation: ghost-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes ghost-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+
+    .ghost-plant-icon {
+      width: 48px;
+      height: 48px;
+      opacity: 0.7;
+      fill: var(--primary-color, #4caf50);
+    }
   `];
 
   private _handleDragStart(plant: PlantEntity) {
@@ -487,6 +541,8 @@ export class GrowspaceGrid extends LitElement {
     }
   }
 
+
+
   render() {
     const isListView = this.cols > 5; // Simplified check for inline style
     const gridStyle = isListView
@@ -539,6 +595,7 @@ export class GrowspaceGrid extends LitElement {
         )
         : ''}
       </div>
+      </div>
     `;
   }
 
@@ -549,19 +606,21 @@ export class GrowspaceGrid extends LitElement {
         class="plant-card-empty"
         data-row="${row}"
         data-col="${col}"
-        style="grid-row: ${row}; grid-column: ${col}"
+        style="grid-row: ${row}; grid-column: ${col}; position: relative;"
         @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
-        <div class="plant-header">
-          <svg
-            style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiPlus}"></path>
-          </svg>
-        </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+          <div class="plant-header">
+            <svg
+              style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiPlus}"></path>
+            </svg>
+          </div>
+          <div style="font-weight: 500; opacity: 0.8;">
+            Add Plant
+          </div>
       </div>
     `;
   }

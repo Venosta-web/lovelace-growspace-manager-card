@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import {
   mdiClose,
-  mdiPencil,
+  mdiDna,
   mdiFlower,
   mdiContentCopy,
   mdiCheck,
@@ -554,6 +554,18 @@ export class PlantOverviewDialog extends LitElement {
     }));
   }
 
+  private _openStrainEditor() {
+    if (!this.plant) return;
+    const strain = this.plant.attributes?.strain;
+    const phenotype = this.plant.attributes?.phenotype;
+
+    this.dispatchEvent(new CustomEvent('open-strain-editor', {
+      detail: { strain, phenotype },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
   private _renderStatItem(label: string, value: any, unit: string = '') {
     if (value === undefined || value === null || value === '') return nothing;
     return html`
@@ -695,6 +707,16 @@ export class PlantOverviewDialog extends LitElement {
                 ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
               </div>
             </div>
+            <button
+              class="md3-button text"
+              @click=${() => this._openStrainEditor()}
+              style="min-width: auto; padding: 8px;"
+              title="Edit Strain Library Entry"
+            >
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDna}"></path>
+              </svg>
+            </button>
             <button
               class="md3-button text"
               @click=${() => this._close()}
@@ -909,7 +931,7 @@ export class PlantOverviewDialog extends LitElement {
                   @click=${this._toggleShowAllDates}
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiPencil}"></path>
+                    <path d="${mdiDna}"></path>
                   </svg>
                 </button>
               </div>

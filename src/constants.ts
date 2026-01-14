@@ -137,6 +137,7 @@ export enum GridOverlayMode {
   TEMPERATURE = 'temperature',
   HUMIDITY = 'humidity',
   VPD = 'vpd',
+  BIO_STATUS = 'bio_status',
 }
 
 export enum GrowspaceType {
@@ -198,6 +199,9 @@ export const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 export const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 export const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
 export const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
+export const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
+export const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
+export const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 
 export const EVENTS = {
   GROWSPACE_UPDATED: "growspace_manager_updated",

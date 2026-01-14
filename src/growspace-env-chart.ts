@@ -466,6 +466,7 @@ export class GrowspaceEnvChart extends LitElement {
           ${ref(this._chartContainerRef)}
           @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, startTime, durationMillis)}
           @mouseleave=${this._onMouseLeave}
+          @click=${() => this._onChartClick()}
         >
           ${this._renderTooltip()}
           ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
@@ -512,6 +513,18 @@ export class GrowspaceEnvChart extends LitElement {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
     this._activeTooltip = null;
     this._hoverTime = null;
+  }
+
+  private _onChartClick() {
+    if (this._hoverTime) {
+      this.dispatchEvent(
+        new CustomEvent('chart-clicked', {
+          detail: { timestamp: this._hoverTime },
+          bubbles: true,
+          composed: true,
+        })
+      );
+    }
   }
 
   private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number) {

@@ -17,6 +17,7 @@ export class GrowspaceUIStore {
         type: 'info' | 'error' | 'success';
         action?: { label: string; callback: () => void };
     } | null>;
+
     public readonly $error: WritableAtom<string | null>;
     public readonly $defaultApplied: WritableAtom<boolean>;
     public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;

@@ -27,5 +27,7 @@ export type ActiveDialogState =
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
   | { type: 'TRAINING'; payload: TrainingDialogState }
-  | { type: 'IPM'; payload: IPMDialogState };
+  | { type: 'IPM'; payload: IPMDialogState }
+  | { type: 'NUTRIENT_INVENTORY'; payload: {} }
+  | { type: 'NUTRIENTS'; payload: {} };
 

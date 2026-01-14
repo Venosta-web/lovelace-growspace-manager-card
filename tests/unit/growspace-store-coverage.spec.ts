@@ -59,6 +59,7 @@ vi.mock('../../src/store/data-store', () => {
         $plantToDeviceMap: { get: vi.fn(() => new Map()), set: vi.fn(), subscribe: vi.fn() },
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
+        $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -72,6 +73,7 @@ vi.mock('../../src/store/data-store', () => {
         removePlantFromWsCache: vi.fn(),
         setNutrientPresets: vi.fn((v) => atoms.$nutrientPresets.set(v)),
         setIPMPresets: vi.fn((v) => atoms.$ipmPresets.set(v)),
+        setNutrientInventory: vi.fn((v) => atoms.$nutrientInventory.set(v)),
     };
     const mocks = { ...atoms, ...actions };
     return {
@@ -86,6 +88,7 @@ vi.mock('../../src/store/data-store', () => {
             $plantToDeviceMap = atoms.$plantToDeviceMap;
             $nutrientPresets = atoms.$nutrientPresets;
             $ipmPresets = atoms.$ipmPresets;
+            $nutrientInventory = atoms.$nutrientInventory;
 
             setDevices = actions.setDevices;
             setSelectedDevice = actions.setSelectedDevice;
@@ -98,6 +101,7 @@ vi.mock('../../src/store/data-store', () => {
             removePlantFromWsCache = actions.removePlantFromWsCache;
             setNutrientPresets = actions.setNutrientPresets;
             setIPMPresets = actions.setIPMPresets;
+            setNutrientInventory = actions.setNutrientInventory;
 
             constructor() {
                 // Properties assigned via class fields
@@ -112,6 +116,7 @@ vi.mock('../../src/store/data-store', () => {
             get plantToDeviceMap() { return this.$plantToDeviceMap.get(); }
             get nutrientPresets() { return this.$nutrientPresets.get(); }
             get ipmPresets() { return this.$ipmPresets.get(); }
+            get nutrientInventory() { return this.$nutrientInventory.get(); }
         }
     };
 });
@@ -144,6 +149,7 @@ const mockDataServiceInstance: any = {
     callService: vi.fn().mockResolvedValue({}),
     fetchNutrientPresets: vi.fn().mockResolvedValue({}),
     fetchIPMPresets: vi.fn().mockResolvedValue({}),
+    fetchNutrientInventory: vi.fn().mockResolvedValue({}),
     hass: { connection: {} } // Default to avoid early returns
 };
 
@@ -704,6 +710,38 @@ describe('GrowspaceStore Branch Coverage', () => {
             await store.handleExportLibrary();
 
             expect(uiStore.showToast).toHaveBeenCalledWith('Failed to export library', 'error', undefined);
+            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to export library', 'error', undefined);
+        });
+
+        it('should use valid cache for strain library', async () => {
+            const strains = [{ id: 's1', name: 'Cached' }];
+            const cache = { version: 2, timestamp: Date.now(), data: strains };
+            localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
+
+            mockDataServiceInstance.fetchStrainLibrary.mockClear();
+            await store.fetchStrainLibrary();
+            expect(mockDataServiceInstance.fetchStrainLibrary).not.toHaveBeenCalled();
+            expect(store.data.setStrainLibrary).toHaveBeenCalledWith(strains);
+        });
+
+        it('should ignore expired strain library cache', async () => {
+            const strains = [{ id: 's1', name: 'Expired' }];
+            // 1 week + 1ms
+            const cache = { version: 2, timestamp: Date.now() - (7 * 24 * 60 * 60 * 1000 + 100), data: strains };
+            localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
+
+            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([]);
+            await store.fetchStrainLibrary();
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should handle corrupt strain library cache', async () => {
+            localStorage.setItem('growspace_strain_library_v2', 'invalid json');
+            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([]);
+            await store.fetchStrainLibrary();
+            // It gets re-populated with fresh data
+            expect(localStorage.getItem('growspace_strain_library_v2')).not.toBe('invalid json');
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should cover openNutrientPresetsDialog', () => {
@@ -722,6 +760,19 @@ describe('GrowspaceStore Branch Coverage', () => {
             ]);
             await store.handleDeletePlant('p-missing');
             expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p-missing');
+        });
+
+        it('confirmAddPlants should handle devices with undefined plants array', async () => {
+            // Mock devices with missing plants array
+            (dataStore.$devices.get as any).mockReturnValue([
+                { device_id: 'd1', plants: undefined }
+            ]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+
+            await store.confirmAddPlants({});
+
+            // Should verify that it didn't crash and refreshData was called
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalled();
         });
 
         it('should auto-expand view mode when enabling graph in header mode', () => {
@@ -902,6 +953,102 @@ describe('GrowspaceStore Branch Coverage', () => {
             const historyDestroySpy = vi.spyOn(store.history, 'destroy');
             store.destroy();
             expect(historyDestroySpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Data Fetching Cache Edge Cases', () => {
+        it('should handle undefined timestamp in strain library cache', async () => {
+            const cache = { version: 2, data: [] }; // No timestamp
+            localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
+            await store.fetchStrainLibrary();
+            // Should fall through to fetch because Date.now() - 0 is huge
+            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+        });
+
+        it('should handle undefined timestamp in nutrient presets cache', async () => {
+            const cache = { data: {} }; // No timestamp
+            localStorage.setItem('growspace_nutrient_presets', JSON.stringify(cache));
+            await store.fetchNutrientPresets();
+            expect(mockDataServiceInstance.fetchNutrientPresets).toHaveBeenCalled();
+        });
+
+        it('should handle undefined timestamp in IPM presets cache', async () => {
+            const cache = { data: {} };
+            localStorage.setItem('growspace_ipm_presets', JSON.stringify(cache));
+            await store.fetchIPMPresets();
+            expect(mockDataServiceInstance.fetchIPMPresets).toHaveBeenCalled();
+        });
+
+        it('should handle undefined timestamp in nutrient inventory cache', async () => {
+            const cache = { data: {} };
+            localStorage.setItem('growspace_nutrient_inventory', JSON.stringify(cache));
+            await store.fetchNutrientInventory();
+            expect(mockDataServiceInstance.fetchNutrientInventory).toHaveBeenCalled();
+        });
+
+        it('should return early in fetchNutrientInventory if no hass', async () => {
+            store.hass = undefined as any;
+            await store.fetchNutrientInventory();
+            expect(mockDataServiceInstance.fetchNutrientInventory).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('API Response Validation', () => {
+        it('should handle fetchStrainLibrary returning non-array', async () => {
+            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue({ not: 'array' });
+            await store.fetchStrainLibrary();
+            expect(dataStore.setStrainLibrary).not.toHaveBeenCalled();
+        });
+
+        it('should handle confirmAddPlants with missing plant_id in existing plants', async () => {
+            // Mock devices with missing plants array
+            (dataStore.$devices.get as any).mockReturnValue([{
+                device_id: 'd1',
+                plants: [{ attributes: { plant_id: null } }] // Plant without ID
+            }]);
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            mockDataServiceInstance.addPlants.mockResolvedValue({});
+            (dataStore.$wsDataCache.get as any).mockReturnValue({});
+
+            await store.confirmAddPlants({});
+
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalled();
+        });
+
+        it('should handle confirmAddPlants where added plant misses ID', async () => {
+            // This covers the logic where we filter out invalid IDs from the "addedIds" list logic
+            // Setup:
+            const beforeDevices = [{ device_id: 'd1', plants: [] }];
+
+            // Mock sequence of device states
+            const getMock = dataStore.$devices.get as any;
+            getMock.mockReturnValueOnce(beforeDevices); // Initial read
+
+            // After refresh, return a plant with no ID (simulating failure or weird state)
+            const afterDevices = [{
+                device_id: 'd1',
+                plants: [{ attributes: { plant_id: null } }]
+            }];
+            getMock.mockReturnValueOnce(afterDevices); // Second read check
+
+            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            mockDataServiceInstance.addPlants.mockResolvedValue({});
+
+            await store.confirmAddPlants({});
+
+            expect(uiStore.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success', undefined);
+        });
+
+        it('should handle nutrient inventory validation for null response', async () => {
+            mockDataServiceInstance.fetchNutrientInventory.mockResolvedValue(null);
+            await store.fetchNutrientInventory();
+            expect(dataStore.setNutrientInventory).not.toHaveBeenCalled();
+        });
+
+        it('should handle nutrient inventory validation for valid response', async () => {
+            mockDataServiceInstance.fetchNutrientInventory.mockResolvedValue([]);
+            await store.fetchNutrientInventory();
+            expect(dataStore.setNutrientInventory).toHaveBeenCalledWith([]);
         });
     });
 });

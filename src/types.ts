@@ -391,25 +391,27 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState { }
 
+export interface EnvironmentConfigData {
+  selectedGrowspaceId: string;
+  temp_sensor: string;
+  humidity_sensor: string;
+  vpd_sensor: string;
+  co2_sensor: string;
+  circulation_fan: string;
+  stress_threshold: number;
+  mold_threshold: number;
+  light_sensor: string;
+  exhaust_entity: string;
+  humidifier_entity: string;
+  dehumidifier_entity: string;
+  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  soil_moisture_sensor: string;
+  control_dehumidifier: boolean;
+}
+
 export interface ConfigDialogState {
   currentTab: 'add_growspace' | 'environment' | 'dehumidifier';
-  environmentData: {
-    selectedGrowspaceId: string;
-    temp_sensor: string;
-    humidity_sensor: string;
-    vpd_sensor: string;
-    co2_sensor: string;
-    circulation_fan: string;
-    stress_threshold: number;
-    mold_threshold: number;
-    light_sensor: string;
-    exhaust_entity: string;
-    humidifier_entity: string;
-    dehumidifier_entity: string;
-    dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-    soil_moisture_sensor: string;
-    control_dehumidifier: boolean;
-  };
+  environmentData: EnvironmentConfigData;
 }
 
 export interface GrowMasterDialogState {
@@ -456,6 +458,18 @@ export interface NutrientPreset {
 export interface NutrientEntry {
   name: string;
   concentration: number; // ml/L
+}
+
+export interface NutrientStock {
+  nutrient_id: string;
+  name: string;
+  current_ml: number;
+  initial_ml: number;
+  last_updated: string;
+}
+
+export interface NutrientInventory {
+  stocks: Record<string, NutrientStock>;
 }
 
 // --- Events & History (Restored) ---

@@ -93,4 +93,50 @@ describe('LogbookDialog', () => {
 
         expect(closeSpy).toHaveBeenCalled();
     });
+    describe('Tab Switching', () => {
+        beforeEach(async () => {
+            element.open = true;
+            await element.updateComplete;
+        });
+
+        it('should switch to timeline view when timeline tab is clicked', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.tab');
+            const timelineTab = Array.from(tabs || []).find(t => t.textContent?.includes('Timeline'));
+            expect(timelineTab).toBeTruthy();
+
+            (timelineTab as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('timeline');
+            expect(timelineTab?.classList.contains('active')).toBe(true);
+        });
+
+        it('should switch to VPD view when VPD tab is clicked', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.tab');
+            const vpdTab = Array.from(tabs || []).find(t => t.textContent?.includes('VPD'));
+            expect(vpdTab).toBeTruthy();
+
+            (vpdTab as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('vpd');
+            expect(vpdTab?.classList.contains('active')).toBe(true);
+        });
+
+        it('should switch back to list view', async () => {
+            // First switch to timeline
+            (element as any)._activeTab = 'timeline';
+            await element.updateComplete;
+
+            const tabs = element.shadowRoot?.querySelectorAll('.tab');
+            const listTab = Array.from(tabs || []).find(t => t.textContent?.includes('List View'));
+            expect(listTab).toBeTruthy();
+
+            (listTab as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('list');
+            expect(listTab?.classList.contains('active')).toBe(true);
+        });
+    });
 });

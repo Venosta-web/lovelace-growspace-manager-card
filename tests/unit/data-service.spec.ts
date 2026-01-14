@@ -1039,11 +1039,7 @@ describe('DataService', () => {
             expect(strains[1].phenotype).toBe('p2');
         });
 
-        it('getGrowspaceId fallback', () => {
-            // Access private method via any
-            expect((service as any).getGrowspaceId({})).toBe('unknown');
-            expect((service as any).getGrowspaceId({ attributes: {} })).toBe('unknown');
-        });
+
     });
 
     describe('Branch Booster', () => {
@@ -1693,6 +1689,74 @@ describe('DataService', () => {
                 expect(res).toEqual([]);
                 expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch strain library for grid:'), expect.anything());
                 errorSpy.mockRestore();
+            });
+        });
+
+        describe('Nutrient Inventory', () => {
+            it('fetchNutrientInventory should return inventory on success', async () => {
+                const mockInventory = {
+                    'n1': { id: 'n1', name: 'Grow A', current_ml: 500, initial_ml: 1000 }
+                };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockInventory);
+
+                const res = await service.fetchNutrientInventory();
+                expect(res).toEqual(mockInventory);
+                expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'growspace_manager/get_nutrient_inventory'
+                }));
+            });
+
+            it('fetchNutrientInventory should return null and log error on WS failure', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Inv Fail'));
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchNutrientInventory();
+                expect(res).toBeNull();
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService:fetchNutrientInventory] Error:'), expect.any(Error));
+                errorSpy.mockRestore();
+            });
+
+            it('fetchNutrientInventory should return raw result and log error on validation failure', async () => {
+                // Schema likely expects id, name, etc. Let's send a bare string or bad object
+                const badData = { 'n1': { missing_id: true } };
+                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+                const res = await service.fetchNutrientInventory();
+                expect(res).toBe(badData);
+                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Inventory Validation Failed:'), expect.anything());
+                errorSpy.mockRestore();
+            });
+
+            it('should update nutrient stock', async () => {
+                await service.updateNutrientStock('n1', 'Base', 500, 1000);
+                expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'growspace_manager/update_nutrient_stock',
+                    nutrient_id: 'n1',
+                    name: 'Base',
+                    current_ml: 500,
+                    initial_ml: 1000
+                }));
+            });
+
+            it('should handle error in updateNutrientStock', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Update Fail'));
+                await expect(service.updateNutrientStock('n1', 'Base', 500, 1000))
+                    .rejects.toThrow('Update Fail');
+            });
+
+            it('should remove nutrient stock', async () => {
+                await service.removeNutrientStock('n1');
+                expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                    type: 'growspace_manager/remove_nutrient_stock',
+                    nutrient_id: 'n1'
+                }));
+            });
+
+            it('should handle error in removeNutrientStock', async () => {
+                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Remove Fail'));
+                await expect(service.removeNutrientStock('n1'))
+                    .rejects.toThrow('Remove Fail');
             });
         });
     });

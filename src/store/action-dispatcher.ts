@@ -54,7 +54,7 @@ export class ActionDispatcher {
             plantActions.updatePlantsFromDialog(this.store.plantActionContext, state),
 
         add: (gid: string, r: number, c: number, s: string, p?: string) =>
-            plantActions.addPlant(this.store.plantActionContext, gid, r, c, s, p),
+            plantActions.addPlant(this.store.plantActionContext, gid, r, c, s, { phenotype: p }),
 
         addBatch: (detail: any) =>
             this.store.confirmAddPlants(detail)

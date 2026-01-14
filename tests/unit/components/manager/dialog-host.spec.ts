@@ -618,6 +618,60 @@ describe('DialogHost', () => {
         expect(mockStore.actions.plant.move).toHaveBeenCalledWith(mockPlant, 'g2');
     });
 
+    it('should handle open-strain-editor event on PLANT_OVERVIEW dialog', async () => {
+        // Mock strain library
+        (mockStore.data.$strainLibrary as any).set([
+            { key: 'Blueberry', strain: 'Blueberry', phenotype: 'Original' }
+        ]);
+
+        $activeDialog.set({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: {
+                    entity_id: 'sensor.p1',
+                    attributes: { plant_id: 'p1', strain: 'Blueberry', stage: 'veg' } // Intentionally omit phenotype to test normalization or finding logic if applicable
+                } as any,
+                activeTab: 'dashboard',
+                editedAttributes: {},
+                selectedPlantIds: []
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        // Dispatch with existing strain
+        dialog?.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: { strain: 'Blueberry', phenotype: 'Original' }
+        }));
+
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'STRAIN_LIBRARY',
+            payload: {
+                editingStrain: expect.objectContaining({
+                    key: 'Blueberry',
+                    strain: 'Blueberry'
+                })
+            }
+        });
+
+        // Test non-existent strain (should create temp)
+        dialog?.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: { strain: 'New Strain', phenotype: 'New Pheno' }
+        }));
+
+        expect(mockStore.ui.setActiveDialog).toHaveBeenLastCalledWith({
+            type: 'STRAIN_LIBRARY',
+            payload: {
+                editingStrain: expect.objectContaining({
+                    key: 'New Strain_New Pheno',
+                    strain: 'New Strain',
+                    phenotype: 'New Pheno'
+                })
+            }
+        });
+    });
+
     it('should handle close event on STRAIN_LIBRARY dialog', async () => {
         $activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         document.body.appendChild(element);
@@ -1056,5 +1110,58 @@ describe('DialogHost', () => {
 
         const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
         expect((dialog as any).personality).toBeUndefined();
+    });
+    it('should render NUTRIENT_INVENTORY dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENT_INVENTORY', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('nutrient-inventory-dialog')).toBeTruthy();
+    });
+
+    it('should handle close event on NUTRIENT_INVENTORY dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENT_INVENTORY', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-inventory-dialog');
+        dialog?.dispatchEvent(new CustomEvent('close'));
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should handle data-changed event on NUTRIENT_INVENTORY dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENT_INVENTORY', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-inventory-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+    });
+
+    it('should render NUTRIENTS dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENTS', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('nutrient-dialog')).toBeTruthy();
+    });
+
+    it('should handle close event on NUTRIENTS dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENTS', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-dialog');
+        dialog?.dispatchEvent(new CustomEvent('close'));
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+    });
+
+    it('should handle data-changed event on NUTRIENTS dialog', async () => {
+        $activeDialog.set({ type: 'NUTRIENTS', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('nutrient-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        expect(mockStore.refreshData).toHaveBeenCalled();
     });
 });

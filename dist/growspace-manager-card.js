@@ -14,6 +14,7 @@ var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
+var mdiChartTimelineVariant = "M3,14L3.5,14.07L8.07,9.5C7.89,8.85 8.06,8.11 8.59,7.59C9.37,6.8 10.63,6.8 11.41,7.59C11.94,8.11 12.11,8.85 11.93,9.5L14.5,12.07L15,12C15.18,12 15.35,12 15.5,12.07L19.07,8.5C19,8.35 19,8.18 19,8A2,2 0 0,1 21,6A2,2 0 0,1 23,8A2,2 0 0,1 21,10C20.82,10 20.65,10 20.5,9.93L16.93,13.5C17,13.65 17,13.82 17,14A2,2 0 0,1 15,16A2,2 0 0,1 13,14L13.07,13.5L10.5,10.93C10.18,11 9.82,11 9.5,10.93L4.93,15.5L5,16A2,2 0 0,1 3,18A2,2 0 0,1 1,16A2,2 0 0,1 3,14Z";
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
@@ -21,6 +22,7 @@ var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiChevronUp = "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z";
+var mdiClipboardList = "M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M7 8H9V12H8V9H7V8M10 17V18H7V17.08L9 15H7V14H9.25C9.66 14 10 14.34 10 14.75C10 14.95 9.92 15.14 9.79 15.27L8.12 17H10M11 4C11 3.45 11.45 3 12 3S13 3.45 13 4 12.55 5 12 5 11 4.55 11 4M17 17H12V15H17V17M17 11H12V9H17V11Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
@@ -39,6 +41,7 @@ var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 1
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
+var mdiFormatListBulleted = "M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z";
 var mdiFullscreenExit = "M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z";
 var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18C15.9,16.7 14,16 12,16C10,16 8.2,16.7 6.7,18C5,16.5 4,14.4 4,12A8,8 0 0,1 12,4M14,5.89C13.62,5.9 13.26,6.15 13.1,6.54L11.81,9.77L11.71,10C11,10.13 10.41,10.6 10.14,11.26C9.73,12.29 10.23,13.45 11.26,13.86C12.29,14.27 13.45,13.77 13.86,12.74C14.12,12.08 14,11.32 13.57,10.76L13.67,10.5L14.96,7.29L14.97,7.26C15.17,6.75 14.92,6.17 14.41,5.96C14.28,5.91 14.15,5.89 14,5.89M10,6A1,1 0 0,0 9,7A1,1 0 0,0 10,8A1,1 0 0,0 11,7A1,1 0 0,0 10,6M7,9A1,1 0 0,0 6,10A1,1 0 0,0 7,11A1,1 0 0,0 8,10A1,1 0 0,0 7,9M17,9A1,1 0 0,0 16,10A1,1 0 0,0 17,11A1,1 0 0,0 18,10A1,1 0 0,0 17,9Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
@@ -190,6 +193,7 @@ var GridOverlayMode;
     GridOverlayMode["TEMPERATURE"] = "temperature";
     GridOverlayMode["HUMIDITY"] = "humidity";
     GridOverlayMode["VPD"] = "vpd";
+    GridOverlayMode["BIO_STATUS"] = "bio_status";
 })(GridOverlayMode || (GridOverlayMode = {}));
 var GrowspaceType;
 (function (GrowspaceType) {
@@ -240,6 +244,9 @@ const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
 const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
+const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
+const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
+const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
     ADD_PLANT: 'add_plant',
@@ -4950,6 +4957,16 @@ const IPMPresetSchema = objectType({
     min_days_in_stage: numberType().nullish().transform(v => v || undefined),
 }).passthrough();
 const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
+const NutrientStockSchema = objectType({
+    nutrient_id: stringType(),
+    name: stringType(),
+    current_ml: numberType(),
+    initial_ml: numberType(),
+    last_updated: stringType(),
+});
+const NutrientInventorySchema = objectType({
+    stocks: recordType(stringType(), NutrientStockSchema)
+});
 const HistoryPointSchema = objectType({
     s: unionType([stringType(), numberType()]).transform(String),
     lu: unionType([stringType(), numberType()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))
@@ -4958,12 +4975,37 @@ const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPoi
 
 class DataService {
     constructor(hass) {
+        // Cache storage for growspace data with TTL
+        this._cache = new Map();
         if (hass) {
             this.hass = hass;
         }
     }
     updateHass(hass) {
         this.hass = hass;
+    }
+    /**
+     * Invalidate cache for a specific growspace or all growspaces.
+     * Call this when receiving GROWSPACE_UPDATED WebSocket events.
+     */
+    invalidateCache(growspaceId) {
+        if (growspaceId) {
+            this._cache.delete(growspaceId);
+            this._cache.delete('__all__'); // Also invalidate collection cache
+        }
+        else {
+            this._cache.clear();
+        }
+        console.debug('[DataService] Cache invalidated:', growspaceId || 'all');
+    }
+    /**
+     * Check if cached data is still valid (within TTL).
+     */
+    _isCacheValid(key) {
+        const cached = this._cache.get(key);
+        if (!cached)
+            return false;
+        return Date.now() - cached.timestamp < DataService.CACHE_TTL_MS;
     }
     /**
      * Generic service call wrapper. Useful for batch actions and other dynamic calls.
@@ -4975,6 +5017,13 @@ class DataService {
     async fetchGrowspaceData(growspaceId) {
         if (!this.hass)
             return null;
+        // Check cache first
+        const cacheKey = growspaceId || '__all__';
+        if (this._isCacheValid(cacheKey)) {
+            const cached = this._cache.get(cacheKey);
+            console.debug(`[DataService] Returning cached data for ${cacheKey}`);
+            return cached.data;
+        }
         try {
             const result = await this.hass.connection.sendMessagePromise({
                 type: WS_TYPE_GET_DATA,
@@ -4986,9 +5035,13 @@ class DataService {
                 const parsed = GrowspaceAPIResponseSchema.safeParse(result);
                 if (!parsed.success) {
                     console.error(`[DataService] API Validation Failed for ${growspaceId}: `, parsed.error.format());
-                    return result;
+                    const data = result;
+                    this._cache.set(cacheKey, { data, timestamp: Date.now() });
+                    return data;
                 }
-                return parsed.data;
+                const data = parsed.data;
+                this._cache.set(cacheKey, { data, timestamp: Date.now() });
+                return data;
             }
             else {
                 // Expect Collection (Record<string, GrowspaceAPIResponse>)
@@ -5005,9 +5058,13 @@ class DataService {
                         }
                     }
                     // For resilience, return as collection.
-                    return result;
+                    const data = result;
+                    this._cache.set(cacheKey, { data, timestamp: Date.now() });
+                    return data;
                 }
-                return parsed.data;
+                const data = parsed.data;
+                this._cache.set(cacheKey, { data, timestamp: Date.now() });
+                return data;
             }
         }
         catch (err) {
@@ -5191,6 +5248,58 @@ class DataService {
         catch (err) {
             console.error('[DataService:fetchIPMPresets] Error:', err);
             return null;
+        }
+    }
+    async fetchNutrientInventory() {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_NUTRIENT_INVENTORY,
+            });
+            const parsed = NutrientInventorySchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[DataService] Nutrient Inventory Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
+        }
+        catch (err) {
+            console.error('[DataService:fetchNutrientInventory] Error:', err);
+            return null;
+        }
+    }
+    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
+        if (!this.hass)
+            return;
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_UPDATE_NUTRIENT_STOCK,
+                nutrient_id: nutrientId,
+                name,
+                current_ml: currentMl,
+                initial_ml: initialMl
+            });
+            console.log(`[DataService] Updated stock: ${name}`);
+        }
+        catch (err) {
+            console.error('[DataService:updateNutrientStock] Error:', err);
+            throw err;
+        }
+    }
+    async removeNutrientStock(nutrientId) {
+        if (!this.hass)
+            return;
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
+                nutrient_id: nutrientId
+            });
+            console.log(`[DataService] Removed stock: ${nutrientId}`);
+        }
+        catch (err) {
+            console.error('[DataService:removeNutrientStock] Error:', err);
+            throw err;
         }
     }
     async getHistory(entityId, startTime, endTime) {
@@ -5795,6 +5904,7 @@ class DataService {
         }
     }
 }
+DataService.CACHE_TTL_MS = 5000; // 5 seconds
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -6997,6 +7107,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
           ${n$2(this._chartContainerRef)}
           @mousemove=${(e) => this._onMouseMove(e, series, startTime, durationMillis)}
           @mouseleave=${this._onMouseLeave}
+          @click=${() => this._onChartClick()}
         >
           ${this._renderTooltip()}
           ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
@@ -7033,6 +7144,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             this._handleGraphHover(e, seriesList, startTime, durationMillis);
             this._tooltipRafId = null;
         });
+    }
+    _onChartClick() {
+        if (this._hoverTime) {
+            this.dispatchEvent(new CustomEvent('chart-clicked', {
+                detail: { timestamp: this._hoverTime },
+                bubbles: true,
+                composed: true,
+            }));
+        }
     }
     _handleGraphHover(e, seriesList, startTime, durationMillis) {
         if (!this._cachedChartRect) {
@@ -10071,6 +10191,17 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             composed: true
         }));
     }
+    _openStrainEditor() {
+        if (!this.plant)
+            return;
+        const strain = this.plant.attributes?.strain;
+        const phenotype = this.plant.attributes?.phenotype;
+        this.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: { strain, phenotype },
+            bubbles: true,
+            composed: true
+        }));
+    }
     _renderStatItem(label, value, unit = '') {
         if (value === undefined || value === null || value === '')
             return E;
@@ -10210,6 +10341,16 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                 ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
               </div>
             </div>
+            <button
+              class="md3-button text"
+              @click=${() => this._openStrainEditor()}
+              style="min-width: auto; padding: 8px;"
+              title="Edit Strain Library Entry"
+            >
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiDna}"></path>
+              </svg>
+            </button>
             <button
               class="md3-button text"
               @click=${() => this._close()}
@@ -10422,7 +10563,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   @click=${this._toggleShowAllDates}
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiPencil}"></path>
+                    <path d="${mdiDna}"></path>
                   </svg>
                 </button>
               </div>
@@ -10949,6 +11090,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
+    }
+    willUpdate(changedProps) {
+        super.willUpdate(changedProps);
+        // Auto-open editor if editingStrain is provided
+        if (changedProps.has('editingStrain') && this.editingStrain) {
+            this._startEdit(this.editingStrain);
+        }
     }
     _startEdit(strain) {
         if (strain) {
@@ -12545,6 +12693,9 @@ __decorate([
 __decorate([
     n$5({ type: Array })
 ], StrainLibraryDialog.prototype, "strains", void 0);
+__decorate([
+    n$5({ type: Object })
+], StrainLibraryDialog.prototype, "editingStrain", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_view", void 0);
@@ -14621,12 +14772,1061 @@ IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
 
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class RangeChangedEvent extends Event {
+    constructor(range) {
+        super(RangeChangedEvent.eventName, { bubbles: false });
+        this.first = range.first;
+        this.last = range.last;
+    }
+}
+RangeChangedEvent.eventName = 'rangeChanged';
+class VisibilityChangedEvent extends Event {
+    constructor(range) {
+        super(VisibilityChangedEvent.eventName, { bubbles: false });
+        this.first = range.first;
+        this.last = range.last;
+    }
+}
+VisibilityChangedEvent.eventName = 'visibilityChanged';
+class UnpinnedEvent extends Event {
+    constructor() {
+        super(UnpinnedEvent.eventName, { bubbles: false });
+    }
+}
+UnpinnedEvent.eventName = 'unpinned';
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class ScrollerShim {
+    constructor(element) {
+        this._element = null;
+        const node = element ?? window;
+        this._node = node;
+        if (element) {
+            this._element = element;
+        }
+    }
+    get element() {
+        return (this._element || document.scrollingElement || document.documentElement);
+    }
+    get scrollTop() {
+        return this.element.scrollTop || window.scrollY;
+    }
+    get scrollLeft() {
+        return this.element.scrollLeft || window.scrollX;
+    }
+    get scrollHeight() {
+        return this.element.scrollHeight;
+    }
+    get scrollWidth() {
+        return this.element.scrollWidth;
+    }
+    get viewportHeight() {
+        return this._element
+            ? this._element.getBoundingClientRect().height
+            : window.innerHeight;
+    }
+    get viewportWidth() {
+        return this._element
+            ? this._element.getBoundingClientRect().width
+            : window.innerWidth;
+    }
+    get maxScrollTop() {
+        return this.scrollHeight - this.viewportHeight;
+    }
+    get maxScrollLeft() {
+        return this.scrollWidth - this.viewportWidth;
+    }
+}
+class ScrollerController extends ScrollerShim {
+    constructor(client, element) {
+        super(element);
+        this._clients = new Set();
+        this._retarget = null;
+        this._end = null;
+        this.__destination = null;
+        this.correctingScrollError = false;
+        this._checkForArrival = this._checkForArrival.bind(this);
+        this._updateManagedScrollTo = this._updateManagedScrollTo.bind(this);
+        this.scrollTo = this.scrollTo.bind(this);
+        this.scrollBy = this.scrollBy.bind(this);
+        const node = this._node;
+        this._originalScrollTo = node.scrollTo;
+        this._originalScrollBy = node.scrollBy;
+        this._originalScroll = node.scroll;
+        this._attach(client);
+    }
+    get _destination() {
+        return this.__destination;
+    }
+    get scrolling() {
+        return this._destination !== null;
+    }
+    scrollTo(p1, p2) {
+        const options = typeof p1 === 'number' && typeof p2 === 'number'
+            ? { left: p1, top: p2 }
+            : p1;
+        this._scrollTo(options);
+    }
+    scrollBy(p1, p2) {
+        const options = typeof p1 === 'number' && typeof p2 === 'number'
+            ? { left: p1, top: p2 }
+            : p1;
+        if (options.top !== undefined) {
+            options.top += this.scrollTop;
+        }
+        if (options.left !== undefined) {
+            options.left += this.scrollLeft;
+        }
+        this._scrollTo(options);
+    }
+    _nativeScrollTo(options) {
+        this._originalScrollTo.bind(this._element || window)(options);
+    }
+    _scrollTo(options, retarget = null, end = null) {
+        if (this._end !== null) {
+            this._end();
+        }
+        if (options.behavior === 'smooth') {
+            this._setDestination(options);
+            this._retarget = retarget;
+            this._end = end;
+        }
+        else {
+            this._resetScrollState();
+        }
+        this._nativeScrollTo(options);
+    }
+    _setDestination(options) {
+        let { top, left } = options;
+        top =
+            top === undefined
+                ? undefined
+                : Math.max(0, Math.min(top, this.maxScrollTop));
+        left =
+            left === undefined
+                ? undefined
+                : Math.max(0, Math.min(left, this.maxScrollLeft));
+        if (this._destination !== null &&
+            left === this._destination.left &&
+            top === this._destination.top) {
+            return false;
+        }
+        this.__destination = { top, left, behavior: 'smooth' };
+        return true;
+    }
+    _resetScrollState() {
+        this.__destination = null;
+        this._retarget = null;
+        this._end = null;
+    }
+    _updateManagedScrollTo(coordinates) {
+        if (this._destination) {
+            if (this._setDestination(coordinates)) {
+                this._nativeScrollTo(this._destination);
+            }
+        }
+    }
+    managedScrollTo(options, retarget, end) {
+        this._scrollTo(options, retarget, end);
+        return this._updateManagedScrollTo;
+    }
+    correctScrollError(coordinates) {
+        this.correctingScrollError = true;
+        requestAnimationFrame(() => requestAnimationFrame(() => (this.correctingScrollError = false)));
+        // Correct the error
+        this._nativeScrollTo(coordinates);
+        // Then, if we were headed for a specific destination, we continue scrolling:
+        // First, we update our target destination, if applicable...
+        if (this._retarget) {
+            this._setDestination(this._retarget());
+        }
+        // Then we go ahead and resume scrolling
+        if (this._destination) {
+            this._nativeScrollTo(this._destination);
+        }
+    }
+    _checkForArrival() {
+        if (this._destination !== null) {
+            const { scrollTop, scrollLeft } = this;
+            let { top, left } = this._destination;
+            top = Math.min(top || 0, this.maxScrollTop);
+            left = Math.min(left || 0, this.maxScrollLeft);
+            const topDiff = Math.abs(top - scrollTop);
+            const leftDiff = Math.abs(left - scrollLeft);
+            // We check to see if we've arrived at our destination.
+            if (topDiff < 1 && leftDiff < 1) {
+                if (this._end) {
+                    this._end();
+                }
+                this._resetScrollState();
+            }
+        }
+    }
+    detach(client) {
+        this._clients.delete(client);
+        /**
+         * If there aren't any more clients, then return the node's default
+         * scrolling methods
+         */
+        if (this._clients.size === 0) {
+            this._node.scrollTo = this._originalScrollTo;
+            this._node.scrollBy = this._originalScrollBy;
+            this._node.scroll = this._originalScroll;
+            this._node.removeEventListener('scroll', this._checkForArrival);
+        }
+        return null;
+    }
+    _attach(client) {
+        this._clients.add(client);
+        /**
+         * The node should only have the methods shimmed when adding the first
+         * client – otherwise it's redundant
+         */
+        if (this._clients.size === 1) {
+            this._node.scrollTo = this.scrollTo;
+            this._node.scrollBy = this.scrollBy;
+            this._node.scroll = this.scrollTo;
+            this._node.addEventListener('scroll', this._checkForArrival);
+        }
+    }
+}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+// Virtualizer depends on `ResizeObserver`, which is supported in
+// all modern browsers. For developers whose browser support
+// matrix includes older browsers, we include a compatible
+// polyfill in the package; this bit of module state facilitates
+// a simple mechanism (see ./polyfillLoaders/ResizeObserver.js.)
+// for loading the polyfill.
+let _ResizeObserver = typeof window !== 'undefined' ? window.ResizeObserver : undefined;
+const virtualizerRef = Symbol('virtualizerRef');
+const SIZER_ATTRIBUTE = 'virtualizer-sizer';
+let DefaultLayoutConstructor;
+/**
+ * Provides virtual scrolling boilerplate.
+ *
+ * Extensions of this class must set hostElement and layout.
+ *
+ * Extensions of this class must also override VirtualRepeater's DOM
+ * manipulation methods.
+ */
+class Virtualizer {
+    constructor(config) {
+        this._benchmarkStart = null;
+        this._layout = null;
+        this._clippingAncestors = [];
+        /**
+         * Layout provides these values, we set them on _render().
+         * TODO @straversi: Can we find an XOR type, usable for the key here?
+         */
+        this._scrollSize = null;
+        /**
+         * Difference between scroll target's current and required scroll offsets.
+         * Provided by layout.
+         */
+        this._scrollError = null;
+        /**
+         * A list of the positions (top, left) of the children in the current range.
+         */
+        this._childrenPos = null;
+        // TODO: (graynorton): type
+        this._childMeasurements = null;
+        this._toBeMeasured = new Map();
+        this._rangeChanged = true;
+        this._itemsChanged = true;
+        this._visibilityChanged = true;
+        this._scrollerController = null;
+        this._isScroller = false;
+        this._sizer = null;
+        /**
+         * Resize observer attached to hostElement.
+         */
+        this._hostElementRO = null;
+        /**
+         * Resize observer attached to children.
+         */
+        this._childrenRO = null;
+        this._mutationObserver = null;
+        this._scrollEventListeners = [];
+        this._scrollEventListenerOptions = {
+            passive: true,
+        };
+        // TODO (graynorton): Rethink, per longer comment below
+        this._loadListener = this._childLoaded.bind(this);
+        /**
+         * Index of element to scroll into view, plus scroll
+         * behavior options, as imperatively specified via
+         * `element(index).scrollIntoView()`
+         */
+        this._scrollIntoViewTarget = null;
+        this._updateScrollIntoViewCoordinates = null;
+        /**
+         * Items to render. Set by items.
+         */
+        this._items = [];
+        /**
+         * Index of the first child in the range, not necessarily the first visible child.
+         * TODO @straversi: Consider renaming these.
+         */
+        this._first = -1;
+        /**
+         * Index of the last child in the range.
+         */
+        this._last = -1;
+        /**
+         * Index of the first item intersecting the viewport.
+         */
+        this._firstVisible = -1;
+        /**
+         * Index of the last item intersecting the viewport.
+         */
+        this._lastVisible = -1;
+        this._scheduled = new WeakSet();
+        /**
+         * Invoked at the end of each render cycle: children in the range are
+         * measured, and their dimensions passed to this callback. Use it to layout
+         * children as needed.
+         */
+        this._measureCallback = null;
+        this._measureChildOverride = null;
+        /**
+         * State for `layoutComplete` promise
+         */
+        this._layoutCompletePromise = null;
+        this._layoutCompleteResolver = null;
+        this._layoutCompleteRejecter = null;
+        this._pendingLayoutComplete = null;
+        /**
+         * Layout initialization is async because we dynamically load
+         * the default layout if none is specified. This state is to track
+         * whether init is complete.
+         */
+        this._layoutInitialized = null;
+        /**
+         * Track connection state to guard against errors / unnecessary work
+         */
+        this._connected = false;
+        if (!config) {
+            throw new Error('Virtualizer constructor requires a configuration object');
+        }
+        if (config.hostElement) {
+            this._init(config);
+        }
+        else {
+            throw new Error('Virtualizer configuration requires the "hostElement" property');
+        }
+    }
+    set items(items) {
+        if (Array.isArray(items) && items !== this._items) {
+            this._itemsChanged = true;
+            this._items = items;
+            this._schedule(this._updateLayout);
+        }
+    }
+    _init(config) {
+        this._isScroller = !!config.scroller;
+        this._initHostElement(config);
+        // If no layout is specified, we make an empty
+        // layout config, which will result in the default
+        // layout with default parameters
+        const layoutConfig = config.layout || {};
+        // Save the promise returned by `_initLayout` as a state
+        // variable we can check before updating layout config
+        this._layoutInitialized = this._initLayout(layoutConfig);
+    }
+    _initObservers() {
+        this._mutationObserver = new MutationObserver(this._finishDOMUpdate.bind(this));
+        this._hostElementRO = new _ResizeObserver(() => this._hostElementSizeChanged());
+        this._childrenRO = new _ResizeObserver(this._childrenSizeChanged.bind(this));
+    }
+    _initHostElement(config) {
+        const hostElement = (this._hostElement = config.hostElement);
+        this._applyVirtualizerStyles();
+        hostElement[virtualizerRef] = this;
+    }
+    connected() {
+        this._initObservers();
+        const includeSelf = this._isScroller;
+        this._clippingAncestors = getClippingAncestors(this._hostElement, includeSelf);
+        this._scrollerController = new ScrollerController(this, this._clippingAncestors[0]);
+        this._schedule(this._updateLayout);
+        this._observeAndListen();
+        this._connected = true;
+    }
+    _observeAndListen() {
+        this._mutationObserver.observe(this._hostElement, { childList: true });
+        this._hostElementRO.observe(this._hostElement);
+        this._scrollEventListeners.push(window);
+        window.addEventListener('scroll', this, this._scrollEventListenerOptions);
+        this._clippingAncestors.forEach((ancestor) => {
+            ancestor.addEventListener('scroll', this, this._scrollEventListenerOptions);
+            this._scrollEventListeners.push(ancestor);
+            this._hostElementRO.observe(ancestor);
+        });
+        this._hostElementRO.observe(this._scrollerController.element);
+        this._children.forEach((child) => this._childrenRO.observe(child));
+        this._scrollEventListeners.forEach((target) => target.addEventListener('scroll', this, this._scrollEventListenerOptions));
+    }
+    disconnected() {
+        this._scrollEventListeners.forEach((target) => target.removeEventListener('scroll', this, this._scrollEventListenerOptions));
+        this._scrollEventListeners = [];
+        this._clippingAncestors = [];
+        this._scrollerController?.detach(this);
+        this._scrollerController = null;
+        this._mutationObserver?.disconnect();
+        this._mutationObserver = null;
+        this._hostElementRO?.disconnect();
+        this._hostElementRO = null;
+        this._childrenRO?.disconnect();
+        this._childrenRO = null;
+        this._rejectLayoutCompletePromise('disconnected');
+        this._connected = false;
+    }
+    _applyVirtualizerStyles() {
+        const hostElement = this._hostElement;
+        // Would rather set these CSS properties on the host using Shadow Root
+        // style scoping (and falling back to a global stylesheet where native
+        // Shadow DOM is not available), but this Mobile Safari bug is preventing
+        // that from working: https://bugs.webkit.org/show_bug.cgi?id=226195
+        const style = hostElement.style;
+        style.display = style.display || 'block';
+        style.position = style.position || 'relative';
+        style.contain = style.contain || 'size layout';
+        if (this._isScroller) {
+            style.overflow = style.overflow || 'auto';
+            style.minHeight = style.minHeight || '150px';
+        }
+    }
+    _getSizer() {
+        const hostElement = this._hostElement;
+        if (!this._sizer) {
+            // Use a preexisting sizer element if provided (for better integration
+            // with vDOM renderers)
+            let sizer = hostElement.querySelector(`[${SIZER_ATTRIBUTE}]`);
+            if (!sizer) {
+                sizer = document.createElement('div');
+                sizer.setAttribute(SIZER_ATTRIBUTE, '');
+                hostElement.appendChild(sizer);
+            }
+            // When the scrollHeight is large, the height of this element might be
+            // ignored. Setting content and font-size ensures the element has a size.
+            Object.assign(sizer.style, {
+                position: 'absolute',
+                margin: '-2px 0 0 0',
+                padding: 0,
+                visibility: 'hidden',
+                fontSize: '2px',
+            });
+            sizer.textContent = '&nbsp;';
+            sizer.setAttribute(SIZER_ATTRIBUTE, '');
+            this._sizer = sizer;
+        }
+        return this._sizer;
+    }
+    async updateLayoutConfig(layoutConfig) {
+        // If layout initialization hasn't finished yet, we wait
+        // for it to finish so we can check whether the new config
+        // is compatible with the existing layout before proceeding.
+        await this._layoutInitialized;
+        const Ctor = layoutConfig.type ||
+            // The new config is compatible with the current layout,
+            // so we update the config and return true to indicate
+            // a successful update
+            DefaultLayoutConstructor;
+        if (typeof Ctor === 'function' && this._layout instanceof Ctor) {
+            const config = { ...layoutConfig };
+            delete config.type;
+            this._layout.config = config;
+            // The new config requires a different layout altogether, but
+            // to limit implementation complexity we don't support dynamically
+            // changing the layout of an existing virtualizer instance.
+            // Returning false here lets the caller know that they should
+            // instead make a new virtualizer instance with the desired layout.
+            return true;
+        }
+        return false;
+    }
+    async _initLayout(layoutConfig) {
+        let config;
+        let Ctor;
+        if (typeof layoutConfig.type === 'function') {
+            // If we have a full LayoutSpecifier, the `type` property
+            // gives us our constructor...
+            Ctor = layoutConfig.type;
+            // ...while the rest of the specifier is our layout config
+            const copy = { ...layoutConfig };
+            delete copy.type;
+            config = copy;
+        }
+        else {
+            // If we don't have a full LayoutSpecifier, we just
+            // have a config for the default layout
+            config = layoutConfig;
+        }
+        if (Ctor === undefined) {
+            // If we don't have a constructor yet, load the default
+            DefaultLayoutConstructor = Ctor = (await Promise.resolve().then(function () { return flow; }))
+                .FlowLayout;
+        }
+        this._layout = new Ctor((message) => this._handleLayoutMessage(message), config);
+        if (this._layout.measureChildren &&
+            typeof this._layout.updateItemSizes === 'function') {
+            if (typeof this._layout.measureChildren === 'function') {
+                this._measureChildOverride = this._layout.measureChildren;
+            }
+            this._measureCallback = this._layout.updateItemSizes.bind(this._layout);
+        }
+        if (this._layout.listenForChildLoadEvents) {
+            this._hostElement.addEventListener('load', this._loadListener, true);
+        }
+        this._schedule(this._updateLayout);
+    }
+    // TODO (graynorton): Rework benchmarking so that it has no API and
+    // instead is always on except in production builds
+    startBenchmarking() {
+        if (this._benchmarkStart === null) {
+            this._benchmarkStart = window.performance.now();
+        }
+    }
+    stopBenchmarking() {
+        if (this._benchmarkStart !== null) {
+            const now = window.performance.now();
+            const timeElapsed = now - this._benchmarkStart;
+            const entries = performance.getEntriesByName('uv-virtualizing', 'measure');
+            const virtualizationTime = entries
+                .filter((e) => e.startTime >= this._benchmarkStart && e.startTime < now)
+                .reduce((t, m) => t + m.duration, 0);
+            this._benchmarkStart = null;
+            return { timeElapsed, virtualizationTime };
+        }
+        return null;
+    }
+    _measureChildren() {
+        const mm = {};
+        const children = this._children;
+        const fn = this._measureChildOverride || this._measureChild;
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            const idx = this._first + i;
+            if (this._itemsChanged || this._toBeMeasured.has(child)) {
+                mm[idx] = fn.call(this, child, this._items[idx]);
+            }
+        }
+        this._childMeasurements = mm;
+        this._schedule(this._updateLayout);
+        this._toBeMeasured.clear();
+    }
+    /**
+     * Returns the width, height, and margins of the given child.
+     */
+    _measureChild(element) {
+        // offsetWidth doesn't take transforms in consideration, so we use
+        // getBoundingClientRect which does.
+        const { width, height } = element.getBoundingClientRect();
+        return Object.assign({ width, height }, getMargins(element));
+    }
+    async _schedule(method) {
+        if (!this._scheduled.has(method)) {
+            this._scheduled.add(method);
+            await Promise.resolve();
+            this._scheduled.delete(method);
+            method.call(this);
+        }
+    }
+    async _updateDOM(state) {
+        this._scrollSize = state.scrollSize;
+        this._adjustRange(state.range);
+        this._childrenPos = state.childPositions;
+        this._scrollError = state.scrollError || null;
+        const { _rangeChanged, _itemsChanged } = this;
+        if (this._visibilityChanged) {
+            this._notifyVisibility();
+            this._visibilityChanged = false;
+        }
+        if (_rangeChanged || _itemsChanged) {
+            this._notifyRange();
+            this._rangeChanged = false;
+        }
+        this._finishDOMUpdate();
+    }
+    _finishDOMUpdate() {
+        if (this._connected) {
+            // _childrenRO should be non-null if we're connected
+            this._children.forEach((child) => this._childrenRO.observe(child));
+            this._checkScrollIntoViewTarget(this._childrenPos);
+            this._positionChildren(this._childrenPos);
+            this._sizeHostElement(this._scrollSize);
+            this._correctScrollError();
+            if (this._benchmarkStart && 'mark' in window.performance) {
+                window.performance.mark('uv-end');
+            }
+        }
+    }
+    _updateLayout() {
+        if (this._layout && this._connected) {
+            this._layout.items = this._items;
+            this._updateView();
+            if (this._childMeasurements !== null) {
+                // If the layout has been changed, we may have measurements but no callback
+                if (this._measureCallback) {
+                    this._measureCallback(this._childMeasurements);
+                }
+                this._childMeasurements = null;
+            }
+            this._layout.reflowIfNeeded();
+            if (this._benchmarkStart && 'mark' in window.performance) {
+                window.performance.mark('uv-end');
+            }
+        }
+    }
+    _handleScrollEvent() {
+        if (this._benchmarkStart && 'mark' in window.performance) {
+            try {
+                window.performance.measure('uv-virtualizing', 'uv-start', 'uv-end');
+            }
+            catch (e) {
+                console.warn('Error measuring performance data: ', e);
+            }
+            window.performance.mark('uv-start');
+        }
+        if (this._scrollerController.correctingScrollError === false) {
+            // This is a user-initiated scroll, so we unpin the layout
+            this._layout?.unpin();
+        }
+        this._schedule(this._updateLayout);
+    }
+    handleEvent(event) {
+        switch (event.type) {
+            case 'scroll':
+                if (event.currentTarget === window ||
+                    this._clippingAncestors.includes(event.currentTarget)) {
+                    this._handleScrollEvent();
+                }
+                break;
+            default:
+                console.warn('event not handled', event);
+        }
+    }
+    _handleLayoutMessage(message) {
+        if (message.type === 'stateChanged') {
+            this._updateDOM(message);
+        }
+        else if (message.type === 'visibilityChanged') {
+            this._firstVisible = message.firstVisible;
+            this._lastVisible = message.lastVisible;
+            this._notifyVisibility();
+        }
+        else if (message.type === 'unpinned') {
+            this._hostElement.dispatchEvent(new UnpinnedEvent());
+        }
+    }
+    get _children() {
+        const arr = [];
+        let next = this._hostElement.firstElementChild;
+        while (next) {
+            if (!next.hasAttribute(SIZER_ATTRIBUTE)) {
+                arr.push(next);
+            }
+            next = next.nextElementSibling;
+        }
+        return arr;
+    }
+    _updateView() {
+        const hostElement = this._hostElement;
+        const scrollingElement = this._scrollerController?.element;
+        const layout = this._layout;
+        if (hostElement && scrollingElement && layout) {
+            let top, left, bottom, right;
+            const hostElementBounds = hostElement.getBoundingClientRect();
+            top = 0;
+            left = 0;
+            bottom = window.innerHeight;
+            right = window.innerWidth;
+            const ancestorBounds = this._clippingAncestors.map((ancestor) => ancestor.getBoundingClientRect());
+            ancestorBounds.unshift(hostElementBounds);
+            for (const bounds of ancestorBounds) {
+                top = Math.max(top, bounds.top);
+                left = Math.max(left, bounds.left);
+                bottom = Math.min(bottom, bounds.bottom);
+                right = Math.min(right, bounds.right);
+            }
+            const scrollingElementBounds = scrollingElement.getBoundingClientRect();
+            const offsetWithinScroller = {
+                left: hostElementBounds.left - scrollingElementBounds.left,
+                top: hostElementBounds.top - scrollingElementBounds.top,
+            };
+            const totalScrollSize = {
+                width: scrollingElement.scrollWidth,
+                height: scrollingElement.scrollHeight,
+            };
+            const scrollTop = top - hostElementBounds.top + hostElement.scrollTop;
+            const scrollLeft = left - hostElementBounds.left + hostElement.scrollLeft;
+            const height = Math.max(0, bottom - top);
+            const width = Math.max(0, right - left);
+            layout.viewportSize = { width, height };
+            layout.viewportScroll = { top: scrollTop, left: scrollLeft };
+            layout.totalScrollSize = totalScrollSize;
+            layout.offsetWithinScroller = offsetWithinScroller;
+        }
+    }
+    /**
+     * Styles the host element so that its size reflects the
+     * total size of all items.
+     */
+    _sizeHostElement(size) {
+        // Some browsers seem to crap out if the host element gets larger than
+        // a certain size, so we clamp it here (this value based on ad hoc
+        // testing in Chrome / Safari / Firefox Mac)
+        const max = 8200000;
+        const h = size && size.width !== null ? Math.min(max, size.width) : 0;
+        const v = size && size.height !== null ? Math.min(max, size.height) : 0;
+        if (this._isScroller) {
+            this._getSizer().style.transform = `translate(${h}px, ${v}px)`;
+        }
+        else {
+            const style = this._hostElement.style;
+            style.minWidth = h ? `${h}px` : '100%';
+            style.minHeight = v ? `${v}px` : '100%';
+        }
+    }
+    /**
+     * Sets the top and left transform style of the children from the values in
+     * pos.
+     */
+    _positionChildren(pos) {
+        if (pos) {
+            pos.forEach(({ top, left, width, height, xOffset, yOffset }, index) => {
+                const child = this._children[index - this._first];
+                if (child) {
+                    child.style.position = 'absolute';
+                    child.style.boxSizing = 'border-box';
+                    child.style.transform = `translate(${left}px, ${top}px)`;
+                    if (width !== undefined) {
+                        child.style.width = width + 'px';
+                    }
+                    if (height !== undefined) {
+                        child.style.height = height + 'px';
+                    }
+                    child.style.left =
+                        xOffset === undefined ? null : xOffset + 'px';
+                    child.style.top =
+                        yOffset === undefined ? null : yOffset + 'px';
+                }
+            });
+        }
+    }
+    async _adjustRange(range) {
+        const { _first, _last, _firstVisible, _lastVisible } = this;
+        this._first = range.first;
+        this._last = range.last;
+        this._firstVisible = range.firstVisible;
+        this._lastVisible = range.lastVisible;
+        this._rangeChanged =
+            this._rangeChanged || this._first !== _first || this._last !== _last;
+        this._visibilityChanged =
+            this._visibilityChanged ||
+                this._firstVisible !== _firstVisible ||
+                this._lastVisible !== _lastVisible;
+    }
+    _correctScrollError() {
+        if (this._scrollError) {
+            const { scrollTop, scrollLeft } = this._scrollerController;
+            const { top, left } = this._scrollError;
+            this._scrollError = null;
+            this._scrollerController.correctScrollError({
+                top: scrollTop - top,
+                left: scrollLeft - left,
+            });
+        }
+    }
+    element(index) {
+        if (index === Infinity) {
+            index = this._items.length - 1;
+        }
+        return this._items?.[index] === undefined
+            ? undefined
+            : {
+                scrollIntoView: (options = {}) => this._scrollElementIntoView({ ...options, index }),
+            };
+    }
+    _scrollElementIntoView(options) {
+        if (options.index >= this._first && options.index <= this._last) {
+            this._children[options.index - this._first].scrollIntoView(options);
+        }
+        else {
+            options.index = Math.min(options.index, this._items.length - 1);
+            if (options.behavior === 'smooth') {
+                const coordinates = this._layout.getScrollIntoViewCoordinates(options);
+                const { behavior } = options;
+                this._updateScrollIntoViewCoordinates =
+                    this._scrollerController.managedScrollTo(Object.assign(coordinates, { behavior }), () => this._layout.getScrollIntoViewCoordinates(options), () => (this._scrollIntoViewTarget = null));
+                this._scrollIntoViewTarget = options;
+            }
+            else {
+                this._layout.pin = options;
+            }
+        }
+    }
+    /**
+     * If we are smoothly scrolling to an element and the target element
+     * is in the DOM, we update our target coordinates as needed
+     */
+    _checkScrollIntoViewTarget(pos) {
+        const { index } = this._scrollIntoViewTarget || {};
+        if (index && pos?.has(index)) {
+            this._updateScrollIntoViewCoordinates(this._layout.getScrollIntoViewCoordinates(this._scrollIntoViewTarget));
+        }
+    }
+    /**
+     * Emits a rangechange event with the current first, last, firstVisible, and
+     * lastVisible.
+     */
+    _notifyRange() {
+        this._hostElement.dispatchEvent(new RangeChangedEvent({ first: this._first, last: this._last }));
+    }
+    _notifyVisibility() {
+        this._hostElement.dispatchEvent(new VisibilityChangedEvent({
+            first: this._firstVisible,
+            last: this._lastVisible,
+        }));
+    }
+    get layoutComplete() {
+        // Lazily create promise
+        if (!this._layoutCompletePromise) {
+            this._layoutCompletePromise = new Promise((resolve, reject) => {
+                this._layoutCompleteResolver = resolve;
+                this._layoutCompleteRejecter = reject;
+            });
+        }
+        return this._layoutCompletePromise;
+    }
+    _rejectLayoutCompletePromise(reason) {
+        if (this._layoutCompleteRejecter !== null) {
+            this._layoutCompleteRejecter(reason);
+        }
+        this._resetLayoutCompleteState();
+    }
+    _scheduleLayoutComplete() {
+        // Don't do anything unless we have a pending promise
+        // And only request a frame if we haven't already done so
+        if (this._layoutCompletePromise && this._pendingLayoutComplete === null) {
+            // Wait one additional frame to be sure the layout is stable
+            this._pendingLayoutComplete = requestAnimationFrame(() => requestAnimationFrame(() => this._resolveLayoutCompletePromise()));
+        }
+    }
+    _resolveLayoutCompletePromise() {
+        if (this._layoutCompleteResolver !== null) {
+            this._layoutCompleteResolver();
+        }
+        this._resetLayoutCompleteState();
+    }
+    _resetLayoutCompleteState() {
+        this._layoutCompletePromise = null;
+        this._layoutCompleteResolver = null;
+        this._layoutCompleteRejecter = null;
+        this._pendingLayoutComplete = null;
+    }
+    /**
+     * Render and update the view at the next opportunity with the given
+     * hostElement size.
+     */
+    _hostElementSizeChanged() {
+        this._schedule(this._updateLayout);
+    }
+    // TODO (graynorton): Rethink how this works. Probably child loading is too specific
+    // to have dedicated support for; might want some more generic lifecycle hooks for
+    // layouts to use. Possibly handle measurement this way, too, or maybe that remains
+    // a first-class feature?
+    _childLoaded() { }
+    // This is the callback for the ResizeObserver that watches the
+    // virtualizer's children. We land here at the end of every virtualizer
+    // update cycle that results in changes to physical items, and we also
+    // end up here if one or more children change size independently of
+    // the virtualizer update cycle.
+    _childrenSizeChanged(changes) {
+        // Only measure if the layout requires it
+        if (this._layout?.measureChildren) {
+            for (const change of changes) {
+                this._toBeMeasured.set(change.target, change.contentRect);
+            }
+            this._measureChildren();
+        }
+        // If this is the end of an update cycle, we need to reset some
+        // internal state. This should be a harmless no-op if we're handling
+        // an out-of-cycle ResizeObserver callback, so we don't need to
+        // distinguish between the two cases.
+        this._scheduleLayoutComplete();
+        this._itemsChanged = false;
+        this._rangeChanged = false;
+    }
+}
+function getMargins(el) {
+    const style = window.getComputedStyle(el);
+    return {
+        marginTop: getMarginValue(style.marginTop),
+        marginRight: getMarginValue(style.marginRight),
+        marginBottom: getMarginValue(style.marginBottom),
+        marginLeft: getMarginValue(style.marginLeft),
+    };
+}
+function getMarginValue(value) {
+    const float = value ? parseFloat(value) : NaN;
+    return Number.isNaN(float) ? 0 : float;
+}
+// TODO (graynorton): Deal with iframes?
+function getParentElement(el) {
+    if (el.assignedSlot !== null) {
+        return el.assignedSlot;
+    }
+    if (el.parentElement !== null) {
+        return el.parentElement;
+    }
+    const parentNode = el.parentNode;
+    if (parentNode && parentNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+        return parentNode.host || null;
+    }
+    return null;
+}
+///
+function getElementAncestors(el, includeSelf = false) {
+    const ancestors = [];
+    let parent = includeSelf ? el : getParentElement(el);
+    while (parent !== null) {
+        ancestors.push(parent);
+        parent = getParentElement(parent);
+    }
+    return ancestors;
+}
+function getClippingAncestors(el, includeSelf = false) {
+    let foundFixed = false;
+    return getElementAncestors(el, includeSelf).filter((a) => {
+        if (foundFixed) {
+            return false;
+        }
+        const style = getComputedStyle(a);
+        foundFixed = style.position === 'fixed';
+        return style.overflow !== 'visible';
+    });
+}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const defaultKeyFunction = (item) => item;
+const defaultRenderItem = (item, idx) => x `${idx}: ${JSON.stringify(item, null, 2)}`;
+class VirtualizeDirective extends f {
+    constructor(part) {
+        super(part);
+        this._virtualizer = null;
+        this._first = 0;
+        this._last = -1;
+        this._renderItem = (item, idx) => defaultRenderItem(item, idx + this._first);
+        this._keyFunction = (item, idx) => defaultKeyFunction(item, idx + this._first);
+        this._items = [];
+        if (part.type !== t.CHILD) {
+            throw new Error('The virtualize directive can only be used in child expressions');
+        }
+    }
+    render(config) {
+        if (config) {
+            this._setFunctions(config);
+        }
+        const itemsToRender = [];
+        if (this._first >= 0 && this._last >= this._first) {
+            for (let i = this._first; i <= this._last; i++) {
+                itemsToRender.push(this._items[i]);
+            }
+        }
+        return c(itemsToRender, this._keyFunction, this._renderItem);
+    }
+    update(part, [config]) {
+        this._setFunctions(config);
+        const itemsChanged = this._items !== config.items;
+        this._items = config.items || [];
+        if (this._virtualizer) {
+            this._updateVirtualizerConfig(part, config);
+        }
+        else {
+            this._initialize(part, config);
+        }
+        return itemsChanged ? T : this.render();
+    }
+    async _updateVirtualizerConfig(part, config) {
+        const compatible = await this._virtualizer.updateLayoutConfig(config.layout || {});
+        if (!compatible) {
+            const hostElement = part.parentNode;
+            this._makeVirtualizer(hostElement, config);
+        }
+        this._virtualizer.items = this._items;
+    }
+    _setFunctions(config) {
+        const { renderItem, keyFunction } = config;
+        if (renderItem) {
+            this._renderItem = (item, idx) => renderItem(item, idx + this._first);
+        }
+        if (keyFunction) {
+            this._keyFunction = (item, idx) => keyFunction(item, idx + this._first);
+        }
+    }
+    _makeVirtualizer(hostElement, config) {
+        if (this._virtualizer) {
+            this._virtualizer.disconnected();
+        }
+        const { layout, scroller, items } = config;
+        this._virtualizer = new Virtualizer({ hostElement, layout, scroller });
+        this._virtualizer.items = items;
+        this._virtualizer.connected();
+    }
+    _initialize(part, config) {
+        const hostElement = part.parentNode;
+        if (hostElement && hostElement.nodeType === 1) {
+            hostElement.addEventListener('rangeChanged', (e) => {
+                this._first = e.first;
+                this._last = e.last;
+                this.setValue(this.render());
+            });
+            this._makeVirtualizer(hostElement, config);
+        }
+    }
+    disconnected() {
+        this._virtualizer?.disconnected();
+    }
+    reconnected() {
+        this._virtualizer?.connected();
+    }
+}
+const virtualize = e$2(VirtualizeDirective);
+
 let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
     constructor() {
         super(...arguments);
         this._events = [];
         this._isLoading = false;
         this._activeFilter = 'all';
+        this._highlightedTimestamp = null;
+        this._containerRef = e$1();
     }
     firstUpdated() {
         this._initController();
@@ -14705,6 +15905,39 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
     _setActiveFilter(filter) {
         this._activeFilter = filter;
     }
+    /**
+     * Public method to scroll to and highlight an event near the given timestamp
+     */
+    scrollToTimestamp(timestamp) {
+        this._highlightedTimestamp = timestamp;
+        // Find closest event to timestamp
+        if (!this._events || this._events.length === 0)
+            return;
+        let closestIndex = 0;
+        let minDiff = Number.MAX_VALUE;
+        for (let i = 0; i < this._events.length; i++) {
+            const eventTime = new Date(this._events[i].timestamp || this._events[i].start_time).getTime();
+            const diff = Math.abs(eventTime - timestamp);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestIndex = i;
+            }
+        }
+        // Scroll to event after render
+        requestAnimationFrame(() => {
+            const container = this._containerRef.value;
+            if (!container)
+                return;
+            const eventCard = container.querySelector(`[data-event-index="${closestIndex}"]`);
+            if (eventCard) {
+                eventCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+        // Clear highlight after animation
+        setTimeout(() => {
+            this._highlightedTimestamp = null;
+        }, 3000);
+    }
     render() {
         if (this._isLoading) {
             return x `<div class="empty-state">Loading events...</div>`;
@@ -14777,64 +16010,73 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
           `)}
       </div>
 
-      <div class="log-container">
+      <div class="log-container" ${n$2(this._containerRef)}>
         ${sortedEvents.length > 0
-            ? sortedEvents.map((event) => {
-                const cat = normalize(event.category);
-                const isNote = cat === 'note';
-                const type = isNote ? 'Plant Note' :
-                    (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
-                        (cat ? cat.replace(/_/g, ' ') : 'Event'));
-                const startTime = event.timestamp || event.start_time;
-                return x `
-                <div class="event-card">
-                  <div class="event-header">
-                    <div>
-                      <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
-                      <div class="event-time">${this._formatTime(startTime)}</div>
-                    </div>
-                    ${event.duration_sec > 0
-                    ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
-                    : E}
-                  </div>
-                  
-                  <div class="event-details">
-                    <div class="event-reasons">
-                      ${isNote ? x `
-                        <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
-                          ${event.notes}
+            ? x `
+            ${virtualize({
+                items: sortedEvents,
+                scroller: true,
+                renderItem: (event) => {
+                    if (!event)
+                        return x ``;
+                    const cat = normalize(event.category);
+                    const isNote = cat === 'note';
+                    const type = isNote ? 'Plant Note' :
+                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
+                            (cat ? cat.replace(/_/g, ' ') : 'Event'));
+                    const startTime = event.timestamp || event.start_time;
+                    const index = (this._events || []).indexOf(event);
+                    return x `
+                    <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
+                      <div class="event-header">
+                        <div>
+                          <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                          <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
-                        ${event.tags?.length > 0 ? x `
-                          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
-                            ${event.tags.map((tag) => x `
-                              <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
-                            `)}
-                          </div>
-                        ` : E}
-                        ${event.images?.length > 0 ? x `
-                          <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
-                            ${event.images.length} Image${event.images.length > 1 ? 's' : ''} attached
-                          </div>
-                        ` : E}
-                      ` : (event.reasons && event.reasons.length > 0
-                    ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
-                    : E)}
+                        ${event.duration_sec > 0
+                        ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                        : E}
+                      </div>
+                      
+                      <div class="event-details">
+                        <div class="event-reasons">
+                          ${isNote ? x `
+                            <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
+                              ${event.notes}
+                            </div>
+                            ${event.tags?.length > 0 ? x `
+                              <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                                ${event.tags.map((tag) => x `
+                                  <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
+                                `)}
+                              </div>
+                            ` : E}
+                            ${event.images?.length > 0 ? x `
+                              <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
+                                ${event.images.length} Image${event.images.length > 1 ? 's' : ''} attached
+                              </div>
+                            ` : E}
+                          ` : (event.reasons && event.reasons.length > 0
+                        ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
+                        : E)}
+                        </div>
+                        
+                        ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                        ? x `
+                              <div 
+                                class="event-probability"
+                                style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
+                              >
+                                ${this._formatProb(event.severity)}
+                              </div>
+                            `
+                        : E}
+                      </div>
                     </div>
-                    
-                    ${!isNote && event.severity > 0.5 && event.category !== 'training'
-                    ? x `
-                          <div 
-                            class="event-probability"
-                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
-                          >
-                            ${this._formatProb(event.severity)}
-                          </div>
-                        `
-                    : E}
-                  </div>
-                </div>
-              `;
-            })
+                  `;
+                }
+            })}
+          `
             : x `
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
@@ -14848,14 +16090,16 @@ GrowspaceLogbook.styles = [
     dialogStyles,
     i$6 `
       :host {
-        display: block;
+        display: flex;
+        flex-direction: column;
         height: 100%;
         overflow: hidden;
       }
       .log-container {
-        height: 100%;
+        flex: 1;
         overflow-y: auto;
         padding-right: 4px; /* Space for scrollbar */
+        position: relative;
       }
       .log-container::-webkit-scrollbar {
         width: 8px;
@@ -14872,6 +16116,19 @@ GrowspaceLogbook.styles = [
         padding: 16px;
         margin-bottom: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .event-card.highlighted {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: var(--primary-color, #4caf50);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        animation: highlight-pulse 1.5s ease;
+      }
+      @keyframes highlight-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
       }
       .event-header {
         display: flex;
@@ -14932,6 +16189,7 @@ GrowspaceLogbook.styles = [
         white-space: nowrap;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE/Edge */
+        flex-shrink: 0;
       }
       .filter-bar::-webkit-scrollbar {
         display: none; /* Chrome/Safari/Opera */
@@ -14983,15 +16241,545 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceLogbook.prototype, "_activeFilter", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbook.prototype, "_highlightedTimestamp", void 0);
 GrowspaceLogbook = __decorate([
     t$2('growspace-logbook')
 ], GrowspaceLogbook);
+
+let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._events = [];
+        this._isLoading = false;
+        this._hoveredEvent = null;
+        this._zoomLevel = 1; // 1 = normal, 2 = zoomed in
+        this._controller = new GrowspaceLogbookController();
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('growspaceId') || (changedProps.has('hass') && !this._events.length)) {
+            this._fetchEvents();
+        }
+    }
+    async _fetchEvents() {
+        if (!this.hass || !this.growspaceId)
+            return;
+        this._isLoading = true;
+        try {
+            this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 100); // Fetch more events for timeline
+        }
+        catch (e) {
+            console.error(e);
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    _getIcon(event) {
+        const cat = event.category?.toLowerCase();
+        const type = event.sensor_type?.toLowerCase();
+        if (cat === 'alert')
+            return mdiAlertCircle;
+        if (cat === 'note')
+            return mdiNoteText;
+        if (type?.includes('water') || type?.includes('irrigation'))
+            return mdiWater;
+        if (cat === 'training')
+            return mdiDumbbell;
+        if (type === 'temperature')
+            return mdiThermometer;
+        if (type === 'humidity')
+            return mdiWaterPercent;
+        if (type === 'vpd')
+            return mdiGauge;
+        return mdiLeaf;
+    }
+    _getClass(event) {
+        const cat = event.category?.toLowerCase();
+        const type = event.sensor_type?.toLowerCase();
+        const severity = event.severity || 0;
+        if (cat === 'alert' || severity > 0.8)
+            return 'marker-alert';
+        if (cat === 'note')
+            return 'marker-note';
+        if (type?.includes('water') || type?.includes('irrigation'))
+            return 'marker-water';
+        if (cat === 'phase_change')
+            return 'marker-stage'; // Hypothetical category
+        return '';
+    }
+    _getPosition(event, minTime, totalDuration) {
+        const time = new Date(event.timestamp || event.start_time).getTime();
+        const position = ((time - minTime) / totalDuration) * 100;
+        return position;
+    }
+    render() {
+        if (this._isLoading)
+            return x `<div class="empty-state">Loading timeline...</div>`;
+        if (this._events.length === 0)
+            return x `<div class="empty-state">No events to display</div>`;
+        // Process times
+        const timestamps = this._events.map(e => new Date(e.timestamp || e.start_time).getTime());
+        const minTime = Math.min(...timestamps);
+        const maxTime = Math.max(...timestamps);
+        // Add buffer (1 day)
+        const buffer = 24 * 60 * 60 * 1000;
+        const start = minTime - buffer;
+        const end = maxTime + buffer;
+        const totalDuration = end - start;
+        // Zoom multiplier
+        const width = 100 * this._zoomLevel;
+        return x `
+      <div class="controls">
+        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
+        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
+      </div>
+
+      <div class="timeline-container">
+        <div class="timeline-track" style="width: ${width}%">
+          ${this._events.map(event => {
+            const left = this._getPosition(event, start, totalDuration);
+            const icon = this._getIcon(event);
+            const className = this._getClass(event);
+            return x `
+              <div 
+                class="event-marker ${className}" 
+                style="left: ${left}%"
+                @mouseenter=${() => this._hoveredEvent = event}
+                @mouseleave=${() => this._hoveredEvent = null}
+              >
+                <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                
+                ${this._hoveredEvent === event ? x `
+                  <div class="tooltip visible" style="left: ${left}%">
+                    <div class="tooltip-header">
+                      ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
+                    </div>
+                    <div class="tooltip-time">
+                      ${new Date(event.timestamp || event.start_time).toLocaleString()}
+                    </div>
+                    <div>${event.notes || event.reasons?.join(', ') || ''}</div>
+                  </div>
+                ` : E}
+              </div>
+            `;
+        })}
+
+          <div class="date-axis">
+            <!-- Generate ticks every 20% -->
+            ${[0, 20, 40, 60, 80, 100].map(pct => {
+            const time = start + (totalDuration * (pct / 100));
+            return x `
+                <div class="date-tick" style="left: ${pct}%">
+                  ${new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </div>
+              `;
+        })}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspaceTimeline.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+      }
+
+      .timeline-container {
+        height: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: relative;
+        padding: 40px 20px;
+        scrollbar-width: thin;
+        cursor: grab;
+      }
+
+      .timeline-container:active {
+        cursor: grabbing;
+      }
+
+      .timeline-track {
+        position: relative;
+        height: 4px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.1));
+        top: 50%;
+        margin-top: -2px;
+        min-width: 100%;
+      }
+
+      .event-marker {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--card-background-color, #202020);
+        border: 2px solid var(--divider-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 2;
+      }
+
+      .event-marker:hover {
+        transform: translate(-50%, -50%) scale(1.2);
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      }
+
+      .event-marker svg {
+        width: 18px;
+        height: 18px;
+        fill: var(--secondary-text-color);
+      }
+
+      /* Event Types */
+      .marker-alert { border-color: var(--error-color); }
+      .marker-alert svg { fill: var(--error-color); }
+      
+      .marker-water { border-color: var(--info-color, #2196f3); }
+      .marker-water svg { fill: var(--info-color, #2196f3); }
+      
+      .marker-note { border-color: var(--warning-color); }
+      .marker-note svg { fill: var(--warning-color); }
+      
+      .marker-stage { 
+        width: 40px; 
+        height: 40px; 
+        border-color: var(--success-color);
+        background: var(--success-color); 
+      }
+      .marker-stage svg { fill: white; width: 24px; height: 24px; }
+
+      .date-axis {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        height: 30px;
+        pointer-events: none;
+      }
+
+      .date-tick {
+        position: absolute;
+        bottom: 0;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+      }
+
+      .date-tick::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        width: 1px;
+        height: 10px;
+        background: var(--divider-color);
+      }
+
+      .tooltip {
+        position: absolute;
+        bottom: 70px; /* Above the track */
+        transform: translateX(-50%);
+        background: var(--ha-card-background, #1c1c1c);
+        border: 1px solid var(--divider-color);
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 20;
+        min-width: 200px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .tooltip.visible {
+        opacity: 1;
+      }
+
+      .tooltip-header {
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: var(--primary-text-color);
+      }
+
+      .tooltip-time {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 8px;
+      }
+
+      .controls {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        gap: 8px;
+        z-index: 20;
+      }
+
+      .zoom-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+      
+      .zoom-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .empty-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--secondary-text-color);
+      }
+    `
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceTimeline.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceTimeline.prototype, "growspaceId", void 0);
+__decorate([
+    r$2()
+], GrowspaceTimeline.prototype, "_events", void 0);
+__decorate([
+    r$2()
+], GrowspaceTimeline.prototype, "_isLoading", void 0);
+__decorate([
+    r$2()
+], GrowspaceTimeline.prototype, "_hoveredEvent", void 0);
+__decorate([
+    r$2()
+], GrowspaceTimeline.prototype, "_zoomLevel", void 0);
+GrowspaceTimeline = __decorate([
+    t$2('growspace-timeline')
+], GrowspaceTimeline);
+
+let VPDHeatmap = class VPDHeatmap extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.stage = 'vegetative';
+    }
+    firstUpdated() {
+        this._drawHeatmap();
+    }
+    updated(changedProps) {
+        if (changedProps.has('stage')) {
+            this._drawHeatmap();
+        }
+    }
+    _getVPD(tempC, rh) {
+        const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
+        const vpd = svp * (1 - rh / 100);
+        return vpd;
+    }
+    _getZoneColor(vpd, stage) {
+        // VPD ranges in kPa
+        let min, max, optMin, optMax;
+        switch (stage) {
+            case 'seedling':
+                optMin = 0.4;
+                optMax = 0.8;
+                min = 0.2;
+                max = 1.0;
+                break;
+            case 'vegetative': // Early/Late veg
+                optMin = 0.8;
+                optMax = 1.1; // 0.8-1.1 kPa
+                min = 0.4;
+                max = 1.4;
+                break;
+            case 'flower': // Early flower
+                optMin = 1.0;
+                optMax = 1.35; // 1.0-1.35 kPa estimate
+                min = 0.6;
+                max = 1.6;
+                break;
+            case 'late_flower':
+                optMin = 1.2;
+                optMax = 1.55; // 1.2-1.55 kPa
+                min = 0.8;
+                max = 1.8;
+                break;
+            default:
+                optMin = 0.8;
+                optMax = 1.2;
+                min = 0.5;
+                max = 1.5;
+        }
+        if (vpd >= optMin && vpd <= optMax)
+            return '#4caf50'; // Optimal (Green)
+        if (vpd < min)
+            return '#2196f3'; // Too Low (Blue/Wet)
+        if (vpd > max)
+            return '#f44336'; // Too High (Red/Dry)
+        // Transitions
+        if (vpd < optMin)
+            return '#ff9800'; // Low-Warning (Orange)
+        if (vpd > optMax)
+            return '#ff9800'; // High-Warning (Orange)
+        return '#9e9e9e';
+    }
+    _drawHeatmap() {
+        const canvas = this.shadowRoot?.getElementById('vpdCanvas');
+        if (!canvas)
+            return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+        // Resolution
+        const width = canvas.width = 400;
+        const height = canvas.height = 300;
+        // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
+        const minTemp = 15, maxTemp = 35;
+        const minRH = 30, maxRH = 90;
+        // Clear
+        ctx.clearRect(0, 0, width, height);
+        // Draw Heatmap pixels
+        for (let x = 0; x < width; x += 4) { // Optimization: 4px blocks
+            for (let y = 0; y < height; y += 4) {
+                // Map pixel to Temp/RH
+                // x=0 -> minTemp, x=width -> maxTemp
+                const temp = minTemp + (x / width) * (maxTemp - minTemp);
+                // y=0 -> maxRH, y=height -> minRH (Canvas Y is inverted relative to standard cartesian chart usually)
+                // Let's make Y=height be minRH (bottom), Y=0 be maxRH (top)
+                const rh = maxRH - (y / height) * (maxRH - minRH);
+                const vpd = this._getVPD(temp, rh);
+                const color = this._getZoneColor(vpd, this.stage);
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 4, 4);
+            }
+        }
+        // Draw Current Point if data exists
+        if (this.temperature && this.humidity) {
+            if (this.temperature >= minTemp && this.temperature <= maxTemp &&
+                this.humidity >= minRH && this.humidity <= maxRH) {
+                const x = ((this.temperature - minTemp) / (maxTemp - minTemp)) * width;
+                const y = ((maxRH - this.humidity) / (maxRH - minRH)) * height;
+                // Draw dot
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+    }
+    render() {
+        return x `
+      <canvas id="vpdCanvas"></canvas>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: #2196f3"></div>Wet</div>
+        <div class="legend-item"><div class="legend-color" style="background: #ff9800"></div>Fair</div>
+        <div class="legend-item"><div class="legend-color" style="background: #4caf50"></div>Optimal</div>
+        <div class="legend-item"><div class="legend-color" style="background: #f44336"></div>Dry</div>
+      </div>
+    `;
+    }
+};
+VPDHeatmap.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        background: var(--card-background-color, #202020);
+      }
+
+      .current-point {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border: 2px solid black;
+        border-radius: 50%;
+        transform: translate(-50%, 50%); /* Adjust for bottom-left origin coordinate system mapping needed */
+        pointer-events: none;
+        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+      }
+
+      .legend {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .legend-color {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+    `
+];
+__decorate([
+    n$5({ attribute: false })
+], VPDHeatmap.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Number })
+], VPDHeatmap.prototype, "temperature", void 0);
+__decorate([
+    n$5({ type: Number })
+], VPDHeatmap.prototype, "humidity", void 0);
+__decorate([
+    n$5({ type: String })
+], VPDHeatmap.prototype, "stage", void 0);
+VPDHeatmap = __decorate([
+    t$2('vpd-heatmap')
+], VPDHeatmap);
 
 let LogbookDialog = class LogbookDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
         this.growspaceId = '';
+        this._activeTab = 'list';
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
@@ -15015,12 +16803,63 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         </div>
 
         <div class="content-wrapper">
-          <growspace-logbook
-            .hass=${this.hass}
-            .growspaceId=${this.growspaceId}
-          ></growspace-logbook>
+          <!-- Tab Switcher -->
+          <div class="tab-bar">
+            <button 
+              class="tab ${this._activeTab === 'list' ? 'active' : ''}"
+              @click=${() => this._activeTab = 'list'}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiFormatListBulleted}"></path></svg>
+              <span>List View</span>
+            </button>
+            <button 
+              class="tab ${this._activeTab === 'timeline' ? 'active' : ''}"
+              @click=${() => this._activeTab = 'timeline'}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
+              <span>Timeline</span>
+            </button>
+            <button 
+              class="tab ${this._activeTab === 'vpd' ? 'active' : ''}"
+              @click=${() => this._activeTab = 'vpd'}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
+              <span>VPD</span>
+            </button>
+          </div>
+
+          <!-- Content -->
+          ${this._activeTab === 'list'
+            ? x `
+              <growspace-logbook
+                .hass=${this.hass}
+                .growspaceId=${this.growspaceId}
+              ></growspace-logbook>
+            `
+            : this._activeTab === 'timeline'
+                ? x `
+              <growspace-timeline
+                .hass=${this.hass}
+                .growspaceId=${this.growspaceId}
+              ></growspace-timeline>
+            `
+                : x `
+            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
+              <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
+              <vpd-heatmap
+                .hass=${this.hass}
+                .temperature=${24} 
+                .humidity=${60}
+                .stage=${'vegetative'}
+              ></vpd-heatmap>
+              <p style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;">
+                Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current stage.<br>
+                Targeting 0.8 - 1.2 kPa.
+              </p>
+            </div>
+          `}
         </div>
-      </ha-dialog>
+  </ha-dialog>
     `;
     }
 };
@@ -15056,10 +16895,57 @@ LogbookDialog.styles = [
         overflow: hidden;
       }
 
+      .tab-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        padding-bottom: 2px;
+      }
+
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+      }
+
+      .tab svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      .tab:hover {
+        color: var(--primary-text-color, #fff);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
+      .tab.active {
+        color: var(--primary-color, #4caf50);
+        border-bottom-color: var(--primary-color, #4caf50);
+      }
+
       growspace-logbook {
         flex: 1;
         overflow: hidden;
-        margin-top: 16px;
+      }
+
+      .timeline-placeholder {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--secondary-text-color);
       }
     `,
 ];
@@ -15072,6 +16958,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], LogbookDialog.prototype, "growspaceId", void 0);
+__decorate([
+    r$2()
+], LogbookDialog.prototype, "_activeTab", void 0);
 LogbookDialog = __decorate([
     t$2('logbook-dialog')
 ], LogbookDialog);
@@ -15683,6 +17572,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
+        this.embedded = false;
         this._view = 'LIST';
         this._editingPreset = null;
         this._error = null;
@@ -15762,16 +17652,11 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         }
     }
     render() {
-        if (!this.open)
+        if (!this.open && !this.embedded)
             return x ``;
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Nutrient Presets'}
-      >
-        <div class="glass-dialog-container">
+        const content = x `
+        <div class="glass-dialog-container" style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}">
+          ${!this.embedded ? x `
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
@@ -15784,8 +17669,9 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
+          ` : E}
 
-          <div class="dialog-content-grid" style="display: block;">
+          <div class="dialog-content-grid" style="display: block; ${this.embedded ? 'padding: 0;' : ''}">
             ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
             
             ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
@@ -15794,7 +17680,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
           <div class="button-group">
             ${this._view === 'LIST'
             ? x `
-                  <button class="md3-button tonal" @click=${this._close}>Close</button>
+                  ${!this.embedded ? x `<button class="md3-button tonal" @click=${this._close}>Close</button>` : E}
                   <button class="md3-button primary" @click=${this._startNew}>
                     <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
                     Add Preset
@@ -15809,6 +17695,18 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
                 `}
           </div>
         </div>
+    `;
+        if (this.embedded) {
+            return content;
+        }
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Nutrient Presets'}
+      >
+        ${content}
       </ha-dialog>
     `;
     }
@@ -16020,6 +17918,9 @@ __decorate([
     n$5({ type: Boolean })
 ], NutrientPresetsEditor.prototype, "open", void 0);
 __decorate([
+    n$5({ type: Boolean })
+], NutrientPresetsEditor.prototype, "embedded", void 0);
+__decorate([
     r$2()
 ], NutrientPresetsEditor.prototype, "_view", void 0);
 __decorate([
@@ -16031,6 +17932,225 @@ __decorate([
 NutrientPresetsEditor = __decorate([
     t$2('nutrient-presets-editor')
 ], NutrientPresetsEditor);
+
+let GrowspaceChip = class GrowspaceChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.icon = '';
+        this.label = '';
+        this.value = undefined;
+        this.status = '';
+        this.active = false;
+        this.linked = false;
+        this.tooltip = '';
+    }
+    render() {
+        // Determine classes based on meaningful status string
+        const statusClass = this.status ? `status-${this.status}` : '';
+        return x `
+      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
+        </div>
+        ${this.label ? x `${this.label}: ` : ''}${this.value}
+        ${this.linked
+            ? x `
+              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+    _handleLinkClick(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceChip.styles = [
+    sharedStyles,
+    i$6 `
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+      backdrop-filter: var(--glass-blur);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+      touch-action: auto;
+    }
+
+    /* Status Colors */
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
+    }
+
+    .stat-chip.status-optimal {
+      color: #2e7d32 !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
+
+    .stat-chip.status-warning {
+      color: #ffa726 !important;
+      border-color: rgba(255, 167, 38, 0.5) !important;
+      background: rgba(255, 167, 38, 0.1) !important;
+    }
+
+    .stat-chip.status-danger {
+      color: #ef5350 !important;
+      border-color: rgba(239, 83, 80, 0.5) !important;
+      background: rgba(239, 83, 80, 0.1) !important;
+      animation: pulse-red 2s infinite;
+    }
+
+    .stat-chip:hover {
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
+      transform: translateY(-1px);
+    }
+
+    :host([active]) .stat-chip {
+      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
+      border-color: var(--primary-color, #03a9f4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: var(--primary-text-color, #fff);
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .link-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      margin-right: -8px;
+      opacity: 0.8;
+      cursor: pointer;
+    }
+
+    .link-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: var(--primary-color, #03a9f4);
+    }
+  `
+];
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "label", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "value", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "status", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], GrowspaceChip.prototype, "active", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceChip.prototype, "linked", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "tooltip", void 0);
+GrowspaceChip = __decorate([
+    t$2('growspace-chip')
+], GrowspaceChip);
+
+let NutrientStockChip = class NutrientStockChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.compact = false;
+    }
+    render() {
+        if (!this.stock) {
+            return x ``;
+        }
+        const { current_ml, initial_ml, name } = this.stock;
+        const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
+        let status = 'optimal';
+        if (ratio <= 0.2) {
+            status = 'danger';
+        }
+        else if (ratio <= 0.5) {
+            status = 'warning';
+        }
+        const percentage = Math.round(ratio * 100);
+        const value = this.compact
+            ? `${percentage}%`
+            : `${current_ml}ml (${percentage}%)`;
+        this.compact ? '' : name;
+        // If compact, maybe show name as tooltip or just rely on parent context? 
+        // Usually chip has label. Let's use name as label always, but maybe truncate?
+        return x `
+      <growspace-chip
+        .icon=${mdiBottleTonicPlus}
+        .label=${this.compact ? undefined : name}
+        .value=${value}
+        .status=${status}
+        .tooltip=${`Capacity: ${initial_ml}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
+      ></growspace-chip>
+    `;
+    }
+};
+NutrientStockChip.styles = i$6 `
+    :host {
+      display: inline-block;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], NutrientStockChip.prototype, "stock", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientStockChip.prototype, "compact", void 0);
+NutrientStockChip = __decorate([
+    t$2('nutrient-stock-chip')
+], NutrientStockChip);
 
 let IPMDialog = class IPMDialog extends i$3 {
     constructor() {
@@ -16507,6 +18627,537 @@ IPMDialog = __decorate([
     t$2('ipm-dialog')
 ], IPMDialog);
 
+let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.embedded = false;
+        this._inventory = null;
+        this._isLoading = true;
+        this._error = null;
+        // For adding/editing
+        this._editingId = null;
+        this._editName = '';
+        this._editCurrent = 0;
+        this._editInitial = 0;
+        this._isAdding = false;
+    }
+    firstUpdated() {
+        if (this.hass) {
+            this._dataService = new DataService(this.hass);
+            this._fetchInventory();
+        }
+    }
+    async _fetchInventory() {
+        if (!this._dataService)
+            return;
+        this._isLoading = true;
+        this._error = null;
+        try {
+            const result = await this._dataService.fetchNutrientInventory();
+            if (result) {
+                this._inventory = result;
+            }
+        }
+        catch (e) {
+            this._error = e.message || 'Failed to load inventory';
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    _startEdit(stock) {
+        this._editingId = stock.nutrient_id;
+        this._editName = stock.name;
+        this._editCurrent = stock.current_ml;
+        this._editInitial = stock.initial_ml;
+        this._isAdding = false;
+    }
+    _startAdd() {
+        this._editingId = null;
+        this._editName = '';
+        this._editCurrent = 1000;
+        this._editInitial = 1000;
+        this._isAdding = true;
+    }
+    _cancelEdit() {
+        this._editingId = null;
+        this._isAdding = false;
+    }
+    async _save() {
+        if (!this._dataService)
+            return;
+        // Basic validation
+        if (!this._editName.trim()) {
+            alert('Name is required');
+            return;
+        }
+        try {
+            const id = this._editingId || this._editName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            await this._dataService.updateNutrientStock(id, this._editName, this._editCurrent, this._editInitial);
+            await this._fetchInventory(); // Refresh list
+            this._notifyDataChanged();
+            this._cancelEdit();
+        }
+        catch (e) {
+            alert(`Error saving: ${e.message}`);
+        }
+    }
+    async _delete(id) {
+        if (!confirm('Are you sure you want to delete this nutrient stock?'))
+            return;
+        if (!this._dataService)
+            return;
+        try {
+            await this._dataService.removeNutrientStock(id);
+            await this._fetchInventory();
+            this._notifyDataChanged();
+        }
+        catch (e) {
+            alert(`Error deleting: ${e.message}`);
+        }
+    }
+    _notifyDataChanged() {
+        this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open && !this.embedded)
+            return E;
+        const content = x `
+          <div class="glass-dialog-container" style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}">
+            ${!this.embedded ? x `
+            <div class="dialog-header">
+              <div class="dialog-icon">
+                <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiBottleTonicPlus}"></path>
+                </svg>
+              </div>
+              <div class="dialog-title-group">
+                <h2 class="dialog-title">Nutrient Inventory</h2>
+                <div class="dialog-subtitle">Manage stock levels</div>
+              </div>
+              <button class="md3-button text" @click=${this._close}>
+                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiClose}"></path>
+                </svg>
+              </button>
+            </div>
+            ` : E}
+
+            <div class="dialog-body" style="${this.embedded ? 'padding: 0;' : ''}">
+              ${this._isLoading
+            ? x `<p>Loading...</p>`
+            : this._error
+                ? x `<div class="error-banner">
+                      <svg viewBox="0 0 24 24"><path d="${mdiAlertCircle}"></path></svg>
+                      ${this._error}
+                    </div>`
+                : this._renderContent()}
+            </div>
+          </div>
+        `;
+        if (this.embedded) {
+            return content;
+        }
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        ${content}
+      </ha-dialog>
+    `;
+    }
+    _renderContent() {
+        const stocks = this._inventory ? Object.values(this._inventory.stocks) : [];
+        return x `
+      ${!this._isAdding
+            ? x `
+            <button class="md3-button tonal add-button" @click=${this._startAdd}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24">
+                <path d="${mdiPlus}"></path>
+              </svg>
+              Add Nutrient
+            </button>
+          `
+            : this._renderEditForm()}
+
+      <div class="inventory-list">
+        ${stocks.length === 0 && !this._isAdding
+            ? x `<p style="text-align:center; opacity:0.6">No nutrient stock items tracked.</p>`
+            : stocks.map(stock => this._renderStockItem(stock))}
+      </div>
+    `;
+    }
+    _renderStockItem(stock) {
+        const isEditing = this._editingId === stock.nutrient_id;
+        if (isEditing)
+            return this._renderEditForm();
+        const percent = Math.max(0, Math.min(100, (stock.current_ml / stock.initial_ml) * 100));
+        let statusClass = '';
+        if (percent <= 20)
+            statusClass = 'danger';
+        else if (percent <= 40)
+            statusClass = 'warning';
+        return x `
+      <div class="stock-item">
+        <div class="stock-info">
+          <div class="stock-name">${stock.name}</div>
+          <div class="stock-meta">
+            ${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml (${percent.toFixed(0)}%)
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${statusClass}" style="width: ${percent}%"></div>
+          </div>
+        </div>
+        
+        <div class="stock-actions">
+          <button class="md3-button text" @click=${() => this._startEdit(stock)}>
+            Edit
+          </button>
+          <button class="md3-button text" style="color: #F44336" @click=${() => this._delete(stock.nutrient_id)}>
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDelete}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderEditForm() {
+        return x `
+      <div class="stock-item" style="border-color: var(--primary-color);">
+        <div class="edit-form">
+          <h3 style="margin:0 0 12px 0;">${this._isAdding ? 'Add Nutrient' : 'Edit Nutrient'}</h3>
+          
+          <md3-text-input
+            label="Name"
+            .value=${this._editName}
+            @change=${(e) => this._editName = e.detail}
+          ></md3-text-input>
+
+          <div class="form-row">
+            <md3-number-input
+              label="Current (ml)"
+              .value=${this._editCurrent}
+              @change=${(e) => this._editCurrent = parseFloat(e.detail)}
+            ></md3-number-input>
+
+            <md3-number-input
+              label="Total Capacity (ml)"
+              .value=${this._editInitial}
+              @change=${(e) => this._editInitial = parseFloat(e.detail)}
+            ></md3-number-input>
+          </div>
+
+          <div class="form-row" style="justify-content: flex-end; margin-top: 8px;">
+            <button class="md3-button text" @click=${this._cancelEdit}>Cancel</button>
+            <button class="md3-button primary" @click=${this._save}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24">
+                <path d="${mdiCheck}"></path>
+              </svg>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+NutrientInventoryDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: clamp(400px, 600px, 90vw);
+      }
+      
+      .inventory-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .stock-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stock-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stock-name {
+        font-weight: 500;
+        font-size: 1rem;
+      }
+
+      .stock-meta {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .stock-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .edit-form {
+        grid-column: 1 / -1;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .add-button {
+        margin-bottom: 16px;
+        width: 100%;
+      }
+
+      .progress-bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 8px;
+        width: 100%;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: var(--primary-color, #4CAF50);
+        transition: width 0.3s ease;
+      }
+      
+      .progress-fill.warning {
+        background: #FF9800;
+      }
+      
+      .progress-fill.danger {
+        background: #F44336;
+      }
+    `
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], NutrientInventoryDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientInventoryDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientInventoryDialog.prototype, "embedded", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_inventory", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_isLoading", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_error", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_editingId", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_editName", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_editCurrent", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_editInitial", void 0);
+__decorate([
+    r$2()
+], NutrientInventoryDialog.prototype, "_isAdding", void 0);
+NutrientInventoryDialog = __decorate([
+    t$2('nutrient-inventory-dialog')
+], NutrientInventoryDialog);
+
+let NutrientDialog = class NutrientDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._activeTab = 'inventory';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    _setTab(tab) {
+        this._activeTab = tab;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+      >
+        <div class="glass-dialog-container">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiBottleTonicPlus}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Nutrients</h2>
+              <div class="dialog-subtitle">Manage inventory and recipes</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="tab-bar">
+            <div class="tab ${this._activeTab === 'inventory' ? 'active' : ''}" 
+                 @click=${() => this._setTab('inventory')}>
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClipboardList}"></path>
+              </svg>
+              Inventory
+            </div>
+            <div class="tab ${this._activeTab === 'presets' ? 'active' : ''}" 
+                 @click=${() => this._setTab('presets')}>
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiFormatListBulleted}"></path>
+              </svg>
+              Presets
+            </div>
+          </div>
+
+          <div class="content-area">
+            ${this._activeTab === 'inventory'
+            ? x `<nutrient-inventory-dialog .open=${true} .embedded=${true} .store=${this.store}></nutrient-inventory-dialog>`
+            : x `<nutrient-presets-editor .open=${true} .embedded=${true} .store=${this.store}></nutrient-presets-editor>`}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+NutrientDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
+      }
+      
+      .dialog-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 16px;
+        margin-bottom: 0 !important;
+      }
+      
+      .tab-bar {
+        display: flex;
+        gap: 24px;
+        padding: 0 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 24px;
+      }
+      
+      .tab {
+        padding: 16px 0;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        position: relative;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .tab:hover {
+        color: var(--primary-text-color);
+      }
+      
+      .tab.active {
+        color: var(--primary-color, #4CAF50);
+      }
+      
+      .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: var(--primary-color, #4CAF50);
+        border-radius: 2px 2px 0 0;
+      }
+
+      .content-area {
+        min-height: 400px;
+        max-height: 70vh;
+        overflow-y: auto;
+        padding: 0 24px 24px;
+      }
+
+      /* Scrollbar styling */
+      .content-area::-webkit-scrollbar {
+        width: 8px;
+      }
+      .content-area::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+      }
+      .content-area::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+    `
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], NutrientDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
+], NutrientDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientDialog.prototype, "open", void 0);
+__decorate([
+    r$2()
+], NutrientDialog.prototype, "_activeTab", void 0);
+NutrientDialog = __decorate([
+    t$2('nutrient-dialog')
+], NutrientDialog);
+
 let DialogHost = class DialogHost extends i$3 {
     constructor() {
         super(...arguments);
@@ -16563,6 +19214,10 @@ let DialogHost = class DialogHost extends i$3 {
                 return this._renderTrainingDialog(active);
             case 'IPM':
                 return this._renderIPMDialog(active, selectedDeviceData);
+            case 'NUTRIENT_INVENTORY':
+                return this._renderNutrientInventoryDialog(active);
+            case 'NUTRIENTS':
+                return this._renderNutrientDialog(active);
             default:
                 return x ``;
         }
@@ -16635,16 +19290,53 @@ let DialogHost = class DialogHost extends i$3 {
             type: 'IPM',
             payload: e.detail
         })}
+            @open-strain-editor=${(e) => {
+            const { strain, phenotype } = e.detail;
+            const strainLibrary = this.store.data.$strainLibrary.get();
+            // Normalize empty strings, null, and undefined to compare properly
+            const normalizedPhenotype = phenotype || '';
+            let strainEntry = strainLibrary.find(s => {
+                const entryPhenotype = s.phenotype || '';
+                return s.strain === strain && entryPhenotype === normalizedPhenotype;
+            });
+            // If no match found, create a new entry for the user to complete
+            if (!strainEntry && strain) {
+                const key = normalizedPhenotype
+                    ? `${strain}_${normalizedPhenotype}`
+                    : strain;
+                strainEntry = {
+                    strain: strain,
+                    phenotype: normalizedPhenotype,
+                    key: key,
+                    breeder: '',
+                    type: 'Hybrid',
+                    flowering_days_min: 60,
+                    flowering_days_max: 70,
+                    lineage: '',
+                    sex: 'Feminized',
+                    description: '',
+                    image: '',
+                    sativa_percentage: 50,
+                    indica_percentage: 50,
+                };
+            }
+            this.store.ui.setActiveDialog({
+                type: 'STRAIN_LIBRARY',
+                payload: { editingStrain: strainEntry }
+            });
+        }}
         ></plant-overview-dialog>
         `;
     }
     _renderStrainLibraryDialog(active, strainLibrary) {
         if (active.type !== 'STRAIN_LIBRARY')
             return x ``;
+        const payload = active.payload;
         return x `
         <strain-library-dialog
             .open=${true}
             .strains=${strainLibrary}
+            .editingStrain=${payload?.editingStrain}
             @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
@@ -16853,6 +19545,28 @@ let DialogHost = class DialogHost extends i$3 {
         @data-changed=${() => this.store.refreshData()}
     ></ipm-dialog>
     `;
+    }
+    _renderNutrientInventoryDialog(active) {
+        if (active.type !== 'NUTRIENT_INVENTORY')
+            return x ``;
+        return x `
+            <nutrient-inventory-dialog
+                .open=${true}
+                @close=${() => this.store.ui.closeDialog()}
+                @data-changed=${() => this.store.refreshData()}
+            ></nutrient-inventory-dialog>
+        `;
+    }
+    _renderNutrientDialog(active) {
+        if (active.type !== 'NUTRIENTS')
+            return x ``;
+        return x `
+            <nutrient-dialog
+                .open=${true}
+                @close=${() => this.store.ui.closeDialog()}
+                @data-changed=${() => this.store.refreshData()}
+            ></nutrient-dialog>
+        `;
     }
 };
 __decorate([
@@ -17824,174 +20538,6 @@ __decorate([
 GrowspacePlantCard = __decorate([
     t$2('growspace-plant-card')
 ], GrowspacePlantCard);
-
-let GrowspaceChip = class GrowspaceChip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.icon = '';
-        this.label = '';
-        this.value = undefined;
-        this.status = '';
-        this.active = false;
-        this.linked = false;
-        this.tooltip = '';
-    }
-    render() {
-        // Determine classes based on meaningful status string
-        const statusClass = this.status ? `status-${this.status}` : '';
-        return x `
-      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
-        <div class="icon">
-          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
-        </div>
-        ${this.label ? x `${this.label}: ` : ''}${this.value}
-        ${this.linked
-            ? x `
-              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
-                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-    _handleLinkClick(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceChip.styles = [
-    sharedStyles,
-    i$6 `
-    :host {
-      display: inline-flex;
-      vertical-align: middle;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .stat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--glass-bg);
-      border: var(--glass-border);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      backdrop-filter: var(--glass-blur);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      user-select: none;
-      flex-shrink: 0;
-      white-space: nowrap;
-      touch-action: auto;
-    }
-
-    /* Status Colors */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      }
-    }
-
-    .stat-chip.status-optimal {
-      color: #2e7d32 !important;
-      background: rgba(46, 125, 50, 0.1) !important;
-    }
-
-    .stat-chip.status-warning {
-      color: #ffa726 !important;
-      border-color: rgba(255, 167, 38, 0.5) !important;
-      background: rgba(255, 167, 38, 0.1) !important;
-    }
-
-    .stat-chip.status-danger {
-      color: #ef5350 !important;
-      border-color: rgba(239, 83, 80, 0.5) !important;
-      background: rgba(239, 83, 80, 0.1) !important;
-      animation: pulse-red 2s infinite;
-    }
-
-    .stat-chip:hover {
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
-      transform: translateY(-1px);
-    }
-
-    :host([active]) .stat-chip {
-      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
-      border-color: var(--primary-color, #03a9f4);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: var(--primary-text-color, #fff);
-    }
-
-    .icon {
-      width: 18px;
-      height: 18px;
-      display: flex;
-    }
-
-    .icon svg {
-      width: 100%;
-      height: 100%;
-      fill: currentColor;
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
-    .link-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      margin-left: -8px;
-      margin-right: -8px;
-      opacity: 0.8;
-      cursor: pointer;
-    }
-
-    .link-icon svg {
-      width: 100%;
-      height: 100%;
-      fill: var(--primary-color, #03a9f4);
-    }
-  `
-];
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "icon", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "label", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "value", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "status", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], GrowspaceChip.prototype, "active", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceChip.prototype, "linked", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "tooltip", void 0);
-GrowspaceChip = __decorate([
-    t$2('growspace-chip')
-], GrowspaceChip);
 
 // these aren't really private, but nor are they really useful to document
 
@@ -23110,7 +25656,7 @@ function oneOf(strings, startIndex) {
   }
 }
 
-function offset(regex, groups) {
+function offset$1(regex, groups) {
   return { regex, deser: ([, h, m]) => signedOffset(h, m), groups };
 }
 
@@ -23246,9 +25792,9 @@ function unitForToken(token, loc) {
         // offset/zone
         case "Z":
         case "ZZ":
-          return offset(new RegExp(`([+-]${oneOrTwo.source})(?::(${two.source}))?`), 2);
+          return offset$1(new RegExp(`([+-]${oneOrTwo.source})(?::(${two.source}))?`), 2);
         case "ZZZ":
-          return offset(new RegExp(`([+-]${oneOrTwo.source})(${two.source})?`), 2);
+          return offset$1(new RegExp(`([+-]${oneOrTwo.source})(${two.source})?`), 2);
         // we don't support ZZZZ (PST) or ZZZZZ (Pacific Standard Time) in parsing
         // because we don't have any way to figure out what they are
         case "z":
@@ -26484,6 +29030,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
             this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
             this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
+            this._nutrientInventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
+            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
             // Trigger history loading for sparklines on initial load
             this.store.history.loadHistoryOnDemand();
         }
@@ -26573,7 +29121,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 break;
             }
             case 'nutrient_presets':
-                this.store.openNutrientPresetsDialog();
+                // Redirect legacy action to new dialog
+                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
                 break;
             case 'control_dehumidifier':
                 // Implementation for dehumidifier toggle
@@ -26586,6 +29135,13 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 break;
             case 'ipm':
                 this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+                break;
+            case 'nutrient_inventory':
+                // Redirect legacy action to new dialog
+                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+                break;
+            case 'nutrients':
+                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
                 break;
         }
     }
@@ -26729,6 +29285,17 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                         @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
                     ></growspace-chip>
                 `)}
+                
+                ${this._nutrientInventoryController.value?.stocks
+            ? Object.values(this._nutrientInventoryController.value.stocks).map(stock => x `
+                        <nutrient-stock-chip
+                            .stock=${stock}
+                            .compact=${this.compact}
+                            @click=${() => this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} })}
+                            style="cursor: pointer;"
+                        ></nutrient-stock-chip>
+                    `)
+            : ''}
             </div>
 
             <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.RIGHT)}>
@@ -26892,9 +29459,9 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             <span class="menu-item-label">Log / Manage IPM</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrient_presets')}>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-            <span class="menu-item-label">Nutrient Presets</span>
+            <span class="menu-item-label">Nutrients</span>
         </div>
 
         <div class="menu-divider"></div>
@@ -27796,13 +30363,6 @@ BatchActionBar = __decorate([
     t$2('batch-action-bar')
 ], BatchActionBar);
 
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
-
 const variables = i$6 `
   :host {
     /* MD3 Color System */
@@ -27922,6 +30482,29 @@ function getOverlayColor(mode, plant, store) {
             return 'rgba(255, 152, 0, 0.15)'; // Orange
         if (status === StatusLevel.DANGER)
             return 'rgba(244, 67, 54, 0.15)'; // Red
+    }
+    if (mode === GridOverlayMode.BIO_STATUS) {
+        // Check Bayesian sensors for biological status
+        // Priority: optimal > stress/mold (danger) > warnings
+        const hass = store.hass;
+        if (!hass)
+            return 'transparent';
+        const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
+        const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
+        const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
+        // Danger: Stress or mold detected
+        if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
+            return 'rgba(244, 67, 54, 0.2)'; // Red with higher opacity for alerts
+        }
+        // Optimal conditions
+        if (optimalEntity?.state === 'on') {
+            return 'rgba(76, 175, 80, 0.15)'; // Green
+        }
+        // Warning: VPD out of range but not critical
+        const vpdStatus = device.biological_metrics.vpd_status;
+        if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
+            return 'rgba(255, 152, 0, 0.15)'; // Amber
+        }
     }
     // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
     // For now, we only implement VPD visualization as it's the most "calculated" metric available
@@ -28074,6 +30657,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
             })
             : ''}
       </div>
+      </div>
     `;
     }
     renderEmptySlot(row, col) {
@@ -28083,19 +30667,21 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         class="plant-card-empty"
         data-row="${row}"
         data-col="${col}"
-        style="grid-row: ${row}; grid-column: ${col}"
+        style="grid-row: ${row}; grid-column: ${col}; position: relative;"
         @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
-        <div class="plant-header">
-          <svg
-            style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiPlus}"></path>
-          </svg>
-        </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+          <div class="plant-header">
+            <svg
+              style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiPlus}"></path>
+            </svg>
+          </div>
+          <div style="font-weight: 500; opacity: 0.8;">
+            Add Plant
+          </div>
       </div>
     `;
     }
@@ -28413,6 +30999,33 @@ GrowspaceGrid.styles = [
         aspect-ratio: unset;
         flex-direction: row;
       }
+    }
+
+    /* Ghost Plant Styling */
+    .ghost-plant {
+      position: absolute;
+      inset: 0;
+      border: 2px dashed var(--primary-color, #4caf50);
+      border-radius: var(--border-radius-lg, 16px);
+      background: rgba(76, 175, 80, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      pointer-events: none;
+      animation: ghost-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes ghost-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+
+    .ghost-plant-icon {
+      width: 48px;
+      height: 48px;
+      opacity: 0.7;
+      fill: var(--primary-color, #4caf50);
     }
   `
 ];
@@ -30265,6 +32878,7 @@ class GrowspaceDataStore {
         this.$plantToDeviceMap = atom(new Map());
         this.$nutrientPresets = atom({});
         this.$ipmPresets = atom({});
+        this.$nutrientInventory = atom(null);
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
             this._isActive = true;
@@ -30439,6 +33053,9 @@ class GrowspaceDataStore {
         if (changed) {
             this.$wsDataCache.set(newCache);
         }
+    }
+    setNutrientInventory(inventory) {
+        this.$nutrientInventory.set(inventory);
     }
 }
 
@@ -31177,16 +33794,17 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
 /**
  * Add a new plant to a growspace.
  */
-async function addPlant(ctx, growspaceId, row, col, strain, phenotype) {
+async function addPlant(ctx, growspaceId, row, col, strain, options = {}) {
     try {
         await ctx.dataService.addPlant({
             growspace_id: growspaceId,
             row,
             col,
             strain,
-            phenotype: phenotype || undefined,
+            ...options
         });
         ctx.closeDialog();
+        await ctx.refreshData();
         ctx.showToast('Plant added successfully', 'success');
         return true;
     }
@@ -31334,7 +33952,7 @@ class ActionDispatcher {
             // For now, we delegate back to store methods or access context if public.
             // Assuming we keep delegation for methods that require complex store state (like undo stack).
             updateFromDialog: (state) => updatePlantsFromDialog(this.store.plantActionContext, state),
-            add: (gid, r, c, s, p) => addPlant(this.store.plantActionContext, gid, r, c, s, p),
+            add: (gid, r, c, s, p) => addPlant(this.store.plantActionContext, gid, r, c, s, { phenotype: p }),
             addBatch: (detail) => this.store.confirmAddPlants(detail)
         };
         this.growspace = {
@@ -31837,6 +34455,59 @@ class GrowspaceStore {
             console.error('Failed to fetch IPM presets:', e);
         }
     }
+    async fetchNutrientInventory(force = false) {
+        if (!this.hass)
+            return;
+        const CACHE_KEY = 'growspace_nutrient_inventory';
+        const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (!force && cachedRaw) {
+            try {
+                const cache = JSON.parse(cachedRaw);
+                const age = Date.now() - (cache.timestamp || 0);
+                if (age < CACHE_VALIDITY_MS) {
+                    this.data.setNutrientInventory(cache.data);
+                    return;
+                }
+            }
+            catch (e) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+        }
+        try {
+            const result = await this.dataService.fetchNutrientInventory();
+            if (result) {
+                this.data.setNutrientInventory(result);
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: result
+                }));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch nutrient inventory:', e);
+        }
+    }
+    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
+        try {
+            await this.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+            await this.fetchNutrientInventory(true);
+            this.showToast(`Updated stock: ${name}`, 'success');
+        }
+        catch (e) {
+            this.showToast(`Failed to update stock: ${e.message}`, 'error');
+        }
+    }
+    async removeNutrientStock(nutrientId) {
+        try {
+            await this.dataService.removeNutrientStock(nutrientId);
+            await this.fetchNutrientInventory(true);
+            this.showToast('Removed nutrient stock', 'success');
+        }
+        catch (e) {
+            this.showToast(`Failed to remove stock: ${e.message}`, 'error');
+        }
+    }
     handleKeyboardNavigation(key) {
         handleKeyboardNavigation(this._keyboardActionContext, key, this.ui, this.data);
     }
@@ -32022,7 +34693,16 @@ class GrowspaceStore {
             this.showToast('No growspace selected', 'error');
             return;
         }
-        await addPlant(this.plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, detail.phenotype);
+        await addPlant(this.plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, {
+            phenotype: detail.phenotype,
+            veg_start: detail.veg_start,
+            flower_start: detail.flower_start,
+            seedling_start: detail.seedling_start,
+            mother_start: detail.mother_start,
+            clone_start: detail.clone_start,
+            dry_start: detail.dry_start,
+            cure_start: detail.cure_start,
+        });
     }
     async confirmAddPlants(detail) {
         const selectedDevice = this.data.$selectedDevice.get();
@@ -32647,6 +35327,893 @@ __decorate([
 GrowspaceManagerCard = __decorate([
     t$2('growspace-manager-card')
 ], GrowspaceManagerCard);
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+class SizeCache {
+    constructor(config) {
+        this._map = new Map();
+        this._roundAverageSize = false;
+        this.totalSize = 0;
+        if (config?.roundAverageSize === true) {
+            this._roundAverageSize = true;
+        }
+    }
+    set(index, value) {
+        const prev = this._map.get(index) || 0;
+        this._map.set(index, value);
+        this.totalSize += value - prev;
+    }
+    get averageSize() {
+        if (this._map.size > 0) {
+            const average = this.totalSize / this._map.size;
+            return this._roundAverageSize ? Math.round(average) : average;
+        }
+        return 0;
+    }
+    getSize(index) {
+        return this._map.get(index);
+    }
+    clear() {
+        this._map.clear();
+        this.totalSize = 0;
+    }
+}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function dim1(direction) {
+    return direction === 'horizontal' ? 'width' : 'height';
+}
+class BaseLayout {
+    _getDefaultConfig() {
+        return {
+            direction: 'vertical',
+        };
+    }
+    constructor(hostSink, config) {
+        /**
+         * The last set viewport scroll position.
+         */
+        this._latestCoords = { left: 0, top: 0 };
+        /**
+         * Scrolling direction.
+         */
+        this._direction = null;
+        /**
+         * Dimensions of the viewport.
+         */
+        this._viewportSize = { width: 0, height: 0 };
+        this.totalScrollSize = { width: 0, height: 0 };
+        this.offsetWithinScroller = { left: 0, top: 0 };
+        /**
+         * Flag for debouncing asynchronous reflow requests.
+         */
+        this._pendingReflow = false;
+        this._pendingLayoutUpdate = false;
+        this._pin = null;
+        /**
+         * The index of the first item intersecting the viewport.
+         */
+        this._firstVisible = 0;
+        /**
+         * The index of the last item intersecting the viewport.
+         */
+        this._lastVisible = 0;
+        /**
+         * Pixel offset in the scroll direction of the first child.
+         */
+        this._physicalMin = 0;
+        /**
+         * Pixel offset in the scroll direction of the last child.
+         */
+        this._physicalMax = 0;
+        /**
+         * Index of the first child.
+         */
+        this._first = -1;
+        /**
+         * Index of the last child.
+         */
+        this._last = -1;
+        /**
+         * Length in the scrolling direction.
+         */
+        this._sizeDim = 'height';
+        /**
+         * Length in the non-scrolling direction.
+         */
+        this._secondarySizeDim = 'width';
+        /**
+         * Position in the scrolling direction.
+         */
+        this._positionDim = 'top';
+        /**
+         * Position in the non-scrolling direction.
+         */
+        this._secondaryPositionDim = 'left';
+        /**
+         * Current scroll offset in pixels.
+         */
+        this._scrollPosition = 0;
+        /**
+         * Difference between current scroll offset and scroll offset calculated due
+         * to a reflow.
+         */
+        this._scrollError = 0;
+        /**
+         * Total number of items that could possibly be displayed. Used to help
+         * calculate the scroll size.
+         */
+        this._items = [];
+        /**
+         * The total (estimated) length of all items in the scrolling direction.
+         */
+        this._scrollSize = 1;
+        /**
+         * Number of pixels beyond the viewport to still include
+         * in the active range of items.
+         */
+        // TODO (graynorton): Probably want to make this something we calculate based
+        // on viewport size, item size, other factors, possibly still with a dial of some kind
+        this._overhang = 1000;
+        this._hostSink = hostSink;
+        // Delay setting config so that subclasses do setup work first
+        Promise.resolve().then(() => (this.config = config || this._getDefaultConfig()));
+    }
+    set config(config) {
+        Object.assign(this, Object.assign({}, this._getDefaultConfig(), config));
+    }
+    get config() {
+        return {
+            direction: this.direction,
+        };
+    }
+    /**
+     * Maximum index of children + 1, to help estimate total height of the scroll
+     * space.
+     */
+    get items() {
+        return this._items;
+    }
+    set items(items) {
+        this._setItems(items);
+    }
+    _setItems(items) {
+        if (items !== this._items) {
+            this._items = items;
+            this._scheduleReflow();
+        }
+    }
+    /**
+     * Primary scrolling direction.
+     */
+    get direction() {
+        return this._direction;
+    }
+    set direction(dir) {
+        // Force it to be either horizontal or vertical.
+        dir = dir === 'horizontal' ? dir : 'vertical';
+        if (dir !== this._direction) {
+            this._direction = dir;
+            this._sizeDim = dir === 'horizontal' ? 'width' : 'height';
+            this._secondarySizeDim = dir === 'horizontal' ? 'height' : 'width';
+            this._positionDim = dir === 'horizontal' ? 'left' : 'top';
+            this._secondaryPositionDim = dir === 'horizontal' ? 'top' : 'left';
+            this._triggerReflow();
+        }
+    }
+    /**
+     * Height and width of the viewport.
+     */
+    get viewportSize() {
+        return this._viewportSize;
+    }
+    set viewportSize(dims) {
+        const { _viewDim1, _viewDim2 } = this;
+        Object.assign(this._viewportSize, dims);
+        if (_viewDim2 !== this._viewDim2) {
+            // this._viewDim2Changed();
+            this._scheduleLayoutUpdate();
+        }
+        else if (_viewDim1 !== this._viewDim1) {
+            this._checkThresholds();
+        }
+    }
+    /**
+     * Scroll offset of the viewport.
+     */
+    get viewportScroll() {
+        return this._latestCoords;
+    }
+    set viewportScroll(coords) {
+        Object.assign(this._latestCoords, coords);
+        const oldPos = this._scrollPosition;
+        this._scrollPosition = this._latestCoords[this._positionDim];
+        const change = Math.abs(oldPos - this._scrollPosition);
+        if (change >= 1) {
+            this._checkThresholds();
+        }
+    }
+    /**
+     * Perform a reflow if one has been scheduled.
+     */
+    reflowIfNeeded(force = false) {
+        if (force || this._pendingReflow) {
+            this._pendingReflow = false;
+            this._reflow();
+        }
+    }
+    set pin(options) {
+        this._pin = options;
+        this._triggerReflow();
+    }
+    get pin() {
+        if (this._pin !== null) {
+            const { index, block } = this._pin;
+            return {
+                index: Math.max(0, Math.min(index, this.items.length - 1)),
+                block,
+            };
+        }
+        return null;
+    }
+    _clampScrollPosition(val) {
+        return Math.max(-this.offsetWithinScroller[this._positionDim], Math.min(val, this.totalScrollSize[dim1(this.direction)] - this._viewDim1));
+    }
+    unpin() {
+        if (this._pin !== null) {
+            this._sendUnpinnedMessage();
+            this._pin = null;
+        }
+    }
+    _updateLayout() {
+        // Override
+    }
+    // protected _viewDim2Changed(): void {
+    //   this._scheduleLayoutUpdate();
+    // }
+    /**
+     * The height or width of the viewport, whichever corresponds to the scrolling direction.
+     */
+    get _viewDim1() {
+        return this._viewportSize[this._sizeDim];
+    }
+    /**
+     * The height or width of the viewport, whichever does NOT correspond to the scrolling direction.
+     */
+    get _viewDim2() {
+        return this._viewportSize[this._secondarySizeDim];
+    }
+    _scheduleReflow() {
+        this._pendingReflow = true;
+    }
+    _scheduleLayoutUpdate() {
+        this._pendingLayoutUpdate = true;
+        this._scheduleReflow();
+    }
+    // For triggering a reflow based on incoming changes to
+    // the layout config.
+    _triggerReflow() {
+        this._scheduleLayoutUpdate();
+        // TODO graynorton@: reflowIfNeeded() isn't really supposed
+        // to be called internally. Address in larger cleanup
+        // of virtualizer / layout interaction pattern.
+        // this.reflowIfNeeded(true);
+        Promise.resolve().then(() => this.reflowIfNeeded());
+    }
+    _reflow() {
+        if (this._pendingLayoutUpdate) {
+            this._updateLayout();
+            this._pendingLayoutUpdate = false;
+        }
+        this._updateScrollSize();
+        this._setPositionFromPin();
+        this._getActiveItems();
+        this._updateVisibleIndices();
+        this._sendStateChangedMessage();
+    }
+    /**
+     * If we are supposed to be pinned to a particular
+     * item or set of coordinates, we set `_scrollPosition`
+     * accordingly and adjust `_scrollError` as needed
+     * so that the virtualizer can keep the scroll
+     * position in the DOM in sync
+     */
+    _setPositionFromPin() {
+        if (this.pin !== null) {
+            const lastScrollPosition = this._scrollPosition;
+            const { index, block } = this.pin;
+            this._scrollPosition =
+                this._calculateScrollIntoViewPosition({
+                    index,
+                    block: block || 'start',
+                }) - this.offsetWithinScroller[this._positionDim];
+            this._scrollError = lastScrollPosition - this._scrollPosition;
+        }
+    }
+    /**
+     * Calculate the coordinates to scroll to, given
+     * a request to scroll to the element at a specific
+     * index.
+     *
+     * Supports the same positioning options (`start`,
+     * `center`, `end`, `nearest`) as the standard
+     * `Element.scrollIntoView()` method, but currently
+     * only considers the provided value in the `block`
+     * dimension, since we don't yet have any layouts
+     * that support virtualization in two dimensions.
+     */
+    _calculateScrollIntoViewPosition(options) {
+        const { block } = options;
+        const index = Math.min(this.items.length, Math.max(0, options.index));
+        const itemStartPosition = this._getItemPosition(index)[this._positionDim];
+        let scrollPosition = itemStartPosition;
+        if (block !== 'start') {
+            const itemSize = this._getItemSize(index)[this._sizeDim];
+            if (block === 'center') {
+                scrollPosition =
+                    itemStartPosition - 0.5 * this._viewDim1 + 0.5 * itemSize;
+            }
+            else {
+                const itemEndPosition = itemStartPosition - this._viewDim1 + itemSize;
+                if (block === 'end') {
+                    scrollPosition = itemEndPosition;
+                }
+                else {
+                    // block === 'nearest'
+                    const currentScrollPosition = this._scrollPosition;
+                    scrollPosition =
+                        Math.abs(currentScrollPosition - itemStartPosition) <
+                            Math.abs(currentScrollPosition - itemEndPosition)
+                            ? itemStartPosition
+                            : itemEndPosition;
+                }
+            }
+        }
+        scrollPosition += this.offsetWithinScroller[this._positionDim];
+        return this._clampScrollPosition(scrollPosition);
+    }
+    getScrollIntoViewCoordinates(options) {
+        return {
+            [this._positionDim]: this._calculateScrollIntoViewPosition(options),
+        };
+    }
+    _sendUnpinnedMessage() {
+        this._hostSink({
+            type: 'unpinned',
+        });
+    }
+    _sendVisibilityChangedMessage() {
+        this._hostSink({
+            type: 'visibilityChanged',
+            firstVisible: this._firstVisible,
+            lastVisible: this._lastVisible,
+        });
+    }
+    _sendStateChangedMessage() {
+        const childPositions = new Map();
+        if (this._first !== -1 && this._last !== -1) {
+            for (let idx = this._first; idx <= this._last; idx++) {
+                childPositions.set(idx, this._getItemPosition(idx));
+            }
+        }
+        const message = {
+            type: 'stateChanged',
+            scrollSize: {
+                [this._sizeDim]: this._scrollSize,
+                [this._secondarySizeDim]: null,
+            },
+            range: {
+                first: this._first,
+                last: this._last,
+                firstVisible: this._firstVisible,
+                lastVisible: this._lastVisible,
+            },
+            childPositions,
+        };
+        if (this._scrollError) {
+            message.scrollError = {
+                [this._positionDim]: this._scrollError,
+                [this._secondaryPositionDim]: 0,
+            };
+            this._scrollError = 0;
+        }
+        this._hostSink(message);
+    }
+    /**
+     * Number of items to display.
+     */
+    get _num() {
+        if (this._first === -1 || this._last === -1) {
+            return 0;
+        }
+        return this._last - this._first + 1;
+    }
+    _checkThresholds() {
+        if ((this._viewDim1 === 0 && this._num > 0) || this._pin !== null) {
+            this._scheduleReflow();
+        }
+        else {
+            const min = Math.max(0, this._scrollPosition - this._overhang);
+            const max = Math.min(this._scrollSize, this._scrollPosition + this._viewDim1 + this._overhang);
+            if (this._physicalMin > min || this._physicalMax < max) {
+                this._scheduleReflow();
+            }
+            else {
+                this._updateVisibleIndices({ emit: true });
+            }
+        }
+    }
+    /**
+     * Find the indices of the first and last items to intersect the viewport.
+     * Emit a visibleindiceschange event when either index changes.
+     */
+    _updateVisibleIndices(options) {
+        if (this._first === -1 || this._last === -1)
+            return;
+        let firstVisible = this._first;
+        while (firstVisible < this._last &&
+            Math.round(this._getItemPosition(firstVisible)[this._positionDim] +
+                this._getItemSize(firstVisible)[this._sizeDim]) <= Math.round(this._scrollPosition)) {
+            firstVisible++;
+        }
+        let lastVisible = this._last;
+        while (lastVisible > this._first &&
+            Math.round(this._getItemPosition(lastVisible)[this._positionDim]) >=
+                Math.round(this._scrollPosition + this._viewDim1)) {
+            lastVisible--;
+        }
+        if (firstVisible !== this._firstVisible ||
+            lastVisible !== this._lastVisible) {
+            this._firstVisible = firstVisible;
+            this._lastVisible = lastVisible;
+            if (options && options.emit) {
+                this._sendVisibilityChangedMessage();
+            }
+        }
+    }
+}
+
+/**
+ * @license
+ * Copyright 2021 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+function leadingMargin(direction) {
+    return direction === 'horizontal' ? 'marginLeft' : 'marginTop';
+}
+function trailingMargin(direction) {
+    return direction === 'horizontal' ? 'marginRight' : 'marginBottom';
+}
+function offset(direction) {
+    return direction === 'horizontal' ? 'xOffset' : 'yOffset';
+}
+function collapseMargins(a, b) {
+    const m = [a, b].sort();
+    return m[1] <= 0 ? Math.min(...m) : m[0] >= 0 ? Math.max(...m) : m[0] + m[1];
+}
+class MetricsCache {
+    constructor() {
+        this._childSizeCache = new SizeCache();
+        this._marginSizeCache = new SizeCache();
+        this._metricsCache = new Map();
+    }
+    update(metrics, direction) {
+        const marginsToUpdate = new Set();
+        Object.keys(metrics).forEach((key) => {
+            const k = Number(key);
+            this._metricsCache.set(k, metrics[k]);
+            this._childSizeCache.set(k, metrics[k][dim1(direction)]);
+            marginsToUpdate.add(k);
+            marginsToUpdate.add(k + 1);
+        });
+        for (const k of marginsToUpdate) {
+            const a = this._metricsCache.get(k)?.[leadingMargin(direction)] || 0;
+            const b = this._metricsCache.get(k - 1)?.[trailingMargin(direction)] || 0;
+            this._marginSizeCache.set(k, collapseMargins(a, b));
+        }
+    }
+    get averageChildSize() {
+        return this._childSizeCache.averageSize;
+    }
+    get totalChildSize() {
+        return this._childSizeCache.totalSize;
+    }
+    get averageMarginSize() {
+        return this._marginSizeCache.averageSize;
+    }
+    get totalMarginSize() {
+        return this._marginSizeCache.totalSize;
+    }
+    getLeadingMarginValue(index, direction) {
+        return this._metricsCache.get(index)?.[leadingMargin(direction)] || 0;
+    }
+    getChildSize(index) {
+        return this._childSizeCache.getSize(index);
+    }
+    getMarginSize(index) {
+        return this._marginSizeCache.getSize(index);
+    }
+    clear() {
+        this._childSizeCache.clear();
+        this._marginSizeCache.clear();
+        this._metricsCache.clear();
+    }
+}
+class FlowLayout extends BaseLayout {
+    constructor() {
+        super(...arguments);
+        /**
+         * Initial estimate of item size
+         */
+        this._itemSize = { width: 100, height: 100 };
+        /**
+         * Indices of children mapped to their (position and length) in the scrolling
+         * direction. Used to keep track of children that are in range.
+         */
+        this._physicalItems = new Map();
+        /**
+         * Used in tandem with _physicalItems to track children in range across
+         * reflows.
+         */
+        this._newPhysicalItems = new Map();
+        /**
+         * Width and height of children by their index.
+         */
+        this._metricsCache = new MetricsCache();
+        /**
+         * anchorIdx is the anchor around which we reflow. It is designed to allow
+         * jumping to any point of the scroll size. We choose it once and stick with
+         * it until stable. _first and _last are deduced around it.
+         */
+        this._anchorIdx = null;
+        /**
+         * Position in the scrolling direction of the anchor child.
+         */
+        this._anchorPos = null;
+        /**
+         * Whether all children in range were in range during the previous reflow.
+         */
+        this._stable = true;
+        this._measureChildren = true;
+        this._estimate = true;
+    }
+    // protected _defaultConfig: BaseLayoutConfig = Object.assign({}, super._defaultConfig, {
+    // })
+    // constructor(config: Layout1dConfig) {
+    //   super(config);
+    // }
+    get measureChildren() {
+        return this._measureChildren;
+    }
+    /**
+     * Determine the average size of all children represented in the sizes
+     * argument.
+     */
+    updateItemSizes(sizes) {
+        this._metricsCache.update(sizes, this.direction);
+        // if (this._nMeasured) {
+        // this._updateItemSize();
+        this._scheduleReflow();
+        // }
+    }
+    /**
+     * Set the average item size based on the total length and number of children
+     * in range.
+     */
+    // _updateItemSize() {
+    //   // Keep integer values.
+    //   this._itemSize[this._sizeDim] = this._metricsCache.averageChildSize;
+    // }
+    _getPhysicalItem(idx) {
+        return this._newPhysicalItems.get(idx) ?? this._physicalItems.get(idx);
+    }
+    _getSize(idx) {
+        const item = this._getPhysicalItem(idx);
+        return item && this._metricsCache.getChildSize(idx);
+    }
+    _getAverageSize() {
+        return this._metricsCache.averageChildSize || this._itemSize[this._sizeDim];
+    }
+    _estimatePosition(idx) {
+        const c = this._metricsCache;
+        if (this._first === -1 || this._last === -1) {
+            return (c.averageMarginSize +
+                idx * (c.averageMarginSize + this._getAverageSize()));
+        }
+        else {
+            if (idx < this._first) {
+                const delta = this._first - idx;
+                const refItem = this._getPhysicalItem(this._first);
+                return (refItem.pos -
+                    (c.getMarginSize(this._first - 1) || c.averageMarginSize) -
+                    (delta * c.averageChildSize + (delta - 1) * c.averageMarginSize));
+            }
+            else {
+                const delta = idx - this._last;
+                const refItem = this._getPhysicalItem(this._last);
+                return (refItem.pos +
+                    (c.getChildSize(this._last) || c.averageChildSize) +
+                    (c.getMarginSize(this._last) || c.averageMarginSize) +
+                    delta * (c.averageChildSize + c.averageMarginSize));
+            }
+        }
+    }
+    /**
+     * Returns the position in the scrolling direction of the item at idx.
+     * Estimates it if the item at idx is not in the DOM.
+     */
+    _getPosition(idx) {
+        const item = this._getPhysicalItem(idx);
+        const { averageMarginSize } = this._metricsCache;
+        return idx === 0
+            ? this._metricsCache.getMarginSize(0) ?? averageMarginSize
+            : item
+                ? item.pos
+                : this._estimatePosition(idx);
+    }
+    _calculateAnchor(lower, upper) {
+        if (lower <= 0) {
+            return 0;
+        }
+        if (upper > this._scrollSize - this._viewDim1) {
+            return this.items.length - 1;
+        }
+        return Math.max(0, Math.min(this.items.length - 1, Math.floor((lower + upper) / 2 / this._delta)));
+    }
+    _getAnchor(lower, upper) {
+        if (this._physicalItems.size === 0) {
+            return this._calculateAnchor(lower, upper);
+        }
+        if (this._first < 0) {
+            return this._calculateAnchor(lower, upper);
+        }
+        if (this._last < 0) {
+            return this._calculateAnchor(lower, upper);
+        }
+        const firstItem = this._getPhysicalItem(this._first), lastItem = this._getPhysicalItem(this._last), firstMin = firstItem.pos, lastMin = lastItem.pos, lastMax = lastMin + this._metricsCache.getChildSize(this._last);
+        if (lastMax < lower) {
+            // Window is entirely past physical items, calculate new anchor
+            return this._calculateAnchor(lower, upper);
+        }
+        if (firstMin > upper) {
+            // Window is entirely before physical items, calculate new anchor
+            return this._calculateAnchor(lower, upper);
+        }
+        // Window contains a physical item
+        // Find one, starting with the one that was previously first visible
+        let candidateIdx = this._firstVisible - 1;
+        let cMax = -Infinity;
+        while (cMax < lower) {
+            const candidate = this._getPhysicalItem(++candidateIdx);
+            cMax = candidate.pos + this._metricsCache.getChildSize(candidateIdx);
+        }
+        return candidateIdx;
+    }
+    /**
+     * Updates _first and _last based on items that should be in the current
+     * viewed range.
+     */
+    _getActiveItems() {
+        if (this._viewDim1 === 0 || this.items.length === 0) {
+            this._clearItems();
+        }
+        else {
+            this._getItems();
+        }
+    }
+    /**
+     * Sets the range to empty.
+     */
+    _clearItems() {
+        this._first = -1;
+        this._last = -1;
+        this._physicalMin = 0;
+        this._physicalMax = 0;
+        const items = this._newPhysicalItems;
+        this._newPhysicalItems = this._physicalItems;
+        this._newPhysicalItems.clear();
+        this._physicalItems = items;
+        this._stable = true;
+    }
+    /*
+     * Updates _first and _last based on items that should be in the given range.
+     */
+    _getItems() {
+        const items = this._newPhysicalItems;
+        this._stable = true;
+        let lower, upper;
+        // The anchorIdx is the anchor around which we reflow. It is designed to
+        // allow jumping to any point of the scroll size. We choose it once and
+        // stick with it until stable. first and last are deduced around it.
+        // If we have a pinned item, we anchor on it
+        if (this.pin !== null) {
+            const { index } = this.pin;
+            this._anchorIdx = index;
+            this._anchorPos = this._getPosition(index);
+        }
+        // Determine the lower and upper bounds of the region to be
+        // rendered, relative to the viewport
+        lower = this._scrollPosition - this._overhang; //leadingOverhang;
+        upper = this._scrollPosition + this._viewDim1 + this._overhang; // trailingOverhang;
+        if (upper < 0 || lower > this._scrollSize) {
+            this._clearItems();
+            return;
+        }
+        // If we are scrolling to a specific index or if we are doing another
+        // pass to stabilize a previously started reflow, we will already
+        // have an anchor. If not, establish an anchor now.
+        if (this._anchorIdx === null || this._anchorPos === null) {
+            this._anchorIdx = this._getAnchor(lower, upper);
+            this._anchorPos = this._getPosition(this._anchorIdx);
+        }
+        let anchorSize = this._getSize(this._anchorIdx);
+        if (anchorSize === undefined) {
+            this._stable = false;
+            anchorSize = this._getAverageSize();
+        }
+        const anchorLeadingMargin = this._metricsCache.getMarginSize(this._anchorIdx) ??
+            this._metricsCache.averageMarginSize;
+        const anchorTrailingMargin = this._metricsCache.getMarginSize(this._anchorIdx + 1) ??
+            this._metricsCache.averageMarginSize;
+        if (this._anchorIdx === 0) {
+            this._anchorPos = anchorLeadingMargin;
+        }
+        if (this._anchorIdx === this.items.length - 1) {
+            this._anchorPos = this._scrollSize - anchorTrailingMargin - anchorSize;
+        }
+        // Anchor might be outside bounds, so prefer correcting the error and keep
+        // that anchorIdx.
+        let anchorErr = 0;
+        if (this._anchorPos + anchorSize + anchorTrailingMargin < lower) {
+            anchorErr = lower - (this._anchorPos + anchorSize + anchorTrailingMargin);
+        }
+        if (this._anchorPos - anchorLeadingMargin > upper) {
+            anchorErr = upper - (this._anchorPos - anchorLeadingMargin);
+        }
+        if (anchorErr) {
+            this._scrollPosition -= anchorErr;
+            lower -= anchorErr;
+            upper -= anchorErr;
+            this._scrollError += anchorErr;
+        }
+        items.set(this._anchorIdx, { pos: this._anchorPos, size: anchorSize });
+        this._first = this._last = this._anchorIdx;
+        this._physicalMin = this._anchorPos - anchorLeadingMargin;
+        this._physicalMax = this._anchorPos + anchorSize + anchorTrailingMargin;
+        while (this._physicalMin > lower && this._first > 0) {
+            let size = this._getSize(--this._first);
+            if (size === undefined) {
+                this._stable = false;
+                size = this._getAverageSize();
+            }
+            let margin = this._metricsCache.getMarginSize(this._first);
+            if (margin === undefined) {
+                this._stable = false;
+                margin = this._metricsCache.averageMarginSize;
+            }
+            this._physicalMin -= size;
+            const pos = this._physicalMin;
+            items.set(this._first, { pos, size });
+            this._physicalMin -= margin;
+            if (this._stable === false && this._estimate === false) {
+                break;
+            }
+        }
+        while (this._physicalMax < upper && this._last < this.items.length - 1) {
+            let size = this._getSize(++this._last);
+            if (size === undefined) {
+                this._stable = false;
+                size = this._getAverageSize();
+            }
+            let margin = this._metricsCache.getMarginSize(this._last);
+            if (margin === undefined) {
+                this._stable = false;
+                margin = this._metricsCache.averageMarginSize;
+            }
+            const pos = this._physicalMax;
+            items.set(this._last, { pos, size });
+            this._physicalMax += size + margin;
+            if (!this._stable && !this._estimate) {
+                break;
+            }
+        }
+        // This handles the cases where we were relying on estimated sizes.
+        const extentErr = this._calculateError();
+        if (extentErr) {
+            this._physicalMin -= extentErr;
+            this._physicalMax -= extentErr;
+            this._anchorPos -= extentErr;
+            this._scrollPosition -= extentErr;
+            items.forEach((item) => (item.pos -= extentErr));
+            this._scrollError += extentErr;
+        }
+        if (this._stable) {
+            this._newPhysicalItems = this._physicalItems;
+            this._newPhysicalItems.clear();
+            this._physicalItems = items;
+        }
+    }
+    _calculateError() {
+        if (this._first === 0) {
+            return this._physicalMin;
+        }
+        else if (this._physicalMin <= 0) {
+            return this._physicalMin - this._first * this._delta;
+        }
+        else if (this._last === this.items.length - 1) {
+            return this._physicalMax - this._scrollSize;
+        }
+        else if (this._physicalMax >= this._scrollSize) {
+            return (this._physicalMax -
+                this._scrollSize +
+                (this.items.length - 1 - this._last) * this._delta);
+        }
+        return 0;
+    }
+    _reflow() {
+        const { _first, _last } = this;
+        super._reflow();
+        if ((this._first === -1 && this._last == -1) ||
+            (this._first === _first && this._last === _last)) {
+            this._resetReflowState();
+        }
+    }
+    _resetReflowState() {
+        this._anchorIdx = null;
+        this._anchorPos = null;
+        this._stable = true;
+    }
+    _updateScrollSize() {
+        const { averageMarginSize } = this._metricsCache;
+        this._scrollSize = Math.max(1, this.items.length * (averageMarginSize + this._getAverageSize()) +
+            averageMarginSize);
+    }
+    /**
+     * Returns the average size (precise or estimated) of an item in the scrolling direction,
+     * including any surrounding space.
+     */
+    get _delta() {
+        const { averageMarginSize } = this._metricsCache;
+        return this._getAverageSize() + averageMarginSize;
+    }
+    /**
+     * Returns the top and left positioning of the item at idx.
+     */
+    _getItemPosition(idx) {
+        return {
+            [this._positionDim]: this._getPosition(idx),
+            [this._secondaryPositionDim]: 0,
+            [offset(this.direction)]: -(this._metricsCache.getLeadingMarginValue(idx, this.direction) ??
+                this._metricsCache.averageMarginSize),
+        };
+    }
+    /**
+     * Returns the height and width of the item at idx.
+     */
+    _getItemSize(idx) {
+        return {
+            [this._sizeDim]: this._getSize(idx) || this._getAverageSize(),
+            [this._secondarySizeDim]: this._itemSize[this._secondarySizeDim],
+        };
+    }
+    _viewDim2Changed() {
+        this._metricsCache.clear();
+        this._scheduleReflow();
+    }
+}
+
+var flow = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    FlowLayout: FlowLayout
+});
 
 class HassSubscriptionController {
     constructor(host) {

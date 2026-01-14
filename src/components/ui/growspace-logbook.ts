@@ -4,6 +4,8 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceEvent } from '../../types';
 import { GrowspaceLogbookController } from '../../controllers/growspace-logbook-controller';
 import { dialogStyles } from '../../styles/dialog.styles';
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../../context';
@@ -18,21 +20,25 @@ export class GrowspaceLogbook extends LitElement {
   @state() private _events: GrowspaceEvent[] = [];
   @state() private _isLoading = false;
   @state() private _activeFilter = 'all';
+  @state() private _highlightedTimestamp: number | null = null;
 
   private _controller?: GrowspaceLogbookController;
+  private _containerRef: Ref<HTMLDivElement> = createRef();
 
   static styles = [
     dialogStyles,
     css`
       :host {
-        display: block;
+        display: flex;
+        flex-direction: column;
         height: 100%;
         overflow: hidden;
       }
       .log-container {
-        height: 100%;
+        flex: 1;
         overflow-y: auto;
         padding-right: 4px; /* Space for scrollbar */
+        position: relative;
       }
       .log-container::-webkit-scrollbar {
         width: 8px;
@@ -49,6 +55,19 @@ export class GrowspaceLogbook extends LitElement {
         padding: 16px;
         margin-bottom: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .event-card.highlighted {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: var(--primary-color, #4caf50);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+        animation: highlight-pulse 1.5s ease;
+      }
+      @keyframes highlight-pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
       }
       .event-header {
         display: flex;
@@ -109,6 +128,7 @@ export class GrowspaceLogbook extends LitElement {
         white-space: nowrap;
         scrollbar-width: none; /* Firefox */
         -ms-overflow-style: none; /* IE/Edge */
+        flex-shrink: 0;
       }
       .filter-bar::-webkit-scrollbar {
         display: none; /* Chrome/Safari/Opera */
@@ -225,6 +245,44 @@ export class GrowspaceLogbook extends LitElement {
     this._activeFilter = filter;
   }
 
+  /**
+   * Public method to scroll to and highlight an event near the given timestamp
+   */
+  public scrollToTimestamp(timestamp: number) {
+    this._highlightedTimestamp = timestamp;
+
+    // Find closest event to timestamp
+    if (!this._events || this._events.length === 0) return;
+
+    let closestIndex = 0;
+    let minDiff = Number.MAX_VALUE;
+
+    for (let i = 0; i < this._events.length; i++) {
+      const eventTime = new Date((this._events[i] as any).timestamp || this._events[i].start_time).getTime();
+      const diff = Math.abs(eventTime - timestamp);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = i;
+      }
+    }
+
+    // Scroll to event after render
+    requestAnimationFrame(() => {
+      const container = this._containerRef.value;
+      if (!container) return;
+
+      const eventCard = container.querySelector(`[data-event-index="${closestIndex}"]`) as HTMLElement;
+      if (eventCard) {
+        eventCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    // Clear highlight after animation
+    setTimeout(() => {
+      this._highlightedTimestamp = null;
+    }, 3000);
+  }
+
   render() {
     if (this._isLoading) {
       return html`<div class="empty-state">Loading events...</div>`;
@@ -273,9 +331,9 @@ export class GrowspaceLogbook extends LitElement {
     // ⚡ Performance: Schwartzian transform for efficient sorting
     // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
     const sortedEvents = filteredEvents
-      .map(e => ({ 
-        event: e, 
-        time: new Date((e as any).timestamp || e.start_time).getTime() 
+      .map(e => ({
+        event: e,
+        time: new Date((e as any).timestamp || e.start_time).getTime()
       }))
       .sort((a, b) => b.time - a.time)
       .map(item => item.event);
@@ -303,67 +361,73 @@ export class GrowspaceLogbook extends LitElement {
     )}
       </div>
 
-      <div class="log-container">
+      <div class="log-container" ${ref(this._containerRef)}>
         ${sortedEvents.length > 0
-        ? sortedEvents.map(
-          (event) => {
+        ? html`
+            ${virtualize({
+          items: sortedEvents,
+          scroller: true,
+          renderItem: (event: GrowspaceEvent) => {
+            if (!event) return html``;
             const cat = normalize(event.category);
             const isNote = cat === 'note';
-            const type = isNote ? 'Plant Note' : 
-                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') : 
-                        (cat ? cat.replace(/_/g, ' ') : 'Event'));
+            const type = isNote ? 'Plant Note' :
+              (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
+                (cat ? cat.replace(/_/g, ' ') : 'Event'));
             const startTime = (event as any).timestamp || event.start_time;
+            const index = (this._events || []).indexOf(event);
 
             return html`
-                <div class="event-card">
-                  <div class="event-header">
-                    <div>
-                      <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
-                      <div class="event-time">${this._formatTime(startTime)}</div>
-                    </div>
-                    ${event.duration_sec > 0
-              ? html`<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
-              : nothing}
-                  </div>
-                  
-                  <div class="event-details">
-                    <div class="event-reasons">
-                      ${isNote ? html`
-                        <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
-                          ${(event as any).notes}
+                    <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
+                      <div class="event-header">
+                        <div>
+                          <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                          <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
-                        ${(event as any).tags?.length > 0 ? html`
-                          <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
-                            ${(event as any).tags.map((tag: string) => html`
-                              <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
-                            `)}
-                          </div>
-                        ` : nothing}
-                        ${(event as any).images?.length > 0 ? html`
-                          <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
-                            ${(event as any).images.length} Image${(event as any).images.length > 1 ? 's' : ''} attached
-                          </div>
-                        ` : nothing}
-                      ` : (event.reasons && event.reasons.length > 0
-                        ? event.reasons.map((reason) => html`<span class="reason-badge">${reason}</span>`)
-                        : nothing)}
+                        ${event.duration_sec > 0
+                ? html`<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                : nothing}
+                      </div>
+                      
+                      <div class="event-details">
+                        <div class="event-reasons">
+                          ${isNote ? html`
+                            <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
+                              ${(event as any).notes}
+                            </div>
+                            ${(event as any).tags?.length > 0 ? html`
+                              <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                                ${(event as any).tags.map((tag: string) => html`
+                                  <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
+                                `)}
+                              </div>
+                            ` : nothing}
+                            ${(event as any).images?.length > 0 ? html`
+                              <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
+                                ${(event as any).images.length} Image${(event as any).images.length > 1 ? 's' : ''} attached
+                              </div>
+                            ` : nothing}
+                          ` : (event.reasons && event.reasons.length > 0
+                ? event.reasons.map((reason: string) => html`<span class="reason-badge">${reason}</span>`)
+                : nothing)}
+                        </div>
+                        
+                        ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                ? html`
+                              <div 
+                                class="event-probability"
+                                style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
+                              >
+                                ${this._formatProb(event.severity)}
+                              </div>
+                            `
+                : nothing}
+                      </div>
                     </div>
-                    
-                    ${!isNote && event.severity > 0.5 && event.category !== 'training'
-              ? html`
-                          <div 
-                            class="event-probability"
-                            style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
-                          >
-                            ${this._formatProb(event.severity)}
-                          </div>
-                        `
-              : nothing}
-                  </div>
-                </div>
-              `;
+                  `;
           }
-        )
+        })}
+          `
         : html`
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
