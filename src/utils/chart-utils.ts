@@ -1,4 +1,5 @@
 import { METRIC_CONFIG } from '../constants';
+import type { RawHistoryDataPoint, NormalizedHistoryPoint } from '../adapters/hass-types';
 
 export class ChartUtils {
     /**
@@ -7,7 +8,7 @@ export class ChartUtils {
      * Downsamples to ~8 points per hour (192 points on 24h grid) for performance.
      */
     public static generateSparklinePath(
-        historyData: any[],
+        historyData: RawHistoryDataPoint[],
         width: number,
         height: number,
         timeRange: '1h' | '6h' | '24h' | '7d' = '24h'
@@ -20,7 +21,7 @@ export class ChartUtils {
         );
 
         // Filter valid numeric values AND apply time-based downsampling
-        const validData: any[] = [];
+        const validData: RawHistoryDataPoint[] = [];
         const len = sortedData.length;
 
         // AUTO-OPTIMIZATION: If we already have sparse data (e.g. from backend downsampling),
@@ -128,7 +129,7 @@ export class ChartUtils {
     /**
      * Determines if it is "Day" (Light ON) at a specific time based on history.
      */
-    public static getIsDay(time: number, lightHistory: any[]): boolean {
+    public static getIsDay(time: number, lightHistory: NormalizedHistoryPoint[]): boolean {
         if (!lightHistory || lightHistory.length === 0) return true; // Default to Day
 
         // 1. Check if time is before the entire history
@@ -168,14 +169,14 @@ export class ChartUtils {
      * Generates colored VPD sparkline segments based on VPD value at each point, respecting Day/Night cycles.
      */
     public static generateVpdSparklineSegments(
-        historyData: any[],
+        historyData: RawHistoryDataPoint[],
         width: number,
         height: number,
         thresholds: {
             day: { targetMin: number; targetMax: number; dangerMin: number; dangerMax: number };
             night: { targetMin: number; targetMax: number; dangerMin: number; dangerMax: number };
         },
-        lightHistory: any[],
+        lightHistory: NormalizedHistoryPoint[] | RawHistoryDataPoint[],
         timeRange: '1h' | '6h' | '24h' | '7d' = '24h'
     ): Array<{ path: string; color: string }> {
         if (!historyData || historyData.length < 2) return [];
@@ -184,17 +185,14 @@ export class ChartUtils {
             (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
         );
 
-        // Normalize light history once if needed, but assuming caller passes normalized points is safer/faster?
-        // Actually, GrowspaceEnvChart passes normalized points. GrowspaceHeader probably passes raw history.
-        // Let's assume normalized points for 'lightHistory' to match 'getIsDay' expectation (array of {time, value}).
-        // If passed raw HA history, we need to normalize it first.
-        let normalizedLight: any[] = lightHistory;
-        if (lightHistory.length > 0 && (lightHistory[0].last_changed)) {
-            normalizedLight = this.normalizeHistory(lightHistory, 'light', 0, Date.now());
+        // Normalize light history if it's raw history (has last_changed property)
+        let normalizedLight: NormalizedHistoryPoint[] = lightHistory as NormalizedHistoryPoint[];
+        if (lightHistory.length > 0 && 'last_changed' in lightHistory[0]) {
+            normalizedLight = this.normalizeHistory(lightHistory as RawHistoryDataPoint[], 'light');
         }
 
 
-        const validData: any[] = [];
+        const validData: RawHistoryDataPoint[] = [];
         const len = sortedData.length;
         const skipDownsampling = len < (width * 1.5);
 
@@ -427,7 +425,7 @@ export class ChartUtils {
      * Generates an SVG path string for a step graph (binary/state) from history data.
      */
     public static generateStepPath(
-        historyData: any[],
+        historyData: RawHistoryDataPoint[],
         width: number,
         height: number,
         timeRange?: '1h' | '6h' | '24h' | '7d'
@@ -467,14 +465,12 @@ export class ChartUtils {
      * Handles binary conversions (on=1/off=0), numeric parsing, and time filtering.
      */
     public static normalizeHistory(
-        historyData: any[],
-        metricKey: string,
-        startTimeMs: number,
-        endTimeMs: number
-    ): Array<{ time: number; value: number; meta?: any }> {
+        historyData: RawHistoryDataPoint[],
+        metricKey: string
+    ): NormalizedHistoryPoint[] {
         if (!historyData || historyData.length === 0) return [];
 
-        const points: Array<{ time: number; value: number; meta?: any }> = [];
+        const points: NormalizedHistoryPoint[] = [];
 
         // Sort first
         const sorted = [...historyData].sort((a, b) =>
@@ -505,7 +501,7 @@ export class ChartUtils {
             }
 
             if (isValid && h.state !== 'unavailable' && h.state !== 'unknown') {
-                const point: any = { time: rawTime, value: val };
+                const point: NormalizedHistoryPoint = { time: rawTime, value: val };
                 if (h.attributes) point.meta = h.attributes;
                 points.push(point);
             }

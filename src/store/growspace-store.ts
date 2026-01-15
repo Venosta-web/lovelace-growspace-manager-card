@@ -810,7 +810,7 @@ export class GrowspaceStore {
             payload: {
                 mode: 'plant',
                 plantIds: selectedIds,
-                growspaceId: growspaceId
+                growspaceId
             }
         });
     }
@@ -828,7 +828,7 @@ export class GrowspaceStore {
             payload: {
                 isOpen: true,
                 plantIds: selectedIds,
-                growspaceId: growspaceId
+                growspaceId
             }
         });
     }

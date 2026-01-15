@@ -474,20 +474,37 @@ export interface NutrientInventory {
 
 // --- Events & History (Restored) ---
 
+/**
+ * Event category types for timeline events
+ */
+export type EventCategory =
+  | 'alert'
+  | 'note'
+  | 'irrigation'
+  | 'training'
+  | 'environmental'
+  | 'phase_change'
+  | 'milestone';
+
+/**
+ * Growspace-level event from the event log
+ * Used by growspace-timeline and growspace-logbook components
+ */
 export interface GrowspaceEvent {
   sensor_type: string;
   growspace_id: string;
-  start_time: string;
+  start_time: string; // ISO date string (legacy, use timestamp)
   end_time: string;
   duration_sec: number;
   severity: number;
-  category: string;
+  category: string; // Should be EventCategory but kept as string for backend compatibility
   reasons: string[];
   notes?: string;
-  timestamp?: string;
+  timestamp?: string; // ISO date string - preferred over start_time
   images?: string[];
   tags?: string[];
 }
+
 
 export type IPMType = 'foliar' | 'drench' | 'beneficials';
 

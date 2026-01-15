@@ -128,8 +128,8 @@ export class VPDHeatmap extends LitElement {
         const height = canvas.height = 300;
 
         // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
-        const minTemp = 15, maxTemp = 35;
-        const minRH = 30, maxRH = 90;
+        const minTemp = 15; const maxTemp = 35;
+        const minRH = 30; const maxRH = 90;
 
         // Clear
         ctx.clearRect(0, 0, width, height);

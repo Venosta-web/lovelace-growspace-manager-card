@@ -212,7 +212,7 @@ export class GrowspaceDataStore {
             Object.entries(grid).forEach(([key, plant]) => {
                 if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
                     // Create a deep copy of the plant data to avoid mutation
-                    const updatedPlant = { ...plant, events: [...(plant['events'] || []), event] };
+                    const updatedPlant = { ...plant, events: [...(plant.events || []), event] };
                     newCache[gsId] = {
                         ...newCache[gsId],
                         grid: {

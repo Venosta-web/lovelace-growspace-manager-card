@@ -35,7 +35,7 @@ test.describe('Growspace Configuration', () => {
         await expect(menuDropdown).toBeVisible();
 
         console.log('Clicking Config menu item...');
-        const configMenuItem = card.locator('.menu-item').filter({ hasText: 'Config' });
+        const configMenuItem = card.locator('.menu-item').filter({ hasText: 'Settings' });
         await expect(configMenuItem).toBeVisible();
         await configMenuItem.click();
 

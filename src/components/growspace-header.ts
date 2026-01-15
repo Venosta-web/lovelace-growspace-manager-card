@@ -1062,8 +1062,8 @@ export class GrowspaceHeader extends LitElement {
     let vpdSegments: Array<{ path: string; color: string }> = [];
 
     if (isVpd && this.store?.history && this.device) {
-      const historyData = this._historyCacheController?.value?.['vpd'];
-      const lightHistory = this._historyCacheController?.value?.['light'] || [];
+      const historyData = this._historyCacheController?.value?.vpd;
+      const lightHistory = this._historyCacheController?.value?.light || [];
       // Get VPD thresholds from device overview entity
       const overviewEntity = this.device.overview_entity_id
         ? this.hass?.states[this.device.overview_entity_id]

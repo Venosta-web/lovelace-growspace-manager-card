@@ -79,7 +79,7 @@ test.describe('Lifecycle Progression', () => {
         // The subagent used `dialog.shadowRoot.querySelectorAll('.detail-card')`.
         // Playwright handles shadow DOM automatically if we search right.
 
-        const timelineEditBtn = dialog.locator('.detail-card').filter({ hasText: 'Timeline' }).getByRole('button').first();
+        const timelineEditBtn = dialog.locator('.detail-card').filter({ hasText: 'Lifecycle Dates' }).getByRole('button', { name: 'Toggle Dates' }).first();
         // OR checks for the pencil icon button.
         await timelineEditBtn.click();
 

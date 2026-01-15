@@ -25,6 +25,7 @@ export class ConfigDialog extends LitElement {
 
   @property({ type: String }) initialTab: ConfigTab =
     ConfigTab.ENVIRONMENT;
+
   @property({ type: String })
   public currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
@@ -791,6 +792,7 @@ export class ConfigDialog extends LitElement {
       </div>
     `;
   }
+
   private _handleEnvGrowspaceChange(e: Event) {
     const target = e.target as HTMLSelectElement;
     const growspaceId = target.value;

@@ -2,7 +2,8 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceEvent } from '../../types';
-import { GrowspaceLogbookController } from '../../controllers/growspace-logbook-controller';
+import { getTimelineService } from '../../services/timeline-service';
+import { getEventTimestamp, formatDateTime, formatDuration, formatProbability } from '../../utils/date-utils';
 import { dialogStyles } from '../../styles/dialog.styles';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
@@ -22,8 +23,14 @@ export class GrowspaceLogbook extends LitElement {
   @state() private _activeFilter = 'all';
   @state() private _highlightedTimestamp: number | null = null;
 
-  private _controller?: GrowspaceLogbookController;
   private _containerRef: Ref<HTMLDivElement> = createRef();
+
+  /**
+   * Normalize string for filtering (moved to class method for performance)
+   */
+  private _normalize(s?: string): string {
+    return s?.toLowerCase().trim() || '';
+  }
 
   static styles = [
     dialogStyles,
@@ -166,10 +173,6 @@ export class GrowspaceLogbook extends LitElement {
     `,
   ];
 
-  protected firstUpdated() {
-    this._initController();
-  }
-
   private _getSeverityColor(severity: number, sensorType?: string): string {
     if (sensorType?.toLowerCase() === 'optimal') {
       if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
@@ -184,33 +187,22 @@ export class GrowspaceLogbook extends LitElement {
   }
 
   protected willUpdate(changedProps: Map<string, any>) {
-    if (changedProps.has('hass') && !this._controller) {
-      this._initController();
+    if (changedProps.has('hass') && !this.hass) {
+      console.warn('GrowspaceLogbook: No HASS context available');
+      return;
     }
     if (changedProps.has('growspaceId')) {
       this._fetchEvents();
     }
   }
 
-  private _initController() {
-    if (!this._controller) {
-      this._controller = new GrowspaceLogbookController();
-      this._fetchEvents();
-    }
-  }
-
   private async _fetchEvents() {
-    if (!this._controller || !this.growspaceId || !this.hass) return;
+    if (!this.growspaceId || !this.hass) return;
 
     this._isLoading = true;
-    try {
-      this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
-    } catch (e) {
-      console.error('Error fetching logbook events:', e);
-      this._events = [];
-    } finally {
-      this._isLoading = false;
-    }
+    const service = getTimelineService(this.hass);
+    this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
+    this._isLoading = false;
   }
 
   private _formatDuration(seconds: number): string {
@@ -227,18 +219,7 @@ export class GrowspaceLogbook extends LitElement {
   }
 
   private _formatTime(isoString: string): string {
-    try {
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) throw new Error('Invalid Time');
-      return date.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return isoString;
-    }
+    return formatDateTime(new Date(isoString));
   }
 
   private _setActiveFilter(filter: string) {
@@ -251,14 +232,13 @@ export class GrowspaceLogbook extends LitElement {
   public scrollToTimestamp(timestamp: number) {
     this._highlightedTimestamp = timestamp;
 
-    // Find closest event to timestamp
     if (!this._events || this._events.length === 0) return;
 
     let closestIndex = 0;
     let minDiff = Number.MAX_VALUE;
 
     for (let i = 0; i < this._events.length; i++) {
-      const eventTime = new Date((this._events[i] as any).timestamp || this._events[i].start_time).getTime();
+      const eventTime = getEventTimestamp(this._events[i]);
       const diff = Math.abs(eventTime - timestamp);
       if (diff < minDiff) {
         minDiff = diff;
@@ -290,16 +270,13 @@ export class GrowspaceLogbook extends LitElement {
 
     const allEvents = this._events || [];
 
-    const normalize = (s?: string) => s?.toLowerCase().trim() || '';
-
-    // Filter logic
+    // Filter logic using class method for normalization
     let filteredEvents = allEvents;
 
     if (this._activeFilter === 'watering') {
       filteredEvents = allEvents.filter(e => {
-        const cat = normalize(e.category);
-        const type = normalize(e.sensor_type);
-        // Include 'environmental' category if sensor_type is irrigation/drain (manual watering creates this)
+        const cat = this._normalize(e.category);
+        const type = this._normalize(e.sensor_type);
         return cat === 'irrigation' ||
           (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
           ['irrigation', 'drain', 'water'].includes(type) ||
@@ -308,32 +285,29 @@ export class GrowspaceLogbook extends LitElement {
     } else if (this._activeFilter === 'training') {
       const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
       filteredEvents = allEvents.filter(e => {
-        const cat = normalize(e.category);
-        const type = normalize(e.sensor_type);
+        const cat = this._normalize(e.category);
+        const type = this._normalize(e.sensor_type);
         return cat === 'training' || techniques.some(t => type.includes(t));
       });
     } else if (this._activeFilter === 'alerts') {
       filteredEvents = allEvents.filter(e => {
-        const cat = normalize(e.category);
+        const cat = this._normalize(e.category);
         return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
       });
     } else if (this._activeFilter === 'environment') {
       filteredEvents = allEvents.filter(e => {
-        const type = normalize(e.sensor_type);
+        const type = this._normalize(e.sensor_type);
         return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
       });
-    }
-    // 'all' case keeps filteredEvents as allEvents
-    if (this._activeFilter === 'notes') {
-      filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
+    } else if (this._activeFilter === 'notes') {
+      filteredEvents = allEvents.filter(e => this._normalize(e.category) === 'note');
     }
 
-    // ⚡ Performance: Schwartzian transform for efficient sorting
-    // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
+    // Schwartzian transform for efficient sorting
     const sortedEvents = filteredEvents
       .map(e => ({
         event: e,
-        time: new Date((e as any).timestamp || e.start_time).getTime()
+        time: getEventTimestamp(e)
       }))
       .sort((a, b) => b.time - a.time)
       .map(item => item.event);
@@ -369,7 +343,7 @@ export class GrowspaceLogbook extends LitElement {
           scroller: true,
           renderItem: (event: GrowspaceEvent) => {
             if (!event) return html``;
-            const cat = normalize(event.category);
+            const cat = this._normalize(event.category);
             const isNote = cat === 'note';
             const type = isNote ? 'Plant Note' :
               (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :

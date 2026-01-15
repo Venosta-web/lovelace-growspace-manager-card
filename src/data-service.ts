@@ -242,7 +242,7 @@ export class DataService {
 
       // Remove legacy or wrapper 'response' key if present to pass legacy validation
       if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
-        delete (rawResponse as Record<string, unknown>)['response'];
+        delete (rawResponse as Record<string, unknown>).response;
       }
 
       // The WS API returns: { strains: { ... }, strain_list: [...] }

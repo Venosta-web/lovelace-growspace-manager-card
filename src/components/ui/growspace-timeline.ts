@@ -2,29 +2,30 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceEvent } from '../../types';
-import { GrowspaceLogbookController } from '../../controllers/growspace-logbook-controller';
+import { getTimelineService } from '../../services/timeline-service';
+import { getEventTimestamp, formatDateTime, formatShortDate } from '../../utils/date-utils';
 import { sharedStyles } from '../../styles/shared.styles';
 import {
-    mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
-    mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlash, mdiCupWater,
-    mdiDumbbell, mdiFlower, mdiHairDryer, mdiCannabis
+  mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
+  mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlash,
+  mdiDumbbell, mdiFlower, mdiHairDryer
 } from '@mdi/js';
 
 @customElement('growspace-timeline')
 export class GrowspaceTimeline extends LitElement {
-    @property({ attribute: false }) public hass!: HomeAssistant;
-    @property({ type: String }) public growspaceId!: string;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ type: String }) public growspaceId!: string;
 
-    @state() private _events: GrowspaceEvent[] = [];
-    @state() private _isLoading = false;
-    @state() private _hoveredEvent: GrowspaceEvent | null = null;
-    @state() private _zoomLevel = 1; // 1 = normal, 2 = zoomed in
+  @state() private _events: GrowspaceEvent[] = [];
+  @state() private _isLoading = false;
+  @state() private _hasError = false;
+  @state() private _errorMessage = '';
+  @state() private _hoveredEvent: GrowspaceEvent | null = null;
+  @state() private _zoomLevel = 1; // 1 = normal, 2 = zoomed in
 
-    private _controller = new GrowspaceLogbookController();
-
-    static styles = [
-        sharedStyles,
-        css`
+  static styles = [
+    sharedStyles,
+    css`
       :host {
         display: block;
         height: 100%;
@@ -199,79 +200,77 @@ export class GrowspaceTimeline extends LitElement {
         color: var(--secondary-text-color);
       }
     `
-    ];
+  ];
 
-    protected willUpdate(changedProps: Map<string, any>) {
-        if (changedProps.has('growspaceId') || (changedProps.has('hass') && !this._events.length)) {
-            this._fetchEvents();
-        }
+  protected willUpdate(changedProps: Map<string, any>) {
+    if (changedProps.has('growspaceId') || (changedProps.has('hass') && !this._events.length)) {
+      this._fetchEvents();
     }
+  }
 
-    private async _fetchEvents() {
-        if (!this.hass || !this.growspaceId) return;
-        this._isLoading = true;
-        try {
-            this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 100); // Fetch more events for timeline
-        } catch (e) {
-            console.error(e);
-        } finally {
-            this._isLoading = false;
-        }
-    }
+  private async _fetchEvents() {
+    if (!this.hass || !this.growspaceId) return;
+    this._isLoading = true;
+    this._hasError = false;
+    const service = getTimelineService(this.hass);
+    this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+    this._isLoading = false;
+  }
 
-    private _getIcon(event: GrowspaceEvent) {
-        const cat = event.category?.toLowerCase();
-        const type = event.sensor_type?.toLowerCase();
+  private _getIcon(event: GrowspaceEvent) {
+    const cat = event.category?.toLowerCase();
+    const type = event.sensor_type?.toLowerCase();
 
-        if (cat === 'alert') return mdiAlertCircle;
-        if (cat === 'note') return mdiNoteText;
-        if (type?.includes('water') || type?.includes('irrigation')) return mdiWater;
-        if (cat === 'training') return mdiDumbbell;
-        if (type === 'temperature') return mdiThermometer;
-        if (type === 'humidity') return mdiWaterPercent;
-        if (type === 'vpd') return mdiGauge;
+    if (cat === 'alert') return mdiAlertCircle;
+    if (cat === 'note') return mdiNoteText;
+    if (type?.includes('water') || type?.includes('irrigation')) return mdiWater;
+    if (cat === 'training') return mdiDumbbell;
+    if (type === 'temperature') return mdiThermometer;
+    if (type === 'humidity') return mdiWaterPercent;
+    if (type === 'vpd') return mdiGauge;
 
-        return mdiLeaf;
-    }
+    return mdiLeaf;
+  }
 
-    private _getClass(event: GrowspaceEvent) {
-        const cat = event.category?.toLowerCase();
-        const type = event.sensor_type?.toLowerCase();
-        const severity = event.severity || 0;
+  private _getClass(event: GrowspaceEvent) {
+    const cat = event.category?.toLowerCase();
+    const type = event.sensor_type?.toLowerCase();
+    const severity = event.severity || 0;
 
-        if (cat === 'alert' || severity > 0.8) return 'marker-alert';
-        if (cat === 'note') return 'marker-note';
-        if (type?.includes('water') || type?.includes('irrigation')) return 'marker-water';
-        if (cat === 'phase_change') return 'marker-stage'; // Hypothetical category
+    if (cat === 'alert' || severity > 0.8) return 'marker-alert';
+    if (cat === 'note') return 'marker-note';
+    if (type?.includes('water') || type?.includes('irrigation')) return 'marker-water';
+    if (cat === 'phase_change') return 'marker-stage'; // Hypothetical category
 
-        return '';
-    }
+    return '';
+  }
 
-    private _getPosition(event: GrowspaceEvent, minTime: number, totalDuration: number): number {
-        const time = new Date((event as any).timestamp || event.start_time).getTime();
-        const position = ((time - minTime) / totalDuration) * 100;
-        return position;
-    }
+  private _getPosition(event: GrowspaceEvent, minTime: number, totalDuration: number): number {
+    const time = getEventTimestamp(event);
+    const position = ((time - minTime) / totalDuration) * 100;
+    return position;
+  }
 
-    render() {
-        if (this._isLoading) return html`<div class="empty-state">Loading timeline...</div>`;
-        if (this._events.length === 0) return html`<div class="empty-state">No events to display</div>`;
+  render() {
+    if (this._isLoading) return html`<div class="empty-state">Loading timeline...</div>`;
+    if (this._hasError) return html`<div class="empty-state" style="color: var(--error-color)">${this._errorMessage}</div>`;
+    if (this._events.length === 0) return html`<div class="empty-state">No events to display</div>`;
 
-        // Process times
-        const timestamps = this._events.map(e => new Date((e as any).timestamp || e.start_time).getTime());
-        const minTime = Math.min(...timestamps);
-        const maxTime = Math.max(...timestamps);
+    // Process times using new utility
+    const timestamps = this._events.map(e => getEventTimestamp(e));
+    const minTime = Math.min(...timestamps);
+    const maxTime = Math.max(...timestamps);
 
-        // Add buffer (1 day)
-        const buffer = 24 * 60 * 60 * 1000;
-        const start = minTime - buffer;
-        const end = maxTime + buffer;
-        const totalDuration = end - start;
+    // Add buffer (1 day)
+    const buffer = 24 * 60 * 60 * 1000;
+    const start = minTime - buffer;
+    const end = maxTime + buffer;
+    const totalDuration = end - start;
 
-        // Zoom multiplier
-        const width = 100 * this._zoomLevel;
+    // Zoom multiplier
+    const width = 100 * this._zoomLevel;
 
-        return html`
+    return html`
       <div class="controls">
         <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
         <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
@@ -280,11 +279,11 @@ export class GrowspaceTimeline extends LitElement {
       <div class="timeline-container">
         <div class="timeline-track" style="width: ${width}%">
           ${this._events.map(event => {
-            const left = this._getPosition(event, start, totalDuration);
-            const icon = this._getIcon(event);
-            const className = this._getClass(event);
+      const left = this._getPosition(event, start, totalDuration);
+      const icon = this._getIcon(event);
+      const className = this._getClass(event);
 
-            return html`
+      return html`
               <div 
                 class="event-marker ${className}" 
                 style="left: ${left}%"
@@ -299,34 +298,34 @@ export class GrowspaceTimeline extends LitElement {
                       ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
                     </div>
                     <div class="tooltip-time">
-                      ${new Date((event as any).timestamp || event.start_time).toLocaleString()}
+                      ${formatDateTime(new Date(getEventTimestamp(event)))}
                     </div>
-                    <div>${(event as any).notes || event.reasons?.join(', ') || ''}</div>
+                    <div>${event.notes || event.reasons?.join(', ') || ''}</div>
                   </div>
                 ` : nothing}
               </div>
             `;
-        })}
+    })}
 
           <div class="date-axis">
             <!-- Generate ticks every 20% -->
             ${[0, 20, 40, 60, 80, 100].map(pct => {
-            const time = start + (totalDuration * (pct / 100));
-            return html`
+      const time = start + (totalDuration * (pct / 100));
+      return html`
                 <div class="date-tick" style="left: ${pct}%">
-                  ${new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  ${formatShortDate(new Date(time))}
                 </div>
               `;
-        })}
+    })}
           </div>
         </div>
       </div>
     `;
-    }
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'growspace-timeline': GrowspaceTimeline;
-    }
+  interface HTMLElementTagNameMap {
+    'growspace-timeline': GrowspaceTimeline;
+  }
 }

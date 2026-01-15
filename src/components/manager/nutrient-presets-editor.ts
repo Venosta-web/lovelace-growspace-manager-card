@@ -360,6 +360,7 @@ export class NutrientPresetsEditor extends LitElement {
       </div>
     `;
   }
+
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
     const presets = this.store.data.$nutrientPresets.get();

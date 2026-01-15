@@ -23,7 +23,7 @@
   "devDependencies": {
     "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
     "@open-wc/testing-helpers": "^3.0.1",
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "^1.57.0",
     "@rollup/plugin-commonjs": "^28.0.9",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-replace": "^6.0.3",

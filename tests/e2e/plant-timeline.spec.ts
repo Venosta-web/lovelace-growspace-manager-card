@@ -91,7 +91,7 @@ test.describe('Plant Timeline', () => {
 
         // Now open a specific plant's timeline
         const plantCard = card.locator('growspace-plant-card').first();
-        const plantIdentifier = await plantCard.locator('.plant-info, .strain-name').first().textContent();
+        const plantIdentifier = await plantCard.locator('.pc-strain-name').first().textContent();
 
         await plantCard.locator('.plant-card-rich').first().dispatchEvent('click', { bubbles: true, composed: true });
 
@@ -134,7 +134,7 @@ test.describe('Plant Timeline', () => {
         await expect(overviewDialog).toHaveAttribute('open', '', { timeout: 10000 });
 
         // Close the dialog and use batch actions for training
-        await overviewDialog.locator('ha-icon-button, button').filter({ hasText: /close|×/i }).first().click();
+        await overviewDialog.getByRole('button', { name: 'Close' }).first().click();
         await page.waitForTimeout(500);
 
         // Open menu and do training on growspace

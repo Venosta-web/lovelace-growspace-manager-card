@@ -3,29 +3,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceLogbook } from '../../../../src/components/ui/growspace-logbook';
 import { GrowspaceEvent } from '../../../../src/types';
 
-// Hoist the mock instance so it can be used in the factory and tests
-const { mockControllerInstance } = vi.hoisted(() => {
-    return {
-        mockControllerInstance: {
-            fetchEventLog: vi.fn().mockResolvedValue([])
-        }
-    };
-});
-
-// Mock Controller
-vi.mock('../../../../src/controllers/growspace-logbook-controller', () => {
-    return {
-        GrowspaceLogbookController: class {
-            constructor() {
-                // Return the singular hoisted instance or copy methods?
-                // If we want to spy on calls, returning the instance is easiest if the code just calls methods.
-                // But the class instantiates new one.
-                return mockControllerInstance;
-            }
-        }
-    };
-});
-
 // Mock virtualizer
 vi.mock('@lit-labs/virtualizer/virtualize.js', () => ({
     virtualize: vi.fn(({ items, renderItem }) => {
@@ -33,11 +10,9 @@ vi.mock('@lit-labs/virtualizer/virtualize.js', () => ({
     })
 }));
 
-// Import AFTER mock
-import { GrowspaceLogbookController } from '../../../../src/controllers/growspace-logbook-controller';
-
 describe('GrowspaceLogbook', () => {
     let element: GrowspaceLogbook;
+    let mockHass: any;
 
     // Updated mock data
     const mockEvents: GrowspaceEvent[] = [
@@ -75,40 +50,43 @@ describe('GrowspaceLogbook', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks();
-        // Reset default impl
-        mockControllerInstance.fetchEventLog.mockResolvedValue([]);
+
+        mockHass = {
+            callWS: vi.fn().mockResolvedValue({ gs1: [] }),
+            callService: vi.fn(),
+        };
 
         element = new GrowspaceLogbook();
-        element.hass = {} as any;
+        element.hass = mockHass;
         element.growspaceId = 'gs1';
 
         document.body.appendChild(element);
         await element.updateComplete;
+        await new Promise(r => setTimeout(r, 0));
     });
 
     afterEach(() => {
         if (element.isConnected) document.body.removeChild(element);
     });
 
-    it('should instantiate controller on init', async () => {
-        // Since we return the same instance, we can't easily check 'toHaveBeenCalled' on the class
-        // unless we mock the class symbol itself which acts as constructor?
-        // But we can check if fetchEventLog was called.
-        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
+    it('should render log container', async () => {
         expect(element.shadowRoot?.querySelector('.log-container')).toBeTruthy();
     });
 
+
     it('should fetch events when growspaceId changes', async () => {
-        const fetchSpy = mockControllerInstance.fetchEventLog;
-        fetchSpy.mockResolvedValue(mockEvents);
+        mockHass.callWS.mockResolvedValue({ gs2: mockEvents });
 
         element.growspaceId = 'gs2';
         await element.updateComplete;
-        // Wait for async fetch
         await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
 
-        expect(fetchSpy).toHaveBeenCalledWith(element.hass, 'gs2', 50);
+        expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'growspace_manager/get_log',
+            growspace_id: 'gs2',
+            limit: 50
+        }));
 
         const cards = element.shadowRoot?.querySelectorAll('.event-card');
         expect(cards?.length).toBe(3);
@@ -249,10 +227,12 @@ describe('GrowspaceLogbook', () => {
 
         it('should format time safely', () => {
             const valid = new Date().toISOString();
-            expect((element as any)._formatTime(valid)).not.toBe(valid); // Should look formatted
+            const result = (element as any)._formatTime(valid);
+            expect(result).not.toBe(valid); // Should be formatted
 
             const invalid = 'not-a-date';
-            expect((element as any)._formatTime(invalid)).toBe(invalid);
+            // formatTime from date-utils returns 'Invalid Date' for invalid input
+            expect((element as any)._formatTime(invalid)).toBe('Invalid Date');
         });
 
         it('should _getSeverityColor for optimal sensors', () => {
@@ -271,38 +251,7 @@ describe('GrowspaceLogbook', () => {
         });
     });
 
-    it('should re-init controller if hass changes and controller missing', async () => {
-        (element as any)._controller = undefined;
-        mockControllerInstance.fetchEventLog.mockClear();
-        // Directly invoke willUpdate logic since Lit reactive updates may not always trigger
-        // for object reference changes (hass is an object)
-        const changedProps = new Map();
-        changedProps.set('hass', element.hass);
-        element.hass = { ...element.hass, state: 'new' } as any;
-        (element as any).willUpdate(changedProps);
-        // Wait for async _fetchEvents
-        await new Promise(r => setTimeout(r, 50));
 
-        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalled();
-    });
-
-    it('should NOT re-init controller if already exists when hass changes', async () => {
-        mockControllerInstance.fetchEventLog.mockClear();
-        (element as any)._controller = mockControllerInstance;
-        element.hass = { ...element.hass, state: 'newer' } as any;
-        await element.updateComplete;
-
-        expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
-    });
-
-    it('should call initController in willUpdate when triggered manually', () => {
-        (element as any)._controller = undefined;
-        // Verify willUpdate logic directly to ensure coverage
-        const map = new Map();
-        map.set('hass', true);
-        (element as any).willUpdate(map);
-        expect(mockControllerInstance.fetchEventLog).toHaveBeenCalledWith(element.hass, 'gs1', 50);
-    });
 
     it('should sort events by time descending', async () => {
         const older = { ...mockEvents[0], start_time: new Date(Date.now() - 100000).toISOString(), sensor_type: 'older' };
@@ -318,18 +267,13 @@ describe('GrowspaceLogbook', () => {
         expect(cards?.[1].querySelector('.event-type')?.textContent).toContain('older');
     });
 
-    it('should handle fetch error and reset loading state', async () => {
-        const errorMock = vi.fn().mockRejectedValue(new Error('Fetch failed'));
-        // Temporarily override the instance method or use spy if possible.
-        // Since we share the instance, we can just change the mock.
-        mockControllerInstance.fetchEventLog.mockRejectedValueOnce(new Error('Fetch failed'));
 
-        // Trigger fetch
+    it('should handle fetch error and reset loading state', async () => {
+        mockHass.callWS.mockRejectedValueOnce(new Error('Fetch failed'));
+
         element.growspaceId = 'gs_error';
-        // Check loading state immediately?
-        // It's async. We can check if it eventually resets.
         await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0)); // wait for async
+        await new Promise(r => setTimeout(r, 0));
         await element.updateComplete;
 
         expect((element as any)._isLoading).toBe(false);
@@ -502,6 +446,35 @@ describe('GrowspaceLogbook', () => {
             expect(types[2]).toBe('fan speed');
         });
 
+        describe('Error Handling', () => {
+            it('should handle fetch error gracefully', async () => {
+                const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+                const mockHass = {
+                    callWS: vi.fn().mockRejectedValue(new Error('Network error'))
+                } as any;
+
+                const element = document.createElement('growspace-logbook') as GrowspaceLogbook;
+                element.hass = mockHass;
+                element.growspaceId = 'test_growspace';
+                document.body.appendChild(element);
+
+                await element.updateComplete;
+                // Wait for async fetch
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                expect(consoleErrorSpy).toHaveBeenCalledWith(
+                    'Error fetching growspace events:',
+                    expect.any(Error)
+                );
+
+                // Should still have empty events array
+                expect((element as any)._events).toEqual([]);
+
+                document.body.removeChild(element);
+                consoleErrorSpy.mockRestore();
+            });
+        });
+
         it('should handle undefined reasons gracefully', async () => {
             const event = { ...mockEvents[0], reasons: undefined };
             (element as any)._events = [event];
@@ -548,12 +521,11 @@ describe('GrowspaceLogbook', () => {
 
         it('should return early in _fetchEvents if hass is missing', async () => {
             element.hass = undefined as any;
-            mockControllerInstance.fetchEventLog.mockClear();
+            mockHass.callWS.mockClear();
 
-            // Trigger private method directly or via change (but change requires hass check in willUpdate)
             await (element as any)._fetchEvents();
 
-            expect(mockControllerInstance.fetchEventLog).not.toHaveBeenCalled();
+            expect(mockHass.callWS).not.toHaveBeenCalled();
         });
     });
 
@@ -568,12 +540,17 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should scroll to closest event and highlight', async () => {
-            // Setup events
-            mockControllerInstance.fetchEventLog.mockResolvedValue(mockEvents);
+            // Setup events with mock HASS
+            mockHass.callWS.mockResolvedValue({ gs1: mockEvents });
             element = new GrowspaceLogbook();
-            element.hass = {} as any;
+            element.hass = mockHass;
             element.growspaceId = 'gs1';
             document.body.appendChild(element);
+
+            // Advance timers to allow fetch to complete
+            await vi.advanceTimersByTimeAsync(0);
+            await element.updateComplete;
+            await vi.advanceTimersByTimeAsync(0);
             await element.updateComplete;
 
             // Mock scrollIntoView
@@ -583,7 +560,7 @@ describe('GrowspaceLogbook', () => {
             const container = element.shadowRoot?.querySelector('.log-container');
             if (container) {
                 vi.spyOn(container, 'querySelector').mockImplementation((selector) => {
-                    if (selector === '[data-event-index="0"]') { // Closest to now - 1 min (mockEvents[0])
+                    if (selector === '[data-event-index="0"]') {
                         return {
                             scrollIntoView: mockScrollIntoView
                         } as any;
@@ -592,38 +569,32 @@ describe('GrowspaceLogbook', () => {
                 });
             }
 
-            // Target timestamp: same as first event start_time
             const targetTime = new Date(mockEvents[0].start_time).getTime();
 
             element.scrollToTimestamp(targetTime);
-
-            // Trigger animation frame (RAF usually runs on next tick or small timeout)
             await vi.advanceTimersByTimeAsync(100);
 
             expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'center' });
             expect((element as any)._highlightedTimestamp).toBe(targetTime);
 
-            // Fast forward to clear highlight (3000ms)
             await vi.advanceTimersByTimeAsync(3000);
             expect((element as any)._highlightedTimestamp).toBeNull();
         });
 
         it('should do nothing if no events', async () => {
-            mockControllerInstance.fetchEventLog.mockResolvedValue([]);
+            mockHass.callWS.mockResolvedValue({ gs1: [] });
             element = new GrowspaceLogbook();
-            element.hass = {} as any;
+            element.hass = mockHass;
             element.growspaceId = 'gs1';
             document.body.appendChild(element);
+            await vi.advanceTimersByTimeAsync(0);
             await element.updateComplete;
 
             const timestamp = Date.now();
             element.scrollToTimestamp(timestamp);
 
-            // Check that it's set initially (line 252)
+            // Check that it's set initially
             expect((element as any)._highlightedTimestamp).toBe(timestamp);
-
-            // But since it returns early, no scroll happens (we can't easily check 'return' but we check no errors)
-            // And wait to ensure no side effects
         });
     });
 
@@ -668,9 +639,9 @@ describe('GrowspaceLogbook', () => {
                 return [renderItem(null), ...items.map((item: any) => renderItem(item))];
             });
 
-            mockControllerInstance.fetchEventLog.mockResolvedValue(mockEvents);
+            mockHass.callWS.mockResolvedValue({ gs1: mockEvents });
             element = new GrowspaceLogbook();
-            element.hass = {} as any;
+            element.hass = mockHass;
             element.growspaceId = 'gs1';
             document.body.appendChild(element);
             await element.updateComplete;
@@ -680,11 +651,13 @@ describe('GrowspaceLogbook', () => {
         });
 
         it('should handle empty events array correctly', async () => {
-            mockControllerInstance.fetchEventLog.mockResolvedValue([]);
+            mockHass.callWS.mockResolvedValue({ gs1: [] });
             element = new GrowspaceLogbook();
-            element.hass = {} as any;
+            element.hass = mockHass;
             element.growspaceId = 'gs1';
             document.body.appendChild(element);
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
             await element.updateComplete;
 
             const emptyState = element.shadowRoot?.querySelector('.empty-state');

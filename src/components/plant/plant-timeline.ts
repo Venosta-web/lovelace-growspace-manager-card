@@ -2,13 +2,20 @@ import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PlantTimelineEvent, TimelineEventMetadata } from '../../types';
+import { getTimelineService } from '../../services/timeline-service';
+import { formatRelativeDay, formatTime, getDateKey } from '../../utils/date-utils';
 import { sharedStyles } from '../../styles/shared.styles';
+import '../ui/quick-note-input';
+import '../ui/confirm-delete-dialog';
 import {
   mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
   mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlaskOutline, mdiFlash,
-  mdiCupWater, mdiTag, mdiCameraPlus, mdiSend, mdiClose, mdiDelete, mdiDumbbell,
+  mdiCupWater, mdiTag, mdiDelete, mdiDumbbell,
   mdiFlower, mdiHairDryer, mdiCannabis
 } from '@mdi/js';
+
+// Correlation window constant
+const CORRELATION_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 @customElement('plant-timeline')
 export class PlantTimeline extends LitElement {
@@ -16,9 +23,6 @@ export class PlantTimeline extends LitElement {
   @property({ type: String }) plant_id!: string;
   @property({ type: Array }) events: PlantTimelineEvent[] = [];
 
-  @state() private _noteText = '';
-  @state() private _noteImages: string[] = [];
-  @state() private _isSaving = false;
   @state() private _showDeleteConfirmation = false;
   @state() private _deletingEventId: string | number | null = null;
   @state() private _hoveredImage: string | null = null;
@@ -108,68 +112,7 @@ export class PlantTimeline extends LitElement {
         line-height: 1.4;
       }
 
-      /* Quick Note */
-      .quick-note {
-        margin-bottom: 24px;
-        padding: 12px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px dashed var(--divider-color);
-      }
-      .note-input {
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-      }
-      .note-input textarea {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: var(--primary-text-color);
-        font-size: 0.9rem;
-        resize: none;
-        padding: 4px;
-        outline: none;
-      }
-      .note-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .image-previews {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-        overflow-x: auto;
-      }
-      .preview-item {
-        position: relative;
-        width: 60px;
-        height: 60px;
-      }
-      .preview-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 4px;
-      }
-      .remove-img {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        background: var(--error-color);
-        color: white;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        padding: 0;
-        border: none;
-      }
+      /* Quick Note - styles now handled by quick-note-input component */
 
       /* Metadata Chips */
       .metadata-chips {
@@ -296,23 +239,7 @@ export class PlantTimeline extends LitElement {
         vertical-align: middle;
       }
 
-      .dialog-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .overlay-content {
-        width: 320px;
-        padding: 24px;
-        background: var(--card-background-color, #1c1c1c);
-        border-radius: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0,0,0,0.4));
-      }
+      /* Delete dialog styles now handled by confirm-delete-dialog component */
 
       .image-hover-overlay {
         position: fixed;
@@ -385,77 +312,42 @@ export class PlantTimeline extends LitElement {
   private _isCorrelated(event: PlantTimelineEvent, allEvents: PlantTimelineEvent[]): boolean {
     if (event.type !== 'note') return false;
     const noteTime = new Date(event.date).getTime();
-    // Check for alerts within 2 hours before this note
+    // Check for alerts within correlation window before this note
     return allEvents.some(e => {
       if (e.type !== 'alert') return false;
       const alertTime = new Date(e.date).getTime();
       const diff = noteTime - alertTime;
-      return diff > 0 && diff < 2 * 60 * 60 * 1000;
+      return diff > 0 && diff < CORRELATION_WINDOW_MS;
     });
   }
 
-  private _formatDayHeader(dateStr: string) {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) throw new Error();
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+  // Date formatting methods replaced by shared date utilities
 
-      if (date.toDateString() === today.toDateString()) return 'Today';
-      if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
-      return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-    } catch { return dateStr; }
-  }
+  private async _handleNoteSubmit(e: CustomEvent) {
+    const noteInput = this.shadowRoot?.querySelector('quick-note-input');
+    if (!noteInput) return;
 
-  private _formatTime(dateStr: string) {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) throw new Error();
-      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    } catch { return dateStr; }
-  }
-
-  private _getDateKey(dateStr: string): string {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) throw new Error();
-      return date.toDateString();
-    } catch { return dateStr; }
-  }
-
-  private _formatDate(dateStr: string) {
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) throw new Error();
-      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch { return dateStr; }
-  }
-
-  async _submitNote() {
-    if (!this._noteText.trim() && !this._noteImages.length) return;
-    this._isSaving = true;
+    noteInput.setSaving(true);
 
     try {
-      await this.hass.callWS({
-        type: 'growspace_manager/add_timeline_note',
-        plant_id: this.plant_id,
-        notes: this._noteText,
-        images: this._noteImages,
-        transition_date: new Date().toISOString()
+      const service = getTimelineService(this.hass);
+      await service.addPlantNote(this.plant_id, {
+        notes: e.detail.text,
+        images: e.detail.images,
       });
-      this._noteText = '';
-      this._noteImages = [];
+
+      // Clear input on success
+      noteInput.clear();
 
       // Allow time for recorder to write to DB
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Fire refresh event
       this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error('Error adding note:', err);
     } finally {
-      this._isSaving = false;
+      noteInput.setSaving(false);
     }
   }
 
@@ -469,10 +361,8 @@ export class PlantTimeline extends LitElement {
     if (this._deletingEventId === null) return;
 
     try {
-      await this.hass.callWS({
-        type: 'growspace_manager/remove_timeline_event',
-        event_id: this._deletingEventId
-      });
+      const service = getTimelineService(this.hass);
+      await service.deleteEvent(this._deletingEventId);
       this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
     } catch (err) {
       console.error('Error deleting event:', err);
@@ -482,29 +372,7 @@ export class PlantTimeline extends LitElement {
     }
   }
 
-  private _renderDeleteOverlay(): TemplateResult {
-    return html`
-      <div class="dialog-overlay" @click=${() => this._showDeleteConfirmation = false}>
-        <div class="overlay-content" @click=${(e: Event) => e.stopPropagation()}>
-          <h2 style="margin: 0 0 12px 0; font-size: 1.25rem;">Confirm Deletion</h2>
-          <p style="margin: 0 0 24px 0; color: var(--secondary-text-color); font-size: 0.95rem; line-height: 1.5;">
-            Are you sure you want to delete this entry? This action cannot be undone.
-          </p>
-          <div style="display: flex; justify-content: flex-end; gap: 12px;">
-            <button class="md3-button tonal" @click=${() => this._showDeleteConfirmation = false}>
-              Cancel
-            </button>
-            <button class="md3-button danger" @click=${this._confirmDeleteEvent}>
-              <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 4px; fill: currentColor;">
-                <path d="${mdiDelete}" />
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
+  // Delete overlay now handled by confirm-delete-dialog component
 
   private _renderHoverOverlay(): TemplateResult | typeof nothing {
     if (!this._hoveredImage) return nothing;
@@ -515,75 +383,7 @@ export class PlantTimeline extends LitElement {
     `;
   }
 
-  private async _resizeImage(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Could not get canvas context'));
-            return;
-          }
-
-          // Max dimensions
-          const MAX_WIDTH = 1024;
-          const MAX_HEIGHT = 1024;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Compress to JPEG 0.8
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          resolve(dataUrl);
-        };
-        img.onerror = (e) => reject(e);
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  private async _handleFileSelect(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (!input.files) return;
-
-    // Process files sequentially or in parallel, but await them
-    const files = Array.from(input.files);
-    for (const file of files) {
-      try {
-        const resized = await this._resizeImage(file);
-        this._noteImages = [...this._noteImages, resized];
-      } catch (err) {
-        console.error('Error processing image:', err);
-      }
-    }
-
-    // Clear input to allow re-selecting same file if needed
-    input.value = '';
-  }
-
-  private _removeImage(index: number) {
-    this._noteImages = this._noteImages.filter((_, i) => i !== index);
-  }
+  // Image handling now done by quick-note-input component
 
   render() {
     // Sort events descending
@@ -591,10 +391,11 @@ export class PlantTimeline extends LitElement {
       .filter(e => e.date)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    // Group by day
+    // Group by day using shared utility
     const groupedByDay = new Map<string, typeof sortedEvents>();
     for (const event of sortedEvents) {
-      const dayKey = this._getDateKey(event.date);
+      const date = new Date(event.date);
+      const dayKey = getDateKey(date);
       if (!groupedByDay.has(dayKey)) {
         groupedByDay.set(dayKey, []);
       }
@@ -607,55 +408,18 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div class="timeline" style="--stage-color: ${stageColor}">
-        ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : nothing}
+        <confirm-delete-dialog
+          .open=${this._showDeleteConfirmation}
+          @confirm=${this._confirmDeleteEvent}
+          @cancel=${() => this._showDeleteConfirmation = false}
+        ></confirm-delete-dialog>
+        
         ${this._renderHoverOverlay()}
         
         <!-- Quick Note Section -->
-        <div class="quick-note glass-surface">
-          <div class="note-input">
-            <textarea 
-              placeholder="Add a cultivation note..." 
-              .value=${this._noteText}
-              @input=${(e: any) => this._noteText = e.target.value}
-              rows="2"
-            ></textarea>
-          </div>
-          
-          ${this._noteImages.length > 0 ? html`
-            <div class="image-previews">
-              ${this._noteImages.map((img, i) => html`
-                <div class="preview-item">
-                  <img src=${img} />
-                  <button class="remove-img" @click=${() => this._removeImage(i)}>
-                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: white;"><path d="${mdiClose}" /></svg>
-                  </button>
-                </div>
-              `)}
-            </div>
-          ` : nothing}
-
-          <div class="note-actions">
-            <div style="display: flex; gap: 8px;">
-              <input 
-                type="file" 
-                id="fileInput" 
-                @change=${this._handleFileSelect} 
-                multiple 
-                accept="image/*" 
-                style="display: none;"
-              >
-              <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
-                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiCameraPlus}" /></svg>
-              </ha-icon-button>
-            </div>
-            <ha-icon-button 
-              .disabled=${(!this._noteText.trim() && !this._noteImages.length) || this._isSaving}
-              @click=${this._submitNote}
-            >
-              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiSend}" /></svg>
-            </ha-icon-button>
-          </div>
-        </div>
+        <quick-note-input
+          @submit=${this._handleNoteSubmit}
+        ></quick-note-input>
 
         ${sortedEvents.length === 0 ? html`
           <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
@@ -667,7 +431,7 @@ export class PlantTimeline extends LitElement {
 
       return html`
               <div class="day-group">
-                <div class="day-header">${this._formatDayHeader(dayEvents[0].date)}</div>
+                <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
                 
                 ${alerts.length > 2 ? html`
                   <div class="day-summary glass-surface">
@@ -702,7 +466,7 @@ export class PlantTimeline extends LitElement {
           </button>
         ` : nothing}
         <div class="date">
-          ${this._formatTime(event.date)}
+          ${formatTime(new Date(event.date))}
           ${isCorrelated ? html`<span class="correlated-badge">System Correlated</span>` : nothing}
         </div>
         ${this._renderEventContent(event)}

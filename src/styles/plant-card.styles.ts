@@ -177,15 +177,15 @@ export const plantCardStyles = css`
   }
 
   .status-icon.training {
-    color: #ff9800; /* Orange for training */
+    color: var(--gm-warning-color); /* Orange for training */
   }
 
   .status-icon.watering {
-    color: #2196f3; /* Blue for watering */
+    color: var(--gm-info-color); /* Blue for watering */
   }
 
   .status-icon.problem {
-    color: #f44336; /* Red for problem */
+    color: var(--gm-error-color); /* Red for problem */
   }
 
   .status-icon.ipm {
@@ -193,7 +193,7 @@ export const plantCardStyles = css`
   }
 
   .status-icon.preset-recommended {
-    color: var(--primary-color);
+    color: var(--gm-primary-color);
   }
 
   .status-icon ha-svg-icon,

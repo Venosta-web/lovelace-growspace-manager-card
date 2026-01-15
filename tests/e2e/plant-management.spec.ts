@@ -52,6 +52,8 @@ test.describe('Plant Management', () => {
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
 
         // Verify Appearance
+        // Allow time for backend persistence before reload
+        await page.waitForTimeout(2000);
         await page.reload({ waitUntil: 'domcontentloaded' });
         const cardReloaded = page.locator('growspace-manager-card').first();
         await expect(cardReloaded.locator('growspace-plant-card').filter({ hasText: '#AddMe' }).first()).toBeVisible({ timeout: 15000 });
@@ -127,6 +129,7 @@ test.describe('Plant Management', () => {
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
 
         // Final verification with reload
+        await page.waitForTimeout(2000);
         await page.reload({ waitUntil: 'domcontentloaded' });
         await expect(page.locator('growspace-manager-card').first().locator('growspace-plant-card').filter({ hasText: '#EditMe-Edited' })).toBeVisible({ timeout: 15000 });
     });

@@ -447,6 +447,7 @@ export class WateringDialog extends LitElement {
       </ha-dialog>
     `;
   }
+
   private _renderPresetOptions() {
     if (!this.store || !this.store.data) return nothing;
     const presetsRecord = this.store.data.$nutrientPresets.get();

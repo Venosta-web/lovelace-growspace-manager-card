@@ -853,20 +853,7 @@ describe('PlantOverviewDialog', () => {
         expect((element as any)._logbookEvents.length).toBe(0);
     });
 
-    it('should handle _fetchLogbook with optimistic events', async () => {
-        element.hass = {} as any;
-        element.plant = mockPlant;
-        element.open = true;
-        (element as any)._logbookEvents = [{ id: undefined, timestamp: new Date().toISOString(), type: 'note' }];
 
-        const controller = (element as any)._logbookController;
-        vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([{ event_id: 'db1', timestamp: new Date(Date.now() - 10000).toISOString(), type: 'milestone' }]);
-
-        await (element as any)._fetchLogbook();
-
-        expect((element as any)._logbookEvents.length).toBe(2);
-        expect((element as any)._logbookEvents[0].type).toBe('note'); // Optimistic should be first
-    });
 
     it('should render action buttons in timeline tab', async () => {
         (element as any)._activeTab = 'timeline';
@@ -1793,33 +1780,6 @@ describe('PlantOverviewDialog', () => {
             expect(element.editedAttributes?.strain).toBe('Blue Dream');
         });
 
-        it('should filter out logbook events without timestamps in _fetchLogbook', async () => {
-            (element as any)._logbookEvents = [
-                { category: 'note', notes: 'No timestamp' } as any
-            ];
-
-            const controller = (element as any)._logbookController;
-            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
-
-            await (element as any)._fetchLogbook();
-
-            expect((element as any)._logbookEvents.length).toBe(0);
-        });
-
-        it('should filter out old optimistic events in _fetchLogbook', async () => {
-            const oldTime = new Date(Date.now() - 70000).toISOString();
-            (element as any)._logbookEvents = [
-                { category: 'note', timestamp: oldTime } as any
-            ];
-
-            const controller = (element as any)._logbookController;
-            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
-
-            await (element as any)._fetchLogbook();
-
-            expect((element as any)._logbookEvents.length).toBe(0);
-        });
-
         it('should include automated irrigation in timeline rendering', () => {
             element.plant = {
                 ...mockPlant,
@@ -1919,16 +1879,6 @@ describe('PlantOverviewDialog', () => {
             element.disconnectedCallback();
         });
 
-        it('should filter out events with event_id in _fetchLogbook (optimistic clean)', async () => {
-            (element as any)._logbookEvents = [
-                { event_id: 'existing', category: 'note' } as any
-            ];
-            const controller = (element as any)._logbookController;
-            vi.spyOn(controller, 'fetchEventLog').mockResolvedValue([]);
 
-            await (element as any)._fetchLogbook();
-
-            expect((element as any)._logbookEvents.length).toBe(0);
-        });
     });
 });

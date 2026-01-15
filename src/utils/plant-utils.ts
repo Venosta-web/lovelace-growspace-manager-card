@@ -487,6 +487,7 @@ export class PlantUtils {
             return num.toString();
         }
     }
+
     static getPlantDisplayData(plant: PlantEntity, strainLibrary: StrainEntry[]): PlantDisplayData {
         const stageColor = this.getPlantStageColor(plant.state);
         const strainName = plant.attributes?.strain || 'Unknown Strain';

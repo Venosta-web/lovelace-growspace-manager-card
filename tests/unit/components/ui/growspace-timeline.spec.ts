@@ -1,73 +1,104 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceTimeline } from '../../../../src/components/ui/growspace-timeline';
-import { GrowspaceLogbookController } from '../../../../src/controllers/growspace-logbook-controller';
 import { HomeAssistant } from 'custom-card-helpers';
 import '../../../../src/components/ui/growspace-timeline';
 
 describe('GrowspaceTimeline', () => {
     let element: GrowspaceTimeline;
     let mockHass: any;
-    let mockController: any;
+
+    const mockEvents = [
+        {
+            sensor_type: 'water',
+            category: 'irrigation',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        },
+        {
+            sensor_type: 'temperature',
+            category: 'alert',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+            duration_sec: 0,
+            severity: 0.9,
+            reasons: ['High Temp'],
+        },
+        {
+            sensor_type: 'custom',
+            category: 'note',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+            notes: 'Manual note',
+        },
+        {
+            sensor_type: 'unknown',
+            category: 'training',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        },
+        {
+            sensor_type: 'humidity',
+            category: 'environment',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        },
+        {
+            sensor_type: 'vpd',
+            category: 'environment',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        },
+        {
+            sensor_type: 'other',
+            category: 'phase_change',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        },
+        {
+            sensor_type: 'other',
+            category: 'general',
+            growspace_id: 'test_growspace',
+            start_time: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
+            end_time: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
+            duration_sec: 0,
+            severity: 0,
+            reasons: [],
+        }
+    ];
 
     beforeEach(async () => {
         mockHass = {
-            callWS: vi.fn(),
+            callWS: vi.fn().mockResolvedValue({ test_growspace: mockEvents }),
             callService: vi.fn(),
         };
-
-        mockController = {
-            fetchEventLog: vi.fn().mockResolvedValue([
-                {
-                    sensor_type: 'water',
-                    category: 'irrigation',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-                    duration_sec: 0,
-                    severity: 0,
-                    reasons: [],
-                },
-                {
-                    sensor_type: 'temperature',
-                    category: 'alert',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-                    duration_sec: 0,
-                    severity: 0.9,
-                    reasons: ['High Temp'],
-                },
-                {
-                    sensor_type: 'custom',
-                    category: 'note',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-                    notes: 'Manual note',
-                },
-                {
-                    sensor_type: 'unknown',
-                    category: 'training',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-                },
-                {
-                    sensor_type: 'humidity',
-                    category: 'environment',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-                },
-                {
-                    sensor_type: 'vpd',
-                    category: 'environment',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-                },
-                {
-                    sensor_type: 'other',
-                    category: 'phase_change',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-                },
-                {
-                    sensor_type: 'other',
-                    category: 'general',
-                    start_time: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
-                }
-            ]),
-        };
     });
+
 
     async function createTimeline(): Promise<GrowspaceTimeline> {
         const el = await fixture<GrowspaceTimeline>(html`
@@ -77,11 +108,9 @@ describe('GrowspaceTimeline', () => {
       ></growspace-timeline>
     `);
 
-        // Inject mock controller
-        (el as any)._controller = mockController;
-        // Trigger update to fetch
-        (el as any)._fetchEvents();
+        // Trigger fetch (will use mocked callWS)
         await el.updateComplete;
+        await new Promise(resolve => setTimeout(resolve, 0));
         return el;
     }
 
@@ -170,7 +199,7 @@ describe('GrowspaceTimeline', () => {
     it('should trigger fetch when growspaceId changes', async () => {
         element = await createTimeline();
         // Clear previous calls
-        (element as any)._controller.fetchEventLog.mockClear();
+        mockHass.callWS.mockClear();
 
         element.growspaceId = 'new_growspace';
         await element.updateComplete;
@@ -178,24 +207,26 @@ describe('GrowspaceTimeline', () => {
         // Wait for potential async effects
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect((element as any)._controller.fetchEventLog).toHaveBeenCalledWith(mockHass, 'new_growspace', 100);
+        // Check that callWS was called with new growspace ID
+        expect(mockHass.callWS).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'growspace_manager/get_log',
+            growspace_id: 'new_growspace',
+            limit: 100
+        }));
     });
 
     it('should handle fetch error gracefully', async () => {
-        mockController.fetchEventLog.mockRejectedValue(new Error('Fetch failed'));
+        // Mock error response
+        mockHass.callWS.mockRejectedValue(new Error('Fetch failed'));
+
         const el = await fixture<GrowspaceTimeline>(html`
             <growspace-timeline .hass=${mockHass} .growspaceId=${'test'}></growspace-timeline>
         `);
-        (el as any)._controller = mockController;
-        // Trigger manually
-        await (el as any)._fetchEvents();
 
-        await element.updateComplete;
+        await el.updateComplete;
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-        // Should show empty state or keep existing. Since it's new fixture, empty.
-        // Wait, default _events is [].
-        // If fetch fails, _events remains [].
-        // So render should show "No events to display"
+        // Service returns empty array on error (matches old controller behavior)
         const content = el.shadowRoot!.textContent;
         expect(content).to.include('No events');
     });
@@ -242,14 +273,21 @@ describe('GrowspaceTimeline', () => {
     });
 
     it('should fallback to Event title if sensor_type is missing', async () => {
-        // Add an event with missing sensor_type to mock
-        mockController.fetchEventLog.mockResolvedValue([
-            {
-                category: 'general',
-                start_time: new Date().toISOString(),
-                // sensor_type undefined
-            }
-        ]);
+        // Mock response with missing sensor_type
+        mockHass.callWS.mockResolvedValue({
+            test_growspace: [
+                {
+                    category: 'general',
+                    growspace_id: 'test_growspace',
+                    start_time: new Date().toISOString(),
+                    end_time: new Date().toISOString(),
+                    duration_sec: 0,
+                    severity: 0,
+                    reasons: [],
+                    // sensor_type undefined
+                }
+            ]
+        });
 
         element = await createTimeline();
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -266,26 +304,28 @@ describe('GrowspaceTimeline', () => {
 
     it('should trigger fetch if hass changes and events are empty', async () => {
         const el = await fixture<GrowspaceTimeline>(html`<growspace-timeline .growspaceId=${'id'}></growspace-timeline>`);
-        (el as any)._controller = mockController;
 
-        // Initial state: events empty
+        // Initial state: events empty, no hass
         // Update hass
         el.hass = mockHass;
         await el.updateComplete;
+        await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockController.fetchEventLog).toHaveBeenCalled();
+        expect(mockHass.callWS).toHaveBeenCalled();
     });
 
     it('should result in different icons for specific environment types', async () => {
-        mockController.fetchEventLog.mockResolvedValue([
-            { sensor_type: 'temperature', category: 'environment', start_time: new Date().toISOString() },
-            { sensor_type: 'humidity', category: 'environment', start_time: new Date().toISOString() },
-            { sensor_type: 'vpd', category: 'environment', start_time: new Date().toISOString() },
-            // Test specific irrigation check
-            { sensor_type: 'water', category: 'general', start_time: new Date().toISOString() },
-            // Test training check
-            { category: 'training', sensor_type: 'unknown', start_time: new Date().toISOString() }
-        ]);
+        mockHass.callWS.mockResolvedValue({
+            test_growspace: [
+                { sensor_type: 'temperature', category: 'environment', growspace_id: 'test_growspace', start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_sec: 0, severity: 0, reasons: [] },
+                { sensor_type: 'humidity', category: 'environment', growspace_id: 'test_growspace', start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_sec: 0, severity: 0, reasons: [] },
+                { sensor_type: 'vpd', category: 'environment', growspace_id: 'test_growspace', start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_sec: 0, severity: 0, reasons: [] },
+                // Test specific irrigation check
+                { sensor_type: 'water', category: 'general', growspace_id: 'test_growspace', start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_sec: 0, severity: 0, reasons: [] },
+                // Test training check
+                { category: 'training', sensor_type: 'unknown', growspace_id: 'test_growspace', start_time: new Date().toISOString(), end_time: new Date().toISOString(), duration_sec: 0, severity: 0, reasons: [] }
+            ]
+        });
 
         element = await createTimeline();
         await new Promise(resolve => setTimeout(resolve, 0));

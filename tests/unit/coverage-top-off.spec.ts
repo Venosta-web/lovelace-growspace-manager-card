@@ -163,12 +163,7 @@ describe('Coverage Top-off', () => {
             element.scrollToTimestamp(123);
         });
 
-        it('_initController should be idempotent', () => {
-            (element as any)._controller = {};
-            const fetchSpy = vi.spyOn(element as any, '_fetchEvents' as any); // Access private
-            (element as any)._initController();
-            expect(fetchSpy).not.toHaveBeenCalled();
-        });
+
 
         it('_formatProb should handle undefined', () => {
             expect((element as any)._formatProb(undefined)).toBe('--%');

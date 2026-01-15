@@ -17,6 +17,7 @@ export class GrowspaceToast extends LitElement {
         type: "success" | "error" | "info";
         action?: { label: string; callback: () => void };
     } | null>;
+
     private _timeoutId: number | null = null;
 
     connectedCallback() {

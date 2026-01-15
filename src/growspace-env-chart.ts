@@ -217,7 +217,7 @@ export class GrowspaceEnvChart extends LitElement {
     // Helper to determine day/night at a specific time
     // using ChartUtils.getIsDay to ensure consistent logic with sparklines
 
-    let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
+    const isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
     let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
 
     for (let i = 0; i < points.length; i++) {
@@ -261,9 +261,7 @@ export class GrowspaceEnvChart extends LitElement {
     if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
       lightHistoryPoints = ChartUtils.normalizeHistory(
         this.sensorHistory[MetricKey.LIGHT],
-        MetricKey.LIGHT,
-        startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
-        nowMs
+        MetricKey.LIGHT
       );
     }
 

@@ -135,11 +135,7 @@ describe('PlantTimeline', () => {
         expect(header).toContain('15');
     });
 
-    it('handles events without valid date gracefully in _formatDayHeader', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const result = (el as any)._formatDayHeader('invalid-date');
-        expect(result).toBe('invalid-date');
-    });
+
 
     it('renders generic action events with leaf icon', async () => {
         const event: PlantTimelineEvent = {
@@ -161,23 +157,11 @@ describe('PlantTimeline', () => {
         expect(icon).toBeDefined();
     });
 
-    it('handles events without valid date gracefully in _formatTime', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const result = (el as any)._formatTime('invalid-date');
-        expect(result).toBe('invalid-date');
-    });
 
-    it('handles events without valid date gracefully in _getDateKey', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const result = (el as any)._getDateKey('invalid-date');
-        expect(result).toBe('invalid-date');
-    });
 
-    it('handles events without valid date gracefully in _formatDate', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const result = (el as any)._formatDate('invalid-date');
-        expect(result).toBe('invalid-date');
-    });
+
+
+
 
     it('returns default icon for unknown event type', async () => {
         const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
@@ -252,24 +236,7 @@ describe('PlantTimeline', () => {
         expect(el.shadowRoot?.querySelector('.details')).toBeNull();
     });
 
-    it('handles file selection and updates _noteImages', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
 
-        // Mock _resizeImage to return a fake base64 string
-        (el as any)._resizeImage = vi.fn().mockResolvedValue('data:image/jpeg;base64,fake');
-
-        const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-        const event = {
-            target: {
-                files: [file]
-            }
-        } as unknown as Event;
-
-        await (el as any)._handleFileSelect(event);
-
-        expect((el as any)._noteImages).toEqual(['data:image/jpeg;base64,fake']);
-        expect((el as any)._resizeImage).toHaveBeenCalledWith(file);
-    });
 
     it('handles delete event', async () => {
         const event: PlantTimelineEvent = {
@@ -289,25 +256,23 @@ describe('PlantTimeline', () => {
         const deleteBtn = el.shadowRoot?.querySelector('.delete-btn') as HTMLElement;
         expect(deleteBtn).toBeTruthy();
 
-        // 1. Click delete icon
+        // Click delete icon - this should trigger the confirm-delete-dialog
         deleteBtn.click();
         await el.updateComplete;
 
-        // 2. Check if overlay is shown
-        const overlay = el.shadowRoot?.querySelector('.dialog-overlay');
-        expect(overlay).toBeTruthy();
-
-        // 3. Click Confirm Delete button in overlay
-        const confirmBtn = el.shadowRoot?.querySelector('.dialog-overlay .md3-button.danger') as HTMLElement;
-        expect(confirmBtn).toBeTruthy();
+        // Check if confirm-delete-dialog is shown
+        const dialog = el.shadowRoot?.querySelector('confirm-delete-dialog');
+        expect(dialog).toBeTruthy();
+        expect(dialog?.hasAttribute('open') || (dialog as any)?.open).toBeTruthy();
 
         // Listen for refresh
         const refreshSpy = vi.fn();
         el.addEventListener('growspace-refresh', refreshSpy);
 
-        confirmBtn.click();
+        // Simulate confirmation by firing @confirm event
+        dialog?.dispatchEvent(new CustomEvent('confirm'));
 
-        // Need to wait for async click handler
+        // Wait for async handler
         await new Promise(r => setTimeout(r, 0));
 
         expect(callWS).toHaveBeenCalledWith({
@@ -407,35 +372,9 @@ describe('PlantTimeline', () => {
         expect(el.shadowRoot?.textContent).toContain('500ml');
     });
 
-    it('handles image removal', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        (el as any)._noteImages = ['img1', 'img2'];
-        await el.updateComplete;
 
-        const removeBtn = el.shadowRoot?.querySelector('.remove-img') as HTMLElement;
-        removeBtn.click();
 
-        expect((el as any)._noteImages).toEqual(['img2']);
-    });
 
-    it('handles note submission', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline .plant_id=${'p1'}></plant-timeline>`);
-        const callWS = vi.fn().mockResolvedValue(undefined);
-        el.hass = { callWS } as any;
-        (el as any)._noteText = 'Test note';
-
-        const refreshSpy = vi.fn();
-        el.addEventListener('growspace-refresh', refreshSpy);
-
-        await (el as any)._submitNote();
-
-        expect(callWS).toHaveBeenCalledWith(expect.objectContaining({
-            type: 'growspace_manager/add_timeline_note',
-            notes: 'Test note'
-        }));
-        expect(refreshSpy).toHaveBeenCalled();
-        expect((el as any)._noteText).toBe('');
-    });
 
     it('maps icons for flower, dry, and cure stages', async () => {
         const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
@@ -471,206 +410,25 @@ describe('PlantTimeline', () => {
         openSpy.mockRestore();
     });
 
-    // --- New Tests for <95% Coverage Gaps ---
-
-    it('resizes image using canvas (large image)', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        // Mock FileReader
-        const mockReader = {
-            readAsDataURL: vi.fn(),
-            onload: null as any,
-            onerror: null as any,
-            result: 'data:image/jpeg;base64,original'
-        };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        // Mock Image
-        const mockImage = {
-            onload: null as any,
-            onerror: null as any,
-            src: '',
-            width: 2000,
-            height: 2000
-        };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        // Mock Canvas
-        const mockContext = {
-            drawImage: vi.fn()
-        };
-        const mockCanvas = {
-            width: 0,
-            height: 0,
-            getContext: vi.fn(() => mockContext),
-            toDataURL: vi.fn(() => 'data:image/jpeg;base64,resized')
-        };
-
-        const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
-            if (tagName === 'canvas') return mockCanvas as any;
-            return originalCreateElement(tagName, options);
-        });
-
-        try {
-            const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-            const resizePromise = (el as any)._resizeImage(file);
-
-            // Trigger FileReader onload
-            if (mockReader.onload) mockReader.onload({ target: { result: 'data:image/jpeg;base64,original' } });
-
-            // Trigger Image onload
-            if (mockImage.onload) mockImage.onload();
-
-            const result = await resizePromise;
-            expect(result).toBe('data:image/jpeg;base64,resized');
-            expect(mockContext.drawImage).toHaveBeenCalled();
-            expect(mockCanvas.width).toBe(1024); // Should be resized max width
-        } finally {
-            createElementSpy.mockRestore();
-            vi.unstubAllGlobals();
-        }
-    });
-
-
-    it('resizes image using canvas (portrait high image)', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any, result: 'data' };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, width: 1000, height: 2000 };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockContext = { drawImage: vi.fn() };
-        const mockCanvas = { width: 0, height: 0, getContext: vi.fn(() => mockContext), toDataURL: vi.fn(() => 'data:resized') };
-
-        const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((t, o) => t === 'canvas' ? mockCanvas as any : originalCreateElement(t, o));
-
-        try {
-            const resizePromise = (el as any)._resizeImage(new File([''], 't.jpg'));
-            if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-            if (mockImage.onload) mockImage.onload();
-
-            await resizePromise;
-            expect(mockCanvas.height).toBe(1024); // Max height constraint
-        } finally {
-            createElementSpy.mockRestore();
-            vi.unstubAllGlobals();
-        }
-    });
-
-    it('handles image load error in _resizeImage', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, onerror: null as any, src: '' };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const resizePromise = (el as any)._resizeImage(new File([''], 't.jpg'));
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-
-        // Trigger Image error
-        if (mockImage.onerror) mockImage.onerror(new Error('Image load failed'));
-
-        await expect(resizePromise).rejects.toThrow('Image load failed');
-        vi.unstubAllGlobals();
-    });
-
-    it('handles FileReader error in _resizeImage', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        const mockReader = { readAsDataURL: vi.fn(), onerror: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const resizePromise = (el as any)._resizeImage(new File([''], 't.jpg'));
-        if (mockReader.onerror) mockReader.onerror(new Error('File read failed'));
-
-        await expect(resizePromise).rejects.toThrow('File read failed');
-        vi.unstubAllGlobals();
-    });
-
-    it('handles canvas context error in _resizeImage', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-        const mockImage = { onload: null as any };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockCanvas = { getContext: vi.fn(() => null) }; // Return null context
-        vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
-
-        const resizePromise = (el as any)._resizeImage(new File([''], 't.jpg'));
-        if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-        if (mockImage.onload) mockImage.onload();
-
-        await expect(resizePromise).rejects.toThrow('Could not get canvas context');
-        vi.restoreAllMocks();
-        vi.unstubAllGlobals();
-    });
-
-    it('updates _noteText on input', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const textarea = el.shadowRoot?.querySelector('textarea');
-        expect(textarea).toBeTruthy();
-
-        textarea!.value = 'New note text';
-        textarea!.dispatchEvent(new Event('input'));
-
-        expect((el as any)._noteText).toBe('New note text');
-    });
-
-    it('triggers file input click on camera button click', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const fileInput = el.shadowRoot?.getElementById('fileInput') as HTMLInputElement;
-        const clickSpy = vi.spyOn(fileInput, 'click');
-
-        // Find camera button (second button in interactions, usually)
-        // Or find by mdiCameraPlus icon path or just the ha-icon-button wrapping it
-        // The implementation has: <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
-        const cameraBtn = el.shadowRoot?.querySelector('.note-actions ha-icon-button') as HTMLElement;
-        expect(cameraBtn).toBeTruthy();
-
-        cameraBtn.click();
-        expect(clickSpy).toHaveBeenCalled();
-    });
-
-    it('handles error during file selection', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        // Mock _resizeImage to throw
-        (el as any)._resizeImage = vi.fn().mockRejectedValue(new Error('Resize failed'));
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-        const file = new File([''], 'test.jpg');
-        const event = { target: { files: [file] } } as unknown as Event;
-
-        await (el as any)._handleFileSelect(event);
-
-        expect(consoleSpy).toHaveBeenCalledWith('Error processing image:', expect.any(Error));
-        expect((el as any)._noteImages).toEqual([]);
-    });
-
     it('handles delete confirmation error gracefully', async () => {
         const event: PlantTimelineEvent = { date: '2023-01-01', type: 'note', event_id: 123, text: 'del' };
         const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
         await el.updateComplete;
 
-        (el as any)._showDeleteConfirmation = true;
-        (el as any)._deletingEventId = 123;
-        await el.updateComplete;
-
-        el.hass = { callWS: vi.fn().mockRejectedValue(new Error('WS Error')) } as any;
+        el.hass = { callWS: vi.fn().mockRejectedValue(new Error('WS Error')) as any };
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-        const confirmBtn = el.shadowRoot?.querySelector('.dialog-overlay .danger') as HTMLElement;
-        confirmBtn.click();
+        // Click delete icon
+        const deleteBtn = el.shadowRoot?.querySelector('.delete-btn') as HTMLElement;
+        deleteBtn?.click();
+        await el.updateComplete;
+
+        // Get confirm-delete-dialog and trigger confirm event
+        const dialog = el.shadowRoot?.querySelector('confirm-delete-dialog');
+        dialog?.dispatchEvent(new CustomEvent('confirm'));
         await new Promise(r => setTimeout(r, 0));
 
         expect(consoleSpy).toHaveBeenCalledWith('Error deleting event:', expect.any(Error));
-        expect((el as any)._showDeleteConfirmation).toBe(false);
     });
 
     it('checks _isCorrelated logic branches', async () => {
@@ -718,80 +476,32 @@ describe('PlantTimeline', () => {
         expect((el as any)._getStageColor(undefined)).toBe('var(--divider-color)');
     });
 
-    it('handles interactions in delete overlay', async () => {
+    it('handles interactions in delete dialog', async () => {
         const event: PlantTimelineEvent = { date: '2023-01-01', type: 'note', event_id: 123, text: 'del' };
         const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
         await el.updateComplete;
 
-        (el as any)._deleteEvent(new Event('click'), 123);
+        // Click delete button to open dialog
+        const deleteBtn = el.shadowRoot?.querySelector('.delete-btn') as HTMLElement;
+        deleteBtn?.click();
         await el.updateComplete;
 
-        expect((el as any)._showDeleteConfirmation).toBe(true);
+        // Dialog should be visible
+        const dialog = el.shadowRoot?.querySelector('confirm-delete-dialog');
+        expect(dialog).toBeTruthy();
+        expect(dialog?.hasAttribute('open') || (dialog as any)?.open).toBeTruthy();
 
-        const overlay = el.shadowRoot?.querySelector('.dialog-overlay') as HTMLElement;
-        const content = el.shadowRoot?.querySelector('.overlay-content') as HTMLElement;
-        const cancelBtn = el.shadowRoot?.querySelector('.md3-button.tonal') as HTMLElement;
+        // Simulate cancel
+        dialog?.dispatchEvent(new CustomEvent('cancel'));
+        await el.updateComplete;
 
-        // Click content should propagate stop (state shouldn't change)
-        content?.click();
-        await el.updateComplete;
-        expect((el as any)._showDeleteConfirmation).toBe(true);
-
-        // Click cancel closes
-        cancelBtn?.click();
-        await el.updateComplete;
-        expect((el as any)._showDeleteConfirmation).toBe(false);
-
-        // Re-open and check overlay background click
-        (el as any)._showDeleteConfirmation = true;
-        await el.updateComplete;
-        overlay?.click();
-        await el.updateComplete;
-        expect((el as any)._showDeleteConfirmation).toBe(false);
+        // Dialog should be closed (open prop should be false)
+        expect((dialog as any)?.open).toBeFalsy();
     });
 
-    it('handles error in _submitNote', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        el.hass = { callWS: vi.fn().mockRejectedValue(new Error('Submit failed')) } as any;
-        (el as any)._noteText = 'fail';
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-        await (el as any)._submitNote();
 
-        expect(consoleSpy).toHaveBeenCalled();
-        expect((el as any)._isSaving).toBe(false);
-    });
 
-    it('resizes image with width constraint', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-
-        // Setup mocks for width > height case
-        const mockReader = { readAsDataURL: vi.fn(), onload: null as any, result: 'data' };
-        vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-
-        const mockImage = { onload: null as any, width: 2000, height: 1000 };
-        vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-
-        const mockContext = { drawImage: vi.fn() };
-        const mockCanvas = { width: 0, height: 0, getContext: vi.fn(() => mockContext), toDataURL: vi.fn(() => 'data:resized') };
-
-        const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((t, o) => t === 'canvas' ? mockCanvas as any : originalCreateElement(t, o));
-
-        try {
-            const resizePromise = (el as any)._resizeImage(new File([''], 'wide.jpg'));
-            if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-            if (mockImage.onload) mockImage.onload();
-
-            await resizePromise;
-            // 2000 > 1000 (width > height)
-            // 2000 > 1024 (width > MAX)
-            // New width = 1024
-            expect(mockCanvas.width).toBe(1024);
-        } finally {
-            createElementSpy.mockRestore();
-            vi.unstubAllGlobals();
-        }
-    });
 
     it('binds image click to _openImage', async () => {
         const event: PlantTimelineEvent = {
@@ -810,13 +520,7 @@ describe('PlantTimeline', () => {
         expect(openSpy).toHaveBeenCalledWith('/api/growspace_manager/v1/images/test.jpg');
     });
 
-    it('formats valid date correctly', async () => {
-        const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-        const dateStr = '2023-01-01T12:00:00Z';
-        const formatted = (el as any)._formatDate(dateStr);
-        expect(formatted).not.toBe(dateStr);
-        expect(formatted).toContain('Jan');
-    });
+
 
     it('renders tags correctly', async () => {
         const event: PlantTimelineEvent = {
@@ -840,16 +544,7 @@ describe('PlantTimeline', () => {
             // Pass if no error thrown and execution finishes
         });
 
-        it('should handle submitNote early return if empty', async () => {
-            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-            (el as any)._noteText = '';
-            (el as any)._noteImages = [];
-            const callWS = vi.fn();
-            el.hass = { callWS } as any;
 
-            await (el as any)._submitNote();
-            expect(callWS).not.toHaveBeenCalled();
-        });
 
         it('should render images with relative paths correctly', async () => {
             const event: PlantTimelineEvent = {
@@ -923,56 +618,11 @@ describe('PlantTimeline', () => {
             }
         });
 
-        it('resizes image with no constraints (small landscape)', async () => {
-            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-            const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-            vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-            const mockImage = { onload: null as any, width: 500, height: 400 };
-            vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-            const mockCanvas = { getContext: vi.fn(() => ({ drawImage: vi.fn() })), toDataURL: vi.fn(() => 'data:resized'), width: 100, height: 100 };
-            vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
 
-            try {
-                const resizePromise = (el as any)._resizeImage(new File([''], 'small.jpg'));
-                if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-                if (mockImage.onload) mockImage.onload();
 
-                await resizePromise;
-                expect(mockCanvas.width).toBe(500); // Unchanged
-            } finally {
-                vi.unstubAllGlobals();
-                vi.restoreAllMocks();
-            }
-        });
 
-        it('resizes image with no constraints (small portrait)', async () => {
-            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-            const mockReader = { readAsDataURL: vi.fn(), onload: null as any };
-            vi.stubGlobal('FileReader', vi.fn().mockImplementation(function () { return mockReader; }));
-            const mockImage = { onload: null as any, width: 400, height: 500 };
-            vi.stubGlobal('Image', vi.fn().mockImplementation(function () { return mockImage; }));
-            const mockCanvas = { getContext: vi.fn(() => ({ drawImage: vi.fn() })), toDataURL: vi.fn(() => 'data:resized'), width: 100, height: 100 };
-            vi.spyOn(document, 'createElement').mockReturnValue(mockCanvas as any);
 
-            try {
-                const resizePromise = (el as any)._resizeImage(new File([''], 'small.jpg'));
-                if (mockReader.onload) mockReader.onload({ target: { result: 'data' } });
-                if (mockImage.onload) mockImage.onload();
 
-                await resizePromise;
-                expect(mockCanvas.height).toBe(500); // Unchanged
-            } finally {
-                vi.unstubAllGlobals();
-                vi.restoreAllMocks();
-            }
-        });
-
-        it('handles file selection with no files', async () => {
-            const el: PlantTimeline = await fixture(html`<plant-timeline></plant-timeline>`);
-            const event = { target: { files: null } } as unknown as Event;
-            await (el as any)._handleFileSelect(event);
-            // Pass if no error
-        });
 
         it('handles undefined events in render', async () => {
             const el: PlantTimeline = await fixture(html`<plant-timeline .events=${undefined}></plant-timeline>`);
@@ -981,4 +631,127 @@ describe('PlantTimeline', () => {
         });
     });
 
+    describe('Quick Note Submission', () => {
+        it('should submit note successfully and refresh', async () => {
+            const mockHass = {
+                callWS: vi.fn().mockResolvedValue({}),
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`
+                <plant-timeline 
+                    .hass=${mockHass}
+                    .plant_id=${'plant_123'}
+                    .plant_name=${'Test Plant'}
+                ></plant-timeline>
+            `);
+            await el.updateComplete;
+
+            // Add submit event listener
+            const refreshSpy = vi.fn();
+            el.addEventListener('growspace-refresh', refreshSpy);
+
+            // Find quick-note-input and trigger submit
+            const noteInput = el.shadowRoot?.querySelector('quick-note-input') as any;
+            expect(noteInput).toBeTruthy();
+
+            // Dispatch submit event
+            const submitEvent = new CustomEvent('submit', {
+                detail: {
+                    text: 'Test note',
+                    images: ['image1.jpg'],
+                },
+            });
+
+            noteInput.dispatchEvent(submitEvent);
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/add_timeline_note',
+                plant_id: 'plant_123',
+                notes: 'Test note',
+                images: ['image1.jpg'],
+                transition_date: expect.any(String),
+            });
+        });
+
+        it('should handle note submission error gracefully', async () => {
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const mockHass = {
+                callWS: vi.fn().mockRejectedValue(new Error('Network error')),
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`
+                <plant-timeline 
+                    .hass=${mockHass}
+                    .plant_id=${'plant_123'}
+                ></plant-timeline>
+            `);
+            await el.updateComplete;
+
+            const noteInput = el.shadowRoot?.querySelector('quick-note-input') as any;
+            const submitEvent = new CustomEvent('submit', {
+                detail: {
+                    text: 'Test note',
+                    images: [],
+                },
+            });
+
+            noteInput.dispatchEvent(submitEvent);
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                'Error adding note:',
+                expect.any(Error)
+            );
+
+            consoleErrorSpy.mockRestore();
+        });
+
+        it('should set saving state during submission', async () => {
+            const mockHass = {
+                callWS: vi.fn().mockImplementation(() =>
+                    new Promise(resolve => setTimeout(() => resolve({}), 100))
+                ),
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`
+                <plant-timeline 
+                    .hass=${mockHass}
+                    .plant_id=${'plant_123'}
+                ></plant-timeline>
+            `);
+            await el.updateComplete;
+
+            const noteInput = el.shadowRoot?.querySelector('quick-note-input') as any;
+            const setSavingSpy = vi.spyOn(noteInput, 'setSaving');
+            const clearSpy = vi.spyOn(noteInput, 'clear');
+
+            const submitEvent = new CustomEvent('submit', {
+                detail: {
+                    text: 'Test note',
+                    images: [],
+                },
+            });
+
+            noteInput.dispatchEvent(submitEvent);
+
+            // Should set saving to true immediately
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(setSavingSpy).toHaveBeenCalledWith(true);
+
+            // Wait for submission to complete
+            await new Promise(resolve => setTimeout(resolve, 1200));
+
+            // Should clear input and set saving to false
+            expect(clearSpy).toHaveBeenCalled();
+            expect(setSavingSpy).toHaveBeenCalledWith(false);
+
+            setSavingSpy.mockRestore();
+            clearSpy.mockRestore();
+        });
+    });
 });

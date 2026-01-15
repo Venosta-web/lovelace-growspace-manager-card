@@ -24,6 +24,7 @@ import {
   PlantOverviewEditedAttributes,
   PlantOverviewDialogState,
   PlantStage,
+  GrowspaceEvent, PlantTimelineEvent
 } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -44,15 +45,13 @@ import {
   TakeCloneEvent,
   MoveCloneEvent,
 } from '../events';
-import { GrowspaceLogbookController } from '../controllers/growspace-logbook-controller';
-import { GrowspaceEvent, PlantTimelineEvent } from '../types';
+import { getTimelineService } from '../services/timeline-service';
 
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   hass!: HomeAssistant;
 
-  private _logbookController = new GrowspaceLogbookController();
   private _unsubEvents?: Promise<() => Promise<void>>;
 
   @property({ type: Boolean, reflect: true }) open = false;
@@ -174,7 +173,8 @@ export class PlantOverviewDialog extends LitElement {
 
   private async _fetchLogbook() {
     if (!this.plant?.attributes?.growspace_id || !this.hass) return;
-    const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+    const service = getTimelineService(this.hass);
+    const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
 
     // Identify optimistic events (no event_id, recent timestamp) to preserve
     // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
@@ -516,7 +516,7 @@ export class PlantOverviewDialog extends LitElement {
       detail: {
         mode: 'plant',
         plantIds: [plantId],
-        growspaceId: growspaceId
+        growspaceId
       },
       bubbles: true,
       composed: true
@@ -532,7 +532,7 @@ export class PlantOverviewDialog extends LitElement {
       detail: {
         isOpen: true,
         plantIds: [plantId],
-        growspaceId: growspaceId
+        growspaceId
       },
       bubbles: true,
       composed: true
@@ -546,7 +546,7 @@ export class PlantOverviewDialog extends LitElement {
 
     this.dispatchEvent(new CustomEvent('open-ipm', {
       detail: {
-        growspaceId: growspaceId,
+        growspaceId,
         plantIds: [plantId]
       },
       bubbles: true,
@@ -721,6 +721,8 @@ export class PlantOverviewDialog extends LitElement {
               class="md3-button text"
               @click=${() => this._close()}
               style="min-width: auto; padding: 8px;"
+              aria-label="Close"
+              title="Close"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
@@ -929,6 +931,8 @@ export class PlantOverviewDialog extends LitElement {
                   class="md3-button text"
                   style="min-width: auto; padding: 4px;"
                   @click=${this._toggleShowAllDates}
+                  aria-label="Toggle Dates"
+                  title="Toggle Dates"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiDna}"></path>

@@ -208,9 +208,9 @@ export class DialogHost extends LitElement {
                         ? `${strain}_${normalizedPhenotype}`
                         : strain;
                     strainEntry = {
-                        strain: strain,
+                        strain,
                         phenotype: normalizedPhenotype,
-                        key: key,
+                        key,
                         breeder: '',
                         type: 'Hybrid',
                         flowering_days_min: 60,

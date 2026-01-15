@@ -5083,9 +5083,6 @@ class DataService {
             .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
             .filter((d) => d !== null);
     }
-    getGrowspaceId(entity) {
-        return entity.attributes?.growspace_id || 'unknown';
-    }
     getStrainLibrary() {
         const knownIds = [
             'sensor.strain_library',
@@ -5161,7 +5158,7 @@ class DataService {
             console.log('[DataService:fetchStrainLibrary] WS Response:', rawResponse);
             // Remove legacy or wrapper 'response' key if present to pass legacy validation
             if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
-                delete rawResponse['response'];
+                delete rawResponse.response;
             }
             // The WS API returns: { strains: { ... }, strain_list: [...] }
             const parsed = StrainLibraryWrapperSchema.safeParse(rawResponse);
@@ -6294,13 +6291,10 @@ class ChartUtils {
         if (!historyData || historyData.length < 2)
             return [];
         const sortedData = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-        // Normalize light history once if needed, but assuming caller passes normalized points is safer/faster?
-        // Actually, GrowspaceEnvChart passes normalized points. GrowspaceHeader probably passes raw history.
-        // Let's assume normalized points for 'lightHistory' to match 'getIsDay' expectation (array of {time, value}).
-        // If passed raw HA history, we need to normalize it first.
+        // Normalize light history if it's raw history (has last_changed property)
         let normalizedLight = lightHistory;
-        if (lightHistory.length > 0 && (lightHistory[0].last_changed)) {
-            normalizedLight = this.normalizeHistory(lightHistory, 'light', 0, Date.now());
+        if (lightHistory.length > 0 && 'last_changed' in lightHistory[0]) {
+            normalizedLight = this.normalizeHistory(lightHistory, 'light');
         }
         const validData = [];
         const len = sortedData.length;
@@ -6539,7 +6533,7 @@ class ChartUtils {
      * Normalizes raw HA history data into GraphDataPoints.
      * Handles binary conversions (on=1/off=0), numeric parsing, and time filtering.
      */
-    static normalizeHistory(historyData, metricKey, startTimeMs, endTimeMs) {
+    static normalizeHistory(historyData, metricKey) {
         if (!historyData || historyData.length === 0)
             return [];
         const points = [];
@@ -6880,7 +6874,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         let currentSegment = [];
         // Helper to determine day/night at a specific time
         // using ChartUtils.getIsDay to ensure consistent logic with sparklines
-        let isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
+        const isDay = ChartUtils.getIsDay(points[0].time, lightHistory);
         let currentStatus = this._getVpdStatusForValue(points[0].value, thresholds, isDay);
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
@@ -6913,8 +6907,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         // Prepare Light History for VPD calculation if needed
         let lightHistoryPoints = [];
         if (metricKeys.includes(MetricKey.VPD) && this.sensorHistory[MetricKey.LIGHT]) {
-            lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT, startTimeMs, // Although normalizeHistory signature might ignore these args currently, passing them is good practice
-            nowMs);
+            lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT);
         }
         metricKeys.forEach((key) => {
             const config = this.metricConfig[key] || {
@@ -8997,13 +8990,641 @@ class ResizeController {
     }
 }
 
+/**
+ * Service for timeline and event log operations
+ * Centralizes all backend API calls related to timelines
+ */
+class TimelineService {
+    constructor(hass) {
+        this.hass = hass;
+    }
+    /**
+     * Fetch growspace event log
+     * @param growspaceId - The growspace ID to fetch events for
+     * @param limit - Maximum number of events to fetch (default: 50)
+     */
+    async fetchGrowspaceEvents(growspaceId, limit = 50) {
+        try {
+            const response = await this.hass.callWS({
+                type: 'growspace_manager/get_log',
+                growspace_id: growspaceId,
+                limit,
+            });
+            return response?.[growspaceId] || [];
+        }
+        catch (e) {
+            console.error('Error fetching growspace events:', e);
+            return []; // Return empty array on error (matches old controller behavior)
+        }
+    }
+    /**
+     * Add a note to a plant timeline
+     * @param plantId - The plant ID to add the note to
+     * @param payload - Note data including text, images, and tags
+     */
+    async addPlantNote(plantId, payload) {
+        await this.hass.callWS({
+            type: 'growspace_manager/add_timeline_note',
+            plant_id: plantId,
+            notes: payload.notes,
+            images: payload.images || [],
+            transition_date: payload.transitionDate || new Date().toISOString(),
+        });
+    }
+    /**
+     * Delete a timeline event
+     * @param eventId - The event ID to delete
+     */
+    async deleteEvent(eventId) {
+        await this.hass.callWS({
+            type: 'growspace_manager/remove_timeline_event',
+            event_id: eventId,
+        });
+    }
+}
+/**
+ * Singleton factory for TimelineService
+ * Ensures only one instance exists per HASS instance
+ */
+let _instance = null;
+function getTimelineService(hass) {
+    // Create new instance if none exists or HASS instance changed
+    if (!_instance || _instance.hass !== hass) {
+        _instance = new TimelineService(hass);
+    }
+    return _instance;
+}
+
+/**
+ * Date and time formatting utilities for timeline components
+ * Centralizes all date handling to ensure consistency across the app
+ */
+/**
+ * Get timestamp from event (handles multiple field names for backwards compatibility)
+ */
+function getEventTimestamp(event) {
+    const dateStr = event.timestamp || event.start_time || event.date;
+    return dateStr ? new Date(dateStr).getTime() : 0;
+}
+/**
+ * Format date as "Today", "Yesterday", or "Monday, Jan 15, 2026"
+ */
+function formatRelativeDay(date) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === today.toDateString())
+        return 'Today';
+    if (date.toDateString() === yesterday.toDateString())
+        return 'Yesterday';
+    return date.toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
+/**
+ * Format time as "2:30 PM"
+ */
+function formatTime(date) {
+    return date.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+/**
+ * Format as "Jan 15, 2:30 PM"
+ */
+function formatDateTime(date) {
+    return date.toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+/**
+ * Format as "Jan 15"
+ */
+function formatShortDate(date) {
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
+}
+/**
+ * Get date key for grouping events by day (e.g., "Wed Jan 15 2026")
+ */
+function getDateKey(date) {
+    return date.toDateString();
+}
+
+/**
+ * Quick note input component with image upload support
+ * Extracted from plant-timeline for reusability
+ */
+let QuickNoteInput = class QuickNoteInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.placeholder = 'Add a cultivation note...';
+        this.allowImages = true;
+        this.disabled = false;
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Resize and compress an image file
+     */
+    async _resizeImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Could not get canvas context'));
+                        return;
+                    }
+                    // Max dimensions
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    }
+                    else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG 0.8
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                };
+                img.onerror = (e) => reject(e);
+                img.src = e.target?.result;
+            };
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+        });
+    }
+    async _handleFileSelect(e) {
+        const input = e.target;
+        if (!input.files)
+            return;
+        const files = Array.from(input.files);
+        for (const file of files) {
+            try {
+                const resized = await this._resizeImage(file);
+                this._images = [...this._images, resized];
+            }
+            catch (err) {
+                console.error('Error processing image:', err);
+            }
+        }
+        // Clear input to allow re-selecting same file
+        input.value = '';
+    }
+    _removeImage(index) {
+        this._images = this._images.filter((_, i) => i !== index);
+    }
+    async _submit() {
+        if (!this._text.trim() && !this._images.length)
+            return;
+        this._isSaving = true;
+        // Dispatch event with note data
+        this.dispatchEvent(new CustomEvent('submit', {
+            detail: {
+                text: this._text.trim(),
+                images: this._images,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        // Note: The parent component should handle the actual submission
+        // and call clear() method on success
+    }
+    /**
+     * Public method to clear the input after successful submission
+     */
+    clear() {
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Public method to set saving state (called by parent during submission)
+     */
+    setSaving(saving) {
+        this._isSaving = saving;
+    }
+    render() {
+        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
+        return x `
+      <div class="container">
+        <div class="input-wrapper">
+          <textarea
+            placeholder="${this.placeholder}"
+            .value=${this._text}
+            @input=${(e) => (this._text = e.target.value)}
+            rows="2"
+            ?disabled=${this.disabled || this._isSaving}
+          ></textarea>
+        </div>
+
+        ${this._images.length > 0
+            ? x `
+              <div class="image-previews">
+                ${this._images.map((img, i) => x `
+                    <div class="preview-item">
+                      <img src=${img} alt="Preview ${i + 1}" />
+                      <button
+                        class="remove-img"
+                        @click=${() => this._removeImage(i)}
+                        ?disabled=${this._isSaving}
+                        aria-label="Remove image"
+                      >
+                        <svg viewBox="0 0 24 24">
+                          <path d="${mdiClose}" />
+                        </svg>
+                      </button>
+                    </div>
+                  `)}
+              </div>
+            `
+            : E}
+
+        <div class="actions">
+          <div class="action-buttons">
+            ${this.allowImages
+            ? x `
+                  <input
+                    type="file"
+                    id="fileInput"
+                    @change=${this._handleFileSelect}
+                    multiple
+                    accept="image/*"
+                  />
+                  <button
+                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
+                    ?disabled=${this.disabled || this._isSaving}
+                    aria-label="Add image"
+                    title="Add image"
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="${mdiCameraPlus}" />
+                    </svg>
+                  </button>
+                `
+            : E}
+          </div>
+          <button
+            class="submit-btn"
+            @click=${this._submit}
+            ?disabled=${!canSubmit || this.disabled}
+            aria-label="Submit note"
+            title="Submit note"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="${mdiSend}" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+QuickNoteInput.styles = i$6 `
+    :host {
+      display: block;
+      margin-bottom: 24px;
+    }
+
+    .container {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--divider-color);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--primary-text-color);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      padding: 4px;
+      outline: none;
+      min-height: 40px;
+    }
+
+    textarea::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.submit-btn {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+    }
+
+    button.submit-btn:hover:not(:disabled) {
+      background: var(--primary-color-dark, #0288d1);
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .image-previews {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .preview-item {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+    }
+
+    .remove-img {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--error-color, #f44336);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .remove-img svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .remove-img:hover {
+      background: var(--error-color-dark, #d32f2f);
+    }
+
+    input[type='file'] {
+      display: none;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], QuickNoteInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "allowImages", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "disabled", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_text", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_images", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_isSaving", void 0);
+QuickNoteInput = __decorate([
+    t$2('quick-note-input')
+], QuickNoteInput);
+
+/**
+ * Reusable confirmation dialog for delete operations
+ * Used by plant-timeline and potentially other components
+ */
+let ConfirmDeleteDialog = class ConfirmDeleteDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.title = 'Confirm Deletion';
+        this.message = 'Are you sure you want to delete this entry? This action cannot be undone.';
+    }
+    _handleCancel(e) {
+        e.stopPropagation();
+        this.open = false;
+        this.dispatchEvent(new CustomEvent('cancel'));
+    }
+    _handleConfirm(e) {
+        e.stopPropagation();
+        this.open = false;
+        this.dispatchEvent(new CustomEvent('confirm'));
+    }
+    _handleOverlayClick(e) {
+        if (e.target === e.currentTarget) {
+            this._handleCancel(e);
+        }
+    }
+    render() {
+        if (!this.open)
+            return null;
+        return x `
+      <div class="overlay" @click=${this._handleOverlayClick}>
+        <div class="dialog" @click=${(e) => e.stopPropagation()}>
+          <h2>${this.title}</h2>
+          <p>${this.message}</p>
+          <div class="actions">
+            <button class="cancel-btn" @click=${this._handleCancel}>
+              <svg viewBox="0 0 24 24">
+                <path d="${mdiClose}" />
+              </svg>
+              Cancel
+            </button>
+            <button class="delete-btn" @click=${this._handleConfirm}>
+              <svg viewBox="0 0 24 24">
+                <path d="${mdiDelete}" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfirmDeleteDialog.styles = i$6 `
+    :host {
+      display: none;
+    }
+
+    :host([open]) {
+      display: block;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog {
+      width: 90%;
+      max-width: 420px;
+      padding: 24px;
+      background: var(--card-background-color, #1c1c1c);
+      border-radius: 16px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0, 0, 0, 0.4));
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      color: var(--primary-text-color);
+    }
+
+    p {
+      margin: 0 0 24px 0;
+      color: var(--secondary-text-color);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+     border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .cancel-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary-text-color);
+    }
+
+    .cancel-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .delete-btn {
+      background: var(--error-color, #f44336);
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background: var(--error-color-dark, #d32f2f);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean })
+], ConfirmDeleteDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfirmDeleteDialog.prototype, "title", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfirmDeleteDialog.prototype, "message", void 0);
+ConfirmDeleteDialog = __decorate([
+    t$2('confirm-delete-dialog')
+], ConfirmDeleteDialog);
+
+// Correlation window constant
+const CORRELATION_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
 let PlantTimeline = class PlantTimeline extends i$3 {
     constructor() {
         super(...arguments);
         this.events = [];
-        this._noteText = '';
-        this._noteImages = [];
-        this._isSaving = false;
         this._showDeleteConfirmation = false;
         this._deletingEventId = null;
         this._hoveredImage = null;
@@ -9061,90 +9682,39 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         if (event.type !== 'note')
             return false;
         const noteTime = new Date(event.date).getTime();
-        // Check for alerts within 2 hours before this note
+        // Check for alerts within correlation window before this note
         return allEvents.some(e => {
             if (e.type !== 'alert')
                 return false;
             const alertTime = new Date(e.date).getTime();
             const diff = noteTime - alertTime;
-            return diff > 0 && diff < 2 * 60 * 60 * 1000;
+            return diff > 0 && diff < CORRELATION_WINDOW_MS;
         });
     }
-    _formatDayHeader(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime()))
-                throw new Error();
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            if (date.toDateString() === today.toDateString())
-                return 'Today';
-            if (date.toDateString() === yesterday.toDateString())
-                return 'Yesterday';
-            return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-        }
-        catch {
-            return dateStr;
-        }
-    }
-    _formatTime(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime()))
-                throw new Error();
-            return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        }
-        catch {
-            return dateStr;
-        }
-    }
-    _getDateKey(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime()))
-                throw new Error();
-            return date.toDateString();
-        }
-        catch {
-            return dateStr;
-        }
-    }
-    _formatDate(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime()))
-                throw new Error();
-            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        }
-        catch {
-            return dateStr;
-        }
-    }
-    async _submitNote() {
-        if (!this._noteText.trim() && !this._noteImages.length)
+    // Date formatting methods replaced by shared date utilities
+    async _handleNoteSubmit(e) {
+        const noteInput = this.shadowRoot?.querySelector('quick-note-input');
+        if (!noteInput)
             return;
-        this._isSaving = true;
+        noteInput.setSaving(true);
         try {
-            await this.hass.callWS({
-                type: 'growspace_manager/add_timeline_note',
-                plant_id: this.plant_id,
-                notes: this._noteText,
-                images: this._noteImages,
-                transition_date: new Date().toISOString()
+            const service = getTimelineService(this.hass);
+            await service.addPlantNote(this.plant_id, {
+                notes: e.detail.text,
+                images: e.detail.images,
             });
-            this._noteText = '';
-            this._noteImages = [];
+            // Clear input on success
+            noteInput.clear();
             // Allow time for recorder to write to DB
             await new Promise(resolve => setTimeout(resolve, 1000));
             // Fire refresh event
             this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
-        catch (e) {
-            console.error(e);
+        catch (err) {
+            console.error('Error adding note:', err);
         }
         finally {
-            this._isSaving = false;
+            noteInput.setSaving(false);
         }
     }
     _deleteEvent(e, eventId) {
@@ -9156,10 +9726,8 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         if (this._deletingEventId === null)
             return;
         try {
-            await this.hass.callWS({
-                type: 'growspace_manager/remove_timeline_event',
-                event_id: this._deletingEventId
-            });
+            const service = getTimelineService(this.hass);
+            await service.deleteEvent(this._deletingEventId);
             this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
         catch (err) {
@@ -9170,29 +9738,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             this._deletingEventId = null;
         }
     }
-    _renderDeleteOverlay() {
-        return x `
-      <div class="dialog-overlay" @click=${() => this._showDeleteConfirmation = false}>
-        <div class="overlay-content" @click=${(e) => e.stopPropagation()}>
-          <h2 style="margin: 0 0 12px 0; font-size: 1.25rem;">Confirm Deletion</h2>
-          <p style="margin: 0 0 24px 0; color: var(--secondary-text-color); font-size: 0.95rem; line-height: 1.5;">
-            Are you sure you want to delete this entry? This action cannot be undone.
-          </p>
-          <div style="display: flex; justify-content: flex-end; gap: 12px;">
-            <button class="md3-button tonal" @click=${() => this._showDeleteConfirmation = false}>
-              Cancel
-            </button>
-            <button class="md3-button danger" @click=${this._confirmDeleteEvent}>
-              <svg viewBox="0 0 24 24" style="width: 18px; height: 18px; margin-right: 4px; fill: currentColor;">
-                <path d="${mdiDelete}" />
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
+    // Delete overlay now handled by confirm-delete-dialog component
     _renderHoverOverlay() {
         if (!this._hoveredImage)
             return E;
@@ -9202,79 +9748,17 @@ let PlantTimeline = class PlantTimeline extends i$3 {
       </div>
     `;
     }
-    async _resizeImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Could not get canvas context'));
-                        return;
-                    }
-                    // Max dimensions
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    }
-                    else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    // Compress to JPEG 0.8
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
-                };
-                img.onerror = (e) => reject(e);
-                img.src = e.target?.result;
-            };
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
-    }
-    async _handleFileSelect(e) {
-        const input = e.target;
-        if (!input.files)
-            return;
-        // Process files sequentially or in parallel, but await them
-        const files = Array.from(input.files);
-        for (const file of files) {
-            try {
-                const resized = await this._resizeImage(file);
-                this._noteImages = [...this._noteImages, resized];
-            }
-            catch (err) {
-                console.error('Error processing image:', err);
-            }
-        }
-        // Clear input to allow re-selecting same file if needed
-        input.value = '';
-    }
-    _removeImage(index) {
-        this._noteImages = this._noteImages.filter((_, i) => i !== index);
-    }
+    // Image handling now done by quick-note-input component
     render() {
         // Sort events descending
         const sortedEvents = [...(this.events || [])]
             .filter(e => e.date)
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        // Group by day
+        // Group by day using shared utility
         const groupedByDay = new Map();
         for (const event of sortedEvents) {
-            const dayKey = this._getDateKey(event.date);
+            const date = new Date(event.date);
+            const dayKey = getDateKey(date);
             if (!groupedByDay.has(dayKey)) {
                 groupedByDay.set(dayKey, []);
             }
@@ -9285,55 +9769,18 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         const stageColor = this._getStageColor(currentStage);
         return x `
       <div class="timeline" style="--stage-color: ${stageColor}">
-        ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
+        <confirm-delete-dialog
+          .open=${this._showDeleteConfirmation}
+          @confirm=${this._confirmDeleteEvent}
+          @cancel=${() => this._showDeleteConfirmation = false}
+        ></confirm-delete-dialog>
+        
         ${this._renderHoverOverlay()}
         
         <!-- Quick Note Section -->
-        <div class="quick-note glass-surface">
-          <div class="note-input">
-            <textarea 
-              placeholder="Add a cultivation note..." 
-              .value=${this._noteText}
-              @input=${(e) => this._noteText = e.target.value}
-              rows="2"
-            ></textarea>
-          </div>
-          
-          ${this._noteImages.length > 0 ? x `
-            <div class="image-previews">
-              ${this._noteImages.map((img, i) => x `
-                <div class="preview-item">
-                  <img src=${img} />
-                  <button class="remove-img" @click=${() => this._removeImage(i)}>
-                    <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: white;"><path d="${mdiClose}" /></svg>
-                  </button>
-                </div>
-              `)}
-            </div>
-          ` : E}
-
-          <div class="note-actions">
-            <div style="display: flex; gap: 8px;">
-              <input 
-                type="file" 
-                id="fileInput" 
-                @change=${this._handleFileSelect} 
-                multiple 
-                accept="image/*" 
-                style="display: none;"
-              >
-              <ha-icon-button @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}>
-                <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiCameraPlus}" /></svg>
-              </ha-icon-button>
-            </div>
-            <ha-icon-button 
-              .disabled=${(!this._noteText.trim() && !this._noteImages.length) || this._isSaving}
-              @click=${this._submitNote}
-            >
-              <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; fill: var(--primary-text-color);"><path d="${mdiSend}" /></svg>
-            </ha-icon-button>
-          </div>
-        </div>
+        <quick-note-input
+          @submit=${this._handleNoteSubmit}
+        ></quick-note-input>
 
         ${sortedEvents.length === 0 ? x `
           <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
@@ -9344,7 +9791,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             const others = dayEvents.filter(e => e.type !== 'alert');
             return x `
               <div class="day-group">
-                <div class="day-header">${this._formatDayHeader(dayEvents[0].date)}</div>
+                <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
                 
                 ${alerts.length > 2 ? x `
                   <div class="day-summary glass-surface">
@@ -9377,7 +9824,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
           </button>
         ` : E}
         <div class="date">
-          ${this._formatTime(event.date)}
+          ${formatTime(new Date(event.date))}
           ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
         </div>
         ${this._renderEventContent(event)}
@@ -9569,68 +10016,7 @@ PlantTimeline.styles = [
         line-height: 1.4;
       }
 
-      /* Quick Note */
-      .quick-note {
-        margin-bottom: 24px;
-        padding: 12px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px dashed var(--divider-color);
-      }
-      .note-input {
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-      }
-      .note-input textarea {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: var(--primary-text-color);
-        font-size: 0.9rem;
-        resize: none;
-        padding: 4px;
-        outline: none;
-      }
-      .note-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-      }
-      .image-previews {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-        overflow-x: auto;
-      }
-      .preview-item {
-        position: relative;
-        width: 60px;
-        height: 60px;
-      }
-      .preview-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 4px;
-      }
-      .remove-img {
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        background: var(--error-color);
-        color: white;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        padding: 0;
-        border: none;
-      }
+      /* Quick Note - styles now handled by quick-note-input component */
 
       /* Metadata Chips */
       .metadata-chips {
@@ -9757,23 +10143,7 @@ PlantTimeline.styles = [
         vertical-align: middle;
       }
 
-      .dialog-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .overlay-content {
-        width: 320px;
-        padding: 24px;
-        background: var(--card-background-color, #1c1c1c);
-        border-radius: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0,0,0,0.4));
-      }
+      /* Delete dialog styles now handled by confirm-delete-dialog component */
 
       .image-hover-overlay {
         position: fixed;
@@ -9809,15 +10179,6 @@ __decorate([
 __decorate([
     n$5({ type: Array })
 ], PlantTimeline.prototype, "events", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_noteText", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_noteImages", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_isSaving", void 0);
 __decorate([
     r$2()
 ], PlantTimeline.prototype, "_showDeleteConfirmation", void 0);
@@ -9942,31 +10303,9 @@ class LibraryExportReadyEvent extends CustomEvent {
 }
 LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
-class GrowspaceLogbookController {
-    async fetchEventLog(hass, growspaceId, limit) {
-        if (!hass) {
-            console.warn('Home Assistant instance not available');
-            return [];
-        }
-        try {
-            const response = await hass.callWS({
-                type: 'growspace_manager/get_log',
-                growspace_id: growspaceId,
-                limit,
-            });
-            return response[growspaceId] || [];
-        }
-        catch (e) {
-            console.error('Error fetching event log:', e);
-            return [];
-        }
-    }
-}
-
 let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     constructor() {
         super(...arguments);
-        this._logbookController = new GrowspaceLogbookController();
         this.open = false;
         this.growspaceOptions = {};
         this.isEditing = true;
@@ -10065,7 +10404,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     async _fetchLogbook() {
         if (!this.plant?.attributes?.growspace_id || !this.hass)
             return;
-        const fetchedEvents = await this._logbookController.fetchEventLog(this.hass, this.plant.attributes.growspace_id);
+        const service = getTimelineService(this.hass);
+        const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
         // Identify optimistic events (no event_id, recent timestamp) to preserve
         // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
         const now = new Date().getTime();
@@ -10156,7 +10496,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             detail: {
                 mode: 'plant',
                 plantIds: [plantId],
-                growspaceId: growspaceId
+                growspaceId
             },
             bubbles: true,
             composed: true
@@ -10171,7 +10511,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             detail: {
                 isOpen: true,
                 plantIds: [plantId],
-                growspaceId: growspaceId
+                growspaceId
             },
             bubbles: true,
             composed: true
@@ -10184,7 +10524,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         const growspaceId = this.plant.attributes?.growspace_id;
         this.dispatchEvent(new CustomEvent('open-ipm', {
             detail: {
-                growspaceId: growspaceId,
+                growspaceId,
                 plantIds: [plantId]
             },
             bubbles: true,
@@ -10355,6 +10695,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
               class="md3-button text"
               @click=${() => this._close()}
               style="min-width: auto; padding: 8px;"
+              aria-label="Close"
+              title="Close"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
@@ -10561,6 +10903,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   class="md3-button text"
                   style="min-width: auto; padding: 4px;"
                   @click=${this._toggleShowAllDates}
+                  aria-label="Toggle Dates"
+                  title="Toggle Dates"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiDna}"></path>
@@ -12783,7 +13127,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     this._initialStateApplied = true;
                 }
             }
-            else if (!this.open) {
+            else {
                 // Reset flag when dialog closes so next open respects initialTab again
                 this._initialStateApplied = false;
             }
@@ -15828,8 +16172,11 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         this._highlightedTimestamp = null;
         this._containerRef = e$1();
     }
-    firstUpdated() {
-        this._initController();
+    /**
+     * Normalize string for filtering (moved to class method for performance)
+     */
+    _normalize(s) {
+        return s?.toLowerCase().trim() || '';
     }
     _getSeverityColor(severity, sensorType) {
         if (sensorType?.toLowerCase() === 'optimal') {
@@ -15847,33 +16194,21 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         return 'var(--primary-text-color)';
     }
     willUpdate(changedProps) {
-        if (changedProps.has('hass') && !this._controller) {
-            this._initController();
+        if (changedProps.has('hass') && !this.hass) {
+            console.warn('GrowspaceLogbook: No HASS context available');
+            return;
         }
         if (changedProps.has('growspaceId')) {
             this._fetchEvents();
         }
     }
-    _initController() {
-        if (!this._controller) {
-            this._controller = new GrowspaceLogbookController();
-            this._fetchEvents();
-        }
-    }
     async _fetchEvents() {
-        if (!this._controller || !this.growspaceId || !this.hass)
+        if (!this.growspaceId || !this.hass)
             return;
         this._isLoading = true;
-        try {
-            this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 50);
-        }
-        catch (e) {
-            console.error('Error fetching logbook events:', e);
-            this._events = [];
-        }
-        finally {
-            this._isLoading = false;
-        }
+        const service = getTimelineService(this.hass);
+        this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
+        this._isLoading = false;
     }
     _formatDuration(seconds) {
         const mins = Math.floor(seconds / 60);
@@ -15887,20 +16222,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         return `${Math.round(Number(val) * 100)}%`;
     }
     _formatTime(isoString) {
-        try {
-            const date = new Date(isoString);
-            if (isNaN(date.getTime()))
-                throw new Error('Invalid Time');
-            return date.toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        }
-        catch {
-            return isoString;
-        }
+        return formatDateTime(new Date(isoString));
     }
     _setActiveFilter(filter) {
         this._activeFilter = filter;
@@ -15910,13 +16232,12 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
      */
     scrollToTimestamp(timestamp) {
         this._highlightedTimestamp = timestamp;
-        // Find closest event to timestamp
         if (!this._events || this._events.length === 0)
             return;
         let closestIndex = 0;
         let minDiff = Number.MAX_VALUE;
         for (let i = 0; i < this._events.length; i++) {
-            const eventTime = new Date(this._events[i].timestamp || this._events[i].start_time).getTime();
+            const eventTime = getEventTimestamp(this._events[i]);
             const diff = Math.abs(eventTime - timestamp);
             if (diff < minDiff) {
                 minDiff = diff;
@@ -15943,14 +16264,12 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             return x `<div class="empty-state">Loading events...</div>`;
         }
         const allEvents = this._events || [];
-        const normalize = (s) => s?.toLowerCase().trim() || '';
-        // Filter logic
+        // Filter logic using class method for normalization
         let filteredEvents = allEvents;
         if (this._activeFilter === 'watering') {
             filteredEvents = allEvents.filter(e => {
-                const cat = normalize(e.category);
-                const type = normalize(e.sensor_type);
-                // Include 'environmental' category if sensor_type is irrigation/drain (manual watering creates this)
+                const cat = this._normalize(e.category);
+                const type = this._normalize(e.sensor_type);
                 return cat === 'irrigation' ||
                     (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
                     ['irrigation', 'drain', 'water'].includes(type) ||
@@ -15960,33 +16279,31 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         else if (this._activeFilter === 'training') {
             const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
             filteredEvents = allEvents.filter(e => {
-                const cat = normalize(e.category);
-                const type = normalize(e.sensor_type);
+                const cat = this._normalize(e.category);
+                const type = this._normalize(e.sensor_type);
                 return cat === 'training' || techniques.some(t => type.includes(t));
             });
         }
         else if (this._activeFilter === 'alerts') {
             filteredEvents = allEvents.filter(e => {
-                const cat = normalize(e.category);
+                const cat = this._normalize(e.category);
                 return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
             });
         }
         else if (this._activeFilter === 'environment') {
             filteredEvents = allEvents.filter(e => {
-                const type = normalize(e.sensor_type);
+                const type = this._normalize(e.sensor_type);
                 return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
             });
         }
-        // 'all' case keeps filteredEvents as allEvents
-        if (this._activeFilter === 'notes') {
-            filteredEvents = allEvents.filter(e => normalize(e.category) === 'note');
+        else if (this._activeFilter === 'notes') {
+            filteredEvents = allEvents.filter(e => this._normalize(e.category) === 'note');
         }
-        // ⚡ Performance: Schwartzian transform for efficient sorting
-        // Parse dates once upfront O(n) instead of O(n log n) Date creations in comparator
+        // Schwartzian transform for efficient sorting
         const sortedEvents = filteredEvents
             .map(e => ({
             event: e,
-            time: new Date(e.timestamp || e.start_time).getTime()
+            time: getEventTimestamp(e)
         }))
             .sort((a, b) => b.time - a.time)
             .map(item => item.event);
@@ -16019,7 +16336,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                 renderItem: (event) => {
                     if (!event)
                         return x ``;
-                    const cat = normalize(event.category);
+                    const cat = this._normalize(event.category);
                     const isNote = cat === 'note';
                     const type = isNote ? 'Plant Note' :
                         (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
@@ -16253,9 +16570,10 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         super(...arguments);
         this._events = [];
         this._isLoading = false;
+        this._hasError = false;
+        this._errorMessage = '';
         this._hoveredEvent = null;
         this._zoomLevel = 1; // 1 = normal, 2 = zoomed in
-        this._controller = new GrowspaceLogbookController();
     }
     willUpdate(changedProps) {
         if (changedProps.has('growspaceId') || (changedProps.has('hass') && !this._events.length)) {
@@ -16266,15 +16584,10 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         if (!this.hass || !this.growspaceId)
             return;
         this._isLoading = true;
-        try {
-            this._events = await this._controller.fetchEventLog(this.hass, this.growspaceId, 100); // Fetch more events for timeline
-        }
-        catch (e) {
-            console.error(e);
-        }
-        finally {
-            this._isLoading = false;
-        }
+        this._hasError = false;
+        const service = getTimelineService(this.hass);
+        this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+        this._isLoading = false;
     }
     _getIcon(event) {
         const cat = event.category?.toLowerCase();
@@ -16310,17 +16623,19 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         return '';
     }
     _getPosition(event, minTime, totalDuration) {
-        const time = new Date(event.timestamp || event.start_time).getTime();
+        const time = getEventTimestamp(event);
         const position = ((time - minTime) / totalDuration) * 100;
         return position;
     }
     render() {
         if (this._isLoading)
             return x `<div class="empty-state">Loading timeline...</div>`;
+        if (this._hasError)
+            return x `<div class="empty-state" style="color: var(--error-color)">${this._errorMessage}</div>`;
         if (this._events.length === 0)
             return x `<div class="empty-state">No events to display</div>`;
-        // Process times
-        const timestamps = this._events.map(e => new Date(e.timestamp || e.start_time).getTime());
+        // Process times using new utility
+        const timestamps = this._events.map(e => getEventTimestamp(e));
         const minTime = Math.min(...timestamps);
         const maxTime = Math.max(...timestamps);
         // Add buffer (1 day)
@@ -16357,7 +16672,7 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
                       ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
                     </div>
                     <div class="tooltip-time">
-                      ${new Date(event.timestamp || event.start_time).toLocaleString()}
+                      ${formatDateTime(new Date(getEventTimestamp(event)))}
                     </div>
                     <div>${event.notes || event.reasons?.join(', ') || ''}</div>
                   </div>
@@ -16372,7 +16687,7 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
             const time = start + (totalDuration * (pct / 100));
             return x `
                 <div class="date-tick" style="left: ${pct}%">
-                  ${new Date(time).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  ${formatShortDate(new Date(time))}
                 </div>
               `;
         })}
@@ -16574,6 +16889,12 @@ __decorate([
 ], GrowspaceTimeline.prototype, "_isLoading", void 0);
 __decorate([
     r$2()
+], GrowspaceTimeline.prototype, "_hasError", void 0);
+__decorate([
+    r$2()
+], GrowspaceTimeline.prototype, "_errorMessage", void 0);
+__decorate([
+    r$2()
 ], GrowspaceTimeline.prototype, "_hoveredEvent", void 0);
 __decorate([
     r$2()
@@ -16658,8 +16979,10 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
         const width = canvas.width = 400;
         const height = canvas.height = 300;
         // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
-        const minTemp = 15, maxTemp = 35;
-        const minRH = 30, maxRH = 90;
+        const minTemp = 15;
+        const maxTemp = 35;
+        const minRH = 30;
+        const maxRH = 90;
         // Clear
         ctx.clearRect(0, 0, width, height);
         // Draw Heatmap pixels
@@ -19305,9 +19628,9 @@ let DialogHost = class DialogHost extends i$3 {
                     ? `${strain}_${normalizedPhenotype}`
                     : strain;
                 strainEntry = {
-                    strain: strain,
+                    strain,
                     phenotype: normalizedPhenotype,
-                    key: key,
+                    key,
                     breeder: '',
                     type: 'Hybrid',
                     flowering_days_min: 60,
@@ -20259,15 +20582,15 @@ const plantCardStyles = i$6 `
   }
 
   .status-icon.training {
-    color: #ff9800; /* Orange for training */
+    color: var(--gm-warning-color); /* Orange for training */
   }
 
   .status-icon.watering {
-    color: #2196f3; /* Blue for watering */
+    color: var(--gm-info-color); /* Blue for watering */
   }
 
   .status-icon.problem {
-    color: #f44336; /* Red for problem */
+    color: var(--gm-error-color); /* Red for problem */
   }
 
   .status-icon.ipm {
@@ -20275,7 +20598,7 @@ const plantCardStyles = i$6 `
   }
 
   .status-icon.preset-recommended {
-    color: var(--primary-color);
+    color: var(--gm-primary-color);
   }
 
   .status-icon ha-svg-icon,
@@ -29326,8 +29649,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const isVpd = chip.key === 'vpd';
         let vpdSegments = [];
         if (isVpd && this.store?.history && this.device) {
-            const historyData = this._historyCacheController?.value?.['vpd'];
-            const lightHistory = this._historyCacheController?.value?.['light'] || [];
+            const historyData = this._historyCacheController?.value?.vpd;
+            const lightHistory = this._historyCacheController?.value?.light || [];
             // Get VPD thresholds from device overview entity
             const overviewEntity = this.device.overview_entity_id
                 ? this.hass?.states[this.device.overview_entity_id]
@@ -33038,7 +33361,7 @@ class GrowspaceDataStore {
             Object.entries(grid).forEach(([key, plant]) => {
                 if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
                     // Create a deep copy of the plant data to avoid mutation
-                    const updatedPlant = { ...plant, events: [...(plant['events'] || []), event] };
+                    const updatedPlant = { ...plant, events: [...(plant.events || []), event] };
                     newCache[gsId] = {
                         ...newCache[gsId],
                         grid: {
@@ -34872,7 +35195,7 @@ class GrowspaceStore {
             payload: {
                 mode: 'plant',
                 plantIds: selectedIds,
-                growspaceId: growspaceId
+                growspaceId
             }
         });
     }
@@ -34888,7 +35211,7 @@ class GrowspaceStore {
             payload: {
                 isOpen: true,
                 plantIds: selectedIds,
-                growspaceId: growspaceId
+                growspaceId
             }
         });
     }
