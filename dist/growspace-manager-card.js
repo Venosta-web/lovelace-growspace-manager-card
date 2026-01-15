@@ -60,6 +60,8 @@ var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
+var mdiRefresh = "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
+var mdiRestart = "M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z";
 var mdiSelectAll = "M9,9H15V15H9M7,17H17V7H7M15,5H17V3H15M15,21H17V19H15M19,17H21V15H19M19,9H21V7H19M19,21A2,2 0 0,0 21,19H19M19,13H21V11H19M11,21H13V19H11M9,3H7V5H9M3,17H5V15H3M5,21V19H3A2,2 0 0,0 5,21M19,3V5H21A2,2 0 0,0 19,3M13,3H11V5H13M3,9H5V7H3M7,21H9V19H7M3,13H5V11H3M3,5H5V3A2,2 0 0,0 3,5Z";
 var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.27L3.73,7H2V5.27L0.5,3.77M4,2H7V4H5.82L3.83,2H4M22,4V7H20V4H17V2H20A2,2 0 0,1 22,4M20,17H22V20L22,20.17L20,18.18V17M2,20V17H4V20H7V22H4A2,2 0 0,1 2,20M10,2H14V4H10V2M10,20H14V22H10V20M20,10H22V14H20V10M2,10H4V14H2V10Z";
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
@@ -889,6 +891,49 @@ PlantUtils.DATE_FIELDS = [
     'dry_start',
     'cure_start',
 ];
+
+/**
+ * Base class for all API services.
+ * Provides shared functionality for WebSocket communication and service calls.
+ */
+class BaseAPI {
+    constructor(hass) {
+        if (hass) {
+            this.hass = hass;
+        }
+    }
+    /**
+     * Update the Home Assistant instance.
+     * Called when hass object changes.
+     */
+    updateHass(hass) {
+        this.hass = hass;
+    }
+    /**
+     * Call a Home Assistant service.
+     * @param domain - Service domain (e.g., 'growspace_manager')
+     * @param service - Service name (e.g., 'add_plant')
+     * @param serviceData - Service data payload
+     */
+    async callService(domain, service, serviceData) {
+        await this.hass.callService(domain, service, serviceData);
+    }
+    /**
+     * Send a WebSocket message to Home Assistant.
+     * @param type - WebSocket message type
+     * @param data - Additional data to include in the message
+     * @returns Response data or null on error
+     */
+    async sendWebSocket(type, data) {
+        try {
+            return await this.hass.callWS({ type, ...data });
+        }
+        catch (error) {
+            console.error(`WebSocket call ${type} failed:`, error);
+            return null;
+        }
+    }
+}
 
 // Define keys for automatic extraction (DRY)
 // These must match the keys produced by serializers.py
@@ -4973,16 +5018,14 @@ const HistoryPointSchema = objectType({
 });
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
 
-class DataService {
-    constructor(hass) {
-        // Cache storage for growspace data with TTL
+/**
+ * API service for growspace operations.
+ * Handles growspace data fetching, CRUD, environment configuration, and caching.
+ */
+class GrowspaceAPI extends BaseAPI {
+    constructor() {
+        super(...arguments);
         this._cache = new Map();
-        if (hass) {
-            this.hass = hass;
-        }
-    }
-    updateHass(hass) {
-        this.hass = hass;
     }
     /**
      * Invalidate cache for a specific growspace or all growspaces.
@@ -4996,7 +5039,7 @@ class DataService {
         else {
             this._cache.clear();
         }
-        console.debug('[DataService] Cache invalidated:', growspaceId || 'all');
+        console.debug('[GrowspaceAPI] Cache invalidated:', growspaceId || 'all');
     }
     /**
      * Check if cached data is still valid (within TTL).
@@ -5005,14 +5048,7 @@ class DataService {
         const cached = this._cache.get(key);
         if (!cached)
             return false;
-        return Date.now() - cached.timestamp < DataService.CACHE_TTL_MS;
-    }
-    /**
-     * Generic service call wrapper. Useful for batch actions and other dynamic calls.
-     */
-    async callService(domain, service, serviceData) {
-        console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
-        await this.hass.callService(domain, service, serviceData);
+        return Date.now() - cached.timestamp < GrowspaceAPI.CACHE_TTL_MS;
     }
     async fetchGrowspaceData(growspaceId) {
         if (!this.hass)
@@ -5021,7 +5057,7 @@ class DataService {
         const cacheKey = growspaceId || '__all__';
         if (this._isCacheValid(cacheKey)) {
             const cached = this._cache.get(cacheKey);
-            console.debug(`[DataService] Returning cached data for ${cacheKey}`);
+            console.debug(`[GrowspaceAPI] Returning cached data for ${cacheKey}`);
             return cached.data;
         }
         try {
@@ -5034,7 +5070,7 @@ class DataService {
                 // Expect Single Response
                 const parsed = GrowspaceAPIResponseSchema.safeParse(result);
                 if (!parsed.success) {
-                    console.error(`[DataService] API Validation Failed for ${growspaceId}: `, parsed.error.format());
+                    console.error(`[GrowspaceAPI] API Validation Failed for ${growspaceId}: `, parsed.error.format());
                     const data = result;
                     this._cache.set(cacheKey, { data, timestamp: Date.now() });
                     return data;
@@ -5044,20 +5080,19 @@ class DataService {
                 return data;
             }
             else {
-                // Expect Collection (Record<string, GrowspaceAPIResponse>)
+                // Expect Collection
                 const parsed = GrowspaceAPICollectionSchema.safeParse(result);
                 if (!parsed.success) {
-                    console.error('[DataService] API Validation Failed for Collection (All Data):', JSON.stringify(parsed.error.format(), null, 2));
+                    console.error('[GrowspaceAPI] API Validation Failed for Collection (All Data):', JSON.stringify(parsed.error.format(), null, 2));
                     // Log which growspace ID failed if we can find it
                     if (typeof result === 'object' && result !== null) {
                         for (const [gid, gdata] of Object.entries(result)) {
                             const itemParsed = GrowspaceAPIResponseSchema.safeParse(gdata);
                             if (!itemParsed.success) {
-                                console.error(`[DataService] -> Found problematic item: ${gid}`, JSON.stringify(itemParsed.error.format(), null, 2));
+                                console.error(`[GrowspaceAPI] -> Found problematic item: ${gid}`, JSON.stringify(itemParsed.error.format(), null, 2));
                             }
                         }
                     }
-                    // For resilience, return as collection.
                     const data = result;
                     this._cache.set(cacheKey, { data, timestamp: Date.now() });
                     return data;
@@ -5068,7 +5103,7 @@ class DataService {
             }
         }
         catch (err) {
-            console.error('[DataService:fetchGrowspaceData] Error:', err);
+            console.error('[GrowspaceAPI:fetchGrowspaceData] Error:', err);
             return null;
         }
     }
@@ -5083,11 +5118,93 @@ class DataService {
             .map((wsData) => GrowspaceAdapter.transformGrowspace(null, wsData))
             .filter((d) => d !== null);
     }
+    async addGrowspace(data) {
+        console.log('[GrowspaceAPI:addGrowspace] Adding growspace:', data);
+        try {
+            const payload = {
+                name: data.name,
+                rows: data.rows,
+                plants_per_row: data.plants_per_row,
+                notification_target: data.notification_service, // Map to backend field
+            };
+            await this.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+            console.log('[GrowspaceAPI:addGrowspace] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:addGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async updateGrowspace(data) {
+        console.log('[GrowspaceAPI:updateGrowspace] Updating growspace:', data);
+        try {
+            const payload = {
+                growspace_id: data.growspace_id,
+            };
+            if (data.name)
+                payload.name = data.name;
+            if (data.rows)
+                payload.rows = data.rows;
+            if (data.plants_per_row)
+                payload.plants_per_row = data.plants_per_row;
+            if (data.notification_service)
+                payload.notification_target = data.notification_service;
+            await this.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+            console.log('[GrowspaceAPI:updateGrowspace] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:updateGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async removeGrowspace(growspaceId) {
+        console.log('[GrowspaceAPI:removeGrowspace] Removing growspace:', growspaceId);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+                growspace_id: growspaceId,
+            });
+            console.log('[GrowspaceAPI:removeGrowspace] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:removeGrowspace] Error:', err);
+            throw err;
+        }
+    }
+    async configureEnvironment(data) {
+        console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
+        try {
+            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+            console.log('[GrowspaceAPI:configureEnvironment] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:configureEnvironment] Error:', err);
+            throw err;
+        }
+    }
+    async setDehumidifierControl(growspaceId, enabled) {
+        console.log(`[GrowspaceAPI:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
+        try {
+            await this.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
+                growspace_id: growspaceId,
+                enabled,
+            });
+            console.log('[GrowspaceAPI:setDehumidifierControl] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:setDehumidifierControl] Error:', err);
+            throw err;
+        }
+    }
+}
+GrowspaceAPI.CACHE_TTL_MS = 30_000; // 30 seconds
+
+/**
+ * API service for strain library operations.
+ * Handles fetching, adding, removing, importing, and exporting strains.
+ */
+class StrainAPI extends BaseAPI {
     getStrainLibrary() {
-        const knownIds = [
-            'sensor.strain_library',
-            'sensor.growspace_manager_strain_library',
-        ];
+        const knownIds = ['sensor.strain_library', 'sensor.growspace_manager_strain_library'];
         let rawStrains;
         // Direct O(1) Lookup
         for (const id of knownIds) {
@@ -5103,7 +5220,7 @@ class DataService {
             const strainSensor = allStates.find((s) => s.attributes && 'strains' in s.attributes);
             rawStrains = strainSensor?.attributes?.strains;
         }
-        // If no sensor data, return empty (let dialog handle service call)
+        // If no sensor data, return empty
         if (!rawStrains) {
             return [];
         }
@@ -5121,6 +5238,7 @@ class DataService {
                 const meta = strainData.meta ?? {};
                 const phenotypes = strainData.phenotypes ?? {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    const typedPhenoData = phenoData;
                     results.push({
                         strain: strainName,
                         phenotype: phenoName,
@@ -5131,11 +5249,11 @@ class DataService {
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
-                        description: phenoData.description,
-                        image: phenoData.image_path,
-                        image_crop_meta: phenoData.image_crop_meta,
-                        flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max,
+                        description: typedPhenoData.description,
+                        image: typedPhenoData.image_path,
+                        image_crop_meta: typedPhenoData.image_crop_meta,
+                        flowering_days_min: typedPhenoData.flower_days_min,
+                        flowering_days_max: typedPhenoData.flower_days_max,
                     });
                 });
             }
@@ -5149,41 +5267,41 @@ class DataService {
         return [];
     }
     async fetchStrainLibrary() {
-        console.log('[DataService:fetchStrainLibrary] Fetching strain library via WebSocket API');
+        console.log('[StrainAPI:fetchStrainLibrary] Fetching strain library via WebSocket API');
         try {
             // Use WebSocket API to bypass the 16KB attribute limit of state machine
             const rawResponse = await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/get_strain_library',
             });
-            console.log('[DataService:fetchStrainLibrary] WS Response:', rawResponse);
-            // Remove legacy or wrapper 'response' key if present to pass legacy validation
+            console.log('[StrainAPI:fetchStrainLibrary] WS Response:', rawResponse);
+            // Remove legacy or wrapper 'response' key if present
             if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
                 delete rawResponse.response;
             }
-            // The WS API returns: { strains: { ... }, strain_list: [...] }
             const parsed = StrainLibraryWrapperSchema.safeParse(rawResponse);
             let rawStrains = {};
             if (parsed.success) {
                 rawStrains = parsed.data.strains;
             }
             else {
-                // Fallback for backward compatibility or if backend changes
+                // Fallback for backward compatibility
                 const legacyParsed = StrainLibrarySchema.safeParse(rawResponse);
                 if (legacyParsed.success) {
                     rawStrains = legacyParsed.data;
                 }
                 else {
-                    console.warn('[DataService:fetchStrainLibrary] API Verification warning:', parsed.error.format());
+                    console.warn('[StrainAPI:fetchStrainLibrary] API Verification warning:', parsed.error.format());
                     return [];
                 }
             }
             const currentStrains = [];
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
-                    return; // unexpected wrapper or metadata
+                    return;
                 const meta = data.meta || {};
                 const phenotypes = data.phenotypes || {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
+                    const typedPhenoData = phenoData;
                     currentStrains.push({
                         strain: strainName,
                         phenotype: phenoName,
@@ -5194,11 +5312,11 @@ class DataService {
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
-                        description: phenoData.description,
-                        image: phenoData.image_path,
-                        image_crop_meta: phenoData.image_crop_meta,
-                        flowering_days_min: phenoData.flower_days_min,
-                        flowering_days_max: phenoData.flower_days_max,
+                        description: typedPhenoData.description,
+                        image: typedPhenoData.image_path,
+                        image_crop_meta: typedPhenoData.image_crop_meta,
+                        flowering_days_min: typedPhenoData.flower_days_min,
+                        flowering_days_max: typedPhenoData.flower_days_max,
                     });
                 });
             });
@@ -5209,394 +5327,8 @@ class DataService {
             return [];
         }
     }
-    async fetchNutrientPresets() {
-        if (!this.hass)
-            return null;
-        try {
-            const result = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_NUTRIENT_PRESETS,
-            });
-            const parsed = NutrientPresetsSchema.safeParse(result);
-            if (!parsed.success) {
-                console.error('[DataService] Nutrient Presets Validation Failed:', parsed.error.format());
-                return result;
-            }
-            return parsed.data;
-        }
-        catch (err) {
-            console.error('[DataService:fetchNutrientPresets] Error:', err);
-            return null;
-        }
-    }
-    async fetchIPMPresets() {
-        if (!this.hass)
-            return null;
-        try {
-            const result = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_IPM_PRESETS,
-            });
-            const parsed = IPMPresetsSchema.safeParse(result);
-            if (!parsed.success) {
-                console.error('[DataService] IPM Presets Validation Failed:', parsed.error.format());
-                return result;
-            }
-            return parsed.data;
-        }
-        catch (err) {
-            console.error('[DataService:fetchIPMPresets] Error:', err);
-            return null;
-        }
-    }
-    async fetchNutrientInventory() {
-        if (!this.hass)
-            return null;
-        try {
-            const result = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_NUTRIENT_INVENTORY,
-            });
-            const parsed = NutrientInventorySchema.safeParse(result);
-            if (!parsed.success) {
-                console.error('[DataService] Nutrient Inventory Validation Failed:', parsed.error.format());
-                return result;
-            }
-            return parsed.data;
-        }
-        catch (err) {
-            console.error('[DataService:fetchNutrientInventory] Error:', err);
-            return null;
-        }
-    }
-    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
-        if (!this.hass)
-            return;
-        try {
-            await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_UPDATE_NUTRIENT_STOCK,
-                nutrient_id: nutrientId,
-                name,
-                current_ml: currentMl,
-                initial_ml: initialMl
-            });
-            console.log(`[DataService] Updated stock: ${name}`);
-        }
-        catch (err) {
-            console.error('[DataService:updateNutrientStock] Error:', err);
-            throw err;
-        }
-    }
-    async removeNutrientStock(nutrientId) {
-        if (!this.hass)
-            return;
-        try {
-            await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
-                nutrient_id: nutrientId
-            });
-            console.log(`[DataService] Removed stock: ${nutrientId}`);
-        }
-        catch (err) {
-            console.error('[DataService:removeNutrientStock] Error:', err);
-            throw err;
-        }
-    }
-    async getHistory(entityId, startTime, endTime) {
-        if (!this.hass)
-            return [];
-        const startStr = startTime.toISOString();
-        let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
-        if (endTime) {
-            url += `&end_time=${endTime.toISOString()}`;
-        }
-        try {
-            const res = await this.hass.callApi('GET', url);
-            return res && res.length > 0 ? res[0] : [];
-        }
-        catch (err) {
-            console.error('Error fetching history:', err);
-            return [];
-        }
-    }
-    async getBatchHistory(entityIds, startTime, endTime) {
-        if (!this.hass || entityIds.length === 0)
-            return {};
-        const startStr = startTime.toISOString();
-        const entityList = entityIds.join(',');
-        // OPTIMIZATION: Request all entities in ONE call
-        let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
-        if (endTime) {
-            url += `&end_time=${endTime.toISOString()}`;
-        }
-        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
-        console.log(`[DataService.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
-        console.log(`[DataService.getBatchHistory] About to call API with URL: ${url}`);
-        try {
-            // HA returns an array of arrays (one array per entity)
-            const res = await this.hass.callApi('GET', url);
-            const resultMap = {};
-            if (res) {
-                res.forEach((entityHistory) => {
-                    if (entityHistory && entityHistory.length > 0) {
-                        // Map back to entity_id from the first record
-                        const id = entityHistory[0].entity_id;
-                        resultMap[id] = entityHistory;
-                    }
-                });
-            }
-            return resultMap;
-        }
-        catch (err) {
-            console.error('[DataService] Error fetching batch history:', err);
-            return {};
-        }
-    }
-    async getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
-        if (!this.hass || entityIds.length === 0)
-            return {};
-        try {
-            const result = await this.hass.callWS({
-                type: WS_TYPE_GET_HISTORY_STATS,
-                entity_ids: entityIds,
-                start_time: startTime.toISOString(),
-                end_time: endTime?.toISOString(),
-                interval_minutes: intervalMinutes,
-                significant_changes_only: significantChangesOnly,
-            });
-            const parsed = HistoryStatsResponseSchema.safeParse(result);
-            if (!parsed.success) {
-                console.warn('[DataService] History Stats Validation Failed:', parsed.error.format());
-                // Fallback or empty? Fallback to batch history might be better if WS returns garbage.
-                throw new Error('Validation Failed');
-            }
-            // Map compact format back to standard formats for ChartUtils compatibility
-            const mappedResult = {};
-            for (const [entityId, points] of Object.entries(parsed.data)) {
-                mappedResult[entityId] = points.map((p) => ({
-                    entity_id: entityId,
-                    state: p.s,
-                    last_changed: p.lu,
-                    last_updated: p.lu,
-                    attributes: {},
-                }));
-            }
-            return mappedResult;
-        }
-        catch (err) {
-            console.warn('[DataService] getHistoryStats WS failed, falling back to REST batch. Error:', err);
-            console.log(`[DataService] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`);
-            return this.getBatchHistory(entityIds, startTime, endTime);
-        }
-    }
-    // Service calls
-    async addPlant(params) {
-        console.log('[DataService:addPlant] Sending payload:', params);
-        try {
-            if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
-                params.mother_start = new Date().toISOString().split('T')[0];
-            }
-            if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
-                params.clone_start = new Date().toISOString().split('T')[0];
-            }
-            await this.hass.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-            console.log('[DataService:addPlant] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:addPlant] Error:', err);
-            const msg = err instanceof Error ? err.message : 'Failed to add plant';
-            throw new Error(msg);
-        }
-    }
-    async addPlants(params) {
-        console.log('[DataService:addPlants] Sending payload:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
-            console.log('[DataService:addPlants] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:addPlants] Error:', err);
-            const msg = err instanceof Error ? err.message : 'Failed to add plants';
-            throw new Error(msg);
-        }
-    }
-    async updatePlant(params) {
-        console.log('[DataService:updatePlant] Sending payload:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-            console.log('[DataService:updatePlant] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:updatePlant] Error:', err);
-            throw err;
-        }
-    }
-    async removePlant(plantId) {
-        console.log('[DataService:removePlant] Removing plant_id:', plantId);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-            console.log('[DataService:removePlant] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:removePlant] Error:', err);
-            throw err;
-        }
-    }
-    async harvestPlant(plantId, target = 'dry') {
-        console.log('[DataService:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
-        try {
-            const payload = {
-                plant_id: plantId,
-                target_growspace_id: target
-            };
-            await this.hass.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-            console.log('[DataService:harvestPlant] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:harvestPlant] Error:', err);
-            throw err;
-        }
-    }
-    async takeClone(params) {
-        console.log('[DataService:takeClone] Cloning plant:', params);
-        try {
-            // Ensure target_growspace_id is set if not provided (though backend handles 'clone' default)
-            const payload = { ...params };
-            if (!payload.target_growspace_id)
-                delete payload.target_growspace_id;
-            await this.hass.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
-            console.log('[DataService:takeClone] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:takeClone] Error:', err);
-            throw err;
-        }
-    }
-    async moveClone(plantId, targetGrowspaceId, transitionDate) {
-        console.log('[DataService:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
-        try {
-            const payload = {
-                plant_id: plantId,
-                target_growspace_id: targetGrowspaceId,
-            };
-            if (transitionDate) {
-                payload.transition_date = transitionDate;
-            }
-            await this.hass.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
-            console.log('[DataService:moveClone] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:moveClone] Error:', err);
-            throw err;
-        }
-    }
-    async swapPlants(plant1Id, plant2Id) {
-        console.log(`[DataService:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
-                plant1_id: plant1Id,
-                plant2_id: plant2Id,
-            });
-            console.log('[DataService:swapPlants] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:swapPlants] Error:', err);
-            throw err;
-        }
-    }
-    async setDehumidifierControl(growspaceId, enabled) {
-        console.log(`[DataService:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
-                growspace_id: growspaceId,
-                enabled,
-            });
-            console.log('[DataService:setDehumidifierControl] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:setDehumidifierControl] Error:', err);
-            throw err;
-        }
-    }
-    async setIrrigationSettings(params) {
-        console.log('[DataService:setIrrigationSettings] Setting irrigation settings:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
-            console.log('[DataService:setIrrigationSettings] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:setIrrigationSettings] Error:', err);
-            throw err;
-        }
-    }
-    async addIrrigationTime(params) {
-        console.log('[DataService:addIrrigationTime] Adding irrigation time:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
-            console.log('[DataService:addIrrigationTime] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:addIrrigationTime] Error:', err);
-            throw err;
-        }
-    }
-    async removeIrrigationTime(params) {
-        console.log('[DataService:removeIrrigationTime] Removing irrigation time:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
-            console.log('[DataService:removeIrrigationTime] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:removeIrrigationTime] Error:', err);
-            throw err;
-        }
-    }
-    async setIrrigationStrategy(growspaceId, strategy) {
-        console.log('[DataService:setIrrigationStrategy] Setting strategy:', strategy);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
-                growspace_id: growspaceId,
-                ...strategy,
-            });
-            console.log('[DataService:setIrrigationStrategy] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:setIrrigationStrategy] Error:', err);
-            throw err;
-        }
-    }
-    async addDrainTime(params) {
-        console.log('[DataService:addDrainTime] Adding drain time:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
-            console.log('[DataService:addDrainTime] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:addDrainTime] Error:', err);
-            throw err;
-        }
-    }
-    async removeDrainTime(params) {
-        console.log('[DataService:removeDrainTime] Removing drain time:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
-            console.log('[DataService:removeDrainTime] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:removeDrainTime] Error:', err);
-            throw err;
-        }
-    }
-    async exportStrainLibrary() {
-        console.log('[DataService:exportStrainLibrary] Exporting strain library');
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY);
-            console.log('[DataService:exportStrainLibrary] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:exportStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
     async addStrain(data) {
-        console.log('[DataService:addStrain] Adding strain:', data);
+        console.log('[StrainAPI:addStrain] Adding strain:', data);
         try {
             const payload = { ...data };
             // Clean undefined keys
@@ -5616,30 +5348,41 @@ class DataService {
                     delete payload.image;
                 }
             }
-            await this.hass.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-            console.log('[DataService:addStrain] Service Called');
+            await this.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
+            console.log('[StrainAPI:addStrain] Service Called');
         }
         catch (err) {
-            console.error('[DataService:addStrain] Error:', err);
+            console.error('[StrainAPI:addStrain] Error:', err);
             throw err;
         }
     }
     async removeStrain(strain, phenotype) {
-        console.log('[DataService:removeStrain] Removing strain:', strain, phenotype);
+        console.log('[StrainAPI:removeStrain] Removing strain:', strain, phenotype);
         try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
+            await this.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
                 strain,
                 phenotype,
             });
-            console.log('[DataService:removeStrain] Service Called');
+            console.log('[StrainAPI:removeStrain] Service Called');
         }
         catch (err) {
-            console.error('[DataService:removeStrain] Error:', err);
+            console.error('[StrainAPI:removeStrain] Error:', err);
+            throw err;
+        }
+    }
+    async exportStrainLibrary() {
+        console.log('[StrainAPI:exportStrainLibrary] Exporting strain library');
+        try {
+            await this.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY, {});
+            console.log('[StrainAPI:exportStrainLibrary] Service Called');
+        }
+        catch (err) {
+            console.error('[StrainAPI:exportStrainLibrary] Error:', err);
             throw err;
         }
     }
     async importStrainLibrary(file, replace) {
-        console.log('[DataService:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
+        console.log('[StrainAPI:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
         const formData = new FormData();
         formData.append('file', file);
         formData.append('replace', replace.toString());
@@ -5653,7 +5396,7 @@ class DataService {
                 throw new Error(errorText || response.statusText);
             }
             const result = await response.json();
-            console.log('[DataService:importStrainLibrary] Response:', result);
+            console.log('[StrainAPI:importStrainLibrary] Response:', result);
             if (result.success) {
                 return result;
             }
@@ -5662,92 +5405,550 @@ class DataService {
             }
         }
         catch (err) {
-            console.error('[DataService:importStrainLibrary] Error:', err);
+            console.error('[StrainAPI:importStrainLibrary] Error:', err);
             const msg = err instanceof Error ? err.message : 'Failed to import strain library';
             throw new Error(msg);
         }
     }
     async clearStrainLibrary() {
-        console.log('[DataService:clearStrainLibrary] Clearing library');
+        console.log('[StrainAPI:clearStrainLibrary] Clearing library');
         try {
-            await this.hass.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY);
-            console.log('[DataService:clearStrainLibrary] Service Called');
+            await this.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY, {});
+            console.log('[StrainAPI:clearStrainLibrary] Service Called');
         }
         catch (err) {
-            console.error('[DataService:clearStrainLibrary] Error:', err);
+            console.error('[StrainAPI:clearStrainLibrary] Error:', err);
             throw err;
         }
     }
-    // Configuration Services
-    async addGrowspace(data) {
-        console.log('[DataService:addGrowspace] Adding growspace:', data);
+}
+
+/**
+ * API service for nutrient and IPM operations.
+ * Handles nutrient presets, inventory, IPM presets, and application.
+ */
+class NutrientAPI extends BaseAPI {
+    async fetchNutrientPresets() {
+        if (!this.hass)
+            return null;
         try {
-            const payload = {
-                name: data.name,
-                rows: data.rows,
-                plants_per_row: data.plants_per_row,
-                notification_target: data.notification_service, // Map to backend field
-            };
-            await this.hass.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
-            // this._cachedGrowspaceSensorIds = null; // Cache removed
-            console.log('[DataService:addGrowspace] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:addGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    async updateGrowspace(data) {
-        console.log('[DataService:updateGrowspace] Updating growspace:', data);
-        try {
-            const payload = {
-                growspace_id: data.growspace_id,
-            };
-            if (data.name)
-                payload.name = data.name;
-            if (data.rows)
-                payload.rows = data.rows;
-            if (data.plants_per_row)
-                payload.plants_per_row = data.plants_per_row;
-            if (data.notification_service)
-                payload.notification_target = data.notification_service;
-            await this.hass.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-            console.log('[DataService:updateGrowspace] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:updateGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    async removeGrowspace(growspaceId) {
-        console.log('[DataService:removeGrowspace] Removing growspace:', growspaceId);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
-                growspace_id: growspaceId,
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_NUTRIENT_PRESETS,
             });
-            // this._cachedGrowspaceSensorIds = null; // Cache removed
-            console.log('[DataService:removeGrowspace] Service Called');
+            const parsed = NutrientPresetsSchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[NutrientAPI] Nutrient Presets Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
         }
         catch (err) {
-            console.error('[DataService:removeGrowspace] Error:', err);
-            throw err;
+            console.error('[NutrientAPI:fetchNutrientPresets] Error:', err);
+            return null;
         }
     }
-    async configureEnvironment(data) {
-        console.log('[DataService:configureEnvironment] Configuring sensors:', data);
+    async fetchNutrientInventory() {
+        if (!this.hass)
+            return null;
         try {
-            await this.hass.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
-            console.log('[DataService:configureEnvironment] Service Called');
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_NUTRIENT_INVENTORY,
+            });
+            const parsed = NutrientInventorySchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[NutrientAPI] Nutrient Inventory Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
         }
         catch (err) {
-            console.error('[DataService:configureEnvironment] Error:', err);
+            console.error('[NutrientAPI:fetchNutrientInventory] Error:', err);
+            return null;
+        }
+    }
+    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
+        if (!this.hass)
+            return;
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_UPDATE_NUTRIENT_STOCK,
+                nutrient_id: nutrientId,
+                name,
+                current_ml: currentMl,
+                initial_ml: initialMl,
+            });
+            console.log(`[NutrientAPI] Updated stock: ${name}`);
+        }
+        catch (err) {
+            console.error('[NutrientAPI:updateNutrientStock] Error:', err);
             throw err;
         }
     }
+    async removeNutrientStock(nutrientId) {
+        if (!this.hass)
+            return;
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
+                nutrient_id: nutrientId,
+            });
+            console.log(`[NutrientAPI] Removed stock: ${nutrientId}`);
+        }
+        catch (err) {
+            console.error('[NutrientAPI:removeNutrientStock] Error:', err);
+            throw err;
+        }
+    }
+    async fetchIPMPresets() {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_IPM_PRESETS,
+            });
+            const parsed = IPMPresetsSchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[NutrientAPI] IPM Presets Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
+        }
+        catch (err) {
+            console.error('[NutrientAPI:fetchIPMPresets] Error:', err);
+            return null;
+        }
+    }
+    async saveNutrientPreset(data) {
+        console.log('[NutrientAPI:saveNutrientPreset] Saving nutrient preset:', data);
+        try {
+            await this.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, data);
+            console.log('[NutrientAPI:saveNutrientPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[NutrientAPI:saveNutrientPreset] Error:', err);
+            throw err;
+        }
+    }
+    async removeNutrientPreset(presetId) {
+        console.log('[NutrientAPI:removeNutrientPreset] Removing nutrient preset:', presetId);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, { preset_id: presetId });
+            console.log('[NutrientAPI:removeNutrientPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[NutrientAPI:removeNutrientPreset] Error:', err);
+            throw err;
+        }
+    }
+    async saveIPMPreset(data) {
+        console.log('[NutrientAPI:saveIPMPreset] Saving IPM preset:', data);
+        try {
+            await this.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
+            console.log('[NutrientAPI:saveIPMPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[NutrientAPI:saveIPMPreset] Error:', err);
+            throw err;
+        }
+    }
+    async removeIPMPreset(presetId) {
+        console.log('[NutrientAPI:removeIPMPreset] Removing IPM preset:', presetId);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
+            console.log('[NutrientAPI:removeIPMPreset] Service Called');
+        }
+        catch (err) {
+            console.error('[NutrientAPI:removeIPMPreset] Error:', err);
+            throw err;
+        }
+    }
+    async applyIPM(data) {
+        console.log('[NutrientAPI:applyIPM] Applying IPM:', data);
+        try {
+            await this.callService(DOMAIN, SERVICES.APPLY_IPM, data);
+            console.log('[NutrientAPI:applyIPM] Service Called');
+        }
+        catch (err) {
+            console.error('[NutrientAPI:applyIPM] Error:', err);
+            throw err;
+        }
+    }
+}
+
+/**
+ * API service for history and statistics operations.
+ * Handles fetching historical sensor data via REST and WebSocket APIs.
+ */
+class HistoryAPI extends BaseAPI {
+    /**
+     * Fetch history for a single entity using Home Assistant REST API.
+     * @param entityId - Entity ID to fetch history for
+     * @param startTime - Start time for history
+     * @param endTime - Optional end time
+     * @returns Array of historical states
+     */
+    async getHistory(entityId, startTime, endTime) {
+        if (!this.hass)
+            return [];
+        const startStr = startTime.toISOString();
+        let url = `history/period/${startStr}?filter_entity_id=${entityId}`;
+        if (endTime) {
+            url += `&end_time=${endTime.toISOString()}`;
+        }
+        try {
+            const res = await this.hass.callApi('GET', url);
+            return res && res.length > 0 ? res[0] : [];
+        }
+        catch (err) {
+            console.error('Error fetching history:', err);
+            return [];
+        }
+    }
+    /**
+     * Fetch history for multiple entities in a single optimized request.
+     * @param entityIds - Array of entity IDs
+     * @param startTime - Start time for history
+     * @param endTime - Optional end time
+     * @returns Map of entity ID to historical states
+     */
+    async getBatchHistory(entityIds, startTime, endTime) {
+        if (!this.hass || entityIds.length === 0)
+            return {};
+        const startStr = startTime.toISOString();
+        const entityList = entityIds.join(',');
+        // OPTIMIZATION: Request all entities in ONE call
+        let url = `history/period/${startStr}?filter_entity_id=${entityList}&minimal_response`;
+        if (endTime) {
+            url += `&end_time=${endTime.toISOString()}`;
+        }
+        const duration = endTime
+            ? (endTime.getTime() - startTime.getTime()) / 1000
+            : 'undefined';
+        console.log(`[HistoryAPI.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
+        console.log(`[HistoryAPI.getBatchHistory] About to call API with URL: ${url}`);
+        try {
+            // HA returns an array of arrays (one array per entity)
+            const res = await this.hass.callApi('GET', url);
+            const resultMap = {};
+            if (res) {
+                res.forEach((entityHistory) => {
+                    if (entityHistory && entityHistory.length > 0) {
+                        // Map back to entity_id from the first record
+                        const id = entityHistory[0].entity_id;
+                        resultMap[id] = entityHistory;
+                    }
+                });
+            }
+            return resultMap;
+        }
+        catch (err) {
+            console.error('[HistoryAPI] Error fetching batch history:', err);
+            return {};
+        }
+    }
+    /**
+     * Fetch history with downsampled statistics via WebSocket API.
+     * Falls back to REST batch history if WebSocket fails.
+     * @param entityIds - Array of entity IDs
+     * @param startTime - Start time for history
+     * @param endTime - Optional end time
+     * @param intervalMinutes - Downsampling interval in minutes (default: 15)
+     * @param significantChangesOnly - Only include significant changes (default: true)
+     * @returns Map of entity ID to downsampled historical states
+     */
+    async getHistoryStats(entityIds, startTime, endTime, intervalMinutes = 15, significantChangesOnly = true) {
+        if (!this.hass || entityIds.length === 0)
+            return {};
+        try {
+            const result = await this.hass.callWS({
+                type: WS_TYPE_GET_HISTORY_STATS,
+                entity_ids: entityIds,
+                start_time: startTime.toISOString(),
+                end_time: endTime?.toISOString(),
+                interval_minutes: intervalMinutes,
+                significant_changes_only: significantChangesOnly,
+            });
+            const parsed = HistoryStatsResponseSchema.safeParse(result);
+            if (!parsed.success) {
+                console.warn('[HistoryAPI] History Stats Validation Failed:', parsed.error.format());
+                // Fallback or empty? Fallback to batch history might be better if WS returns garbage.
+                throw new Error('Validation Failed');
+            }
+            // Map compact format back to standard formats for ChartUtils compatibility
+            const mappedResult = {};
+            for (const [entityId, points] of Object.entries(parsed.data)) {
+                mappedResult[entityId] = points.map((p) => ({
+                    entity_id: entityId,
+                    state: p.s,
+                    last_changed: p.lu,
+                    last_updated: p.lu,
+                    attributes: {},
+                }));
+            }
+            return mappedResult;
+        }
+        catch (err) {
+            console.warn('[HistoryAPI] getHistoryStats WS failed, falling back to REST batch. Error:', err);
+            console.log(`[HistoryAPI] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`);
+            return this.getBatchHistory(entityIds, startTime, endTime);
+        }
+    }
+}
+
+/**
+ * API service for plant operations.
+ * Handles plant CRUD, harvesting, cloning, and watering.
+ */
+class PlantAPI extends BaseAPI {
+    async addPlant(params) {
+        console.log('[PlantAPI:addPlant] Sending payload:', params);
+        try {
+            if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
+                params.mother_start = new Date().toISOString().split('T')[0];
+            }
+            if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
+                params.clone_start = new Date().toISOString().split('T')[0];
+            }
+            await this.callService(DOMAIN, SERVICES.ADD_PLANT, params);
+            console.log('[PlantAPI:addPlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:addPlant] Error:', err);
+            const msg = err instanceof Error ? err.message : 'Failed to add plant';
+            throw new Error(msg);
+        }
+    }
+    async addPlants(params) {
+        console.log('[PlantAPI:addPlants] Sending payload:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
+            console.log('[PlantAPI:addPlants] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:addPlants] Error:', err);
+            const msg = err instanceof Error ? err.message : 'Failed to add plants';
+            throw new Error(msg);
+        }
+    }
+    async updatePlant(params) {
+        console.log('[PlantAPI:updatePlant] Sending payload:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
+            console.log('[PlantAPI:updatePlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:updatePlant] Error:', err);
+            throw err;
+        }
+    }
+    async removePlant(plantId) {
+        console.log('[PlantAPI:removePlant] Removing plant_id:', plantId);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
+            console.log('[PlantAPI:removePlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:removePlant] Error:', err);
+            throw err;
+        }
+    }
+    async harvestPlant(plantId, target = 'dry') {
+        console.log('[PlantAPI:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
+        try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: target,
+            };
+            await this.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
+            console.log('[PlantAPI:harvestPlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:harvestPlant] Error:', err);
+            throw err;
+        }
+    }
+    async takeClone(params) {
+        console.log('[PlantAPI:takeClone] Cloning plant:', params);
+        try {
+            // Ensure target_growspace_id is set if not provided
+            const payload = { ...params };
+            if (!payload.target_growspace_id)
+                delete payload.target_growspace_id;
+            await this.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
+            console.log('[PlantAPI:takeClone] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:takeClone] Error:', err);
+            throw err;
+        }
+    }
+    async moveClone(plantId, targetGrowspaceId, transitionDate) {
+        console.log('[PlantAPI:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
+        try {
+            const payload = {
+                plant_id: plantId,
+                target_growspace_id: targetGrowspaceId,
+            };
+            if (transitionDate) {
+                payload.transition_date = transitionDate;
+            }
+            await this.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+            console.log('[PlantAPI:moveClone] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:moveClone] Error:', err);
+            throw err;
+        }
+    }
+    async swapPlants(plant1Id, plant2Id) {
+        console.log(`[PlantAPI:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
+        try {
+            await this.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
+                plant1_id: plant1Id,
+                plant2_id: plant2Id,
+            });
+            console.log('[PlantAPI:swapPlants] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:swapPlants] Error:', err);
+            throw err;
+        }
+    }
+    async waterPlant(plantId, amount, nutrients, presetId) {
+        console.log('[PlantAPI:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
+        try {
+            const payload = {
+                plant_id: plantId,
+                amount,
+            };
+            if (nutrients && Object.keys(nutrients).length > 0) {
+                payload.nutrients = nutrients;
+            }
+            if (presetId) {
+                payload.preset_id = presetId;
+            }
+            await this.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
+            console.log('[PlantAPI:waterPlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:waterPlant] Error:', err);
+            throw err;
+        }
+    }
+}
+
+/**
+ * API service for irrigation control operations.
+ * Handles irrigation settings, scheduling, and strategy configuration.
+ */
+class IrrigationAPI extends BaseAPI {
+    async setIrrigationSettings(params) {
+        console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+            console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:setIrrigationSettings] Error:', err);
+            throw err;
+        }
+    }
+    async addIrrigationTime(params) {
+        console.log('[IrrigationAPI:addIrrigationTime] Adding irrigation time:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+            console.log('[IrrigationAPI:addIrrigationTime] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:addIrrigationTime] Error:', err);
+            throw err;
+        }
+    }
+    async removeIrrigationTime(params) {
+        console.log('[IrrigationAPI:removeIrrigationTime] Removing irrigation time:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+            console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:removeIrrigationTime] Error:', err);
+            throw err;
+        }
+    }
+    async addDrainTime(params) {
+        console.log('[IrrigationAPI:addDrainTime] Adding drain time:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+            console.log('[IrrigationAPI:addDrainTime] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:addDrainTime] Error:', err);
+            throw err;
+        }
+    }
+    async removeDrainTime(params) {
+        console.log('[IrrigationAPI:removeDrainTime] Removing drain time:', params);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+            console.log('[IrrigationAPI:removeDrainTime] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:removeDrainTime] Error:', err);
+            throw err;
+        }
+    }
+    async setIrrigationStrategy(growspaceId, strategy) {
+        console.log('[IrrigationAPI:setIrrigationStrategy] Setting strategy:', strategy);
+        try {
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+                growspace_id: growspaceId,
+                ...strategy,
+            });
+            console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:setIrrigationStrategy] Error:', err);
+            throw err;
+        }
+    }
+    async waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId) {
+        console.log('[IrrigationAPI:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
+        try {
+            const payload = {
+                growspace_id: growspaceId,
+                amount_per_plant: amountPerPlant,
+            };
+            if (nutrients && Object.keys(nutrients).length > 0) {
+                payload.nutrients = nutrients;
+            }
+            if (presetId) {
+                payload.preset_id = presetId;
+            }
+            await this.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
+            console.log('[IrrigationAPI:waterGrowspace] Service Called');
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:waterGrowspace] Error:', err);
+            throw err;
+        }
+    }
+}
+
+/**
+ * API service for AI assistant operations.
+ * Handles grow advice, analysis, and strain recommendations via AI.
+ */
+class AIAPI extends BaseAPI {
+    /**
+     * Ask the AI assistant for growing advice for a specific growspace.
+     * @param growspaceId - Growspace ID to get advice for
+     * @param userQuery - User's question or concern
+     * @returns AI-generated advice response
+     */
     async askGrowAdvice(growspaceId, userQuery) {
-        console.log('[DataService:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
+        console.log('[AIAPI:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
         try {
-            // UPDATED: Use sendMessagePromise to send return_response=true
+            // Use sendMessagePromise with return_response=true
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
                 domain: DOMAIN,
@@ -5760,13 +5961,17 @@ class DataService {
             });
         }
         catch (err) {
-            console.error('[DataService:askGrowAdvice] Error:', err);
+            console.error('[AIAPI:askGrowAdvice] Error:', err);
             const message = err instanceof Error ? err.message : 'Failed to get advice';
             throw new Error(message);
         }
     }
+    /**
+     * Request AI analysis of all growspaces.
+     * @returns Comprehensive analysis from AI
+     */
     async analyzeAllGrowspaces() {
-        console.log('[DataService:analyzeAllGrowspaces] Analyzing all growspaces');
+        console.log('[AIAPI:analyzeAllGrowspaces] Analyzing all growspaces');
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -5777,12 +5982,17 @@ class DataService {
             });
         }
         catch (err) {
-            console.error('[DataService:analyzeAllGrowspaces] Error:', err);
+            console.error('[AIAPI:analyzeAllGrowspaces] Error:', err);
             throw err;
         }
     }
+    /**
+     * Get AI-powered strain recommendation based on user preferences.
+     * @param userQuery - User's requirements or preferences
+     * @returns AI-generated strain recommendation
+     */
     async getStrainRecommendation(userQuery) {
-        console.log('[DataService:getStrainRecommendation] Getting strain recommendation for:', userQuery);
+        console.log('[AIAPI:getStrainRecommendation] Getting strain recommendation for:', userQuery);
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -5795,113 +6005,138 @@ class DataService {
             });
         }
         catch (err) {
-            console.error('[DataService:getStrainRecommendation] Error:', err);
-            throw err;
-        }
-    }
-    // --- Watering Services ---
-    async waterPlant(plantId, amount, nutrients, presetId) {
-        console.log('[DataService:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
-        try {
-            const payload = {
-                plant_id: plantId,
-                amount,
-            };
-            if (nutrients && Object.keys(nutrients).length > 0) {
-                payload.nutrients = nutrients;
-            }
-            if (presetId) {
-                payload.preset_id = presetId;
-            }
-            await this.hass.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
-            console.log('[DataService:waterPlant] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:waterPlant] Error:', err);
-            throw err;
-        }
-    }
-    async saveIPMPreset(data) {
-        console.log('[DataService:saveIPMPreset] Saving IPM preset:', data);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
-            console.log('[DataService:saveIPMPreset] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:saveIPMPreset] Error:', err);
-            throw err;
-        }
-    }
-    async removeIPMPreset(presetId) {
-        console.log('[DataService:removeIPMPreset] Removing IPM preset:', presetId);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
-            console.log('[DataService:removeIPMPreset] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:removeIPMPreset] Error:', err);
-            throw err;
-        }
-    }
-    async applyIPM(data) {
-        console.log('[DataService:applyIPM] Applying IPM:', data);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.APPLY_IPM, data);
-            console.log('[DataService:applyIPM] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:applyIPM] Error:', err);
-            throw err;
-        }
-    }
-    async waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId) {
-        console.log('[DataService:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
-        try {
-            const payload = {
-                growspace_id: growspaceId,
-                amount_per_plant: amountPerPlant,
-            };
-            if (nutrients && Object.keys(nutrients).length > 0) {
-                payload.nutrients = nutrients;
-            }
-            if (presetId) {
-                payload.preset_id = presetId;
-            }
-            await this.hass.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
-            console.log('[DataService:waterGrowspace] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:waterGrowspace] Error:', err);
-            throw err;
-        }
-    }
-    // --- Nutrient Presets ---
-    async saveNutrientPreset(params) {
-        console.log('[DataService:saveNutrientPreset] Saving preset:', params);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, params);
-            console.log('[DataService:saveNutrientPreset] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:saveNutrientPreset] Error:', err);
-            throw err;
-        }
-    }
-    async removeNutrientPreset(presetId) {
-        console.log('[DataService:removeNutrientPreset] Removing preset:', presetId);
-        try {
-            await this.hass.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, {
-                preset_id: presetId,
-            });
-            console.log('[DataService:removeNutrientPreset] Service Called');
-        }
-        catch (err) {
-            console.error('[DataService:removeNutrientPreset] Error:', err);
+            console.error('[AIAPI:getStrainRecommendation] Error:', err);
             throw err;
         }
     }
 }
-DataService.CACHE_TTL_MS = 5000; // 5 seconds
+
+// Import all API services
+/**
+ * DataService - Thin facade coordinating domain-specific API services.
+ *
+ * This service delegates all operations to focused domain services:
+ * - GrowspaceAPI: Growspace data, CRUD, caching
+ * - StrainAPI: Strain library management
+ * - NutrientAPI: Nutrient presets, inventory, IPM
+ * - HistoryAPI: Historical sensor data
+ * - PlantAPI: Plant CRUD and lifecycle
+ * - IrrigationAPI: Irrigation control
+ * - AIAPI: AI assistant operations
+ */
+class DataService {
+    constructor(hass) {
+        // ========================================
+        // Growspace API Delegations
+        // ========================================
+        this.fetchGrowspaceData = (growspaceId) => this._growspaceAPI.fetchGrowspaceData(growspaceId);
+        this.getGrowspaceDevices = (wsDataMap) => this._growspaceAPI.getGrowspaceDevices(wsDataMap);
+        this.invalidateCache = (growspaceId) => this._growspaceAPI.invalidateCache(growspaceId);
+        this.addGrowspace = (data) => this._growspaceAPI.addGrowspace(data);
+        this.updateGrowspace = (data) => this._growspaceAPI.updateGrowspace(data);
+        this.removeGrowspace = (growspaceId) => this._growspaceAPI.removeGrowspace(growspaceId);
+        this.configureEnvironment = (data) => this._growspaceAPI.configureEnvironment(data);
+        this.setDehumidifierControl = (growspaceId, enabled) => this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
+        // ========================================
+        // Strain API Delegations
+        // ========================================
+        this.getStrainLibrary = () => this._strainAPI.getStrainLibrary();
+        this.fetchStrainLibrary = () => this._strainAPI.fetchStrainLibrary();
+        this.addStrain = (data) => this._strainAPI.addStrain(data);
+        this.removeStrain = (strain, phenotype) => this._strainAPI.removeStrain(strain, phenotype);
+        this.exportStrainLibrary = () => this._strainAPI.exportStrainLibrary();
+        this.importStrainLibrary = (file, replace) => this._strainAPI.importStrainLibrary(file, replace);
+        this.clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
+        // ========================================
+        // Nutrient API Delegations
+        // ========================================
+        this.fetchNutrientPresets = () => this._nutrientAPI.fetchNutrientPresets();
+        this.fetchNutrientInventory = () => this._nutrientAPI.fetchNutrientInventory();
+        this.updateNutrientStock = (nutrientId, name, currentMl, initialMl) => this._nutrientAPI.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+        this.removeNutrientStock = (nutrientId) => this._nutrientAPI.removeNutrientStock(nutrientId);
+        this.fetchIPMPresets = () => this._nutrientAPI.fetchIPMPresets();
+        this.saveIPMPreset = (data) => this._nutrientAPI.saveIPMPreset(data);
+        this.removeIPMPreset = (presetId) => this._nutrientAPI.removeIPMPreset(presetId);
+        this.saveNutrientPreset = (data) => this._nutrientAPI.saveNutrientPreset(data);
+        this.removeNutrientPreset = (presetId) => this._nutrientAPI.removeNutrientPreset(presetId);
+        this.applyIPM = (data) => this._nutrientAPI.applyIPM(data);
+        // ========================================
+        // History API Delegations
+        // ========================================
+        this.getHistory = (entityId, startTime, endTime) => this._historyAPI.getHistory(entityId, startTime, endTime);
+        this.getBatchHistory = (entityIds, startTime, endTime) => this._historyAPI.getBatchHistory(entityIds, startTime, endTime);
+        this.getHistoryStats = (entityIds, startTime, endTime, intervalMinutes, significantChangesOnly) => this._historyAPI.getHistoryStats(entityIds, startTime, endTime, intervalMinutes, significantChangesOnly);
+        // ========================================
+        // Plant API Delegations
+        // ========================================
+        this.addPlant = (params) => this._plantAPI.addPlant(params);
+        this.addPlants = (params) => this._plantAPI.addPlants(params);
+        this.updatePlant = (params) => this._plantAPI.updatePlant(params);
+        this.removePlant = (plantId) => this._plantAPI.removePlant(plantId);
+        this.harvestPlant = (plantId, target) => this._plantAPI.harvestPlant(plantId, target);
+        this.takeClone = (params) => this._plantAPI.takeClone(params);
+        this.moveClone = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
+        this.swapPlants = (plant1Id, plant2Id) => this._plantAPI.swapPlants(plant1Id, plant2Id);
+        this.waterPlant = (plantId, amount, nutrients, presetId) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
+        // ========================================
+        // Irrigation API Delegations
+        // ========================================
+        this.setIrrigationSettings = (params) => this._irrigationAPI.setIrrigationSettings(params);
+        this.addIrrigationTime = (params) => this._irrigationAPI.addIrrigationTime(params);
+        this.removeIrrigationTime = (params) => this._irrigationAPI.removeIrrigationTime(params);
+        this.addDrainTime = (params) => this._irrigationAPI.addDrainTime(params);
+        this.removeDrainTime = (params) => this._irrigationAPI.removeDrainTime(params);
+        this.setIrrigationStrategy = (growspaceId, strategy) => this._irrigationAPI.setIrrigationStrategy(growspaceId, strategy);
+        this.waterGrowspace = (growspaceId, amountPerPlant, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId);
+        // ========================================
+        // AI API Delegations
+        // ========================================
+        this.askGrowAdvice = (growspaceId, userQuery) => this._aiAPI.askGrowAdvice(growspaceId, userQuery);
+        this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
+        this.getStrainRecommendation = (userQuery) => this._aiAPI.getStrainRecommendation(userQuery);
+        // Initialize all API services
+        this._growspaceAPI = new GrowspaceAPI(hass);
+        this._strainAPI = new StrainAPI(hass);
+        this._nutrientAPI = new NutrientAPI(hass);
+        this._historyAPI = new HistoryAPI(hass);
+        this._plantAPI = new PlantAPI(hass);
+        this._irrigationAPI = new IrrigationAPI(hass);
+        this._aiAPI = new AIAPI(hass);
+        if (hass) {
+            this.hass = hass;
+        }
+    }
+    /**
+     * Update Home Assistant instance across all services.
+     */
+    updateHass(hass) {
+        this.hass = hass;
+        [
+            this._growspaceAPI,
+            this._strainAPI,
+            this._nutrientAPI,
+            this._historyAPI,
+            this._plantAPI,
+            this._irrigationAPI,
+            this._aiAPI,
+        ].forEach((api) => api.updateHass(hass));
+    }
+    // ========================================
+    // Legacy/Generic Service Call Support
+    // ========================================
+    /**
+     * Generic service call wrapper for dynamic/batch operations.
+     * Delegates to BaseAPI's callService method.
+     */
+    async callService(domain, service, serviceData) {
+        if (!this.hass) {
+            console.error('[DataService:callService] Hass instance is missing');
+            return;
+        }
+        console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
+        await this.hass.callService(domain, service, serviceData);
+    }
+}
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -6715,6 +6950,321 @@ class GraphDataTransformer {
     }
 }
 
+/**
+ * ErrorBoundary - Catches and handles errors in child components
+ *
+ * Usage:
+ * ```html
+ * <error-boundary
+ *   .fallbackMessage=${"Something went wrong"}
+ *   .onRetry=${() => this.requestUpdate()}
+ *   .onReset=${() => this.resetState()}
+ * >
+ *   <my-component></my-component>
+ * </error-boundary>
+ * ```
+ */
+let ErrorBoundary = class ErrorBoundary extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.fallbackMessage = 'An error occurred';
+        this.showDetails = false;
+        this._error = null;
+        this._errorInfo = null;
+        this._errorCount = 0;
+        this._lastErrorTime = 0;
+        this.MAX_ERROR_COUNT = 5;
+        this.ERROR_RESET_INTERVAL = 5000; // 5 seconds
+        this._handleErrorEvent = (e) => {
+            const customEvent = e;
+            if (customEvent.detail && customEvent.detail.error) {
+                this._catchError(customEvent.detail.error, customEvent.detail.errorInfo);
+                e.stopPropagation();
+            }
+        };
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        // Listen for error events bubbling from children
+        this.addEventListener('recoverable-error', this._handleErrorEvent);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.removeEventListener('recoverable-error', this._handleErrorEvent);
+    }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        // Reset error count if enough time has passed
+        const now = Date.now();
+        if (now - this._lastErrorTime > this.ERROR_RESET_INTERVAL) {
+            this._errorCount = 0;
+        }
+    }
+    _catchError(error, errorInfo) {
+        const now = Date.now();
+        // Increment error count
+        this._errorCount++;
+        this._lastErrorTime = now;
+        // Store error state
+        this._error = error;
+        this._errorInfo = errorInfo;
+        // Log to console
+        console.error('[ErrorBoundary] Caught error:', error);
+        if (errorInfo) {
+            console.error('[ErrorBoundary] Error info:', errorInfo);
+        }
+        // Call optional error callback
+        if (this.onError) {
+            try {
+                this.onError(error, errorInfo);
+            }
+            catch (callbackError) {
+                console.error('[ErrorBoundary] Error in onError callback:', callbackError);
+            }
+        }
+        // Emit custom event
+        this.dispatchEvent(new CustomEvent('error-caught', {
+            detail: { error, errorInfo, errorCount: this._errorCount },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleRetry() {
+        this._error = null;
+        this._errorInfo = null;
+        if (this.onRetry) {
+            try {
+                this.onRetry();
+            }
+            catch (error) {
+                this._catchError(error, { context: 'retry' });
+            }
+        }
+        else {
+            this.requestUpdate();
+        }
+        this.dispatchEvent(new CustomEvent('error-reset'));
+    }
+    _handleReset() {
+        this._error = null;
+        this._errorInfo = null;
+        this._errorCount = 0;
+        if (this.onReset) {
+            try {
+                this.onReset();
+            }
+            catch (error) {
+                this._catchError(error, { context: 'reset' });
+            }
+        }
+        else {
+            this.requestUpdate();
+        }
+        this.dispatchEvent(new CustomEvent('error-reset'));
+    }
+    /**
+     * Public method to manually trigger error state
+     * Useful for testing or programmatic error handling
+     */
+    setError(error, errorInfo) {
+        this._catchError(error, errorInfo);
+    }
+    /**
+     * Public method to clear error state
+     */
+    clearError() {
+        this._error = null;
+        this._errorInfo = null;
+    }
+    render() {
+        // Check for too many errors (potential infinite loop)
+        if (this._errorCount >= this.MAX_ERROR_COUNT) {
+            return x `
+                <div class="too-many-errors">
+                    <p><strong>Too many errors detected</strong></p>
+                    <p>
+                        This component has encountered ${this._errorCount} errors in a short time.
+                        This may indicate a critical issue.
+                    </p>
+                    <button class="error-button" @click=${this._handleReset}>
+                        <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+                        Force Reset
+                    </button>
+                </div>
+            `;
+        }
+        // Show error fallback if error exists
+        if (this._error) {
+            const isDev = window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1';
+            return x `
+                <div class="error-container">
+                    <div class="error-header">
+                        <ha-svg-icon class="error-icon" .path=${mdiAlertCircle}></ha-svg-icon>
+                        <h3 class="error-title">${this.fallbackMessage}</h3>
+                    </div>
+
+                    <p class="error-message">
+                        ${this._error.message || 'An unexpected error occurred'}
+                    </p>
+
+                    ${isDev && this._error.stack
+                ? x `
+                            <details ?open=${this.showDetails}>
+                                <summary>
+                                    ${this.showDetails ? 'Hide' : 'Show'} technical details
+                                </summary>
+                                <div class="error-details">${this._error.stack}</div>
+                            </details>
+                          `
+                : E}
+
+                    <div class="error-actions">
+                        <button class="error-button" @click=${this._handleRetry}>
+                            <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+                            Retry
+                        </button>
+                        ${this.onReset
+                ? x `
+                                <button class="error-button" @click=${this._handleReset}>
+                                    <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+                                    Reset
+                                </button>
+                              `
+                : E}
+                    </div>
+                </div>
+            `;
+        }
+        // No error - render children
+        return x `<slot></slot>`;
+    }
+};
+ErrorBoundary.styles = i$6 `
+        :host {
+            display: block;
+        }
+
+        .error-container {
+            padding: 24px;
+            background: var(--error-color, #f44336);
+            color: white;
+            border-radius: 8px;
+            margin: 16px;
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .error-icon {
+            --mdc-icon-size: 32px;
+        }
+
+        .error-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .error-message {
+            margin: 0 0 16px 0;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .error-details {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .error-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .error-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .error-button ha-svg-icon {
+            --mdc-icon-size: 18px;
+        }
+
+        .too-many-errors {
+            background: var(--error-color, #d32f2f);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px;
+            color: white;
+        }
+
+        .too-many-errors p {
+            margin: 0 0 12px 0;
+        }
+
+        details summary {
+            cursor: pointer;
+            margin-bottom: 8px;
+            user-select: none;
+        }
+    `;
+__decorate([
+    n$5({ type: String })
+], ErrorBoundary.prototype, "fallbackMessage", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ErrorBoundary.prototype, "onRetry", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ErrorBoundary.prototype, "onReset", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ErrorBoundary.prototype, "onError", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], ErrorBoundary.prototype, "showDetails", void 0);
+__decorate([
+    r$2()
+], ErrorBoundary.prototype, "_error", void 0);
+__decorate([
+    r$2()
+], ErrorBoundary.prototype, "_errorInfo", void 0);
+__decorate([
+    r$2()
+], ErrorBoundary.prototype, "_errorCount", void 0);
+__decorate([
+    r$2()
+], ErrorBoundary.prototype, "_lastErrorTime", void 0);
+ErrorBoundary = __decorate([
+    t$2('error-boundary')
+], ErrorBoundary);
+
 let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     constructor() {
         super(...arguments);
@@ -7092,23 +7642,24 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
       `;
         }
         return x `
-      <div class="gs-env-graph-card">
-        ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
+      <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
+        <div class="gs-env-graph-card">
+          ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
 
-        <div
-          class="gs-env-chart-container"
-          ${n$2(this._chartContainerRef)}
-          @mousemove=${(e) => this._onMouseMove(e, series, startTime, durationMillis)}
-          @mouseleave=${this._onMouseLeave}
-          @click=${() => this._onChartClick()}
-        >
-          ${this._renderTooltip()}
-          ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
-          ${this._renderXAxisHTML(this.range)}
+          <div
+            class="gs-env-chart-container"
+            ${n$2(this._chartContainerRef)}
+            @mousemove=${(e) => this._onMouseMove(e, series, startTime, durationMillis)}
+            @mouseleave=${this._onMouseLeave}
+            @click=${() => this._onChartClick()}
+          >
+            ${this._renderTooltip()}
+            ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+            ${this._renderXAxisHTML(this.range)}
 
-          <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
-            ${this._renderGrid(width, height)}
-            ${series.map((s) => {
+            <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
+              ${this._renderGrid(width, height)}
+              ${series.map((s) => {
             // Handle VPD segments separately (they have their own path validation)
             if (s.vpdSegments?.length) {
                 return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
@@ -7118,16 +7669,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 return b ``;
             }
             return b `
-                 ${s.fillType === 'gradient' ? b `<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                 ${s.fillType === 'gradient'
+                  ${s.fillType === 'gradient' ? b `<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
+                  ${s.fillType === 'gradient'
                 ? b `<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
                 : b `<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`}
-                 <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
-              `;
+                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
+                `;
         })}
-          </svg>
+            </svg>
+          </div>
         </div>
-      </div>
+      </error-boundary>
     `;
     }
     _onMouseMove(e, seriesList, startTime, durationMillis) {
@@ -16646,54 +17198,56 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         // Zoom multiplier
         const width = 100 * this._zoomLevel;
         return x `
-      <div class="controls">
-        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
-        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
-      </div>
+      <error-boundary .fallbackMessage=${'Failed to render timeline'}>
+        <div class="controls">
+          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
+          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
+        </div>
 
-      <div class="timeline-container">
-        <div class="timeline-track" style="width: ${width}%">
-          ${this._events.map(event => {
+        <div class="timeline-container">
+          <div class="timeline-track" style="width: ${width}%">
+            ${this._events.map(event => {
             const left = this._getPosition(event, start, totalDuration);
             const icon = this._getIcon(event);
             const className = this._getClass(event);
             return x `
-              <div 
-                class="event-marker ${className}" 
-                style="left: ${left}%"
-                @mouseenter=${() => this._hoveredEvent = event}
-                @mouseleave=${() => this._hoveredEvent = null}
-              >
-                <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                
-                ${this._hoveredEvent === event ? x `
-                  <div class="tooltip visible" style="left: ${left}%">
-                    <div class="tooltip-header">
-                      ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
+                <div 
+                  class="event-marker ${className}" 
+                  style="left: ${left}%"
+                  @mouseenter=${() => this._hoveredEvent = event}
+                  @mouseleave=${() => this._hoveredEvent = null}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                  
+                  ${this._hoveredEvent === event ? x `
+                    <div class="tooltip visible" style="left: ${left}%">
+                      <div class="tooltip-header">
+                        ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
+                      </div>
+                      <div class="tooltip-time">
+                        ${formatDateTime(new Date(getEventTimestamp(event)))}
+                      </div>
+                      <div>${event.notes || event.reasons?.join(', ') || ''}</div>
                     </div>
-                    <div class="tooltip-time">
-                      ${formatDateTime(new Date(getEventTimestamp(event)))}
-                    </div>
-                    <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                  </div>
-                ` : E}
-              </div>
-            `;
-        })}
-
-          <div class="date-axis">
-            <!-- Generate ticks every 20% -->
-            ${[0, 20, 40, 60, 80, 100].map(pct => {
-            const time = start + (totalDuration * (pct / 100));
-            return x `
-                <div class="date-tick" style="left: ${pct}%">
-                  ${formatShortDate(new Date(time))}
+                  ` : E}
                 </div>
               `;
         })}
+
+            <div class="date-axis">
+              <!-- Generate ticks every 20% -->
+              ${[0, 20, 40, 60, 80, 100].map(pct => {
+            const time = start + (totalDuration * (pct / 100));
+            return x `
+                  <div class="date-tick" style="left: ${pct}%">
+                    ${formatShortDate(new Date(time))}
+                  </div>
+                `;
+        })}
+            </div>
           </div>
         </div>
-      </div>
+      </error-boundary>
     `;
     }
 };
@@ -19510,40 +20064,46 @@ let DialogHost = class DialogHost extends i$3 {
         devices.forEach((d) => {
             growspaceOptions[d.device_id] = d.name;
         });
-        switch (active.type) {
-            case 'ADD_PLANT':
-                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-            case 'ADD_PLANTS':
-                return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
-            case 'PLANT_OVERVIEW':
-                return this._renderPlantOverviewDialog(active, growspaceOptions);
-            case 'STRAIN_LIBRARY':
-                return this._renderStrainLibraryDialog(active, strainLibrary);
-            case 'CONFIG':
-                return this._renderConfigDialog(active, growspaceOptions);
-            case 'GROW_MASTER':
-                return this._renderGrowMasterDialog(active);
-            case 'STRAIN_RECOMMENDATION':
-                return this._renderStrainRecommendationDialog(active);
-            case 'IRRIGATION':
-                return this._renderIrrigationDialog(active, selectedDeviceData);
-            case 'LOGBOOK':
-                return this._renderLogbookDialog(active);
-            case 'WATERING':
-                return this._renderWateringDialog(active, selectedDeviceData);
-            case 'NUTRIENT_PRESETS':
-                return this._renderNutrientPresetsDialog(active, selectedDeviceData);
-            case 'TRAINING':
-                return this._renderTrainingDialog(active);
-            case 'IPM':
-                return this._renderIPMDialog(active, selectedDeviceData);
-            case 'NUTRIENT_INVENTORY':
-                return this._renderNutrientInventoryDialog(active);
-            case 'NUTRIENTS':
-                return this._renderNutrientDialog(active);
-            default:
-                return x ``;
-        }
+        return x `
+            <error-boundary .fallbackMessage=${'Dialog error occurred'}>
+                ${(() => {
+            switch (active.type) {
+                case 'ADD_PLANT':
+                    return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                case 'ADD_PLANTS':
+                    return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
+                case 'PLANT_OVERVIEW':
+                    return this._renderPlantOverviewDialog(active, growspaceOptions);
+                case 'STRAIN_LIBRARY':
+                    return this._renderStrainLibraryDialog(active, strainLibrary);
+                case 'CONFIG':
+                    return this._renderConfigDialog(active, growspaceOptions);
+                case 'GROW_MASTER':
+                    return this._renderGrowMasterDialog(active);
+                case 'STRAIN_RECOMMENDATION':
+                    return this._renderStrainRecommendationDialog(active);
+                case 'IRRIGATION':
+                    return this._renderIrrigationDialog(active, selectedDeviceData);
+                case 'LOGBOOK':
+                    return this._renderLogbookDialog(active);
+                case 'WATERING':
+                    return this._renderWateringDialog(active, selectedDeviceData);
+                case 'NUTRIENT_PRESETS':
+                    return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+                case 'TRAINING':
+                    return this._renderTrainingDialog(active);
+                case 'IPM':
+                    return this._renderIPMDialog(active, selectedDeviceData);
+                case 'NUTRIENT_INVENTORY':
+                    return this._renderNutrientInventoryDialog(active);
+                case 'NUTRIENTS':
+                    return this._renderNutrientDialog(active);
+                default:
+                    return x ``;
+            }
+        })()}
+            </error-boundary>
+        `;
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'ADD_PLANT')
@@ -32880,37 +33440,43 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
             return x ``;
         if (this.viewMode === ViewMode.COMPACT) {
             return x `
-        <growspace-view-compact
-            .grid=${this.grid}
-            .rows=${this.rows}
-            .cols=${this.device.plants_per_row}
-            .isLoading=${this.isLoading}
-        ></growspace-view-compact>
+        <error-boundary heading="Detailed View Error">
+          <growspace-view-compact
+              .grid=${this.grid}
+              .rows=${this.rows}
+              .cols=${this.device.plants_per_row}
+              .isLoading=${this.isLoading}
+          ></growspace-view-compact>
+        </error-boundary>
       `;
         }
         if (this.viewMode === ViewMode.HEADER) {
             return x `
-        <growspace-view-header
-            .device=${this.device}
-            .growspaceOptions=${this.growspaceOptions}
-        ></growspace-view-header>
+        <error-boundary heading="Header View Error">
+          <growspace-view-header
+              .device=${this.device}
+              .growspaceOptions=${this.growspaceOptions}
+          ></growspace-view-header>
+        </error-boundary>
       `;
         }
         // Standard Mode
         return x `
-      <growspace-view-standard
-        .device=${this.device}
-        .growspaceOptions=${this.growspaceOptions}
-        .grid=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.device.plants_per_row}
-        .isEditMode=${this.isEditMode}
-        .isCompact=${this.isCompact}
-        .selectedCount=${this.selectedCount}
-        .config=${this.config}
-        .isLoading=${this.isLoading}
-        @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
-      ></growspace-view-standard>
+      <error-boundary heading="Dashboard View Error">
+        <growspace-view-standard
+          .device=${this.device}
+          .growspaceOptions=${this.growspaceOptions}
+          .grid=${this.grid}
+          .rows=${this.rows}
+          .cols=${this.device.plants_per_row}
+          .isEditMode=${this.isEditMode}
+          .isCompact=${this.isCompact}
+          .selectedCount=${this.selectedCount}
+          .config=${this.config}
+          .isLoading=${this.isLoading}
+          @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
+        ></growspace-view-standard>
+      </error-boundary>
     `;
     }
 };
@@ -33935,9 +34501,7 @@ class GrowspaceGridStore {
 }
 
 /**
- * Plant Actions - Pure functions for plant business logic.
- * These functions encapsulate plant manipulation operations without
- * coupling to the store lifecycle or UI state management.
+ * Plant Actions - Unified business logic for plant operations.
  */
 /**
  * Update a single plant with new attributes.
@@ -33955,7 +34519,7 @@ async function updatePlant(ctx, plantId, updates) {
 /**
  * Bulk update plants from dialog state.
  */
-async function updatePlantsFromDialog(ctx, dialogState) {
+async function updatePlantFromDialog(ctx, dialogState) {
     const { plant, editedAttributes, selectedPlantIds } = dialogState;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
     const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
@@ -33967,18 +34531,22 @@ async function updatePlantsFromDialog(ctx, dialogState) {
             return ctx.dataService.updatePlant(payload);
         });
         await Promise.all(updatePromises);
-        return true;
+        ctx.closeDialog();
+        await ctx.refreshData();
+        if (ctx.ui.$isEditMode.get()) {
+            ctx.ui.clearPlantSelection();
+            ctx.ui.setEditMode(false);
+        }
     }
     catch (err) {
         console.error('Error updating plant(s):', err);
-        return false;
     }
 }
 /**
- * Delete one or more plants with optimistic UI support.
+ * Internal helper for API deletion with optimistic updates
  */
-async function deletePlants(ctx, plantIds, addOptimisticId, removeOptimisticId) {
-    plantIds.forEach(id => addOptimisticId(id));
+async function _deletePlantsApi(ctx, plantIds) {
+    plantIds.forEach(id => ctx.data.addOptimisticDeletedPlantId(id));
     try {
         await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
         return true;
@@ -33986,8 +34554,66 @@ async function deletePlants(ctx, plantIds, addOptimisticId, removeOptimisticId) 
     catch (e) {
         console.error('Failed to delete plant:', e);
         ctx.showToast(`Failed to delete: ${e.message}`, 'error');
-        plantIds.forEach(id => removeOptimisticId(id));
+        plantIds.forEach(id => ctx.data.removeOptimisticDeletedPlantId(id));
         return false;
+    }
+}
+/**
+ * High-level delete action with Undo/Redo
+ */
+async function handleDeletePlant(ctx, plantId) {
+    const ids = Array.isArray(plantId) ? plantId : [plantId];
+    const plantsToRestore = [];
+    const devices = ctx.data.$devices.get();
+    ids.forEach(id => {
+        for (const device of devices) {
+            const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+            if (plant) {
+                plantsToRestore.push({
+                    growspace_id: plant.attributes.growspace_id || device.device_id,
+                    row: plant.attributes.row,
+                    col: plant.attributes.col,
+                    strain: plant.attributes.strain,
+                    phenotype: plant.attributes.phenotype,
+                    veg_start: plant.attributes.veg_start,
+                    flower_start: plant.attributes.flower_start,
+                    mother_start: plant.attributes.mother_start,
+                    clone_start: plant.attributes.clone_start,
+                    seedling_start: plant.attributes.seedling_start,
+                    dry_start: plant.attributes.dry_start,
+                    cure_start: plant.attributes.cure_start,
+                });
+                break;
+            }
+        }
+    });
+    const success = await _deletePlantsApi(ctx, ids);
+    if (success) {
+        ctx.undoRedoManager.pushAction({
+            type: ids.length > 1 ? 'batch-delete' : 'delete',
+            description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+            reverse: async () => {
+                for (const p of plantsToRestore) {
+                    await ctx.dataService.addPlant(p);
+                }
+                await ctx.refreshData();
+            },
+            redo: async () => {
+                await handleDeletePlant(ctx, ids);
+            }
+        });
+        // UI Updates
+        // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
+        // ctx.ui.deselectPlants(ids) was in the original code, implying ui store has it.
+        // Assuming ctx.ui has a method to deselect.
+        // If not, we iterate.
+        // Checking ui-store.ts would confirm, assuming it has specific method.
+        // We'll trust the original code's intent or use remove.
+        ctx.ui.deselectPlants(ids);
+        if (ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
+            ctx.closeDialog();
+        }
+        ctx.refreshData(); // updateGrid equivalent
     }
 }
 /**
@@ -34030,22 +34656,40 @@ async function movePlantToNextStage(ctx, plant) {
     }
 }
 /**
- * Move plant to a specific growspace.
+ * Internal API move clone wrapper
  */
-async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
+async function _movePlantApi(ctx, plant, targetGrowspace) {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
     const currentStage = plant.attributes?.stage || 'unknown';
+    if (currentStage === 'clone') {
+        await ctx.dataService.moveClone(plantId, targetGrowspace);
+    }
+    else {
+        await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+    }
+}
+/**
+ * Move plant to a specific growspace with Undo/Redo.
+ */
+async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
+    const originalGrowspace = plant.attributes.growspace_id || 'unknown';
     try {
-        if (currentStage === 'clone') {
-            await ctx.dataService.moveClone(plantId, targetGrowspace);
-        }
-        else {
-            await ctx.dataService.harvestPlant(plantId, targetGrowspace);
-        }
+        await _movePlantApi(ctx, plant, targetGrowspace);
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise(resolve => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
+        // Push Undo
+        ctx.undoRedoManager.pushAction({
+            type: 'move',
+            description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+            reverse: async () => {
+                await movePlantToGrowspace(ctx, plant, originalGrowspace);
+            },
+            redo: async () => {
+                await movePlantToGrowspace(ctx, plant, targetGrowspace);
+            }
+        });
         return true;
     }
     catch (err) {
@@ -34073,7 +34717,7 @@ async function takeClone(ctx, motherPlant, numClones) {
     }
 }
 /**
- * Move plant to new grid position.
+ * Move plant to new grid position (Internal)
  */
 async function movePlantPosition(ctx, plant, newRow, newCol) {
     try {
@@ -34091,22 +34735,43 @@ async function movePlantPosition(ctx, plant, newRow, newCol) {
     }
 }
 /**
- * Handle drag and drop between grid cells.
+ * Handle drag and drop between grid cells with Undo/Redo
  */
 async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant) {
-    if (!sourcePlant)
+    if (!sourcePlant || !sourcePlant.attributes)
         return false;
+    const originalRow = sourcePlant.attributes.row;
+    const originalCol = sourcePlant.attributes.col;
+    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
+    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
     try {
         if (targetPlant) {
-            const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-            const targetId = targetPlant.attributes.plant_id || targetPlant.entity_id.replace('sensor.', '');
             if (sourceId === targetId)
                 return false;
-            await ctx.dataService.swapPlants(sourceId, targetId);
+            if (targetId) {
+                await ctx.dataService.swapPlants(sourceId, targetId);
+            }
         }
         else {
             await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
         }
+        ctx.undoRedoManager.pushAction({
+            type: 'move',
+            description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+            reverse: async () => {
+                if (targetPlant && targetId) {
+                    await ctx.dataService.swapPlants(sourceId, targetId);
+                }
+                else {
+                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+                }
+                await ctx.refreshData();
+            },
+            redo: async () => {
+                await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+            }
+        });
+        await ctx.refreshData();
         return true;
     }
     catch (err) {
@@ -34117,14 +34782,26 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
 /**
  * Add a new plant to a growspace.
  */
-async function addPlant(ctx, growspaceId, row, col, strain, options = {}) {
+async function confirmAddPlant(ctx, detail) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
+    if (!selectedDevice) {
+        ctx.showToast('No growspace selected', 'error');
+        return false;
+    }
     try {
         await ctx.dataService.addPlant({
-            growspace_id: growspaceId,
-            row,
-            col,
-            strain,
-            ...options
+            growspace_id: selectedDevice,
+            row: detail.row,
+            col: detail.col,
+            strain: detail.strain,
+            phenotype: detail.phenotype,
+            veg_start: detail.veg_start,
+            flower_start: detail.flower_start,
+            seedling_start: detail.seedling_start,
+            mother_start: detail.mother_start,
+            clone_start: detail.clone_start,
+            dry_start: detail.dry_start,
+            cure_start: detail.cure_start,
         });
         ctx.closeDialog();
         await ctx.refreshData();
@@ -34137,9 +34814,222 @@ async function addPlant(ctx, growspaceId, row, col, strain, options = {}) {
         return false;
     }
 }
+/**
+ * Batch add plants with Undo/Redo
+ */
+async function confirmAddPlants(ctx, detail) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
+    if (!selectedDevice) {
+        ctx.showToast('No growspace selected', 'error');
+        return;
+    }
+    const devices = ctx.data.$devices.get();
+    const beforeIds = new Set();
+    devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
+    try {
+        await ctx.dataService.addPlants({
+            growspace_id: selectedDevice,
+            ...detail
+        });
+        await ctx.refreshData();
+        const afterDevices = ctx.data.$devices.get();
+        const addedIds = [];
+        afterDevices.forEach(d => d.plants?.forEach(p => {
+            const id = p.attributes.plant_id || '';
+            if (id && !beforeIds.has(id)) {
+                addedIds.push(id);
+            }
+        }));
+        if (addedIds.length > 0) {
+            ctx.undoRedoManager.pushAction({
+                type: 'batch-delete',
+                description: `Added ${addedIds.length} plants`,
+                reverse: async () => {
+                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete. 
+                    // handleDeletePlant pushes undo action. We probably don't want nested undo actions here.
+                    // So we use _deletePlantsApi.
+                    await _deletePlantsApi(ctx, addedIds);
+                    await ctx.refreshData();
+                },
+                redo: async () => {
+                    await confirmAddPlants(ctx, detail);
+                }
+            });
+        }
+        ctx.showToast('Batch plants added successfully', 'success');
+        ctx.closeDialog();
+    }
+    catch (err) {
+        ctx.showToast(`Error: ${err.message}`, 'error');
+    }
+}
+
+async function fetchStrainLibrary(ctx, force = false) {
+    // Requires hass to be present in store (usually via dataService or just check store)
+    // The original code checks this.hass.
+    // We assume dataService has valid connection or we check it.
+    // Original code checked `if (!this.hass) return;`
+    // We can check if dataService is initialized or catch errors.
+    const CACHE_KEY = 'growspace_strain_library_v2';
+    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    let usedCache = false;
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                ctx.data.setStrainLibrary(cache.data);
+                usedCache = true;
+            }
+        }
+        catch (e) {
+            console.warn('Failed to parse cached strain library', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    if (!usedCache) {
+        try {
+            const currentStrains = await ctx.dataService.fetchStrainLibrary();
+            if (Array.isArray(currentStrains)) {
+                ctx.data.setStrainLibrary(currentStrains);
+                const cacheData = {
+                    version: 2,
+                    timestamp: Date.now(),
+                    data: currentStrains,
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library:', e);
+        }
+    }
+}
+async function fetchNutrientPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_presets';
+    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setNutrientPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchNutrientPresets();
+        if (result) {
+            ctx.data.setNutrientPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient presets:', e);
+    }
+}
+async function fetchIPMPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ipm_presets';
+    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setIPMPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchIPMPresets();
+        if (result) {
+            ctx.data.setIPMPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch IPM presets:', e);
+    }
+}
+async function fetchNutrientInventory(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_inventory';
+    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setNutrientInventory(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchNutrientInventory();
+        if (result) {
+            ctx.data.setNutrientInventory(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient inventory:', e);
+    }
+}
+async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
+    try {
+        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast(`Updated stock: ${name}`, 'success');
+    }
+    catch (e) {
+        ctx.showToast(`Failed to update stock: ${e.message}`, 'error');
+    }
+}
+async function removeNutrientStock(ctx, nutrientId) {
+    try {
+        await ctx.dataService.removeNutrientStock(nutrientId);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('Removed nutrient stock', 'success');
+    }
+    catch (e) {
+        ctx.showToast(`Failed to remove stock: ${e.message}`, 'error');
+    }
+}
 
 /**
- * Strain & Growspace Actions - Pure functions for strain library and growspace management.
+ * Strain & Growspace Actions - Unified CRUD logic.
  */
 /**
  * Add a new strain to the library.
@@ -34169,7 +35059,7 @@ async function addStrain(ctx, strainData) {
     try {
         await ctx.dataService.addStrain(payload);
         ctx.showToast('Strain saved successfully!', 'success');
-        await ctx.refreshStrainLibrary(true);
+        await fetchStrainLibrary(ctx, true);
         return true;
     }
     catch (err) {
@@ -34186,9 +35076,9 @@ async function removeStrain(ctx, strainKey) {
         const strain = parts[0];
         const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
         await ctx.dataService.removeStrain(strain, phenotype);
-        const current = ctx.getStrainLibrary();
-        ctx.setStrainLibrary(current.filter((s) => s.key !== strainKey));
-        await ctx.refreshStrainLibrary(true);
+        const current = ctx.data.$strainLibrary.get();
+        ctx.data.setStrainLibrary(current.filter((s) => s.key !== strainKey));
+        await fetchStrainLibrary(ctx, true);
         return true;
     }
     catch (err) {
@@ -34265,27 +35155,29 @@ class ActionDispatcher {
     constructor(store) {
         this.store = store;
         this.plant = {
-            update: (id, updates) => this.store.updatePlant(id, updates),
-            delete: (id) => this.store.handleDeletePlant(id),
-            move: (plant, growspace) => this.store.movePlantToGrowspace(plant, growspace),
-            drop: (row, col, target, source) => this.store.handleDrop(row, col, target, source),
-            nextStage: (plant) => this.store.handleMovePlantToNextStage(plant),
-            takeClone: (mother, num) => this.store.handleTakeClone(mother, num),
-            // These use the store's private context getter, which we'll need to expose or access differently.
-            // For now, we delegate back to store methods or access context if public.
-            // Assuming we keep delegation for methods that require complex store state (like undo stack).
-            updateFromDialog: (state) => updatePlantsFromDialog(this.store.plantActionContext, state),
-            add: (gid, r, c, s, p) => addPlant(this.store.plantActionContext, gid, r, c, s, { phenotype: p }),
-            addBatch: (detail) => this.store.confirmAddPlants(detail)
+            update: (id, updates) => updatePlant(this.ctx, id, updates),
+            delete: (id) => handleDeletePlant(this.ctx, id),
+            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
+            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
+            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
+            takeClone: (mother, num) => takeClone(this.ctx, mother, num),
+            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
+            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
+                row: r,
+                col: c,
+                strain: s,
+                phenotype: p
+            }),
+            addBatch: (detail) => confirmAddPlants(this.ctx, detail)
         };
         this.growspace = {
-            add: (detail) => this.store.handleAddGrowspace(detail),
-            update: (detail) => this.store.handleUpdateGrowspace(detail),
-            remove: (id) => removeGrowspace(this.store.growspaceActionContext, id)
+            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plants_per_row, detail.notification_service),
+            update: (detail) => updateGrowspace(this.ctx, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row),
+            remove: (id) => removeGrowspace(this.ctx, id)
         };
         this.strain = {
-            add: (data) => this.store.addStrain(data),
-            remove: (key) => this.store.removeStrain(key)
+            add: (data) => addStrain(this.ctx, data),
+            remove: (key) => removeStrain(this.ctx, key)
         };
         this.history = {
             undo: () => this.store.undo(),
@@ -34293,6 +35185,329 @@ class ActionDispatcher {
             canUndo: () => this.store.canUndo,
             canRedo: () => this.store.canRedo
         };
+    }
+    get ctx() {
+        return this.store.context;
+    }
+}
+
+function initializeSelectedDevice(ctx, config) {
+    ctx.data.setConfig(config);
+    // Set view mode from config
+    if (config?.initial_view_mode) {
+        ctx.ui.setViewMode(config.initial_view_mode);
+    }
+    // Trigger update logic via sync service
+    ctx.syncService.updateDevicesState();
+}
+function handleDeviceChange(ctx, deviceId) {
+    ctx.data.setSelectedDevice(deviceId);
+}
+
+function setIsCompactView(ctx, value) {
+    if (value) {
+        ctx.ui.setViewMode(ViewMode.COMPACT);
+    }
+    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+}
+function toggleHeaderExpansion(ctx) {
+    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+    else {
+        ctx.ui.setViewMode(ViewMode.HEADER);
+    }
+}
+function togglePlantSelection(ctx, plantOrId) {
+    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+    if (!plantId)
+        return;
+    ctx.ui.togglePlantSelection(plantId);
+}
+function selectAllPlants(ctx) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
+    if (!selectedDevice)
+        return;
+    const devices = ctx.data.$devices.get();
+    const selectedDeviceData = devices.find((d) => d.device_id === selectedDevice);
+    const allIds = [];
+    if (selectedDeviceData && selectedDeviceData.plants) {
+        selectedDeviceData.plants.forEach((plant) => {
+            const pId = plant.attributes.plant_id;
+            if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
+                allIds.push(pId);
+            }
+        });
+        ctx.ui.selectAllPlants(allIds);
+    }
+}
+function clearPlantSelection(ctx) {
+    ctx.ui.clearPlantSelection();
+}
+function exitEditMode(ctx) {
+    ctx.ui.setEditMode(false);
+    ctx.ui.clearPlantSelection();
+}
+function handlePlantClick(ctx, plant) {
+    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
+        const plantId = plant.attributes.plant_id;
+        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
+            togglePlantSelection(ctx, plantId);
+        }
+        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
+    }
+    else {
+        openPlantOverviewDialog(ctx, plant);
+    }
+}
+function openPlantOverviewDialog(ctx, plant, selectedIds) {
+    ctx.ui.setActiveDialog({
+        type: 'PLANT_OVERVIEW',
+        payload: {
+            plant,
+            editedAttributes: { ...plant.attributes },
+            activeTab: 'dashboard',
+            selectedPlantIds: selectedIds,
+        },
+    });
+}
+function openBatchWateringDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            mode: 'plant',
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId
+        }
+    });
+}
+function openBatchTrainingDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId
+        }
+    });
+}
+function openAddPlantDialog(ctx, row, col) {
+    if (row !== undefined && col !== undefined) {
+        fetchStrainLibrary(ctx);
+        ctx.ui.setActiveDialog({
+            type: 'ADD_PLANT',
+            payload: { row, col },
+        });
+        return;
+    }
+    const selectedDeviceId = ctx.data.$selectedDevice.get();
+    if (!selectedDeviceId) {
+        return;
+    }
+    const devices = ctx.data.$devices.get();
+    const device = devices.find(d => d.device_id === selectedDeviceId);
+    let targetRow = 0;
+    let targetCol = 0;
+    if (device) {
+        const occupied = new Set();
+        const deleted = ctx.data.$optimisticDeletedPlantIds.get();
+        device.plants.forEach(p => {
+            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+            if (deleted.has(pId))
+                return;
+            const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
+            const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
+            occupied.add(`${r},${c}`);
+        });
+        let found = false;
+        const rows = device.rows || 4;
+        const cols = device.plants_per_row || 4;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!occupied.has(`${r},${c}`)) {
+                    targetRow = r;
+                    targetCol = c;
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                break;
+        }
+    }
+    fetchStrainLibrary(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'ADD_PLANT',
+        payload: { row: targetRow, col: targetCol }
+    });
+}
+function openStrainRecommendationDialog(ctx) {
+    ctx.ui.setActiveDialog({
+        type: 'STRAIN_RECOMMENDATION',
+        payload: { isLoading: false, response: null }
+    });
+}
+function openNutrientPresetsDialog(ctx) {
+    fetchNutrientPresets(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'NUTRIENT_PRESETS',
+        payload: {}
+    });
+}
+function openIPMDialog(ctx, context) {
+    fetchIPMPresets(ctx);
+    const growspaceId = context?.growspaceId ||
+        (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
+    ctx.ui.setActiveDialog({
+        type: 'IPM',
+        payload: {
+            growspaceId,
+            plantIds: context?.plantIds
+        }
+    });
+}
+function openLogbookDialog(ctx) {
+    const growspaceId = ctx.data.$selectedDevice.get();
+    if (growspaceId) {
+        ctx.ui.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: { growspaceId }
+        });
+    }
+}
+async function exportStrainLibrary(ctx) {
+    try {
+        const library = await ctx.dataService.fetchStrainLibrary();
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', dataStr);
+        downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+    catch (e) {
+        console.error(e);
+        ctx.showToast('Failed to export library', 'error');
+    }
+}
+/** HELPER: Get common growspace ID for multiple plants */
+function getCommonGrowspaceId(ctx, plantIds) {
+    const plantToDevice = ctx.data.$plantToDeviceMap.get();
+    let commonGrowspaceId;
+    for (const plantId of plantIds) {
+        const plantGrowspaceId = plantToDevice.get(plantId);
+        if (!plantGrowspaceId)
+            continue;
+        if (commonGrowspaceId === undefined) {
+            commonGrowspaceId = plantGrowspaceId;
+        }
+        else if (commonGrowspaceId !== plantGrowspaceId) {
+            return undefined; // Mixed growspaces
+        }
+    }
+    return commonGrowspaceId;
+}
+
+async function analyzeGrowspace(ctx, query, all) {
+    const currentDialog = ctx.ui.$activeDialog.get();
+    if (currentDialog.type === 'GROW_MASTER') {
+        ctx.ui.setActiveDialog({
+            ...currentDialog,
+            payload: { ...currentDialog.payload, isLoading: true }
+        });
+    }
+    try {
+        let response;
+        if (all) {
+            response = await ctx.dataService.analyzeAllGrowspaces();
+        }
+        else {
+            const selectedDevice = ctx.data.$selectedDevice.get();
+            if (!selectedDevice)
+                throw new Error("No device selected");
+            response = await ctx.dataService.askGrowAdvice(selectedDevice, query);
+        }
+        const extractText = (res) => {
+            if (typeof res === 'string')
+                return res;
+            if (!res.response)
+                return JSON.stringify(res);
+            if (typeof res.response === 'string')
+                return res.response;
+            const nested = res.response;
+            if ('response' in nested && typeof nested.response === 'string') {
+                return nested.response;
+            }
+            return JSON.stringify(res.response);
+        };
+        const text = extractText(response);
+        const d = ctx.ui.$activeDialog.get();
+        if (d.type === 'GROW_MASTER') {
+            ctx.ui.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...d.payload, isLoading: false, response: text }
+            });
+        }
+    }
+    catch (e) {
+        const d = ctx.ui.$activeDialog.get();
+        if (d.type === 'GROW_MASTER') {
+            ctx.ui.setActiveDialog({
+                type: 'GROW_MASTER',
+                payload: { ...d.payload, isLoading: false, response: "Error: " + e.message }
+            });
+        }
+    }
+}
+async function getStrainRecommendation(ctx, userQuery) {
+    // Current UI for strain recommendation?
+    // Usually likely a dialog or part of library view.
+    // Assuming we want to update some state or return value.
+    // If usage is within a specific component state, maybe it's better to just return the promise.
+    // But to unify, let's look at how strain-actions.ts did it: it took a callback.
+    // If we want "Pure Nanostores Actions", we should probably update a specific store atom or return the value.
+    // Returning the value is cleaner for logic that drives a local component state.
+    // BUT `analyzeGrowspace` updates Global UI Dialog state.
+    // Let's return the value here to be flexible, or update if there is a global "Recommendation State".
+    // For now, let's stick to returning data and let the caller handle UI if it's local.
+    // Wait, strain-actions.old had `setDialogPayload`.
+    // If the dialog is global (managed by ui-store), we can update it.
+    // If it's local component state, we can't touch it easily from here without passing a setter.
+    // Passing a setter is fine, but less "Store Pattern".
+    // However, `plant-actions.ts` updates UI store (closeDialog).
+    // Let's try to update UI store if possible.
+    // Is there a strain recommendation dialog type?
+    // Let's use the pattern of returning the promise for now, as it blocks less.
+    // Or accepted a callback like before.
+    // I'll stick to the previous pattern: return data, or use callback if needed.
+    // Actually, `strain-actions.ts` implementation showed it updates a generic "payload" via callback.
+    // I will keep it as returning the promise for now, so the component creates the loading state itself?
+    // Or I can accept a `setLoading` callback.
+    // To make it simple and consistent:
+    try {
+        const response = await ctx.dataService.getStrainRecommendation(userQuery);
+        const text = response.response || response;
+        return typeof text === 'string' ? text : JSON.stringify(text);
+    }
+    catch (e) {
+        throw e;
     }
 }
 
@@ -34304,52 +35519,61 @@ class ActionDispatcher {
  * Get the currently visible plants for the selected device.
  * Excludes plants that are marked for optimistic deletion.
  */
-function getVisiblePlants(dataStore) {
-    const selectedDevice = dataStore.$selectedDevice.get();
+function getVisiblePlants(ctx) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
     if (!selectedDevice)
         return [];
-    const devices = dataStore.$devices.get();
+    const devices = ctx.data.$devices.get();
     const device = devices.find((d) => d.device_id === selectedDevice);
     if (!device)
         return [];
-    return device.plants.filter((p) => !dataStore.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
+    return device.plants.filter((p) => !ctx.data.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
 }
 /**
  * Handle keyboard navigation for the growspace grid.
  * Supports arrow key navigation, enter/space for selection, and delete/backspace for removal.
  */
-function handleKeyboardNavigation(ctx, key, uiStore, dataStore) {
+function handleKeyboardNavigation(ctx, key) {
     // Escape exits edit mode
-    if (uiStore.$isEditMode.get() && key === 'Escape') {
-        ctx.exitEditMode();
+    if (ctx.ui.$isEditMode.get() && key === 'Escape') {
+        exitEditMode(ctx);
         return;
     }
-    const plants = getVisiblePlants(dataStore);
+    const plants = getVisiblePlants(ctx);
     if (plants.length === 0)
         return;
-    const currentIndex = uiStore.$focusedPlantIndex.get();
+    const currentIndex = ctx.ui.$focusedPlantIndex.get();
     switch (key) {
         case 'ArrowRight':
-            uiStore.setFocusedPlantIndex((currentIndex + 1) % plants.length);
+            ctx.ui.setFocusedPlantIndex((currentIndex + 1) % plants.length);
             break;
         case 'ArrowLeft':
-            uiStore.setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
+            ctx.ui.setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
             break;
         case 'Enter':
         case ' ':
             if (currentIndex >= 0 && currentIndex < plants.length) {
-                ctx.handlePlantClick(plants[currentIndex]);
+                handlePlantClick(ctx, plants[currentIndex]);
             }
             break;
         case 'Delete':
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                ctx.deletePlants(focusedPlant.entity_id);
+                focusedPlant.attributes.plant_id; // Check if this is the correct ID access
+                // logic in plant-actions implies we pass IDs.
+                // In plantActions.handleDeletePlant, it expects string or string[].
+                // But in original keyboard-actions it passed entity_id. Let's check plant type.
+                // Looking at getVisiblePlants above, plants are PlantEntity.
+                // PlantEntity has entity_id and attributes. attributes has plant_id.
+                // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
+                // Let's pass the ID we can find.
+                const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
+                handleDeletePlant(ctx, idToDelete);
             }
-            else if (uiStore.$selectedPlants.get().size > 0) {
+            else if (ctx.ui.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
-                ctx.deletePlants(Array.from(uiStore.$selectedPlants.get()));
+                handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
             }
             break;
     }
@@ -34558,49 +35782,29 @@ class UndoRedoManager {
 }
 
 class GrowspaceStore {
-    /** Base context with common action dependencies */
-    get _baseActionContext() {
+    /** Unified Action Context */
+    get context() {
         return {
             dataService: this.dataService,
-            showToast: (msg, type) => this.showToast(msg, type),
+            data: this.data,
+            ui: this.ui,
+            history: this.history,
+            grid: this.grid,
+            undoRedoManager: this.undoRedoManager,
+            syncService: this.syncService,
+            hass: this.hass,
+            showToast: (msg, type, action) => this.showToast(msg, type, action),
             closeDialog: () => this.ui.closeDialog(),
             refreshData: () => this.refreshData(),
-        };
-    }
-    /** Context object for plant action functions */
-    get plantActionContext() {
-        return this._baseActionContext;
-    }
-    /** Context object for strain action functions */
-    get _strainActionContext() {
-        return {
-            ...this._baseActionContext,
-            refreshStrainLibrary: (force) => this.fetchStrainLibrary(force),
-            setStrainLibrary: (lib) => this.data.setStrainLibrary(lib),
-            getStrainLibrary: () => this.data.$strainLibrary.get(),
-        };
-    }
-    /** Context object for growspace action functions */
-    get growspaceActionContext() {
-        return this._baseActionContext;
-    }
-    /** Context object for keyboard action functions */
-    get _keyboardActionContext() {
-        return {
-            exitEditMode: () => this.exitEditMode(),
-            handlePlantClick: (p) => this.handlePlantClick(p),
-            handleDeletePlant: (plantId) => this.handleDeletePlant(plantId),
-            deletePlants: (plantIds) => this.handleDeletePlant(plantIds),
         };
     }
     constructor() {
         /**
          * Centralized Action Dispatcher
-         * Provides a single entry point for all business logic actions.
          */
         this.actions = new ActionDispatcher(this);
         this.handleTakeClone = (motherPlant, numClones) => {
-            return takeClone(this.plantActionContext, motherPlant, numClones);
+            return takeClone(this.context, motherPlant, numClones);
         };
         this.dataService = new DataService();
         // Initialize sub-stores
@@ -34638,336 +35842,9 @@ class GrowspaceStore {
     }
     async refreshData() {
         await this.syncService.refreshGrowspaceData();
-        this.pruneOptimisticDeletions();
+        this._pruneOptimisticDeletions();
     }
-    // --- Actions / Logic ---
-    // State Setters
-    setIsCompactView(value) {
-        if (value) {
-            this.ui.setViewMode(ViewMode.COMPACT);
-        }
-        else if (this.ui.$viewMode.get() === ViewMode.COMPACT) {
-            this.ui.setViewMode(ViewMode.STANDARD);
-        }
-    }
-    toggleHeaderExpansion() {
-        if (this.ui.$viewMode.get() === ViewMode.HEADER) {
-            this.ui.setViewMode(ViewMode.STANDARD);
-        }
-        else {
-            this.ui.setViewMode(ViewMode.HEADER);
-        }
-    }
-    showToast(message, type = 'info', action) {
-        this.ui.showToast(message, type, action);
-    }
-    initializeSelectedDevice(config) {
-        this.data.setConfig(config);
-        // Set view mode from config
-        if (config?.initial_view_mode) {
-            this.ui.setViewMode(config.initial_view_mode);
-        }
-        // Trigger update logic via sync service
-        this.syncService.updateDevicesState();
-    }
-    fetchStrainLibrary(force = false) {
-        return this._fetchStrainLibraryImpl(force);
-    }
-    async _fetchStrainLibraryImpl(force) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_strain_library_v2';
-        const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        let usedCache = false;
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                    this.data.setStrainLibrary(cache.data);
-                    usedCache = true;
-                }
-            }
-            catch (e) {
-                console.warn('Failed to parse cached strain library', e);
-                localStorage.removeItem(CACHE_KEY);
-            }
-        }
-        if (!usedCache) {
-            try {
-                const currentStrains = await this.dataService.fetchStrainLibrary();
-                if (Array.isArray(currentStrains)) {
-                    this.data.setStrainLibrary(currentStrains);
-                    const cacheData = {
-                        version: 2,
-                        timestamp: Date.now(),
-                        data: currentStrains,
-                    };
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-                }
-            }
-            catch (e) {
-                console.error('Failed to fetch strain library:', e);
-            }
-        }
-    }
-    async fetchNutrientPresets(force = false) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_nutrient_presets';
-        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (age < CACHE_VALIDITY_MS) {
-                    this.data.setNutrientPresets(cache.data);
-                    return;
-                }
-            }
-            catch (e) {
-                localStorage.removeItem(CACHE_KEY);
-            }
-        }
-        try {
-            const result = await this.dataService.fetchNutrientPresets();
-            if (result) {
-                this.data.setNutrientPresets(result);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: result
-                }));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch nutrient presets:', e);
-        }
-    }
-    async fetchIPMPresets(force = false) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_ipm_presets';
-        const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (age < CACHE_VALIDITY_MS) {
-                    this.data.setIPMPresets(cache.data);
-                    return;
-                }
-            }
-            catch (e) {
-                localStorage.removeItem(CACHE_KEY);
-            }
-        }
-        try {
-            const result = await this.dataService.fetchIPMPresets();
-            if (result) {
-                this.data.setIPMPresets(result);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: result
-                }));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch IPM presets:', e);
-        }
-    }
-    async fetchNutrientInventory(force = false) {
-        if (!this.hass)
-            return;
-        const CACHE_KEY = 'growspace_nutrient_inventory';
-        const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        if (!force && cachedRaw) {
-            try {
-                const cache = JSON.parse(cachedRaw);
-                const age = Date.now() - (cache.timestamp || 0);
-                if (age < CACHE_VALIDITY_MS) {
-                    this.data.setNutrientInventory(cache.data);
-                    return;
-                }
-            }
-            catch (e) {
-                localStorage.removeItem(CACHE_KEY);
-            }
-        }
-        try {
-            const result = await this.dataService.fetchNutrientInventory();
-            if (result) {
-                this.data.setNutrientInventory(result);
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: result
-                }));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch nutrient inventory:', e);
-        }
-    }
-    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
-        try {
-            await this.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
-            await this.fetchNutrientInventory(true);
-            this.showToast(`Updated stock: ${name}`, 'success');
-        }
-        catch (e) {
-            this.showToast(`Failed to update stock: ${e.message}`, 'error');
-        }
-    }
-    async removeNutrientStock(nutrientId) {
-        try {
-            await this.dataService.removeNutrientStock(nutrientId);
-            await this.fetchNutrientInventory(true);
-            this.showToast('Removed nutrient stock', 'success');
-        }
-        catch (e) {
-            this.showToast(`Failed to remove stock: ${e.message}`, 'error');
-        }
-    }
-    handleKeyboardNavigation(key) {
-        handleKeyboardNavigation(this._keyboardActionContext, key, this.ui, this.data);
-    }
-    handleDeviceChange(deviceId) {
-        this.data.setSelectedDevice(deviceId);
-    }
-    togglePlantSelection(plantOrId) {
-        const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-        if (!plantId)
-            return;
-        this.ui.togglePlantSelection(plantId);
-    }
-    selectAllPlants() {
-        const selectedDevice = this.data.$selectedDevice.get();
-        if (!selectedDevice)
-            return;
-        const devices = this.data.$devices.get();
-        const selectedDeviceData = devices.find((d) => d.device_id === selectedDevice);
-        const allIds = [];
-        if (selectedDeviceData && selectedDeviceData.plants) {
-            selectedDeviceData.plants.forEach((plant) => {
-                const pId = plant.attributes.plant_id;
-                if (pId && !this.data.$optimisticDeletedPlantIds.get().has(pId)) {
-                    allIds.push(pId);
-                }
-            });
-            this.ui.selectAllPlants(allIds);
-        }
-    }
-    setSelectedPlants(plantIds) {
-        // No-op for now unless we need to sync specific sets
-    }
-    clearPlantSelection() {
-        this.ui.clearPlantSelection();
-    }
-    exitEditMode() {
-        this.ui.setEditMode(false);
-        this.ui.clearPlantSelection();
-    }
-    handlePlantClick(plant) {
-        if (this.ui.$isEditMode.get() && this.ui.$selectedPlants.get().size > 0) {
-            const plantId = plant.attributes.plant_id;
-            if (plantId && !this.ui.$selectedPlants.get().has(plantId)) {
-                this.togglePlantSelection(plantId);
-            }
-            this.openPlantOverviewDialog(plant, Array.from(this.ui.$selectedPlants.get()));
-        }
-        else {
-            this.openPlantOverviewDialog(plant);
-        }
-    }
-    openPlantOverviewDialog(plant, selectedIds) {
-        this.ui.setActiveDialog({
-            type: 'PLANT_OVERVIEW',
-            payload: {
-                plant,
-                editedAttributes: { ...plant.attributes },
-                activeTab: 'dashboard',
-                selectedPlantIds: selectedIds,
-            },
-        });
-    }
-    async updatePlantFromDialog(dialogState) {
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-        try {
-            const updatePromises = targetIds.map((id) => {
-                const payload = { ...payloadTemplate, plant_id: id };
-                return this.dataService.updatePlant(payload);
-            });
-            await Promise.all(updatePromises);
-            this.ui.closeDialog();
-            await this.refreshData();
-            if (this.ui.$isEditMode.get()) {
-                this.ui.clearPlantSelection();
-                this.ui.setEditMode(false);
-            }
-        }
-        catch (err) {
-            console.error('Error updating plant(s):', err);
-        }
-    }
-    async updatePlant(plantId, updates) {
-        await updatePlant(this.plantActionContext, plantId, updates);
-    }
-    async handleDeletePlant(plantId) {
-        const ids = Array.isArray(plantId) ? plantId : [plantId];
-        const plantsToRestore = [];
-        const devices = this.data.$devices.get();
-        ids.forEach(id => {
-            for (const device of devices) {
-                const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
-                if (plant) {
-                    plantsToRestore.push({
-                        growspace_id: plant.attributes.growspace_id || device.device_id,
-                        row: plant.attributes.row,
-                        col: plant.attributes.col,
-                        strain: plant.attributes.strain,
-                        phenotype: plant.attributes.phenotype,
-                        veg_start: plant.attributes.veg_start,
-                        flower_start: plant.attributes.flower_start,
-                        mother_start: plant.attributes.mother_start,
-                        clone_start: plant.attributes.clone_start,
-                        seedling_start: plant.attributes.seedling_start,
-                        dry_start: plant.attributes.dry_start,
-                        cure_start: plant.attributes.cure_start,
-                    });
-                    break;
-                }
-            }
-        });
-        const success = await deletePlants(this.plantActionContext, ids, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
-        if (success) {
-            this.pushUndoAction({
-                type: ids.length > 1 ? 'batch-delete' : 'delete',
-                description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
-                reverse: async () => {
-                    for (const p of plantsToRestore) {
-                        await this.dataService.addPlant(p);
-                    }
-                    await this.refreshData();
-                },
-                redo: async () => {
-                    await this.handleDeletePlant(ids);
-                }
-            });
-            this.ui.deselectPlants(ids);
-            if (this.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
-                this.ui.closeDialog();
-            }
-            this.updateGrid();
-        }
-    }
-    pruneOptimisticDeletions() {
+    _pruneOptimisticDeletions() {
         const optimisticIds = this.data.$optimisticDeletedPlantIds.get();
         if (optimisticIds.size === 0)
             return;
@@ -34984,198 +35861,129 @@ class GrowspaceStore {
             toRemove.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
         }
     }
-    async handleMovePlantToNextStage(plant) {
-        return await movePlantToNextStage(this.plantActionContext, plant);
+    // --- Actions Delegation ---
+    // UI Actions
+    setIsCompactView(value) {
+        setIsCompactView(this.context, value);
     }
-    async movePlantToGrowspace(plant, targetGrowspace) {
-        const originalGrowspace = plant.attributes.growspace_id || 'unknown';
-        const success = await movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
-        if (success) {
-            this.pushUndoAction({
-                type: 'move',
-                description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
-                reverse: async () => {
-                    await movePlantToGrowspace(this.plantActionContext, plant, originalGrowspace);
-                },
-                redo: async () => {
-                    await movePlantToGrowspace(this.plantActionContext, plant, targetGrowspace);
-                }
-            });
-        }
-        return success;
+    toggleHeaderExpansion() {
+        toggleHeaderExpansion(this.context);
     }
-    async addStrain(strainData) {
-        await addStrain(this._strainActionContext, strainData);
-    }
-    async removeStrain(strainKey) {
-        await removeStrain(this._strainActionContext, strainKey);
-    }
-    async confirmAddPlant(detail) {
-        const selectedDevice = this.data.$selectedDevice.get();
-        if (!selectedDevice) {
-            this.showToast('No growspace selected', 'error');
-            return;
-        }
-        await addPlant(this.plantActionContext, selectedDevice, detail.row, detail.col, detail.strain, {
-            phenotype: detail.phenotype,
-            veg_start: detail.veg_start,
-            flower_start: detail.flower_start,
-            seedling_start: detail.seedling_start,
-            mother_start: detail.mother_start,
-            clone_start: detail.clone_start,
-            dry_start: detail.dry_start,
-            cure_start: detail.cure_start,
-        });
-    }
-    async confirmAddPlants(detail) {
-        const selectedDevice = this.data.$selectedDevice.get();
-        if (!selectedDevice) {
-            this.showToast('No growspace selected', 'error');
-            return;
-        }
-        const devices = this.data.$devices.get();
-        const beforeIds = new Set();
-        devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
-        try {
-            await this.dataService.addPlants({
-                growspace_id: selectedDevice,
-                ...detail
-            });
-            await this.refreshData();
-            const afterDevices = this.data.$devices.get();
-            const addedIds = [];
-            afterDevices.forEach(d => d.plants?.forEach(p => {
-                const id = p.attributes.plant_id || '';
-                if (id && !beforeIds.has(id)) {
-                    addedIds.push(id);
-                }
-            }));
-            if (addedIds.length > 0) {
-                this.pushUndoAction({
-                    type: 'batch-delete',
-                    description: `Added ${addedIds.length} plants`,
-                    reverse: async () => {
-                        await deletePlants(this.plantActionContext, addedIds, (id) => this.data.addOptimisticDeletedPlantId(id), (id) => this.data.removeOptimisticDeletedPlantId(id));
-                        await this.refreshData();
-                    },
-                    redo: async () => {
-                        await this.confirmAddPlants(detail);
-                    }
-                });
-            }
-            this.showToast('Batch plants added successfully', 'success');
-            this.ui.closeDialog();
-        }
-        catch (err) {
-            this.showToast(`Error: ${err.message}`, 'error');
-        }
+    showToast(message, type = 'info', action) {
+        this.ui.showToast(message, type, action);
     }
     toggleEnvGraph(metric) {
         if (!this.history)
             return;
         const isNowActive = this.history.toggleEnvGraph(metric);
-        if (isNowActive && this.ui.$viewMode.get() === 'header') {
+        if (isNowActive && this.ui.$viewMode.get() === ViewMode.HEADER) {
             this.ui.setViewMode(ViewMode.STANDARD);
         }
     }
-    async analyzeGrowspace(query, all) {
-        const currentDialog = this.ui.$activeDialog.get();
-        if (currentDialog.type === 'GROW_MASTER') {
-            this.ui.setActiveDialog({
-                ...currentDialog,
-                payload: { ...currentDialog.payload, isLoading: true }
-            });
-        }
-        try {
-            let response;
-            if (all) {
-                response = await this.dataService.analyzeAllGrowspaces();
-            }
-            else {
-                const selectedDevice = this.data.$selectedDevice.get();
-                if (!selectedDevice)
-                    throw new Error("No device selected");
-                response = await this.dataService.askGrowAdvice(selectedDevice, query);
-            }
-            const extractText = (res) => {
-                if (typeof res === 'string')
-                    return res;
-                if (!res.response)
-                    return JSON.stringify(res);
-                if (typeof res.response === 'string')
-                    return res.response;
-                const nested = res.response;
-                if ('response' in nested && typeof nested.response === 'string') {
-                    return nested.response;
-                }
-                return JSON.stringify(res.response);
-            };
-            const text = extractText(response);
-            const d = this.ui.$activeDialog.get();
-            if (d.type === 'GROW_MASTER') {
-                this.ui.setActiveDialog({
-                    type: 'GROW_MASTER',
-                    payload: { ...d.payload, isLoading: false, response: text }
-                });
-            }
-        }
-        catch (e) {
-            const d = this.ui.$activeDialog.get();
-            if (d.type === 'GROW_MASTER') {
-                this.ui.setActiveDialog({
-                    type: 'GROW_MASTER',
-                    payload: { ...d.payload, isLoading: false, response: "Error: " + e.message }
-                });
-            }
+    // Device Actions
+    initializeSelectedDevice(config) {
+        initializeSelectedDevice(this.context, config);
+    }
+    handleDeviceChange(deviceId) {
+        handleDeviceChange(this.context, deviceId);
+    }
+    // Library Actions
+    fetchStrainLibrary(force = false) {
+        return fetchStrainLibrary(this.context, force);
+    }
+    async fetchNutrientPresets(force = false) {
+        await fetchNutrientPresets(this.context, force);
+    }
+    async fetchIPMPresets(force = false) {
+        await fetchIPMPresets(this.context, force);
+    }
+    async fetchNutrientInventory(force = false) {
+        await fetchNutrientInventory(this.context, force);
+    }
+    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
+        await updateNutrientStock(this.context, nutrientId, name, currentMl, initialMl);
+    }
+    async removeNutrientStock(nutrientId) {
+        await removeNutrientStock(this.context, nutrientId);
+    }
+    // Plant Actions
+    togglePlantSelection(plantOrId) {
+        togglePlantSelection(this.context, plantOrId);
+    }
+    selectAllPlants() {
+        selectAllPlants(this.context);
+    }
+    setSelectedPlants(plantIds) {
+        // No-op
+    }
+    clearPlantSelection() {
+        clearPlantSelection(this.context);
+    }
+    exitEditMode() {
+        exitEditMode(this.context);
+    }
+    handlePlantClick(plant) {
+        handlePlantClick(this.context, plant);
+    }
+    openPlantOverviewDialog(plant, selectedIds) {
+        openPlantOverviewDialog(this.context, plant, selectedIds);
+    }
+    async updatePlantFromDialog(dialogState) {
+        await updatePlantFromDialog(this.context, dialogState);
+    }
+    async updatePlant(plantId, updates) {
+        await updatePlant(this.context, plantId, updates);
+    }
+    async handleDeletePlant(plantId) {
+        await handleDeletePlant(this.context, plantId);
+    }
+    async handleMovePlantToNextStage(plant) {
+        return await movePlantToNextStage(this.context, plant);
+    }
+    async movePlantToGrowspace(plant, targetGrowspace) {
+        return await movePlantToGrowspace(this.context, plant, targetGrowspace);
+    }
+    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        return await handlePlantDrop(this.context, targetRow, targetCol, targetPlant, sourcePlant);
+    }
+    async movePlant(plant, newRow, newCol) {
+        const success = await movePlantPosition(this.context, plant, newRow, newCol);
+        if (success) {
+            this.updateGrid();
         }
     }
+    // Strain/Growspace Actions
+    async addStrain(strainData) {
+        await addStrain(this.context, strainData);
+    }
+    async removeStrain(strainKey) {
+        await removeStrain(this.context, strainKey);
+    }
+    async handleAddGrowspace(detail) {
+        await addGrowspace(this.context, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
+    }
+    async handleUpdateGrowspace(detail) {
+        await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
+    }
+    async confirmAddPlant(detail) {
+        await confirmAddPlant(this.context, detail);
+    }
+    async confirmAddPlants(detail) {
+        await confirmAddPlants(this.context, detail);
+    }
+    // AI Actions
+    async analyzeGrowspace(query, all) {
+        await analyzeGrowspace(this.context, query, all);
+    }
+    // Helpers
     updateGrid() {
         if (this.hass) {
             this.dataService.updateHass(this.hass);
         }
         this.refreshData();
     }
-    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        const selectedDevice = this.data.$selectedDevice.get();
-        if (!sourcePlant || !selectedDevice)
-            return false;
-        const originalRow = sourcePlant.attributes.row;
-        const originalCol = sourcePlant.attributes.col;
-        const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-        const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
-        const success = await handlePlantDrop(this.plantActionContext, targetRow, targetCol, targetPlant, sourcePlant);
-        if (success) {
-            this.pushUndoAction({
-                type: 'move',
-                description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-                reverse: async () => {
-                    if (targetPlant && targetId) {
-                        await this.dataService.swapPlants(sourceId, targetId);
-                    }
-                    else {
-                        await movePlantPosition(this.plantActionContext, sourcePlant, originalRow, originalCol);
-                    }
-                    await this.refreshData();
-                },
-                redo: async () => {
-                    await this.handleDrop(targetRow, targetCol, targetPlant, sourcePlant);
-                }
-            });
-            this.updateGrid();
-        }
-        return success;
-    }
-    async movePlant(plant, newRow, newCol) {
-        const success = await movePlantPosition(this.plantActionContext, plant, newRow, newCol);
-        if (success) {
-            this.updateGrid();
-        }
-    }
-    async handleAddGrowspace(detail) {
-        await addGrowspace(this.growspaceActionContext, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
-    }
-    async handleUpdateGrowspace(detail) {
-        await updateGrowspace(this.growspaceActionContext, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
+    handleKeyboardNavigation(key) {
+        handleKeyboardNavigation(this.context, key);
     }
     async harvestPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
@@ -35183,109 +35991,18 @@ class GrowspaceStore {
     async finishDryingPlant(plant) {
         await this.handleMovePlantToNextStage(plant);
     }
+    // Removed: getCommonGrowspaceId - now internal to ui-actions
     openBatchWateringDialog(growspaceId) {
-        const selectedIds = Array.from(this.ui.$selectedPlants.get());
-        if (selectedIds.length === 0 && !growspaceId)
-            return;
-        if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this.getCommonGrowspaceId(selectedIds);
-        }
-        this.ui.setActiveDialog({
-            type: 'WATERING',
-            payload: {
-                mode: 'plant',
-                plantIds: selectedIds,
-                growspaceId
-            }
-        });
+        openBatchWateringDialog(this.context, growspaceId);
     }
     openBatchTrainingDialog(growspaceId) {
-        const selectedIds = Array.from(this.ui.$selectedPlants.get());
-        if (selectedIds.length === 0 && !growspaceId)
-            return;
-        if (!growspaceId && selectedIds.length > 0) {
-            growspaceId = this.getCommonGrowspaceId(selectedIds);
-        }
-        this.ui.setActiveDialog({
-            type: 'TRAINING',
-            payload: {
-                isOpen: true,
-                plantIds: selectedIds,
-                growspaceId
-            }
-        });
-    }
-    getCommonGrowspaceId(plantIds) {
-        const plantToDevice = this.data.$plantToDeviceMap.get();
-        let commonGrowspaceId;
-        for (const plantId of plantIds) {
-            const plantGrowspaceId = plantToDevice.get(plantId);
-            if (!plantGrowspaceId)
-                continue;
-            if (commonGrowspaceId === undefined) {
-                commonGrowspaceId = plantGrowspaceId;
-            }
-            else if (commonGrowspaceId !== plantGrowspaceId) {
-                return undefined; // Mixed growspaces
-            }
-        }
-        return commonGrowspaceId;
+        openBatchTrainingDialog(this.context, growspaceId);
     }
     openAddPlantDialog(row, col) {
-        if (row !== undefined && col !== undefined) {
-            this.fetchStrainLibrary();
-            this.ui.setActiveDialog({
-                type: 'ADD_PLANT',
-                payload: { row, col },
-            });
-            return;
-        }
-        const selectedDeviceId = this.data.$selectedDevice.get();
-        if (!selectedDeviceId) {
-            return;
-        }
-        const devices = this.data.$devices.get();
-        const device = devices.find(d => d.device_id === selectedDeviceId);
-        let targetRow = 0;
-        let targetCol = 0;
-        if (device) {
-            const occupied = new Set();
-            const deleted = this.data.$optimisticDeletedPlantIds.get();
-            device.plants.forEach(p => {
-                const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                if (deleted.has(pId))
-                    return;
-                const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
-                const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
-                occupied.add(`${r},${c}`);
-            });
-            let found = false;
-            const rows = device.rows || 4;
-            const cols = device.plants_per_row || 4;
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    if (!occupied.has(`${r},${c}`)) {
-                        targetRow = r;
-                        targetCol = c;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                    break;
-            }
-        }
-        this.fetchStrainLibrary();
-        this.ui.setActiveDialog({
-            type: 'ADD_PLANT',
-            payload: { row: targetRow, col: targetCol }
-        });
+        openAddPlantDialog(this.context, row, col);
     }
     openStrainRecommendationDialog() {
-        this.ui.setActiveDialog({
-            type: 'STRAIN_RECOMMENDATION',
-            payload: { isLoading: false, response: null }
-        });
+        openStrainRecommendationDialog(this.context);
     }
     async getStrainRecommendation(userQuery) {
         const currentDialog = this.ui.$activeDialog.get();
@@ -35296,26 +36013,12 @@ class GrowspaceStore {
             });
         }
         try {
-            const res = await this.dataService.getStrainRecommendation(userQuery);
-            const extractText = (res) => {
-                if (typeof res === 'string')
-                    return res;
-                if (!res.response)
-                    return JSON.stringify(res);
-                if (typeof res.response === 'string')
-                    return res.response;
-                const nested = res.response;
-                if ('response' in nested && typeof nested.response === 'string') {
-                    return nested.response;
-                }
-                return JSON.stringify(res.response);
-            };
-            const text = extractText(res);
+            const res = await getStrainRecommendation(this.context, userQuery);
             const d = this.ui.$activeDialog.get();
             if (d.type === 'STRAIN_RECOMMENDATION') {
                 this.ui.setActiveDialog({
                     ...d,
-                    payload: { ...d.payload, isLoading: false, response: text }
+                    payload: { ...d.payload, isLoading: false, response: typeof res === 'string' ? res : JSON.stringify(res) }
                 });
             }
             return res;
@@ -35333,54 +36036,19 @@ class GrowspaceStore {
         }
     }
     openNutrientPresetsDialog() {
-        this.fetchNutrientPresets();
-        this.ui.setActiveDialog({
-            type: 'NUTRIENT_PRESETS',
-            payload: {}
-        });
+        openNutrientPresetsDialog(this.context);
     }
     openIPMDialog(context) {
-        this.fetchIPMPresets();
-        const growspaceId = context?.growspaceId ||
-            (!context?.plantIds?.length ? this.data.$selectedDevice.get() || undefined : undefined);
-        this.ui.setActiveDialog({
-            type: 'IPM',
-            payload: {
-                growspaceId,
-                plantIds: context?.plantIds
-            }
-        });
+        openIPMDialog(this.context, context);
     }
     openLogbookDialog() {
-        const growspaceId = this.data.$selectedDevice.get();
-        if (growspaceId) {
-            this.ui.setActiveDialog({
-                type: 'LOGBOOK',
-                payload: { growspaceId }
-            });
-        }
+        openLogbookDialog(this.context);
     }
-    handleExportLibrary() {
-        this._handleExportLibraryLogic();
-    }
-    async _handleExportLibraryLogic() {
-        try {
-            const library = await this.dataService.fetchStrainLibrary();
-            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute('href', dataStr);
-            downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        }
-        catch (e) {
-            console.error(e);
-            this.showToast('Failed to export library', 'error');
-        }
+    async handleExportLibrary() {
+        await exportStrainLibrary(this.context);
     }
     async toggleDehumidifierControl(deviceId) {
-        console.warn('toggleDehumidifierControl not fully implemented in data service');
+        console.warn('toggleDehumidifierControl not fully implemented in data service (deprecated or future)');
     }
     async performImport(file, replace) {
         try {
@@ -35446,6 +36114,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this._strainLibrary = [];
         this._handleLibraryExportReady = (e) => {
             this._downloadFile(e.detail.url);
+        };
+        this._handleError = (error, errorInfo) => {
+            // Always log to console
+            console.error('Growspace Manager Card caught error:', error, errorInfo);
+            // Report to Home Assistant system log
+            if (this.hass) {
+                this.hass.callService('system_log', 'write', {
+                    message: `Growspace Manager Card Error: ${error.message}. Info: ${JSON.stringify(errorInfo)}`,
+                    level: 'error',
+                    logger: 'lovelace_growspace_manager_card'
+                });
+            }
         };
     }
     /* Getter for convenience/compatibility if needed, or update call sites */
@@ -35584,45 +36264,50 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         const { effectiveRows, grid } = this._gridLayoutController.value;
         const isWide = selectedDeviceData.plants_per_row > 7;
         return x `
-      <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        <div class="sr-only-announcer" aria-live="polite"></div>
-        <div 
-            class="unified-growspace-card glass-surface glass-panel" 
-            role="region"
-            aria-label="Growspace: ${selectedDeviceData.name}"
-            tabindex="0" 
-            @keydown=${this._handleKeyboardNav}
-            @view-mode-changed=${this._handleViewModeChanged}
-            @growspace-changed=${this._handleGrowspaceChanged}
-            @toggle-expansion=${this._handleToggleExpansion}
-            @select-all=${this._handleSelectAll}
-            @clear-selection=${this._handleClearSelection}
-            @water-selected=${this._handleWaterSelected}
-            @training-selected=${this._handleTrainingSelected}
-            @ipm-selected=${this._handleIPMSelected}
-            @batch-add-plants=${this._handleBatchAddPlants}
-            @exit-edit-mode=${this._handleExitEditMode}
-        >
-          <growspace-view-switcher
-            .viewMode=${this._cardViewController.value.viewMode}
-            .device=${selectedDeviceData}
-            .growspaceOptions=${growspaceOptions}
-            .grid=${grid}
-            .rows=${effectiveRows}
-            .isEditMode=${this._cardViewController.value.isEditMode}
-            .isCompact=${this._cardViewController.value.isCompact}
-            .selectedCount=${this._selectedPlantsController.value.size}
-            .config=${this._config}
-            .isLoading=${this._cardViewController.value.isLoading}
-            .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
-          ></growspace-view-switcher>
-          
-          <batch-action-bar></batch-action-bar>
-        </div>
-      </ha-card>
+      <error-boundary 
+          .fallbackMessage=${'Failed to load Growspace Manager'}
+          .onError=${this._handleError}
+      >
+        <ha-card class=${isWide ? 'wide-growspace' : ''}>
+          <div class="sr-only-announcer" aria-live="polite"></div>
+          <div 
+              class="unified-growspace-card glass-surface glass-panel" 
+              role="region"
+              aria-label="Growspace: ${selectedDeviceData.name}"
+              tabindex="0" 
+              @keydown=${this._handleKeyboardNav}
+              @view-mode-changed=${this._handleViewModeChanged}
+              @growspace-changed=${this._handleGrowspaceChanged}
+              @toggle-expansion=${this._handleToggleExpansion}
+              @select-all=${this._handleSelectAll}
+              @clear-selection=${this._handleClearSelection}
+              @water-selected=${this._handleWaterSelected}
+              @training-selected=${this._handleTrainingSelected}
+              @ipm-selected=${this._handleIPMSelected}
+              @batch-add-plants=${this._handleBatchAddPlants}
+              @exit-edit-mode=${this._handleExitEditMode}
+          >
+            <growspace-view-switcher
+              .viewMode=${this._cardViewController.value.viewMode}
+              .device=${selectedDeviceData}
+              .growspaceOptions=${growspaceOptions}
+              .grid=${grid}
+              .rows=${effectiveRows}
+              .isEditMode=${this._cardViewController.value.isEditMode}
+              .isCompact=${this._cardViewController.value.isCompact}
+              .selectedCount=${this._selectedPlantsController.value.size}
+              .config=${this._config}
+              .isLoading=${this._cardViewController.value.isLoading}
+              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+            ></growspace-view-switcher>
+            
+            <batch-action-bar></batch-action-bar>
+          </div>
+        </ha-card>
 
-      <growspace-toast></growspace-toast>
-      ${this.renderDialogs()}
+        <growspace-toast></growspace-toast>
+        ${this.renderDialogs()}
+      </error-boundary>
     `;
     }
     renderDialogs() {

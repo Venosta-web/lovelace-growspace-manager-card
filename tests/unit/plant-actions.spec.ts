@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ActionContext } from '../../src/store/action-context';
 import {
     updatePlant,
-    updatePlantsFromDialog,
-    deletePlants,
+    updatePlantFromDialog,
+    handleDeletePlant,
     movePlantToNextStage,
     movePlantToGrowspace,
     takeClone,
     movePlantPosition,
     handlePlantDrop,
-    addPlant,
-    PlantActionContext,
+    confirmAddPlant,
 } from '../../src/store/plant-actions';
 import { PlantEntity } from '../../src/types';
 
 describe('plant-actions', () => {
-    let ctx: PlantActionContext;
+    let ctx: ActionContext;
     let mockDataService: any;
 
     const mockPlant: PlantEntity = {
@@ -65,8 +65,22 @@ describe('plant-actions', () => {
             dataService: mockDataService,
             showToast: vi.fn(),
             closeDialog: vi.fn(),
+            undoRedoManager: { pushAction: vi.fn() },
             refreshData: vi.fn().mockResolvedValue(undefined),
-        };
+            ui: {
+                deselectPlants: vi.fn(),
+                $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
+                $isEditMode: { get: vi.fn().mockReturnValue(false) },
+                setEditMode: vi.fn(),
+                clearPlantSelection: vi.fn()
+            },
+            data: {
+                $selectedDevice: { get: vi.fn() },
+                $devices: { get: vi.fn().mockReturnValue([]) },
+                addOptimisticDeletedPlantId: vi.fn(),
+                removeOptimisticDeletedPlantId: vi.fn()
+            } as any
+        } as any;
     });
 
     describe('updatePlant', () => {
@@ -89,7 +103,7 @@ describe('plant-actions', () => {
         });
     });
 
-    describe('updatePlantsFromDialog', () => {
+    describe('updatePlantFromDialog', () => {
         it('should update single plant from dialog state', async () => {
             const dialogState = {
                 plant: mockPlant,
@@ -97,9 +111,8 @@ describe('plant-actions', () => {
                 selectedPlantIds: undefined,
             };
 
-            const result = await updatePlantsFromDialog(ctx, dialogState);
+            await updatePlantFromDialog(ctx, dialogState);
 
-            expect(result).toBe(true);
             expect(mockDataService.updatePlant).toHaveBeenCalledTimes(1);
         });
 
@@ -110,9 +123,8 @@ describe('plant-actions', () => {
                 selectedPlantIds: ['plant1', 'plant2', 'plant3'],
             };
 
-            const result = await updatePlantsFromDialog(ctx, dialogState);
+            await updatePlantFromDialog(ctx, dialogState);
 
-            expect(result).toBe(true);
             expect(mockDataService.updatePlant).toHaveBeenCalledTimes(3);
         });
 
@@ -125,9 +137,8 @@ describe('plant-actions', () => {
                 selectedPlantIds: undefined,
             };
 
-            const result = await updatePlantsFromDialog(ctx, dialogState);
-
-            expect(result).toBe(false);
+            await updatePlantFromDialog(ctx, dialogState);
+            // Error logged, implied void return
         });
 
         it('should use entity_id fallback when plant_id is missing', async () => {
@@ -138,9 +149,8 @@ describe('plant-actions', () => {
                 selectedPlantIds: undefined,
             };
 
-            const result = await updatePlantsFromDialog(ctx, dialogState);
+            await updatePlantFromDialog(ctx, dialogState);
 
-            expect(result).toBe(true);
             expect(mockDataService.updatePlant).toHaveBeenCalledWith({
                 plant_id: 'plant_test123',
                 strain: 'Fallback Update',
@@ -148,29 +158,25 @@ describe('plant-actions', () => {
         });
     });
 
-    describe('deletePlants', () => {
+    describe('handleDeletePlant', () => {
         it('should delete plants and show success toast', async () => {
-            const addOptimistic = vi.fn();
-            const removeOptimistic = vi.fn();
+            await handleDeletePlant(ctx, ['plant1', 'plant2']);
 
-            const result = await deletePlants(ctx, ['plant1', 'plant2'], addOptimistic, removeOptimistic);
-
-            expect(result).toBe(true);
-            expect(addOptimistic).toHaveBeenCalledTimes(2);
             expect(mockDataService.removePlant).toHaveBeenCalledTimes(2);
-            expect(mockDataService.removePlant).toHaveBeenCalledTimes(2);
+            expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledTimes(2);
+            expect(ctx.data.removeOptimisticDeletedPlantId).not.toHaveBeenCalled();
+            expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
         });
 
         it('should remove optimistic IDs on failure', async () => {
             mockDataService.removePlant.mockRejectedValue(new Error('Delete failed'));
-            const addOptimistic = vi.fn();
-            const removeOptimistic = vi.fn();
 
-            const result = await deletePlants(ctx, ['plant1'], addOptimistic, removeOptimistic);
+            await handleDeletePlant(ctx, ['plant1']);
 
-            expect(result).toBe(false);
-            expect(removeOptimistic).toHaveBeenCalledWith('plant1');
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to delete: Delete failed', 'error');
+            expect(mockDataService.removePlant).toHaveBeenCalled();
+            expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
+            expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
         });
     });
 
@@ -433,9 +439,17 @@ describe('plant-actions', () => {
         });
     });
 
-    describe('addPlant', () => {
+    describe('confirmAddPlant', () => {
         it('should add plant successfully', async () => {
-            const result = await addPlant(ctx, 'growspace1', 2, 3, 'Blue Dream', { phenotype: 'Pheno A' });
+            const detail = {
+                row: 2,
+                col: 3,
+                strain: 'Blue Dream',
+                phenotype: 'Pheno A'
+            };
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+
+            const result = await confirmAddPlant(ctx, detail);
 
             expect(result).toBe(true);
             expect(mockDataService.addPlant).toHaveBeenCalledWith({
@@ -450,8 +464,15 @@ describe('plant-actions', () => {
             expect(ctx.refreshData).toHaveBeenCalled();
         });
 
+        it('should fail if no growspace selected', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+            const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'X' });
+            expect(result).toBe(false);
+        });
+
         it('should add plant without phenotype', async () => {
-            const result = await addPlant(ctx, 'growspace1', 1, 1, 'OG Kush');
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'OG Kush' });
 
             expect(result).toBe(true);
             expect(mockDataService.addPlant).toHaveBeenCalledWith({
@@ -464,7 +485,9 @@ describe('plant-actions', () => {
         });
 
         it('should pass stage start dates correctly', async () => {
-            const result = await addPlant(ctx, 'growspace1', 1, 1, 'OG Kush', {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            const result = await confirmAddPlant(ctx, {
+                row: 1, col: 1, strain: 'OG Kush',
                 veg_start: '2024-01-01',
                 flower_start: '2024-02-01'
             });
@@ -481,9 +504,10 @@ describe('plant-actions', () => {
         });
 
         it('should return false and show error on failure', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
             mockDataService.addPlant.mockRejectedValue(new Error('Add failed'));
 
-            const result = await addPlant(ctx, 'gs1', 1, 1, 'Test');
+            const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'Test' });
 
             expect(result).toBe(false);
             expect(ctx.showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');

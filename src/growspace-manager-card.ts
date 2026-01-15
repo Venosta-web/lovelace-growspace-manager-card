@@ -27,6 +27,7 @@ import './components/manager/batch-action-bar';
 import { LibraryExportReadyEvent } from './events';
 import './components/growspace-view-switcher';
 import './components/ui'; // Register MD3 components
+import './components/error-boundary';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
@@ -246,45 +247,50 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const isWide = selectedDeviceData.plants_per_row > 7;
 
     return html`
-      <ha-card class=${isWide ? 'wide-growspace' : ''}>
-        <div class="sr-only-announcer" aria-live="polite"></div>
-        <div 
-            class="unified-growspace-card glass-surface glass-panel" 
-            role="region"
-            aria-label="Growspace: ${selectedDeviceData.name}"
-            tabindex="0" 
-            @keydown=${this._handleKeyboardNav}
-            @view-mode-changed=${this._handleViewModeChanged}
-            @growspace-changed=${this._handleGrowspaceChanged}
-            @toggle-expansion=${this._handleToggleExpansion}
-            @select-all=${this._handleSelectAll}
-            @clear-selection=${this._handleClearSelection}
-            @water-selected=${this._handleWaterSelected}
-            @training-selected=${this._handleTrainingSelected}
-            @ipm-selected=${this._handleIPMSelected}
-            @batch-add-plants=${this._handleBatchAddPlants}
-            @exit-edit-mode=${this._handleExitEditMode}
-        >
-          <growspace-view-switcher
-            .viewMode=${this._cardViewController.value.viewMode}
-            .device=${selectedDeviceData}
-            .growspaceOptions=${growspaceOptions}
-            .grid=${grid}
-            .rows=${effectiveRows}
-            .isEditMode=${this._cardViewController.value.isEditMode}
-            .isCompact=${this._cardViewController.value.isCompact}
-            .selectedCount=${this._selectedPlantsController.value.size}
-            .config=${this._config}
-            .isLoading=${this._cardViewController.value.isLoading}
-            .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
-          ></growspace-view-switcher>
-          
-          <batch-action-bar></batch-action-bar>
-        </div>
-      </ha-card>
+      <error-boundary 
+          .fallbackMessage=${'Failed to load Growspace Manager'}
+          .onError=${this._handleError}
+      >
+        <ha-card class=${isWide ? 'wide-growspace' : ''}>
+          <div class="sr-only-announcer" aria-live="polite"></div>
+          <div 
+              class="unified-growspace-card glass-surface glass-panel" 
+              role="region"
+              aria-label="Growspace: ${selectedDeviceData.name}"
+              tabindex="0" 
+              @keydown=${this._handleKeyboardNav}
+              @view-mode-changed=${this._handleViewModeChanged}
+              @growspace-changed=${this._handleGrowspaceChanged}
+              @toggle-expansion=${this._handleToggleExpansion}
+              @select-all=${this._handleSelectAll}
+              @clear-selection=${this._handleClearSelection}
+              @water-selected=${this._handleWaterSelected}
+              @training-selected=${this._handleTrainingSelected}
+              @ipm-selected=${this._handleIPMSelected}
+              @batch-add-plants=${this._handleBatchAddPlants}
+              @exit-edit-mode=${this._handleExitEditMode}
+          >
+            <growspace-view-switcher
+              .viewMode=${this._cardViewController.value.viewMode}
+              .device=${selectedDeviceData}
+              .growspaceOptions=${growspaceOptions}
+              .grid=${grid}
+              .rows=${effectiveRows}
+              .isEditMode=${this._cardViewController.value.isEditMode}
+              .isCompact=${this._cardViewController.value.isCompact}
+              .selectedCount=${this._selectedPlantsController.value.size}
+              .config=${this._config}
+              .isLoading=${this._cardViewController.value.isLoading}
+              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+            ></growspace-view-switcher>
+            
+            <batch-action-bar></batch-action-bar>
+          </div>
+        </ha-card>
 
-      <growspace-toast></growspace-toast>
-      ${this.renderDialogs()}
+        <growspace-toast></growspace-toast>
+        ${this.renderDialogs()}
+      </error-boundary>
     `;
   }
 
@@ -292,6 +298,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return html`<growspace-dialog-host
       .devices=${this._devicesController.value}
     ></growspace-dialog-host>`;
+  }
+
+  private _handleError = (error: Error, errorInfo: any) => {
+    // Always log to console
+    console.error('Growspace Manager Card caught error:', error, errorInfo);
+
+    // Report to Home Assistant system log
+    if (this.hass) {
+      this.hass.callService('system_log', 'write', {
+        message: `Growspace Manager Card Error: ${error.message}. Info: ${JSON.stringify(errorInfo)}`,
+        level: 'error',
+        logger: 'lovelace_growspace_manager_card'
+      });
+    }
   }
 }
 

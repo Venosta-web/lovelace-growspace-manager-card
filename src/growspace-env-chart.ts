@@ -28,6 +28,7 @@ import {
 
 import { consume } from '@lit/context';
 import { hassContext } from './context';
+import './components/error-boundary';
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {
@@ -456,23 +457,24 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     return html`
-      <div class="gs-env-graph-card">
-        ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
+      <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
+        <div class="gs-env-graph-card">
+          ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
 
-        <div
-          class="gs-env-chart-container"
-          ${ref(this._chartContainerRef)}
-          @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, startTime, durationMillis)}
-          @mouseleave=${this._onMouseLeave}
-          @click=${() => this._onChartClick()}
-        >
-          ${this._renderTooltip()}
-          ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
-          ${this._renderXAxisHTML(this.range)}
+          <div
+            class="gs-env-chart-container"
+            ${ref(this._chartContainerRef)}
+            @mousemove=${(e: MouseEvent) => this._onMouseMove(e, series, startTime, durationMillis)}
+            @mouseleave=${this._onMouseLeave}
+            @click=${() => this._onChartClick()}
+          >
+            ${this._renderTooltip()}
+            ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+            ${this._renderXAxisHTML(this.range)}
 
-          <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
-            ${this._renderGrid(width, height)}
-            ${series.map((s) => {
+            <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
+              ${this._renderGrid(width, height)}
+              ${series.map((s) => {
       // Handle VPD segments separately (they have their own path validation)
       if (s.vpdSegments?.length) {
         return svg`${s.vpdSegments.map(seg => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
@@ -484,17 +486,18 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       return svg`
-                 ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                 ${s.fillType === 'gradient'
+                  ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
+                  ${s.fillType === 'gradient'
           ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
           : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
         }
-                 <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
-              `;
+                  <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
+                `;
     })}
-          </svg>
+            </svg>
+          </div>
         </div>
-      </div>
+      </error-boundary>
     `;
   }
 

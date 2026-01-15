@@ -737,7 +737,9 @@ describe('DialogHost', () => {
         $activeDialog.set({ type: 'UNKNOWN' as any });
         document.body.appendChild(element);
         await element.updateComplete;
-        expect(element.render()).toEqual(html``);
+        // After adding error-boundary, unknown types are wrapped in error-boundary
+        const errorBoundary = element.shadowRoot?.querySelector('error-boundary');
+        expect(errorBoundary).toBeTruthy();
     });
 
     it('should render WATERING dialog', async () => {

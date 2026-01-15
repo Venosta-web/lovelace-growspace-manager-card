@@ -1,74 +1,66 @@
 import * as plantActions from './plant-actions';
 import * as strainActions from './strain-actions';
 import { PlantEntity, StrainEntry } from '../types';
-import { PlantActionContext } from './plant-actions';
-import { StrainActionContext, GrowspaceActionContext } from './strain-actions';
+import { ActionContext } from './action-context';
 
 interface IGrowspaceStore {
-    updatePlant(id: string, updates: Partial<PlantEntity['attributes']>): Promise<void>;
-    handleDeletePlant(id: string | string[]): Promise<void>;
-    movePlantToGrowspace(plant: PlantEntity, growspace: string): Promise<boolean>;
-    handleDrop(row: number, col: number, target: PlantEntity | null, source: PlantEntity | null): Promise<boolean>;
-    handleMovePlantToNextStage(plant: PlantEntity): Promise<boolean>;
-    handleTakeClone(mother: PlantEntity, num?: number): Promise<boolean>;
-    confirmAddPlants(detail: any): Promise<void>;
-    handleAddGrowspace(detail: any): Promise<void>;
-    handleUpdateGrowspace(detail: any): Promise<void>;
-    addStrain(data: Partial<StrainEntry>): Promise<void>;
-    removeStrain(key: string): Promise<void>;
+    context: ActionContext;
     undo(): Promise<void>;
     redo(): Promise<void>;
     canUndo: boolean;
     canRedo: boolean;
-    plantActionContext: PlantActionContext;
-    growspaceActionContext: GrowspaceActionContext;
 }
 
 export class ActionDispatcher {
     constructor(private store: IGrowspaceStore) { }
 
+    private get ctx(): ActionContext {
+        return this.store.context;
+    }
+
     public readonly plant = {
         update: (id: string, updates: Partial<PlantEntity['attributes']>) =>
-            this.store.updatePlant(id, updates),
+            plantActions.updatePlant(this.ctx, id, updates),
 
         delete: (id: string | string[]) =>
-            this.store.handleDeletePlant(id),
+            plantActions.handleDeletePlant(this.ctx, id),
 
         move: (plant: PlantEntity, growspace: string) =>
-            this.store.movePlantToGrowspace(plant, growspace),
+            plantActions.movePlantToGrowspace(this.ctx, plant, growspace),
 
         drop: (row: number, col: number, target: PlantEntity | null, source: PlantEntity | null) =>
-            this.store.handleDrop(row, col, target, source),
+            plantActions.handlePlantDrop(this.ctx, row, col, target, source),
 
         nextStage: (plant: PlantEntity) =>
-            this.store.handleMovePlantToNextStage(plant),
+            plantActions.movePlantToNextStage(this.ctx, plant),
 
         takeClone: (mother: PlantEntity, num?: number) =>
-            this.store.handleTakeClone(mother, num),
-
-        // These use the store's private context getter, which we'll need to expose or access differently.
-        // For now, we delegate back to store methods or access context if public.
-        // Assuming we keep delegation for methods that require complex store state (like undo stack).
+            plantActions.takeClone(this.ctx, mother, num),
 
         updateFromDialog: (state: any) =>
-            plantActions.updatePlantsFromDialog(this.store.plantActionContext, state),
+            plantActions.updatePlantFromDialog(this.ctx, state),
 
         add: (gid: string, r: number, c: number, s: string, p?: string) =>
-            plantActions.addPlant(this.store.plantActionContext, gid, r, c, s, { phenotype: p }),
+            plantActions.confirmAddPlant(this.ctx, {
+                row: r,
+                col: c,
+                strain: s,
+                phenotype: p
+            }),
 
         addBatch: (detail: any) =>
-            this.store.confirmAddPlants(detail)
+            plantActions.confirmAddPlants(this.ctx, detail)
     };
 
     public readonly growspace = {
-        add: (detail: any) => this.store.handleAddGrowspace(detail),
-        update: (detail: any) => this.store.handleUpdateGrowspace(detail),
-        remove: (id: string) => strainActions.removeGrowspace(this.store.growspaceActionContext, id)
+        add: (detail: any) => strainActions.addGrowspace(this.ctx, detail.name, detail.rows, detail.plants_per_row, detail.notification_service),
+        update: (detail: any) => strainActions.updateGrowspace(this.ctx, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row),
+        remove: (id: string) => strainActions.removeGrowspace(this.ctx, id)
     };
 
     public readonly strain = {
-        add: (data: Partial<StrainEntry>) => this.store.addStrain(data),
-        remove: (key: string) => this.store.removeStrain(key)
+        add: (data: Partial<StrainEntry>) => strainActions.addStrain(this.ctx, data),
+        remove: (key: string) => strainActions.removeStrain(this.ctx, key)
     };
 
     public readonly history = {

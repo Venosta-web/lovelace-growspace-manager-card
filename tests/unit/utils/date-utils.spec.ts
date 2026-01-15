@@ -163,6 +163,12 @@ describe('date-utils', () => {
             const result = parseDate('2026-01-15');
             expect(result).toBeInstanceOf(Date);
         });
+
+        it('should return null if new Date() throws', () => {
+            // new Date() throws TypeError if passed a Symbol
+            const result = parseDate(Symbol('test') as any);
+            expect(result).toBeNull();
+        });
     });
 
     describe('formatProbability', () => {

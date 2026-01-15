@@ -38,7 +38,7 @@ describe('DataService Coverage Gap Fill', () => {
 
     describe('getStrainLibrary Entity Lookup', () => {
         it('should find library in known entity sensor.strain_library', () => {
-            service.hass = {
+            service.updateHass({
                 states: {
                     'sensor.strain_library': {
                         attributes: {
@@ -46,7 +46,7 @@ describe('DataService Coverage Gap Fill', () => {
                         }
                     }
                 }
-            } as any;
+            } as any);
 
             const strains = service.getStrainLibrary();
             expect(strains).toHaveLength(2);
@@ -54,7 +54,7 @@ describe('DataService Coverage Gap Fill', () => {
         });
 
         it('should find library in known entity sensor.growspace_manager_strain_library', () => {
-            service.hass = {
+            service.updateHass({
                 states: {
                     'sensor.growspace_manager_strain_library': {
                         attributes: {
@@ -62,7 +62,7 @@ describe('DataService Coverage Gap Fill', () => {
                         }
                     }
                 }
-            } as any;
+            } as any);
 
             const strains = service.getStrainLibrary();
             expect(strains).toHaveLength(1);
@@ -72,21 +72,23 @@ describe('DataService Coverage Gap Fill', () => {
 
     describe('invalidateCache', () => {
         it('should invalidate specific growspace and collection', () => {
-            (service as any)._cache.set('g1', { data: {}, timestamp: Date.now() });
-            (service as any)._cache.set('__all__', { data: {}, timestamp: Date.now() });
-            (service as any)._cache.set('g2', { data: {}, timestamp: Date.now() });
+            const growspaceAPI = (service as any)._growspaceAPI;
+            growspaceAPI._cache.set('g1', { data: {}, timestamp: Date.now() });
+            growspaceAPI._cache.set('__all__', { data: {}, timestamp: Date.now() });
+            growspaceAPI._cache.set('g2', { data: {}, timestamp: Date.now() });
 
             service.invalidateCache('g1');
 
-            expect((service as any)._cache.has('g1')).toBe(false);
-            expect((service as any)._cache.has('__all__')).toBe(false);
-            expect((service as any)._cache.has('g2')).toBe(true);
+            expect(growspaceAPI._cache.has('g1')).toBe(false);
+            expect(growspaceAPI._cache.has('__all__')).toBe(false);
+            expect(growspaceAPI._cache.has('g2')).toBe(true);
         });
 
         it('should invalidate all if no ID provided', () => {
-            (service as any)._cache.set('g1', { data: {}, timestamp: Date.now() });
+            const growspaceAPI = (service as any)._growspaceAPI;
+            growspaceAPI._cache.set('g1', { data: {}, timestamp: Date.now() });
             service.invalidateCache();
-            expect((service as any)._cache.size).toBe(0);
+            expect(growspaceAPI._cache.size).toBe(0);
         });
     });
 

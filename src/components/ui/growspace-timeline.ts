@@ -10,6 +10,7 @@ import {
   mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlash,
   mdiDumbbell, mdiFlower, mdiHairDryer
 } from '@mdi/js';
+import '../error-boundary';
 
 @customElement('growspace-timeline')
 export class GrowspaceTimeline extends LitElement {
@@ -271,55 +272,57 @@ export class GrowspaceTimeline extends LitElement {
     const width = 100 * this._zoomLevel;
 
     return html`
-      <div class="controls">
-        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
-        <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
-      </div>
+      <error-boundary .fallbackMessage=${'Failed to render timeline'}>
+        <div class="controls">
+          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
+          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
+        </div>
 
-      <div class="timeline-container">
-        <div class="timeline-track" style="width: ${width}%">
-          ${this._events.map(event => {
+        <div class="timeline-container">
+          <div class="timeline-track" style="width: ${width}%">
+            ${this._events.map(event => {
       const left = this._getPosition(event, start, totalDuration);
       const icon = this._getIcon(event);
       const className = this._getClass(event);
 
       return html`
-              <div 
-                class="event-marker ${className}" 
-                style="left: ${left}%"
-                @mouseenter=${() => this._hoveredEvent = event}
-                @mouseleave=${() => this._hoveredEvent = null}
-              >
-                <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                
-                ${this._hoveredEvent === event ? html`
-                  <div class="tooltip visible" style="left: ${left}%">
-                    <div class="tooltip-header">
-                      ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
+                <div 
+                  class="event-marker ${className}" 
+                  style="left: ${left}%"
+                  @mouseenter=${() => this._hoveredEvent = event}
+                  @mouseleave=${() => this._hoveredEvent = null}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                  
+                  ${this._hoveredEvent === event ? html`
+                    <div class="tooltip visible" style="left: ${left}%">
+                      <div class="tooltip-header">
+                        ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
+                      </div>
+                      <div class="tooltip-time">
+                        ${formatDateTime(new Date(getEventTimestamp(event)))}
+                      </div>
+                      <div>${event.notes || event.reasons?.join(', ') || ''}</div>
                     </div>
-                    <div class="tooltip-time">
-                      ${formatDateTime(new Date(getEventTimestamp(event)))}
-                    </div>
-                    <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                  </div>
-                ` : nothing}
-              </div>
-            `;
-    })}
-
-          <div class="date-axis">
-            <!-- Generate ticks every 20% -->
-            ${[0, 20, 40, 60, 80, 100].map(pct => {
-      const time = start + (totalDuration * (pct / 100));
-      return html`
-                <div class="date-tick" style="left: ${pct}%">
-                  ${formatShortDate(new Date(time))}
+                  ` : nothing}
                 </div>
               `;
     })}
+
+            <div class="date-axis">
+              <!-- Generate ticks every 20% -->
+              ${[0, 20, 40, 60, 80, 100].map(pct => {
+      const time = start + (totalDuration * (pct / 100));
+      return html`
+                  <div class="date-tick" style="left: ${pct}%">
+                    ${formatShortDate(new Date(time))}
+                  </div>
+                `;
+    })}
+            </div>
           </div>
         </div>
-      </div>
+      </error-boundary>
     `;
   }
 }

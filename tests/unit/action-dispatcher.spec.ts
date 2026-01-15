@@ -19,23 +19,11 @@ describe('ActionDispatcher', () => {
 
         // comprehensive mock of IGrowspaceStore
         mockStore = {
-            updatePlant: vi.fn(),
-            handleDeletePlant: vi.fn(),
-            movePlantToGrowspace: vi.fn(),
-            handleDrop: vi.fn(),
-            handleMovePlantToNextStage: vi.fn(),
-            handleTakeClone: vi.fn(),
-            confirmAddPlants: vi.fn(),
-            handleAddGrowspace: vi.fn(),
-            handleUpdateGrowspace: vi.fn(),
-            addStrain: vi.fn(),
-            removeStrain: vi.fn(),
             undo: vi.fn(),
             redo: vi.fn(),
             canUndo: true,
             canRedo: false,
-            plantActionContext: { id: 'plant-ctx' },
-            growspaceActionContext: { id: 'gs-ctx' }
+            context: { id: 'mock-ctx' }
         };
 
         dispatcher = new ActionDispatcher(mockStore);
@@ -44,92 +32,86 @@ describe('ActionDispatcher', () => {
     describe('Plant Actions', () => {
         const mockPlant = { attributes: { plant_id: 'p1' } } as PlantEntity;
 
-        it('should delegate update to store', () => {
+        it('should delegate update to plantActions', () => {
             dispatcher.plant.update('p1', { strain: 'OG' });
-            expect(mockStore.updatePlant).toHaveBeenCalledWith('p1', { strain: 'OG' });
+            expect(plantActions.updatePlant).toHaveBeenCalledWith(mockStore.context, 'p1', { strain: 'OG' });
         });
 
-        it('should delegate delete to store', () => {
+        it('should delegate delete to plantActions', () => {
             dispatcher.plant.delete('p1');
-            expect(mockStore.handleDeletePlant).toHaveBeenCalledWith('p1');
+            expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(mockStore.context, 'p1');
         });
 
-        it('should delegate move to store', () => {
+        it('should delegate move to plantActions', () => {
             dispatcher.plant.move(mockPlant, 'gs2');
-            expect(mockStore.movePlantToGrowspace).toHaveBeenCalledWith(mockPlant, 'gs2');
+            expect(plantActions.movePlantToGrowspace).toHaveBeenCalledWith(mockStore.context, mockPlant, 'gs2');
         });
 
-        it('should delegate drop to store', () => {
+        it('should delegate drop to plantActions', () => {
             dispatcher.plant.drop(1, 2, null, mockPlant);
-            expect(mockStore.handleDrop).toHaveBeenCalledWith(1, 2, null, mockPlant);
+            expect(plantActions.handlePlantDrop).toHaveBeenCalledWith(mockStore.context, 1, 2, null, mockPlant);
         });
 
-        it('should delegate nextStage to store', () => {
+        it('should delegate nextStage to plantActions', () => {
             dispatcher.plant.nextStage(mockPlant);
-            expect(mockStore.handleMovePlantToNextStage).toHaveBeenCalledWith(mockPlant);
+            expect(plantActions.movePlantToNextStage).toHaveBeenCalledWith(mockStore.context, mockPlant);
         });
 
-        it('should delegate takeClone to store', () => {
+        it('should delegate takeClone to plantActions', () => {
             dispatcher.plant.takeClone(mockPlant, 5);
-            expect(mockStore.handleTakeClone).toHaveBeenCalledWith(mockPlant, 5);
+            expect(plantActions.takeClone).toHaveBeenCalledWith(mockStore.context, mockPlant, 5);
         });
 
-        it('should delegate updateFromDialog to plantActions with context', () => {
+        it('should delegate updateFromDialog to plantActions', () => {
             const state = { some: 'state' };
             dispatcher.plant.updateFromDialog(state);
-            expect(plantActions.updatePlantsFromDialog).toHaveBeenCalledWith(
-                mockStore.plantActionContext,
-                state
-            );
+            expect(plantActions.updatePlantFromDialog).toHaveBeenCalledWith(mockStore.context, state);
         });
 
-        it('should delegate add to plantActions with context', () => {
+        it('should delegate add to plantActions', () => {
             dispatcher.plant.add('gs1', 0, 0, 'strain', 'pheno');
-            expect(plantActions.addPlant).toHaveBeenCalledWith(
-                mockStore.plantActionContext,
-                'gs1', 0, 0, 'strain', { phenotype: 'pheno' }
+            expect(plantActions.confirmAddPlant).toHaveBeenCalledWith(
+                mockStore.context,
+                { row: 0, col: 0, strain: 'strain', phenotype: 'pheno' }
             );
         });
 
-        it('should delegate addBatch to store', () => {
+        it('should delegate addBatch to plantActions', () => {
             const detail = { count: 5 };
             dispatcher.plant.addBatch(detail);
-            expect(mockStore.confirmAddPlants).toHaveBeenCalledWith(detail);
+            expect(plantActions.confirmAddPlants).toHaveBeenCalledWith(mockStore.context, detail);
         });
     });
 
     describe('Growspace Actions', () => {
-        it('should delegate add to store', () => {
-            const detail = { name: 'New Tent' };
+        it('should delegate add to strainActions', () => {
+            const detail = { name: 'New Tent', rows: 4, plants_per_row: 2 };
             dispatcher.growspace.add(detail);
-            expect(mockStore.handleAddGrowspace).toHaveBeenCalledWith(detail);
+            expect(strainActions.addGrowspace).toHaveBeenCalledWith(mockStore.context, 'New Tent', 4, 2, undefined);
         });
 
-        it('should delegate update to store', () => {
-            const detail = { id: 'gs1', name: 'Updated' };
+        it('should delegate update to strainActions', () => {
+            const detail = { growspace_id: 'gs1', name: 'Updated', rows: 4, plants_per_row: 2 };
             dispatcher.growspace.update(detail);
-            expect(mockStore.handleUpdateGrowspace).toHaveBeenCalledWith(detail);
+            expect(strainActions.updateGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 'Updated', 4, 2);
         });
 
-        it('should delegate remove to strainActions with context', () => {
+        it('should delegate remove to strainActions', () => {
             dispatcher.growspace.remove('gs1');
-            expect(strainActions.removeGrowspace).toHaveBeenCalledWith(
-                mockStore.growspaceActionContext,
-                'gs1'
-            );
+            expect(strainActions.removeGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1');
         });
     });
 
     describe('Strain Actions', () => {
-        it('should delegate add to store', () => {
+        it('should delegate add to strainActions', () => {
             const data = { strain: 'New Strain' };
             dispatcher.strain.add(data);
-            expect(mockStore.addStrain).toHaveBeenCalledWith(data);
+            expect(strainActions.addStrain).toHaveBeenCalledWith(mockStore.context, data);
         });
 
-        it('should delegate remove to store', () => {
+        it('should delegate remove to strainActions', () => {
             dispatcher.strain.remove('strain-key');
-            expect(mockStore.removeStrain).toHaveBeenCalledWith('strain-key');
+            expect(strainActions.removeStrain).toHaveBeenCalledWith(mockStore.context, 'strain-key');
         });
     });
 

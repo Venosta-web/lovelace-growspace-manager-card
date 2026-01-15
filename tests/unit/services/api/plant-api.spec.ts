@@ -1,0 +1,240 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { DataService } from '../../../../src/data-service';
+import { HomeAssistant } from 'custom-card-helpers';
+
+describe('DataService - PlantAPI', () => {
+    let service: DataService;
+    let mockHass: HomeAssistant;
+    let callServiceMock: any;
+
+    beforeEach(() => {
+        service = new DataService();
+        callServiceMock = vi.fn().mockResolvedValue({});
+        mockHass = {
+            callService: callServiceMock,
+            connection: {
+                sendMessagePromise: vi.fn().mockResolvedValue({}), // For websocket calls
+            },
+            callApi: vi.fn().mockResolvedValue({}), // For API calls like getHistory
+            callWS: vi.fn().mockResolvedValue({}), // For WS calls like getHistoryStats
+            fetchWithAuth: vi.fn().mockResolvedValue({}), // For importStrainLibrary
+        } as any;
+        service.updateHass(mockHass);
+    });
+
+    describe('Plant Actions', () => {
+        it('should add plant with auto-dates for special rooms', async () => {
+            await service.addPlant({ growspace_id: 'mother', strain: 'XS', row: 0, col: 0 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_plant', expect.objectContaining({
+                growspace_id: 'mother',
+                mother_start: expect.stringMatching(/\d{4}-\d{2}-\d{2}/)
+            }));
+        });
+
+        it('should update plant', async () => {
+            await service.updatePlant({ plant_id: 'p1', notes: 'Hi' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_plant', { plant_id: 'p1', notes: 'Hi' });
+        });
+
+        it('should remove plant', async () => {
+            await service.removePlant('p1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_plant', { plant_id: 'p1' });
+        });
+
+        it('should swap plants', async () => {
+            await service.swapPlants('p1', 'p2');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'switch_plants', { plant1_id: 'p1', plant2_id: 'p2' });
+        });
+
+        it('should take clone', async () => {
+            await service.takeClone({ mother_plant_id: 'm1' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'take_clone', { mother_plant_id: 'm1' });
+        });
+    });
+
+    describe('harvestPlant', () => {
+        it('should call harvest_plant service with correct payload', async () => {
+            await service.harvestPlant('plant_123', 'dry');
+
+            expect(callServiceMock).toHaveBeenCalledWith(
+                'growspace_manager', // DOMAIN
+                'harvest_plant',     // SERVICE
+                {
+                    plant_id: 'plant_123',
+                    target_growspace_id: 'dry'
+                }
+            );
+        });
+
+        it('should pass custom target IDs directly', async () => {
+            // No legacy mapping - pass IDs directly
+            await service.harvestPlant('plant_123', 'my_custom_dry_room');
+
+            expect(callServiceMock).toHaveBeenCalledWith(
+                'growspace_manager',
+                'harvest_plant',
+                {
+                    plant_id: 'plant_123',
+                    target_growspace_id: 'my_custom_dry_room'
+                }
+            );
+        });
+
+        it('should pass through unknown targets as-is', async () => {
+            await service.harvestPlant('plant_123', 'tent_2');
+            expect(callServiceMock).toHaveBeenCalledWith(
+                'growspace_manager',
+                'harvest_plant',
+                {
+                    plant_id: 'plant_123',
+                    target_growspace_id: 'tent_2'
+                }
+            );
+        });
+    });
+
+    describe('moveClone', () => {
+        it('should call move_clone with transition date if provided', async () => {
+            const date = '2023-12-01';
+            await service.moveClone('plant_123', 'veg_tent', date);
+
+            expect(callServiceMock).toHaveBeenCalledWith(
+                'growspace_manager',
+                'move_clone',
+                {
+                    plant_id: 'plant_123',
+                    target_growspace_id: 'veg_tent',
+                    transition_date: date
+                }
+            );
+        });
+
+        it('should call move_clone without transition date if optional', async () => {
+            await service.moveClone('plant_123', 'veg_tent');
+
+            expect(callServiceMock).toHaveBeenCalledWith(
+                'growspace_manager',
+                'move_clone',
+                {
+                    plant_id: 'plant_123',
+                    target_growspace_id: 'veg_tent'
+                }
+            );
+        });
+    });
+
+    describe('Plant Actions Extensions', () => {
+        it('should set clone_start if growspace is clone', async () => {
+            await service.addPlant({ growspace_id: 'clone', strain: 'X', row: 1, col: 1 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_plant', expect.objectContaining({
+                clone_start: expect.any(String)
+            }));
+        });
+
+        it('should clean undefined keys in addStrain', async () => {
+            await service.addStrain({ strain: 'X', breeder: undefined });
+            // Verify breeder is NOT in call
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', {
+                strain: 'X'
+            });
+        });
+
+        it('should call takeClone and remove target if undefined', async () => {
+            // Technically target_growspace_id is omitted from payload if not present
+            await service.takeClone({ mother_plant_id: 'p1' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'take_clone', { mother_plant_id: 'p1' });
+        });
+    });
+
+    describe('Harvest Strict ID Passing', () => {
+        it('should pass target ID directly without transformation', async () => {
+            // Since legacy mapping was removed, IDs are passed directly
+            await service.harvestPlant('p1', 'cure');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'cure'
+            });
+        });
+
+        it('should pass any custom growspace ID as-is', async () => {
+            await service.harvestPlant('p1', 'my_custom_room_123');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'my_custom_room_123'
+            });
+        });
+
+        it('should use default target of dry', async () => {
+            await service.harvestPlant('p1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1', target_growspace_id: 'dry'
+            });
+        });
+    });
+
+    describe('Batch Plant Actions', () => {
+        it('should add multiple plants via addPlants', async () => {
+            await service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_plants', expect.objectContaining({
+                growspace_id: 'g1',
+                strain: 'X',
+                amount: 5
+            }));
+        });
+
+        it('should handle error in addPlants', async () => {
+            callServiceMock.mockRejectedValue(new Error('Batch Fail'));
+            await expect(service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 }))
+                .rejects.toThrow('Batch Fail');
+        });
+
+        it('should handle non-Error rejection in addPlants', async () => {
+            callServiceMock.mockRejectedValue('String Error');
+            await expect(service.addPlants({ growspace_id: 'g1', strain: 'X', amount: 5 }))
+                .rejects.toThrow('Failed to add plants');
+        });
+    });
+
+    // From Branch Booster
+    describe('Edge Cases', () => {
+        it('takeClone should preserve target_growspace_id if provided', async () => {
+            const params = { mother_plant_id: 'm1', target_growspace_id: 'custom_room' };
+            await service.takeClone(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'take_clone', params);
+        });
+        describe('Service Error Handling', () => {
+            it('addPlant should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.addPlant({ growspace_id: 'g1', strain: 's', row: 1, col: 1 })).rejects.toThrow('Fail');
+            });
+
+            it('updatePlant should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.updatePlant({ plant_id: 'p1' })).rejects.toThrow('Fail');
+            });
+
+            it('removePlant should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.removePlant('p1')).rejects.toThrow('Fail');
+            });
+
+            it('swapPlants should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.swapPlants('p1', 'p2')).rejects.toThrow('Fail');
+            });
+
+            it('harvestPlant should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.harvestPlant('p1', 'dry')).rejects.toThrow('Fail');
+            });
+
+            it('takeClone should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.takeClone({ mother_plant_id: 'p1' })).rejects.toThrow('Fail');
+            });
+
+            it('moveClone should handle error', async () => {
+                callServiceMock.mockRejectedValue(new Error('Fail'));
+                await expect(service.moveClone('p1', 'target')).rejects.toThrow('Fail');
+            });
+        });
+    });
+});

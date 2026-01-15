@@ -23,6 +23,7 @@ import './nutrient-presets-editor';
 import './ipm-dialog';
 import '../../dialogs/nutrient-inventory-dialog';
 import '../../dialogs/nutrient-dialog';
+import '../error-boundary';
 
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -70,40 +71,46 @@ export class DialogHost extends LitElement {
             growspaceOptions[d.device_id] = d.name;
         });
 
-        switch (active.type) {
-            case 'ADD_PLANT':
-                return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
-            case 'ADD_PLANTS':
-                return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
-            case 'PLANT_OVERVIEW':
-                return this._renderPlantOverviewDialog(active, growspaceOptions);
-            case 'STRAIN_LIBRARY':
-                return this._renderStrainLibraryDialog(active, strainLibrary);
-            case 'CONFIG':
-                return this._renderConfigDialog(active, growspaceOptions);
-            case 'GROW_MASTER':
-                return this._renderGrowMasterDialog(active);
-            case 'STRAIN_RECOMMENDATION':
-                return this._renderStrainRecommendationDialog(active);
-            case 'IRRIGATION':
-                return this._renderIrrigationDialog(active, selectedDeviceData);
-            case 'LOGBOOK':
-                return this._renderLogbookDialog(active);
-            case 'WATERING':
-                return this._renderWateringDialog(active, selectedDeviceData);
-            case 'NUTRIENT_PRESETS':
-                return this._renderNutrientPresetsDialog(active, selectedDeviceData);
-            case 'TRAINING':
-                return this._renderTrainingDialog(active);
-            case 'IPM':
-                return this._renderIPMDialog(active, selectedDeviceData);
-            case 'NUTRIENT_INVENTORY':
-                return this._renderNutrientInventoryDialog(active);
-            case 'NUTRIENTS':
-                return this._renderNutrientDialog(active);
-            default:
-                return html``;
-        }
+        return html`
+            <error-boundary .fallbackMessage=${'Dialog error occurred'}>
+                ${(() => {
+                switch (active.type) {
+                    case 'ADD_PLANT':
+                        return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                    case 'ADD_PLANTS':
+                        return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
+                    case 'PLANT_OVERVIEW':
+                        return this._renderPlantOverviewDialog(active, growspaceOptions);
+                    case 'STRAIN_LIBRARY':
+                        return this._renderStrainLibraryDialog(active, strainLibrary);
+                    case 'CONFIG':
+                        return this._renderConfigDialog(active, growspaceOptions);
+                    case 'GROW_MASTER':
+                        return this._renderGrowMasterDialog(active);
+                    case 'STRAIN_RECOMMENDATION':
+                        return this._renderStrainRecommendationDialog(active);
+                    case 'IRRIGATION':
+                        return this._renderIrrigationDialog(active, selectedDeviceData);
+                    case 'LOGBOOK':
+                        return this._renderLogbookDialog(active);
+                    case 'WATERING':
+                        return this._renderWateringDialog(active, selectedDeviceData);
+                    case 'NUTRIENT_PRESETS':
+                        return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+                    case 'TRAINING':
+                        return this._renderTrainingDialog(active);
+                    case 'IPM':
+                        return this._renderIPMDialog(active, selectedDeviceData);
+                    case 'NUTRIENT_INVENTORY':
+                        return this._renderNutrientInventoryDialog(active);
+                    case 'NUTRIENTS':
+                        return this._renderNutrientDialog(active);
+                    default:
+                        return html``;
+                }
+            })()}
+            </error-boundary>
+        `;
     }
 
     private _renderAddPlantDialog(

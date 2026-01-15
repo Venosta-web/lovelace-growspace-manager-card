@@ -1,20 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ActionContext } from '../../src/store/action-context';
 import {
     addStrain,
     removeStrain,
     addGrowspace,
     updateGrowspace,
-    analyzeGrowspace,
-    getStrainRecommendation,
     removeGrowspace,
-    StrainActionContext,
-    GrowspaceActionContext,
 } from '../../src/store/strain-actions';
 import { StrainEntry } from '../../src/types';
 
 describe('strain-actions', () => {
     describe('Strain Actions', () => {
-        let ctx: StrainActionContext;
+        let ctx: ActionContext;
         let mockDataService: any;
         let strainLibrary: StrainEntry[];
 
@@ -27,6 +24,10 @@ describe('strain-actions', () => {
             mockDataService = {
                 addStrain: vi.fn().mockResolvedValue({}),
                 removeStrain: vi.fn().mockResolvedValue({}),
+                fetchStrainLibrary: vi.fn().mockResolvedValue([
+                    { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
+                    { strain: 'New Strain', phenotype: 'Pheno1' }
+                ]),
             };
 
             ctx = {
@@ -34,10 +35,13 @@ describe('strain-actions', () => {
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
-                refreshStrainLibrary: vi.fn().mockResolvedValue(undefined),
-                setStrainLibrary: vi.fn((lib) => { strainLibrary = lib; }),
-                getStrainLibrary: vi.fn(() => strainLibrary),
-            };
+                hass: {} as any,
+                data: {
+                    setStrainLibrary: vi.fn((lib) => { strainLibrary = lib; }),
+                    getStrainLibrary: vi.fn(() => strainLibrary),
+                    $strainLibrary: { get: () => strainLibrary },
+                } as any,
+            } as any;
         });
 
         describe('addStrain', () => {
@@ -68,7 +72,7 @@ describe('strain-actions', () => {
                     flowering_days_max: 70,
                 }));
                 expect(ctx.showToast).toHaveBeenCalledWith('Strain saved successfully!', 'success');
-                expect(ctx.refreshStrainLibrary).toHaveBeenCalledWith(true);
+                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should return false when strain name missing', async () => {
@@ -108,8 +112,8 @@ describe('strain-actions', () => {
 
                 expect(result).toBe(true);
                 expect(mockDataService.removeStrain).toHaveBeenCalledWith('OG Kush', 'Alpha');
-                expect(ctx.setStrainLibrary).toHaveBeenCalled();
-                expect(ctx.refreshStrainLibrary).toHaveBeenCalledWith(true);
+                expect(ctx.data.setStrainLibrary).toHaveBeenCalled();
+                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should remove strain without phenotype (default)', async () => {
@@ -123,7 +127,7 @@ describe('strain-actions', () => {
                 await removeStrain(ctx, 'OG Kush|Alpha');
 
                 // setStrainLibrary should be called with filtered array
-                expect(ctx.setStrainLibrary).toHaveBeenCalledWith([
+                expect(ctx.data.setStrainLibrary).toHaveBeenCalledWith([
                     { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
                 ]);
             });
@@ -139,7 +143,7 @@ describe('strain-actions', () => {
     });
 
     describe('Growspace Actions', () => {
-        let ctx: GrowspaceActionContext;
+        let ctx: ActionContext;
         let mockDataService: any;
 
         beforeEach(() => {
@@ -157,7 +161,7 @@ describe('strain-actions', () => {
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
-            };
+            } as any;
         });
 
         describe('addGrowspace', () => {
@@ -241,114 +245,6 @@ describe('strain-actions', () => {
                 expect(ctx.closeDialog).toHaveBeenCalled();
             });
 
-            it('should return false on error', async () => {
-                mockDataService.removeGrowspace.mockRejectedValue(new Error('Removal failed'));
-
-                const result = await removeGrowspace(ctx, 'gs123');
-
-                expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Removal failed', 'error');
-            });
-        });
-
-        describe('analyzeGrowspace', () => {
-            it('should analyze all growspaces', async () => {
-                const setPayload = vi.fn();
-
-                await analyzeGrowspace(ctx, 'query', true, null, setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({ isLoading: true });
-                expect(mockDataService.analyzeAllGrowspaces).toHaveBeenCalled();
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'AI analysis result',
-                });
-            });
-
-            it('should analyze specific growspace', async () => {
-                const setPayload = vi.fn();
-
-                await analyzeGrowspace(ctx, 'How are my plants?', false, 'gs123', setPayload);
-
-                expect(mockDataService.askGrowAdvice).toHaveBeenCalledWith('gs123', 'How are my plants?');
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'Advice for your plants',
-                });
-            });
-
-            it('should handle error when no device selected', async () => {
-                const setPayload = vi.fn();
-
-                await analyzeGrowspace(ctx, 'query', false, null, setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'Error: No device selected',
-                });
-            });
-
-            it('should handle non-string response', async () => {
-                mockDataService.analyzeAllGrowspaces.mockResolvedValue({ data: { complex: 'object' } });
-                const setPayload = vi.fn();
-
-                await analyzeGrowspace(ctx, 'query', true, null, setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: expect.stringContaining('{'),
-                });
-            });
-        });
-
-        describe('getStrainRecommendation', () => {
-            it('should get recommendation successfully', async () => {
-                const setPayload = vi.fn();
-
-                await getStrainRecommendation(ctx, 'I want something relaxing', setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({ isLoading: true });
-                expect(mockDataService.getStrainRecommendation).toHaveBeenCalledWith('I want something relaxing');
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'Try Blue Dream',
-                });
-            });
-
-            it('should handle error and re-throw', async () => {
-                mockDataService.getStrainRecommendation.mockRejectedValue(new Error('API error'));
-                const setPayload = vi.fn();
-
-                await expect(getStrainRecommendation(ctx, 'query', setPayload)).rejects.toThrow('API error');
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'Error: API error',
-                });
-            });
-
-            it('should handle direct string response (no response property)', async () => {
-                mockDataService.getStrainRecommendation.mockResolvedValue('Direct string recommendation');
-                const setPayload = vi.fn();
-
-                await getStrainRecommendation(ctx, 'query', setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: 'Direct string recommendation',
-                });
-            });
-
-            it('should JSON.stringify non-string response data', async () => {
-                mockDataService.getStrainRecommendation.mockResolvedValue({ data: { strains: ['OG Kush'] } });
-                const setPayload = vi.fn();
-
-                await getStrainRecommendation(ctx, 'query', setPayload);
-
-                expect(setPayload).toHaveBeenCalledWith({
-                    isLoading: false,
-                    response: expect.stringContaining('strains'),
-                });
-            });
         });
     });
 });

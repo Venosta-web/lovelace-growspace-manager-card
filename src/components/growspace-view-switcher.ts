@@ -7,6 +7,7 @@ import { ViewMode } from '../constants';
 import './views/growspace-view-compact';
 import './views/growspace-view-header';
 import './views/growspace-view-standard';
+import './error-boundary';
 
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
@@ -47,39 +48,45 @@ export class GrowspaceViewSwitcher extends LitElement {
 
         if (this.viewMode === ViewMode.COMPACT) {
             return html`
-        <growspace-view-compact
-            .grid=${this.grid}
-            .rows=${this.rows}
-            .cols=${this.device.plants_per_row}
-            .isLoading=${this.isLoading}
-        ></growspace-view-compact>
+        <error-boundary heading="Detailed View Error">
+          <growspace-view-compact
+              .grid=${this.grid}
+              .rows=${this.rows}
+              .cols=${this.device.plants_per_row}
+              .isLoading=${this.isLoading}
+          ></growspace-view-compact>
+        </error-boundary>
       `;
         }
 
         if (this.viewMode === ViewMode.HEADER) {
             return html`
-        <growspace-view-header
-            .device=${this.device}
-            .growspaceOptions=${this.growspaceOptions}
-        ></growspace-view-header>
+        <error-boundary heading="Header View Error">
+          <growspace-view-header
+              .device=${this.device}
+              .growspaceOptions=${this.growspaceOptions}
+          ></growspace-view-header>
+        </error-boundary>
       `;
         }
 
         // Standard Mode
         return html`
-      <growspace-view-standard
-        .device=${this.device}
-        .growspaceOptions=${this.growspaceOptions}
-        .grid=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.device.plants_per_row}
-        .isEditMode=${this.isEditMode}
-        .isCompact=${this.isCompact}
-        .selectedCount=${this.selectedCount}
-        .config=${this.config}
-        .isLoading=${this.isLoading}
-        @batch-add-plants=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
-      ></growspace-view-standard>
+      <error-boundary heading="Dashboard View Error">
+        <growspace-view-standard
+          .device=${this.device}
+          .growspaceOptions=${this.growspaceOptions}
+          .grid=${this.grid}
+          .rows=${this.rows}
+          .cols=${this.device.plants_per_row}
+          .isEditMode=${this.isEditMode}
+          .isCompact=${this.isCompact}
+          .selectedCount=${this.selectedCount}
+          .config=${this.config}
+          .isLoading=${this.isLoading}
+          @batch-add-plants=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
+        ></growspace-view-standard>
+      </error-boundary>
     `;
     }
 }
