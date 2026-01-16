@@ -9063,6 +9063,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.clone_start = '';
         this.dry_start = '';
         this.cure_start = '';
+        // Tab state for transplant functionality
+        this._activeTab = 'add';
+        this._selectedTransplantPlant = null;
+        // Plants available for transplant (filtered by stage)
+        this.clonePlants = [];
+        this.seedlingPlants = [];
+        this.targetGrowspaceId = '';
     }
     // Provide a method to set initial data from parent if needed
     setInitialState(row, col, strain = '', phenotype = '') {
@@ -9105,25 +9112,48 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         }));
     }
     _confirm() {
-        const payload = {
-            row: this.row + 1,
-            col: this.col + 1,
-            strain: this.strain,
-            phenotype: this.phenotype,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-            addToLibrary: this.addToLibrary,
-        };
-        this.dispatchEvent(new CustomEvent('add-plant-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true,
-        }));
+        if (this._activeTab === 'add') {
+            // Original add plant logic
+            const payload = {
+                row: this.row + 1,
+                col: this.col + 1,
+                strain: this.strain,
+                phenotype: this.phenotype,
+                veg_start: this.veg_start,
+                flower_start: this.flower_start,
+                seedling_start: this.seedling_start,
+                mother_start: this.mother_start,
+                clone_start: this.clone_start,
+                dry_start: this.dry_start,
+                cure_start: this.cure_start,
+                addToLibrary: this.addToLibrary,
+            };
+            this.dispatchEvent(new CustomEvent('add-plant-submit', {
+                detail: payload,
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        else {
+            // Transplant mode
+            if (!this._selectedTransplantPlant)
+                return;
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date().toISOString().split('T')[0];
+            const payload = {
+                plant_id: this._selectedTransplantPlant.attributes.plant_id,
+                source_growspace_id: this._selectedTransplantPlant.attributes.growspace_id,
+                target_growspace_id: this.targetGrowspaceId,
+                new_row: this.row + 1,
+                new_col: this.col + 1,
+                veg_start: today, // Auto-set veg_start to today
+            };
+            this.dispatchEvent(new CustomEvent('transplant-plant-submit', {
+                detail: payload,
+                bubbles: true,
+                composed: true,
+            }));
+        }
     }
     render() {
         console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
@@ -9136,6 +9166,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                     .filter(s => s.strain === this.strain && s.phenotype)
                     .map(s => s.phenotype))].sort()
             : [];
+        const dialogTitle = this._activeTab === 'add' ? 'Add New Plant'
+            : this._activeTab === 'clone' ? 'Transplant Clone'
+                : 'Transplant Seedling';
+        const dialogSubtitle = this._activeTab === 'add' ? 'Enter plant details below'
+            : 'Select a plant to transplant to this location';
+        const buttonText = this._activeTab === 'add' ? 'Add Plant' : 'Transplant';
+        const isButtonDisabled = this._activeTab !== 'add' && !this._selectedTransplantPlant;
         return x `
       <ha-dialog
         open
@@ -9153,8 +9190,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Add New Plant</h2>
-              <div class="dialog-subtitle">Enter plant details below</div>
+              <h2 class="dialog-title">${dialogTitle}</h2>
+              <div class="dialog-subtitle">${dialogSubtitle}</div>
             </div>
             <button
               class="md3-button text"
@@ -9167,73 +9204,49 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             </button>
           </div>
 
+          <!-- TAB BAR -->
+          <div class="tab-bar">
+            <button 
+              class="tab ${this._activeTab === 'add' ? 'active' : ''}"
+              @click=${() => { this._activeTab = 'add'; this._selectedTransplantPlant = null; }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+              Add Plant
+            </button>
+            <button 
+              class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
+              @click=${() => { this._activeTab = 'clone'; this._selectedTransplantPlant = null; }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+              Clone
+            </button>
+            <button 
+              class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
+              @click=${() => { this._activeTab = 'seedling'; this._selectedTransplantPlant = null; }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+              Seedling
+            </button>
+          </div>
+
           <div class="overview-grid">
-            <!-- IDENTITY CARD -->
-            <div class="detail-card">
-              <h3>Identity & Location</h3>
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
-                <md3-select
-                  style="width: 100%;"
-                  label="Strain *"
-                  .value=${this.strain}
-                  .options=${uniqueStrains}
-                  @change=${(e) => (this.strain = e.detail)}
-                ></md3-select>
-                <button
-                  class="md3-button tonal"
-                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
-                  @click=${this._openStrainCreator}
-                  title="Add New Strain"
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiDna}"></path>
-                  </svg>
-                </button>
-              </div>
-              <md3-text-input
-                label="Phenotype"
-                .value=${this.phenotype}
-                .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this.phenotype = e.detail)}
-              ></md3-text-input>
-
-              <div class="toggle-container" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
-                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
-                  <md3-switch
-                      .checked=${this.addToLibrary}
-                      @change=${(e) => this.addToLibrary = e.target.checked}
-                      ?disabled=${!this.strain}
-                  ></md3-switch>
-              </div>
-              <div class="row-col-grid">
-                <md3-number-input
-                  label="Row"
-                  .value=${this.row + 1}
-                  @change=${(e) => (this.row = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-                <md3-number-input
-                  label="Col"
-                  .value=${this.col + 1}
-                  @change=${(e) => (this.col = parseInt(e.detail) - 1)}
-                ></md3-number-input>
-              </div>
-            </div>
-
-            <!-- TIMELINE CARD -->
-            <div class="detail-card">
-              <h3>Timeline</h3>
-              ${this.renderTimelineContent()}
-            </div>
+            ${this._activeTab === 'add'
+            ? this._renderAddPlantForm(uniqueStrains, relevantPhenotypes)
+            : this._renderTransplantForm(this._activeTab)}
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button class="md3-button primary" @click=${this._confirm}>
+            <button 
+              class="md3-button primary" 
+              @click=${this._confirm}
+              ?disabled=${isButtonDisabled}
+            >
               <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiSprout}"></path>
               </svg>
-              Add Plant
+              ${buttonText}
             </button>
           </div>
         </div>
@@ -9290,6 +9303,143 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
       `;
         }
     }
+    _renderAddPlantForm(uniqueStrains, relevantPhenotypes) {
+        return x `
+      <!-- IDENTITY CARD -->
+      <div class="detail-card">
+        <h3>Identity & Location</h3>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+          <md3-select
+            style="width: 100%;"
+            label="Strain *"
+            .value=${this.strain}
+            .options=${uniqueStrains}
+            @change=${(e) => (this.strain = e.detail)}
+          ></md3-select>
+          <button
+            class="md3-button tonal"
+            style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+            @click=${this._openStrainCreator}
+            title="Add New Strain"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiDna}"></path>
+            </svg>
+          </button>
+        </div>
+        <md3-text-input
+          label="Phenotype"
+          .value=${this.phenotype}
+          .suggestions=${relevantPhenotypes}
+          @change=${(e) => (this.phenotype = e.detail)}
+        ></md3-text-input>
+
+        <div class="toggle-container" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+            <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+            <md3-switch
+                .checked=${this.addToLibrary}
+                @change=${(e) => this.addToLibrary = e.target.checked}
+                ?disabled=${!this.strain}
+            ></md3-switch>
+        </div>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Row"
+            .value=${this.row + 1}
+            @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+          ></md3-number-input>
+          <md3-number-input
+            label="Col"
+            .value=${this.col + 1}
+            @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- TIMELINE CARD -->
+      <div class="detail-card">
+        <h3>Timeline</h3>
+        ${this.renderTimelineContent()}
+      </div>
+    `;
+    }
+    _renderTransplantForm(stage) {
+        const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
+        const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
+        const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
+        // Build options for select with format: StrainName, Phenotype, Growspace, Col, Row, Days
+        const options = plants.map(p => {
+            const strain = p.attributes.strain || 'Unknown';
+            const pheno = p.attributes.phenotype || '-';
+            const growspace = p._growspaceName || 'Unknown';
+            const col = p.attributes.col;
+            const row = p.attributes.row;
+            const days = p.attributes[daysField] || 0;
+            return {
+                value: p.attributes.plant_id,
+                label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`
+            };
+        });
+        const selectedPlant = this._selectedTransplantPlant;
+        return x `
+      <!-- SELECT PLANT CARD -->
+      <div class="detail-card">
+        <h3>Select ${stageLabel} to Transplant</h3>
+        ${plants.length === 0
+            ? x `<p style="color: var(--secondary-text-color); font-style: italic;">No ${stageLabel.toLowerCase()}s available for transplant</p>`
+            : x `
+            <md3-select
+              label="Select Plant"
+              .value=${selectedPlant?.attributes.plant_id || ''}
+              .options=${options}
+              @change=${(e) => {
+                const plantId = e.detail;
+                this._selectedTransplantPlant = plants.find(p => p.attributes.plant_id === plantId) || null;
+            }}
+            ></md3-select>
+          `}
+        
+        ${selectedPlant ? x `
+          <div class="plant-info-grid">
+            <span class="info-label">Strain:</span>
+            <span class="info-value">${selectedPlant.attributes.strain}</span>
+            
+            <span class="info-label">Phenotype:</span>
+            <span class="info-value">${selectedPlant.attributes.phenotype || 'N/A'}</span>
+            
+            <span class="info-label">Current Position:</span>
+            <span class="info-value">Row ${selectedPlant.attributes.row}, Col ${selectedPlant.attributes.col}</span>
+            
+            <span class="info-label">Days in Stage:</span>
+            <span class="info-value">${selectedPlant.attributes[daysField] || 0} days</span>
+            
+            <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
+            <span class="info-value">${selectedPlant.attributes[stage === 'clone' ? 'clone_start' : 'seedling_start'] || 'N/A'}</span>
+          </div>
+        ` : E}
+      </div>
+
+      <!-- NEW LOCATION CARD -->
+      <div class="detail-card">
+        <h3>New Location</h3>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Row"
+            .value=${this.row + 1}
+            @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+          ></md3-number-input>
+          <md3-number-input
+            label="Col"
+            .value=${this.col + 1}
+            @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+          ></md3-number-input>
+        </div>
+        <p style="margin-top: 12px; font-size: 0.85rem; color: var(--secondary-text-color);">
+          Veg start will be set to today's date upon transplant.
+        </p>
+      </div>
+    `;
+    }
 };
 AddPlantDialog.styles = [
     dialogStyles,
@@ -9310,6 +9460,66 @@ AddPlantDialog.styles = [
           min-height: 0;
           padding: 16px;
         }
+      }
+      
+      /* Tab bar styles */
+      .tab-bar {
+        display: flex;
+        gap: 4px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 8px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        font-family: inherit;
+      }
+      
+      .tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      
+      .tab.active {
+        background: rgba(var(--rgb-primary-color), 0.15);
+        color: var(--primary-color);
+      }
+      
+      .tab svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+      
+      .plant-info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px 16px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        margin-top: 12px;
+      }
+      
+      .info-label {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+      }
+      
+      .info-value {
+        font-weight: 500;
       }
     `,
 ];
@@ -9361,6 +9571,21 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], AddPlantDialog.prototype, "cure_start", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], AddPlantDialog.prototype, "_selectedTransplantPlant", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "clonePlants", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "seedlingPlants", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantDialog.prototype, "targetGrowspaceId", void 0);
 AddPlantDialog = __decorate([
     t$2('add-plant-dialog')
 ], AddPlantDialog);
@@ -18403,7 +18628,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
     }
     _handlePresetChange(e) {
-        const presetId = e.detail || e.target.value;
+        const presetId = e.detail !== undefined ? e.detail : e?.target?.value || '';
         this._selectedPresetId = presetId;
         if (!presetId) {
             this._nutrients = [];
@@ -18460,6 +18685,23 @@ let WateringDialog = class WateringDialog extends i$3 {
             this._isSubmitting = false;
         }
     }
+    _getPresetOptions(currentStage, daysInStage = 0) {
+        if (!this.store)
+            return [];
+        const presetsRecord = this._presetsController?.value || {};
+        return Object.values(presetsRecord).map(p => {
+            let recommended = false;
+            if (p.stage && p.stage === currentStage) {
+                if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+                    recommended = true;
+                }
+            }
+            return {
+                label: `${p.name}${recommended ? ' ⭐(Recommended)' : ''}`,
+                value: p.id
+            };
+        });
+    }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
     }
@@ -18493,20 +18735,7 @@ let WateringDialog = class WateringDialog extends i$3 {
                 }
             }
         }
-        // Create preset list for MD3 select
-        const presetsRecord = this._presetsController.value || {};
-        const presetList = Object.values(presetsRecord).map(p => {
-            let recommended = false;
-            if (p.stage && p.stage === currentStage) {
-                if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
-                    recommended = true;
-                }
-            }
-            return {
-                label: `${p.name} ${recommended ? '⭐(Recommended)' : ''}`,
-                value: p.id
-            };
-        });
+        const presetList = this._getPresetOptions(currentStage, daysInStage);
         // Logic for recommendations to sort or star
         // For now simple listing as per IPM dialog style
         return x `
@@ -18883,7 +19112,7 @@ let TrainingDialog = class TrainingDialog extends i$3 {
                         <button 
                             class="md3-button primary" 
                             style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-                            @click=${this._save}
+                            @click=${() => this._save()}
                             ?disabled=${!this._technique || this._submitting}
                         >
                             <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
@@ -20633,6 +20862,11 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'ADD_PLANT')
             return x ``;
         const dialogState = active.payload;
+        // Get all clone and seedling plants from all growspaces
+        const devices = this._devicesController.value;
+        const clonePlants = this._getPlantsByStage(devices, 'clone');
+        const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
+        const targetGrowspaceId = selectedDeviceData?.device_id || '';
         return x `
         <add-plant-dialog
             .open=${true}
@@ -20649,12 +20883,16 @@ let DialogHost = class DialogHost extends i$3 {
             .dry_start=${dialogState?.dry_start || ''}
             .cure_start=${dialogState?.cure_start || ''}
             .growspaceName=${selectedDeviceData?.name || ''}
+            .clonePlants=${clonePlants}
+            .seedlingPlants=${seedlingPlants}
+            .targetGrowspaceId=${targetGrowspaceId}
             @close=${() => {
             if (this._activeDialogController.value.type === 'ADD_PLANT') {
                 this.store.ui.closeDialog();
             }
         }}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+            @transplant-plant-submit=${(e) => this._handleTransplant(e.detail)}
             @create-new-strain=${(e) => {
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
@@ -20677,6 +20915,37 @@ let DialogHost = class DialogHost extends i$3 {
         }}
         ></add-plant-dialog>
         `;
+    }
+    /** Get all plants with a specific stage from all devices, including growspace name */
+    _getPlantsByStage(devices, stage) {
+        return devices
+            .flatMap(d => (d.plants || []).map(p => ({
+            ...p,
+            _growspaceName: d.name
+        })))
+            .filter(p => p.attributes.stage === stage);
+    }
+    /** Handle transplant from clone/seedling to new location */
+    async _handleTransplant(detail) {
+        try {
+            // Update plant position and growspace
+            await this.hass.callService('growspace_manager', 'update_plant', {
+                plant_id: detail.plant_id,
+                row: detail.new_row,
+                col: detail.new_col,
+                growspace_id: detail.target_growspace_id,
+                veg_start: detail.veg_start
+            });
+            this.store.ui.showToast('Plant transplanted successfully', 'success');
+            this.store.ui.closeDialog();
+            // Refresh data after a small delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await this.store.refreshData();
+        }
+        catch (e) {
+            console.error('[DialogHost] Transplant failed:', e);
+            this.store.ui.showToast('Failed to transplant plant', 'error');
+        }
     }
     _renderAddPlantsDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'ADD_PLANTS')

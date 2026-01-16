@@ -129,6 +129,13 @@ export class DialogHost extends LitElement {
     ): TemplateResult {
         if (active.type !== 'ADD_PLANT') return html``;
         const dialogState = active.payload;
+
+        // Get all clone and seedling plants from all growspaces
+        const devices = this._devicesController.value;
+        const clonePlants = this._getPlantsByStage(devices, 'clone');
+        const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
+        const targetGrowspaceId = selectedDeviceData?.device_id || '';
+
         return html`
         <add-plant-dialog
             .open=${true}
@@ -145,12 +152,16 @@ export class DialogHost extends LitElement {
             .dry_start=${dialogState?.dry_start || ''}
             .cure_start=${dialogState?.cure_start || ''}
             .growspaceName=${selectedDeviceData?.name || ''}
+            .clonePlants=${clonePlants}
+            .seedlingPlants=${seedlingPlants}
+            .targetGrowspaceId=${targetGrowspaceId}
             @close=${() => {
                 if (this._activeDialogController.value.type === 'ADD_PLANT') {
                     this.store.ui.closeDialog();
                 }
             }}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
+            @transplant-plant-submit=${(e: CustomEvent) => this._handleTransplant(e.detail)}
             @create-new-strain=${(e: CustomEvent) => {
                 this.store.ui.setActiveDialog({
                     type: 'STRAIN_LIBRARY',
@@ -173,6 +184,47 @@ export class DialogHost extends LitElement {
             }}
         ></add-plant-dialog>
         `;
+    }
+
+    /** Get all plants with a specific stage from all devices, including growspace name */
+    private _getPlantsByStage(devices: GrowspaceDevice[], stage: string): (PlantEntity & { _growspaceName?: string })[] {
+        return devices
+            .flatMap(d => (d.plants || []).map(p => ({
+                ...p,
+                _growspaceName: d.name
+            })))
+            .filter(p => p.attributes.stage === stage);
+    }
+
+    /** Handle transplant from clone/seedling to new location */
+    private async _handleTransplant(detail: {
+        plant_id: string;
+        source_growspace_id: string;
+        target_growspace_id: string;
+        new_row: number;
+        new_col: number;
+        veg_start: string;
+    }) {
+        try {
+            // Update plant position and growspace
+            await this.hass.callService('growspace_manager', 'update_plant', {
+                plant_id: detail.plant_id,
+                row: detail.new_row,
+                col: detail.new_col,
+                growspace_id: detail.target_growspace_id,
+                veg_start: detail.veg_start
+            });
+
+            this.store.ui.showToast('Plant transplanted successfully', 'success');
+            this.store.ui.closeDialog();
+
+            // Refresh data after a small delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await this.store.refreshData();
+        } catch (e) {
+            console.error('[DialogHost] Transplant failed:', e);
+            this.store.ui.showToast('Failed to transplant plant', 'error');
+        }
     }
 
     private _renderAddPlantsDialog(
