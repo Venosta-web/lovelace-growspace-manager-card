@@ -205,9 +205,11 @@ export class PlantTimeline extends LitElement {
       .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
       .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
       .action-water .icon-wrapper,
-      .action-watering .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-watering .icon-wrapper,
+      .action-irrigation .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
       .action-water .icon-wrapper svg,
-      .action-watering .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
+      .action-watering .icon-wrapper svg,
+      .action-irrigation .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
 
       /* Day grouping */
       .day-header {

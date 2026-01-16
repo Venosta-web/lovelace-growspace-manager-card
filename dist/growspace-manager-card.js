@@ -243,6 +243,8 @@ const METRIC_ENTITY_KEYS = {
 };
 const DOMAIN = 'growspace_manager';
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+const WS_TYPE_GET_LOG = 'growspace_manager/get_log';
+const WS_TYPE_GET_ALERTS = 'growspace_manager/get_alerts';
 const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
 const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
@@ -10013,12 +10015,28 @@ class TimelineService {
      */
     async fetchGrowspaceEvents(growspaceId, limit = 50) {
         try {
-            const response = await this.hass.callWS({
-                type: 'growspace_manager/get_log',
-                growspace_id: growspaceId,
-                limit,
+            // Fetch both logs (user/system) and alerts (environmental) concurrently
+            const [logsResponse, alertsResponse] = await Promise.all([
+                this.hass.callWS({
+                    type: WS_TYPE_GET_LOG,
+                    growspace_id: growspaceId,
+                    limit: limit, // User logs are less frequent, standard limit ok
+                }),
+                this.hass.callWS({
+                    type: WS_TYPE_GET_ALERTS,
+                    growspace_id: growspaceId,
+                    limit: 300, // Alerts are frequent, need higher limit to not miss recent ones
+                })
+            ]);
+            const logs = logsResponse?.[growspaceId] || [];
+            const alerts = alertsResponse?.[growspaceId] || [];
+            // Combine and sort by timestamp descending
+            const combined = [...logs, ...alerts].sort((a, b) => {
+                const tA = new Date(a.timestamp || a.start_time).getTime();
+                const tB = new Date(b.timestamp || b.start_time).getTime();
+                return tB - tA; // Newest first
             });
-            return response?.[growspaceId] || [];
+            return combined;
         }
         catch (e) {
             console.error('Error fetching growspace events:', e);
@@ -11117,9 +11135,11 @@ PlantTimeline.styles = [
       .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
       .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
       .action-water .icon-wrapper,
-      .action-watering .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-watering .icon-wrapper,
+      .action-irrigation .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
       .action-water .icon-wrapper svg,
-      .action-watering .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
+      .action-watering .icon-wrapper svg,
+      .action-irrigation .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
 
       /* Day grouping */
       .day-header {
@@ -17251,6 +17271,23 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
     _normalize(s) {
         return s?.toLowerCase().trim() || '';
     }
+    _getEventColor(category, type) {
+        const cat = this._normalize(category);
+        const t = this._normalize(type);
+        if (t.includes('ipm'))
+            return '#9c27b0';
+        if (cat === 'training' || t.includes('training'))
+            return 'var(--gm-warning-color, #ff9800)';
+        if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient'))
+            return 'var(--gm-info-color, #2196f3)';
+        // Severity/Alerts
+        if (cat === 'alert')
+            return 'var(--error-color, #f44336)';
+        // Notes
+        if (cat === 'note')
+            return 'var(--warning-color, #ff9800)';
+        return 'var(--accent-color, #4caf50)';
+    }
     _getSeverityColor(severity, sensorType) {
         if (sensorType?.toLowerCase() === 'optimal') {
             if (severity >= 0.9)
@@ -17411,16 +17448,20 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                         return x ``;
                     const cat = this._normalize(event.category);
                     const isNote = cat === 'note';
-                    const type = isNote ? 'Plant Note' :
-                        (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
-                            (cat ? cat.replace(/_/g, ' ') : 'Event'));
+                    // Format type and hide Plant ID
+                    let rawType = event.sensor_type || cat || 'Event';
+                    // Remove common plant ID prefixes like "plant_uuid_" or "plant uuid "
+                    rawType = rawType.replace(/plant[\s_]+[a-z0-9-]+[\s_]+/i, '');
+                    // Clean up underscores
+                    const type = isNote ? 'Plant Note' : rawType.replace(/_/g, ' ');
                     const startTime = event.timestamp || event.start_time;
                     const index = (this._events || []).indexOf(event);
+                    const eventColor = this._getEventColor(event.category, event.sensor_type);
                     return x `
                     <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
                       <div class="event-header">
                         <div>
-                          <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                          <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
                         ${event.duration_sec > 0
@@ -17447,7 +17488,9 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                               </div>
                             ` : E}
                           ` : (event.reasons && event.reasons.length > 0
-                        ? event.reasons.map((reason) => x `<span class="reason-badge">${reason}</span>`)
+                        ? event.reasons
+                            .filter((r) => !r.trim().toLowerCase().startsWith('plant_id:'))
+                            .map((reason) => x `<span class="reason-badge">${reason}</span>`)
                         : E)}
                         </div>
                         

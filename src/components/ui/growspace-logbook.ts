@@ -173,6 +173,23 @@ export class GrowspaceLogbook extends LitElement {
     `,
   ];
 
+  private _getEventColor(category?: string, type?: string): string {
+    const cat = this._normalize(category);
+    const t = this._normalize(type);
+
+    if (t.includes('ipm')) return '#9c27b0';
+    if (cat === 'training' || t.includes('training')) return 'var(--gm-warning-color, #ff9800)';
+    if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient')) return 'var(--gm-info-color, #2196f3)';
+
+    // Severity/Alerts
+    if (cat === 'alert') return 'var(--error-color, #f44336)';
+
+    // Notes
+    if (cat === 'note') return 'var(--warning-color, #ff9800)';
+
+    return 'var(--accent-color, #4caf50)';
+  }
+
   private _getSeverityColor(severity: number, sensorType?: string): string {
     if (sensorType?.toLowerCase() === 'optimal') {
       if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
@@ -345,17 +362,23 @@ export class GrowspaceLogbook extends LitElement {
             if (!event) return html``;
             const cat = this._normalize(event.category);
             const isNote = cat === 'note';
-            const type = isNote ? 'Plant Note' :
-              (event.sensor_type ? event.sensor_type.replace(/_/g, ' ') :
-                (cat ? cat.replace(/_/g, ' ') : 'Event'));
+
+            // Format type and hide Plant ID
+            let rawType = event.sensor_type || cat || 'Event';
+            // Remove common plant ID prefixes like "plant_uuid_" or "plant uuid "
+            rawType = rawType.replace(/plant[\s_]+[a-z0-9-]+[\s_]+/i, '');
+            // Clean up underscores
+            const type = isNote ? 'Plant Note' : rawType.replace(/_/g, ' ');
+
             const startTime = (event as any).timestamp || event.start_time;
             const index = (this._events || []).indexOf(event);
+            const eventColor = this._getEventColor(event.category, event.sensor_type);
 
             return html`
                     <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
                       <div class="event-header">
                         <div>
-                          <div class="event-type" style="color: ${isNote ? 'var(--warning-color, #ff9800)' : ''}">${type}</div>
+                          <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
                         ${event.duration_sec > 0
@@ -382,7 +405,9 @@ export class GrowspaceLogbook extends LitElement {
                               </div>
                             ` : nothing}
                           ` : (event.reasons && event.reasons.length > 0
-                ? event.reasons.map((reason: string) => html`<span class="reason-badge">${reason}</span>`)
+                ? event.reasons
+                  .filter((r: string) => !r.trim().toLowerCase().startsWith('plant_id:'))
+                  .map((reason: string) => html`<span class="reason-badge">${reason}</span>`)
                 : nothing)}
                         </div>
                         

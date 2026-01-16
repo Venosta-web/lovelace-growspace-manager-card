@@ -1,5 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceEvent } from '../types';
+import { WS_TYPE_GET_LOG, WS_TYPE_GET_ALERTS } from '../constants';
 
 /**
  * Payload for creating a new timeline note
@@ -28,14 +29,31 @@ export class TimelineService {
         limit = 50
     ): Promise<GrowspaceEvent[]> {
         try {
-            const response = await this.hass.callWS<Record<string, GrowspaceEvent[]>>(
-                {
-                    type: 'growspace_manager/get_log',
+            // Fetch both logs (user/system) and alerts (environmental) concurrently
+            const [logsResponse, alertsResponse] = await Promise.all([
+                this.hass.callWS<Record<string, GrowspaceEvent[]>>({
+                    type: WS_TYPE_GET_LOG,
                     growspace_id: growspaceId,
-                    limit,
-                }
-            );
-            return response?.[growspaceId] || [];
+                    limit: limit, // User logs are less frequent, standard limit ok
+                }),
+                this.hass.callWS<Record<string, GrowspaceEvent[]>>({
+                    type: WS_TYPE_GET_ALERTS,
+                    growspace_id: growspaceId,
+                    limit: 300, // Alerts are frequent, need higher limit to not miss recent ones
+                })
+            ]);
+
+            const logs = logsResponse?.[growspaceId] || [];
+            const alerts = alertsResponse?.[growspaceId] || [];
+
+            // Combine and sort by timestamp descending
+            const combined = [...logs, ...alerts].sort((a, b) => {
+                const tA = new Date(a.timestamp || a.start_time).getTime();
+                const tB = new Date(b.timestamp || b.start_time).getTime();
+                return tB - tA; // Newest first
+            });
+
+            return combined;
         } catch (e) {
             console.error('Error fetching growspace events:', e);
             return [];  // Return empty array on error (matches old controller behavior)
