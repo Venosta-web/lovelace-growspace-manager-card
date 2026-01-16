@@ -9086,7 +9086,22 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('create-new-strain', {
             bubbles: true,
             composed: true,
-            detail: { source: 'add-plant' }
+            detail: {
+                source: 'add-plant',
+                returnPayload: {
+                    row: this.row,
+                    col: this.col,
+                    strain: this.strain,
+                    phenotype: this.phenotype,
+                    seedling_start: this.seedling_start,
+                    veg_start: this.veg_start,
+                    flower_start: this.flower_start,
+                    mother_start: this.mother_start,
+                    clone_start: this.clone_start,
+                    dry_start: this.dry_start,
+                    cure_start: this.cure_start,
+                }
+            }
         }));
     }
     _confirm() {
@@ -9127,7 +9142,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -9311,10 +9326,10 @@ __decorate([
     n$5({ type: Boolean, reflect: true })
 ], AddPlantDialog.prototype, "open", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "strain", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "phenotype", void 0);
 __decorate([
     r$2()
@@ -9326,25 +9341,25 @@ __decorate([
     n$5({ type: Number })
 ], AddPlantDialog.prototype, "col", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "veg_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "flower_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "seedling_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "mother_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "clone_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "dry_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantDialog.prototype, "cure_start", void 0);
 AddPlantDialog = __decorate([
     t$2('add-plant-dialog')
@@ -9389,7 +9404,22 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('create-new-strain', {
             bubbles: true,
             composed: true,
-            detail: { source: 'add-plants' }
+            detail: {
+                source: 'add-plants',
+                returnPayload: {
+                    strain: this.strain,
+                    phenotype: this.phenotype,
+                    amount: this.amount,
+                    start_number: this.start_number,
+                    seedling_start: this.seedling_start,
+                    veg_start: this.veg_start,
+                    flower_start: this.flower_start,
+                    mother_start: this.mother_start,
+                    clone_start: this.clone_start,
+                    dry_start: this.dry_start,
+                    cure_start: this.cure_start,
+                }
+            }
         }));
     }
     _confirm() {
@@ -9436,7 +9466,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -9652,40 +9682,40 @@ __decorate([
     n$5({ type: Boolean, reflect: true })
 ], AddPlantsDialog.prototype, "open", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "strain", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "phenotype", void 0);
 __decorate([
     r$2()
 ], AddPlantsDialog.prototype, "addToLibrary", void 0);
 __decorate([
-    r$2()
+    n$5({ type: Number })
 ], AddPlantsDialog.prototype, "amount", void 0);
 __decorate([
-    r$2()
+    n$5({ type: Number })
 ], AddPlantsDialog.prototype, "start_number", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "veg_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "flower_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "seedling_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "mother_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "clone_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "dry_start", void 0);
 __decorate([
-    r$2()
+    n$5({ type: String })
 ], AddPlantsDialog.prototype, "cure_start", void 0);
 AddPlantsDialog = __decorate([
     t$2('add-plants-dialog')
@@ -11293,6 +11323,19 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             composed: true
         }));
     }
+    _openClone() {
+        if (!this.plant)
+            return;
+        const growspaceId = this.plant.attributes?.growspace_id || '';
+        this.dispatchEvent(new CustomEvent('open-clone', {
+            detail: {
+                sourcePlant: this.plant,
+                defaultGrowspaceId: growspaceId
+            },
+            bubbles: true,
+            composed: true
+        }));
+    }
     _openStrainEditor() {
         if (!this.plant)
             return;
@@ -11425,7 +11468,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
           ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
@@ -11784,6 +11827,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
           <div class="action-card" @click=${() => this._openIPM()}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             <span>Log IPM</span>
+          </div>
+          <div class="action-card" @click=${() => this._openClone()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+            <span>Take Clone</span>
           </div>
         </div>
       </div>
@@ -12267,8 +12314,23 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     _handleSave() {
         if (!this._editorState.strain)
             return;
+        // Save to backend
         this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-        this._view = 'browse';
+        // If opened from a specific source, we might want to return there immediately
+        if (this.source) {
+            this.dispatchEvent(new CustomEvent('strain-created-at-source', {
+                detail: {
+                    strain: this._editorState,
+                    source: this.source,
+                    returnPayload: this.returnPayload
+                },
+                bubbles: true,
+                composed: true
+            }));
+        }
+        else {
+            this._view = 'browse';
+        }
     }
     _handleDelete(key) {
         this._pendingDeleteKey = key;
@@ -12341,7 +12403,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
@@ -12636,7 +12698,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </datalist>
 
       <div class="dialog-header">
-        <div style="display:flex; align-items:center; gap:16px;">
+        <div class="dialog-title-group" style="display:flex; align-items:center; gap:16px;">
           <button
             class="md3-button tonal"
             style="padding: 0 12px; height: 32px;"
@@ -12655,7 +12717,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         <button
           class="md3-button text close"
           @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px margin-left: auto;"
+          style="min-width:auto; padding:8px; margin-left: auto;"
         >
           <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiClose}"></path>
@@ -13132,7 +13194,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
         >
           <div class="dialog-header">
-            <h2 class="dialog-title">Select from Library</h2>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Select from Library</h2>
+            </div>
             <button
               class="md3-button text"
               @click=${() => this._toggleImageSelector(false)}
@@ -13187,7 +13251,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       <div class="crop-overlay">
         <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
           <div class="dialog-header">
-            <h2 class="dialog-title">Import Strains</h2>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Import Strains</h2>
+            </div>
             <button
               class="md3-button text"
               @click=${() => (this._importDialogOpen = false)}
@@ -13318,6 +13384,15 @@ StrainLibraryDialog.styles = [
         width: 80vw;
         max-width: 95vw;
         height: 85vh;
+      }
+
+      @media (min-width: 601px) {
+        .dialog-header {
+          justify-content: space-between;
+        }
+        .dialog-header .dialog-title-group {
+          flex: none;
+        }
       }
 
       .sd-content {
@@ -13836,6 +13911,12 @@ __decorate([
 __decorate([
     n$5({ type: Object })
 ], StrainLibraryDialog.prototype, "editingStrain", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainLibraryDialog.prototype, "source", void 0);
+__decorate([
+    n$5({ type: Object })
+], StrainLibraryDialog.prototype, "returnPayload", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_view", void 0);
@@ -18867,6 +18948,204 @@ TrainingDialog = __decorate([
     t$2('training-dialog')
 ], TrainingDialog);
 
+let CloneDialog = class CloneDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceOptions = {};
+        this.defaultGrowspace = '';
+        this._numClones = 1;
+        this._targetGrowspace = '';
+        this._submitting = false;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('defaultGrowspace') && this.defaultGrowspace && !this._targetGrowspace) {
+            this._targetGrowspace = this.defaultGrowspace;
+        }
+    }
+    _handleClose() {
+        this.store.ui.closeDialog();
+    }
+    async _save() {
+        if (!this.sourcePlant || this._numClones < 1)
+            return;
+        this._submitting = true;
+        try {
+            const plantId = this.sourcePlant.attributes?.plant_id ||
+                this.sourcePlant.entity_id.replace('sensor.', '');
+            this.dispatchEvent(new CustomEvent('take-clone-submit', {
+                detail: {
+                    motherPlantId: plantId,
+                    numClones: Number(this._numClones) || 1,
+                    targetGrowspaceId: this._targetGrowspace || this.defaultGrowspace
+                },
+                bubbles: true,
+                composed: true
+            }));
+            this._handleClose();
+        }
+        finally {
+            this._submitting = false;
+        }
+    }
+    render() {
+        if (!this.open || !this.sourcePlant)
+            return E;
+        const attrs = this.sourcePlant.attributes;
+        const strain = attrs?.strain || 'Unknown Strain';
+        const phenotype = attrs?.phenotype || 'No Phenotype';
+        const dialogColor = '#8bc34a'; // Light green for cloning
+        const title = 'Take Clone';
+        const subtitle = `Creating clones from ${strain}`;
+        const growspaceEntries = Object.entries(this.growspaceOptions || {});
+        return x `
+            <ha-dialog
+                .open=${this.open}
+                @closed=${this._handleClose}
+                hideActions
+                .heading=${title}
+                .escapeKeyAction=${'close'}
+            >
+                <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+                    <div class="dialog-header">
+                        <div class="dialog-icon">
+                            <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
+                        </div>
+                        <div class="dialog-title-group">
+                            <h2 class="dialog-title">${title}</h2>
+                            <div class="dialog-subtitle">${subtitle}</div>
+                        </div>
+                        <button class="md3-button text" @click=${this._handleClose}>
+                            <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                        </button>
+                    </div>
+
+                    <div class="dialog-content-grid">
+                        <div class="detail-card">
+                            <h3>Source Plant</h3>
+                            <div class="source-info">
+                                <div class="source-info-row">
+                                    <span class="source-info-label">Strain</span>
+                                    <span class="source-info-value">${strain}</span>
+                                </div>
+                                <div class="source-info-row">
+                                    <span class="source-info-label">Phenotype</span>
+                                    <span class="source-info-value">${phenotype}</span>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Clone Settings</h3>
+                                <md3-number-input
+                                    label="Number of Clones"
+                                    .value=${this._numClones}
+                                    .min=${1}
+                                    .max=${20}
+                                    @change=${(e) => this._numClones = Number(e.detail) || 1}
+                                ></md3-number-input>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Target Growspace</h3>
+                                <md3-select
+                                    label="Destination"
+                                    .value=${this._targetGrowspace || this.defaultGrowspace}
+                                    .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
+                                    @change=${(e) => this._targetGrowspace = e.detail}
+                                ></md3-select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="md3-button text" @click=${this._handleClose}>Cancel</button>
+                        <button 
+                            class="md3-button primary" 
+                            @click=${this._save}
+                            ?disabled=${this._submitting}
+                        >
+                            <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
+                            ${this._submitting ? 'Creating...' : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
+                        </button>
+                    </div>
+                </div>
+            </ha-dialog>
+        `;
+    }
+};
+CloneDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+      }
+      .form-section {
+          margin-bottom: 24px;
+      }
+      .form-section h3 {
+          margin-top: 0;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+      }
+      .source-info {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      }
+      .source-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .source-info-row:last-child {
+        margin-bottom: 0;
+      }
+      .source-info-label {
+        opacity: 0.7;
+      }
+      .source-info-value {
+        font-weight: 500;
+        color: var(--primary-color, #4caf50);
+      }
+    `
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], CloneDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], CloneDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], CloneDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], CloneDialog.prototype, "sourcePlant", void 0);
+__decorate([
+    n$5({ type: Object })
+], CloneDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ type: String })
+], CloneDialog.prototype, "defaultGrowspace", void 0);
+__decorate([
+    r$2()
+], CloneDialog.prototype, "_numClones", void 0);
+__decorate([
+    r$2()
+], CloneDialog.prototype, "_targetGrowspace", void 0);
+__decorate([
+    r$2()
+], CloneDialog.prototype, "_submitting", void 0);
+CloneDialog = __decorate([
+    t$2('clone-dialog')
+], CloneDialog);
+
 let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     constructor() {
         super(...arguments);
@@ -20330,6 +20609,8 @@ let DialogHost = class DialogHost extends i$3 {
                     return this._renderNutrientPresetsDialog(active, selectedDeviceData);
                 case 'TRAINING':
                     return this._renderTrainingDialog(active);
+                case 'TAKE_CLONE':
+                    return this._renderCloneDialog(active, growspaceOptions);
                 case 'IPM':
                     return this._renderIPMDialog(active, selectedDeviceData);
                 case 'NUTRIENT_INVENTORY':
@@ -20358,6 +20639,15 @@ let DialogHost = class DialogHost extends i$3 {
             .strainLibrary=${strainLibrary}
             .row=${dialogState?.row}
             .col=${dialogState?.col}
+            .strain=${dialogState?.strain || ''}
+            .phenotype=${dialogState?.phenotype || ''}
+            .veg_start=${dialogState?.veg_start || ''}
+            .flower_start=${dialogState?.flower_start || ''}
+            .seedling_start=${dialogState?.seedling_start || ''}
+            .mother_start=${dialogState?.mother_start || ''}
+            .clone_start=${dialogState?.clone_start || ''}
+            .dry_start=${dialogState?.dry_start || ''}
+            .cure_start=${dialogState?.cure_start || ''}
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => {
             if (this._activeDialogController.value.type === 'ADD_PLANT') {
@@ -20365,13 +20655,15 @@ let DialogHost = class DialogHost extends i$3 {
             }
         }}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-            @create-new-strain=${() => {
+            @create-new-strain=${(e) => {
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
                 payload: {
+                    source: e.detail.source,
+                    returnPayload: e.detail.returnPayload,
                     editingStrain: {
-                        strain: '',
-                        phenotype: '',
+                        strain: e.detail.returnPayload?.strain || '',
+                        phenotype: e.detail.returnPayload?.phenotype || '',
                         key: '',
                         type: 'Hybrid',
                         flowering_days_min: 60,
@@ -20395,6 +20687,17 @@ let DialogHost = class DialogHost extends i$3 {
             .strainLibrary=${strainLibrary}
             .growspaceName=${selectedDeviceData?.name || ''}
             .growspaceDevice=${selectedDeviceData}
+            .strain=${active.payload?.strain || ''}
+            .phenotype=${active.payload?.phenotype || ''}
+            .amount=${active.payload?.amount || 1}
+            .start_number=${active.payload?.start_number || 1}
+            .veg_start=${active.payload?.veg_start || ''}
+            .flower_start=${active.payload?.flower_start || ''}
+            .seedling_start=${active.payload?.seedling_start || ''}
+            .mother_start=${active.payload?.mother_start || ''}
+            .clone_start=${active.payload?.clone_start || ''}
+            .dry_start=${active.payload?.dry_start || ''}
+            .cure_start=${active.payload?.cure_start || ''}
             @close=${() => {
             if (this._activeDialogController.value.type === 'ADD_PLANTS') {
                 this.store.ui.closeDialog();
@@ -20402,13 +20705,15 @@ let DialogHost = class DialogHost extends i$3 {
         }}
             @show-toast=${(e) => this.store.showToast(e.detail.message, e.detail.type)}
             @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
-            @create-new-strain=${() => {
+            @create-new-strain=${(e) => {
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
                 payload: {
+                    source: e.detail.source,
+                    returnPayload: e.detail.returnPayload,
                     editingStrain: {
-                        strain: '',
-                        phenotype: '',
+                        strain: e.detail.returnPayload?.strain || '',
+                        phenotype: e.detail.returnPayload?.phenotype || '',
                         key: '',
                         type: 'Hybrid',
                         flowering_days_min: 60,
@@ -20462,6 +20767,10 @@ let DialogHost = class DialogHost extends i$3 {
             type: 'IPM',
             payload: e.detail
         })}
+            @open-clone=${(e) => this.store.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: e.detail
+        })}
             @open-strain-editor=${(e) => {
             const { strain, phenotype } = e.detail;
             const strainLibrary = this.store.data.$strainLibrary.get();
@@ -20509,10 +20818,35 @@ let DialogHost = class DialogHost extends i$3 {
             .open=${true}
             .strains=${strainLibrary}
             .editingStrain=${payload?.editingStrain}
+            .source=${payload?.source}
+            .returnPayload=${payload?.returnPayload}
             @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
                 this.store.ui.closeDialog();
+            }
+        }}
+            @strain-created-at-source=${(e) => {
+            const { strain, source, returnPayload } = e.detail;
+            if (source === 'add-plant') {
+                this.store.ui.setActiveDialog({
+                    type: 'ADD_PLANT',
+                    payload: {
+                        ...returnPayload,
+                        strain: strain.strain,
+                        phenotype: strain.phenotype
+                    }
+                });
+            }
+            else if (source === 'add-plants') {
+                this.store.ui.setActiveDialog({
+                    type: 'ADD_PLANTS',
+                    payload: {
+                        ...returnPayload,
+                        strain: strain.strain,
+                        phenotype: strain.phenotype
+                    }
+                });
             }
         }}
             @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
@@ -20729,6 +21063,26 @@ let DialogHost = class DialogHost extends i$3 {
                 @close=${() => this.store.ui.closeDialog()}
                 @data-changed=${() => this._handleDataChanged()}
             ></nutrient-inventory-dialog>
+        `;
+    }
+    _renderCloneDialog(active, growspaceOptions) {
+        if (active.type !== 'TAKE_CLONE')
+            return x ``;
+        const dialogState = active.payload;
+        return x `
+            <clone-dialog
+                .open=${true}
+                .store=${this.store}
+                .sourcePlant=${dialogState.sourcePlant}
+                .growspaceOptions=${growspaceOptions}
+                .defaultGrowspace=${dialogState.defaultGrowspaceId}
+                @take-clone-submit=${async (e) => {
+            const { motherPlantId, numClones, targetGrowspaceId } = e.detail;
+            await this.store.actions.plant.takeClone(dialogState.sourcePlant, numClones, targetGrowspaceId);
+            await this._handleDataChanged();
+            this.store.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
+        }}
+            ></clone-dialog>
         `;
     }
     _renderNutrientDialog(active) {
@@ -35023,14 +35377,15 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
 /**
  * Take clones from a mother plant.
  */
-async function takeClone(ctx, motherPlant, numClones) {
+async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
     const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
     try {
         await ctx.dataService.takeClone({
             mother_plant_id: plantId,
             num_clones: numClones,
+            target_growspace_id: targetGrowspaceId,
         });
-        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
         return true;
     }
     catch (error) {
@@ -35478,7 +35833,7 @@ class ActionDispatcher {
             move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
             drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
             nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
-            takeClone: (mother, num) => takeClone(this.ctx, mother, num),
+            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
             updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
             add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
                 row: r,

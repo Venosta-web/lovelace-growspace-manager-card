@@ -591,6 +591,20 @@ export class PlantOverviewDialog extends LitElement {
     }));
   }
 
+  private _openClone() {
+    if (!this.plant) return;
+    const growspaceId = this.plant.attributes?.growspace_id || '';
+
+    this.dispatchEvent(new CustomEvent('open-clone', {
+      detail: {
+        sourcePlant: this.plant,
+        defaultGrowspaceId: growspaceId
+      },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
   private _openStrainEditor() {
     if (!this.plant) return;
     const strain = this.plant.attributes?.strain;
@@ -725,7 +739,7 @@ export class PlantOverviewDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
           ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : nothing}
@@ -793,10 +807,10 @@ export class PlantOverviewDialog extends LitElement {
 
           <div class="overview-grid">
             ${this._activeTab === 'dashboard'
-                ? this._renderDashboard(attributes)
-                : this._activeTab === 'actions'
-                  ? this._renderActions()
-                  : this._renderTimeline()}
+        ? this._renderDashboard(attributes)
+        : this._activeTab === 'actions'
+          ? this._renderActions()
+          : this._renderTimeline()}
           </div>
 
           <!-- ACTIONS -->
@@ -824,12 +838,12 @@ export class PlantOverviewDialog extends LitElement {
                         ></md3-number-input>
                         <button class="md3-button primary"
                           @click=${(e: MouseEvent) => {
-               const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
-               const input = container?.querySelector('#clone-count-input') as any;
-               const val = input ? parseInt(input.value, 10) : 1;
-               const numClones = isNaN(val) ? 1 : val;
-               this._takeClone(this.plant!, numClones);
-             }}
+            const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
+            const input = container?.querySelector('#clone-count-input') as any;
+            const val = input ? parseInt(input.value, 10) : 1;
+            const numClones = isNaN(val) ? 1 : val;
+            this._takeClone(this.plant!, numClones);
+          }}
                         >
                           <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
                           Take Clone
@@ -1094,6 +1108,10 @@ export class PlantOverviewDialog extends LitElement {
           <div class="action-card" @click=${() => this._openIPM()}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             <span>Log IPM</span>
+          </div>
+          <div class="action-card" @click=${() => this._openClone()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+            <span>Take Clone</span>
           </div>
         </div>
       </div>

@@ -17,6 +17,14 @@ vi.mock('../../src/components/ui/md3-number-input', () => ({
         set value(v) { this.setAttribute('value', v); }
     }
 }));
+vi.mock('../../src/components/ui/md3-select', () => ({
+    Md3Select: class extends HTMLElement {
+        get value() { return this.getAttribute('value') || ''; }
+        set value(v) { this.setAttribute('value', v); }
+        set options(o: any) { (this as any)._options = o; }
+        get options() { return (this as any)._options || []; }
+    }
+}));
 
 // Mock DataService
 const mockWaterPlant = vi.fn();
@@ -168,7 +176,7 @@ describe('WateringDialog', () => {
         element.open = true;
         await element.updateComplete;
 
-        const addBtn = element.shadowRoot?.querySelector('.add-nutrient-btn') as HTMLElement;
+        const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || []).find(b => b.textContent?.includes('Add')) as HTMLElement;
         addBtn.click();
         await element.updateComplete;
 
@@ -200,9 +208,8 @@ describe('WateringDialog', () => {
         };
         await element.updateComplete;
 
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        select.value = 'veg1';
-        select.dispatchEvent(new Event('change'));
+        const select = element.shadowRoot?.querySelector('md3-select') as any;
+        select.dispatchEvent(new CustomEvent('change', { detail: 'veg1' }));
         await element.updateComplete;
 
         expect((element as any)._nutrients.length).toBe(2);
@@ -217,15 +224,13 @@ describe('WateringDialog', () => {
         await element.updateComplete;
 
         // Select first
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        select.value = 'veg1';
-        select.dispatchEvent(new Event('change'));
+        const select = element.shadowRoot?.querySelector('md3-select') as any;
+        select.dispatchEvent(new CustomEvent('change', { detail: 'veg1' }));
         await element.updateComplete;
         expect((element as any)._nutrients.length).toBe(2);
 
         // Deselect
-        select.value = '';
-        select.dispatchEvent(new Event('change'));
+        select.dispatchEvent(new CustomEvent('change', { detail: '' }));
         await element.updateComplete;
         expect((element as any)._nutrients.length).toBe(0);
     });
@@ -335,8 +340,9 @@ describe('WateringDialog', () => {
             };
             await element.updateComplete;
 
-            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(option?.textContent).toContain('⭐ (Recommended)');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const option = select.options.find((o: any) => o.value === 'veg1');
+            expect(option?.label).toContain('⭐(Recommended)');
         });
 
         it('should not recommend if stage mismatch', async () => {
@@ -356,8 +362,9 @@ describe('WateringDialog', () => {
             await element.requestUpdate(); // Force re-render with new data
             await element.updateComplete;
 
-            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(option?.textContent).not.toContain('⭐');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const option = select.options.find((o: any) => o.value === 'veg1');
+            expect(option?.label).not.toContain('⭐');
 
             // Reset for other tests
             mockDevice.plants![0].attributes.stage = 'veg';
@@ -464,8 +471,9 @@ describe('WateringDialog', () => {
             await element.updateComplete;
 
             // When stages are mixed, no preset should be marked as recommended
-            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(option?.textContent).not.toContain('⭐');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const option = select.options.find((o: any) => o.value === 'veg1');
+            expect(option?.label).not.toContain('⭐');
 
             // Restore
             mockDevice.plants = originalPlants;
@@ -493,12 +501,13 @@ describe('WateringDialog', () => {
             await element.updateComplete;
 
             // veg1 has no min_days requirement, should be recommended
-            const veg1Option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(veg1Option?.textContent).toContain('⭐');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const veg1Option = select.options.find((o: any) => o.value === 'veg1');
+            expect(veg1Option?.label).toContain('⭐');
 
             // late-veg requires 20 days, plant has 10, should NOT be recommended
-            const lateVegOption = element.shadowRoot?.querySelector('option[value="late-veg"]');
-            expect(lateVegOption?.textContent).not.toContain('⭐');
+            const lateVegOption = select.options.find((o: any) => o.value === 'late-veg');
+            expect(lateVegOption?.label).not.toContain('⭐');
 
             // Restore
             mockStore.data.$nutrientPresets.get = () => ({ 'veg1': mockPreset });
@@ -513,7 +522,7 @@ describe('WateringDialog', () => {
             await element.updateComplete;
 
             // Should not crash, preset select should still render
-            const select = element.shadowRoot?.querySelector('select');
+            const select = element.shadowRoot?.querySelector('md3-select');
             expect(select).toBeTruthy();
         });
 
@@ -530,7 +539,7 @@ describe('WateringDialog', () => {
             await element.updateComplete;
 
             // Should not crash
-            const select = element.shadowRoot?.querySelector('select');
+            const select = element.shadowRoot?.querySelector('md3-select');
             expect(select).toBeTruthy();
 
             // Restore
@@ -559,8 +568,9 @@ describe('WateringDialog', () => {
             };
             await element.updateComplete;
 
-            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(option?.textContent).toContain('⭐');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const option = select.options.find((o: any) => o.value === 'veg1');
+            expect(option?.label).toContain('⭐');
 
             // Restore
             mockDevice.plants = originalPlants;
@@ -587,9 +597,9 @@ describe('WateringDialog', () => {
             };
             await element.updateComplete;
 
-            // Should use 0 as fallback for days_in_stage
-            const option = element.shadowRoot?.querySelector('option[value="veg1"]');
-            expect(option?.textContent).toContain('⭐');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            const option = select.options.find((o: any) => o.value === 'veg1');
+            expect(option?.label).toContain('⭐');
 
             // Restore
             mockDevice.plants = originalPlants;
@@ -681,9 +691,8 @@ describe('WateringDialog', () => {
             element.open = true;
             await element.updateComplete;
 
-            const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-            select.value = 'non-existent';
-            select.dispatchEvent(new Event('change'));
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
+            select.dispatchEvent(new CustomEvent('change', { detail: 'non-existent' }));
             await element.updateComplete;
 
             // Should not crash and nutrients should remain empty (or unchanged from initial)
@@ -695,9 +704,9 @@ describe('WateringDialog', () => {
             element.open = true;
             await element.updateComplete;
 
-            const select = element.shadowRoot?.querySelector('select');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
             // If presets are null, only the "Manual" option should be there
-            expect(select?.querySelectorAll('option').length).toBe(1);
+            expect(select?.options?.length).toBe(1);
         });
 
         it('should handle missing selectedDevice in _renderPresetOptions', async () => {
@@ -710,10 +719,11 @@ describe('WateringDialog', () => {
             };
             await element.updateComplete;
 
-            const select = element.shadowRoot?.querySelector('select');
+            const select = element.shadowRoot?.querySelector('md3-select') as any;
             expect(select).toBeTruthy();
             // Should not crash and should not show recommendations
-            expect(select?.textContent).not.toContain('⭐');
+            const anyRecommended = select?.options?.some((o: any) => o.label.includes('⭐'));
+            expect(anyRecommended).toBe(false);
         });
     });
 });

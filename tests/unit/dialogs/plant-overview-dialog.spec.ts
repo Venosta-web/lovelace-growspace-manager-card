@@ -868,7 +868,7 @@ describe('PlantOverviewDialog', () => {
         await element.updateComplete;
 
         const actionCards = element.shadowRoot?.querySelectorAll('.action-card');
-        expect(actionCards?.length).toBe(3);
+        expect(actionCards?.length).toBe(4);
 
         const waterCard = Array.from(actionCards || []).find(b => b.textContent?.includes('Water'));
         expect(waterCard).toBeTruthy();

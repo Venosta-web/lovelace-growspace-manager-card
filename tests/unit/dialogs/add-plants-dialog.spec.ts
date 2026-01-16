@@ -221,9 +221,8 @@ describe('AddPlantsDialog', () => {
         expect(createBtn).toBeTruthy();
         createBtn.click();
 
-        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
-            detail: { source: 'add-plants' }
-        }));
+        expect(createSpy).toHaveBeenCalled();
+        expect(createSpy.mock.calls[0][0].detail).toMatchObject({ source: 'add-plants' });
     });
     it('shows validation error when growspace slots are full', async () => {
         // Setup a restricted growspace

@@ -10,6 +10,7 @@ import {
   NutrientPresetsDialogState,
   TrainingDialogState,
   IPMDialogState,
+  CloneDialogState,
 } from './types';
 
 // Discriminated union for central dialog management
@@ -28,6 +29,7 @@ export type ActiveDialogState =
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
   | { type: 'TRAINING'; payload: TrainingDialogState }
   | { type: 'IPM'; payload: IPMDialogState }
+  | { type: 'TAKE_CLONE'; payload: CloneDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> };
 

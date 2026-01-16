@@ -419,9 +419,9 @@ describe('PlantCard', () => {
             expect(img?.getAttribute('srcset')).toContain('test_image.webp 1024w');
         });
 
-        it('should not render image if no match found', async () => {
+        it('should render fallback image if no match found', async () => {
             const plant = {
-                attributes: { strain: 'Unknown Strain', plant_id: 'p1' },
+                attributes: { strain: 'Unknown Strain', plant_id: 'p1', stage: 'veg' },
                 state: 'veg'
             } as any;
 
@@ -433,7 +433,8 @@ describe('PlantCard', () => {
             await element.updateComplete;
 
             const img = element.shadowRoot?.querySelector('img');
-            expect(img).toBeNull();
+            expect(img).toBeTruthy();
+            expect(img?.src).toContain('/growspace_manager/static/stages/veg.png');
         });
     });
 

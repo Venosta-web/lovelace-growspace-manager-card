@@ -179,9 +179,8 @@ describe('AddPlantDialog', () => {
             expect(createBtn).toBeTruthy();
             createBtn.click();
 
-            expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { source: 'add-plant' }
-            }));
+            expect(createSpy).toHaveBeenCalled();
+            expect(createSpy.mock.calls[0][0].detail).toMatchObject({ source: 'add-plant' });
         });
 
         it('should update addToLibrary state on switch change', async () => {

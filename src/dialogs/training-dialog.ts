@@ -174,7 +174,7 @@ export class TrainingDialog extends LitElement {
                         <button 
                             class="md3-button primary" 
                             style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-                            @click=${this._save}
+                            @click=${() => this._save()}
                             ?disabled=${!this._technique || this._submitting}
                         >
                             <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>

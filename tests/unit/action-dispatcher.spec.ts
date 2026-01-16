@@ -58,8 +58,8 @@ describe('ActionDispatcher', () => {
         });
 
         it('should delegate takeClone to plantActions', () => {
-            dispatcher.plant.takeClone(mockPlant, 5);
-            expect(plantActions.takeClone).toHaveBeenCalledWith(mockStore.context, mockPlant, 5);
+            dispatcher.plant.takeClone(mockPlant, 5, 'gs2');
+            expect(plantActions.takeClone).toHaveBeenCalledWith(mockStore.context, mockPlant, 5, 'gs2');
         });
 
         it('should delegate updateFromDialog to plantActions', () => {

@@ -250,7 +250,8 @@ export async function movePlantToGrowspace(
 export async function takeClone(
     ctx: ActionContext,
     motherPlant: PlantEntity,
-    numClones?: number
+    numClones?: number,
+    targetGrowspaceId?: string
 ): Promise<boolean> {
     const plantId =
         motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
@@ -259,8 +260,9 @@ export async function takeClone(
         await ctx.dataService.takeClone({
             mother_plant_id: plantId,
             num_clones: numClones,
+            target_growspace_id: targetGrowspaceId,
         });
-        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`);
+        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
         return true;
     } catch (error: any) {
         console.error(`Failed to take clone: ${error.message}`);

@@ -141,7 +141,7 @@ export class WateringDialog extends LitElement {
   }
 
   private _handlePresetChange(e: CustomEvent | Event) {
-    const presetId = (e as CustomEvent).detail || (e.target as HTMLSelectElement).value;
+    const presetId = (e as CustomEvent).detail !== undefined ? (e as CustomEvent).detail : (e?.target as any)?.value || '';
     this._selectedPresetId = presetId;
 
     if (!presetId) {
@@ -218,6 +218,24 @@ export class WateringDialog extends LitElement {
     }
   }
 
+  private _getPresetOptions(currentStage?: string, daysInStage = 0) {
+    if (!this.store) return [];
+
+    const presetsRecord = this._presetsController?.value || {};
+    return Object.values(presetsRecord).map(p => {
+      let recommended = false;
+      if (p.stage && p.stage === currentStage) {
+        if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+          recommended = true;
+        }
+      }
+      return {
+        label: `${p.name}${recommended ? ' ⭐(Recommended)' : ''}`,
+        value: p.id
+      };
+    });
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
   }
@@ -261,20 +279,7 @@ export class WateringDialog extends LitElement {
       }
     }
 
-    // Create preset list for MD3 select
-    const presetsRecord = this._presetsController.value || {};
-    const presetList = Object.values(presetsRecord).map(p => {
-      let recommended = false;
-      if (p.stage && p.stage === currentStage) {
-        if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
-          recommended = true;
-        }
-      }
-      return {
-        label: `${p.name} ${recommended ? '⭐(Recommended)' : ''}`,
-        value: p.id
-      };
-    });
+    const presetList = this._getPresetOptions(currentStage, daysInStage);
 
     // Logic for recommendations to sort or star
     // For now simple listing as per IPM dialog style

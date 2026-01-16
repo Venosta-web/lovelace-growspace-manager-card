@@ -413,12 +413,13 @@ describe('plant-actions', () => {
 
     describe('takeClone', () => {
         it('should take clone successfully', async () => {
-            const result = await takeClone(ctx, mockPlant, 5);
+            const result = await takeClone(ctx, mockPlant, 5, 'target_gs');
 
             expect(result).toBe(true);
             expect(mockDataService.takeClone).toHaveBeenCalledWith({
                 mother_plant_id: 'test123',
                 num_clones: 5,
+                target_growspace_id: 'target_gs'
             });
         });
 
@@ -433,18 +434,19 @@ describe('plant-actions', () => {
         it('should use entity_id fallback for plant without plant_id', async () => {
             const plantNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
 
-            await takeClone(ctx, plantNoId);
+            await takeClone(ctx, plantNoId, undefined, 'target_gs');
 
             expect(mockDataService.takeClone).toHaveBeenCalledWith({
                 mother_plant_id: 'plant_test123',
                 num_clones: undefined,
+                target_growspace_id: 'target_gs'
             });
         });
 
         it('should log with strain name when available', async () => {
             const consoleSpy = vi.spyOn(console, 'log');
             await takeClone(ctx, mockPlant);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test Strain'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test Strain'), expect.anything());
             consoleSpy.mockRestore();
         });
 
@@ -452,7 +454,7 @@ describe('plant-actions', () => {
             const consoleSpy = vi.spyOn(console, 'log');
             const plantNoStrain = { ...mockPlant, attributes: { ...mockPlant.attributes, strain: undefined } };
             await takeClone(ctx, plantNoStrain as any);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('plant'));
+            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('plant'), expect.anything());
             consoleSpy.mockRestore();
         });
     });

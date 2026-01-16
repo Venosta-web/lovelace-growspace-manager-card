@@ -34,6 +34,8 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
+  @property({ type: String }) source?: string;
+  @property({ type: Object }) returnPayload?: any;
 
   @state() private _view: 'browse' | 'editor' = 'browse';
   @state() private _searchQuery = '';
@@ -85,6 +87,15 @@ export class StrainLibraryDialog extends LitElement {
         width: 80vw;
         max-width: 95vw;
         height: 85vh;
+      }
+
+      @media (min-width: 601px) {
+        .dialog-header {
+          justify-content: space-between;
+        }
+        .dialog-header .dialog-title-group {
+          flex: none;
+        }
       }
 
       .sd-content {
@@ -619,8 +630,24 @@ export class StrainLibraryDialog extends LitElement {
 
   private _handleSave() {
     if (!this._editorState.strain) return;
+
+    // Save to backend
     this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-    this._view = 'browse';
+
+    // If opened from a specific source, we might want to return there immediately
+    if (this.source) {
+      this.dispatchEvent(new CustomEvent('strain-created-at-source', {
+        detail: {
+          strain: this._editorState,
+          source: this.source,
+          returnPayload: this.returnPayload
+        },
+        bubbles: true,
+        composed: true
+      }));
+    } else {
+      this._view = 'browse';
+    }
   }
 
   private _handleDelete(key: string) {
@@ -707,7 +734,7 @@ export class StrainLibraryDialog extends LitElement {
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
@@ -1011,7 +1038,7 @@ export class StrainLibraryDialog extends LitElement {
       </datalist>
 
       <div class="dialog-header">
-        <div style="display:flex; align-items:center; gap:16px;">
+        <div class="dialog-title-group" style="display:flex; align-items:center; gap:16px;">
           <button
             class="md3-button tonal"
             style="padding: 0 12px; height: 32px;"
@@ -1030,7 +1057,7 @@ export class StrainLibraryDialog extends LitElement {
         <button
           class="md3-button text close"
           @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px margin-left: auto;"
+          style="min-width:auto; padding:8px; margin-left: auto;"
         >
           <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiClose}"></path>
@@ -1524,7 +1551,9 @@ export class StrainLibraryDialog extends LitElement {
           style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
         >
           <div class="dialog-header">
-            <h2 class="dialog-title">Select from Library</h2>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Select from Library</h2>
+            </div>
             <button
               class="md3-button text"
               @click=${() => this._toggleImageSelector(false)}
@@ -1584,7 +1613,9 @@ export class StrainLibraryDialog extends LitElement {
       <div class="crop-overlay">
         <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
           <div class="dialog-header">
-            <h2 class="dialog-title">Import Strains</h2>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Import Strains</h2>
+            </div>
             <button
               class="md3-button text"
               @click=${() => (this._importDialogOpen = false)}

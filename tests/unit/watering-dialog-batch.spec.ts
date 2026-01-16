@@ -136,22 +136,16 @@ describe('WateringDialog Batch Submission', () => {
 
         // Trigger render logic for options
         dialog.connectedCallback();
-        const options = (dialog as any)._renderPresetOptions();
+        const options = (dialog as any)._getPresetOptions('flower', 20);
 
-        // Use a temp container to render the TemplateResult
-        const div = document.createElement('div');
-        const { render } = await import('lit');
-        render(options, div);
-
-        expect(div.textContent).toContain('Flower ⭐ (Recommended)');
-        expect(div.textContent).not.toContain('Veg ⭐');
+        expect(options.find((o: any) => o.value === 'pre2').label).toContain('Flower ⭐(Recommended)');
+        expect(options.find((o: any) => o.value === 'pre1').label).not.toContain('⭐');
     });
 
-    it('should handle missing store/data gracefully in _renderPresetOptions', async () => {
-        dialog.store = {} as any; // No data
-        const result = (dialog as any)._renderPresetOptions();
-        // Check for Lit's 'nothing' symbol
-        expect(result).toBe(nothing);
+    it('should handle missing store/data gracefully in _getPresetOptions', async () => {
+        dialog.store = undefined as any; // No store
+        const result = (dialog as any)._getPresetOptions();
+        expect(result).toEqual([]);
     });
 
 });

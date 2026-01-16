@@ -375,9 +375,30 @@ export interface PlantOverviewEditedAttributes {
 export interface AddPlantDialogState {
   row: number;
   col: number;
+  strain?: string;
+  phenotype?: string;
+  veg_start?: string;
+  flower_start?: string;
+  seedling_start?: string;
+  mother_start?: string;
+  clone_start?: string;
+  dry_start?: string;
+  cure_start?: string;
 }
 
-export type AddPlantsDialogState = Record<string, never>;
+export interface AddPlantsDialogState {
+  strain?: string;
+  phenotype?: string;
+  amount?: number;
+  start_number?: number;
+  veg_start?: string;
+  flower_start?: string;
+  seedling_start?: string;
+  mother_start?: string;
+  clone_start?: string;
+  dry_start?: string;
+  cure_start?: string;
+}
 // Batch add doesn't specific a row/col, it finds available ones
 
 export interface PlantOverviewDialogState {
@@ -390,6 +411,8 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   editingStrain?: StrainEntry;
+  source?: 'add-plant' | 'add-plants' | 'plant-overview';
+  returnPayload?: any;
 }
 
 export interface EnvironmentConfigData {
@@ -437,6 +460,11 @@ export interface TrainingDialogState {
   isOpen: boolean;
   plantIds: string[];
   growspaceId?: string;
+}
+
+export interface CloneDialogState {
+  sourcePlant: PlantEntity;
+  defaultGrowspaceId: string;
 }
 
 export interface NutrientPresetsDialogState {

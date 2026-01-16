@@ -34,8 +34,8 @@ export class ActionDispatcher {
         nextStage: (plant: PlantEntity) =>
             plantActions.movePlantToNextStage(this.ctx, plant),
 
-        takeClone: (mother: PlantEntity, num?: number) =>
-            plantActions.takeClone(this.ctx, mother, num),
+        takeClone: (mother: PlantEntity, num?: number, targetGrowspaceId?: string) =>
+            plantActions.takeClone(this.ctx, mother, num, targetGrowspaceId),
 
         updateFromDialog: (state: any) =>
             plantActions.updatePlantFromDialog(this.ctx, state),

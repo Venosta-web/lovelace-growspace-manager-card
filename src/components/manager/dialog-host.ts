@@ -19,6 +19,7 @@ import '../../dialogs/irrigation-dialog';
 import '../../dialogs/logbook-dialog';
 import '../../dialogs/watering-dialog';
 import '../../dialogs/training-dialog';
+import '../../dialogs/clone-dialog';
 import './nutrient-presets-editor';
 import './ipm-dialog';
 import '../../dialogs/nutrient-inventory-dialog';
@@ -99,6 +100,8 @@ export class DialogHost extends LitElement {
                         return this._renderNutrientPresetsDialog(active, selectedDeviceData);
                     case 'TRAINING':
                         return this._renderTrainingDialog(active);
+                    case 'TAKE_CLONE':
+                        return this._renderCloneDialog(active, growspaceOptions);
                     case 'IPM':
                         return this._renderIPMDialog(active, selectedDeviceData);
                     case 'NUTRIENT_INVENTORY':
@@ -132,6 +135,15 @@ export class DialogHost extends LitElement {
             .strainLibrary=${strainLibrary}
             .row=${dialogState?.row}
             .col=${dialogState?.col}
+            .strain=${dialogState?.strain || ''}
+            .phenotype=${dialogState?.phenotype || ''}
+            .veg_start=${dialogState?.veg_start || ''}
+            .flower_start=${dialogState?.flower_start || ''}
+            .seedling_start=${dialogState?.seedling_start || ''}
+            .mother_start=${dialogState?.mother_start || ''}
+            .clone_start=${dialogState?.clone_start || ''}
+            .dry_start=${dialogState?.dry_start || ''}
+            .cure_start=${dialogState?.cure_start || ''}
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => {
                 if (this._activeDialogController.value.type === 'ADD_PLANT') {
@@ -139,13 +151,15 @@ export class DialogHost extends LitElement {
                 }
             }}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
-            @create-new-strain=${() => {
+            @create-new-strain=${(e: CustomEvent) => {
                 this.store.ui.setActiveDialog({
                     type: 'STRAIN_LIBRARY',
                     payload: {
+                        source: e.detail.source,
+                        returnPayload: e.detail.returnPayload,
                         editingStrain: {
-                            strain: '',
-                            phenotype: '',
+                            strain: e.detail.returnPayload?.strain || '',
+                            phenotype: e.detail.returnPayload?.phenotype || '',
                             key: '',
                             type: 'Hybrid',
                             flowering_days_min: 60,
@@ -173,6 +187,17 @@ export class DialogHost extends LitElement {
             .strainLibrary=${strainLibrary}
             .growspaceName=${selectedDeviceData?.name || ''}
             .growspaceDevice=${selectedDeviceData}
+            .strain=${active.payload?.strain || ''}
+            .phenotype=${active.payload?.phenotype || ''}
+            .amount=${active.payload?.amount || 1}
+            .start_number=${active.payload?.start_number || 1}
+            .veg_start=${active.payload?.veg_start || ''}
+            .flower_start=${active.payload?.flower_start || ''}
+            .seedling_start=${active.payload?.seedling_start || ''}
+            .mother_start=${active.payload?.mother_start || ''}
+            .clone_start=${active.payload?.clone_start || ''}
+            .dry_start=${active.payload?.dry_start || ''}
+            .cure_start=${active.payload?.cure_start || ''}
             @close=${() => {
                 if (this._activeDialogController.value.type === 'ADD_PLANTS') {
                     this.store.ui.closeDialog();
@@ -180,13 +205,15 @@ export class DialogHost extends LitElement {
             }}
             @show-toast=${(e: CustomEvent) => this.store.showToast(e.detail.message, e.detail.type)}
             @add-plants-submit=${(e: CustomEvent) => this.store.confirmAddPlants(e.detail)}
-            @create-new-strain=${() => {
+            @create-new-strain=${(e: CustomEvent) => {
                 this.store.ui.setActiveDialog({
                     type: 'STRAIN_LIBRARY',
                     payload: {
+                        source: e.detail.source,
+                        returnPayload: e.detail.returnPayload,
                         editingStrain: {
-                            strain: '',
-                            phenotype: '',
+                            strain: e.detail.returnPayload?.strain || '',
+                            phenotype: e.detail.returnPayload?.phenotype || '',
                             key: '',
                             type: 'Hybrid',
                             flowering_days_min: 60,
@@ -250,6 +277,11 @@ export class DialogHost extends LitElement {
                     type: 'IPM',
                     payload: e.detail
                 })}
+            @open-clone=${(e: CustomEvent) =>
+                this.store.ui.setActiveDialog({
+                    type: 'TAKE_CLONE',
+                    payload: e.detail
+                })}
             @open-strain-editor=${(e: CustomEvent) => {
                 const { strain, phenotype } = e.detail;
                 const strainLibrary = this.store.data.$strainLibrary.get();
@@ -304,10 +336,34 @@ export class DialogHost extends LitElement {
             .open=${true}
             .strains=${strainLibrary}
             .editingStrain=${payload?.editingStrain}
+            .source=${payload?.source}
+            .returnPayload=${payload?.returnPayload}
             @close=${() => {
                 // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
                 if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
                     this.store.ui.closeDialog();
+                }
+            }}
+            @strain-created-at-source=${(e: CustomEvent) => {
+                const { strain, source, returnPayload } = e.detail;
+                if (source === 'add-plant') {
+                    this.store.ui.setActiveDialog({
+                        type: 'ADD_PLANT',
+                        payload: {
+                            ...returnPayload,
+                            strain: strain.strain,
+                            phenotype: strain.phenotype
+                        }
+                    });
+                } else if (source === 'add-plants') {
+                    this.store.ui.setActiveDialog({
+                        type: 'ADD_PLANTS',
+                        payload: {
+                            ...returnPayload,
+                            strain: strain.strain,
+                            phenotype: strain.phenotype
+                        }
+                    });
                 }
             }}
             @save-strain=${(e: CustomEvent) => this.store.actions.strain.add(e.detail)}
@@ -564,6 +620,33 @@ export class DialogHost extends LitElement {
                 @close=${() => this.store.ui.closeDialog()}
                 @data-changed=${() => this._handleDataChanged()}
             ></nutrient-inventory-dialog>
+        `;
+    }
+
+    private _renderCloneDialog(
+        active: ActiveDialogState,
+        growspaceOptions: Record<string, string>
+    ): TemplateResult {
+        if (active.type !== 'TAKE_CLONE') return html``;
+        const dialogState = active.payload;
+        return html`
+            <clone-dialog
+                .open=${true}
+                .store=${this.store}
+                .sourcePlant=${dialogState.sourcePlant}
+                .growspaceOptions=${growspaceOptions}
+                .defaultGrowspace=${dialogState.defaultGrowspaceId}
+                @take-clone-submit=${async (e: CustomEvent) => {
+                const { motherPlantId, numClones, targetGrowspaceId } = e.detail;
+                await this.store.actions.plant.takeClone(
+                    dialogState.sourcePlant,
+                    numClones,
+                    targetGrowspaceId
+                );
+                await this._handleDataChanged();
+                this.store.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
+            }}
+            ></clone-dialog>
         `;
     }
 

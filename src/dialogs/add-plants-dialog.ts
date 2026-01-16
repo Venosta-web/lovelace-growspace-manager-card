@@ -22,20 +22,20 @@ export class AddPlantsDialog extends LitElement {
   @property({ attribute: false }) growspaceDevice?: GrowspaceDevice;
   @property({ type: Boolean, reflect: true }) open = false;
 
-  @state() private strain = '';
-  @state() private phenotype = '';
+  @property({ type: String }) strain = '';
+  @property({ type: String }) phenotype = '';
   @state() private addToLibrary = false;
-  @state() private amount = 1;
-  @state() private start_number = 1;
+  @property({ type: Number }) amount = 1;
+  @property({ type: Number }) start_number = 1;
 
   // Date fields
-  @state() private veg_start = '';
-  @state() private flower_start = '';
-  @state() private seedling_start = '';
-  @state() private mother_start = '';
-  @state() private clone_start = '';
-  @state() private dry_start = '';
-  @state() private cure_start = '';
+  @property({ type: String }) veg_start = '';
+  @property({ type: String }) flower_start = '';
+  @property({ type: String }) seedling_start = '';
+  @property({ type: String }) mother_start = '';
+  @property({ type: String }) clone_start = '';
+  @property({ type: String }) dry_start = '';
+  @property({ type: String }) cure_start = '';
 
   static styles = [
     dialogStyles,
@@ -96,7 +96,22 @@ export class AddPlantsDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('create-new-strain', {
       bubbles: true,
       composed: true,
-      detail: { source: 'add-plants' }
+      detail: {
+        source: 'add-plants',
+        returnPayload: {
+          strain: this.strain,
+          phenotype: this.phenotype,
+          amount: this.amount,
+          start_number: this.start_number,
+          seedling_start: this.seedling_start,
+          veg_start: this.veg_start,
+          flower_start: this.flower_start,
+          mother_start: this.mother_start,
+          clone_start: this.clone_start,
+          dry_start: this.dry_start,
+          cure_start: this.cure_start,
+        }
+      }
     }));
   }
 
@@ -151,7 +166,7 @@ export class AddPlantsDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
