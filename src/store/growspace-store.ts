@@ -392,6 +392,34 @@ export class GrowspaceStore {
         await ipmActions.applyIPM(this.context, detail);
     }
 
+    openConfigDialog(device?: import('../types').GrowspaceDevice) {
+        uiActions.openConfigDialog(this.context, device);
+    }
+
+    openStrainLibraryDialog() {
+        uiActions.openStrainLibraryDialog(this.context);
+    }
+
+    openIrrigationDialog() {
+        uiActions.openIrrigationDialog(this.context);
+    }
+
+    openGrowMasterDialog(growspaceId: string) {
+        uiActions.openGrowMasterDialog(this.context, growspaceId);
+    }
+
+    openWateringDialog(options: { plantIds?: string[]; growspaceId?: string; mode?: 'plant' | 'growspace' }) {
+        uiActions.openWateringDialog(this.context, options);
+    }
+
+    openTrainingDialog(plantIds: string[], growspaceId?: string) {
+        uiActions.openTrainingDialog(this.context, plantIds, growspaceId);
+    }
+
+    openNutrientsDialog() {
+        uiActions.openNutrientsDialog(this.context);
+    }
+
     openLogbookDialog() {
         uiActions.openLogbookDialog(this.context);
     }

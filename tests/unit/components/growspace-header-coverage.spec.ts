@@ -101,6 +101,13 @@ describe('GrowspaceHeader Coverage', () => {
             openLogbookDialog: vi.fn(),
             openIPMDialog: vi.fn(),
             openAddPlantDialog: vi.fn(),
+            openConfigDialog: vi.fn(),
+            openStrainLibraryDialog: vi.fn(),
+            openIrrigationDialog: vi.fn(),
+            openGrowMasterDialog: vi.fn(),
+            openWateringDialog: vi.fn(),
+            openTrainingDialog: vi.fn(),
+            openNutrientsDialog: vi.fn(),
         };
 
         mockHass = {
@@ -159,20 +166,17 @@ describe('GrowspaceHeader Coverage', () => {
 
         it('should handle "strains" action', () => {
             (element as any)._triggerAction('strains');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'STRAIN_LIBRARY', payload: {} });
+            expect(mockStore.openStrainLibraryDialog).toHaveBeenCalled();
         });
 
         it('should handle "irrigation" action', () => {
             (element as any)._triggerAction('irrigation');
-            expect(mockStore.ui.$activeDialog.set).toHaveBeenCalledWith({ type: 'IRRIGATION', payload: {} });
+            expect(mockStore.openIrrigationDialog).toHaveBeenCalled();
         });
 
         it('should handle "ai" action', () => {
             (element as any)._triggerAction('ai');
-            expect(mockStore.ui.$activeDialog.set).toHaveBeenCalledWith({
-                type: 'GROW_MASTER',
-                payload: expect.objectContaining({ growspaceId: 'gs1', mode: 'single' })
-            });
+            expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('gs1');
         });
 
         it('should handle "logbook" action', () => {
@@ -182,25 +186,23 @@ describe('GrowspaceHeader Coverage', () => {
 
         it('should handle "water" action for growspace', () => {
             (element as any)._triggerAction('water');
-            expect(mockStore.ui.$activeDialog.set).toHaveBeenCalledWith({
-                type: 'WATERING',
-                payload: expect.objectContaining({ mode: 'growspace', growspaceId: 'gs1' })
-            });
+            expect(mockStore.openWateringDialog).toHaveBeenCalledWith(
+                expect.objectContaining({ mode: 'growspace', growspaceId: 'gs1' })
+            );
         });
 
         it('should handle "water" action for plants', () => {
             mockStore.ui.$selectedPlants.get.mockReturnValue(new Set(['p1']));
+            // Manually update controller value since we mocked it
+            (element as any)._selectedPlantsController = { value: new Set(['p1']) };
+
             (element as any)._triggerAction('water');
-            expect(mockStore.ui.$activeDialog.set).toHaveBeenCalledWith({
-                type: 'WATERING',
-                payload: expect.objectContaining({ mode: 'plant', plantIds: ['p1'] })
-            });
+            expect(mockStore.openWateringDialog).toHaveBeenCalledWith(
+                expect.objectContaining({ mode: 'plant', plantIds: ['p1'] })
+            );
         });
 
-        it('should handle "nutrient_presets" action', () => {
-            (element as any)._triggerAction('nutrient_presets');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
-        });
+
 
         it('should handle "control_dehumidifier" action', () => {
             // Need device overview entity
@@ -224,14 +226,9 @@ describe('GrowspaceHeader Coverage', () => {
             expect(mockStore.openIPMDialog).toHaveBeenCalledWith({ growspaceId: 'gs1' });
         });
 
-        it('should handle "nutrient_inventory" action', () => {
-            (element as any)._triggerAction('nutrient_inventory');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
-        });
-
         it('should handle "nutrients" action', () => {
             (element as any)._triggerAction('nutrients');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
+            expect(mockStore.openNutrientsDialog).toHaveBeenCalled();
         });
     });
 
@@ -301,7 +298,7 @@ describe('GrowspaceHeader Coverage', () => {
 
             if (stockChip) {
                 (stockChip as HTMLElement).click();
-                expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
+                expect(mockStore.openNutrientsDialog).toHaveBeenCalled();
             }
 
             document.body.removeChild(testEl);

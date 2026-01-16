@@ -20763,7 +20763,7 @@ let EditModeBanner = class EditModeBanner extends i$3 {
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-              Water / Nutrients
+              Water Selected
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
@@ -30151,6 +30151,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         if (this.store) {
             this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
             this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
             this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
             this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
             this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
@@ -30196,29 +30197,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 this.store.openAddPlantDialog();
                 break;
             case 'config':
-                this.store.ui.$activeDialog.set({
-                    type: 'CONFIG',
-                    payload: {
-                        currentTab: ConfigTab.ENVIRONMENT,
-                        environmentData: {
-                            selectedGrowspaceId: this._selectedDeviceController.value || '',
-                            temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
-                            humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
-                            vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
-                            co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
-                            circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
-                            stress_threshold: 0.8,
-                            mold_threshold: 0.8,
-                            light_sensor: this.device?.environment_attributes?.light_sensor || '',
-                            exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
-                            humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
-                            dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
-                            soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
-                            control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
-                            dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
-                        }
-                    }
-                });
+                this.store.openConfigDialog(this.device);
                 break;
             case 'edit':
                 this.store.ui.setEditMode(!this._isEditModeController.value);
@@ -30229,38 +30208,28 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                 this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
                 break;
             case 'strains':
-                this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+                this.store.openStrainLibraryDialog();
                 break;
             case 'irrigation':
                 if (this._selectedDeviceController.value) {
-                    this.store.ui.$activeDialog.set({ type: 'IRRIGATION', payload: {} });
+                    this.store.openIrrigationDialog();
                 }
                 break;
             case 'ai':
-                this.store.ui.$activeDialog.set({
-                    type: 'GROW_MASTER',
-                    payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
-                });
+                this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
                 break;
             case 'logbook':
                 this.store.openLogbookDialog();
                 break;
             case 'water': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.ui.$activeDialog.set({
-                    type: 'WATERING',
-                    payload: {
-                        plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-                        growspaceId: this._selectedDeviceController.value || undefined,
-                        mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
-                    }
+                this.store.openWateringDialog({
+                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+                    growspaceId: this._selectedDeviceController.value || undefined,
+                    mode: selectedPlants.size > 0 ? 'plant' : 'growspace'
                 });
                 break;
             }
-            case 'nutrient_presets':
-                // Redirect legacy action to new dialog
-                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
-                break;
             case 'control_dehumidifier':
                 // Implementation for dehumidifier toggle
                 if (this.device?.overview_entity_id) {
@@ -30270,15 +30239,21 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                     });
                 }
                 break;
-            case 'ipm':
-                this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+            case 'ipm': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.openIPMDialog({
+                    growspaceId: this._selectedDeviceController.value || this.device?.device_id,
+                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
+                });
                 break;
-            case 'nutrient_inventory':
-                // Redirect legacy action to new dialog
-                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+            }
+            case 'training': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this._selectedDeviceController.value || undefined);
                 break;
+            }
             case 'nutrients':
-                this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+                this.store.openNutrientsDialog();
                 break;
         }
     }
@@ -30433,7 +30408,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                         <nutrient-stock-chip
                             .stock=${stock}
                             .compact=${this.compact}
-                            @click=${() => this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} })}
+                            @click=${() => this.store.openNutrientsDialog()}
                             style="cursor: pointer;"
                         ></nutrient-stock-chip>
                     `)
@@ -30579,7 +30554,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         <div class="menu-header">Plant Care</div>
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
@@ -30587,7 +30562,11 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            <span class="menu-item-label">Log / Manage IPM</span>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('training')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Train Selected' : 'Log Training'}</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
@@ -35669,6 +35648,72 @@ function getCommonGrowspaceId(ctx, plantIds) {
     }
     return commonGrowspaceId;
 }
+// ===== Standardized Dialog Opening Functions =====
+function openConfigDialog(ctx, device) {
+    ctx.ui.setActiveDialog({
+        type: 'CONFIG',
+        payload: {
+            currentTab: ConfigTab.ENVIRONMENT,
+            environmentData: {
+                selectedGrowspaceId: device?.device_id || '',
+                temp_sensor: device?.environment_attributes?.temperature_sensor || '',
+                humidity_sensor: device?.environment_attributes?.humidity_sensor || '',
+                vpd_sensor: device?.environment_attributes?.vpd_sensor || '',
+                co2_sensor: device?.environment_attributes?.co2_sensor || '',
+                circulation_fan: device?.environment_attributes?.circulation_fan_entity || '',
+                stress_threshold: 0.8,
+                mold_threshold: 0.8,
+                light_sensor: device?.environment_attributes?.light_sensor || '',
+                exhaust_entity: device?.environment_attributes?.exhaust_entity || '',
+                humidifier_entity: device?.environment_attributes?.humidifier_entity || '',
+                dehumidifier_entity: device?.environment_attributes?.dehumidifier_entity || '',
+                soil_moisture_sensor: device?.environment_attributes?.soil_moisture_sensor || '',
+                control_dehumidifier: device?.environment_attributes?.dehumidifier_control_enabled || false,
+                dehumidifier_thresholds: device?.environment_attributes?.dehumidifier_thresholds || {},
+            }
+        }
+    });
+}
+function openStrainLibraryDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+}
+function openIrrigationDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+}
+function openGrowMasterDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_MASTER',
+        payload: {
+            growspaceId,
+            isLoading: false,
+            response: '',
+            mode: 'single'
+        }
+    });
+}
+function openWateringDialog(ctx, options) {
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            plantIds: options.plantIds,
+            growspaceId: options.growspaceId,
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace')
+        }
+    });
+}
+function openTrainingDialog(ctx, plantIds, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds,
+            growspaceId
+        }
+    });
+}
+function openNutrientsDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+}
 
 async function analyzeGrowspace(ctx, query, all) {
     const currentDialog = ctx.ui.$activeDialog.get();
@@ -36322,6 +36367,27 @@ class GrowspaceStore {
     }
     async applyIPM(detail) {
         await applyIPM(this.context, detail);
+    }
+    openConfigDialog(device) {
+        openConfigDialog(this.context, device);
+    }
+    openStrainLibraryDialog() {
+        openStrainLibraryDialog(this.context);
+    }
+    openIrrigationDialog() {
+        openIrrigationDialog(this.context);
+    }
+    openGrowMasterDialog(growspaceId) {
+        openGrowMasterDialog(this.context, growspaceId);
+    }
+    openWateringDialog(options) {
+        openWateringDialog(this.context, options);
+    }
+    openTrainingDialog(plantIds, growspaceId) {
+        openTrainingDialog(this.context, plantIds, growspaceId);
+    }
+    openNutrientsDialog() {
+        openNutrientsDialog(this.context);
     }
     openLogbookDialog() {
         openLogbookDialog(this.context);

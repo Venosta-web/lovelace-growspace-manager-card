@@ -179,4 +179,35 @@ describe('AddPlantsDialog', () => {
             detail: { source: 'add-plants' }
         }));
     });
+    it('shows validation error when growspace slots are full', async () => {
+        // Setup a restricted growspace
+        const restrictedElement = await fixture(html`
+            <add-plants-dialog 
+                .open=${true} 
+                .strainLibrary=${mockStrainLibrary}
+                .growspaceName=${'Tent 1'}
+                .growspaceDevice=${{
+                rows: 2,
+                plants_per_row: 2,
+                plants: ['p1', 'p2', 'p3'] // 3 occupied
+            }}
+            ></add-plants-dialog>
+        `);
+
+        // Total 4 slots, 3 occupied = 1 free. Try adding 2.
+        (restrictedElement as any).amount = 2;
+
+        const toastSpy = vi.fn();
+        restrictedElement.addEventListener('show-toast', toastSpy);
+
+        const addBtn = restrictedElement.shadowRoot?.querySelector('.md3-button.primary') as HTMLElement;
+        addBtn.click();
+
+        expect(toastSpy).toHaveBeenCalledWith(expect.objectContaining({
+            detail: expect.objectContaining({
+                type: 'error',
+                message: expect.stringContaining('Not enough free Plant Slots')
+            })
+        }));
+    });
 });

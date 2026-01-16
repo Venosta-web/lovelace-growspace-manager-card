@@ -200,7 +200,7 @@ export class EditModeBanner extends LitElement {
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-              Water / Nutrients
+              Water Selected
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>

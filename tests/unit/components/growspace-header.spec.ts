@@ -222,6 +222,13 @@ describe('GrowspaceHeader', () => {
             openLogbookDialog: vi.fn(),
             openNutrientPresetsDialog: vi.fn(),
             openIPMDialog: vi.fn(),
+            openConfigDialog: vi.fn(),
+            openStrainLibraryDialog: vi.fn(),
+            openIrrigationDialog: vi.fn(),
+            openGrowMasterDialog: vi.fn(),
+            openWateringDialog: vi.fn(),
+            openTrainingDialog: vi.fn(),
+            openNutrientsDialog: vi.fn(),
             toggleEnvGraph: vi.fn()
         };
 
@@ -278,6 +285,13 @@ describe('GrowspaceHeader', () => {
             openLogbookDialog: vi.fn(),
             openNutrientPresetsDialog: vi.fn(),
             openIPMDialog: vi.fn(),
+            openConfigDialog: vi.fn(),
+            openStrainLibraryDialog: vi.fn(),
+            openIrrigationDialog: vi.fn(),
+            openGrowMasterDialog: vi.fn(),
+            openWateringDialog: vi.fn(),
+            openTrainingDialog: vi.fn(),
+            openNutrientsDialog: vi.fn(),
             toggleEnvGraph: vi.fn()
         };
 
@@ -446,17 +460,8 @@ describe('GrowspaceHeader', () => {
             // Config
             const configItem = menu?.querySelectorAll('.menu-item')[0] as HTMLElement;
             configItem.click();
-            expect($activeDialog.set).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'CONFIG' })
-            );
-
-            // Strains
-            const strainsItem = menu?.querySelectorAll('.menu-item')[7] as HTMLElement;
-            strainsItem.click();
-
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'STRAIN_LIBRARY' })
-            );
+            expect(mockStore.openConfigDialog).toHaveBeenCalled();
+            expect(mockStore.openConfigDialog).toHaveBeenCalledWith(element.device);
         });
     });
 
@@ -521,7 +526,7 @@ describe('GrowspaceHeader', () => {
         it('should handle irrigation action', () => {
             $selectedDevice.set('d1');
             (element as any)._triggerAction('irrigation');
-            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION', payload: {} }));
+            expect(mockStore.openIrrigationDialog).toHaveBeenCalled();
 
             $selectedDevice.set(null);
             vi.clearAllMocks();
@@ -532,10 +537,7 @@ describe('GrowspaceHeader', () => {
         it('should handle ai action', () => {
             $selectedDevice.set('d1');
             (element as any)._triggerAction('ai');
-            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'GROW_MASTER',
-                payload: expect.objectContaining({ growspaceId: 'd1', mode: 'single' })
-            }));
+            expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('d1');
         });
 
         it('should handle logbook action', () => {
@@ -546,19 +548,12 @@ describe('GrowspaceHeader', () => {
         it('should handle config action', () => {
             $selectedDevice.set('d1');
             (element as any)._triggerAction('config');
-            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'CONFIG',
-                payload: expect.objectContaining({
-                    currentTab: 'environment'
-                })
-            }));
+            expect(mockStore.openConfigDialog).toHaveBeenCalledWith(element.device);
         });
 
         it('should handle strains action', () => {
             (element as any)._triggerAction('strains');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'STRAIN_LIBRARY'
-            }));
+            expect(mockStore.openStrainLibraryDialog).toHaveBeenCalled();
         });
 
         it('should handle control_dehumidifier action (no-op in switch)', () => {
@@ -569,12 +564,9 @@ describe('GrowspaceHeader', () => {
         it('should handle water action with no plants selected', () => {
             $selectedPlants.set(new Set());
             (element as any)._triggerAction('water');
-            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'WATERING',
-                payload: expect.objectContaining({
-                    mode: 'growspace',
-                    plantIds: undefined
-                })
+            expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
+                mode: 'growspace',
+                plantIds: undefined
             }));
         });
 
@@ -595,16 +587,13 @@ describe('GrowspaceHeader', () => {
 
         it('should handle nutrients action', () => {
             (element as any)._triggerAction('nutrients');
-            expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'NUTRIENTS' }));
+            expect(mockStore.openNutrientsDialog).toHaveBeenCalled();
         });
 
         it('should handle ai action with no selected device', () => {
             $selectedDevice.set(null);
             (element as any)._triggerAction('ai');
-            expect($activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'GROW_MASTER',
-                payload: expect.objectContaining({ growspaceId: '' })
-            }));
+            expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
         });
 
         it('should handle irrigation action with no selected device', () => {
@@ -876,24 +865,28 @@ describe('GrowspaceHeader', () => {
                 clickItem(4, 'ipm');
                 expect(triggerSpy).toHaveBeenCalledWith('ipm');
 
-                // 6. Nutrients (Index 5)
-                clickItem(5, 'nutrients');
+                // 6. Training (Index 5) - NEW
+                clickItem(5, 'training');
+                expect(triggerSpy).toHaveBeenCalledWith('training');
+
+                // 7. Nutrients (Index 6)
+                clickItem(6, 'nutrients');
                 expect(triggerSpy).toHaveBeenCalledWith('nutrients');
 
-                // 7. Add Plant (Index 6)
-                clickItem(6, 'add_plant');
+                // 8. Add Plant (Index 7)
+                clickItem(7, 'add_plant');
                 expect(triggerSpy).toHaveBeenCalledWith('add_plant');
 
-                // 8. Strains (Index 7)
-                clickItem(7, 'strains');
+                // 9. Strains (Index 8)
+                clickItem(8, 'strains');
                 expect(triggerSpy).toHaveBeenCalledWith('strains');
 
-                // 9. Logbook (Index 8)
-                clickItem(8, 'logbook');
+                // 10. Logbook (Index 9)
+                clickItem(9, 'logbook');
                 expect(triggerSpy).toHaveBeenCalledWith('logbook');
 
-                // 10. AI (Index 9)
-                clickItem(9, 'ai');
+                // 11. AI (Index 10)
+                clickItem(10, 'ai');
                 expect(triggerSpy).toHaveBeenCalledWith('ai');
             });
         });

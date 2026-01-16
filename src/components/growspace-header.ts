@@ -20,6 +20,7 @@ import {
   mdiWaterPlus,
   mdiBottleTonicPlus,
   mdiBug,
+  mdiDumbbell,
   mdiPlus
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
@@ -65,6 +66,7 @@ export class GrowspaceHeader extends LitElement {
   // Reactivity Controllers
   private _viewModeController!: StoreController<string>;
   private _isEditModeController!: StoreController<boolean>;
+  private _selectedPlantsController!: StoreController<Set<string>>;
 
   // Data Store Controllers
   private _devicesController!: StoreController<GrowspaceDevice[]>;
@@ -777,6 +779,7 @@ export class GrowspaceHeader extends LitElement {
     if (this.store) {
       this._viewModeController = new StoreController(this, this.store.ui.$viewMode);
       this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
+      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
       this._devicesController = new StoreController(this, this.store.data.$devices);
       this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
       this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
@@ -828,29 +831,7 @@ export class GrowspaceHeader extends LitElement {
         this.store.openAddPlantDialog();
         break;
       case 'config':
-        this.store.ui.$activeDialog.set({
-          type: 'CONFIG',
-          payload: {
-            currentTab: ConfigTab.ENVIRONMENT,
-            environmentData: {
-              selectedGrowspaceId: this._selectedDeviceController.value || '',
-              temp_sensor: this.device?.environment_attributes?.temperature_sensor || '',
-              humidity_sensor: this.device?.environment_attributes?.humidity_sensor || '',
-              vpd_sensor: this.device?.environment_attributes?.vpd_sensor || '',
-              co2_sensor: this.device?.environment_attributes?.co2_sensor || '',
-              circulation_fan: this.device?.environment_attributes?.circulation_fan_entity || '',
-              stress_threshold: 0.8,
-              mold_threshold: 0.8,
-              light_sensor: this.device?.environment_attributes?.light_sensor || '',
-              exhaust_entity: this.device?.environment_attributes?.exhaust_entity || '',
-              humidifier_entity: this.device?.environment_attributes?.humidifier_entity || '',
-              dehumidifier_entity: this.device?.environment_attributes?.dehumidifier_entity || '',
-              soil_moisture_sensor: this.device?.environment_attributes?.soil_moisture_sensor || '',
-              control_dehumidifier: this.device?.environment_attributes?.dehumidifier_control_enabled || false,
-              dehumidifier_thresholds: this.device?.environment_attributes?.dehumidifier_thresholds || {},
-            } as any
-          }
-        });
+        this.store.openConfigDialog(this.device);
         break;
       case 'edit':
         this.store.ui.setEditMode(!this._isEditModeController.value);
@@ -861,38 +842,29 @@ export class GrowspaceHeader extends LitElement {
         this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
         break;
       case 'strains':
-        this.store.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+        this.store.openStrainLibraryDialog();
         break;
       case 'irrigation':
         if (this._selectedDeviceController.value) {
-          this.store.ui.$activeDialog.set({ type: 'IRRIGATION', payload: {} });
+          this.store.openIrrigationDialog();
         }
         break;
       case 'ai':
-        this.store.ui.$activeDialog.set({
-          type: 'GROW_MASTER',
-          payload: { growspaceId: this._selectedDeviceController.value || '', isLoading: false, response: '', mode: 'single' }
-        });
+        this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
         break;
       case 'logbook':
         this.store.openLogbookDialog();
         break;
       case 'water': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.ui.$activeDialog.set({
-          type: 'WATERING',
-          payload: {
-            plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-            growspaceId: this._selectedDeviceController.value || undefined,
-            mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
-          }
+        this.store.openWateringDialog({
+          plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+          growspaceId: this._selectedDeviceController.value || undefined,
+          mode: selectedPlants.size > 0 ? 'plant' : 'growspace'
         });
         break;
       }
-      case 'nutrient_presets':
-        // Redirect legacy action to new dialog
-        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
-        break;
+
       case 'control_dehumidifier':
         // Implementation for dehumidifier toggle
         if (this.device?.overview_entity_id) {
@@ -902,15 +874,25 @@ export class GrowspaceHeader extends LitElement {
           });
         }
         break;
-      case 'ipm':
-        this.store.openIPMDialog({ growspaceId: this._selectedDeviceController.value || this.device?.device_id });
+      case 'ipm': {
+        const selectedPlants = this.store.ui.$selectedPlants.get();
+        this.store.openIPMDialog({
+          growspaceId: this._selectedDeviceController.value || this.device?.device_id,
+          plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
+        });
         break;
-      case 'nutrient_inventory':
-        // Redirect legacy action to new dialog
-        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+      }
+
+      case 'training': {
+        const selectedPlants = this.store.ui.$selectedPlants.get();
+        this.store.openTrainingDialog(
+          selectedPlants.size > 0 ? Array.from(selectedPlants) : [],
+          this._selectedDeviceController.value || undefined
+        );
         break;
+      }
       case 'nutrients':
-        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+        this.store.openNutrientsDialog();
         break;
     }
   }
@@ -1073,7 +1055,7 @@ export class GrowspaceHeader extends LitElement {
                         <nutrient-stock-chip
                             .stock=${stock}
                             .compact=${this.compact}
-                            @click=${() => this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} })}
+                            @click=${() => this.store.openNutrientsDialog()}
                             style="cursor: pointer;"
                         ></nutrient-stock-chip>
                     `)
@@ -1248,7 +1230,7 @@ export class GrowspaceHeader extends LitElement {
         <div class="menu-header">Plant Care</div>
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">${this.store.ui.$selectedPlants.get().size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
             <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
@@ -1256,7 +1238,11 @@ export class GrowspaceHeader extends LitElement {
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            <span class="menu-item-label">Log / Manage IPM</span>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('training')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Train Selected' : 'Log Training'}</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
             <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>

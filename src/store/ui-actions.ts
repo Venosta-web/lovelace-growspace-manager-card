@@ -1,5 +1,5 @@
 import { ActionContext } from './action-context';
-import { ViewMode } from '../constants';
+import { ViewMode, ConfigTab } from '../constants';
 import { PlantEntity } from '../types';
 import * as libraryActions from './library-actions';
 
@@ -256,4 +256,81 @@ function getCommonGrowspaceId(ctx: ActionContext, plantIds: string[]): string | 
     }
 
     return commonGrowspaceId;
+}
+
+// ===== Standardized Dialog Opening Functions =====
+
+export function openConfigDialog(ctx: ActionContext, device?: import('../types').GrowspaceDevice) {
+    ctx.ui.setActiveDialog({
+        type: 'CONFIG',
+        payload: {
+            currentTab: ConfigTab.ENVIRONMENT,
+            environmentData: {
+                selectedGrowspaceId: device?.device_id || '',
+                temp_sensor: device?.environment_attributes?.temperature_sensor || '',
+                humidity_sensor: device?.environment_attributes?.humidity_sensor || '',
+                vpd_sensor: device?.environment_attributes?.vpd_sensor || '',
+                co2_sensor: device?.environment_attributes?.co2_sensor || '',
+                circulation_fan: device?.environment_attributes?.circulation_fan_entity || '',
+                stress_threshold: 0.8,
+                mold_threshold: 0.8,
+                light_sensor: device?.environment_attributes?.light_sensor || '',
+                exhaust_entity: device?.environment_attributes?.exhaust_entity || '',
+                humidifier_entity: device?.environment_attributes?.humidifier_entity || '',
+                dehumidifier_entity: device?.environment_attributes?.dehumidifier_entity || '',
+                soil_moisture_sensor: device?.environment_attributes?.soil_moisture_sensor || '',
+                control_dehumidifier: device?.environment_attributes?.dehumidifier_control_enabled || false,
+                dehumidifier_thresholds: device?.environment_attributes?.dehumidifier_thresholds || {},
+            } as any
+        }
+    });
+}
+
+export function openStrainLibraryDialog(ctx: ActionContext) {
+    ctx.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+}
+
+export function openIrrigationDialog(ctx: ActionContext) {
+    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+}
+
+export function openGrowMasterDialog(ctx: ActionContext, growspaceId: string) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_MASTER',
+        payload: {
+            growspaceId,
+            isLoading: false,
+            response: '',
+            mode: 'single'
+        }
+    });
+}
+
+export function openWateringDialog(
+    ctx: ActionContext,
+    options: { plantIds?: string[]; growspaceId?: string; mode?: 'plant' | 'growspace' }
+) {
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            plantIds: options.plantIds,
+            growspaceId: options.growspaceId,
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace')
+        }
+    });
+}
+
+export function openTrainingDialog(ctx: ActionContext, plantIds: string[], growspaceId?: string) {
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds,
+            growspaceId
+        }
+    });
+}
+
+export function openNutrientsDialog(ctx: ActionContext) {
+    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
 }
