@@ -307,14 +307,79 @@ export async function handlePlantDrop(
     const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
     const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
 
+    // Fix: extract growspace ID properly
+    const growspaceId = sourcePlant.attributes.growspace_id;
+
+    // Helper to perform optimistic update on the cache AND devices store
+    const optimisticUpdate = (isRevert: boolean = false) => {
+        if (!growspaceId) return;
+
+        const updateGridLogic = (grid: Record<string, any>) => {
+            let sourceKey: string | null = null;
+            let targetKey: string | null = null;
+
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (!plant) return;
+                const pId = plant.plant_id || plant.entity_id.replace('sensor.', '');
+                if (pId === sourceId) sourceKey = key;
+                if (targetId && pId === targetId) targetKey = key;
+            });
+
+            if (sourceKey && targetKey) {
+                const sData = grid[sourceKey];
+                const tData = grid[targetKey];
+
+                // Determine new coordinates based on direction
+                // Forward: s -> target, t -> original
+                // Revert: s -> original, t -> target
+                const newSourceRow = isRevert ? originalRow : targetRow;
+                const newSourceCol = isRevert ? originalCol : targetCol;
+                const newTargetRow = isRevert ? targetRow : originalRow;
+                const newTargetCol = isRevert ? targetCol : originalCol;
+
+                if (sData) { sData.row = newSourceRow; sData.col = newSourceCol; }
+                if (tData) { tData.row = newTargetRow; tData.col = newTargetCol; }
+
+                grid[sourceKey] = tData;
+                grid[targetKey] = sData;
+            }
+        };
+
+        // 1. Update Cache
+        ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
+
+        // 2. Update Devices Atom (for immediate UI Reactivity)
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            const device = { ...newDevices[deviceIdx] };
+            const newGrid = { ...device.grid };
+
+            updateGridLogic(newGrid);
+
+            device.grid = newGrid;
+            newDevices[deviceIdx] = device;
+            ctx.data.$devices.set(newDevices);
+        }
+    };
+
     try {
+        // Optimistically update if swapping two existing plants
+        if (targetPlant && growspaceId) {
+            optimisticUpdate(false);
+        }
+
         if (targetPlant) {
             if (sourceId === targetId) return false;
             if (targetId) {
                 await ctx.dataService.swapPlants(sourceId, targetId);
             }
         } else {
+            // Non-swap move (to empty) - no optimistic update for now
             await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+            // Re-fetch immediately for non-optimistic moves
+            await ctx.refreshData();
         }
 
         ctx.undoRedoManager.pushAction({
@@ -322,6 +387,8 @@ export async function handlePlantDrop(
             description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
             reverse: async () => {
                 if (targetPlant && targetId) {
+                    // APPLY OPTIMISTIC UNDO
+                    optimisticUpdate(true);
                     await ctx.dataService.swapPlants(sourceId, targetId);
                 } else {
                     await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
@@ -333,10 +400,16 @@ export async function handlePlantDrop(
             }
         });
 
-        await ctx.refreshData();
+        if (targetPlant) {
+            // For optimistic swaps, we still refresh to be safe, but can delay slightly or just let it happen in background
+            ctx.refreshData();
+        }
+
         return true;
     } catch (err) {
         console.error('Error during drag-and-drop:', err);
+        // If error, force refresh to sync state
+        ctx.refreshData();
         return false;
     }
 }

@@ -17,6 +17,7 @@ import {
   mdiBug,
   mdiChevronLeft,
   mdiChevronRight,
+  mdiPencil,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -935,7 +936,7 @@ export class PlantOverviewDialog extends LitElement {
                   title="Toggle Dates"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiDna}"></path>
+                    <path d="${mdiPencil}"></path>
                   </svg>
                 </button>
               </div>

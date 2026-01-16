@@ -1,8 +1,8 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceManagerCardConfig, GrowAdviceResponse } from '../types';
+import { StrainEntry, PlantEntity, PlantOverviewDialogState, GrowspaceManagerCardConfig } from '../types';
 import { ViewMode } from '../constants';
 import { DataService } from '../data-service';
-import { PlantUtils } from '../utils/plant-utils';
+
 
 // Sub-stores
 import { GrowspaceDataStore } from './data-store';
@@ -207,7 +207,7 @@ export class GrowspaceStore {
         uiActions.selectAllPlants(this.context);
     }
 
-    setSelectedPlants(plantIds: Set<string>) {
+    setSelectedPlants(_plantIds: Set<string>) {
         // No-op
     }
 
@@ -271,10 +271,12 @@ export class GrowspaceStore {
         await strainActions.removeStrain(this.context, strainKey);
     }
 
+    // eslint-disable-next-line camelcase
     async handleAddGrowspace(detail: { name: string; rows?: number; plants_per_row?: number; notification_service?: string }) {
         await strainActions.addGrowspace(this.context, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
     }
 
+    // eslint-disable-next-line camelcase
     async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plants_per_row: number }) {
         await strainActions.updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
     }
@@ -379,11 +381,11 @@ export class GrowspaceStore {
         await uiActions.exportStrainLibrary(this.context);
     }
 
-    async toggleDehumidifierControl(deviceId: string) {
+    async toggleDehumidifierControl(_deviceId: string) {
         console.warn('toggleDehumidifierControl not fully implemented in data service (deprecated or future)');
     }
 
-    async performImport(file: File, replace: boolean) {
+    async performImport(file: File, _replace: boolean) {
         try {
             const content = await file.text();
             const strains = JSON.parse(content);

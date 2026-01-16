@@ -1,12 +1,11 @@
 import { BaseAPI } from '../base-api';
 import { GrowspaceDevice, GrowspaceAPIResponse } from '../../types';
-import { GrowspaceAPICollection } from '../../schemas/api-schema';
-import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
-import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from '../../constants';
-import {
+import { GrowspaceAPICollection ,
     GrowspaceAPIResponseSchema,
     GrowspaceAPICollectionSchema,
 } from '../../schemas/api-schema';
+import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
+import { DOMAIN, SERVICES, WS_TYPE_GET_DATA } from '../../constants';
 
 /**
  * API service for growspace operations.

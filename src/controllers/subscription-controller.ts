@@ -58,10 +58,13 @@ export class SubscriptionController implements ReactiveController {
     }
 
     private _handleEvent(event: any) {
+        // eslint-disable-next-line camelcase
         const { event_type, data } = event.data;
 
+        // eslint-disable-next-line camelcase
         if (event_type === 'plant_added' || event_type === 'plant_updated') {
             this._handlePlantUpdate(data.plant);
+            // eslint-disable-next-line camelcase
         } else if (event_type === 'plant_removed') {
             this._handlePlantRemoval(data.plant_id, data.growspace_id);
         }

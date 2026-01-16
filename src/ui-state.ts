@@ -22,12 +22,12 @@ export type ActiveDialogState =
   | { type: 'CONFIG'; payload: ConfigDialogState }
   | { type: 'GROW_MASTER'; payload: GrowMasterDialogState }
   | { type: 'STRAIN_RECOMMENDATION'; payload: StrainRecommendationDialogState }
-  | { type: 'IRRIGATION'; payload: {} }
+  | { type: 'IRRIGATION'; payload: Record<string, never> }
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
   | { type: 'TRAINING'; payload: TrainingDialogState }
   | { type: 'IPM'; payload: IPMDialogState }
-  | { type: 'NUTRIENT_INVENTORY'; payload: {} }
-  | { type: 'NUTRIENTS'; payload: {} };
+  | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
+  | { type: 'NUTRIENTS'; payload: Record<string, never> };
 

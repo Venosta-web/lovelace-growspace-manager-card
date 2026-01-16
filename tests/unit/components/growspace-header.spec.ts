@@ -439,11 +439,7 @@ describe('GrowspaceHeader', () => {
         });
 
         it('should handle menu actions', async () => {
-            // Open menu
-            (element as any)._menuOpen = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
+            // Menu is always rendered with Popover API
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
             expect(menu).not.toBeNull();
 
@@ -454,7 +450,7 @@ describe('GrowspaceHeader', () => {
                 expect.objectContaining({ type: 'CONFIG' })
             );
 
-            // Removed redundant spyOn
+            // Strains
             const strainsItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
             strainsItem.click();
 
@@ -497,9 +493,7 @@ describe('GrowspaceHeader', () => {
 
     describe('Menu Actions Coverage', () => {
         beforeEach(async () => {
-            // Already connected via top-level beforeEach
-            (element as any)._menuOpen = true;
-            element.requestUpdate();
+            // Menu is always rendered with Popover API
             await element.updateComplete;
         });
 
@@ -569,7 +563,7 @@ describe('GrowspaceHeader', () => {
 
         it('should handle control_dehumidifier action (no-op in switch)', () => {
             (element as any)._triggerAction('control_dehumidifier');
-            expect((element as any)._menuOpen).toBe(false);
+            // No state to check - Popover API handles menu visibility
         });
 
         it('should handle water action with no plants selected', () => {
@@ -621,22 +615,11 @@ describe('GrowspaceHeader', () => {
     });
 
     describe('Render Methods Coverage', () => {
-        it('should render menu when open', async () => {
-            (element as any)._menuOpen = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
+        it('should render menu with Popover API', async () => {
+            // Menu is always rendered in DOM with popover="auto"
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
             expect(menu).not.toBeNull();
-        });
-
-        it('should not render menu when closed', async () => {
-            (element as any)._menuOpen = false;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            expect(menu).toBeNull();
+            expect(menu?.getAttribute('popover')).toBe('auto');
         });
 
         it('should render hero card for main chips', async () => {
@@ -645,13 +628,9 @@ describe('GrowspaceHeader', () => {
         });
 
         it('should call _renderMenu method directly', () => {
-            (element as any)._menuOpen = false;
-            const result = (element as any)._renderMenu();
-            expect(result).toBe('');
-
-            (element as any)._menuOpen = true;
+            // Menu is always rendered with Popover API
             const menuResult = (element as any)._renderMenu();
-            expect(menuResult).not.toBe('');
+            expect(menuResult).toBeDefined();
         });
 
         it('should call _renderHeroCard method directly', () => {
@@ -686,7 +665,6 @@ describe('GrowspaceHeader', () => {
 
         it('should render "Water Growspace" label when no plants selected', async () => {
             $selectedPlants.set(new Set());
-            (element as any)._menuOpen = true;
             element.requestUpdate();
             await element.updateComplete;
 
@@ -697,7 +675,6 @@ describe('GrowspaceHeader', () => {
 
         it('should render "Water Selected" label when plants are selected', async () => {
             $selectedPlants.set(new Set(['p1']));
-            (element as any)._menuOpen = true;
             element.requestUpdate();
             await element.updateComplete;
 
@@ -862,8 +839,7 @@ describe('GrowspaceHeader', () => {
 
         describe('Menu DOM Interactions', () => {
             beforeEach(async () => {
-                (element as any)._menuOpen = true;
-                element.requestUpdate();
+                // Menu is always rendered with Popover API
                 await element.updateComplete;
             });
 
@@ -1302,27 +1278,10 @@ describe('GrowspaceHeader', () => {
             }
         });
 
-        it('should stop propagation on menu dropdown click', async () => {
-            (element as any)._menuOpen = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown') as HTMLElement;
-            if (menu) {
-                const evt = new Event('click', { bubbles: true });
-                const stopSpy = vi.spyOn(evt, 'stopPropagation');
-                menu.dispatchEvent(evt);
-                expect(stopSpy).toHaveBeenCalled();
-            }
-        });
-
-        it('should toggle menu open state via menu button click', async () => {
-            const initialOpen = (element as any)._menuOpen;
-            const menuBtn = element.shadowRoot?.querySelector('.menu-container .icon-button') as HTMLElement;
-            if (menuBtn) {
-                menuBtn.click();
-                expect((element as any)._menuOpen).toBe(!initialOpen);
-            }
+        it('should verify menu button has popovertarget attribute', async () => {
+            const menuBtn = element.shadowRoot?.querySelector('.menu-container button') as HTMLButtonElement;
+            expect(menuBtn).not.toBeNull();
+            expect(menuBtn?.getAttribute('popovertarget')).toBe('header-menu');
         });
 
         it('should register scroll listeners in firstUpdated', async () => {
@@ -1683,20 +1642,16 @@ describe('GrowspaceHeader', () => {
             expect(spyScrollChips).toHaveBeenCalledWith('right');
         });
 
-        it('should trigger menu and mobile toggles', async () => {
+        it('should trigger mobile link toggle', async () => {
             // Force mobile
             (element as any)._resizeController = { isMobile: true };
             element.requestUpdate();
             await element.updateComplete;
 
             const mobileToggle = element.shadowRoot?.querySelector('.mobile-link') as HTMLElement;
-            const menuToggle = element.shadowRoot?.querySelector('.menu-container .icon-button') as HTMLElement;
 
             mobileToggle?.click();
             expect((element as any)._mobileLink).toBe(true);
-
-            menuToggle?.click();
-            expect((element as any)._menuOpen).toBe(true);
         });
 
         it('should trigger chip drag events (secondary)', async () => {

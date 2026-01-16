@@ -1,5 +1,4 @@
 import { ActionContext } from './action-context';
-import { GrowAdviceResponse } from '../types';
 
 export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = false) {
     // Requires hass to be present in store (usually via dataService or just check store)
@@ -66,7 +65,7 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
                 ctx.data.setNutrientPresets(cache.data);
                 return;
             }
-        } catch (e) {
+        } catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
@@ -100,7 +99,7 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
                 ctx.data.setIPMPresets(cache.data);
                 return;
             }
-        } catch (e) {
+        } catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
@@ -134,7 +133,7 @@ export async function fetchNutrientInventory(ctx: ActionContext, force: boolean 
                 ctx.data.setNutrientInventory(cache.data);
                 return;
             }
-        } catch (e) {
+        } catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }

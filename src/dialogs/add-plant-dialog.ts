@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { HomeAssistant } from 'custom-card-helpers';
-import { mdiClose, mdiSprout } from '@mdi/js';
+import { mdiClose, mdiSprout, mdiDna } from '@mdi/js';
 import { StrainEntry } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -78,6 +78,14 @@ export class AddPlantDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
+  private _openStrainCreator() {
+    this.dispatchEvent(new CustomEvent('create-new-strain', {
+      bubbles: true,
+      composed: true,
+      detail: { source: 'add-plant' }
+    }));
+  }
+
   private _confirm() {
     const payload = {
       row: this.row + 1,
@@ -107,13 +115,13 @@ export class AddPlantDialog extends LitElement {
     if (!this.open) return html``;
 
     const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-    
+
     // Filter phenotypes based on selected strain
     const relevantPhenotypes = this.strain
       ? [...new Set(this.strainLibrary
-          .filter(s => s.strain === this.strain && s.phenotype)
-          .map(s => s.phenotype)
-        )].sort()
+        .filter(s => s.strain === this.strain && s.phenotype)
+        .map(s => s.phenotype)
+      )].sort()
       : [];
 
     return html`
@@ -151,12 +159,25 @@ export class AddPlantDialog extends LitElement {
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Identity & Location</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e: CustomEvent) => (this.strain = e.detail)}
-              ></md3-select>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+                <md3-select
+                  style="width: 100%;"
+                  label="Strain *"
+                  .value=${this.strain}
+                  .options=${uniqueStrains}
+                  @change=${(e: CustomEvent) => (this.strain = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button tonal"
+                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                  @click=${this._openStrainCreator}
+                  title="Add New Strain"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDna}"></path>
+                  </svg>
+                </button>
+              </div>
               <md3-text-input
                 label="Phenotype"
                 .value=${this.phenotype}

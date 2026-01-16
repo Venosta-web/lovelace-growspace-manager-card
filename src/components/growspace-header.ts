@@ -60,7 +60,6 @@ export class GrowspaceHeader extends LitElement {
   @state() private _canScrollStageRight = false;
   @state() private _canScrollDeviceLeft = false;
   @state() private _canScrollDeviceRight = false;
-  @state() private _menuOpen = false;
   @state() private _mobileLink = false;
 
   // Reactivity Controllers
@@ -606,6 +605,8 @@ export class GrowspaceHeader extends LitElement {
       color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
+      /* Define anchor for menu positioning */
+      anchor-name: --menu-trigger;
     }
     .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
     .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
@@ -617,18 +618,54 @@ export class GrowspaceHeader extends LitElement {
 
 
     .menu-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
+      /* Popover API handles positioning in top layer */
+      position: fixed;
+      inset: auto;
+      
+      /* Anchor positioning - attach to trigger button */
+      position-anchor: --menu-trigger;
+      top: anchor(bottom);
+      right: anchor(right);
+      
+      /* Auto-flip if no space below */
+      position-try-fallbacks: flip-block;
+      
       margin-top: 8px;
       background: var(--card-background-color, #2a2a2a);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
       border-radius: 12px;
       font-size: 0.9rem;
       min-width: 180px;
-      z-index: 1000;
+      padding: 0;
       overflow: hidden;
       box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    
+    .menu-dropdown:popover-open {
+      display: block;
+      animation: slide-in 0.2s ease-out;
+    }
+    
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Mobile: Convert to bottom sheet */
+    @media (max-width: 600px) {
+      .menu-dropdown:popover-open {
+        inset: auto 0 0 0;
+        width: 100%;
+        position-anchor: none;
+        border-radius: 20px 20px 0 0;
+        margin: 0;
+        animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+      }
+      
+      @keyframes slide-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
     }
     .menu-item {
         padding: 12px 16px;
@@ -774,7 +811,7 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _triggerAction(action: string) {
-    this._menuOpen = false;
+    // Menu state now managed by Popover API
     // Direct store method calls
     switch (action) {
       case 'add_plant':
@@ -956,9 +993,14 @@ export class GrowspaceHeader extends LitElement {
              ` : ''}
 
              <div class="menu-container">
-                <div class="icon-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                <button 
+                  class="icon-button" 
+                  id="menu-trigger"
+                  popovertarget="header-menu"
+                  title="Open Menu"
+                >
                     <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </div>
+                </button>
                 ${this._renderMenu()}
              </div>
           </div>
@@ -1178,9 +1220,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _renderMenu() {
-    if (!this._menuOpen) return '';
     return html`
-      <div class="menu-dropdown" @click=${(e: Event) => e.stopPropagation()}>
+      <div id="header-menu" popover="auto" class="menu-dropdown">
         <div class="menu-header">Configuration</div>
         <div class="menu-item" @click=${() => this._triggerAction('config')}>
             <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>

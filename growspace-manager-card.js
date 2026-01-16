@@ -511,6 +511,7 @@ class PlantUtils {
         return { row: 1, col: 1 };
     }
     static calculateEffectiveRows(device) {
+        // eslint-disable-next-line camelcase
         const { type, plants, plants_per_row, rows } = device;
         // Use strict type check instead of magic string comparison
         if (this.DYNAMIC_ROW_TYPES.includes(type)) {
@@ -932,106 +933,6 @@ class BaseAPI {
             console.error(`WebSocket call ${type} failed:`, error);
             return null;
         }
-    }
-}
-
-// Define keys for automatic extraction (DRY)
-// These must match the keys produced by serializers.py
-const BIO_KEYS = [
-    'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
-    'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
-];
-const ENV_KEYS = [
-    'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
-    'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
-    'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
-    'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
-];
-const STAT_KEYS = [
-    'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
-    'max_stage_summary', 'total_plants'
-];
-class GrowspaceAdapter {
-    static transformGrowspace(overview, wsData = null) {
-        if (!wsData && !overview)
-            return null;
-        const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
-        const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
-        const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
-        // 1. Loading State
-        if (!wsData) {
-            return createGrowspaceDevice({
-                device_id: growspace_id,
-                overview_entity_id: overview.entity_id,
-                name,
-                last_updated: 'Loading...',
-            });
-        }
-        // 2. Extract Groups using Utility Helper
-        const biological_metrics = this.extractSubset(wsData, BIO_KEYS);
-        const environment_attributes = this.extractSubset(wsData, ENV_KEYS);
-        const stats = this.extractSubset(wsData, STAT_KEYS);
-        // 3. Transform Grid Dictionary to Plant Entity Array
-        const plants = [];
-        if (wsData.grid) {
-            Object.values(wsData.grid).forEach((slot) => {
-                if (slot) {
-                    plants.push({
-                        entity_id: slot.entity_id,
-                        state: slot.stage || 'unknown',
-                        attributes: {
-                            ...slot, // Spread raw plant data
-                            row: Number(slot.row),
-                            col: Number(slot.col),
-                            growspace_id,
-                            friendly_name: `${slot.strain} ${slot.phenotype}`,
-                            stage: slot.stage || 'unknown',
-                        },
-                        last_changed: '',
-                        last_updated: '',
-                        context: { id: '', parent_id: null, user_id: null },
-                    });
-                }
-            });
-        }
-        // 4. Construct Device
-        return createGrowspaceDevice({
-            device_id: growspace_id,
-            overview_entity_id,
-            name,
-            type: wsData.type || 'normal',
-            rows: wsData.rows,
-            plants_per_row: wsData.plants_per_row,
-            notification_target: wsData.notification_target,
-            last_updated: overview?.last_updated || new Date().toISOString(),
-            // Structural Data
-            plants,
-            grid: wsData.grid,
-            // Grouped Data
-            biological_metrics,
-            environment_attributes,
-            stats,
-            // Configs
-            irrigation_config: wsData.irrigation_config,
-            irrigation_strategy: wsData.irrigation_strategy || undefined,
-        });
-    }
-    /**
-     * Helper to extract specific keys from the flattened API response into a typed object.
-     */
-    static extractSubset(source, keys) {
-        const result = {};
-        const src = source;
-        keys.forEach((key) => {
-            if (key in source) {
-                result[key] = src[key];
-            }
-        });
-        return result;
-    }
-    /** @deprecated */
-    static transformToDevices() {
-        return [];
     }
 }
 
@@ -5018,6 +4919,106 @@ const HistoryPointSchema = objectType({
 });
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
 
+// Define keys for automatic extraction (DRY)
+// These must match the keys produced by serializers.py
+const BIO_KEYS = [
+    'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
+    'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
+];
+const ENV_KEYS = [
+    'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
+    'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
+    'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
+    'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
+];
+const STAT_KEYS = [
+    'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
+    'max_stage_summary', 'total_plants'
+];
+class GrowspaceAdapter {
+    static transformGrowspace(overview, wsData = null) {
+        if (!wsData && !overview)
+            return null;
+        const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+        const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
+        const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
+        // 1. Loading State
+        if (!wsData) {
+            return createGrowspaceDevice({
+                device_id: growspace_id,
+                overview_entity_id: overview.entity_id,
+                name,
+                last_updated: 'Loading...',
+            });
+        }
+        // 2. Extract Groups using Utility Helper
+        const biological_metrics = this.extractSubset(wsData, BIO_KEYS);
+        const environment_attributes = this.extractSubset(wsData, ENV_KEYS);
+        const stats = this.extractSubset(wsData, STAT_KEYS);
+        // 3. Transform Grid Dictionary to Plant Entity Array
+        const plants = [];
+        if (wsData.grid) {
+            Object.values(wsData.grid).forEach((slot) => {
+                if (slot) {
+                    plants.push({
+                        entity_id: slot.entity_id,
+                        state: slot.stage || 'unknown',
+                        attributes: {
+                            ...slot, // Spread raw plant data
+                            row: Number(slot.row),
+                            col: Number(slot.col),
+                            growspace_id,
+                            friendly_name: `${slot.strain} ${slot.phenotype}`,
+                            stage: slot.stage || 'unknown',
+                        },
+                        last_changed: '',
+                        last_updated: '',
+                        context: { id: '', parent_id: null, user_id: null },
+                    });
+                }
+            });
+        }
+        // 4. Construct Device
+        return createGrowspaceDevice({
+            device_id: growspace_id,
+            overview_entity_id,
+            name,
+            type: wsData.type || 'normal',
+            rows: wsData.rows,
+            plants_per_row: wsData.plants_per_row,
+            notification_target: wsData.notification_target,
+            last_updated: overview?.last_updated || new Date().toISOString(),
+            // Structural Data
+            plants,
+            grid: wsData.grid,
+            // Grouped Data
+            biological_metrics,
+            environment_attributes,
+            stats,
+            // Configs
+            irrigation_config: wsData.irrigation_config,
+            irrigation_strategy: wsData.irrigation_strategy || undefined,
+        });
+    }
+    /**
+     * Helper to extract specific keys from the flattened API response into a typed object.
+     */
+    static extractSubset(source, keys) {
+        const result = {};
+        const src = source;
+        keys.forEach((key) => {
+            if (key in source) {
+                result[key] = src[key];
+            }
+        });
+        return result;
+    }
+    /** @deprecated */
+    static transformToDevices() {
+        return [];
+    }
+}
+
 /**
  * API service for growspace operations.
  * Handles growspace data fetching, CRUD, environment configuration, and caching.
@@ -6304,9 +6305,12 @@ class SubscriptionController {
         }
     }
     _handleEvent(event) {
+        // eslint-disable-next-line camelcase
         const { event_type, data } = event.data;
+        // eslint-disable-next-line camelcase
         if (event_type === 'plant_added' || event_type === 'plant_updated') {
             this._handlePlantUpdate(data.plant);
+            // eslint-disable-next-line camelcase
         }
         else if (event_type === 'plant_removed') {
             this._handlePlantRemoval(data.plant_id, data.growspace_id);
@@ -7076,6 +7080,10 @@ let ErrorBoundary = class ErrorBoundary extends i$3 {
         this._error = null;
         this._errorInfo = null;
     }
+    get _isDev() {
+        return window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1';
+    }
     render() {
         // Check for too many errors (potential infinite loop)
         if (this._errorCount >= this.MAX_ERROR_COUNT) {
@@ -7095,8 +7103,7 @@ let ErrorBoundary = class ErrorBoundary extends i$3 {
         }
         // Show error fallback if error exists
         if (this._error) {
-            const isDev = window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1';
+            const isDev = this._isDev;
             return x `
                 <div class="error-container">
                     <div class="error-header">
@@ -8976,6 +8983,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
+    _openStrainCreator() {
+        this.dispatchEvent(new CustomEvent('create-new-strain', {
+            bubbles: true,
+            composed: true,
+            detail: { source: 'add-plant' }
+        }));
+    }
     _confirm() {
         const payload = {
             row: this.row + 1,
@@ -9042,12 +9056,25 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Identity & Location</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e) => (this.strain = e.detail)}
-              ></md3-select>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+                <md3-select
+                  style="width: 100%;"
+                  label="Strain *"
+                  .value=${this.strain}
+                  .options=${uniqueStrains}
+                  @change=${(e) => (this.strain = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button tonal"
+                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                  @click=${this._openStrainCreator}
+                  title="Add New Strain"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDna}"></path>
+                  </svg>
+                </button>
+              </div>
               <md3-text-input
                 label="Phenotype"
                 .value=${this.phenotype}
@@ -9244,6 +9271,13 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
+    _openStrainCreator() {
+        this.dispatchEvent(new CustomEvent('create-new-strain', {
+            bubbles: true,
+            composed: true,
+            detail: { source: 'add-plants' }
+        }));
+    }
     _confirm() {
         const payload = {
             strain: this.strain,
@@ -9313,12 +9347,25 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Batch Configuration</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e) => (this.strain = e.detail)}
-              ></md3-select>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+                <md3-select
+                  style="width: 100%;"
+                  label="Strain *"
+                  .value=${this.strain}
+                  .options=${uniqueStrains}
+                  @change=${(e) => (this.strain = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button tonal"
+                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                  @click=${this._openStrainCreator}
+                  title="Add New Strain"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDna}"></path>
+                  </svg>
+                </button>
+              </div>
               
               <div class="row-col-grid">
                 <md3-number-input
@@ -11459,7 +11506,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                   title="Toggle Dates"
                 >
                   <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiDna}"></path>
+                    <path d="${mdiPencil}"></path>
                   </svg>
                 </button>
               </div>
@@ -15244,12 +15291,20 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             >
               Crop Steering (VWC)
             </div>
+            <div
+              class="tab-item ${this._activeTab === 'config' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'config')}
+            >
+              Configuration
+            </div>
           </div>
 
           <div class="dialog-body">
             ${this._activeTab === 'schedules'
             ? this._renderSchedulesTab(dialogColor)
-            : this._renderSteeringTab(dialogColor)}
+            : this._activeTab === 'steering'
+                ? this._renderSteeringTab(dialogColor)
+                : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
@@ -15265,6 +15320,17 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   </button>
                 `
             : ''}
+            ${this._activeTab === 'config'
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    style="background: ${dialogColor};"
+                    @click=${this._saveSettings}
+                  >
+                    Save Configuration
+                  </button>
+                `
+            : ''}
           </div>
         </div>
       </ha-dialog>
@@ -15274,6 +15340,43 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return x `
       ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
       ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+    `;
+    }
+    _getEntities(domains) {
+        if (!this.hass)
+            return [];
+        return Object.values(this.hass.states)
+            .filter((stateObj) => {
+            const domain = stateObj.entity_id.split('.')[0];
+            return domains.includes(domain);
+        })
+            .sort((a, b) => (a.attributes.friendly_name || a.entity_id).localeCompare(b.attributes.friendly_name || b.entity_id));
+    }
+    _renderEntitySelect(label, value, domains, changeHandler) {
+        const entities = this._getEntities(domains);
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select class="md3-input" .value=${value} @change=${changeHandler}>
+          <option value="">None</option>
+          ${entities.map((e) => x `<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
+              </option>`)}
+        </select>
+      </div>
+    `;
+    }
+    _renderConfigSection() {
+        return x `
+      <div class="schedule-section">
+        <div class="section-header">
+           <h3>Pump Configuration</h3>
+        </div>
+        <div class="section-content">
+             ${this._renderEntitySelect('Irrigation Pump', this._irrigation_pump_entity, ['switch', 'input_boolean'], (e) => (this._irrigation_pump_entity = e.target.value))}
+             ${this._renderEntitySelect('Drain Pump (Optional)', this._drain_pump_entity, ['switch', 'input_boolean'], (e) => (this._drain_pump_entity = e.target.value))}
+        </div>
+      </div>
     `;
     }
     _renderSteeringTab(color) {
@@ -18987,6 +19090,7 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
         if (!this.stock) {
             return x ``;
         }
+        // eslint-disable-next-line camelcase
         const { current_ml, initial_ml, name } = this.stock;
         const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
         let status = 'optimal';
@@ -20118,6 +20222,24 @@ let DialogHost = class DialogHost extends i$3 {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+            @create-new-strain=${() => {
+            this.store.ui.setActiveDialog({
+                type: 'STRAIN_LIBRARY',
+                payload: {
+                    editingStrain: {
+                        strain: '',
+                        phenotype: '',
+                        key: '',
+                        type: 'Hybrid',
+                        flowering_days_min: 60,
+                        flowering_days_max: 70,
+                        sex: 'Feminized',
+                        sativa_percentage: 50,
+                        indica_percentage: 50
+                    }
+                }
+            });
+        }}
         ></add-plant-dialog>
         `;
     }
@@ -20131,6 +20253,24 @@ let DialogHost = class DialogHost extends i$3 {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
+            @create-new-strain=${() => {
+            this.store.ui.setActiveDialog({
+                type: 'STRAIN_LIBRARY',
+                payload: {
+                    editingStrain: {
+                        strain: '',
+                        phenotype: '',
+                        key: '',
+                        type: 'Hybrid',
+                        flowering_days_min: 60,
+                        flowering_days_max: 70,
+                        sex: 'Feminized',
+                        sativa_percentage: 50,
+                        indica_percentage: 50
+                    }
+                }
+            });
+        }}
         ></add-plants-dialog>
         `;
     }
@@ -20265,6 +20405,7 @@ let DialogHost = class DialogHost extends i$3 {
         `;
     }
     async _handleEnvironmentConfig(detail) {
+        // eslint-disable-next-line camelcase
         const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_thresholds, soil_moisture_sensor, control_dehumidifier, } = detail;
         if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
             this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
@@ -29626,8 +29767,8 @@ class MetricsUtils {
                     .toString()
                     .toLowerCase()
                     .replace(/\s+/g, '_')
-                    .replace(/[^\w\-]+/g, '')
-                    .replace(/\-\-+/g, '_')
+                    .replace(/[^\w-]+/g, '')
+                    .replace(/--+/g, '_')
                     .replace(/^-+/, '')
                     .replace(/-+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
@@ -29767,7 +29908,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         this._canScrollStageRight = false;
         this._canScrollDeviceLeft = false;
         this._canScrollDeviceRight = false;
-        this._menuOpen = false;
         this._mobileLink = false;
         this._chipsContainerRef = e$1();
         this._stageContainerRef = e$1();
@@ -29935,7 +30075,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         return 'true';
     }
     _triggerAction(action) {
-        this._menuOpen = false;
+        // Menu state now managed by Popover API
         // Direct store method calls
         switch (action) {
             case 'add_plant':
@@ -30109,9 +30249,14 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
              ` : ''}
 
              <div class="menu-container">
-                <div class="icon-button" @click=${() => this._menuOpen = !this._menuOpen}>
+                <button 
+                  class="icon-button" 
+                  id="menu-trigger"
+                  popovertarget="header-menu"
+                  title="Open Menu"
+                >
                     <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </div>
+                </button>
                 ${this._renderMenu()}
              </div>
           </div>
@@ -30302,10 +30447,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     `;
     }
     _renderMenu() {
-        if (!this._menuOpen)
-            return '';
         return x `
-      <div class="menu-dropdown" @click=${(e) => e.stopPropagation()}>
+      <div id="header-menu" popover="auto" class="menu-dropdown">
         <div class="menu-header">Configuration</div>
         <div class="menu-item" @click=${() => this._triggerAction('config')}>
             <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
@@ -30774,6 +30917,8 @@ GrowspaceHeader.styles = i$6 `
       color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
+      /* Define anchor for menu positioning */
+      anchor-name: --menu-trigger;
     }
     .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
     .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
@@ -30785,18 +30930,54 @@ GrowspaceHeader.styles = i$6 `
 
 
     .menu-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
+      /* Popover API handles positioning in top layer */
+      position: fixed;
+      inset: auto;
+      
+      /* Anchor positioning - attach to trigger button */
+      position-anchor: --menu-trigger;
+      top: anchor(bottom);
+      right: anchor(right);
+      
+      /* Auto-flip if no space below */
+      position-try-fallbacks: flip-block;
+      
       margin-top: 8px;
       background: var(--card-background-color, #2a2a2a);
       border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
       border-radius: 12px;
       font-size: 0.9rem;
       min-width: 180px;
-      z-index: 1000;
+      padding: 0;
       overflow: hidden;
       box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    
+    .menu-dropdown:popover-open {
+      display: block;
+      animation: slide-in 0.2s ease-out;
+    }
+    
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Mobile: Convert to bottom sheet */
+    @media (max-width: 600px) {
+      .menu-dropdown:popover-open {
+        inset: auto 0 0 0;
+        width: 100%;
+        position-anchor: none;
+        border-radius: 20px 20px 0 0;
+        margin: 0;
+        animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+      }
+      
+      @keyframes slide-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
     }
     .menu-item {
         padding: 12px 16px;
@@ -30899,9 +31080,6 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceHeader.prototype, "_canScrollDeviceRight", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_menuOpen", void 0);
 __decorate([
     r$2()
 ], GrowspaceHeader.prototype, "_mobileLink", void 0);
@@ -33004,6 +33182,17 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
     }
     render() {
         return x `
+      <div class="compact-controls">
+            <button
+            class="compact-exit-fab"
+            @click=${() => this._dispatchModeChange('standard')}
+            title="Exit Compact Mode"
+            >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiFullscreenExit}"></path>
+            </svg>
+            </button>
+      </div>
       <div class="view-mode-container compact">
         <growspace-grid
           .plants=${this.grid}
@@ -33011,15 +33200,6 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
           .cols=${this.cols}
         ></growspace-grid>
 
-        <button
-          class="md3-button compact-exit-fab"
-          @click=${() => this._dispatchModeChange('standard')}
-          title="Exit Compact Mode"
-        >
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiFullscreenExit}"></path>
-          </svg>
-        </button>
       </div>
     `;
     }
@@ -33031,7 +33211,51 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
         }));
     }
 };
-GrowspaceViewCompact.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+GrowspaceViewCompact.styles = [
+    growspaceCardStyles,
+    sharedStyles,
+    uiStyles,
+    variables,
+    i$6 `
+      :host {
+        display: block;
+        position: relative;
+      }
+      .view-mode-container {
+        position: relative;
+      }
+      .compact-controls {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 8px;
+        gap: 8px;
+      }
+      .compact-exit-fab {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border-radius: 50%;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .compact-exit-fab:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+      }
+      .compact-exit-fab svg {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+      }
+    `
+];
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceViewCompact.prototype, "grid", void 0);
@@ -34430,7 +34654,7 @@ class GrowspaceHistoryStore {
             // unless strictly required. The controller had access to this.host.hass.states.
             // We can access this.dataService.hass.states.
             if (this.dataService.hass) {
-                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 if (this.dataService.hass.states[calculatedId]) {
@@ -34744,7 +34968,66 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
     const originalCol = sourcePlant.attributes.col;
     const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
     const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
+    // Fix: extract growspace ID properly
+    const growspaceId = sourcePlant.attributes.growspace_id;
+    // Helper to perform optimistic update on the cache AND devices store
+    const optimisticUpdate = (isRevert = false) => {
+        if (!growspaceId)
+            return;
+        const updateGridLogic = (grid) => {
+            let sourceKey = null;
+            let targetKey = null;
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (!plant)
+                    return;
+                const pId = plant.plant_id || plant.entity_id.replace('sensor.', '');
+                if (pId === sourceId)
+                    sourceKey = key;
+                if (targetId && pId === targetId)
+                    targetKey = key;
+            });
+            if (sourceKey && targetKey) {
+                const sData = grid[sourceKey];
+                const tData = grid[targetKey];
+                // Determine new coordinates based on direction
+                // Forward: s -> target, t -> original
+                // Revert: s -> original, t -> target
+                const newSourceRow = isRevert ? originalRow : targetRow;
+                const newSourceCol = isRevert ? originalCol : targetCol;
+                const newTargetRow = isRevert ? targetRow : originalRow;
+                const newTargetCol = isRevert ? targetCol : originalCol;
+                if (sData) {
+                    sData.row = newSourceRow;
+                    sData.col = newSourceCol;
+                }
+                if (tData) {
+                    tData.row = newTargetRow;
+                    tData.col = newTargetCol;
+                }
+                grid[sourceKey] = tData;
+                grid[targetKey] = sData;
+            }
+        };
+        // 1. Update Cache
+        ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
+        // 2. Update Devices Atom (for immediate UI Reactivity)
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            const device = { ...newDevices[deviceIdx] };
+            const newGrid = { ...device.grid };
+            updateGridLogic(newGrid);
+            device.grid = newGrid;
+            newDevices[deviceIdx] = device;
+            ctx.data.$devices.set(newDevices);
+        }
+    };
     try {
+        // Optimistically update if swapping two existing plants
+        if (targetPlant && growspaceId) {
+            optimisticUpdate(false);
+        }
         if (targetPlant) {
             if (sourceId === targetId)
                 return false;
@@ -34753,13 +35036,18 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
             }
         }
         else {
+            // Non-swap move (to empty) - no optimistic update for now
             await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+            // Re-fetch immediately for non-optimistic moves
+            await ctx.refreshData();
         }
         ctx.undoRedoManager.pushAction({
             type: 'move',
             description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
             reverse: async () => {
                 if (targetPlant && targetId) {
+                    // APPLY OPTIMISTIC UNDO
+                    optimisticUpdate(true);
                     await ctx.dataService.swapPlants(sourceId, targetId);
                 }
                 else {
@@ -34771,11 +35059,16 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
                 await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
             }
         });
-        await ctx.refreshData();
+        if (targetPlant) {
+            // For optimistic swaps, we still refresh to be safe, but can delay slightly or just let it happen in background
+            ctx.refreshData();
+        }
         return true;
     }
     catch (err) {
         console.error('Error during drag-and-drop:', err);
+        // If error, force refresh to sync state
+        ctx.refreshData();
         return false;
     }
 }
@@ -34923,7 +35216,7 @@ async function fetchNutrientPresets(ctx, force = false) {
                 return;
             }
         }
-        catch (e) {
+        catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
@@ -34956,7 +35249,7 @@ async function fetchIPMPresets(ctx, force = false) {
                 return;
             }
         }
-        catch (e) {
+        catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
@@ -34989,7 +35282,7 @@ async function fetchNutrientInventory(ctx, force = false) {
                 return;
             }
         }
-        catch (e) {
+        catch (_) {
             localStorage.removeItem(CACHE_KEY);
         }
     }
@@ -35116,6 +35409,19 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
  */
 async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
     try {
+        // Optimistic update for immediate UI feedback
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            // Shallow clone device, update dimensions
+            newDevices[deviceIdx] = {
+                ...newDevices[deviceIdx],
+                rows,
+                plants_per_row: plantsPerRow
+            };
+            ctx.data.$devices.set(newDevices);
+        }
         await ctx.dataService.updateGrowspace({
             growspace_id: growspaceId,
             name,
@@ -35913,7 +36219,7 @@ class GrowspaceStore {
     selectAllPlants() {
         selectAllPlants(this.context);
     }
-    setSelectedPlants(plantIds) {
+    setSelectedPlants(_plantIds) {
         // No-op
     }
     clearPlantSelection() {
@@ -35959,9 +36265,11 @@ class GrowspaceStore {
     async removeStrain(strainKey) {
         await removeStrain(this.context, strainKey);
     }
+    // eslint-disable-next-line camelcase
     async handleAddGrowspace(detail) {
         await addGrowspace(this.context, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
     }
+    // eslint-disable-next-line camelcase
     async handleUpdateGrowspace(detail) {
         await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
     }
@@ -36047,10 +36355,10 @@ class GrowspaceStore {
     async handleExportLibrary() {
         await exportStrainLibrary(this.context);
     }
-    async toggleDehumidifierControl(deviceId) {
+    async toggleDehumidifierControl(_deviceId) {
         console.warn('toggleDehumidifierControl not fully implemented in data service (deprecated or future)');
     }
-    async performImport(file, replace) {
+    async performImport(file, _replace) {
         try {
             const content = await file.text();
             const strains = JSON.parse(content);

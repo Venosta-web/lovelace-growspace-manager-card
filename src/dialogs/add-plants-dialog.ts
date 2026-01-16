@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { HomeAssistant } from 'custom-card-helpers';
-import { mdiClose, mdiSprout, mdiInformationOutline } from '@mdi/js';
+import { mdiClose, mdiSprout, mdiInformationOutline, mdiDna } from '@mdi/js';
 import { StrainEntry } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -13,29 +13,29 @@ import '../components/ui/md3-date-input';
 
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {
-    @consume({ context: hassContext, subscribe: true })
-    hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  hass!: HomeAssistant;
 
-    @property({ type: Array }) strainLibrary: StrainEntry[] = [];
-    @property({ type: String }) growspaceName = '';
-    @property({ type: Boolean, reflect: true }) open = false;
+  @property({ type: Array }) strainLibrary: StrainEntry[] = [];
+  @property({ type: String }) growspaceName = '';
+  @property({ type: Boolean, reflect: true }) open = false;
 
-    @state() private strain = '';
-    @state() private amount = 1;
-    @state() private start_number = 1;
+  @state() private strain = '';
+  @state() private amount = 1;
+  @state() private start_number = 1;
 
-    // Date fields
-    @state() private veg_start = '';
-    @state() private flower_start = '';
-    @state() private seedling_start = '';
-    @state() private mother_start = '';
-    @state() private clone_start = '';
-    @state() private dry_start = '';
-    @state() private cure_start = '';
+  // Date fields
+  @state() private veg_start = '';
+  @state() private flower_start = '';
+  @state() private seedling_start = '';
+  @state() private mother_start = '';
+  @state() private clone_start = '';
+  @state() private dry_start = '';
+  @state() private cure_start = '';
 
-    static styles = [
-        dialogStyles,
-        css`
+  static styles = [
+    dialogStyles,
+    css`
       :host {
         display: block;
       }
@@ -69,54 +69,62 @@ export class AddPlantsDialog extends LitElement {
         }
       }
     `,
-    ];
+  ];
 
-    public setInitialState(strain: string = '') {
-        this.strain = strain;
-        this.amount = 1;
-        this.start_number = 1;
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
+  public setInitialState(strain: string = '') {
+    this.strain = strain;
+    this.amount = 1;
+    this.start_number = 1;
+    this.veg_start = '';
+    this.flower_start = '';
+    this.seedling_start = '';
+    this.mother_start = '';
+    this.clone_start = '';
+    this.dry_start = '';
+    this.cure_start = '';
+  }
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
 
-    private _confirm() {
-        const payload = {
-            strain: this.strain,
-            amount: this.amount,
-            start_number: this.start_number,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-        };
+  private _openStrainCreator() {
+    this.dispatchEvent(new CustomEvent('create-new-strain', {
+      bubbles: true,
+      composed: true,
+      detail: { source: 'add-plants' }
+    }));
+  }
 
-        this.dispatchEvent(
-            new CustomEvent('add-plants-submit', {
-                detail: payload,
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+  private _confirm() {
+    const payload = {
+      strain: this.strain,
+      amount: this.amount,
+      start_number: this.start_number,
+      veg_start: this.veg_start,
+      flower_start: this.flower_start,
+      seedling_start: this.seedling_start,
+      mother_start: this.mother_start,
+      clone_start: this.clone_start,
+      dry_start: this.dry_start,
+      cure_start: this.cure_start,
+    };
 
-    render() {
-        if (!this.open) return html``;
+    this.dispatchEvent(
+      new CustomEvent('add-plants-submit', {
+        detail: payload,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+  render() {
+    if (!this.open) return html``;
 
-        return html`
+    const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -162,12 +170,25 @@ export class AddPlantsDialog extends LitElement {
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Batch Configuration</h3>
-              <md3-select
-                label="Strain *"
-                .value=${this.strain}
-                .options=${uniqueStrains}
-                @change=${(e: CustomEvent) => (this.strain = e.detail)}
-              ></md3-select>
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+                <md3-select
+                  style="width: 100%;"
+                  label="Strain *"
+                  .value=${this.strain}
+                  .options=${uniqueStrains}
+                  @change=${(e: CustomEvent) => (this.strain = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button tonal"
+                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                  @click=${this._openStrainCreator}
+                  title="Add New Strain"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDna}"></path>
+                  </svg>
+                </button>
+              </div>
               
               <div class="row-col-grid">
                 <md3-number-input
@@ -205,37 +226,37 @@ export class AddPlantsDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-    }
+  }
 
-    private renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
+  private renderTimelineContent() {
+    const name = this.growspaceName.toLowerCase();
 
-        if (name.includes('mother')) {
-            return html`<md3-date-input
+    if (name.includes('mother')) {
+      return html`<md3-date-input
         label="Mother Start"
         .value=${this.mother_start}
         @change=${(e: CustomEvent) => (this.mother_start = e.detail)}
       ></md3-date-input>`;
-        } else if (name.includes('clone')) {
-            return html`<md3-date-input
+    } else if (name.includes('clone')) {
+      return html`<md3-date-input
         label="Clone Start"
         .value=${this.clone_start}
         @change=${(e: CustomEvent) => (this.clone_start = e.detail)}
       ></md3-date-input>`;
-        } else if (name.includes('dry')) {
-            return html`<md3-date-input
+    } else if (name.includes('dry')) {
+      return html`<md3-date-input
         label="Dry Start"
         .value=${this.dry_start}
         @change=${(e: CustomEvent) => (this.dry_start = e.detail)}
       ></md3-date-input>`;
-        } else if (name.includes('cure')) {
-            return html`<md3-date-input
+    } else if (name.includes('cure')) {
+      return html`<md3-date-input
         label="Cure Start"
         .value=${this.cure_start}
         @change=${(e: CustomEvent) => (this.cure_start = e.detail)}
       ></md3-date-input>`;
-        } else {
-            return html`
+    } else {
+      return html`
         <md3-date-input
           label="Seedling Start"
           .value=${this.seedling_start}
@@ -252,6 +273,6 @@ export class AddPlantsDialog extends LitElement {
           @change=${(e: CustomEvent) => (this.flower_start = e.detail)}
         ></md3-date-input>
       `;
-        }
     }
+  }
 }

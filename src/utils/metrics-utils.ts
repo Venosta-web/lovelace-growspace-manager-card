@@ -135,8 +135,8 @@ export class MetricsUtils {
                         .toString()
                         .toLowerCase()
                         .replace(/\s+/g, '_')
-                        .replace(/[^\w\-]+/g, '')
-                        .replace(/\-\-+/g, '_')
+                        .replace(/[^\w-]+/g, '')
+                        .replace(/--+/g, '_')
                         .replace(/^-+/, '')
                         .replace(/-+$/, '');
 

@@ -174,6 +174,7 @@ export class PlantUtils {
     ];
 
     static calculateEffectiveRows(device: GrowspaceDevice): number {
+        // eslint-disable-next-line camelcase
         const { type, plants, plants_per_row, rows } = device;
 
         // Use strict type check instead of magic string comparison

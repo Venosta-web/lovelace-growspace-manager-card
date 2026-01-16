@@ -102,7 +102,7 @@ describe('Growspace Views', () => {
             const listener = vi.fn();
             element.addEventListener('view-mode-changed', listener);
 
-            const btn = element.shadowRoot?.querySelector('button');
+            const btn = element.shadowRoot?.querySelector('.compact-exit-fab') as HTMLElement;
             btn?.click();
 
             expect(listener).toHaveBeenCalled();

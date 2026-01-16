@@ -114,6 +114,21 @@ export async function updateGrowspace(
     plantsPerRow: number
 ): Promise<boolean> {
     try {
+        // Optimistic update for immediate UI feedback
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            // Shallow clone device, update dimensions
+            newDevices[deviceIdx] = {
+                ...newDevices[deviceIdx],
+                rows,
+                plants_per_row: plantsPerRow
+            };
+            ctx.data.$devices.set(newDevices);
+        }
+
         await ctx.dataService.updateGrowspace({
             growspace_id: growspaceId,
             name,

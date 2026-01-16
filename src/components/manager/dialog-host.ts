@@ -129,6 +129,24 @@ export class DialogHost extends LitElement {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
+            @create-new-strain=${() => {
+                this.store.ui.setActiveDialog({
+                    type: 'STRAIN_LIBRARY',
+                    payload: {
+                        editingStrain: {
+                            strain: '',
+                            phenotype: '',
+                            key: '',
+                            type: 'Hybrid',
+                            flowering_days_min: 60,
+                            flowering_days_max: 70,
+                            sex: 'Feminized',
+                            sativa_percentage: 50,
+                            indica_percentage: 50
+                        }
+                    }
+                });
+            }}
         ></add-plant-dialog>
         `;
     }
@@ -146,6 +164,24 @@ export class DialogHost extends LitElement {
             .growspaceName=${selectedDeviceData?.name || ''}
             @close=${() => this.store.ui.closeDialog()}
             @add-plants-submit=${(e: CustomEvent) => this.store.confirmAddPlants(e.detail)}
+            @create-new-strain=${() => {
+                this.store.ui.setActiveDialog({
+                    type: 'STRAIN_LIBRARY',
+                    payload: {
+                        editingStrain: {
+                            strain: '',
+                            phenotype: '',
+                            key: '',
+                            type: 'Hybrid',
+                            flowering_days_min: 60,
+                            flowering_days_max: 70,
+                            sex: 'Feminized',
+                            sativa_percentage: 50,
+                            indica_percentage: 50
+                        }
+                    }
+                });
+            }}
         ></add-plants-dialog>
         `;
     }
@@ -300,6 +336,7 @@ export class DialogHost extends LitElement {
     }
 
     private async _handleEnvironmentConfig(detail: any) {
+        // eslint-disable-next-line camelcase
         const {
             selectedGrowspaceId,
             temp_sensor,

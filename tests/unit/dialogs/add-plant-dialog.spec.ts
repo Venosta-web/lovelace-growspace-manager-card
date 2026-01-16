@@ -154,7 +154,7 @@ describe('AddPlantDialog', () => {
             const closeSpy = vi.fn();
             element.addEventListener('close', closeSpy);
 
-            const cancelBtn = element.shadowRoot?.querySelector('.tonal') as HTMLElement;
+            const cancelBtn = element.shadowRoot?.querySelector('.button-group .tonal') as HTMLElement;
             cancelBtn.click();
 
             expect(closeSpy).toHaveBeenCalled();

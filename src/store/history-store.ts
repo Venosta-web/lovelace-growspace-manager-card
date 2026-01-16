@@ -499,7 +499,7 @@ export class GrowspaceHistoryStore {
             // We can access this.dataService.hass.states.
 
             if (this.dataService.hass) {
-                const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+                const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 if (this.dataService.hass.states[calculatedId]) {

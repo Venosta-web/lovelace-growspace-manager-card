@@ -377,9 +377,8 @@ export interface AddPlantDialogState {
   col: number;
 }
 
-export interface AddPlantsDialogState {
-  // Batch add doesn't specific a row/col, it finds available ones
-}
+export type AddPlantsDialogState = Record<string, never>;
+// Batch add doesn't specific a row/col, it finds available ones
 
 export interface PlantOverviewDialogState {
   plant: PlantEntity;
@@ -389,7 +388,9 @@ export interface PlantOverviewDialogState {
   selectedPlantIds?: string[];
 }
 
-export interface StrainLibraryDialogState { }
+export interface StrainLibraryDialogState {
+  editingStrain?: StrainEntry;
+}
 
 export interface EnvironmentConfigData {
   selectedGrowspaceId: string;

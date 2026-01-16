@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
-import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
+import { mdiWater, mdiClose, mdiPlus, mdiCog } from '@mdi/js';
 import { IrrigationTime, IrrigationStrategy, GrowspaceDevice } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -149,7 +149,7 @@ export class IrrigationDialog extends LitElement {
     `,
   ];
 
-  @state() private _activeTab: 'schedules' | 'steering' = 'schedules';
+  @state() private _activeTab: 'schedules' | 'steering' | 'config' = 'schedules';
   @state() private _strategy: Partial<IrrigationStrategy> = {};
 
   protected willUpdate(changedProps: PropertyValues): void {
@@ -401,12 +401,20 @@ export class IrrigationDialog extends LitElement {
             >
               Crop Steering (VWC)
             </div>
+            <div
+              class="tab-item ${this._activeTab === 'config' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'config')}
+            >
+              Configuration
+            </div>
           </div>
 
           <div class="dialog-body">
             ${this._activeTab === 'schedules'
         ? this._renderSchedulesTab(dialogColor)
-        : this._renderSteeringTab(dialogColor)}
+        : this._activeTab === 'steering'
+          ? this._renderSteeringTab(dialogColor)
+          : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
@@ -419,6 +427,17 @@ export class IrrigationDialog extends LitElement {
                     @click=${this._saveStrategy}
                   >
                     Save Strategy
+                  </button>
+                `
+        : ''}
+            ${this._activeTab === 'config'
+        ? html`
+                  <button
+                    class="md3-button primary"
+                    style="background: ${dialogColor};"
+                    @click=${this._saveSettings}
+                  >
+                    Save Configuration
                   </button>
                 `
         : ''}
@@ -444,6 +463,67 @@ export class IrrigationDialog extends LitElement {
       'drain',
       '#FF9800'
     )}
+    `;
+  }
+
+  private _getEntities(domains: string[]) {
+    if (!this.hass) return [];
+    return Object.values(this.hass.states)
+      .filter((stateObj) => {
+        const domain = stateObj.entity_id.split('.')[0];
+        return domains.includes(domain);
+      })
+      .sort((a, b) =>
+        (a.attributes.friendly_name || a.entity_id).localeCompare(
+          b.attributes.friendly_name || b.entity_id
+        )
+      );
+  }
+
+  private _renderEntitySelect(
+    label: string,
+    value: string,
+    domains: string[],
+    changeHandler: (e: Event) => void
+  ) {
+    const entities = this._getEntities(domains);
+    return html`
+      <div class="md3-input-group">
+        <label class="md3-label">${label}</label>
+        <select class="md3-input" .value=${value} @change=${changeHandler}>
+          <option value="">None</option>
+          ${entities.map(
+      (e) =>
+        html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
+              </option>`
+    )}
+        </select>
+      </div>
+    `;
+  }
+
+  private _renderConfigSection() {
+    return html`
+      <div class="schedule-section">
+        <div class="section-header">
+           <h3>Pump Configuration</h3>
+        </div>
+        <div class="section-content">
+             ${this._renderEntitySelect(
+      'Irrigation Pump',
+      this._irrigation_pump_entity,
+      ['switch', 'input_boolean'],
+      (e) => (this._irrigation_pump_entity = (e.target as HTMLSelectElement).value)
+    )}
+             ${this._renderEntitySelect(
+      'Drain Pump (Optional)',
+      this._drain_pump_entity,
+      ['switch', 'input_boolean'],
+      (e) => (this._drain_pump_entity = (e.target as HTMLSelectElement).value)
+    )}
+        </div>
+      </div>
     `;
   }
 

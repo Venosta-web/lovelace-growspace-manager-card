@@ -40,6 +40,7 @@ describe('strain-actions', () => {
                     setStrainLibrary: vi.fn((lib) => { strainLibrary = lib; }),
                     getStrainLibrary: vi.fn(() => strainLibrary),
                     $strainLibrary: { get: () => strainLibrary },
+                    $devices: { get: vi.fn(() => []) },
                 } as any,
             } as any;
         });
@@ -161,6 +162,9 @@ describe('strain-actions', () => {
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
+                data: {
+                    $devices: { get: vi.fn(() => []), set: vi.fn() },
+                } as any,
             } as any;
         });
 
