@@ -221,6 +221,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.deleteSelectedPlants();
   };
 
+  private _handleTransplantMode = () => {
+    this.store.ui.toggleTransplantMode();
+  };
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -276,9 +280,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               @ipm-selected=${this._handleIPMSelected}
               @batch-add-plants=${this._handleBatchAddPlants}
               @delete-selected=${this._handleDeleteSelected}
+              @transplant-mode=${this._handleTransplantMode}
               @exit-edit-mode=${this._handleExitEditMode}
-          >
-            <growspace-view-switcher
+          >            <growspace-view-switcher
               .viewMode=${this._cardViewController.value.viewMode}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}

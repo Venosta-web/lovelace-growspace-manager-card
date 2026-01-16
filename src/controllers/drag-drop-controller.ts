@@ -8,6 +8,7 @@ export interface DragDropHost extends ReactiveControllerHost, HTMLElement {
     isEditMode: boolean;
     selected: boolean;
     shadowRoot: ShadowRoot | null;
+    forceDraggable?: boolean; // Allow drag even in edit mode (for transplant sources)
 }
 
 export class DragDropController implements ReactiveController {
@@ -67,7 +68,7 @@ export class DragDropController implements ReactiveController {
     // --- Touch / Mobile Handlers ---
 
     handleTouchStart(e: TouchEvent) {
-        if (this.host.isEditMode) return;
+        if (this.host.isEditMode && !this.host.forceDraggable) return;
         if (e.touches.length !== 1) return;
 
         this._startX = e.touches[0].clientX;
@@ -117,7 +118,8 @@ export class DragDropController implements ReactiveController {
     // --- Desktop Drag handlers ---
 
     handleDragStart(e: DragEvent) {
-        if (this.host.isEditMode) {
+        // Allow drag if forceDraggable is set (for transplant sources)
+        if (this.host.isEditMode && !this.host.forceDraggable) {
             e.preventDefault();
             return;
         }
@@ -153,7 +155,7 @@ export class DragDropController implements ReactiveController {
 
     handleDrop(e: DragEvent) {
         e.preventDefault();
-        if (this.host.isEditMode) return;
+        if (this.host.isEditMode && !this.host.forceDraggable) return;
 
         this.host.dispatchEvent(
             new CustomEvent('plant-drop', {

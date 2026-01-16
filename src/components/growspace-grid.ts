@@ -457,6 +457,34 @@ export class GrowspaceGrid extends LitElement {
     targetPlant: PlantEntity | null
   ) {
     if (e) e.preventDefault();
+
+    // Check for transplant data from external source (TransplantSourcePanel)
+    if (e?.dataTransfer) {
+      const transplantData = e.dataTransfer.getData('application/json');
+      if (transplantData) {
+        try {
+          const data = JSON.parse(transplantData);
+          if (data.type === 'transplant') {
+            // Dispatch transplant event
+            this.dispatchEvent(new CustomEvent('transplant-drop', {
+              bubbles: true,
+              composed: true,
+              detail: {
+                plant_id: data.plant_id,
+                source_growspace_id: data.source_growspace_id,
+                target_row: targetRow,
+                target_col: targetCol
+              }
+            }));
+            return;
+          }
+        } catch (err) {
+          // Not transplant data, fall through to regular drop
+        }
+      }
+    }
+
+    // Regular internal drag-drop
     if (!this._draggedPlant) return;
 
     // Direct store call

@@ -33,6 +33,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @property({ attribute: false }) plant!: PlantEntity;
   @property({ type: Number }) row!: number;
   @property({ type: Number }) col!: number;
+  @property({ type: Boolean }) forceDraggable = false; // Allow drag even in edit mode
 
   @consume({ context: strainLibraryContext, subscribe: true })
   strainLibrary: StrainEntry[] = [];

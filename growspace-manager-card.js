@@ -67,6 +67,7 @@ var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.2
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
+var mdiSwapHorizontal = "M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z";
 var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
@@ -21446,6 +21447,10 @@ let EditModeBanner = class EditModeBanner extends i$3 {
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
               Log IPM
             </button>
+            <button class="md3-button text" @click=${() => this._dispatch('transplant-mode')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
+              Transplant
+            </button>
             <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
               Batch Add Plants
@@ -21689,7 +21694,7 @@ class DragDropController {
     }
     // --- Touch / Mobile Handlers ---
     handleTouchStart(e) {
-        if (this.host.isEditMode)
+        if (this.host.isEditMode && !this.host.forceDraggable)
             return;
         if (e.touches.length !== 1)
             return;
@@ -21732,7 +21737,8 @@ class DragDropController {
     }
     // --- Desktop Drag handlers ---
     handleDragStart(e) {
-        if (this.host.isEditMode) {
+        // Allow drag if forceDraggable is set (for transplant sources)
+        if (this.host.isEditMode && !this.host.forceDraggable) {
             e.preventDefault();
             return;
         }
@@ -21764,7 +21770,7 @@ class DragDropController {
     }
     handleDrop(e) {
         e.preventDefault();
-        if (this.host.isEditMode)
+        if (this.host.isEditMode && !this.host.forceDraggable)
             return;
         this.host.dispatchEvent(new CustomEvent('plant-drop', {
             detail: {
@@ -22101,6 +22107,7 @@ const plantCardStyles = i$6 `
 let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     constructor() {
         super(...arguments);
+        this.forceDraggable = false; // Allow drag even in edit mode
         this.strainLibrary = [];
         // Instantiate controller
         this.dragController = new DragDropController(this);
@@ -22330,6 +22337,9 @@ __decorate([
 __decorate([
     n$5({ type: Number })
 ], GrowspacePlantCard.prototype, "col", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspacePlantCard.prototype, "forceDraggable", void 0);
 __decorate([
     c$2({ context: strainLibraryContext, subscribe: true })
 ], GrowspacePlantCard.prototype, "strainLibrary", void 0);
@@ -32159,6 +32169,33 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     _handleDrop(e, targetRow, targetCol, targetPlant) {
         if (e)
             e.preventDefault();
+        // Check for transplant data from external source (TransplantSourcePanel)
+        if (e?.dataTransfer) {
+            const transplantData = e.dataTransfer.getData('application/json');
+            if (transplantData) {
+                try {
+                    const data = JSON.parse(transplantData);
+                    if (data.type === 'transplant') {
+                        // Dispatch transplant event
+                        this.dispatchEvent(new CustomEvent('transplant-drop', {
+                            bubbles: true,
+                            composed: true,
+                            detail: {
+                                plant_id: data.plant_id,
+                                source_growspace_id: data.source_growspace_id,
+                                target_row: targetRow,
+                                target_col: targetCol
+                            }
+                        }));
+                        return;
+                    }
+                }
+                catch (err) {
+                    // Not transplant data, fall through to regular drop
+                }
+            }
+        }
+        // Regular internal drag-drop
         if (!this._draggedPlant)
             return;
         // Direct store call
@@ -34081,6 +34118,169 @@ GrowspaceAnalytics = __decorate([
     t$2('growspace-analytics')
 ], GrowspaceAnalytics);
 
+let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.clonePlants = [];
+        this.seedlingPlants = [];
+    }
+    _handleDragStart(e, plant) {
+        if (!e.dataTransfer)
+            return;
+        // Set dragged plant data
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('application/json', JSON.stringify({
+            type: 'transplant',
+            plant_id: plant.attributes.plant_id,
+            source_growspace_id: plant.attributes.growspace_id,
+            strain: plant.attributes.strain,
+            phenotype: plant.attributes.phenotype,
+            stage: plant.attributes.stage
+        }));
+        // Set visual feedback
+        const target = e.currentTarget;
+        target.setAttribute('dragging', '');
+        // Remove dragging attribute on drag end
+        target.addEventListener('dragend', () => {
+            target.removeAttribute('dragging');
+        }, { once: true });
+    }
+    render() {
+        return x `
+      <div class="transplant-panel">
+        <div class="section">
+          <div class="section-header">
+            <h3>Clone Stage</h3>
+            <span class="count-badge">${this.clonePlants.length}</span>
+          </div>
+          <div class="source-grid">
+            ${this.clonePlants.length === 0
+            ? x `<div class="empty-state">No clones available</div>`
+            : this.clonePlants.map(p => this._renderDraggablePlant(p, 'clone'))}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h3>Seedling Stage</h3>
+            <span class="count-badge">${this.seedlingPlants.length}</span>
+          </div>
+          <div class="source-grid">
+            ${this.seedlingPlants.length === 0
+            ? x `<div class="empty-state">No seedlings available</div>`
+            : this.seedlingPlants.map(p => this._renderDraggablePlant(p, 'seedling'))}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderDraggablePlant(plant, stage) {
+        return x `
+      <growspace-plant-card
+        class="source-plant-card"
+        .plant=${plant}
+        .row=${plant.attributes.row}
+        .col=${plant.attributes.col}
+        .forceDraggable=${true}
+        draggable="true"
+        @dragstart=${(e) => this._handleDragStart(e, plant)}
+      ></growspace-plant-card>
+    `;
+    }
+};
+TransplantSourcePanel.styles = [
+    variables,
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        margin-bottom: 24px;
+      }
+
+      .transplant-panel {
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: var(--border-radius-xl, 20px);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 4px;
+      }
+
+      .section-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .count-badge {
+        background: rgba(var(--rgb-primary-color), 0.2);
+        color: var(--primary-color);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .source-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        min-height: 60px;
+      }
+
+      .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        padding: 20px;
+      }
+
+      .source-plant-card {
+        cursor: move;
+        transition: all 0.2s ease;
+      }
+
+      .source-plant-card:hover {
+        transform: translateY(-4px);
+      }
+
+      .source-plant-card[dragging] {
+        opacity: 0.4;
+      }
+
+      @media (max-width: 600px) {
+        .source-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `
+];
+__decorate([
+    n$5({ type: Array })
+], TransplantSourcePanel.prototype, "clonePlants", void 0);
+__decorate([
+    n$5({ type: Array })
+], TransplantSourcePanel.prototype, "seedlingPlants", void 0);
+TransplantSourcePanel = __decorate([
+    t$2('transplant-source-panel')
+], TransplantSourcePanel);
+
 let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
     constructor() {
         super(...arguments);
@@ -34092,6 +34292,46 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         this.isEditMode = false;
         this.isCompact = false;
         this.selectedCount = 0;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._isTransplantModeController = new libExports.StoreController(this, this.store.ui.$isTransplantMode);
+            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+        }
+    }
+    _getPlantsByStage(stage) {
+        const devices = this._devicesController?.value || [];
+        return devices
+            .flatMap(d => (d.plants || []).map(p => ({
+            ...p,
+            _growspaceName: d.name
+        })))
+            .filter(p => p.attributes.stage === stage);
+    }
+    async _handleTransplantDrop(e) {
+        const detail = e.detail;
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const targetGrowspaceId = this.device?.device_id;
+            if (!targetGrowspaceId)
+                return;
+            await this.store.hass.callService('growspace_manager', 'update_plant', {
+                plant_id: detail.plant_id,
+                growspace_id: targetGrowspaceId,
+                row: detail.target_row,
+                col: detail.target_col,
+                veg_start: today
+            });
+            this.store.ui.showToast('Plant transplanted successfully', 'success');
+            // Refresh data after a small delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await this.store.refreshData();
+        }
+        catch (error) {
+            console.error('[GrowspaceViewStandard] Transplant failed:', error);
+            this.store.ui.showToast('Failed to transplant plant', 'error');
+        }
     }
     focusPlant(index) {
         const grid = this.shadowRoot?.querySelector('growspace-grid');
@@ -34120,10 +34360,20 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
           `
             : ''}
 
+      ${this._isTransplantModeController?.value
+            ? x `
+            <transplant-source-panel
+              .clonePlants=${this._getPlantsByStage('clone')}
+              .seedlingPlants=${this._getPlantsByStage('seedling')}
+            ></transplant-source-panel>
+          `
+            : ''}
+
       <growspace-grid
         .plants=${this.grid}
         .rows=${this.rows}
         .cols=${this.cols}
+        @transplant-drop=${(e) => this._handleTransplantDrop(e)}
       ></growspace-grid>
 
       ${this.config?.initial_view_mode === 'header'
@@ -34150,6 +34400,9 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
     }
 };
 GrowspaceViewStandard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], GrowspaceViewStandard.prototype, "store", void 0);
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceViewStandard.prototype, "device", void 0);
@@ -34729,6 +34982,7 @@ class GrowspaceUIStore {
         this.$isLoading = atom(true);
         this.$activeDialog = atom({ type: 'NONE' });
         this.$isEditMode = atom(false);
+        this.$isTransplantMode = atom(false);
         this.$selectedPlants = atom(new Set());
         this.$focusedPlantIndex = atom(-1);
         this.$menuOpen = atom(false);
@@ -34808,6 +35062,12 @@ class GrowspaceUIStore {
     }
     setError(error) {
         this.$error.set(error);
+    }
+    toggleTransplantMode() {
+        this.$isTransplantMode.set(!this.$isTransplantMode.get());
+    }
+    exitTransplantMode() {
+        this.$isTransplantMode.set(false);
     }
 }
 
@@ -36831,8 +37091,12 @@ class GrowspaceStore {
          * Centralized Action Dispatcher
          */
         this.actions = new ActionDispatcher(this);
-        this.handleTakeClone = (motherPlant, numClones) => {
-            return takeClone(this.context, motherPlant, numClones);
+        this.handleTakeClone = async (motherPlant, numClones) => {
+            const success = await takeClone(this.context, motherPlant, numClones);
+            if (success) {
+                await this.refreshData();
+            }
+            return success;
         };
         this.dataService = new DataService();
         // Initialize sub-stores
@@ -37009,9 +37273,11 @@ class GrowspaceStore {
     }
     async confirmAddPlant(detail) {
         await confirmAddPlant(this.context, detail);
+        await this.refreshData();
     }
     async confirmAddPlants(detail) {
         await confirmAddPlants(this.context, detail);
+        await this.refreshData();
     }
     // AI Actions
     async analyzeGrowspace(query, all) {
@@ -37183,6 +37449,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         };
         this._handleDeleteSelected = () => {
             this.store.deleteSelectedPlants();
+        };
+        this._handleTransplantMode = () => {
+            this.store.ui.toggleTransplantMode();
         };
         this._handleError = (error, errorInfo) => {
             // Always log to console
@@ -37358,9 +37627,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
               @ipm-selected=${this._handleIPMSelected}
               @batch-add-plants=${this._handleBatchAddPlants}
               @delete-selected=${this._handleDeleteSelected}
+              @transplant-mode=${this._handleTransplantMode}
               @exit-edit-mode=${this._handleExitEditMode}
-          >
-            <growspace-view-switcher
+          >            <growspace-view-switcher
               .viewMode=${this._cardViewController.value.viewMode}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}

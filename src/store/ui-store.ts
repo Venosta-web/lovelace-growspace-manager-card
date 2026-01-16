@@ -9,6 +9,7 @@ export class GrowspaceUIStore {
     public readonly $isLoading: WritableAtom<boolean>;
     public readonly $activeDialog: WritableAtom<ActiveDialogState>;
     public readonly $isEditMode: WritableAtom<boolean>;
+    public readonly $isTransplantMode: WritableAtom<boolean>;
     public readonly $selectedPlants: WritableAtom<Set<string>>;
     public readonly $focusedPlantIndex: WritableAtom<number>;
     public readonly $menuOpen: WritableAtom<boolean>;
@@ -30,6 +31,7 @@ export class GrowspaceUIStore {
         this.$isLoading = atom<boolean>(true);
         this.$activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
         this.$isEditMode = atom<boolean>(false);
+        this.$isTransplantMode = atom<boolean>(false);
         this.$selectedPlants = atom<Set<string>>(new Set());
         this.$focusedPlantIndex = atom<number>(-1);
         this.$menuOpen = atom<boolean>(false);
@@ -139,5 +141,13 @@ export class GrowspaceUIStore {
 
     public setError(error: string | null) {
         this.$error.set(error);
+    }
+
+    public toggleTransplantMode() {
+        this.$isTransplantMode.set(!this.$isTransplantMode.get());
+    }
+
+    public exitTransplantMode() {
+        this.$isTransplantMode.set(false);
     }
 }

@@ -258,8 +258,12 @@ export class GrowspaceStore {
         return await plantActions.movePlantToNextStage(this.context, plant);
     }
 
-    handleTakeClone = (motherPlant: PlantEntity, numClones?: number): Promise<boolean> => {
-        return plantActions.takeClone(this.context, motherPlant, numClones);
+    handleTakeClone = async (motherPlant: PlantEntity, numClones?: number): Promise<boolean> => {
+        const success = await plantActions.takeClone(this.context, motherPlant, numClones);
+        if (success) {
+            await this.refreshData();
+        }
+        return success;
     };
 
     async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string): Promise<boolean> {
@@ -298,10 +302,13 @@ export class GrowspaceStore {
 
     async confirmAddPlant(detail: any) {
         await plantActions.confirmAddPlant(this.context, detail);
+        await this.refreshData();
     }
+
 
     async confirmAddPlants(detail: any) {
         await plantActions.confirmAddPlants(this.context, detail);
+        await this.refreshData();
     }
 
     // AI Actions

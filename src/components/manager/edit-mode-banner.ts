@@ -11,7 +11,8 @@ import {
   mdiPlusBoxMultiple,
   mdiChevronLeft,
   mdiChevronRight,
-  mdiDelete
+  mdiDelete,
+  mdiSwapHorizontal
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -209,6 +210,10 @@ export class EditModeBanner extends LitElement {
             <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
               Log IPM
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('transplant-mode')}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
+              Transplant
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
