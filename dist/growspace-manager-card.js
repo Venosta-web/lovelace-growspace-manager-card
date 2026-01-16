@@ -21427,41 +21427,35 @@ let EditModeBanner = class EditModeBanner extends i$3 {
           </div>
 
           <div class="banner-actions" ${n$2(this._actionsContainerRef)}>
-            <button class="md3-button text" @click=${() => this._dispatch('select-all')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
-              Select All
+            <button class="icon-button" @click=${() => this._dispatch('select-all')} title="Select All">
+              <svg viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('clear-selection')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
-              Clear
+            <button class="icon-button" @click=${() => this._dispatch('clear-selection')} title="Clear Selection">
+              <svg viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('water-selected')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-              Water Selected
+            <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+            <button class="icon-button" @click=${() => this._dispatch('water-selected')} title="Water Selected">
+              <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('training-selected')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-              Log Training
+            <button class="icon-button" @click=${() => this._dispatch('training-selected')} title="Log Training">
+              <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('ipm-selected')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-              Log IPM
+            <button class="icon-button" @click=${() => this._dispatch('ipm-selected')} title="Log IPM">
+              <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('transplant-mode')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
-              Transplant
+            <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+            <button class="icon-button" @click=${() => this._dispatch('transplant-mode')} title="Transplant Mode">
+              <svg viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
-              Batch Add Plants
+            <button class="icon-button" @click=${() => this._dispatch('batch-add-plants')} title="Batch Add Plants">
+              <svg viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('delete-selected')} style="color: var(--error-color);">
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-              Delete Selected
+            <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+            <button class="icon-button delete" @click=${() => this._dispatch('delete-selected')} title="Delete Selected">
+              <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
             </button>
-            <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
-              Exit
+            <button class="icon-button" @click=${() => this._dispatch('exit-edit-mode')} title="Exit Edit Mode">
+              <svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
 
@@ -21484,8 +21478,10 @@ EditModeBanner.styles = [
         display: block;
       }
       .edit-mode-banner {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-        border: 1px solid rgba(76, 175, 80, 0.4);
+        background: rgba(var(--rgb-card-background-color, 32, 33, 36), 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         padding: 8px 16px;
         display: flex;
@@ -21494,6 +21490,7 @@ EditModeBanner.styles = [
         margin-bottom: 16px;
         animation: slideDown 0.3s ease;
         gap: 16px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
       @keyframes slideDown {
@@ -21521,7 +21518,7 @@ EditModeBanner.styles = [
       .banner-content svg {
         width: 20px;
         height: 20px;
-        fill: currentColor;
+        fill: var(--primary-color, #4caf50);
       }
 
       .banner-actions-wrapper {
@@ -21530,6 +21527,7 @@ EditModeBanner.styles = [
         min-width: 0;
         flex: 1;
         position: relative;
+        justify-content: flex-end;
       }
 
       .banner-actions {
@@ -21546,8 +21544,41 @@ EditModeBanner.styles = [
         display: none;
       }
 
-      .banner-actions button {
-        flex-shrink: 0;
+      .icon-button {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        border-radius: 8px;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        width: 40px;
+        height: 40px;
+        box-sizing: border-box;
+      }
+
+      .icon-button:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+      }
+
+      .icon-button svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      .icon-button.delete {
+        color: var(--error-color, #f44336);
+        border-color: rgba(244, 67, 54, 0.3);
+        background: rgba(244, 67, 54, 0.1);
+      }
+
+      .icon-button.delete:hover {
+        background: rgba(244, 67, 54, 0.2);
       }
 
       .scroll-arrow {
@@ -21577,20 +21608,17 @@ EditModeBanner.styles = [
         margin: 0;
       }
 
-      .scroll-arrow svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-
       @media (max-width: 600px) {
         .edit-mode-banner {
           flex-direction: column;
           align-items: stretch;
           padding: 12px;
-          gap: 8px;
+          gap: 12px;
         }
         .banner-content {
+          justify-content: center;
+        }
+        .banner-actions-wrapper {
           justify-content: center;
         }
       }
