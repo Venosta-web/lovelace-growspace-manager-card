@@ -165,4 +165,18 @@ describe('AddPlantsDialog', () => {
         (element as any)._confirm();
         expect(submitSpy).toHaveBeenCalled();
     });
+
+    it('should dispatch create-new-strain event', async () => {
+        const createSpy = vi.fn();
+        element.addEventListener('create-new-strain', createSpy);
+
+        // Button with mdiDna icon
+        const createBtn = element.shadowRoot?.querySelector('button[title="Add New Strain"]') as HTMLElement;
+        expect(createBtn).toBeTruthy();
+        createBtn.click();
+
+        expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+            detail: { source: 'add-plants' }
+        }));
+    });
 });

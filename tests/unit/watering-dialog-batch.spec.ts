@@ -34,6 +34,8 @@ describe('WateringDialog Batch Submission', () => {
         mockStore = {
             showToast: mockShowToast,
             refreshData: mockRefreshData,
+            waterPlant: mockWaterPlant,
+            waterGrowspace: mockWaterGrowspace,
             data: {
                 $devices: {
                     get: () => []
@@ -60,12 +62,11 @@ describe('WateringDialog Batch Submission', () => {
         await (dialog as any)._submit();
 
         expect(mockWaterPlant).toHaveBeenCalledTimes(3);
-        expect(mockWaterPlant).toHaveBeenCalledWith('p1', 1.5, undefined, undefined);
-        expect(mockWaterPlant).toHaveBeenCalledWith('p2', 1.5, undefined, undefined);
-        expect(mockWaterPlant).toHaveBeenCalledWith('p3', 1.5, undefined, undefined);
+        expect(mockWaterPlant).toHaveBeenCalledWith('p1', 0.5, undefined, undefined);
+        expect(mockWaterPlant).toHaveBeenCalledWith('p2', 0.5, undefined, undefined);
+        expect(mockWaterPlant).toHaveBeenCalledWith('p3', 0.5, undefined, undefined);
 
         expect(mockShowToast).toHaveBeenCalledWith('Watered 3 plant(s)', 'success');
-        expect(mockRefreshData).toHaveBeenCalled();
     });
 
     it('should pass preset_id if selected', async () => {
@@ -123,9 +124,9 @@ describe('WateringDialog Batch Submission', () => {
             'pre2': { id: 'pre2', name: 'Flower', stage: 'flower', min_days_in_stage: 10, nutrients: [] }
         };
 
-        mockStore.data.$devices = { get: () => [mockDevice] };
-        mockStore.data.$selectedDevice = { get: () => 'd1' };
-        mockStore.data.$nutrientPresets = { get: () => mockPresets };
+        mockStore.data.$devices = { get: () => [mockDevice], subscribe: vi.fn() };
+        mockStore.data.$selectedDevice = { get: () => 'd1', subscribe: vi.fn() };
+        mockStore.data.$nutrientPresets = { get: () => mockPresets, subscribe: vi.fn() };
 
         dialog.dialogState = {
             mode: 'plant',
@@ -134,6 +135,7 @@ describe('WateringDialog Batch Submission', () => {
         };
 
         // Trigger render logic for options
+        dialog.connectedCallback();
         const options = (dialog as any)._renderPresetOptions();
 
         // Use a temp container to render the TemplateResult

@@ -7,6 +7,7 @@ import { mdiWaterPlus, mdiClose, mdiPlus, mdiDelete, mdiAutoFix, mdiStar } from 
 import { WateringDialogState, NutrientEntry, NutrientPreset, NutrientItem } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
+import { StoreController } from '@nanostores/lit';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import type { GrowspaceStore } from '../store/growspace-store';
@@ -28,6 +29,17 @@ export class WateringDialog extends LitElement {
   @state() private _nutrients: NutrientEntry[] = [];
   @state() private _selectedPresetId = '';
   @state() private _isSubmitting = false;
+
+  private _presetsController!: StoreController<Record<string, NutrientPreset>>;
+  private _inventoryController!: StoreController<import('../types').NutrientInventory | null>;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.store) {
+      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
+      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    }
+  }
 
   private _dataService?: DataService;
 
@@ -204,7 +216,7 @@ export class WateringDialog extends LitElement {
       return;
     }
 
-    const presets = this.store.data.$nutrientPresets.get();
+    const presets = this._presetsController.value;
 
     if (presets && presets[presetId]) {
       const preset = presets[presetId];
@@ -238,11 +250,12 @@ export class WateringDialog extends LitElement {
       }
 
       if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
-        // Water individual plants
+        // Water individual plants - divide total volume by number of plants
+        const amountPerPlant = this._volume / this.dialogState.plantIds.length;
         for (const plantId of this.dialogState.plantIds) {
-          await this._dataService.waterPlant(
+          await this.store.waterPlant(
             plantId,
-            this._volume,
+            amountPerPlant,
             Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined,
             this._selectedPresetId || undefined
           );
@@ -253,7 +266,7 @@ export class WateringDialog extends LitElement {
         );
       } else if (this.dialogState.growspaceId) {
         // Water entire growspace
-        await this._dataService.waterGrowspace(
+        await this.store.waterGrowspace(
           this.dialogState.growspaceId,
           this._volume,
           Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined,
@@ -262,7 +275,7 @@ export class WateringDialog extends LitElement {
         this.store?.showToast('Watered all plants in growspace', 'success');
       }
 
-      await this.store?.refreshData();
+      this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
       this._close();
     } catch (e: any) {
       console.error('Failed to record watering:', e);
@@ -449,8 +462,8 @@ export class WateringDialog extends LitElement {
   }
 
   private _renderPresetOptions() {
-    if (!this.store || !this.store.data) return nothing;
-    const presetsRecord = this.store.data.$nutrientPresets.get();
+    if (!this.store || !this.store.data || !this._presetsController) return nothing;
+    const presetsRecord = this._presetsController.value;
     if (!presetsRecord) return nothing;
 
     const presets = Object.values(presetsRecord);
@@ -501,14 +514,27 @@ export class WateringDialog extends LitElement {
 
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
-    if (!this.store || !this.store.data) return [];
+    if (!this.store || !this.store.data || !this._presetsController || !this._inventoryController) return [];
 
-    const presets = this.store.data.$nutrientPresets.get();
-    Object.values(presets).forEach(preset => {
-      preset.nutrients.forEach(n => {
-        if (n.name) nutrients.add(n.name);
+    // Add nutrients from presets
+    const presets = this._presetsController.value;
+    if (presets) {
+      Object.values(presets).forEach(preset => {
+        if (preset.nutrients) {
+          preset.nutrients.forEach(n => {
+            if (n.name) nutrients.add(n.name);
+          });
+        }
       });
-    });
+    }
+
+    // Add nutrients from inventory
+    const inventory = this._inventoryController.value;
+    if (inventory && inventory.stocks) {
+      Object.values(inventory.stocks).forEach(stock => {
+        if (stock.name) nutrients.add(stock.name);
+      });
+    }
 
     return Array.from(nutrients).sort();
   }

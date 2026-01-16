@@ -451,7 +451,7 @@ describe('GrowspaceHeader', () => {
             );
 
             // Strains
-            const strainsItem = menu?.querySelectorAll('.menu-item')[9] as HTMLElement;
+            const strainsItem = menu?.querySelectorAll('.menu-item')[7] as HTMLElement;
             strainsItem.click();
 
             expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith(
@@ -669,7 +669,7 @@ describe('GrowspaceHeader', () => {
             await element.updateComplete;
 
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
+            const waterItem = menu?.querySelectorAll('.menu-item')[2] as HTMLElement;
             expect(waterItem.textContent).toContain('Water Growspace');
         });
 
@@ -679,7 +679,7 @@ describe('GrowspaceHeader', () => {
             await element.updateComplete;
 
             const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[4] as HTMLElement;
+            const waterItem = menu?.querySelectorAll('.menu-item')[2] as HTMLElement;
             expect(waterItem.textContent).toContain('Water Selected');
         });
     });
@@ -863,46 +863,37 @@ describe('GrowspaceHeader', () => {
                 clickItem(1, 'edit');
                 expect(editSpy).toHaveBeenCalled();
 
-                // 3. Compact (Index 2)
+                // 3. Water (Index 2)
                 const triggerSpy = vi.spyOn(element as any, '_triggerAction');
-                element.requestUpdate();
-                clickItem(2, 'compact');
-                expect(triggerSpy).toHaveBeenCalledWith('compact');
-
-                // 4. Dehumidifier (Index 3)
-                clickItem(3, 'control_dehumidifier');
-                expect(triggerSpy).toHaveBeenCalledWith('control_dehumidifier');
-
-                // 5. Water (Index 4)
-                clickItem(4, 'water');
+                clickItem(2, 'water');
                 expect(triggerSpy).toHaveBeenCalledWith('water');
 
-                // 6. Irrigation (Index 5)
-                clickItem(5, 'irrigation');
+                // 4. Irrigation (Index 3)
+                clickItem(3, 'irrigation');
                 expect(triggerSpy).toHaveBeenCalledWith('irrigation');
 
-                // 7. IPM (Index 6)
-                clickItem(6, 'ipm');
+                // 5. IPM (Index 4)
+                clickItem(4, 'ipm');
                 expect(triggerSpy).toHaveBeenCalledWith('ipm');
 
-                // 8. Nutrients (Index 7)
-                clickItem(7, 'nutrients');
+                // 6. Nutrients (Index 5)
+                clickItem(5, 'nutrients');
                 expect(triggerSpy).toHaveBeenCalledWith('nutrients');
 
-                // 9. Add Plant (Index 8)
-                clickItem(8, 'add_plant');
+                // 7. Add Plant (Index 6)
+                clickItem(6, 'add_plant');
                 expect(triggerSpy).toHaveBeenCalledWith('add_plant');
 
-                // 10. Strains (Index 9)
-                clickItem(9, 'strains');
+                // 8. Strains (Index 7)
+                clickItem(7, 'strains');
                 expect(triggerSpy).toHaveBeenCalledWith('strains');
 
-                // 11. Logbook (Index 10)
-                clickItem(10, 'logbook');
+                // 9. Logbook (Index 8)
+                clickItem(8, 'logbook');
                 expect(triggerSpy).toHaveBeenCalledWith('logbook');
 
-                // 12. AI (Index 11)
-                clickItem(11, 'ai');
+                // 10. AI (Index 9)
+                clickItem(9, 'ai');
                 expect(triggerSpy).toHaveBeenCalledWith('ai');
             });
         });

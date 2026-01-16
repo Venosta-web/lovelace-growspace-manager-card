@@ -118,7 +118,7 @@ describe('DataService - IrrigationAPI', () => {
             await service.waterGrowspace('gs1', 300);
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
                 growspace_id: 'gs1',
-                amount_per_plant: 300
+                amount: 300
             });
         });
 
@@ -127,7 +127,7 @@ describe('DataService - IrrigationAPI', () => {
             await service.waterGrowspace('gs1', 300, nutrients);
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
                 growspace_id: 'gs1',
-                amount_per_plant: 300,
+                amount: 300,
                 nutrients
             });
         });
@@ -136,7 +136,7 @@ describe('DataService - IrrigationAPI', () => {
             await service.waterGrowspace('gs1', 300, undefined, 'preset2');
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_growspace', {
                 growspace_id: 'gs1',
-                amount_per_plant: 300,
+                amount: 300,
                 preset_id: 'preset2'
             });
         });

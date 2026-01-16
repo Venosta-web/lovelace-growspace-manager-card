@@ -1009,4 +1009,104 @@ describe('IrrigationDialog', () => {
             expect((element as any)._strategy.enabled).toBe(true);
         });
     });
+
+    describe('Configuration Tab', () => {
+        beforeEach(async () => {
+            // Setup Hass with mock entities
+            element.hass = {
+                states: {
+                    'switch.pump1': { entity_id: 'switch.pump1', attributes: { friendly_name: 'Pump 1' } },
+                    'input_boolean.valve': { entity_id: 'input_boolean.valve', attributes: { friendly_name: 'Valve A' } },
+                    'light.grow': { entity_id: 'light.grow', attributes: { friendly_name: 'Grow Light' } }, // Should be filtered out
+                    'switch.pump2': { entity_id: 'switch.pump2', attributes: { friendly_name: 'Pump 2' } },
+                    'switch.bare': { entity_id: 'switch.bare', attributes: {} }
+                }
+            } as any;
+
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Switch to Config Tab
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            (tabs?.[2] as HTMLElement).click();
+            await element.updateComplete;
+        });
+
+        it('should render configuration tab content', () => {
+            const section = element.shadowRoot?.querySelector('.schedule-section');
+            expect(section).toBeTruthy();
+            expect(section?.innerHTML).toContain('Pump Configuration');
+        });
+
+        it('should populate entity selects with filtered and sorted entities', () => {
+            const selects = element.shadowRoot?.querySelectorAll('select');
+            const pumpSelect = selects?.[0]; // Irrigation Pump
+
+            const options = Array.from(pumpSelect?.querySelectorAll('option') || []).map(o => o.value).filter(v => v);
+
+            // Should contain switches and input_booleans, but not lights
+            expect(options).toContain('switch.pump1');
+            expect(options).toContain('input_boolean.valve');
+            expect(options).toContain('switch.pump2');
+            expect(options).toContain('switch.bare');
+            expect(options).not.toContain('light.grow');
+            // Check sorting if needed, but existence is key for coverage
+        });
+
+        it('should update irrigation pump entity on change', async () => {
+            const selects = element.shadowRoot?.querySelectorAll('select');
+            const pumpSelect = selects?.[0]; // First one is irrigation pump
+
+            expect(pumpSelect).toBeTruthy();
+
+            // Simulating change
+            pumpSelect!.value = 'switch.pump2';
+            pumpSelect!.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            // Verify state update by checking what happens on save
+            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            (saveBtn as HTMLElement).click();
+
+            expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
+                irrigation_pump_entity: 'switch.pump2'
+            }));
+        });
+
+        it('should update drain pump entity on change', async () => {
+            const selects = element.shadowRoot?.querySelectorAll('select');
+            const drainSelect = selects?.[1]; // Second one is drain pump
+
+            expect(drainSelect).toBeTruthy();
+
+            drainSelect!.value = 'input_boolean.valve';
+            drainSelect!.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            (saveBtn as HTMLElement).click();
+
+            expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
+                drain_pump_entity: 'input_boolean.valve'
+            }));
+        });
+
+        it('should handle missing hass safely in _getEntities', async () => {
+            element.hass = undefined as any;
+            await element.requestUpdate();
+            await element.updateComplete;
+
+            // Re-render to trigger _getEntities
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            (tabs?.[2] as HTMLElement).click();
+            await element.updateComplete;
+
+            const selects = element.shadowRoot?.querySelectorAll('select');
+            expect(selects?.length).toBeGreaterThan(0);
+            const options = selects?.[0]?.querySelectorAll('option');
+            // Should have 1 option (None)
+            expect(options?.length).toBe(1);
+        });
+    });
 });

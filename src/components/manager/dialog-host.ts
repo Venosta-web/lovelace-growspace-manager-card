@@ -113,6 +113,12 @@ export class DialogHost extends LitElement {
         `;
     }
 
+    private async _handleDataChanged() {
+        // Add a small delay to ensure backend has persisted changes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await this.store.refreshData();
+    }
+
     private _renderAddPlantDialog(
         active: ActiveDialogState,
         strainLibrary: StrainEntry[],
@@ -127,7 +133,11 @@ export class DialogHost extends LitElement {
             .row=${dialogState?.row}
             .col=${dialogState?.col}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
+            @close=${() => {
+                if (this._activeDialogController.value.type === 'ADD_PLANT') {
+                    this.store.ui.closeDialog();
+                }
+            }}
             @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
             @create-new-strain=${() => {
                 this.store.ui.setActiveDialog({
@@ -162,7 +172,13 @@ export class DialogHost extends LitElement {
             .open=${true}
             .strainLibrary=${strainLibrary}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
+            .growspaceDevice=${selectedDeviceData}
+            @close=${() => {
+                if (this._activeDialogController.value.type === 'ADD_PLANTS') {
+                    this.store.ui.closeDialog();
+                }
+            }}
+            @show-toast=${(e: CustomEvent) => this.store.showToast(e.detail.message, e.detail.type)}
             @add-plants-submit=${(e: CustomEvent) => this.store.confirmAddPlants(e.detail)}
             @create-new-strain=${() => {
                 this.store.ui.setActiveDialog({
@@ -459,7 +475,7 @@ export class DialogHost extends LitElement {
             .growspaceName = ${selectedDeviceData?.name || ''}
 @close=${() => this.store.ui.closeDialog()}
 @closed=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
+@data-changed=${() => this._handleDataChanged()}
         > </irrigation-dialog>
     `;
     }
@@ -488,7 +504,7 @@ export class DialogHost extends LitElement {
             .dialogState = ${dialogState}
             .growspaceName = ${selectedDeviceData?.name || ''}
 @close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
+@data-changed=${() => this._handleDataChanged()}
         > </watering-dialog>
     `;
     }
@@ -504,7 +520,7 @@ export class DialogHost extends LitElement {
         .store=${this.store}
         .hass=${this.hass}
         @close=${() => this.store.ui.closeDialog()}
-        @data-changed=${() => this.store.refreshData()}
+        @data-changed=${() => this._handleDataChanged()}
     ></nutrient-presets-editor>
     `;
     }
@@ -515,7 +531,8 @@ export class DialogHost extends LitElement {
     <training-dialog
         .open=${true}
             .store = ${this.store}
-@close=${() => this.store.ui.closeDialog()}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this._handleDataChanged()}
         > </training-dialog>
     `;
     }
@@ -534,7 +551,7 @@ export class DialogHost extends LitElement {
         .growspaceId=${dialogState.growspaceId}
         .plantIds=${dialogState.plantIds || []}
         @close=${() => this.store.ui.closeDialog()}
-        @data-changed=${() => this.store.refreshData()}
+        @data-changed=${() => this._handleDataChanged()}
     ></ipm-dialog>
     `;
     }
@@ -545,7 +562,7 @@ export class DialogHost extends LitElement {
             <nutrient-inventory-dialog
                 .open=${true}
                 @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this.store.refreshData()}
+                @data-changed=${() => this._handleDataChanged()}
             ></nutrient-inventory-dialog>
         `;
     }
@@ -556,7 +573,7 @@ export class DialogHost extends LitElement {
             <nutrient-dialog
                 .open=${true}
                 @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this.store.refreshData()}
+                @data-changed=${() => this._handleDataChanged()}
             ></nutrient-dialog>
         `;
     }

@@ -5,6 +5,7 @@
 import { PlantEntity, PlantOverviewDialogState } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { ActionContext } from './action-context';
+import * as libraryActions from './library-actions';
 
 /**
  * Update a single plant with new attributes.
@@ -531,5 +532,51 @@ export async function confirmAddPlants(
         ctx.closeDialog();
     } catch (err: any) {
         ctx.showToast(`Error: ${err.message}`, 'error');
+    }
+}
+
+/**
+ * Water a single plant and refresh inventory.
+ */
+export async function waterPlant(
+    ctx: ActionContext,
+    plantId: string,
+    amount: number,
+    nutrients?: Record<string, number>,
+    presetId?: string
+): Promise<void> {
+    try {
+        await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
+        // If nutrients were used, refresh the inventory
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await libraryActions.fetchNutrientInventory(ctx, true);
+        }
+    } catch (e: any) {
+        console.error('Failed to water plant:', e);
+        ctx.showToast(`Failed to water plant: ${e.message}`, 'error');
+        throw e;
+    }
+}
+
+/**
+ * Water a growspace and refresh inventory.
+ */
+export async function waterGrowspace(
+    ctx: ActionContext,
+    growspaceId: string,
+    amount: number,
+    nutrients?: Record<string, number>,
+    presetId?: string
+): Promise<void> {
+    try {
+        await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
+        // If nutrients were used, refresh the inventory
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await libraryActions.fetchNutrientInventory(ctx, true);
+        }
+    } catch (e: any) {
+        console.error('Failed to water growspace:', e);
+        ctx.showToast(`Failed to water growspace: ${e.message}`, 'error');
+        throw e;
     }
 }

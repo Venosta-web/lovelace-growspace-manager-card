@@ -65,7 +65,6 @@ var mdiRestart = "M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15
 var mdiSelectAll = "M9,9H15V15H9M7,17H17V7H7M15,5H17V3H15M15,21H17V19H15M19,17H21V15H19M19,9H21V7H19M19,21A2,2 0 0,0 21,19H19M19,13H21V11H19M11,21H13V19H11M9,3H7V5H9M3,17H5V15H3M5,21V19H3A2,2 0 0,0 5,21M19,3V5H21A2,2 0 0,0 19,3M13,3H11V5H13M3,9H5V7H3M7,21H9V19H7M3,13H5V11H3M3,5H5V3A2,2 0 0,0 3,5Z";
 var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.27L3.73,7H2V5.27L0.5,3.77M4,2H7V4H5.82L3.83,2H4M22,4V7H20V4H17V2H20A2,2 0 0,1 22,4M20,17H22V20L22,20.17L20,18.18V17M2,20V17H4V20H7V22H4A2,2 0 0,1 2,20M10,2H14V4H10V2M10,20H14V22H10V20M20,10H22V14H20V10M2,10H4V14H2V10Z";
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
-var mdiSickle = "M19.3 7.2C17.5 4.7 14.9 3 12 2C26.2 10.5 15.4 22.9 8.5 15.5L5.9 16L2.5 19.4C1.9 20 1.9 21 2.5 21.5C3.1 22.1 4.1 22.1 4.6 21.5L7.8 18.3C15.3 24.3 25 15 19.3 7.2Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
 var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
@@ -5262,7 +5261,7 @@ class StrainAPI extends BaseAPI {
                 const strainComp = a.strain.localeCompare(b.strain);
                 if (strainComp !== 0)
                     return strainComp;
-                return (a.phenotype || '').localeCompare(b.phenotype || '');
+                return a.phenotype.localeCompare(b.phenotype);
             });
         }
         return [];
@@ -5299,8 +5298,14 @@ class StrainAPI extends BaseAPI {
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
                     return;
-                const meta = data.meta || {};
-                const phenotypes = data.phenotypes || {};
+                let meta = data.meta;
+                if (!meta) {
+                    meta = {};
+                }
+                let phenotypes = data.phenotypes;
+                if (!phenotypes) {
+                    phenotypes = {};
+                }
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
                     const typedPhenoData = phenoData;
                     currentStrains.push({
@@ -5912,12 +5917,12 @@ class IrrigationAPI extends BaseAPI {
             throw err;
         }
     }
-    async waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId) {
-        console.log('[IrrigationAPI:waterGrowspace] Watering growspace:', growspaceId, 'amount per plant:', amountPerPlant, 'preset:', presetId);
+    async waterGrowspace(growspaceId, amount, nutrients, presetId) {
+        console.log('[IrrigationAPI:waterGrowspace] Watering growspace:', growspaceId, 'total amount:', amount, 'preset:', presetId);
         try {
             const payload = {
                 growspace_id: growspaceId,
-                amount_per_plant: amountPerPlant,
+                amount: amount,
             };
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;
@@ -6088,7 +6093,7 @@ class DataService {
         this.addDrainTime = (params) => this._irrigationAPI.addDrainTime(params);
         this.removeDrainTime = (params) => this._irrigationAPI.removeDrainTime(params);
         this.setIrrigationStrategy = (growspaceId, strategy) => this._irrigationAPI.setIrrigationStrategy(growspaceId, strategy);
-        this.waterGrowspace = (growspaceId, amountPerPlant, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId);
+        this.waterGrowspace = (growspaceId, amount, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
         // ========================================
         // AI API Delegations
         // ========================================
@@ -9279,6 +9284,19 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         }));
     }
     _confirm() {
+        if (this.growspaceDevice) {
+            const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plants_per_row || 0);
+            const occupied = this.growspaceDevice.plants?.length || 0;
+            const free = Math.max(0, totalSlots - occupied);
+            if (this.amount > free) {
+                this.dispatchEvent(new CustomEvent('show-toast', {
+                    bubbles: true,
+                    composed: true,
+                    detail: { message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`, type: 'error' }
+                }));
+                return;
+            }
+        }
         const payload = {
             strain: this.strain,
             amount: this.amount,
@@ -9501,6 +9519,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], AddPlantsDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ attribute: false })
+], AddPlantsDialog.prototype, "growspaceDevice", void 0);
 __decorate([
     n$5({ type: Boolean, reflect: true })
 ], AddPlantsDialog.prototype, "open", void 0);
@@ -10409,7 +10430,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
     _renderEvent(event, allEvents) {
         const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
         return x `
-      <div class="event type-${event.type} glass-surface">
+      <div class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} glass-surface">
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
             <path d="${this._getIcon(event)}" />
@@ -10701,6 +10722,16 @@ PlantTimeline.styles = [
       .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
       .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
       .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
+
+      /* Action specific styling */
+      .action-ipm .icon-wrapper { border-color: #9c27b0; }
+      .action-ipm .icon-wrapper svg { fill: #9c27b0; }
+      .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
+      .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
+      .action-water .icon-wrapper,
+      .action-watering .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-water .icon-wrapper svg,
+      .action-watering .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
 
       /* Day grouping */
       .day-header {
@@ -12660,11 +12691,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             ${(s.type || '').toLowerCase() === 'hybrid'
             ? x `
                   <div style="margin-bottom: 20px;">
-                    <label
-                      class="md3-label"
-                      style="display:block; margin-bottom:8px; color:var(--secondary-text-color);"
-                      >Hybrid Composition (%)</label
-                    >
+                    <label class="sd-label">Hybrid Composition (%)</label>
                     <div
                       class="hg-container"
                       style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
@@ -17956,6 +17983,13 @@ let WateringDialog = class WateringDialog extends i$3 {
         this._selectedPresetId = '';
         this._isSubmitting = false;
     }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._presetsController = new libExports.StoreController(this, this.store.data.$nutrientPresets);
+            this._inventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
+        }
+    }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
             this._resetForm();
@@ -17990,7 +18024,7 @@ let WateringDialog = class WateringDialog extends i$3 {
             this._nutrients = [];
             return;
         }
-        const presets = this.store.data.$nutrientPresets.get();
+        const presets = this._presetsController.value;
         if (presets && presets[presetId]) {
             const preset = presets[presetId];
             this._nutrients = preset.nutrients.map(n => ({
@@ -18018,18 +18052,19 @@ let WateringDialog = class WateringDialog extends i$3 {
                 }
             }
             if (this.dialogState.mode === 'plant' && this.dialogState.plantIds?.length) {
-                // Water individual plants
+                // Water individual plants - divide total volume by number of plants
+                const amountPerPlant = this._volume / this.dialogState.plantIds.length;
                 for (const plantId of this.dialogState.plantIds) {
-                    await this._dataService.waterPlant(plantId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
+                    await this.store.waterPlant(plantId, amountPerPlant, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
                 }
                 this.store?.showToast(`Watered ${this.dialogState.plantIds.length} plant(s)`, 'success');
             }
             else if (this.dialogState.growspaceId) {
                 // Water entire growspace
-                await this._dataService.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
+                await this.store.waterGrowspace(this.dialogState.growspaceId, this._volume, Object.keys(nutrientsRecord).length > 0 ? nutrientsRecord : undefined, this._selectedPresetId || undefined);
                 this.store?.showToast('Watered all plants in growspace', 'success');
             }
-            await this.store?.refreshData();
+            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
             this._close();
         }
         catch (e) {
@@ -18208,9 +18243,9 @@ let WateringDialog = class WateringDialog extends i$3 {
     `;
     }
     _renderPresetOptions() {
-        if (!this.store || !this.store.data)
+        if (!this.store || !this.store.data || !this._presetsController)
             return E;
-        const presetsRecord = this.store.data.$nutrientPresets.get();
+        const presetsRecord = this._presetsController.value;
         if (!presetsRecord)
             return E;
         const presets = Object.values(presetsRecord);
@@ -18252,15 +18287,28 @@ let WateringDialog = class WateringDialog extends i$3 {
     }
     _getNutrientSuggestions() {
         const nutrients = new Set();
-        if (!this.store || !this.store.data)
+        if (!this.store || !this.store.data || !this._presetsController || !this._inventoryController)
             return [];
-        const presets = this.store.data.$nutrientPresets.get();
-        Object.values(presets).forEach(preset => {
-            preset.nutrients.forEach(n => {
-                if (n.name)
-                    nutrients.add(n.name);
+        // Add nutrients from presets
+        const presets = this._presetsController.value;
+        if (presets) {
+            Object.values(presets).forEach(preset => {
+                if (preset.nutrients) {
+                    preset.nutrients.forEach(n => {
+                        if (n.name)
+                            nutrients.add(n.name);
+                    });
+                }
             });
-        });
+        }
+        // Add nutrients from inventory
+        const inventory = this._inventoryController.value;
+        if (inventory && inventory.stocks) {
+            Object.values(inventory.stocks).forEach(stock => {
+                if (stock.name)
+                    nutrients.add(stock.name);
+            });
+        }
         return Array.from(nutrients).sort();
     }
 };
@@ -18459,6 +18507,7 @@ let TrainingDialog = class TrainingDialog extends i$3 {
                 plant_id: plantIds && plantIds.length > 0 ? plantIds : undefined,
             });
             this.store.ui.showToast('Training logged successfully', 'success');
+            this.dispatchEvent(new CustomEvent('data-changed'));
             this._handleClose();
         }
         catch (e) {
@@ -18557,6 +18606,13 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         this._editingPreset = null;
         this._error = null;
     }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._presetsController = new libExports.StoreController(this, this.store.data.$nutrientPresets);
+            this._inventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
+        }
+    }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
@@ -18581,6 +18637,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         try {
             await this.store.dataService.removeNutrientPreset(presetId);
             await this.store.fetchNutrientPresets(true);
+            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
         }
         catch (err) {
             this._error = err.message;
@@ -18603,6 +18660,11 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         if (!this._editingPreset)
             return;
         const nutrients = [...(this._editingPreset.nutrients || [])];
+        // Convert dose_ml_l to number and handle NaN
+        if ('dose_ml_l' in updates) {
+            const dose = parseFloat(String(updates.dose_ml_l ?? '0'));
+            updates.dose_ml_l = isNaN(dose) ? 0 : dose;
+        }
         nutrients[index] = { ...nutrients[index], ...updates };
         this._editingPreset = { ...this._editingPreset, nutrients };
     }
@@ -18611,7 +18673,10 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             this._error = 'Preset name is required';
             return;
         }
-        const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
+        const nutrients = (this._editingPreset.nutrients || []).filter(n => {
+            const dose = parseFloat(String(n.dose_ml_l ?? '0'));
+            return n.name && !isNaN(dose) && dose > 0;
+        });
         if (nutrients.length === 0) {
             this._error = 'At least one valid nutrient is required';
             return;
@@ -18626,6 +18691,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             });
             await this.store.fetchNutrientPresets(true);
             this._view = 'LIST';
+            this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
         }
         catch (err) {
             this._error = err.message;
@@ -18691,7 +18757,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     `;
     }
     _renderList() {
-        const presets = this.store.data.$nutrientPresets.get();
+        const presets = this._presetsController.value;
         const presetEntries = Object.values(presets);
         if (presetEntries.length === 0) {
             return x `
@@ -18709,7 +18775,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             <div class="preset-info">
               <div class="preset-name">${preset.name}</div>
               <div class="preset-details">
-                ${preset.nutrients.length} nutrients 
+                ${(preset.nutrients || []).length} nutrients 
                 ${preset.stage ? x `• <span style="text-transform: capitalize;">${preset.stage}</span>` : ''}
                 ${preset.min_days_in_stage ? x `• Day ${preset.min_days_in_stage}+` : ''}
               </div>
@@ -18805,15 +18871,26 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     }
     _getNutrientSuggestions() {
         const nutrients = new Set();
-        const presets = this.store.data.$nutrientPresets.get();
-        Object.values(presets).forEach(preset => {
-            if (preset.nutrients) {
-                preset.nutrients.forEach(n => {
-                    if (n.name)
-                        nutrients.add(n.name);
-                });
-            }
-        });
+        // Add nutrients from presets
+        const presets = this._presetsController.value;
+        if (presets) {
+            Object.values(presets).forEach(preset => {
+                if (preset.nutrients) {
+                    preset.nutrients.forEach(n => {
+                        if (n.name)
+                            nutrients.add(n.name);
+                    });
+                }
+            });
+        }
+        // Add nutrients from inventory
+        const inventory = this._inventoryController.value;
+        if (inventory && inventory.stocks) {
+            Object.values(inventory.stocks).forEach(stock => {
+                if (stock.name)
+                    nutrients.add(stock.name);
+            });
+        }
         return Array.from(nutrients).sort();
     }
 };
@@ -19103,7 +19180,7 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
         const percentage = Math.round(ratio * 100);
         const value = this.compact
             ? `${percentage}%`
-            : `${current_ml}ml (${percentage}%)`;
+            : `${Math.round(current_ml)}ml (${percentage}%)`;
         this.compact ? '' : name;
         // If compact, maybe show name as tooltip or just rely on parent context? 
         // Usually chip has label. Let's use name as label always, but maybe truncate?
@@ -19146,6 +19223,12 @@ let IPMDialog = class IPMDialog extends i$3 {
         this._editingPreset = null;
         this._error = null;
     }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._presetsController = new libExports.StoreController(this, this.store.data.$ipmPresets);
+        }
+    }
     updated(changedProps) {
         if (changedProps.has('open') && this.open) {
             if (!this._editingPreset) {
@@ -19172,12 +19255,13 @@ let IPMDialog = class IPMDialog extends i$3 {
             return;
         }
         try {
-            await this.store.dataService.applyIPM({
+            await this.store.applyIPM({
                 preset_id: this._selectedPresetId,
                 growspace_id: !hasPlants ? this.growspaceId : undefined,
                 plant_ids: hasPlants ? this.plantIds : undefined,
                 notes: this._notes
             });
+            this.dispatchEvent(new CustomEvent('data-changed'));
             this._close();
         }
         catch (e) {
@@ -19334,7 +19418,7 @@ let IPMDialog = class IPMDialog extends i$3 {
         }
     }
     _renderApply() {
-        const presets = this.store.data.$ipmPresets.get();
+        const presets = this._presetsController.value;
         const presetList = Object.values(presets || {});
         const targetText = (this.plantIds && this.plantIds.length > 0)
             ? `${this.plantIds.length} Plants`
@@ -19367,7 +19451,7 @@ let IPMDialog = class IPMDialog extends i$3 {
     `;
     }
     _renderList() {
-        const presets = this.store.data.$ipmPresets.get();
+        const presets = this._presetsController.value;
         const presetEntries = Object.values(presets || {});
         if (presetEntries.length === 0) {
             return x `
@@ -20209,6 +20293,11 @@ let DialogHost = class DialogHost extends i$3 {
             </error-boundary>
         `;
     }
+    async _handleDataChanged() {
+        // Add a small delay to ensure backend has persisted changes
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await this.store.refreshData();
+    }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'ADD_PLANT')
             return x ``;
@@ -20220,7 +20309,11 @@ let DialogHost = class DialogHost extends i$3 {
             .row=${dialogState?.row}
             .col=${dialogState?.col}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
+            @close=${() => {
+            if (this._activeDialogController.value.type === 'ADD_PLANT') {
+                this.store.ui.closeDialog();
+            }
+        }}
             @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
             @create-new-strain=${() => {
             this.store.ui.setActiveDialog({
@@ -20251,7 +20344,13 @@ let DialogHost = class DialogHost extends i$3 {
             .open=${true}
             .strainLibrary=${strainLibrary}
             .growspaceName=${selectedDeviceData?.name || ''}
-            @close=${() => this.store.ui.closeDialog()}
+            .growspaceDevice=${selectedDeviceData}
+            @close=${() => {
+            if (this._activeDialogController.value.type === 'ADD_PLANTS') {
+                this.store.ui.closeDialog();
+            }
+        }}
+            @show-toast=${(e) => this.store.showToast(e.detail.message, e.detail.type)}
             @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
             @create-new-strain=${() => {
             this.store.ui.setActiveDialog({
@@ -20500,7 +20599,7 @@ let DialogHost = class DialogHost extends i$3 {
             .growspaceName = ${selectedDeviceData?.name || ''}
 @close=${() => this.store.ui.closeDialog()}
 @closed=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
+@data-changed=${() => this._handleDataChanged()}
         > </irrigation-dialog>
     `;
     }
@@ -20526,7 +20625,7 @@ let DialogHost = class DialogHost extends i$3 {
             .dialogState = ${dialogState}
             .growspaceName = ${selectedDeviceData?.name || ''}
 @close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this.store.refreshData()}
+@data-changed=${() => this._handleDataChanged()}
         > </watering-dialog>
     `;
     }
@@ -20539,7 +20638,7 @@ let DialogHost = class DialogHost extends i$3 {
         .store=${this.store}
         .hass=${this.hass}
         @close=${() => this.store.ui.closeDialog()}
-        @data-changed=${() => this.store.refreshData()}
+        @data-changed=${() => this._handleDataChanged()}
     ></nutrient-presets-editor>
     `;
     }
@@ -20550,7 +20649,8 @@ let DialogHost = class DialogHost extends i$3 {
     <training-dialog
         .open=${true}
             .store = ${this.store}
-@close=${() => this.store.ui.closeDialog()}
+            @close=${() => this.store.ui.closeDialog()}
+            @data-changed=${() => this._handleDataChanged()}
         > </training-dialog>
     `;
     }
@@ -20566,7 +20666,7 @@ let DialogHost = class DialogHost extends i$3 {
         .growspaceId=${dialogState.growspaceId}
         .plantIds=${dialogState.plantIds || []}
         @close=${() => this.store.ui.closeDialog()}
-        @data-changed=${() => this.store.refreshData()}
+        @data-changed=${() => this._handleDataChanged()}
     ></ipm-dialog>
     `;
     }
@@ -20577,7 +20677,7 @@ let DialogHost = class DialogHost extends i$3 {
             <nutrient-inventory-dialog
                 .open=${true}
                 @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this.store.refreshData()}
+                @data-changed=${() => this._handleDataChanged()}
             ></nutrient-inventory-dialog>
         `;
     }
@@ -20588,7 +20688,7 @@ let DialogHost = class DialogHost extends i$3 {
             <nutrient-dialog
                 .open=${true}
                 @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this.store.refreshData()}
+                @data-changed=${() => this._handleDataChanged()}
             ></nutrient-dialog>
         `;
     }
@@ -20676,6 +20776,10 @@ let EditModeBanner = class EditModeBanner extends i$3 {
             <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
               Batch Add Plants
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('delete-selected')} style="color: var(--error-color);">
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+              Delete Selected
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
@@ -21283,15 +21387,15 @@ const plantCardStyles = i$6 `
   }
 
   .status-icon.training {
-    color: var(--gm-warning-color); /* Orange for training */
+    color: var(--gm-warning-color, #ff9800); /* Orange for training */
   }
 
   .status-icon.watering {
-    color: var(--gm-info-color); /* Blue for watering */
+    color: var(--gm-info-color, #2196f3); /* Blue for watering */
   }
 
   .status-icon.problem {
-    color: var(--gm-error-color); /* Red for problem */
+    color: var(--gm-error-color, #f44336); /* Red for problem */
   }
 
   .status-icon.ipm {
@@ -30076,6 +30180,16 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     _triggerAction(action) {
         // Menu state now managed by Popover API
+        // Explicitly close popover on action trigger to prevent overlap with dialogs
+        const menu = this.shadowRoot?.getElementById('header-menu');
+        if (menu && typeof menu.hidePopover === 'function') {
+            try {
+                menu.hidePopover();
+            }
+            catch (e) {
+                // Context might differ or already hidden
+            }
+        }
         // Direct store method calls
         switch (action) {
             case 'add_plant':
@@ -30458,16 +30572,6 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
              <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
              <span class="menu-item-label">Edit Mode</span>
              <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-             <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-             <span class="menu-item-label">Compact View</span>
-             <div class=${e({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-             <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-             <span class="menu-item-label">Dehumidifier Ctrl</span>
-             <div class=${e({ 'menu-toggle-switch': true, active: !!this._envAttrs.dehumidifier_control_enabled })}></div>
         </div>
 
         <div class="menu-divider"></div>
@@ -31218,211 +31322,6 @@ __decorate([
 GrowspaceToast = __decorate([
     t$2('growspace-toast')
 ], GrowspaceToast);
-
-let BatchActionBar = class BatchActionBar extends i$3 {
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.store) {
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-        }
-    }
-    _handleWater() {
-        this.store.openBatchWateringDialog();
-    }
-    _handleStage() {
-        this.store.openBatchTrainingDialog();
-    }
-    _handleIPM() {
-        this.store.openIPMDialog({ plantIds: Array.from(this.store.ui.$selectedPlants.get()) });
-    }
-    _handleDelete() {
-        const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
-        if (selectedIds.length === 0)
-            return;
-        if (confirm(`Delete ${selectedIds.length} plant(s)? This cannot be undone.`)) {
-            this.store.batchAction('remove', selectedIds);
-        }
-    }
-    _handleHarvest() {
-        const selectedIds = Array.from(this.store.ui.$selectedPlants.get());
-        if (selectedIds.length === 0)
-            return;
-        this.store.batchAction('harvest', selectedIds);
-    }
-    _handleClear() {
-        this.store.clearPlantSelection();
-        this.store.ui.setEditMode(false);
-    }
-    render() {
-        const selectedCount = this._selectedPlantsController?.value.size || 0;
-        // Toggle host attribute for CSS transition
-        if (selectedCount > 0) {
-            this.setAttribute('visible', '');
-        }
-        else {
-            this.removeAttribute('visible');
-        }
-        if (selectedCount === 0)
-            return E;
-        return x `
-      <div class="batch-bar">
-        <div class="count-badge">${selectedCount} Selected</div>
-        
-        <div class="actions">
-          <button class="action-btn primary" @click=${this._handleWater}>
-            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            Water
-          </button>
-          
-          <button class="action-btn" @click=${this._handleStage}>
-            <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-            Log Training
-          </button>
-          
-          <button class="action-btn" @click=${this._handleIPM}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            Log IPM
-          </button>
-
-          <button class="action-btn" @click=${this._handleHarvest}>
-            <svg viewBox="0 0 24 24"><path d="${mdiSickle}"></path></svg>
-            Harvest
-          </button>
-
-          <button class="action-btn danger" @click=${this._handleDelete}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-            Delete
-          </button>
-        </div>
-
-        <button class="close-btn" @click=${this._handleClear} title="Clear Selection">
-          <svg style="width:20px;height:20px" viewBox="0 0 24 24">
-            <path d="${mdiClose}"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-    }
-};
-BatchActionBar.styles = [
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-        position: absolute;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%) translateY(150%);
-        z-index: 100;
-        transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-        width: auto;
-        max-width: 90%;
-      }
-
-      :host([visible]) {
-        transform: translateX(-50%) translateY(0);
-      }
-
-      .batch-bar {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 12px 24px;
-        border-radius: 32px;
-        background: rgba(30, 30, 30, 0.95);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      }
-
-      .count-badge {
-        background: var(--primary-color);
-        color: var(--text-primary-color, #fff);
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-
-      .actions {
-        display: flex;
-        gap: 8px;
-        border-left: 1px solid rgba(255, 255, 255, 0.1);
-        padding-left: 16px;
-      }
-
-      .action-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border: none;
-        padding: 8px 16px;
-        border-radius: 20px;
-        color: var(--primary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-family: inherit;
-        font-size: 0.9rem;
-        font-weight: 500;
-      }
-
-      .action-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-1px);
-      }
-
-      .action-btn svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-      
-      .action-btn.primary {
-        background: var(--primary-color);
-        color: var(--text-primary-color, #fff);
-      }
-
-      .action-btn.primary:hover {
-        filter: brightness(1.1);
-        background: var(--primary-color);
-      }
-
-      .action-btn.danger {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-      }
-
-      .action-btn.danger:hover {
-        background: rgba(244, 67, 54, 0.3);
-      }
-
-      .close-btn {
-        background: transparent;
-        border: none;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        margin-left: 8px;
-      }
-
-      .close-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--primary-text-color);
-      }
-    `
-];
-__decorate([
-    c$2({ context: storeContext })
-], BatchActionBar.prototype, "store", void 0);
-BatchActionBar = __decorate([
-    t$2('batch-action-bar')
-], BatchActionBar);
 
 const variables = i$6 `
   :host {
@@ -34724,6 +34623,176 @@ class GrowspaceGridStore {
     }
 }
 
+async function fetchStrainLibrary(ctx, force = false) {
+    // Requires hass to be present in store (usually via dataService or just check store)
+    // The original code checks this.hass.
+    // We assume dataService has valid connection or we check it.
+    // Original code checked `if (!this.hass) return;`
+    // We can check if dataService is initialized or catch errors.
+    const CACHE_KEY = 'growspace_strain_library_v2';
+    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    let usedCache = false;
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                ctx.data.setStrainLibrary(cache.data);
+                usedCache = true;
+            }
+        }
+        catch (e) {
+            console.warn('Failed to parse cached strain library', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    if (!usedCache) {
+        try {
+            const currentStrains = await ctx.dataService.fetchStrainLibrary();
+            if (Array.isArray(currentStrains)) {
+                ctx.data.setStrainLibrary(currentStrains);
+                const cacheData = {
+                    version: 2,
+                    timestamp: Date.now(),
+                    data: currentStrains,
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library:', e);
+        }
+    }
+}
+async function fetchNutrientPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
+                ctx.data.setNutrientPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchNutrientPresets();
+        if (result) {
+            ctx.data.setNutrientPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient presets:', e);
+    }
+}
+async function fetchIPMPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ipm_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
+                ctx.data.setIPMPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchIPMPresets();
+        if (result) {
+            ctx.data.setIPMPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch IPM presets:', e);
+    }
+}
+async function fetchNutrientInventory(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_inventory';
+    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setNutrientInventory(cache.data);
+                return;
+            }
+        }
+        catch (_) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchNutrientInventory();
+        if (result) {
+            ctx.data.setNutrientInventory(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient inventory:', e);
+    }
+}
+async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
+    try {
+        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast(`Updated stock: ${name}`, 'success');
+    }
+    catch (e) {
+        ctx.showToast(`Failed to update stock: ${e.message}`, 'error');
+    }
+}
+async function removeNutrientStock(ctx, nutrientId) {
+    try {
+        await ctx.dataService.removeNutrientStock(nutrientId);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('Removed nutrient stock', 'success');
+    }
+    catch (e) {
+        ctx.showToast(`Failed to remove stock: ${e.message}`, 'error');
+    }
+}
+
 /**
  * Plant Actions - Unified business logic for plant operations.
  */
@@ -35156,168 +35225,38 @@ async function confirmAddPlants(ctx, detail) {
         ctx.showToast(`Error: ${err.message}`, 'error');
     }
 }
-
-async function fetchStrainLibrary(ctx, force = false) {
-    // Requires hass to be present in store (usually via dataService or just check store)
-    // The original code checks this.hass.
-    // We assume dataService has valid connection or we check it.
-    // Original code checked `if (!this.hass) return;`
-    // We can check if dataService is initialized or catch errors.
-    const CACHE_KEY = 'growspace_strain_library_v2';
-    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    let usedCache = false;
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                ctx.data.setStrainLibrary(cache.data);
-                usedCache = true;
-            }
-        }
-        catch (e) {
-            console.warn('Failed to parse cached strain library', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    if (!usedCache) {
-        try {
-            const currentStrains = await ctx.dataService.fetchStrainLibrary();
-            if (Array.isArray(currentStrains)) {
-                ctx.data.setStrainLibrary(currentStrains);
-                const cacheData = {
-                    version: 2,
-                    timestamp: Date.now(),
-                    data: currentStrains,
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library:', e);
-        }
-    }
-}
-async function fetchNutrientPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_presets';
-    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                ctx.data.setNutrientPresets(cache.data);
-                return;
-            }
-        }
-        catch (_) {
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
+/**
+ * Water a single plant and refresh inventory.
+ */
+async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
     try {
-        const result = await ctx.dataService.fetchNutrientPresets();
-        if (result) {
-            ctx.data.setNutrientPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result
-            }));
+        await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
+        // If nutrients were used, refresh the inventory
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await fetchNutrientInventory(ctx, true);
         }
     }
     catch (e) {
-        console.error('Failed to fetch nutrient presets:', e);
+        console.error('Failed to water plant:', e);
+        ctx.showToast(`Failed to water plant: ${e.message}`, 'error');
+        throw e;
     }
 }
-async function fetchIPMPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_ipm_presets';
-    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                ctx.data.setIPMPresets(cache.data);
-                return;
-            }
-        }
-        catch (_) {
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
+/**
+ * Water a growspace and refresh inventory.
+ */
+async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
     try {
-        const result = await ctx.dataService.fetchIPMPresets();
-        if (result) {
-            ctx.data.setIPMPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result
-            }));
+        await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
+        // If nutrients were used, refresh the inventory
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await fetchNutrientInventory(ctx, true);
         }
     }
     catch (e) {
-        console.error('Failed to fetch IPM presets:', e);
-    }
-}
-async function fetchNutrientInventory(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_inventory';
-    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                ctx.data.setNutrientInventory(cache.data);
-                return;
-            }
-        }
-        catch (_) {
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    try {
-        const result = await ctx.dataService.fetchNutrientInventory();
-        if (result) {
-            ctx.data.setNutrientInventory(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch nutrient inventory:', e);
-    }
-}
-async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
-    try {
-        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast(`Updated stock: ${name}`, 'success');
-    }
-    catch (e) {
-        ctx.showToast(`Failed to update stock: ${e.message}`, 'error');
-    }
-}
-async function removeNutrientStock(ctx, nutrientId) {
-    try {
-        await ctx.dataService.removeNutrientStock(nutrientId);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast('Removed nutrient stock', 'success');
-    }
-    catch (e) {
-        ctx.showToast(`Failed to remove stock: ${e.message}`, 'error');
+        console.error('Failed to water growspace:', e);
+        ctx.showToast(`Failed to water growspace: ${e.message}`, 'error');
+        throw e;
     }
 }
 
@@ -35886,6 +35825,26 @@ function handleKeyboardNavigation(ctx, key) {
 }
 
 /**
+ * IPM Actions - Unified business logic for Integrated Pest Management operations.
+ */
+/**
+ * Apply IPM treatment and refresh inventory if needed.
+ */
+async function applyIPM(ctx, detail) {
+    try {
+        await ctx.dataService.applyIPM(detail);
+        // Refresh nutrient inventory as IPM products often deduct from stock
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('IPM treatment applied successfully', 'success');
+    }
+    catch (e) {
+        console.error('Failed to apply IPM:', e);
+        ctx.showToast(`Failed to apply IPM: ${e.message}`, 'error');
+        throw e;
+    }
+}
+
+/**
  * Service responsible for synchronizing data between Home Assistant and the local store.
  * Handles caching, optimizing updates, and managing the initial data fetch.
  */
@@ -36213,6 +36172,12 @@ class GrowspaceStore {
         await removeNutrientStock(this.context, nutrientId);
     }
     // Plant Actions
+    async waterPlant(plantId, amount, nutrients, presetId) {
+        await waterPlant(this.context, plantId, amount, nutrients, presetId);
+    }
+    async waterGrowspace(growspaceId, amount, nutrients, presetId) {
+        await waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
+    }
     togglePlantSelection(plantOrId) {
         togglePlantSelection(this.context, plantOrId);
     }
@@ -36224,6 +36189,12 @@ class GrowspaceStore {
     }
     clearPlantSelection() {
         clearPlantSelection(this.context);
+    }
+    async deleteSelectedPlants() {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0)
+            return;
+        await handleDeletePlant(this.context, selectedIds);
     }
     exitEditMode() {
         exitEditMode(this.context);
@@ -36349,6 +36320,9 @@ class GrowspaceStore {
     openIPMDialog(context) {
         openIPMDialog(this.context, context);
     }
+    async applyIPM(detail) {
+        await applyIPM(this.context, detail);
+    }
     openLogbookDialog() {
         openLogbookDialog(this.context);
     }
@@ -36423,6 +36397,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this._handleLibraryExportReady = (e) => {
             this._downloadFile(e.detail.url);
         };
+        this._handleDeleteSelected = () => {
+            this.store.deleteSelectedPlants();
+        };
         this._handleError = (error, errorInfo) => {
             // Always log to console
             console.error('Growspace Manager Card caught error:', error, errorInfo);
@@ -36452,6 +36429,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.updateHass(this.hass);
         this.store.initializeSelectedDevice(this._config);
         this.store.fetchStrainLibrary();
+        this.store.fetchNutrientPresets();
+        this.store.fetchIPMPresets();
+        this.store.fetchNutrientInventory();
     }
     connectedCallback() {
         super.connectedCallback();
@@ -36593,6 +36573,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
               @training-selected=${this._handleTrainingSelected}
               @ipm-selected=${this._handleIPMSelected}
               @batch-add-plants=${this._handleBatchAddPlants}
+              @delete-selected=${this._handleDeleteSelected}
               @exit-edit-mode=${this._handleExitEditMode}
           >
             <growspace-view-switcher
@@ -36609,7 +36590,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
               .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
             ></growspace-view-switcher>
             
-            <batch-action-bar></batch-action-bar>
+
           </div>
         </ha-card>
 

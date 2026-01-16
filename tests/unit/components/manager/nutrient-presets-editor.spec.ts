@@ -29,6 +29,10 @@ describe('NutrientPresetsEditor', () => {
                 $nutrientPresets: {
                     get: () => ({}),
                     subscribe: (fn: any) => { fn({}); return () => { }; }
+                },
+                $nutrientInventory: {
+                    get: () => ({}),
+                    subscribe: (fn: any) => { fn({}); return () => { }; }
                 }
             }
         };

@@ -20,6 +20,7 @@ describe('DialogHost', () => {
     const $selectedDevice = atom<string | null>(null);
     const $nutrientPresets = atom<Record<string, any>>({});
     const $ipmPresets = atom<Record<string, any>>({});
+    const $nutrientInventory = atom<any>(null);
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -30,7 +31,11 @@ describe('DialogHost', () => {
         }
 
         element = document.createElement('growspace-dialog-host') as DialogHost;
+    });
 
+    // deleted afterEach with global useRealTimers
+
+    beforeEach(() => {
         mockStore = {
             ui: {
                 $activeDialog: $activeDialog,
@@ -43,7 +48,8 @@ describe('DialogHost', () => {
                 $selectedDevice: $selectedDevice,
                 $strainLibrary: atom([]),
                 $nutrientPresets: $nutrientPresets,
-                $ipmPresets: $ipmPresets
+                $ipmPresets: $ipmPresets,
+                $nutrientInventory: $nutrientInventory
             },
             actions: {
                 plant: {
@@ -111,6 +117,7 @@ describe('DialogHost', () => {
         $selectedDevice.set(null);
         $nutrientPresets.set({});
         $ipmPresets.set({});
+        $nutrientInventory.set(null);
     });
 
     afterEach(() => {
@@ -775,6 +782,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle data-changed event on WATERING dialog', async () => {
+        vi.useFakeTimers();
         $activeDialog.set({
             type: 'WATERING',
             payload: { growspaceId: 'g1', mode: 'growspace' }
@@ -785,7 +793,10 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('watering-dialog');
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
 
+        vi.advanceTimersByTime(510);
+        await Promise.resolve();
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('should render NUTRIENT_PRESETS dialog', async () => {
@@ -807,6 +818,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle data-changed event on NUTRIENT_PRESETS dialog', async () => {
+        vi.useFakeTimers();
         $devices.set([{ device_id: 'g1', name: 'Grow 1', nutrient_presets: {} } as any]);
         $selectedDevice.set('g1');
         $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
@@ -816,7 +828,10 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('nutrient-presets-editor');
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
 
+        vi.advanceTimersByTime(510);
+        await Promise.resolve();
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('should render TRAINING dialog', async () => {
@@ -835,6 +850,7 @@ describe('DialogHost', () => {
     });
 
     it('should render IPM dialog and handle events', async () => {
+        vi.useFakeTimers();
         $devices.set([{ device_id: 'g1', name: 'Grow 1' } as any]);
         $ipmPresets.set({});
         $selectedDevice.set('g1');
@@ -853,7 +869,10 @@ describe('DialogHost', () => {
         expect(mockStore.ui.closeDialog).toHaveBeenCalled();
 
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        vi.advanceTimersByTime(510);
+        await Promise.resolve();
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('should handle optional fields in IPM and Nutrient Presets rendering', async () => {
@@ -886,6 +905,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle data-changed event on IRRIGATION dialog', async () => {
+        vi.useFakeTimers();
         $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
         document.body.appendChild(element);
         await element.updateComplete;
@@ -893,7 +913,10 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('irrigation-dialog');
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
 
+        vi.advanceTimersByTime(510);
+        await Promise.resolve();
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('should handle close event on NUTRIENT_PRESETS dialog', async () => {
@@ -1131,13 +1154,17 @@ describe('DialogHost', () => {
     });
 
     it('should handle data-changed event on NUTRIENT_INVENTORY dialog', async () => {
+        vi.useFakeTimers();
         $activeDialog.set({ type: 'NUTRIENT_INVENTORY', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
         const dialog = element.shadowRoot?.querySelector('nutrient-inventory-dialog');
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        vi.advanceTimersByTime(510);
+        await Promise.resolve();
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 
     it('should render NUTRIENTS dialog', async () => {
@@ -1158,12 +1185,16 @@ describe('DialogHost', () => {
     });
 
     it('should handle data-changed event on NUTRIENTS dialog', async () => {
+        vi.useFakeTimers();
         $activeDialog.set({ type: 'NUTRIENTS', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
         const dialog = element.shadowRoot?.querySelector('nutrient-dialog');
         dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        vi.advanceTimersByTime(510);
+        await Promise.resolve(); // trigger microtasks
         expect(mockStore.refreshData).toHaveBeenCalled();
+        vi.useRealTimers();
     });
 });

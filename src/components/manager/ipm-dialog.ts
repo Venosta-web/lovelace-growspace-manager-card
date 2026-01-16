@@ -20,6 +20,7 @@ import { GrowspaceDevice, IPMPreset, IPMItem } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
 import { sharedStyles } from '../../styles/shared.styles';
 import { GrowspaceStore } from '../../store/growspace-store';
+import { StoreController } from '@nanostores/lit';
 import '../../components/ui'; // Ensure MD3 components are registered
 
 @customElement('ipm-dialog')
@@ -42,6 +43,15 @@ export class IPMDialog extends LitElement {
   // Edit mode state
   @state() private _editingPreset: Partial<IPMPreset> | null = null;
   @state() private _error: string | null = null;
+
+  private _presetsController!: StoreController<Record<string, IPMPreset>>;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.store) {
+      this._presetsController = new StoreController(this, this.store.data.$ipmPresets);
+    }
+  }
 
   static styles = [
     dialogStyles,
@@ -151,12 +161,13 @@ export class IPMDialog extends LitElement {
     }
 
     try {
-      await this.store.dataService.applyIPM({
+      await this.store.applyIPM({
         preset_id: this._selectedPresetId,
         growspace_id: !hasPlants ? this.growspaceId : undefined,
         plant_ids: hasPlants ? this.plantIds : undefined,
         notes: this._notes
       });
+      this.dispatchEvent(new CustomEvent('data-changed'));
       this._close();
     } catch (e: any) {
       console.error('Failed to apply IPM', e);
@@ -317,7 +328,7 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderApply() {
-    const presets = this.store.data.$ipmPresets.get();
+    const presets = this._presetsController.value;
     const presetList = Object.values(presets || {});
     const targetText = (this.plantIds && this.plantIds.length > 0)
       ? `${this.plantIds.length} Plants`
@@ -352,7 +363,7 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderList() {
-    const presets = this.store.data.$ipmPresets.get();
+    const presets = this._presetsController.value;
     const presetEntries = Object.values(presets || {});
     if (presetEntries.length === 0) {
       return html`

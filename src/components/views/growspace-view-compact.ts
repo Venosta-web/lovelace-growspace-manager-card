@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiFullscreenExit, mdiDotsVertical } from '@mdi/js';
+import { mdiFullscreenExit } from '@mdi/js';
 import { PlantEntity } from '../../types';
 import '../growspace-grid';
 import { growspaceCardStyles } from '../../styles/growspace-card.styles';

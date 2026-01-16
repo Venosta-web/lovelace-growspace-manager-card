@@ -21,6 +21,7 @@ import * as libraryActions from './library-actions';
 import * as uiActions from './ui-actions';
 import * as aiActions from './ai-actions';
 import * as keyboardActions from './keyboard-actions';
+import * as ipmActions from './ipm-actions';
 
 // Services
 import { SyncService } from '../services/sync-service';
@@ -199,6 +200,13 @@ export class GrowspaceStore {
     }
 
     // Plant Actions
+    async waterPlant(plantId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) {
+        await plantActions.waterPlant(this.context, plantId, amount, nutrients, presetId);
+    }
+
+    async waterGrowspace(growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) {
+        await plantActions.waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
+    }
     togglePlantSelection(plantOrId: string | PlantEntity) {
         uiActions.togglePlantSelection(this.context, plantOrId);
     }
@@ -213,6 +221,13 @@ export class GrowspaceStore {
 
     clearPlantSelection() {
         uiActions.clearPlantSelection(this.context);
+    }
+
+    async deleteSelectedPlants() {
+        const selectedIds = Array.from(this.ui.$selectedPlants.get());
+        if (selectedIds.length === 0) return;
+
+        await plantActions.handleDeletePlant(this.context, selectedIds);
     }
 
     exitEditMode() {
@@ -371,6 +386,10 @@ export class GrowspaceStore {
 
     openIPMDialog(context?: { growspaceId?: string; plantIds?: string[] }) {
         uiActions.openIPMDialog(this.context, context);
+    }
+
+    async applyIPM(detail: { preset_id: string; growspace_id?: string; plant_ids?: string[]; notes?: string }) {
+        await ipmActions.applyIPM(this.context, detail);
     }
 
     openLogbookDialog() {

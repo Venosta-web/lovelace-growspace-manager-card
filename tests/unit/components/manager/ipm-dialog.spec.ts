@@ -24,6 +24,7 @@ describe('IPMDialog', () => {
         mockStore = {
             dataService: mockDataService,
             fetchIPMPresets: vi.fn(),
+            applyIPM: mockDataService.applyIPM,
             data: {
                 $ipmPresets: {
                     get: () => ({}),

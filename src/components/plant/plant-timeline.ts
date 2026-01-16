@@ -199,6 +199,16 @@ export class PlantTimeline extends LitElement {
       .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
       .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
 
+      /* Action specific styling */
+      .action-ipm .icon-wrapper { border-color: #9c27b0; }
+      .action-ipm .icon-wrapper svg { fill: #9c27b0; }
+      .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
+      .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
+      .action-water .icon-wrapper,
+      .action-watering .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-water .icon-wrapper svg,
+      .action-watering .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
+
       /* Day grouping */
       .day-header {
         font-size: 0.85rem;
@@ -452,7 +462,7 @@ export class PlantTimeline extends LitElement {
     const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
 
     return html`
-      <div class="event type-${event.type} glass-surface">
+      <div class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} glass-surface">
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
             <path d="${this._getIcon(event)}" />

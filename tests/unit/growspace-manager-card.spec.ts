@@ -80,6 +80,9 @@ vi.mock('../../src/store/growspace-store', () => ({
         updateHass() { }
         initializeSelectedDevice() { }
         fetchStrainLibrary() { }
+        fetchNutrientPresets() { }
+        fetchIPMPresets() { }
+        fetchNutrientInventory() { }
         handleDeviceChange() { }
         handleKeyboardNavigation() { }
         toggleHeaderExpansion() { }
@@ -586,7 +589,7 @@ describe('GrowspaceManagerCard Absolute Coverage', () => {
     it('should handle setConfig with all variations', () => {
         element.setConfig({ initial_view_mode: 'compact' } as any);
         expect((element as any)._config.initial_view_mode).toBe('compact');
-        
+
         element.setConfig({ compact: true } as any);
         // compact is checked in setConfig but maybe not stored? 
         // Need to check the code for setConfig in growing-manager-card.ts
@@ -597,7 +600,7 @@ describe('GrowspaceManagerCard Absolute Coverage', () => {
         (element as any)._strainLibraryController = { value: null };
         (element as any).updated(new Map());
         expect((element as any)._strainLibrary).toEqual([]);
-        
+
         (element as any)._strainLibraryController = { value: [{ name: 'S1' }] };
         (element as any).updated(new Map());
         expect((element as any)._strainLibrary).toEqual([{ name: 'S1' }]);
@@ -619,7 +622,7 @@ describe('GrowspaceManagerCard Absolute Coverage', () => {
         (element as any)._handleBatchAddPlants();
         (element as any)._handleKeyboardNav({ key: 'Escape' });
         (element as any)._handleLibraryExportReady({ detail: { url: 'blob:test' } });
-        
+
         expect(element.getCardSize()).toBe(4);
     });
 

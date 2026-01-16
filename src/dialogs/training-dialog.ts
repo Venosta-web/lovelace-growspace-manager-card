@@ -73,6 +73,7 @@ export class TrainingDialog extends LitElement {
             );
 
             this.store.ui.showToast('Training logged successfully', 'success');
+            this.dispatchEvent(new CustomEvent('data-changed'));
             this._handleClose();
         } catch (e) {
             console.error('Failed to log training:', e);

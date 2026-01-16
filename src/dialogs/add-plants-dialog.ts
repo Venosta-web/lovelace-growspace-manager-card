@@ -4,7 +4,7 @@ import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiInformationOutline, mdiDna } from '@mdi/js';
-import { StrainEntry } from '../types';
+import { StrainEntry, GrowspaceDevice } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
@@ -18,6 +18,7 @@ export class AddPlantsDialog extends LitElement {
 
   @property({ type: Array }) strainLibrary: StrainEntry[] = [];
   @property({ type: String }) growspaceName = '';
+  @property({ attribute: false }) growspaceDevice?: GrowspaceDevice;
   @property({ type: Boolean, reflect: true }) open = false;
 
   @state() private strain = '';
@@ -97,6 +98,21 @@ export class AddPlantsDialog extends LitElement {
   }
 
   private _confirm() {
+    if (this.growspaceDevice) {
+      const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plants_per_row || 0);
+      const occupied = this.growspaceDevice.plants?.length || 0;
+      const free = Math.max(0, totalSlots - occupied);
+
+      if (this.amount > free) {
+        this.dispatchEvent(new CustomEvent('show-toast', {
+          bubbles: true,
+          composed: true,
+          detail: { message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`, type: 'error' }
+        }));
+        return;
+      }
+    }
+
     const payload = {
       strain: this.strain,
       amount: this.amount,

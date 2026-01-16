@@ -1245,11 +1245,7 @@ export class StrainLibraryDialog extends LitElement {
             ${(s.type || '').toLowerCase() === 'hybrid'
         ? html`
                   <div style="margin-bottom: 20px;">
-                    <label
-                      class="md3-label"
-                      style="display:block; margin-bottom:8px; color:var(--secondary-text-color);"
-                      >Hybrid Composition (%)</label
-                    >
+                    <label class="sd-label">Hybrid Composition (%)</label>
                     <div
                       class="hg-container"
                       style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"

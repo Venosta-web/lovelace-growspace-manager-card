@@ -95,22 +95,22 @@ export class IrrigationAPI extends BaseAPI {
 
     async waterGrowspace(
         growspaceId: string,
-        amountPerPlant: number,
+        amount: number,
         nutrients?: Record<string, number>,
         presetId?: string
     ): Promise<void> {
         console.log(
             '[IrrigationAPI:waterGrowspace] Watering growspace:',
             growspaceId,
-            'amount per plant:',
-            amountPerPlant,
+            'total amount:',
+            amount,
             'preset:',
             presetId
         );
         try {
             const payload: Record<string, unknown> = {
                 growspace_id: growspaceId,
-                amount_per_plant: amountPerPlant,
+                amount: amount,
             };
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;

@@ -83,20 +83,30 @@ describe('WateringDialog', () => {
         mockStore = {
             data: {
                 $devices: {
-                    get: () => [mockDevice]
+                    get: () => [mockDevice],
+                    subscribe: vi.fn()
                 },
                 $nutrientPresets: {
-                    get: () => ({ 'veg1': mockPreset })
+                    get: () => ({ 'veg1': mockPreset }),
+                    subscribe: vi.fn()
                 },
                 $selectedDevice: {
-                    get: () => 'gs1'
+                    get: () => 'gs1',
+                    subscribe: vi.fn()
                 },
                 $ipmPresets: {
-                    get: () => ({})
+                    get: () => ({}),
+                    subscribe: vi.fn()
+                },
+                $nutrientInventory: {
+                    get: () => ({}),
+                    subscribe: vi.fn()
                 }
             },
             showToast: vi.fn(),
             refreshData: vi.fn(),
+            waterPlant: mockWaterPlant,
+            waterGrowspace: mockWaterGrowspace,
             dataService: {
                 fetchNutrientPresets: vi.fn(),
                 fetchIPMPresets: vi.fn()
@@ -260,8 +270,6 @@ describe('WateringDialog', () => {
                 { 'A': 1 },
                 undefined
             );
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Watered 1 plant'), 'success');
-            expect(mockStore.refreshData).toHaveBeenCalled();
         });
 
         it('should submit for growspace', async () => {
@@ -418,9 +426,8 @@ describe('WateringDialog', () => {
             await new Promise(r => setTimeout(r, 0));
 
             expect(mockWaterPlant).toHaveBeenCalledTimes(2);
-            expect(mockWaterPlant).toHaveBeenCalledWith('p1', 1.5, undefined, undefined);
-            expect(mockWaterPlant).toHaveBeenCalledWith('p2', 1.5, undefined, undefined);
-            expect(mockStore.showToast).toHaveBeenCalledWith('Watered 2 plant(s)', 'success');
+            expect(mockWaterPlant).toHaveBeenCalledWith('p1', 0.75, undefined, undefined);
+            expect(mockWaterPlant).toHaveBeenCalledWith('p2', 0.75, undefined, undefined);
 
             // Restore
             mockDevice.plants = originalPlants;

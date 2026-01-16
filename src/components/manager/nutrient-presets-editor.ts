@@ -13,9 +13,10 @@ import {
 import { consume } from '@lit/context';
 import { HomeAssistant } from 'custom-card-helpers';
 import { hassContext, storeContext } from '../../context';
-import { NutrientPreset, NutrientItem } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
 import { GrowspaceStore } from '../../store/growspace-store';
+import { StoreController } from '@nanostores/lit';
+import { NutrientPreset, NutrientItem } from '../../types';
 
 @customElement('nutrient-presets-editor')
 export class NutrientPresetsEditor extends LitElement {
@@ -32,6 +33,17 @@ export class NutrientPresetsEditor extends LitElement {
   @state() private _view: 'LIST' | 'EDIT' = 'LIST';
   @state() private _editingPreset: Partial<NutrientPreset> | null = null;
   @state() private _error: string | null = null;
+
+  private _presetsController!: StoreController<Record<string, NutrientPreset>>;
+  private _inventoryController!: StoreController<import('../../types').NutrientInventory | null>;
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.store) {
+      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
+      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    }
+  }
 
   static styles = [
     dialogStyles,
@@ -130,6 +142,7 @@ export class NutrientPresetsEditor extends LitElement {
     try {
       await this.store.dataService.removeNutrientPreset(presetId);
       await this.store.fetchNutrientPresets(true);
+      this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
     } catch (err: any) {
       this._error = err.message;
     }
@@ -151,6 +164,11 @@ export class NutrientPresetsEditor extends LitElement {
   private _updateNutrient(index: number, updates: Partial<NutrientItem>) {
     if (!this._editingPreset) return;
     const nutrients = [...(this._editingPreset.nutrients || [])];
+    // Convert dose_ml_l to number and handle NaN
+    if ('dose_ml_l' in updates) {
+      const dose = parseFloat(String(updates.dose_ml_l ?? '0'));
+      updates.dose_ml_l = isNaN(dose) ? 0 : dose;
+    }
     nutrients[index] = { ...nutrients[index], ...updates };
     this._editingPreset = { ...this._editingPreset, nutrients };
   }
@@ -161,7 +179,10 @@ export class NutrientPresetsEditor extends LitElement {
       return;
     }
 
-    const nutrients = (this._editingPreset.nutrients || []).filter(n => n.name && n.dose_ml_l > 0);
+    const nutrients = (this._editingPreset.nutrients || []).filter(n => {
+      const dose = parseFloat(String(n.dose_ml_l ?? '0'));
+      return n.name && !isNaN(dose) && dose > 0;
+    });
     if (nutrients.length === 0) {
       this._error = 'At least one valid nutrient is required';
       return;
@@ -177,6 +198,7 @@ export class NutrientPresetsEditor extends LitElement {
       });
       await this.store.fetchNutrientPresets(true);
       this._view = 'LIST';
+      this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
     } catch (err: any) {
       this._error = err.message;
     }
@@ -246,7 +268,7 @@ export class NutrientPresetsEditor extends LitElement {
   }
 
   private _renderList() {
-    const presets = this.store.data.$nutrientPresets.get();
+    const presets = this._presetsController.value;
     const presetEntries = Object.values(presets);
     if (presetEntries.length === 0) {
       return html`
@@ -265,7 +287,7 @@ export class NutrientPresetsEditor extends LitElement {
             <div class="preset-info">
               <div class="preset-name">${preset.name}</div>
               <div class="preset-details">
-                ${preset.nutrients.length} nutrients 
+                ${(preset.nutrients || []).length} nutrients 
                 ${preset.stage ? html`• <span style="text-transform: capitalize;">${preset.stage}</span>` : ''}
                 ${preset.min_days_in_stage ? html`• Day ${preset.min_days_in_stage}+` : ''}
               </div>
@@ -363,14 +385,27 @@ export class NutrientPresetsEditor extends LitElement {
 
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
-    const presets = this.store.data.$nutrientPresets.get();
-    Object.values(presets).forEach(preset => {
-      if (preset.nutrients) {
-        preset.nutrients.forEach(n => {
-          if (n.name) nutrients.add(n.name);
-        });
-      }
-    });
+
+    // Add nutrients from presets
+    const presets = this._presetsController.value;
+    if (presets) {
+      Object.values(presets).forEach(preset => {
+        if (preset.nutrients) {
+          preset.nutrients.forEach(n => {
+            if (n.name) nutrients.add(n.name);
+          });
+        }
+      });
+    }
+
+    // Add nutrients from inventory
+    const inventory = this._inventoryController.value;
+    if (inventory && inventory.stocks) {
+      Object.values(inventory.stocks).forEach(stock => {
+        if (stock.name) nutrients.add(stock.name);
+      });
+    }
+
     return Array.from(nutrients).sort();
   }
 }

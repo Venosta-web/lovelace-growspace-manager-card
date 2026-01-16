@@ -228,6 +228,22 @@ describe('strain-actions', () => {
                 expect(ctx.closeDialog).toHaveBeenCalled();
             });
 
+            it('should perform optimistic update', async () => {
+                // Mock existing devices
+                const devices = [{ device_id: 'gs123', rows: 4, plants_per_row: 4 }];
+                (ctx.data.$devices.get as any).mockReturnValue(devices);
+
+                await updateGrowspace(ctx, 'gs123', 'Updated Name', 5, 6);
+
+                expect(ctx.data.$devices.set).toHaveBeenCalledWith(expect.arrayContaining([
+                    expect.objectContaining({
+                        device_id: 'gs123',
+                        rows: 5,
+                        plants_per_row: 6
+                    })
+                ]));
+            });
+
             it('should return false on error', async () => {
                 mockDataService.updateGrowspace.mockRejectedValue(new Error('Update failed'));
 

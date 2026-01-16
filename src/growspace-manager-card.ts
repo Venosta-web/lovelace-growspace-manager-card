@@ -23,7 +23,7 @@ import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-toast';
-import './components/manager/batch-action-bar';
+
 import { LibraryExportReadyEvent } from './events';
 import './components/growspace-view-switcher';
 import './components/ui'; // Register MD3 components
@@ -92,6 +92,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.updateHass(this.hass);
     this.store.initializeSelectedDevice(this._config);
     this.store.fetchStrainLibrary();
+    this.store.fetchNutrientPresets();
+    this.store.fetchIPMPresets();
+    this.store.fetchNutrientInventory();
   }
 
   connectedCallback() {
@@ -214,6 +217,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   }
 
+  private _handleDeleteSelected = () => {
+    this.store.deleteSelectedPlants();
+  };
+
   protected render(): TemplateResult {
     if (!this.hass) {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -268,6 +275,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               @training-selected=${this._handleTrainingSelected}
               @ipm-selected=${this._handleIPMSelected}
               @batch-add-plants=${this._handleBatchAddPlants}
+              @delete-selected=${this._handleDeleteSelected}
               @exit-edit-mode=${this._handleExitEditMode}
           >
             <growspace-view-switcher
@@ -284,7 +292,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
             ></growspace-view-switcher>
             
-            <batch-action-bar></batch-action-bar>
+
           </div>
         </ha-card>
 

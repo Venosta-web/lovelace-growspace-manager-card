@@ -13,7 +13,12 @@ describe('NutrientDialog', () => {
         element.store = {
             data: {
                 $nutrientPresets: {
-                    get: () => ({})
+                    get: () => ({}),
+                    subscribe: (fn: any) => { fn({}); return () => { }; }
+                },
+                $nutrientInventory: {
+                    get: () => ({}),
+                    subscribe: (fn: any) => { fn({}); return () => { }; }
                 }
             }
         } as any;

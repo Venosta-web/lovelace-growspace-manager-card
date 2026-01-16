@@ -10,6 +10,7 @@ import {
     movePlantPosition,
     handlePlantDrop,
     confirmAddPlant,
+    confirmAddPlants,
 } from '../../src/store/plant-actions';
 import { PlantEntity } from '../../src/types';
 
@@ -59,6 +60,7 @@ describe('plant-actions', () => {
             takeClone: vi.fn().mockResolvedValue({}),
             swapPlants: vi.fn().mockResolvedValue({}),
             addPlant: vi.fn().mockResolvedValue({}),
+            addPlants: vi.fn().mockResolvedValue({}),
         };
 
         ctx = {
@@ -76,7 +78,7 @@ describe('plant-actions', () => {
             },
             data: {
                 $selectedDevice: { get: vi.fn() },
-                $devices: { get: vi.fn().mockReturnValue([]) },
+                $devices: { get: vi.fn().mockReturnValue([]), set: vi.fn() },
                 addOptimisticDeletedPlantId: vi.fn(),
                 removeOptimisticDeletedPlantId: vi.fn()
             } as any
@@ -156,6 +158,20 @@ describe('plant-actions', () => {
                 strain: 'Fallback Update',
             });
         });
+
+        it('should clear selection and exit edit mode if active', async () => {
+            (ctx.ui.$isEditMode.get as any).mockReturnValue(true);
+            const dialogState = {
+                plant: mockPlant,
+                editedAttributes: { strain: 'Strain' },
+                selectedPlantIds: ['p1'],
+            };
+
+            await updatePlantFromDialog(ctx, dialogState);
+
+            expect(ctx.ui.clearPlantSelection).toHaveBeenCalled();
+            expect(ctx.ui.setEditMode).toHaveBeenCalledWith(false);
+        });
     });
 
     describe('handleDeletePlant', () => {
@@ -177,6 +193,53 @@ describe('plant-actions', () => {
             expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
+        });
+
+        it('should handle redo action', async () => {
+            let redoAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                redoAction = action.redo;
+            });
+
+            await handleDeletePlant(ctx, ['plant1']);
+            expect(redoAction).toBeDefined();
+            await redoAction!();
+
+            // Should call removePlant again (total 2 times: once initial, once redo)
+            expect(mockDataService.removePlant).toHaveBeenCalledTimes(2);
+        });
+
+        it('should handle undo action and close dialog if open', async () => {
+            let reverseAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                reverseAction = action.reverse;
+            });
+
+            // Mock dialog state to hit the branch
+            (ctx.ui.$activeDialog.get as any).mockReturnValue({ type: 'PLANT_OVERVIEW' });
+
+            // Mock plants to be restored
+            (ctx.data.$devices.get as any).mockReturnValue([
+                {
+                    device_id: 'growspace1',
+                    plants: [{
+                        attributes: { plant_id: 'plant1', strain: 'Restored Strain', row: 1, col: 1 }
+                    }]
+                }
+            ]);
+
+            await handleDeletePlant(ctx, 'plant1');
+
+            expect(ctx.closeDialog).toHaveBeenCalled(); // From handleDeletePlant execution
+
+            expect(reverseAction).toBeDefined();
+            await reverseAction!();
+
+            // Reverse should call addPlant
+            expect(mockDataService.addPlant).toHaveBeenCalledWith(expect.objectContaining({
+                strain: 'Restored Strain'
+            }));
+            expect(ctx.refreshData).toHaveBeenCalled();
         });
     });
 
@@ -251,7 +314,6 @@ describe('plant-actions', () => {
 
             expect(result).toBe(true);
             expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_growspace');
-            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_growspace');
             expect(ctx.refreshData).toHaveBeenCalled();
             expect(ctx.closeDialog).toHaveBeenCalled();
         });
@@ -290,6 +352,25 @@ describe('plant-actions', () => {
             expect(result).toBe(true);
             // Should use harvestPlant since stage is 'unknown' (not 'clone')
             expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'target_room');
+        });
+
+        it('should handle redo action', async () => {
+            let redoAction: (() => Promise<void>) | undefined;
+            let reverseAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                redoAction = action.redo;
+                reverseAction = action.reverse;
+            });
+
+            await movePlantToGrowspace(ctx, mockPlant, 'target_room');
+            expect(redoAction).toBeDefined();
+            await redoAction!();
+            expect(mockDataService.harvestPlant).toHaveBeenCalledTimes(2); // Once initial, once redo
+
+            expect(reverseAction).toBeDefined();
+            await reverseAction!();
+            // Should call movePlantToGrowspace with original growspace (undefined in mockPlant -> 'unknown')
+            expect(mockDataService.harvestPlant).toHaveBeenCalledWith('test123', 'unknown');
         });
     });
 
@@ -392,6 +473,31 @@ describe('plant-actions', () => {
             expect(mockDataService.swapPlants).toHaveBeenCalledWith('test123', 'target456');
         });
 
+        it('should perform optimistic update when swapping in a growspace', async () => {
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1' } }; // technically only source needs it to start
+
+            (ctx.data.$devices.get as any).mockReturnValue([
+                {
+                    device_id: 'gs1',
+                    grid: {
+                        'pos1': { plant_id: 'test123', row: 1, col: 1 },
+                        'pos2': { plant_id: 'target456', row: 2, col: 2 }
+                    }
+                }
+            ]);
+
+            // spy on updateWsDataCacheGrid is implicitly mocked in context setup but let's spy it properly if needed
+            // but here we just check if it runs without error and calls things if possible. 
+            // Since ctx.data.updateWsDataCacheGrid is a mock, we can check it.
+            ctx.data.updateWsDataCacheGrid = vi.fn();
+
+            await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
+
+            expect(ctx.data.updateWsDataCacheGrid).toHaveBeenCalledWith('gs1', expect.any(Function));
+        });
+
+
         it('should not swap when source and target are same', async () => {
             const result = await handlePlantDrop(ctx, 1, 1, mockPlant, mockPlant);
 
@@ -417,6 +523,49 @@ describe('plant-actions', () => {
 
             expect(result).toBe(false);
         });
+
+        it('should handle redo action for swap', async () => {
+            let redoAction: (() => Promise<void>) | undefined;
+            let reverseAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                redoAction = action.redo;
+                reverseAction = action.reverse;
+            });
+
+            await handlePlantDrop(ctx, 1, 1, targetPlant, mockPlant);
+
+            expect(redoAction).toBeDefined();
+            await redoAction!();
+            // Should call handlePlantDrop again (so swapPlants called 2nd time)
+            expect(mockDataService.swapPlants).toHaveBeenCalledTimes(2);
+
+            expect(reverseAction).toBeDefined();
+            await reverseAction!();
+            // Reverse calls swapPlants again
+            expect(mockDataService.swapPlants).toHaveBeenCalledTimes(3);
+        });
+
+        it('should handle redo action for move to empty', async () => {
+            let redoAction: (() => Promise<void>) | undefined;
+            let reverseAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                redoAction = action.redo;
+                reverseAction = action.reverse;
+            });
+
+            await handlePlantDrop(ctx, 2, 3, null, mockPlant);
+
+            expect(redoAction).toBeDefined();
+            await redoAction!();
+            // Should call handlePlantDrop -> movePlantPosition again
+            expect(mockDataService.updatePlant).toHaveBeenCalledTimes(2);
+
+            expect(reverseAction).toBeDefined();
+            await reverseAction!();
+            // Reverse calls movePlantPosition (updatePlant) again
+            expect(mockDataService.updatePlant).toHaveBeenCalledTimes(3);
+        });
+
 
         it('should use entity_id fallback when plant_id is missing on source', async () => {
             const sourceNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
@@ -511,6 +660,112 @@ describe('plant-actions', () => {
 
             expect(result).toBe(false);
             expect(ctx.showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
+        });
+    });
+
+    describe('confirmAddPlants', () => {
+        it('should add multiple plants successfully', async () => {
+            const detail = {
+                strain: 'Batch Strain',
+                count: 3
+            };
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.data.$devices.get as any).mockReturnValue([
+                { device_id: 'growspace1', plants: [] }
+            ]);
+
+            // Mock subsequent devices call to simulate added plants
+            const mockAddedPlants = [
+                { attributes: { plant_id: 'p1', strain: 'Batch Strain' } },
+                { attributes: { plant_id: 'p2', strain: 'Batch Strain' } },
+                { attributes: { plant_id: 'p3', strain: 'Batch Strain' } }
+            ];
+
+            (ctx.data.$devices.get as any)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Before
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: mockAddedPlants }]); // After
+
+
+            await confirmAddPlants(ctx, detail);
+
+            expect(mockDataService.addPlants).toHaveBeenCalledWith({
+                growspace_id: 'growspace1',
+                strain: 'Batch Strain',
+                count: 3
+            });
+            expect(ctx.refreshData).toHaveBeenCalled();
+            expect(ctx.closeDialog).toHaveBeenCalled();
+            expect(ctx.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');
+            expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
+        });
+
+        it('should fail if no growspace selected', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+
+            await confirmAddPlants(ctx, { count: 1 });
+
+            expect(ctx.showToast).toHaveBeenCalledWith('No growspace selected', 'error');
+            expect(mockDataService.addPlants).not.toHaveBeenCalled();
+        });
+
+        it('should handle API failure', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.data.$devices.get as any).mockReturnValue([]);
+            mockDataService.addPlants.mockRejectedValue(new Error('Batch failed'));
+
+            await confirmAddPlants(ctx, { count: 5 });
+
+            expect(ctx.showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
+        });
+
+        it('should handle undo action (batch-delete)', async () => {
+            let reverseAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                reverseAction = action.reverse;
+            });
+
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            const mockAddedPlants = [{ attributes: { plant_id: 'p1' } }];
+
+            (ctx.data.$devices.get as any)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }])
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: mockAddedPlants }]);
+
+            await confirmAddPlants(ctx, { count: 1 });
+
+            expect(reverseAction).toBeDefined();
+            await reverseAction!();
+
+            // Undo for batch add is batch delete -> check _deletePlantsApi usage
+            expect(mockDataService.removePlant).toHaveBeenCalledWith('p1');
+            // _deletePlantsApi calls removePlant for each ID
+        });
+
+        it('should handle redo action', async () => {
+            let redoAction: (() => Promise<void>) | undefined;
+            (ctx.undoRedoManager.pushAction as any).mockImplementation((action: any) => {
+                redoAction = action.redo;
+            });
+
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+
+            // Reset default mock to ensure clean state
+            (ctx.data.$devices.get as any).mockReset();
+
+            (ctx.data.$devices.get as any)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Initial state (Before)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]) // Initial state (After)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Redo state (Before)
+                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]); // Redo state (After)
+
+            await confirmAddPlants(ctx, { count: 1 });
+
+            expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
+            expect(redoAction).toBeDefined();
+            await redoAction!();
+
+            // Redo calls confirmAddPlants again
+            expect(mockDataService.addPlants).toHaveBeenCalledTimes(2);
         });
     });
 });

@@ -52,7 +52,7 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
 
 export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = false) {
     const CACHE_KEY = 'growspace_nutrient_presets';
-    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
 
     if (!ctx.hass) return;
 
@@ -62,13 +62,17 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
             const cache = JSON.parse(cachedRaw);
             const age = Date.now() - (cache.timestamp || 0);
             if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
                 ctx.data.setNutrientPresets(cache.data);
                 return;
             }
-        } catch (_) {
+        } catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
             localStorage.removeItem(CACHE_KEY);
         }
     }
+
+    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
 
     try {
         const result = await ctx.dataService.fetchNutrientPresets();
@@ -86,7 +90,7 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
 
 export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false) {
     const CACHE_KEY = 'growspace_ipm_presets';
-    const CACHE_VALIDITY_MS = 60 * 60 * 1000; // 1 hour
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
 
     if (!ctx.hass) return;
 
@@ -96,13 +100,17 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
             const cache = JSON.parse(cachedRaw);
             const age = Date.now() - (cache.timestamp || 0);
             if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
                 ctx.data.setIPMPresets(cache.data);
                 return;
             }
-        } catch (_) {
+        } catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
             localStorage.removeItem(CACHE_KEY);
         }
     }
+
+    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
 
     try {
         const result = await ctx.dataService.fetchIPMPresets();

@@ -34,7 +34,7 @@ export class NutrientStockChip extends LitElement {
     const percentage = Math.round(ratio * 100);
     const value = this.compact
       ? `${percentage}%`
-      : `${current_ml}ml (${percentage}%)`;
+      : `${Math.round(current_ml)}ml (${percentage}%)`;
 
     const label = this.compact ? '' : name;
     // If compact, maybe show name as tooltip or just rely on parent context? 

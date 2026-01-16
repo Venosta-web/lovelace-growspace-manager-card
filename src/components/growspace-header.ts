@@ -812,6 +812,16 @@ export class GrowspaceHeader extends LitElement {
 
   private _triggerAction(action: string) {
     // Menu state now managed by Popover API
+    // Explicitly close popover on action trigger to prevent overlap with dialogs
+    const menu = this.shadowRoot?.getElementById('header-menu') as HTMLElement & { hidePopover?: () => void };
+    if (menu && typeof menu.hidePopover === 'function') {
+      try {
+        menu.hidePopover();
+      } catch (e) {
+        // Context might differ or already hidden
+      }
+    }
+
     // Direct store method calls
     switch (action) {
       case 'add_plant':
@@ -1231,16 +1241,6 @@ export class GrowspaceHeader extends LitElement {
              <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
              <span class="menu-item-label">Edit Mode</span>
              <div class=${classMap({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('compact')}>
-             <svg viewBox="0 0 24 24"><path d="${mdiMagnify}"></path></svg>
-             <span class="menu-item-label">Compact View</span>
-             <div class=${classMap({ 'menu-toggle-switch': true, active: this._viewModeController.value === 'compact' })}></div>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('control_dehumidifier')}>
-             <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifierOff}"></path></svg>
-             <span class="menu-item-label">Dehumidifier Ctrl</span>
-             <div class=${classMap({ 'menu-toggle-switch': true, active: !!this._envAttrs.dehumidifier_control_enabled })}></div>
         </div>
 
         <div class="menu-divider"></div>

@@ -177,15 +177,15 @@ export const plantCardStyles = css`
   }
 
   .status-icon.training {
-    color: var(--gm-warning-color); /* Orange for training */
+    color: var(--gm-warning-color, #ff9800); /* Orange for training */
   }
 
   .status-icon.watering {
-    color: var(--gm-info-color); /* Blue for watering */
+    color: var(--gm-info-color, #2196f3); /* Blue for watering */
   }
 
   .status-icon.problem {
-    color: var(--gm-error-color); /* Red for problem */
+    color: var(--gm-error-color, #f44336); /* Red for problem */
   }
 
   .status-icon.ipm {

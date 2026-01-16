@@ -105,7 +105,7 @@ export class StrainAPI extends BaseAPI {
             return results.sort((a, b) => {
                 const strainComp = a.strain.localeCompare(b.strain);
                 if (strainComp !== 0) return strainComp;
-                return (a.phenotype || '').localeCompare(b.phenotype || '');
+                return a.phenotype.localeCompare(b.phenotype);
             });
         }
 
@@ -148,8 +148,15 @@ export class StrainAPI extends BaseAPI {
 
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response') return;
-                const meta = data.meta || {};
-                const phenotypes = data.phenotypes || {};
+                let meta = data.meta;
+                if (!meta) {
+                    meta = {};
+                }
+
+                let phenotypes = data.phenotypes;
+                if (!phenotypes) {
+                    phenotypes = {};
+                }
 
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
                     const typedPhenoData = phenoData as RawPhenotypeData;

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WateringDialog } from '../../../src/dialogs/watering-dialog';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { atom } from 'nanostores';
 
 // Mock UI components to avoid rendering issues
 vi.mock('../../../src/components/ui/md3-text-input', () => ({
@@ -29,37 +30,40 @@ describe('WateringDialog', () => {
 
         mockStore = {
             data: {
-                $nutrientPresets: {
-                    get: vi.fn().mockReturnValue({
-                        'p1': {
-                            id: 'p1',
-                            name: 'Veg',
-                            nutrients: [{ name: 'A', dose_ml_l: 2 }]
-                        },
-                        'p2': {
-                            id: 'p2',
-                            name: 'Flower',
-                            nutrients: [{ name: 'B', dose_ml_l: 3 }],
-                            stage: 'flower',
-                            min_days_in_stage: 10
-                        }
-                    })
-                },
-                $devices: {
-                    get: vi.fn().mockReturnValue([
-                        {
-                            device_id: 'd1',
-                            plants: [
-                                { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', stage: 'flower', days_in_stage: 12 } },
-                                { entity_id: 'sensor.p2', attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 12 } }
-                            ]
-                        }
-                    ])
-                },
-                $selectedDevice: { get: vi.fn().mockReturnValue('d1') }
+                $nutrientPresets: atom({
+                    'p1': {
+                        id: 'p1',
+                        name: 'Veg',
+                        nutrients: [{ name: 'A', dose_ml_l: 2 }]
+                    },
+                    'p2': {
+                        id: 'p2',
+                        name: 'Flower',
+                        nutrients: [{ name: 'B', dose_ml_l: 3 }],
+                        stage: 'flower',
+                        min_days_in_stage: 10
+                    }
+                }),
+                $devices: atom([
+                    {
+                        device_id: 'd1',
+                        plants: [
+                            { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', stage: 'flower', days_in_stage: 12 } },
+                            { entity_id: 'sensor.p2', attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 12 } }
+                        ]
+                    }
+                ]),
+                $selectedDevice: atom('d1'),
+                $nutrientInventory: atom({
+                    stocks: {
+                        's1': { name: 'InventoryNutrient', amount: 100, unit: 'ml' }
+                    }
+                })
             },
             showToast: vi.fn(),
-            refreshData: vi.fn()
+            refreshData: vi.fn(),
+            waterPlant: mockDataService.waterPlant,
+            waterGrowspace: mockDataService.waterGrowspace
         };
 
         // Instantiate class directly for logic testing
@@ -71,6 +75,9 @@ describe('WateringDialog', () => {
         // Initial state
         element.open = true;
         element.growspaceName = 'Test Tent';
+
+        // Initialize controllers
+        element.connectedCallback();
     });
 
     describe('Initialization', () => {
@@ -200,7 +207,8 @@ describe('WateringDialog', () => {
             const suggestions = (element as any)._getNutrientSuggestions();
             expect(suggestions).toContain('A');
             expect(suggestions).toContain('B');
-            expect(suggestions).toHaveLength(2);
+            expect(suggestions).toContain('InventoryNutrient');
+            expect(suggestions).toHaveLength(3);
         });
 
         it('should return empty suggestions if store missing', () => {
@@ -221,9 +229,10 @@ describe('WateringDialog Rendering', () => {
 
         mockStore = {
             data: {
-                $nutrientPresets: { get: vi.fn().mockReturnValue({}) },
-                $devices: { get: vi.fn().mockReturnValue([]) },
-                $selectedDevice: { get: vi.fn() }
+                $nutrientPresets: atom({}),
+                $devices: atom([]),
+                $selectedDevice: atom(null),
+                $nutrientInventory: atom(null)
             },
             showToast: vi.fn(),
             refreshData: vi.fn()
@@ -247,8 +256,8 @@ describe('WateringDialog Rendering', () => {
     });
 
     it('should render preset options', async () => {
-        mockStore.data.$nutrientPresets.get.mockReturnValue({
-            'p1': { id: 'p1', name: 'Veg' }
+        mockStore.data.$nutrientPresets.set({
+            'p1': { id: 'p1', name: 'Veg', nutrients: [] }
         });
 
         element.open = true;

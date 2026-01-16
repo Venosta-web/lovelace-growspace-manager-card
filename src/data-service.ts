@@ -329,10 +329,10 @@ export class DataService {
 
   waterGrowspace = (
     growspaceId: string,
-    amountPerPlant: number,
+    amount: number,
     nutrients?: Record<string, number>,
     presetId?: string
-  ) => this._irrigationAPI.waterGrowspace(growspaceId, amountPerPlant, nutrients, presetId);
+  ) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
 
   // ========================================
   // AI API Delegations

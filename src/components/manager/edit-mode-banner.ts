@@ -10,7 +10,8 @@ import {
   mdiClose,
   mdiPlusBoxMultiple,
   mdiChevronLeft,
-  mdiChevronRight
+  mdiChevronRight,
+  mdiDelete
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -212,6 +213,10 @@ export class EditModeBanner extends LitElement {
             <button class="md3-button text" @click=${() => this._dispatch('batch-add-plants')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
               Batch Add Plants
+            </button>
+            <button class="md3-button text" @click=${() => this._dispatch('delete-selected')} style="color: var(--error-color);">
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+              Delete Selected
             </button>
             <button class="md3-button text" @click=${() => this._dispatch('exit-edit-mode')}>
               <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
