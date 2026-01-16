@@ -8950,6 +8950,92 @@ Md3DateInput = __decorate([
     t$2('md3-date-input')
 ], Md3DateInput);
 
+let Md3Switch = class Md3Switch extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        return x `
+      <button
+        role="switch"
+        aria-checked=${this.checked}
+        @click=${this._handleClick}
+        ?disabled=${this.disabled}
+      >
+        <div class="handle"></div>
+      </button>
+    `;
+    }
+};
+Md3Switch.styles = i$6 `
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      --md-switch-width: 52px;
+      --md-switch-height: 32px;
+      --md-switch-handle-size: 24px;
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
+      --md-switch-handle-color: #fff;
+    }
+
+    button {
+      all: unset;
+      position: relative;
+      width: var(--md-switch-width);
+      height: var(--md-switch-height);
+      border-radius: calc(var(--md-switch-height) / 2);
+      background: var(--md-switch-track-color-off);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+
+    :host([checked]) button {
+      background: var(--md-switch-track-color-on);
+      border-color: transparent;
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: var(--md-switch-handle-size);
+      height: var(--md-switch-handle-size);
+      background: var(--md-switch-handle-color);
+      border-radius: 50%;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    :host([checked]) .handle {
+      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t$2('md3-switch')
+], Md3Switch);
+
 let AddPlantDialog = class AddPlantDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -8959,6 +9045,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         // Initialize with values passed via methods or defaults
         this.strain = '';
         this.phenotype = '';
+        this.addToLibrary = false;
         this.row = 0;
         this.col = 0;
         // Date fields
@@ -9008,6 +9095,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             clone_start: this.clone_start,
             dry_start: this.dry_start,
             cure_start: this.cure_start,
+            addToLibrary: this.addToLibrary,
         };
         this.dispatchEvent(new CustomEvent('add-plant-submit', {
             detail: payload,
@@ -9086,6 +9174,15 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 .suggestions=${relevantPhenotypes}
                 @change=${(e) => (this.phenotype = e.detail)}
               ></md3-text-input>
+
+              <div class="toggle-container" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+                  <md3-switch
+                      .checked=${this.addToLibrary}
+                      @change=${(e) => this.addToLibrary = e.target.checked}
+                      ?disabled=${!this.strain}
+                  ></md3-switch>
+              </div>
               <div class="row-col-grid">
                 <md3-number-input
                   label="Row"
@@ -9213,6 +9310,9 @@ __decorate([
     r$2()
 ], AddPlantDialog.prototype, "phenotype", void 0);
 __decorate([
+    r$2()
+], AddPlantDialog.prototype, "addToLibrary", void 0);
+__decorate([
     n$5({ type: Number })
 ], AddPlantDialog.prototype, "row", void 0);
 __decorate([
@@ -9250,6 +9350,8 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         this.growspaceName = '';
         this.open = false;
         this.strain = '';
+        this.phenotype = '';
+        this.addToLibrary = false;
         this.amount = 1;
         this.start_number = 1;
         // Date fields
@@ -9308,6 +9410,8 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
             clone_start: this.clone_start,
             dry_start: this.dry_start,
             cure_start: this.cure_start,
+            phenotype: this.phenotype,
+            addToLibrary: this.addToLibrary,
         };
         this.dispatchEvent(new CustomEvent('add-plants-submit', {
             detail: payload,
@@ -9383,6 +9487,21 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                     <path d="${mdiDna}"></path>
                   </svg>
                 </button>
+              </div>
+              
+              <md3-text-input
+                label="Phenotype (Optional)"
+                .value=${this.phenotype}
+                @change=${(e) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+
+              <div class="toggle-container" style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+                  <md3-switch
+                      .checked=${this.addToLibrary}
+                      @change=${(e) => this.addToLibrary = e.target.checked}
+                      ?disabled=${!this.strain}
+                  ></md3-switch>
               </div>
               
               <div class="row-col-grid">
@@ -9528,6 +9647,12 @@ __decorate([
 __decorate([
     r$2()
 ], AddPlantsDialog.prototype, "strain", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "phenotype", void 0);
+__decorate([
+    r$2()
+], AddPlantsDialog.prototype, "addToLibrary", void 0);
 __decorate([
     r$2()
 ], AddPlantsDialog.prototype, "amount", void 0);
@@ -14989,92 +15114,6 @@ __decorate([
 StrainRecommendationDialog = __decorate([
     t$2('strain-recommendation-dialog')
 ], StrainRecommendationDialog);
-
-let Md3Switch = class Md3Switch extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.checked = false;
-        this.disabled = false;
-    }
-    _handleClick() {
-        if (this.disabled)
-            return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        return x `
-      <button
-        role="switch"
-        aria-checked=${this.checked}
-        @click=${this._handleClick}
-        ?disabled=${this.disabled}
-      >
-        <div class="handle"></div>
-      </button>
-    `;
-    }
-};
-Md3Switch.styles = i$6 `
-    :host {
-      display: inline-block;
-      vertical-align: middle;
-      --md-switch-width: 52px;
-      --md-switch-height: 32px;
-      --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
-      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
-      --md-switch-handle-color: #fff;
-    }
-
-    button {
-      all: unset;
-      position: relative;
-      width: var(--md-switch-width);
-      height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
-      background: var(--md-switch-track-color-off);
-      cursor: pointer;
-      transition: background-color 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-sizing: border-box;
-    }
-
-    :host([checked]) button {
-      background: var(--md-switch-track-color-on);
-      border-color: transparent;
-    }
-
-    .handle {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      transform: translateY(-50%);
-      width: var(--md-switch-handle-size);
-      height: var(--md-switch-handle-size);
-      background: var(--md-switch-handle-color);
-      border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
-
-    :host([checked]) .handle {
-      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
-    }
-  `;
-__decorate([
-    n$5({ type: Boolean })
-], Md3Switch.prototype, "checked", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], Md3Switch.prototype, "disabled", void 0);
-Md3Switch = __decorate([
-    t$2('md3-switch')
-], Md3Switch);
 
 let IrrigationDialog = class IrrigationDialog extends i$3 {
     constructor() {
@@ -35130,6 +35169,20 @@ async function confirmAddPlant(ctx, detail) {
         return false;
     }
     try {
+        if (detail.addToLibrary) {
+            try {
+                await ctx.dataService.addStrain({
+                    strain: detail.strain,
+                    phenotype: detail.phenotype
+                });
+                await fetchStrainLibrary(ctx, true);
+                ctx.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strain to library:', e);
+                ctx.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+            }
+        }
         await ctx.dataService.addPlant({
             growspace_id: selectedDevice,
             row: detail.row,
@@ -35168,9 +35221,39 @@ async function confirmAddPlants(ctx, detail) {
     const beforeIds = new Set();
     devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
     try {
+        if (detail.addToLibrary) {
+            try {
+                const amount = detail.amount || 1; // Dialog uses 'amount'
+                const startNumber = detail.start_number || 1;
+                const promises = [];
+                for (let i = 0; i < amount; i++) {
+                    const currentNumber = startNumber + i;
+                    // Format: "Phenotype #1"
+                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name, 
+                    // but typically we only add to library if phenotype is explicit or we want "Strain #1".
+                    // User request specific to "phenotype + #Number". 
+                    const phenoName = detail.phenotype
+                        ? `${detail.phenotype} #${currentNumber}`
+                        : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
+                    promises.push(ctx.dataService.addStrain({
+                        strain: detail.strain,
+                        phenotype: phenoName
+                    }));
+                }
+                await Promise.all(promises);
+                await fetchStrainLibrary(ctx, true);
+                ctx.showToast(`Added ${amount} strain variants to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strains to library:', e);
+                ctx.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
+            }
+        }
+        // Exclude addToLibrary from payload sent to backend
+        const { addToLibrary, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             growspace_id: selectedDevice,
-            ...detail
+            ...apiPayload
         });
         await ctx.refreshData();
         const afterDevices = ctx.data.$devices.get();

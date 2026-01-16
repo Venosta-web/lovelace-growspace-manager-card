@@ -19,11 +19,13 @@ import * as libraryActions from '../../src/store/library-actions';
 // Mock library actions
 vi.mock('../../src/store/library-actions', () => ({
     fetchNutrientInventory: vi.fn(),
-    fetchIPMPresets: vi.fn()
+    fetchIPMPresets: vi.fn(),
+    fetchStrainLibrary: vi.fn().mockResolvedValue(undefined)
 }));
 import { PlantEntity } from '../../src/types';
 
 describe('plant-actions', () => {
+
     let ctx: ActionContext;
     let mockDataService: any;
 
@@ -73,6 +75,7 @@ describe('plant-actions', () => {
             addPlants: vi.fn().mockResolvedValue({}),
             waterPlant: vi.fn().mockResolvedValue({}),
             waterGrowspace: vi.fn().mockResolvedValue({}),
+            addStrain: vi.fn().mockResolvedValue({}),
         };
 
         ctx = {
@@ -92,7 +95,8 @@ describe('plant-actions', () => {
                 $selectedDevice: { get: vi.fn() },
                 $devices: { get: vi.fn().mockReturnValue([]), set: vi.fn() },
                 addOptimisticDeletedPlantId: vi.fn(),
-                removeOptimisticDeletedPlantId: vi.fn()
+                removeOptimisticDeletedPlantId: vi.fn(),
+                updateWsDataCacheGrid: vi.fn()
             } as any
         } as any;
     });
@@ -267,6 +271,12 @@ describe('plant-actions', () => {
             const call = (ctx.undoRedoManager.pushAction as any).mock.calls[0][0];
             await call.reverse();
             expect(mockDataService.addPlant).not.toHaveBeenCalled();
+        });
+
+        it('should handle deletion when device plants array is undefined', async () => {
+            (ctx.data.$devices.get as any).mockReturnValue([{ device_id: 'gs1' }]); // No plants property
+            await handleDeletePlant(ctx, 'any');
+            expect(mockDataService.removePlant).toHaveBeenCalledWith('any');
         });
     });
 
@@ -514,11 +524,7 @@ describe('plant-actions', () => {
                 }
             ]);
 
-            // spy on updateWsDataCacheGrid is implicitly mocked in context setup but let's spy it properly if needed
-            // but here we just check if it runs without error and calls things if possible. 
-            // Since ctx.data.updateWsDataCacheGrid is a mock, we can check it.
-            ctx.data.updateWsDataCacheGrid = vi.fn();
-
+            // Since ctx.data.updateWsDataCacheGrid is a mock in beforeEach, we can check it.
             await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
 
             expect(ctx.data.updateWsDataCacheGrid).toHaveBeenCalledWith('gs1', expect.any(Function));
@@ -646,6 +652,34 @@ describe('plant-actions', () => {
             // Should NOT set devices because device not found
             expect(ctx.data.$devices.set).not.toHaveBeenCalled();
         });
+
+        it('should handle grid with null entries and missing sData/tData', async () => {
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1' } };
+
+            (ctx.data.$devices.get as any).mockReturnValue([
+                {
+                    device_id: 'gs1',
+                    grid: {
+                        'pos1': { plant_id: 'test123', row: 1, col: 1 },
+                        'pos2': null, // Null entry to cover line 323
+                        'pos3': { plant_id: 'target456', row: 2, col: 2 }
+                    }
+                }
+            ]);
+
+            // This will execute updateGridLogic internally which contains the line 323
+            // To verify it actually runs, we check if sData and tData were assigned correctly 
+            // by looking at what was passed back to etc.
+
+            // We also want to verify lines 341/342 by making one of them null 
+            // We can do this by using IDs that don't match or by having them be null in the grid 
+            // but the find logic uses IDs.
+
+            // Actually, we already have a test for swap, so let's just ensure line 323 is hit.
+            await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
+            expect(ctx.data.updateWsDataCacheGrid).toHaveBeenCalled();
+        });
     });
 
     describe('confirmAddPlant', () => {
@@ -721,13 +755,43 @@ describe('plant-actions', () => {
             expect(result).toBe(false);
             expect(ctx.showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
         });
+
+        it('should add strain to library if addToLibrary is true', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+
+            await confirmAddPlant(ctx, {
+                row: 1, col: 1, strain: 'New Strain', phenotype: 'P1',
+                addToLibrary: true
+            });
+
+            expect(mockDataService.addStrain).toHaveBeenCalledWith({
+                strain: 'New Strain',
+                phenotype: 'P1'
+            });
+            expect(mockDataService.addPlant).toHaveBeenCalled();
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('to library'), 'success');
+        });
+
+        it('should continue adding plant if adding strain fails', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            mockDataService.addStrain.mockRejectedValue(new Error('Library fail'));
+
+            await confirmAddPlant(ctx, {
+                row: 1, col: 1, strain: 'New Strain', phenotype: 'P1',
+                addToLibrary: true
+            });
+
+            expect(mockDataService.addStrain).toHaveBeenCalled();
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
+            expect(mockDataService.addPlant).toHaveBeenCalled(); // Should still proceed
+        });
     });
 
     describe('confirmAddPlants', () => {
         it('should add multiple plants successfully', async () => {
             const detail = {
                 strain: 'Batch Strain',
-                count: 3
+                amount: 3
             };
             (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
             (ctx.data.$devices.get as any).mockReturnValue([
@@ -751,7 +815,7 @@ describe('plant-actions', () => {
             expect(mockDataService.addPlants).toHaveBeenCalledWith({
                 growspace_id: 'growspace1',
                 strain: 'Batch Strain',
-                count: 3
+                amount: 3
             });
             expect(ctx.refreshData).toHaveBeenCalled();
             expect(ctx.closeDialog).toHaveBeenCalled();
@@ -776,6 +840,52 @@ describe('plant-actions', () => {
             await confirmAddPlants(ctx, { count: 5 });
 
             expect(ctx.showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
+        });
+
+        it('should add strain to library during batch add if requested', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.data.$devices.get as any).mockReturnValue([]);
+
+            await confirmAddPlants(ctx, {
+                strain: 'Batch', amount: 2, phenotype: 'Bio', addToLibrary: true
+            });
+
+            expect(mockDataService.addStrain).toHaveBeenCalledWith({
+                strain: 'Batch',
+                phenotype: 'Bio #1'
+            });
+            expect(mockDataService.addPlants).toHaveBeenCalled();
+        });
+
+        it('should continue adding plants if adding strain to library fails during batch', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.data.$devices.get as any).mockReturnValue([]);
+            mockDataService.addStrain.mockRejectedValue(new Error('Library batch fail'));
+
+            await confirmAddPlants(ctx, {
+                strain: 'Batch', amount: 2, phenotype: 'Bio', addToLibrary: true
+            });
+
+            expect(mockDataService.addStrain).toHaveBeenCalled();
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strains'), 'info');
+            expect(mockDataService.addPlants).toHaveBeenCalled();
+        });
+
+        it('should send detail as is (minus addToLibrary) to addPlants', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.data.$devices.get as any).mockReturnValue([]);
+            await confirmAddPlants(ctx, { strain: 'X' }); // No amount
+            expect(mockDataService.addPlants).toHaveBeenCalledWith({
+                growspace_id: 'gs1',
+                strain: 'X'
+            });
+        });
+
+        it('should use "Strain" as fallback if phenotype not provided when adding to library during batch', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.data.$devices.get as any).mockReturnValue([]);
+            await confirmAddPlants(ctx, { strain: 'OG', amount: 1, addToLibrary: true }); // No phenotype
+            expect(mockDataService.addStrain).toHaveBeenCalledWith({ strain: 'OG', phenotype: 'Strain #1' });
         });
 
         it('should handle undo action (batch-delete)', async () => {

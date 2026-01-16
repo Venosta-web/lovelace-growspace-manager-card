@@ -10,6 +10,7 @@ import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/md3-date-input';
+import '../components/ui/md3-switch';
 
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {
@@ -22,6 +23,8 @@ export class AddPlantsDialog extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
 
   @state() private strain = '';
+  @state() private phenotype = '';
+  @state() private addToLibrary = false;
   @state() private amount = 1;
   @state() private start_number = 1;
 
@@ -124,6 +127,8 @@ export class AddPlantsDialog extends LitElement {
       clone_start: this.clone_start,
       dry_start: this.dry_start,
       cure_start: this.cure_start,
+      phenotype: this.phenotype,
+      addToLibrary: this.addToLibrary,
     };
 
     this.dispatchEvent(
@@ -204,6 +209,21 @@ export class AddPlantsDialog extends LitElement {
                     <path d="${mdiDna}"></path>
                   </svg>
                 </button>
+              </div>
+              
+              <md3-text-input
+                label="Phenotype (Optional)"
+                .value=${this.phenotype}
+                @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+
+              <div class="toggle-container" style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+                  <md3-switch
+                      .checked=${this.addToLibrary}
+                      @change=${(e: any) => this.addToLibrary = e.target.checked}
+                      ?disabled=${!this.strain}
+                  ></md3-switch>
               </div>
               
               <div class="row-col-grid">

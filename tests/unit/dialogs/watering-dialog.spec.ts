@@ -180,6 +180,12 @@ describe('WateringDialog', () => {
             expect(mockDataService.waterGrowspace).toHaveBeenCalledWith('gs1', 1.0, undefined, undefined);
         });
 
+        it('should fall through to growspace if plant mode has no IDs', async () => {
+            element.dialogState = { mode: 'plant', plantIds: [], growspaceId: 'gs_fallback' };
+            await (element as any)._submit();
+            expect(mockDataService.waterGrowspace).toHaveBeenCalledWith('gs_fallback', 1.0, undefined, undefined);
+        });
+
         it('should handle errors gracefully', async () => {
             element.dialogState = { mode: 'growspace', growspaceId: 'gs1' };
             mockDataService.waterGrowspace.mockRejectedValue(new Error('API fail'));
@@ -209,6 +215,21 @@ describe('WateringDialog', () => {
             expect(suggestions).toContain('B');
             expect(suggestions).toContain('InventoryNutrient');
             expect(suggestions).toHaveLength(3);
+        });
+
+        it('should handle presets/inventory with missing keys or names', () => {
+            mockStore.data.$nutrientPresets.set({
+                'p_empty': { id: 'p_empty', name: 'Empty' } // Missing nutrients array
+            });
+            mockStore.data.$nutrientInventory.set({
+                stocks: {
+                    's_noname': { amount: 10 } // Missing name
+                }
+            });
+
+            const suggestions = (element as any)._getNutrientSuggestions();
+            // Should not crash and should return sorted results (currently empty based on above overwrite)
+            expect(suggestions).toEqual([]);
         });
 
         it('should return empty suggestions if store missing', () => {

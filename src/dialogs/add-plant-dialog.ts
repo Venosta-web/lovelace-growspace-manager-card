@@ -10,6 +10,7 @@ import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/md3-date-input';
+import '../components/ui/md3-switch';
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
@@ -23,6 +24,7 @@ export class AddPlantDialog extends LitElement {
   // Initialize with values passed via methods or defaults
   @state() private strain = '';
   @state() private phenotype = '';
+  @state() private addToLibrary = false;
   @property({ type: Number }) row = 0;
   @property({ type: Number }) col = 0;
 
@@ -99,6 +101,7 @@ export class AddPlantDialog extends LitElement {
       clone_start: this.clone_start,
       dry_start: this.dry_start,
       cure_start: this.cure_start,
+      addToLibrary: this.addToLibrary,
     };
 
     this.dispatchEvent(
@@ -184,6 +187,15 @@ export class AddPlantDialog extends LitElement {
                 .suggestions=${relevantPhenotypes}
                 @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
               ></md3-text-input>
+
+              <div class="toggle-container" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
+                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+                  <md3-switch
+                      .checked=${this.addToLibrary}
+                      @change=${(e: any) => this.addToLibrary = e.target.checked}
+                      ?disabled=${!this.strain}
+                  ></md3-switch>
+              </div>
               <div class="row-col-grid">
                 <md3-number-input
                   label="Row"

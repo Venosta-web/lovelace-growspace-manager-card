@@ -36,6 +36,13 @@ describe('AddPlantsDialog', () => {
         expect((element as any).strain).toBe('OG Kush');
     });
 
+    it('populates strain options correctly', async () => {
+        const select = element.shadowRoot?.querySelector('md3-select') as any;
+        expect(select).toBeTruthy();
+        // uniqueStrains sorts the strains: Blue Dream, OG Kush
+        expect(select.options).toEqual(['Blue Dream', 'OG Kush']);
+    });
+
     it('updates amount and start number', async () => {
         const amountInput = element.shadowRoot?.querySelector('md3-number-input[label="Amount"]');
         amountInput?.dispatchEvent(new CustomEvent('change', { detail: '5' }));
@@ -44,6 +51,45 @@ describe('AddPlantsDialog', () => {
         const startInput = element.shadowRoot?.querySelector('md3-number-input[label="Start Number"]');
         startInput?.dispatchEvent(new CustomEvent('change', { detail: '10' }));
         expect((element as any).start_number).toBe(10);
+    });
+
+    it('updates phenotype and addToLibrary toggle', async () => {
+        const phenoInput = element.shadowRoot?.querySelector('md3-text-input[label="Phenotype (Optional)"]');
+        expect(phenoInput).toBeTruthy();
+        phenoInput?.dispatchEvent(new CustomEvent('change', { detail: 'Purple Haze' }));
+        expect((element as any).phenotype).toBe('Purple Haze');
+
+        // Test toggle - requires strain to be set to be enabled
+        (element as any).strain = 'OG Kush';
+        await element.updateComplete;
+
+        const toggle = element.shadowRoot?.querySelector('md3-switch');
+        expect(toggle).toBeTruthy();
+
+        // md3-switch uses @change with e.target.checked logic
+        // Mock event object
+        const mockChangeEvent = { target: { checked: true } };
+        // We can't dispatch a native event easily that matches the specific e.target structure expected by the inline handler
+        // unless we use a custom event or specifically craft it.
+        // The inline handler is: @change=${(e: any) => this.addToLibrary = e.target.checked}
+        toggle?.dispatchEvent(new CustomEvent('change', {
+            detail: {},
+            bubbles: true,
+            composed: true
+        } as any));
+        // Wait, CustomEvent doesn't automatically populate target.checked. 
+        // We might need to manually call the handler or use a better mock event.
+        // However, standard DOM dispatchEvent sets 'target' to the element. 
+        // If we set .checked on the element first, then dispatch change, it might work?
+
+        // Let's rely on setting the property on the element mock if possible?
+        // Actually, let's just trigger the state change verification.
+
+        // Simulating the handler logic:
+        const switchEl = toggle as any;
+        switchEl.checked = true;
+        switchEl.dispatchEvent(new Event('change'));
+        expect((element as any).addToLibrary).toBe(true);
     });
 
     it('emits close event when clicking close button', async () => {
@@ -209,5 +255,46 @@ describe('AddPlantsDialog', () => {
                 message: expect.stringContaining('Not enough free Plant Slots')
             })
         }));
+    });
+
+    it('handles missing device properties correctly (0 slots)', async () => {
+        const elementPartial = await fixture(html`
+            <add-plants-dialog 
+                .open=${true} 
+                .growspaceDevice=${{ device_id: 'g1' }} 
+            ></add-plants-dialog>
+        `);
+        // rows/plants_per_row undefined -> 0 slots.
+        // amount 1 > 0 -> Error.
+        (elementPartial as any).amount = 1;
+
+        const toastSpy = vi.fn();
+        elementPartial.addEventListener('show-toast', toastSpy);
+
+        (elementPartial as any)._confirm();
+
+        expect(toastSpy).toHaveBeenCalledWith(expect.objectContaining({
+            detail: expect.objectContaining({ type: 'error' })
+        }));
+    });
+
+    it('allows submission when growspace has enough free slots', async () => {
+        const elementSuccess = await fixture(html`
+            <add-plants-dialog 
+                .open=${true} 
+                .growspaceDevice=${{
+                rows: 4, plants_per_row: 4, plants: ['p1'] // 16 slots, 1 occupied, 15 free
+            }}
+            ></add-plants-dialog>
+        `);
+        (elementSuccess as any).amount = 5; // 5 <= 15. OK.
+        (elementSuccess as any).strain = 'Success Strain';
+
+        const submitSpy = vi.fn();
+        elementSuccess.addEventListener('add-plants-submit', submitSpy);
+
+        (elementSuccess as any)._confirm();
+
+        expect(submitSpy).toHaveBeenCalled();
     });
 });

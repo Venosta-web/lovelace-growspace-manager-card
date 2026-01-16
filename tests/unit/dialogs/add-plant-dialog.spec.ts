@@ -183,6 +183,29 @@ describe('AddPlantDialog', () => {
                 detail: { source: 'add-plant' }
             }));
         });
+
+        it('should update addToLibrary state on switch change', async () => {
+            // Need a strain selected for switch to be enabled
+            element.setInitialState(0, 0, 'Blue Dream');
+            await element.updateComplete;
+
+            const switchEl = element.shadowRoot?.querySelector('md3-switch') as any;
+            expect(switchEl).toBeTruthy();
+            expect(switchEl.disabled).toBe(false);
+
+            // Mock the event target checked property
+            switchEl.checked = true;
+            switchEl.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            expect((element as any).addToLibrary).toBe(true);
+
+            switchEl.checked = false;
+            switchEl.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            expect((element as any).addToLibrary).toBe(false);
+        });
     });
 
 

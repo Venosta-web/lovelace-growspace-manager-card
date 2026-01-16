@@ -443,6 +443,7 @@ export async function confirmAddPlant(
         clone_start?: string;
         dry_start?: string;
         cure_start?: string;
+        addToLibrary?: boolean;
     }
 ): Promise<boolean> {
     const selectedDevice = ctx.data.$selectedDevice.get();
@@ -452,6 +453,20 @@ export async function confirmAddPlant(
     }
 
     try {
+        if (detail.addToLibrary) {
+            try {
+                await ctx.dataService.addStrain({
+                    strain: detail.strain,
+                    phenotype: detail.phenotype
+                });
+                await libraryActions.fetchStrainLibrary(ctx, true);
+                ctx.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+            } catch (e) {
+                console.error('Failed to add strain to library:', e);
+                ctx.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+            }
+        }
+
         await ctx.dataService.addPlant({
             growspace_id: selectedDevice,
             row: detail.row,
@@ -495,9 +510,42 @@ export async function confirmAddPlants(
     devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
 
     try {
+        if (detail.addToLibrary) {
+            try {
+                const amount = detail.amount || 1; // Dialog uses 'amount'
+                const startNumber = detail.start_number || 1;
+                const promises: Promise<any>[] = [];
+
+                for (let i = 0; i < amount; i++) {
+                    const currentNumber = startNumber + i;
+                    // Format: "Phenotype #1"
+                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name, 
+                    // but typically we only add to library if phenotype is explicit or we want "Strain #1".
+                    // User request specific to "phenotype + #Number". 
+                    const phenoName = detail.phenotype
+                        ? `${detail.phenotype} #${currentNumber}`
+                        : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
+
+                    promises.push(ctx.dataService.addStrain({
+                        strain: detail.strain,
+                        phenotype: phenoName
+                    }));
+                }
+
+                await Promise.all(promises);
+                await libraryActions.fetchStrainLibrary(ctx, true);
+                ctx.showToast(`Added ${amount} strain variants to library`, 'success');
+            } catch (e) {
+                console.error('Failed to add strains to library:', e);
+                ctx.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
+            }
+        }
+
+        // Exclude addToLibrary from payload sent to backend
+        const { addToLibrary, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             growspace_id: selectedDevice,
-            ...detail
+            ...apiPayload
         });
 
         await ctx.refreshData();

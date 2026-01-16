@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 
 @customElement('md3-switch')
 export class Md3Switch extends LitElement {
-  @property({ type: Boolean }) checked = false;
+  @property({ type: Boolean, reflect: true }) checked = false;
   @property({ type: Boolean }) disabled = false;
 
   static styles = css`

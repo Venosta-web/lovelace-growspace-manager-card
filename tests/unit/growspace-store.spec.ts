@@ -128,6 +128,8 @@ const mockDataServiceInstance: any = {
     updateNutrientStock: vi.fn().mockResolvedValue({}),
     removeNutrientStock: vi.fn().mockResolvedValue({}),
     addPlants: vi.fn().mockResolvedValue({}),
+    waterPlant: vi.fn().mockResolvedValue({}),
+    waterGrowspace: vi.fn().mockResolvedValue({}),
     hass: { connection: {} } // Default to avoid early returns
 };
 
@@ -2651,6 +2653,89 @@ describe('GrowspaceStore', () => {
                 // Default auto select is true, so it should select d1
                 expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
             });
+        });
+    });
+    describe('Actions Delegation Coverage', () => {
+        it('should delegate waterPlant', async () => {
+            await store.waterPlant('p1', 500);
+            expect(mockDataServiceInstance.waterPlant).toHaveBeenCalledWith('p1', 500, undefined, undefined);
+        });
+
+        it('should delegate waterGrowspace', async () => {
+            await store.waterGrowspace('g1', 1000);
+            expect(mockDataServiceInstance.waterGrowspace).toHaveBeenCalledWith('g1', 1000, undefined, undefined);
+        });
+
+        it('should delegate deleteSelectedPlants', async () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'p2']));
+            // Setup devices for restoring if needed or finding logic
+            const devices = [{
+                device_id: 'd1',
+                plants: [
+                    { entity_id: 's.p1', attributes: { plant_id: 'p1', growspace_id: 'd1' } },
+                    { entity_id: 's.p2', attributes: { plant_id: 'p2', growspace_id: 'd1' } }
+                ]
+            }];
+            (dataStore.$devices.get as any).mockReturnValue(devices);
+
+            await store.deleteSelectedPlants();
+            // handleDeletePlant calls deletePlantsApi which calls removePlant for each
+            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledTimes(2);
+            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p1');
+            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p2');
+        });
+
+        it('should not delete if selection empty', async () => {
+            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set());
+            await store.deleteSelectedPlants();
+            expect(mockDataServiceInstance.removePlant).not.toHaveBeenCalled();
+        });
+
+        it('should open dialogs via uiActions', () => {
+            store.openConfigDialog();
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'CONFIG',
+                payload: expect.objectContaining({})
+            }));
+
+            store.openStrainLibraryDialog();
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'STRAIN_LIBRARY' }));
+
+            store.openIrrigationDialog();
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION' }));
+
+            store.openGrowMasterDialog('g1');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'GROW_MASTER',
+                payload: expect.objectContaining({ growspaceId: 'g1' })
+            }));
+
+            store.openWateringDialog({});
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'WATERING',
+                payload: expect.objectContaining({})
+            }));
+
+            store.openTrainingDialog(['p1']);
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'TRAINING',
+                payload: expect.objectContaining({ plantIds: ['p1'] })
+            }));
+
+            store.openNutrientsDialog();
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'NUTRIENTS' }));
+
+            store.openBatchWateringDialog('g1');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'WATERING',
+                payload: expect.objectContaining({ growspaceId: 'g1' })
+            }));
+
+            store.openBatchTrainingDialog('g1');
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'TRAINING',
+                payload: expect.objectContaining({ growspaceId: 'g1' })
+            }));
         });
     });
 });

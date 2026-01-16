@@ -42,6 +42,7 @@ export class PlantAPI extends BaseAPI {
         strain: string;
         amount: number;
         start_number?: number;
+        phenotype?: string;
         veg_start?: string;
         flower_start?: string;
         mother_start?: string;
