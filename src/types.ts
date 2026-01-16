@@ -383,7 +383,7 @@ export type AddPlantsDialogState = Record<string, never>;
 export interface PlantOverviewDialogState {
   plant: PlantEntity;
   editedAttributes: Partial<PlantAttributes>;
-  activeTab: 'dashboard' | 'timeline' | 'genetics';
+  activeTab: 'dashboard' | 'actions' | 'timeline' | 'genetics';
   showAllDates?: boolean;
   selectedPlantIds?: string[];
 }

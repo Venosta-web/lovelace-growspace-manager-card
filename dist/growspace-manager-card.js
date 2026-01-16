@@ -818,6 +818,13 @@ class PlantUtils {
                 }
             }
         }
+        // Fallback to default stage image if no specific image found
+        if (!imageUrl) {
+            const currentStage = (plant.state || '').toLowerCase();
+            // Use normalizeStage to ensure we map aliases like 'vegetative' -> 'veg'
+            const normalized = this.normalizeStage(currentStage);
+            imageUrl = `/growspace_manager/static/stages/${normalized}.png`;
+        }
         // Stages logic
         const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
             const daysAttr = `${stage}_days`;
@@ -11140,7 +11147,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             this.plant = this.dialog.plant;
             this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
             this.cloneTargetId = '';
-            if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
+            if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'actions' || this.dialog.activeTab === 'timeline')) {
                 this._activeTab = this.dialog.activeTab;
             }
             // Fetch logbook when dialog is set
@@ -11469,6 +11476,13 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                 Overview
             </button>
             <button 
+                class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'actions'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiFlash}"></path></svg>
+                Actions
+            </button>
+            <button 
                 class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}" 
                 @click=${() => this._activeTab = 'timeline'}
             >
@@ -11478,118 +11492,93 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
           </div>
 
           <div class="overview-grid">
-            ${this._activeTab === 'dashboard' ? this._renderDashboard(attributes) : this._renderTimeline()}
+            ${this._activeTab === 'dashboard'
+            ? this._renderDashboard(attributes)
+            : this._activeTab === 'actions'
+                ? this._renderActions()
+                : this._renderTimeline()}
           </div>
 
           <!-- ACTIONS -->
           <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
-             ${this._activeTab === 'timeline'
-            ? x `
-                 <!-- EVENT ACTIONS (TIMELINE TAB) -->
-                 <div class="event-actions-wrapper" style="width: 100%; display: flex; align-items: center; position: relative;">
-                     <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                     </div>
+             <div class="standard-actions" style="display:flex; gap:12px;">
+                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiDelete}"></path>
+                   </svg>
+                   Delete
+                 </button>
+             </div>
 
-                     <div class="event-actions" ${n$2(this._setActionsRef)}>
-                         <button class="md3-button tonal" @click=${() => this._openWatering()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                            Water
-                         </button>
-                         <button class="md3-button tonal" @click=${() => this._openTraining()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-                            Train
-                         </button>
-                         <button class="md3-button tonal" @click=${() => this._openIPM()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-                            IPM
-                         </button>
-                     </div>
-
-                     <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                     </div>
-                 </div>
-               `
-            : x `
-                 <!-- STANDARD ACTIONS (OVERVIEW TAB) -->
-                 <div class="standard-actions" style="display:flex; gap:12px;">
-                     <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                         <path d="${mdiDelete}"></path>
-                       </svg>
-                       Delete
+             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+                 ${this._activeTab === 'dashboard' ? x `
+                   ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
+                      <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
+                         <md3-number-input
+                          id="clone-count-input"
+                          .value=${1}
+                          .min=${1}
+                          .max=${10}
+                          style="width: 80px;"
+                        ></md3-number-input>
+                        <button class="md3-button primary"
+                          @click=${(e) => {
+            const container = e.currentTarget.closest('.take-clone-container');
+            const input = container?.querySelector('#clone-count-input');
+            const val = input ? parseInt(input.value, 10) : 1;
+            const numClones = isNaN(val) ? 1 : val;
+            this._takeClone(this.plant, numClones);
+        }}
+                        >
+                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                          Take Clone
+                        </button>
+                      </div>
+                   ` : E}
+                   ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
+                     <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
+                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                       Harvest
                      </button>
-                 </div>
-    
-                 <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
-                     <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-                     ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
-                        <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
-                           <md3-number-input
-                            id="clone-count-input"
-                            .value=${1}
-                            .min=${1}
-                            .max=${10}
-                            style="width: 80px;"
-                          ></md3-number-input>
-                          <button class="md3-button primary"
-                            @click=${(e) => {
-                const container = e.currentTarget.closest('.take-clone-container');
-                const input = container?.querySelector('#clone-count-input');
-                const val = input ? parseInt(input.value, 10) : 1;
-                const numClones = isNaN(val) ? 1 : val;
-                this._takeClone(this.plant, numClones);
-            }}
-                          >
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                            Take Clone
-                          </button>
-                        </div>
-                     ` : E}
-                     ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
-                       <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                         Harvest
-                       </button>
-                     ` : E}
-        
-                     ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
-                       <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
-                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                         Finish Drying
-                       </button>
-                     ` : E}
-        
-                     ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
-                        <div style="display:flex; align-items:center; gap:8px;">
-                           <md3-select
-                             label="Target Growspace"
-                             .value=${this.cloneTargetId}
-                             .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                             style="width: 200px;"
-                             @change=${(e) => this.cloneTargetId = e.detail}
-                           ></md3-select>
-                          <button class="md3-button primary"
-                            @click=${() => this._moveClone(this.plant)}
-                            style="margin-top: 24px;"
-                          >
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                            Move
-                          </button>
-                        </div>
-                     ` : E}
-    
-                    <button class="md3-button tonal" @click=${() => this._update()}>
-                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                        <path d="${mdiCheck}"></path>
-                      </svg>
-                      Save Changes
-                    </button>
-                 </div>
-               `}
-          </div>
+                   ` : E}
+      
+                   ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
+                     <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
+                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                       Finish Drying
+                     </button>
+                   ` : E}
+      
+                   ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
+                      <div style="display:flex; align-items:center; gap:8px;">
+                         <md3-select
+                           label="Target Growspace"
+                           .value=${this.cloneTargetId}
+                           .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                           style="width: 200px;"
+                           @change=${(e) => this.cloneTargetId = e.detail}
+                         ></md3-select>
+                        <button class="md3-button primary"
+                          @click=${() => this._moveClone(this.plant)}
+                          style="margin-top: 24px;"
+                        >
+                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                          Move
+                        </button>
+                      </div>
+                   ` : E}
+                 ` : E}
 
+                 <button class="md3-button tonal" @click=${() => this._update()}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiCheck}"></path>
+                   </svg>
+                   Save Changes
+                 </button>
+             </div>
+          </div>
+        </div>
       </ha-dialog>
     `;
     }
@@ -11777,6 +11766,27 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                 : E}
                   `}
             </div>
+    `;
+    }
+    _renderActions() {
+        return x `
+      <div class="detail-card" style="grid-column: 1 / -1;">
+        <h3>Quick Actions</h3>
+        <div class="action-grid">
+          <div class="action-card" @click=${() => this._openWatering()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            <span>Water Plant</span>
+          </div>
+          <div class="action-card" @click=${() => this._openTraining()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            <span>Log Training</span>
+          </div>
+          <div class="action-card" @click=${() => this._openIPM()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            <span>Log IPM</span>
+          </div>
+        </div>
+      </div>
     `;
     }
     _renderTimeline() {
@@ -11988,6 +11998,41 @@ PlantOverviewDialog.styles = [
         gap: 4px;
         flex: 1;
         margin-bottom: 12px;
+      }
+
+      /* Action Grid */
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+        padding: 8px;
+      }
+      .action-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 12px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .action-card:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-color: var(--primary-color, #4caf50);
+        transform: translateY(-2px);
+      }
+      .action-card svg {
+        width: 32px;
+        height: 32px;
+        fill: var(--primary-color, #4caf50);
+      }
+      .action-card span {
+        font-weight: 500;
+        font-size: 1rem;
       }
 
       @media (max-width: 600px) {
@@ -18011,6 +18056,226 @@ LogbookDialog = __decorate([
     t$2('logbook-dialog')
 ], LogbookDialog);
 
+let GrowspaceChip = class GrowspaceChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.icon = '';
+        this.label = '';
+        this.value = undefined;
+        this.status = '';
+        this.active = false;
+        this.linked = false;
+        this.tooltip = '';
+    }
+    render() {
+        // Determine classes based on meaningful status string
+        const statusClass = this.status ? `status-${this.status}` : '';
+        return x `
+      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
+        </div>
+        ${this.label ? x `${this.label}: ` : ''}${this.value}
+        ${this.linked
+            ? x `
+              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
+                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+              </div>
+            `
+            : ''}
+      </div>
+    `;
+    }
+    _handleLinkClick(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
+    }
+};
+GrowspaceChip.styles = [
+    sharedStyles,
+    i$6 `
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--glass-bg);
+      border: var(--glass-border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+      backdrop-filter: var(--glass-blur);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+      touch-action: auto;
+    }
+
+    /* Status Colors */
+    @keyframes pulse-red {
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+      }
+    }
+
+    .stat-chip.status-optimal {
+      color: #2e7d32 !important;
+      background: rgba(46, 125, 50, 0.1) !important;
+    }
+
+    .stat-chip.status-warning {
+      color: #ffa726 !important;
+      border-color: rgba(255, 167, 38, 0.5) !important;
+      background: rgba(255, 167, 38, 0.1) !important;
+    }
+
+    .stat-chip.status-danger {
+      color: #ef5350 !important;
+      border-color: rgba(239, 83, 80, 0.5) !important;
+      background: rgba(239, 83, 80, 0.1) !important;
+      animation: pulse-red 2s infinite;
+    }
+
+    .stat-chip:hover {
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
+      transform: translateY(-1px);
+    }
+
+    :host([active]) .stat-chip {
+      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
+      border-color: var(--primary-color, #03a9f4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: var(--primary-text-color, #fff);
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      display: flex;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .link-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      margin-right: -8px;
+      opacity: 0.8;
+      cursor: pointer;
+    }
+
+    .link-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: var(--primary-color, #03a9f4);
+    }
+  `
+];
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "icon", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "label", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "value", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "status", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], GrowspaceChip.prototype, "active", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceChip.prototype, "linked", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceChip.prototype, "tooltip", void 0);
+GrowspaceChip = __decorate([
+    t$2('growspace-chip')
+], GrowspaceChip);
+
+let NutrientStockChip = class NutrientStockChip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.compact = false;
+    }
+    render() {
+        if (!this.stock) {
+            return x ``;
+        }
+        // eslint-disable-next-line camelcase
+        const { current_ml, initial_ml, name } = this.stock;
+        const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
+        let status = 'optimal';
+        if (ratio <= 0.2) {
+            status = 'danger';
+        }
+        else if (ratio <= 0.5) {
+            status = 'warning';
+        }
+        const percentage = Math.round(ratio * 100);
+        const value = this.compact
+            ? `${percentage}%`
+            : `${Math.round(current_ml)}ml (${percentage}%)`;
+        this.compact ? '' : name;
+        // If compact, maybe show name as tooltip or just rely on parent context? 
+        // Usually chip has label. Let's use name as label always, but maybe truncate?
+        return x `
+      <growspace-chip
+        .icon=${mdiBottleTonicPlus}
+        .label=${this.compact ? undefined : name}
+        .value=${value}
+        .status=${status}
+        .tooltip=${`Capacity: ${initial_ml}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
+      ></growspace-chip>
+    `;
+    }
+};
+NutrientStockChip.styles = i$6 `
+    :host {
+      display: inline-block;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], NutrientStockChip.prototype, "stock", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], NutrientStockChip.prototype, "compact", void 0);
+NutrientStockChip = __decorate([
+    t$2('nutrient-stock-chip')
+], NutrientStockChip);
+
 let WateringDialog = class WateringDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -18057,7 +18322,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
     }
     _handlePresetChange(e) {
-        const presetId = e.target.value;
+        const presetId = e.detail || e.target.value;
         this._selectedPresetId = presetId;
         if (!presetId) {
             this._nutrients = [];
@@ -18126,172 +18391,10 @@ let WateringDialog = class WateringDialog extends i$3 {
         const modeText = mode === 'plant' && plantCount > 0
             ? `Watering ${plantCount} selected plant${plantCount > 1 ? 's' : ''}`
             : `Watering all plants in ${this.growspaceName}`;
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWaterPlus}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Record Watering</h2>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="dialog-body">
-            <!-- Mode Indicator -->
-            <div class="mode-indicator">
-              <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-              <span>${modeText}</span>
-            </div>
-
-            <!-- Volume Input -->
-            <div class="detail-card">
-              <h3 style="margin-top: 0;">Solution Volume</h3>
-              <md3-number-input
-                label="Volume (Liters)"
-                .value=${this._volume}
-                .min=${0.1}
-                .step=${0.1}
-                @change=${(e) => {
-            this._volume = parseFloat(e.detail) || 0;
-        }}
-              ></md3-number-input>
-            </div>
-
-            <!-- Nutrients Section -->
-            <div class="detail-card">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <h3 style="margin: 0;">Nutrients</h3>
-                ${this._selectedPresetId ? x `<span class="preset-chip">Preset Active</span>` : E}
-              </div>
-              
-              <div class="preset-select">
-                <div class="md3-input-group">
-                    <label class="md3-label">Use Nutrient Preset</label>
-                    <select class="md3-input" .value=${this._selectedPresetId} @change=${this._handlePresetChange}>
-                        <option value="">Manual / No Preset</option>
-                        ${this._renderPresetOptions()}
-                    </select>
-                </div>
-              </div>
-
-              <p style="font-size: 0.8rem; opacity: 0.7; margin-bottom: 16px;">
-                Track nutrient concentrations. Values auto-populated from presets can be overridden.
-              </p>
-
-              <div class="nutrients-section">
-                ${this._nutrients.map((nutrient, index) => x `
-                    <div class="nutrient-row">
-                      <md3-text-input
-                        label="Nutrient Name"
-                        .value=${nutrient.name}
-                        .suggestions=${this._getNutrientSuggestions()}
-                        @change=${(e) => {
-            const val = e.target.value || e.detail;
-            this._updateNutrient(index, 'name', val);
-        }}
-                      ></md3-text-input>
-                      <md3-number-input
-                        label="ml/L"
-                        .value=${nutrient.concentration}
-                        .min=${0}
-                        .step=${0.1}
-                        @change=${(e) => {
-            this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
-        }}
-                      ></md3-number-input>
-                      <button
-                        class="md3-button icon"
-                        @click=${() => this._removeNutrient(index)}
-                        title="Remove nutrient"
-                        style="color: var(--error-color);"
-                      >
-                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                      </button>
-                    </div>
-                  `)}
-
-                <div class="add-nutrient-btn" @click=${() => this._addNutrient()}>
-                  <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                  <span>Add Nutrient</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Calculation Preview -->
-            ${this._nutrients.length > 0
-            ? x `
-                  <div class="calculation-preview">
-                    <h4 style="margin-top: 0; margin-bottom: 12px;">Calculation Preview</h4>
-                    ${this._nutrients
-                .filter((n) => n.name && n.concentration > 0)
-                .map((nutrient) => x `
-                          <div class="calculation-row">
-                            <span class="calculation-label">${nutrient.name}</span>
-                            <span class="calculation-value">
-                              ${this._volume}L × ${nutrient.concentration} ml/L =
-                              <strong>${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml</strong>
-                            </span>
-                          </div>
-                        `)}
-                    <div class="calculation-row">
-                      <span class="calculation-label">Total Nutrients</span>
-                      <span class="calculation-value">
-                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
-                      </span>
-                    </div>
-                  </div>
-                `
-            : E}
-          </div>
-
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background: ${dialogColor};"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting || this._volume <= 0}
-            >
-              ${this._isSubmitting ? 'Recording...' : 'Record Watering'}
-            </button>
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderPresetOptions() {
-        if (!this.store || !this.store.data || !this._presetsController)
-            return E;
-        const presetsRecord = this._presetsController.value;
-        if (!presetsRecord)
-            return E;
-        const presets = Object.values(presetsRecord);
         // Logic for recommendations
         let currentStage;
         let daysInStage = 0;
-        if (this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
+        if (this.store && this.store.data && this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
             const selectedDeviceId = this.store.data.$selectedDevice.get();
             const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
             if (selectedDevice) {
@@ -18309,20 +18412,155 @@ let WateringDialog = class WateringDialog extends i$3 {
                 }
             }
         }
-        return presets.map(p => {
+        // Create preset list for MD3 select
+        const presetsRecord = this._presetsController.value || {};
+        const presetList = Object.values(presetsRecord).map(p => {
             let recommended = false;
-            // Exact match logic from backend
             if (p.stage && p.stage === currentStage) {
                 if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
                     recommended = true;
                 }
             }
-            return x `
-                <option value="${p.id}" ?selected=${this._selectedPresetId === p.id}>
-                    ${p.name} ${recommended ? '⭐ (Recommended)' : ''}
-                </option>
-            `;
+            return {
+                label: `${p.name} ${recommended ? '⭐(Recommended)' : ''}`,
+                value: p.id
+            };
         });
+        // Logic for recommendations to sort or star
+        // For now simple listing as per IPM dialog style
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Record Watering'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Record Watering</h2>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid">
+            <!-- Settings Section -->
+            <div class="form-section">
+                <h3>Watering Settings</h3>
+                <md3-number-input
+                    label="Volume (Liters)"
+                    .value=${this._volume}
+                    .min=${0.1}
+                    .step=${0.1}
+                    @change=${(e) => { this._volume = parseFloat(e.detail) || 0; }}
+                    style="margin-bottom: 12px;"
+                ></md3-number-input>
+
+                <md3-select
+                    label="Nutrient Preset"
+                    .value=${this._selectedPresetId || ''}
+                    .options=${[{ label: 'Manual / No Preset', value: '' }, ...presetList.map(p => ({ label: p.label, value: p.value }))]}
+                    @change=${(e) => this._handlePresetChange(e)}
+                ></md3-select>
+
+                <div class="apply-summary">
+                    Targeting: <span class="apply-target">${modeText}</span>
+                </div>
+            </div>
+
+            <!-- Nutrients Section -->
+            <div class="form-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin: 0;">Nutrients</h3>
+                    <button class="md3-button text" @click=${() => this._addNutrient()} style="--mdc-button-horizontal-padding: 8px;">
+                        <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+                        Add
+                    </button>
+                </div>
+                
+                ${this._nutrients.length === 0 ? x `
+                    <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                        <ha-svg-icon .path=${mdiInformation} style="margin-bottom: 8px;"></ha-svg-icon>
+                        <div>No nutrients added</div>
+                    </div>
+                ` : E}
+
+                ${this._nutrients.map((nutrient, index) => x `
+                    <div class="product-row">
+                      <md3-text-input
+                        label="Nutrient Name"
+                        .value=${nutrient.name}
+                        .suggestions=${this._getNutrientSuggestions()}
+                        @change=${(e) => {
+            const val = e.target.value || e.detail;
+            this._updateNutrient(index, 'name', val);
+        }}
+                        placeholder="e.g. CalMag"
+                      ></md3-text-input>
+                      <md3-number-input
+                        label="ml/L"
+                        .value=${nutrient.concentration}
+                        .min=${0}
+                        .step=${0.1}
+                        @change=${(e) => {
+            this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
+        }}
+                      ></md3-number-input>
+                      <button class="md3-button icon" @click=${() => this._removeNutrient(index)} style="color: var(--error-color);">
+                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                      </button>
+                    </div>
+                `)}
+            </div>
+
+            <!-- Calculation Preview -->
+            ${this._nutrients.length > 0 ? x `
+            <div class="form-section">
+                <h3>Summary</h3>
+                <div class="calculation-preview">
+                    ${this._nutrients.filter((n) => n.name && n.concentration > 0).map((nutrient) => x `
+                          <div class="calculation-row">
+                            <span class="calculation-label">${nutrient.name}</span>
+                            <span class="calculation-value">
+                              ${this._volume}L × ${nutrient.concentration} ml/L =
+                              <strong>${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml</strong>
+                            </span>
+                          </div>
+                    `)}
+                    <div class="calculation-row">
+                      <span class="calculation-label">Total Nutrients</span>
+                      <span class="calculation-value">
+                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
+                      </span>
+                    </div>
+                </div>
+            </div>
+            ` : E}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
+              @click=${this._submit}
+              ?disabled=${this._isSubmitting || this._volume <= 0}
+            >
+              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+              ${this._isSubmitting ? 'Recording...' : 'Record Watering'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
     }
     _getNutrientSuggestions() {
         const nutrients = new Set();
@@ -18357,128 +18595,62 @@ WateringDialog.styles = [
       :host {
         --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
-
-      .dialog-body {
-        padding: 24px;
-        overflow-y: auto;
-        max-height: 70vh;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      .nutrient-row {
+      .product-row {
         display: flex;
         gap: 12px;
-        align-items: flex-end;
+        align-items: center;
+        margin-bottom: 8px;
       }
-
-      .nutrient-row md3-text-input {
+      .product-row md3-text-input {
         flex: 2;
       }
-
-      .nutrient-row md3-number-input {
+      .product-row md3-number-input {
         flex: 1;
       }
-
-      .nutrient-row button {
-        flex-shrink: 0;
-        padding: 8px;
-        min-width: auto;
+      .form-section {
+          margin-bottom: 24px;
       }
-
-      .nutrients-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+      .form-section h3 {
+          margin-top: 0;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
       }
-
+      .apply-summary {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 16px;
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      }
+      .apply-target {
+        font-weight: 500;
+        color: var(--primary-color, #4caf50);
+      }
+      
+      /* Specific Watering Dialog customizations */
       .calculation-preview {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 12px;
         padding: 16px;
-        margin-top: 8px;
       }
-
       .calculation-row {
         display: flex;
         justify-content: space-between;
         padding: 8px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
-
       .calculation-row:last-child {
         border-bottom: none;
         font-weight: 600;
       }
-
       .calculation-label {
         color: var(--secondary-text-color);
       }
-
       .calculation-value {
         color: var(--primary-text-color);
-      }
-
-      .mode-indicator {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px;
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 8px;
-        font-size: 0.9rem;
-      }
-
-      .mode-indicator svg {
-        width: 20px;
-        height: 20px;
-        fill: var(--primary-color);
-      }
-
-      .add-nutrient-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        transition: all 0.2s;
-      }
-
-      .add-nutrient-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
-
-      .add-nutrient-btn svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-
-      .preset-select {
-          margin-bottom: 12px;
-      }
-      
-      .preset-chip {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          background: var(--primary-color);
-          color: white;
-          margin-left: 8px;
-      }
-
-      .calculation-row strong {
-          color: var(--primary-color);
       }
     `,
 ];
@@ -18558,59 +18730,118 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         }
     }
     render() {
+        if (!this.open)
+            return E;
         const activeDialog = this.store.ui.$activeDialog.get();
         if (activeDialog.type !== 'TRAINING')
             return E;
         const { plantIds } = activeDialog.payload;
         const count = plantIds ? plantIds.length : 0;
-        const title = count > 0
-            ? `Log Training (${count} plant${count !== 1 ? 's' : ''})`
-            : 'Log Training';
+        // Match standard dialog layout
+        const dialogColor = '#9c27b0'; // Purple for learning/training
+        const title = 'Log Training';
+        const subtitle = count > 0
+            ? `Recording training for ${count} plant${count !== 1 ? 's' : ''}`
+            : 'Record training activity';
+        const targetText = count > 0
+            ? `${count} Selected Plant${count !== 1 ? 's' : ''}`
+            : 'Growspace';
         return x `
             <ha-dialog
                 .open=${this.open}
                 @closed=${this._handleClose}
+                hideActions
                 .heading=${title}
             >
-                <div class="content">
-                    <p>Select the technique used and add any optional notes.</p>
-                    
-                    <md3-select
-                        .label=${'Technique'}
-                        .options=${this._techniques}
-                        .value=${this._technique}
-                        @change=${(e) => this._technique = e.detail}
-                    ></md3-select>
+                <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+                    <div class="dialog-header">
+                        <div class="dialog-icon">
+                            <ha-svg-icon .path=${mdiDumbbell}></ha-svg-icon>
+                        </div>
+                        <div class="dialog-title-group">
+                            <h2 class="dialog-title">${title}</h2>
+                            <div class="dialog-subtitle">${subtitle}</div>
+                        </div>
+                        <button class="md3-button text" @click=${this._handleClose}>
+                            <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                        </button>
+                    </div>
 
-                    <ha-textarea
-                        .label=${'Notes (Optional)'}
-                        .value=${this._notes}
-                        @input=${(e) => this._notes = e.target.value}
-                        autogrow
-                    ></ha-textarea>
-                </div>
-                <div slot="primaryAction" class="actions">
-                    <mwc-button 
-                        raised 
-                        @click=${this._save}
-                        ?disabled=${!this._technique || this._submitting}
-                    >Log</mwc-button>
+                    <div class="dialog-content-grid">
+                        <div class="form-section">
+                            <h3>Training Details</h3>
+                            <md3-select
+                                .label=${'Technique'}
+                                .options=${this._techniques}
+                                .value=${this._technique}
+                                @change=${(e) => this._technique = e.detail}
+                                style="margin-bottom: 12px;"
+                            ></md3-select>
+
+                            <div class="apply-summary">
+                                Targeting: <span class="apply-target">${targetText}</span>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Notes</h3>
+                            <ha-textarea
+                                .label=${'Notes (Optional)'}
+                                .value=${this._notes}
+                                @input=${(e) => this._notes = e.target.value}
+                                autogrow
+                                style="width: 100%;"
+                            ></ha-textarea>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="md3-button tonal" @click=${this._handleClose} ?disabled=${this._submitting}>
+                            Cancel
+                        </button>
+                        <button 
+                            class="md3-button primary" 
+                            style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
+                            @click=${this._save}
+                            ?disabled=${!this._technique || this._submitting}
+                        >
+                            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+                            ${this._submitting ? 'Logging...' : 'Log Training'}
+                        </button>
+                    </div>
                 </div>
             </ha-dialog>
         `;
     }
 };
 TrainingDialog.styles = [
-    sharedStyles,
+    dialogStyles,
     i$6 `
       :host {
         display: block;
+        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
-      .form-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
+      .form-section {
+          margin-bottom: 24px;
+      }
+      .form-section h3 {
+          margin-top: 0;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          letter-spacing: 1px;
+          margin-bottom: 12px;
+      }
+      .apply-summary {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        padding: 16px;
+        border-radius: 8px;
         margin-top: 16px;
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      }
+      .apply-target {
+        font-weight: 500;
+        color: var(--primary-color, #4caf50);
       }
     `
 ];
@@ -19028,226 +19259,6 @@ __decorate([
 NutrientPresetsEditor = __decorate([
     t$2('nutrient-presets-editor')
 ], NutrientPresetsEditor);
-
-let GrowspaceChip = class GrowspaceChip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.icon = '';
-        this.label = '';
-        this.value = undefined;
-        this.status = '';
-        this.active = false;
-        this.linked = false;
-        this.tooltip = '';
-    }
-    render() {
-        // Determine classes based on meaningful status string
-        const statusClass = this.status ? `status-${this.status}` : '';
-        return x `
-      <div class="stat-chip ${statusClass}" title="${this.tooltip}">
-        <div class="icon">
-          <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
-        </div>
-        ${this.label ? x `${this.label}: ` : ''}${this.value}
-        ${this.linked
-            ? x `
-              <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
-                <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-              </div>
-            `
-            : ''}
-      </div>
-    `;
-    }
-    _handleLinkClick(e) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent('unlink', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceChip.styles = [
-    sharedStyles,
-    i$6 `
-    :host {
-      display: inline-flex;
-      vertical-align: middle;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .stat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--glass-bg);
-      border: var(--glass-border);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      backdrop-filter: var(--glass-blur);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      user-select: none;
-      flex-shrink: 0;
-      white-space: nowrap;
-      touch-action: auto;
-    }
-
-    /* Status Colors */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      }
-    }
-
-    .stat-chip.status-optimal {
-      color: #2e7d32 !important;
-      background: rgba(46, 125, 50, 0.1) !important;
-    }
-
-    .stat-chip.status-warning {
-      color: #ffa726 !important;
-      border-color: rgba(255, 167, 38, 0.5) !important;
-      background: rgba(255, 167, 38, 0.1) !important;
-    }
-
-    .stat-chip.status-danger {
-      color: #ef5350 !important;
-      border-color: rgba(239, 83, 80, 0.5) !important;
-      background: rgba(239, 83, 80, 0.1) !important;
-      animation: pulse-red 2s infinite;
-    }
-
-    .stat-chip:hover {
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
-      transform: translateY(-1px);
-    }
-
-    :host([active]) .stat-chip {
-      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
-      border-color: var(--primary-color, #03a9f4);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: var(--primary-text-color, #fff);
-    }
-
-    .icon {
-      width: 18px;
-      height: 18px;
-      display: flex;
-    }
-
-    .icon svg {
-      width: 100%;
-      height: 100%;
-      fill: currentColor;
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
-    .link-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      margin-left: -8px;
-      margin-right: -8px;
-      opacity: 0.8;
-      cursor: pointer;
-    }
-
-    .link-icon svg {
-      width: 100%;
-      height: 100%;
-      fill: var(--primary-color, #03a9f4);
-    }
-  `
-];
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "icon", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "label", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "value", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "status", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], GrowspaceChip.prototype, "active", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceChip.prototype, "linked", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceChip.prototype, "tooltip", void 0);
-GrowspaceChip = __decorate([
-    t$2('growspace-chip')
-], GrowspaceChip);
-
-let NutrientStockChip = class NutrientStockChip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.compact = false;
-    }
-    render() {
-        if (!this.stock) {
-            return x ``;
-        }
-        // eslint-disable-next-line camelcase
-        const { current_ml, initial_ml, name } = this.stock;
-        const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
-        let status = 'optimal';
-        if (ratio <= 0.2) {
-            status = 'danger';
-        }
-        else if (ratio <= 0.5) {
-            status = 'warning';
-        }
-        const percentage = Math.round(ratio * 100);
-        const value = this.compact
-            ? `${percentage}%`
-            : `${Math.round(current_ml)}ml (${percentage}%)`;
-        this.compact ? '' : name;
-        // If compact, maybe show name as tooltip or just rely on parent context? 
-        // Usually chip has label. Let's use name as label always, but maybe truncate?
-        return x `
-      <growspace-chip
-        .icon=${mdiBottleTonicPlus}
-        .label=${this.compact ? undefined : name}
-        .value=${value}
-        .status=${status}
-        .tooltip=${`Capacity: ${initial_ml}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
-      ></growspace-chip>
-    `;
-    }
-};
-NutrientStockChip.styles = i$6 `
-    :host {
-      display: inline-block;
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], NutrientStockChip.prototype, "stock", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], NutrientStockChip.prototype, "compact", void 0);
-NutrientStockChip = __decorate([
-    t$2('nutrient-stock-chip')
-], NutrientStockChip);
 
 let IPMDialog = class IPMDialog extends i$3 {
     constructor() {

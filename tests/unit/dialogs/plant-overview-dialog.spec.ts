@@ -855,8 +855,8 @@ describe('PlantOverviewDialog', () => {
 
 
 
-    it('should render action buttons in timeline tab', async () => {
-        (element as any)._activeTab = 'timeline';
+    it('should render action buttons in actions tab', async () => {
+        (element as any)._activeTab = 'actions';
         element.plant = mockPlant;
         element.hass = {
             connection: {
@@ -867,20 +867,20 @@ describe('PlantOverviewDialog', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const actionButtons = element.shadowRoot?.querySelectorAll('.event-actions button');
-        expect(actionButtons?.length).toBeGreaterThan(1);
+        const actionCards = element.shadowRoot?.querySelectorAll('.action-card');
+        expect(actionCards?.length).toBe(3);
 
-        const waterBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('Water'));
-        expect(waterBtn).toBeTruthy();
+        const waterCard = Array.from(actionCards || []).find(b => b.textContent?.includes('Water'));
+        expect(waterCard).toBeTruthy();
 
         const openTrainingSpy = vi.spyOn(element as any, '_openTraining').mockImplementation(() => { });
-        const trainBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('Train'));
-        (trainBtn as HTMLElement).click();
+        const trainCard = Array.from(actionCards || []).find(b => b.textContent?.includes('Train'));
+        (trainCard as HTMLElement).click();
         expect(openTrainingSpy).toHaveBeenCalled();
 
         const openIPMSpy = vi.spyOn(element as any, '_openIPM').mockImplementation(() => { });
-        const ipmBtn = Array.from(actionButtons || []).find(b => b.textContent?.includes('IPM'));
-        (ipmBtn as HTMLElement).click();
+        const ipmCard = Array.from(actionCards || []).find(b => b.textContent?.includes('IPM'));
+        (ipmCard as HTMLElement).click();
         expect(openIPMSpy).toHaveBeenCalled();
 
         document.body.removeChild(element);
@@ -1197,12 +1197,19 @@ describe('PlantOverviewDialog', () => {
         // Initially dashboard
         expect((element as any)._activeTab).toBe('dashboard');
 
-        // Click timeline
         const buttons = element.shadowRoot?.querySelectorAll('.tab-btn');
+
+        // Click actions
+        const actionsBtn = Array.from(buttons || []).find(b => b.textContent?.includes('Actions'));
+        (actionsBtn as HTMLElement).click();
+        await element.updateComplete;
+        expect((element as any)._activeTab).toBe('actions');
+        expect(actionsBtn?.classList.contains('active')).toBe(true);
+
+        // Click timeline
         const timelineBtn = Array.from(buttons || []).find(b => b.textContent?.includes('Timeline'));
         (timelineBtn as HTMLElement).click();
         await element.updateComplete;
-
         expect((element as any)._activeTab).toBe('timeline');
         expect(timelineBtn?.classList.contains('active')).toBe(true);
 
@@ -1210,7 +1217,6 @@ describe('PlantOverviewDialog', () => {
         const dashboardBtn = Array.from(buttons || []).find(b => b.textContent?.includes('Overview'));
         (dashboardBtn as HTMLElement).click();
         await element.updateComplete;
-
         expect((element as any)._activeTab).toBe('dashboard');
         expect(dashboardBtn?.classList.contains('active')).toBe(true);
 

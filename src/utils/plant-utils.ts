@@ -523,6 +523,14 @@ export class PlantUtils {
             }
         }
 
+        // Fallback to default stage image if no specific image found
+        if (!imageUrl) {
+            const currentStage = (plant.state || '').toLowerCase();
+            // Use normalizeStage to ensure we map aliases like 'vegetative' -> 'veg'
+            const normalized = this.normalizeStage(currentStage);
+            imageUrl = `/growspace_manager/static/stages/${normalized}.png`;
+        }
+
         // Stages logic
         const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
             const daysAttr = `${stage}_days` as keyof typeof plant.attributes;

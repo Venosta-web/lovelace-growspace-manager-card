@@ -18,6 +18,7 @@ import {
   mdiChevronLeft,
   mdiChevronRight,
   mdiPencil,
+  mdiFlash,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -65,7 +66,7 @@ export class PlantOverviewDialog extends LitElement {
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
   @state() private _showDeleteConfirmation = false;
-  @state() private _activeTab: 'dashboard' | 'timeline' = 'dashboard';
+  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' = 'dashboard';
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
   @state() private _canScrollLeft = false;
@@ -153,7 +154,7 @@ export class PlantOverviewDialog extends LitElement {
       this.plant = this.dialog.plant;
       this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
       this.cloneTargetId = '';
-      if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'timeline')) {
+      if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'actions' || this.dialog.activeTab === 'timeline')) {
         this._activeTab = this.dialog.activeTab;
       }
       // Fetch logbook when dialog is set
@@ -312,6 +313,41 @@ export class PlantOverviewDialog extends LitElement {
         gap: 4px;
         flex: 1;
         margin-bottom: 12px;
+      }
+
+      /* Action Grid */
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 16px;
+        padding: 8px;
+      }
+      .action-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 12px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      .action-card:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-color: var(--primary-color, #4caf50);
+        transform: translateY(-2px);
+      }
+      .action-card svg {
+        width: 32px;
+        height: 32px;
+        fill: var(--primary-color, #4caf50);
+      }
+      .action-card span {
+        font-weight: 500;
+        font-size: 1rem;
       }
 
       @media (max-width: 600px) {
@@ -682,7 +718,6 @@ export class PlantOverviewDialog extends LitElement {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
     const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
     const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
-    const isBulkEdit = false;
 
     return html`
       <ha-dialog
@@ -741,6 +776,13 @@ export class PlantOverviewDialog extends LitElement {
                 Overview
             </button>
             <button 
+                class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}" 
+                @click=${() => this._activeTab = 'actions'}
+            >
+                <svg viewBox="0 0 24 24"><path d="${mdiFlash}"></path></svg>
+                Actions
+            </button>
+            <button 
                 class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}" 
                 @click=${() => this._activeTab = 'timeline'}
             >
@@ -750,122 +792,97 @@ export class PlantOverviewDialog extends LitElement {
           </div>
 
           <div class="overview-grid">
-            ${this._activeTab === 'dashboard' ? this._renderDashboard(attributes) : this._renderTimeline()}
+            ${this._activeTab === 'dashboard'
+                ? this._renderDashboard(attributes)
+                : this._activeTab === 'actions'
+                  ? this._renderActions()
+                  : this._renderTimeline()}
           </div>
 
           <!-- ACTIONS -->
           <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
-             ${this._activeTab === 'timeline'
-        ? html`
-                 <!-- EVENT ACTIONS (TIMELINE TAB) -->
-                 <div class="event-actions-wrapper" style="width: 100%; display: flex; align-items: center; position: relative;">
-                     <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                     </div>
+             <div class="standard-actions" style="display:flex; gap:12px;">
+                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiDelete}"></path>
+                   </svg>
+                   Delete
+                 </button>
+             </div>
 
-                     <div class="event-actions" ${ref(this._setActionsRef)}>
-                         <button class="md3-button tonal" @click=${() => this._openWatering()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                            Water
-                         </button>
-                         <button class="md3-button tonal" @click=${() => this._openTraining()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-                            Train
-                         </button>
-                         <button class="md3-button tonal" @click=${() => this._openIPM()}>
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-                            IPM
-                         </button>
-                     </div>
-
-                     <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
-                        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                     </div>
-                 </div>
-               `
-        : html`
-                 <!-- STANDARD ACTIONS (OVERVIEW TAB) -->
-                 <div class="standard-actions" style="display:flex; gap:12px;">
-                     <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                         <path d="${mdiDelete}"></path>
-                       </svg>
-                       Delete
+             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+                 ${this._activeTab === 'dashboard' ? html`
+                   ${(this.plant.state || '').toLowerCase() === 'mother' ? html`
+                      <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
+                         <md3-number-input
+                          id="clone-count-input"
+                          .value=${1}
+                          .min=${1}
+                          .max=${10}
+                          style="width: 80px;"
+                        ></md3-number-input>
+                        <button class="md3-button primary"
+                          @click=${(e: MouseEvent) => {
+               const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
+               const input = container?.querySelector('#clone-count-input') as any;
+               const val = input ? parseInt(input.value, 10) : 1;
+               const numClones = isNaN(val) ? 1 : val;
+               this._takeClone(this.plant!, numClones);
+             }}
+                        >
+                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+                          Take Clone
+                        </button>
+                      </div>
+                   ` : nothing}
+                   ${(this.plant.state || '').toLowerCase() === 'flower' ? html`
+                     <button class="md3-button primary" @click=${() => this._harvest(this.plant!)}>
+                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
+                       Harvest
                      </button>
-                 </div>
-    
-                 <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
-                     <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-                     ${(this.plant.state || '').toLowerCase() === 'mother' ? html`
-                        <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
-                           <md3-number-input
-                            id="clone-count-input"
-                            .value=${1}
-                            .min=${1}
-                            .max=${10}
-                            style="width: 80px;"
-                          ></md3-number-input>
-                          <button class="md3-button primary"
-                            @click=${(e: MouseEvent) => {
-              const container = (e.currentTarget as HTMLElement).closest('.take-clone-container');
-              const input = container?.querySelector('#clone-count-input') as any;
-              const val = input ? parseInt(input.value, 10) : 1;
-              const numClones = isNaN(val) ? 1 : val;
-              this._takeClone(this.plant!, numClones);
-            }}
-                          >
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                            Take Clone
-                          </button>
-                        </div>
-                     ` : nothing}
-                     ${(this.plant.state || '').toLowerCase() === 'flower' ? html`
-                       <button class="md3-button primary" @click=${() => this._harvest(this.plant!)}>
-                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                         Harvest
-                       </button>
-                     ` : nothing}
-        
-                     ${(this.plant.state || '').toLowerCase() === 'dry' ? html`
-                       <button class="md3-button primary" @click=${() => this._finishDrying(this.plant!)}>
-                         <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                         Finish Drying
-                       </button>
-                     ` : nothing}
-        
-                     ${(this.plant.state || '').toLowerCase() === 'clone' ? html`
-                        <div style="display:flex; align-items:center; gap:8px;">
-                           <md3-select
-                             label="Target Growspace"
-                             .value=${this.cloneTargetId}
-                             .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                             style="width: 200px;"
-                             @change=${(e: CustomEvent) => this.cloneTargetId = e.detail}
-                           ></md3-select>
-                          <button class="md3-button primary"
-                            @click=${() => this._moveClone(this.plant!)}
-                            style="margin-top: 24px;"
-                          >
-                            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                            Move
-                          </button>
-                        </div>
-                     ` : nothing}
-    
-                    <button class="md3-button tonal" @click=${() => this._update()}>
-                      <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                        <path d="${mdiCheck}"></path>
-                      </svg>
-                      Save Changes
-                    </button>
-                 </div>
-               `
-      }
-          </div>
+                   ` : nothing}
+      
+                   ${(this.plant.state || '').toLowerCase() === 'dry' ? html`
+                     <button class="md3-button primary" @click=${() => this._finishDrying(this.plant!)}>
+                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                       Finish Drying
+                     </button>
+                   ` : nothing}
+      
+                   ${(this.plant.state || '').toLowerCase() === 'clone' ? html`
+                      <div style="display:flex; align-items:center; gap:8px;">
+                         <md3-select
+                           label="Target Growspace"
+                           .value=${this.cloneTargetId}
+                           .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                           style="width: 200px;"
+                           @change=${(e: CustomEvent) => this.cloneTargetId = e.detail}
+                         ></md3-select>
+                        <button class="md3-button primary"
+                          @click=${() => this._moveClone(this.plant!)}
+                          style="margin-top: 24px;"
+                        >
+                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
+                          Move
+                        </button>
+                      </div>
+                   ` : nothing}
+                 ` : nothing}
 
+                 <button class="md3-button tonal" @click=${() => this._update()}>
+                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                     <path d="${mdiCheck}"></path>
+                   </svg>
+                   Save Changes
+                 </button>
+             </div>
+          </div>
+        </div>
       </ha-dialog>
     `;
   }
+
 
   private _renderDashboard(attributes: PlantOverviewEditedAttributes): TemplateResult {
     return html`
@@ -1058,6 +1075,28 @@ export class PlantOverviewDialog extends LitElement {
             : nothing}
                   `}
             </div>
+    `;
+  }
+
+  private _renderActions(): TemplateResult {
+    return html`
+      <div class="detail-card" style="grid-column: 1 / -1;">
+        <h3>Quick Actions</h3>
+        <div class="action-grid">
+          <div class="action-card" @click=${() => this._openWatering()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            <span>Water Plant</span>
+          </div>
+          <div class="action-card" @click=${() => this._openTraining()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            <span>Log Training</span>
+          </div>
+          <div class="action-card" @click=${() => this._openIPM()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+            <span>Log IPM</span>
+          </div>
+        </div>
+      </div>
     `;
   }
 
