@@ -164,7 +164,8 @@ export type PlantTimelineEvent =
   | ({ type: 'action'; action: string; details?: string } & BaseTimelineEvent)
   | ({ type: 'alert'; severity: 'low' | 'medium' | 'high'; message: string } & BaseTimelineEvent)
   | ({ type: 'note'; text: string } & BaseTimelineEvent)
-  | ({ type: 'milestone'; label: string } & BaseTimelineEvent);
+  | ({ type: 'milestone'; label: string } & BaseTimelineEvent)
+  | ({ type: 'environmental_report'; sensor_type: string; reasons?: string[] } & BaseTimelineEvent);
 
 export interface RawPlantData {
   plant_id: string;

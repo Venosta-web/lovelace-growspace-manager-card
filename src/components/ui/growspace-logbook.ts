@@ -177,6 +177,11 @@ export class GrowspaceLogbook extends LitElement {
     const cat = this._normalize(category);
     const t = this._normalize(type);
 
+    if (cat === 'environmental_report') {
+      if (t.includes('night')) return '#3f51b5'; // Indigo for Night
+      return '#ffc107'; // Amber for Day
+    }
+
     if (t.includes('ipm')) return '#9c27b0';
     if (cat === 'training' || t.includes('training')) return 'var(--gm-warning-color, #ff9800)';
     if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient')) return 'var(--gm-info-color, #2196f3)';
@@ -213,13 +218,23 @@ export class GrowspaceLogbook extends LitElement {
     }
   }
 
+  @state() private _error?: string;
+
   private async _fetchEvents() {
     if (!this.growspaceId || !this.hass) return;
 
     this._isLoading = true;
-    const service = getTimelineService(this.hass);
-    this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
-    this._isLoading = false;
+    this._error = undefined;
+
+    try {
+      const service = getTimelineService(this.hass);
+      this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
+    } catch (e) {
+      console.error('Error fetching logbook events:', e);
+      this._error = (e as Error).message || 'Failed to fetch events';
+    } finally {
+      this._isLoading = false;
+    }
   }
 
   private _formatDuration(seconds: number): string {
@@ -268,7 +283,9 @@ export class GrowspaceLogbook extends LitElement {
       const container = this._containerRef.value;
       if (!container) return;
 
-      const eventCard = container.querySelector(`[data-event-index="${closestIndex}"]`) as HTMLElement;
+      const selector = `[data-event-index="${closestIndex}"]`;
+      const eventCard = container.querySelector(selector) as HTMLElement;
+
       if (eventCard) {
         eventCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -314,7 +331,8 @@ export class GrowspaceLogbook extends LitElement {
     } else if (this._activeFilter === 'environment') {
       filteredEvents = allEvents.filter(e => {
         const type = this._normalize(e.sensor_type);
-        return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
+        const cat = this._normalize(e.category);
+        return ['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report';
       });
     } else if (this._activeFilter === 'notes') {
       filteredEvents = allEvents.filter(e => this._normalize(e.category) === 'note');

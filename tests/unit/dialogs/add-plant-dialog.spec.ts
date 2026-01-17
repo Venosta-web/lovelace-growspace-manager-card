@@ -273,4 +273,201 @@ describe('AddPlantDialog', () => {
         expect(detail.seedling_start).toBe('2023-01-02');
         expect(detail.flower_start).toBe('2023-02-01');
     });
+
+
+    describe('Transplant Mode', () => {
+        const mockPlants = [
+            {
+                entity_id: 'sensor.plant1',
+                attributes: {
+                    plant_id: 'p1',
+                    strain: 'Strain A',
+                    phenotype: 'Pheno 1',
+                    col: 1,
+                    row: 1,
+                    clone_days: 10,
+                    seedling_days: 5,
+                    clone_start: '2023-01-01',
+                    seedling_start: '2023-01-05',
+                    growspace_id: 'gs_source'
+                }
+            },
+            {
+                entity_id: 'sensor.plant2',
+                attributes: {
+                    plant_id: 'p2',
+                    strain: 'Strain B',
+                    col: 2,
+                    row: 2
+                }
+            },
+            {
+                entity_id: 'sensor.plant3',
+                attributes: {
+                    plant_id: 'p3',
+                    // No strain
+                    col: 3,
+                    row: 3
+                }
+            }
+        ] as any[];
+
+        beforeEach(async () => {
+            element.clonePlants = mockPlants;
+            element.seedlingPlants = mockPlants;
+            element.targetGrowspaceId = 'gs_target';
+            await element.updateComplete;
+        });
+
+        it('should switch to clone tab and render clone form', async () => {
+            const cloneTab = element.shadowRoot?.querySelectorAll('.tab')[1] as HTMLElement;
+            cloneTab.click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('clone');
+
+            const select = element.shadowRoot?.querySelector('md3-select');
+            expect(select).toBeTruthy();
+            expect(select?.getAttribute('label')).toBe('Select Plant');
+
+            const title = element.shadowRoot?.querySelector('.dialog-title');
+            expect(title?.textContent).toBe('Transplant Clone');
+        });
+
+        it('should switch to seedling tab and render seedling form', async () => {
+            const seedlingTab = element.shadowRoot?.querySelectorAll('.tab')[2] as HTMLElement;
+            seedlingTab.click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('seedling');
+
+            const title = element.shadowRoot?.querySelector('.dialog-title');
+            expect(title?.textContent).toBe('Transplant Seedling');
+        });
+
+        it('should show empty message if no plants available', async () => {
+            element.clonePlants = [];
+            const cloneTab = element.shadowRoot?.querySelectorAll('.tab')[1] as HTMLElement;
+            cloneTab.click();
+            await element.updateComplete;
+
+            const msg = element.shadowRoot?.querySelector('p[style*="font-style: italic"]');
+            expect(msg?.textContent).toContain('No clones available');
+        });
+
+        it('should select a plant and show its details', async () => {
+            // Switch to clone tab
+            (element as any)._activeTab = 'clone';
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('md3-select') as HTMLElement;
+            select.dispatchEvent(new CustomEvent('change', { detail: 'p1' }));
+            await element.updateComplete;
+
+            expect((element as any)._selectedTransplantPlant).toEqual(mockPlants[0]);
+
+            const infoValues = element.shadowRoot?.querySelectorAll('.info-value');
+            expect(infoValues?.[0].textContent).toBe('Strain A');
+            expect(infoValues?.[1].textContent).toBe('Pheno 1');
+            expect(infoValues?.[4].textContent).toBe('2023-01-01'); // clone_start
+        });
+
+        it('should select a plant with minimal attributes', async () => {
+            // Switch to seedling tab
+            (element as any)._activeTab = 'seedling';
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('md3-select') as HTMLElement;
+            select.dispatchEvent(new CustomEvent('change', { detail: 'p2' }));
+            await element.updateComplete;
+
+            expect((element as any)._selectedTransplantPlant).toEqual(mockPlants[1]);
+
+            const infoValues = element.shadowRoot?.querySelectorAll('.info-value');
+            expect(infoValues?.[1].textContent).toBe('N/A'); // Pheno
+            expect(infoValues?.[4].textContent).toBe('N/A'); // seedling_start
+        });
+
+        it('should submit transplant payload', async () => {
+            // Setup
+            (element as any)._activeTab = 'clone';
+            (element as any)._selectedTransplantPlant = mockPlants[0];
+            element.row = 0; // target row 1
+            element.col = 0; // target col 1
+            await element.updateComplete;
+
+            const submitSpy = vi.fn();
+            element.addEventListener('transplant-plant-submit', submitSpy);
+
+            const btn = element.shadowRoot?.querySelector('.primary') as HTMLElement;
+            expect(btn.hasAttribute('disabled')).toBe(false);
+            btn.click();
+
+            expect(submitSpy).toHaveBeenCalled();
+            const detail = submitSpy.mock.calls[0][0].detail;
+
+            // Should verify payload
+            expect(detail).toEqual(expect.objectContaining({
+                plant_id: 'p1',
+                source_growspace_id: 'gs_source',
+                target_growspace_id: 'gs_target',
+                new_row: 1,
+                new_col: 1
+                // veg_start is dynamic (today)
+            }));
+            expect(detail.veg_start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        });
+
+        it('should not submit if no plant selected', async () => {
+            (element as any)._activeTab = 'clone';
+            (element as any)._selectedTransplantPlant = null;
+            await element.updateComplete;
+
+            const submitSpy = vi.fn();
+            element.addEventListener('transplant-plant-submit', submitSpy);
+
+            // Button should likely be disabled, but if we force click or call confirm:
+            (element as any)._confirm(); // Force call
+
+            expect(submitSpy).not.toHaveBeenCalled();
+        });
+
+        it('should update state to null if wrong plant id selected', async () => {
+            (element as any)._activeTab = 'clone';
+            await element.updateComplete;
+
+            const select = element.shadowRoot?.querySelector('md3-select') as HTMLElement;
+            select.dispatchEvent(new CustomEvent('change', { detail: 'non_existent' }));
+            await element.updateComplete;
+
+            expect((element as any)._selectedTransplantPlant).toBeNull();
+        });
+
+        it('should handle Row/Col changes in transplant mode', async () => {
+            (element as any)._activeTab = 'clone';
+            await element.updateComplete;
+
+            const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0] as HTMLElement;
+            const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1] as HTMLElement;
+
+            rowInput.dispatchEvent(new CustomEvent('change', { detail: '5' }));
+            colInput.dispatchEvent(new CustomEvent('change', { detail: '6' }));
+            await element.updateComplete;
+
+            expect(element.row).toBe(4);
+            expect(element.col).toBe(5);
+        });
+
+        it('should switch back to add tab', async () => {
+            (element as any)._activeTab = 'clone';
+            await element.updateComplete;
+
+            const addTab = element.shadowRoot?.querySelectorAll('.tab')[0] as HTMLElement;
+            addTab.click();
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('add');
+            expect((element as any)._selectedTransplantPlant).toBeNull();
+        });
+    });
 });

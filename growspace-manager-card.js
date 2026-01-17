@@ -9949,57 +9949,6 @@ AddPlantsDialog = __decorate([
     t$2('add-plants-dialog')
 ], AddPlantsDialog);
 
-class ResizeController {
-    constructor(host, callback) {
-        this.isMobile = false;
-        this.hasTouch = false;
-        this._checkMobileBound = () => this._checkMobile();
-        this.host = host;
-        this._callback = callback;
-        host.addController(this);
-    }
-    hostConnected() {
-        this._checkMobile();
-        window.addEventListener('resize', this._checkMobileBound);
-        // Observe the host element by default if not specified otherwise
-        // Note: The consumer can call startObserving(element) to be more specific
-        // or we can rely on window resize for mobile check.
-    }
-    hostDisconnected() {
-        window.removeEventListener('resize', this._checkMobileBound);
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-    }
-    observe(element) {
-        if (this._resizeObserver) {
-            this._resizeObserver.disconnect();
-        }
-        this._elementToObserve = element;
-        this._resizeObserver = new ResizeObserver(() => {
-            this._callback?.();
-            this.host.requestUpdate();
-        });
-        this._resizeObserver.observe(element);
-    }
-    _checkMobile() {
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
-        let changed = false;
-        if (this.isMobile !== isMobile) {
-            this.isMobile = isMobile;
-            changed = true;
-        }
-        if (this.hasTouch !== hasTouch) {
-            this.hasTouch = hasTouch;
-            changed = true;
-        }
-        if (changed) {
-            this.host.requestUpdate();
-        }
-    }
-}
-
 /**
  * Service for timeline and event log operations
  * Centralizes all backend API calls related to timelines
@@ -10040,7 +9989,7 @@ class TimelineService {
         }
         catch (e) {
             console.error('Error fetching growspace events:', e);
-            return []; // Return empty array on error (matches old controller behavior)
+            throw e;
         }
     }
     /**
@@ -10689,6 +10638,8 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                 if (action === 'training')
                     return mdiDumbbell;
                 return mdiLeaf;
+            case 'environmental_report':
+                return event.sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
             default: return mdiLeaf;
         }
     }
@@ -10883,6 +10834,14 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                 return x `
             <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
             <div class="details">Severity: ${event.severity}</div>
+        `;
+            case 'environmental_report':
+                const isDay = event.sensor_type !== 'night_report';
+                return x `
+            <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+            <div class="details">
+              ${event.reasons?.map((r) => x `<span style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${r}</span>`)}
+            </div>
         `;
             case 'note':
                 return x `
@@ -11128,6 +11087,8 @@ PlantTimeline.styles = [
       .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
       .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
       .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
+      .type-environmental_report .icon-wrapper { border-color: #ff9800; }
+      .type-environmental_report .icon-wrapper svg { fill: #ff9800; }
 
       /* Action specific styling */
       .action-ipm .icon-wrapper { border-color: #9c27b0; }
@@ -11352,31 +11313,6 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this._showDeleteConfirmation = false;
         this._activeTab = 'dashboard';
         this._logbookEvents = [];
-        this._canScrollLeft = false;
-        this._canScrollRight = false;
-        this._resizeController = new ResizeController(this, () => this._checkScroll());
-        this._setActionsRef = (el) => {
-            this._actionsContainer = el;
-            if (el) {
-                el.addEventListener('scroll', this._checkScroll);
-                this._resizeController.observe(el);
-                setTimeout(() => this._checkScroll(), 0);
-            }
-        };
-        this._checkScroll = () => {
-            const container = this._actionsContainer;
-            if (container) {
-                this._canScrollLeft = container.scrollLeft > 1;
-                this._canScrollRight =
-                    container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-            }
-        };
-    }
-    _scrollActions(direction) {
-        const container = this._actionsContainer;
-        if (container) {
-            container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
-        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -11442,24 +11378,30 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     async _fetchLogbook() {
         if (!this.plant?.attributes?.growspace_id || !this.hass)
             return;
-        const service = getTimelineService(this.hass);
-        const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
-        // Identify optimistic events (no event_id, recent timestamp) to preserve
-        // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
-        const now = new Date().getTime();
-        const optimisticEvents = this._logbookEvents.filter(e => {
-            const evt = e;
-            if (evt.event_id)
-                return false; // Already from DB
-            // Check if recent (< 60 seconds)
-            const ts = evt.timestamp || evt.start_time;
-            if (!ts)
-                return false;
-            const time = new Date(ts).getTime();
-            return (now - time) < 60000;
-        });
-        // Merge: Put optimistic events first, then fetched events
-        this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
+        try {
+            const service = getTimelineService(this.hass);
+            const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
+            // Identify optimistic events (no event_id, recent timestamp) to preserve
+            // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
+            const now = new Date().getTime();
+            const optimisticEvents = this._logbookEvents.filter(e => {
+                const evt = e;
+                if (evt.event_id)
+                    return false; // Already from DB
+                // Check if recent (< 60 seconds)
+                const ts = evt.timestamp || evt.start_time;
+                if (!ts)
+                    return false;
+                const time = new Date(ts).getTime();
+                return (now - time) < 60000;
+            });
+            // Merge: Put optimistic events first, then fetched events
+            this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
+        }
+        catch (e) {
+            console.error('Error fetching logbook for dialog:', e);
+            // We don't necessarily show an error in the dialog, just log it and potentially keep old events
+        }
     }
     _getAttributesFromPlant() {
         if (!this.plant)
@@ -12500,12 +12442,6 @@ __decorate([
 __decorate([
     r$2()
 ], PlantOverviewDialog.prototype, "_logbookEvents", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_canScrollLeft", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_canScrollRight", void 0);
 PlantOverviewDialog = __decorate([
     t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
@@ -17274,6 +17210,11 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
     _getEventColor(category, type) {
         const cat = this._normalize(category);
         const t = this._normalize(type);
+        if (cat === 'environmental_report') {
+            if (t.includes('night'))
+                return '#3f51b5'; // Indigo for Night
+            return '#ffc107'; // Amber for Day
+        }
         if (t.includes('ipm'))
             return '#9c27b0';
         if (cat === 'training' || t.includes('training'))
@@ -17316,9 +17257,18 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         if (!this.growspaceId || !this.hass)
             return;
         this._isLoading = true;
-        const service = getTimelineService(this.hass);
-        this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
-        this._isLoading = false;
+        this._error = undefined;
+        try {
+            const service = getTimelineService(this.hass);
+            this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
+        }
+        catch (e) {
+            console.error('Error fetching logbook events:', e);
+            this._error = e.message || 'Failed to fetch events';
+        }
+        finally {
+            this._isLoading = false;
+        }
     }
     _formatDuration(seconds) {
         const mins = Math.floor(seconds / 60);
@@ -17359,7 +17309,8 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             const container = this._containerRef.value;
             if (!container)
                 return;
-            const eventCard = container.querySelector(`[data-event-index="${closestIndex}"]`);
+            const selector = `[data-event-index="${closestIndex}"]`;
+            const eventCard = container.querySelector(selector);
             if (eventCard) {
                 eventCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
@@ -17403,7 +17354,8 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         else if (this._activeFilter === 'environment') {
             filteredEvents = allEvents.filter(e => {
                 const type = this._normalize(e.sensor_type);
-                return ['temperature', 'humidity', 'vpd', 'co2'].includes(type);
+                const cat = this._normalize(e.category);
+                return ['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report';
             });
         }
         else if (this._activeFilter === 'notes') {
@@ -17677,6 +17629,9 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceLogbook.prototype, "_highlightedTimestamp", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbook.prototype, "_error", void 0);
 GrowspaceLogbook = __decorate([
     t$2('growspace-logbook')
 ], GrowspaceLogbook);
@@ -17702,8 +17657,18 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         this._isLoading = true;
         this._hasError = false;
         const service = getTimelineService(this.hass);
-        this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
-        this._isLoading = false;
+        try {
+            this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+        }
+        catch (e) {
+            console.error('Error fetching growspace events:', e);
+            this._hasError = true;
+            this._errorMessage = e.message || 'Fetch failed';
+            this._events = [];
+        }
+        finally {
+            this._isLoading = false;
+        }
     }
     _getIcon(event) {
         const cat = event.category?.toLowerCase();
@@ -21422,6 +21387,57 @@ __decorate([
 DialogHost = __decorate([
     t$2('growspace-dialog-host')
 ], DialogHost);
+
+class ResizeController {
+    constructor(host, callback) {
+        this.isMobile = false;
+        this.hasTouch = false;
+        this._checkMobileBound = () => this._checkMobile();
+        this.host = host;
+        this._callback = callback;
+        host.addController(this);
+    }
+    hostConnected() {
+        this._checkMobile();
+        window.addEventListener('resize', this._checkMobileBound);
+        // Observe the host element by default if not specified otherwise
+        // Note: The consumer can call startObserving(element) to be more specific
+        // or we can rely on window resize for mobile check.
+    }
+    hostDisconnected() {
+        window.removeEventListener('resize', this._checkMobileBound);
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+    }
+    observe(element) {
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+        }
+        this._elementToObserve = element;
+        this._resizeObserver = new ResizeObserver(() => {
+            this._callback?.();
+            this.host.requestUpdate();
+        });
+        this._resizeObserver.observe(element);
+    }
+    _checkMobile() {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const hasTouch = window.matchMedia('(pointer: coarse)').matches;
+        let changed = false;
+        if (this.isMobile !== isMobile) {
+            this.isMobile = isMobile;
+            changed = true;
+        }
+        if (this.hasTouch !== hasTouch) {
+            this.hasTouch = hasTouch;
+            changed = true;
+        }
+        if (changed) {
+            this.host.requestUpdate();
+        }
+    }
+}
 
 let EditModeBanner = class EditModeBanner extends i$3 {
     constructor() {

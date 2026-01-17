@@ -30,7 +30,7 @@ import {
 } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
-import { ResizeController } from '../controllers/resize-controller';
+
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
@@ -69,35 +69,7 @@ export class PlantOverviewDialog extends LitElement {
   @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' = 'dashboard';
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
-  @state() private _canScrollLeft = false;
-  @state() private _canScrollRight = false;
-  private _actionsContainer: HTMLDivElement | undefined;
-  private _resizeController = new ResizeController(this, () => this._checkScroll());
 
-  private _setActionsRef = (el?: Element) => {
-    this._actionsContainer = el as HTMLDivElement;
-    if (el) {
-      el.addEventListener('scroll', this._checkScroll);
-      this._resizeController.observe(el);
-      setTimeout(() => this._checkScroll(), 0);
-    }
-  };
-
-  private _checkScroll = () => {
-    const container = this._actionsContainer;
-    if (container) {
-      this._canScrollLeft = container.scrollLeft > 1;
-      this._canScrollRight =
-        container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-    }
-  };
-
-  private _scrollActions(direction: 'left' | 'right') {
-    const container = this._actionsContainer;
-    if (container) {
-      container.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' });
-    }
-  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -175,25 +147,31 @@ export class PlantOverviewDialog extends LitElement {
 
   private async _fetchLogbook() {
     if (!this.plant?.attributes?.growspace_id || !this.hass) return;
-    const service = getTimelineService(this.hass);
-    const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
 
-    // Identify optimistic events (no event_id, recent timestamp) to preserve
-    // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
-    const now = new Date().getTime();
-    const optimisticEvents = this._logbookEvents.filter(e => {
-      const evt = e as any;
-      if (evt.event_id) return false; // Already from DB
+    try {
+      const service = getTimelineService(this.hass);
+      const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
 
-      // Check if recent (< 60 seconds)
-      const ts = evt.timestamp || evt.start_time;
-      if (!ts) return false;
-      const time = new Date(ts).getTime();
-      return (now - time) < 60000;
-    });
+      // Identify optimistic events (no event_id, recent timestamp) to preserve
+      // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
+      const now = new Date().getTime();
+      const optimisticEvents = this._logbookEvents.filter(e => {
+        const evt = e as any;
+        if (evt.event_id) return false; // Already from DB
 
-    // Merge: Put optimistic events first, then fetched events
-    this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
+        // Check if recent (< 60 seconds)
+        const ts = evt.timestamp || evt.start_time;
+        if (!ts) return false;
+        const time = new Date(ts).getTime();
+        return (now - time) < 60000;
+      });
+
+      // Merge: Put optimistic events first, then fetched events
+      this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
+    } catch (e) {
+      console.error('Error fetching logbook for dialog:', e);
+      // We don't necessarily show an error in the dialog, just log it and potentially keep old events
+    }
   }
 
   private _getAttributesFromPlant(): PlantOverviewEditedAttributes {

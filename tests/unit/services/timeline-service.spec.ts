@@ -16,12 +16,15 @@ describe('TimelineService', () => {
     describe('fetchGrowspaceEvents', () => {
         it('should fetch events successfully', async () => {
             const mockEvents = [
-                { event_id: '1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
                 { event_id: '2', timestamp: '2026-01-15T11:00:00Z', category: 'watering' },
+                { event_id: '1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
             ];
 
-            mockHass.callWS.mockResolvedValue({
-                test_growspace: mockEvents,
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') {
+                    return { test_growspace: mockEvents };
+                }
+                return { test_growspace: [] };
             });
 
             const result = await service.fetchGrowspaceEvents('test_growspace');
@@ -64,18 +67,15 @@ describe('TimelineService', () => {
             expect(result).toEqual([]);
         });
 
-        it('should handle errors and return empty array', async () => {
+
+
+        it('should rethrow errors', async () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             mockHass.callWS.mockRejectedValue(new Error('WS connection failed'));
 
-            const result = await service.fetchGrowspaceEvents('test_growspace');
+            await expect(service.fetchGrowspaceEvents('gs1')).rejects.toThrow('WS connection failed');
 
-            expect(result).toEqual([]);
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                'Error fetching growspace events:',
-                expect.any(Error)
-            );
-
+            expect(consoleErrorSpy).toHaveBeenCalled();
             consoleErrorSpy.mockRestore();
         });
     });
@@ -191,7 +191,7 @@ describe('TimelineService', () => {
             const newMockHass = {
                 callWS: vi.fn(),
             };
-            const instance2 = getTimelineService(newMockHass);
+            const instance2 = getTimelineService(newMockHass as any);
 
             expect(instance1).not.toBe(instance2);
             expect((instance2 as any).hass).toBe(newMockHass);

@@ -11,7 +11,7 @@ import {
   mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
   mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlaskOutline, mdiFlash,
   mdiCupWater, mdiTag, mdiDelete, mdiDumbbell,
-  mdiFlower, mdiHairDryer, mdiCannabis
+  mdiFlower, mdiHairDryer, mdiCannabis, mdiWeatherSunny, mdiWeatherNight
 } from '@mdi/js';
 
 // Correlation window constant
@@ -198,6 +198,8 @@ export class PlantTimeline extends LitElement {
       .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
       .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
       .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
+      .type-environmental_report .icon-wrapper { border-color: #ff9800; }
+      .type-environmental_report .icon-wrapper svg { fill: #ff9800; }
 
       /* Action specific styling */
       .action-ipm .icon-wrapper { border-color: #9c27b0; }
@@ -304,6 +306,8 @@ export class PlantTimeline extends LitElement {
         if (action === 'ipm') return mdiBug;
         if (action === 'training') return mdiDumbbell;
         return mdiLeaf;
+      case 'environmental_report':
+        return (event as any).sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
       default: return mdiLeaf;
     }
   }
@@ -512,6 +516,14 @@ export class PlantTimeline extends LitElement {
         return html`
             <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
             <div class="details">Severity: ${event.severity}</div>
+        `;
+      case 'environmental_report':
+        const isDay = (event as any).sensor_type !== 'night_report';
+        return html`
+            <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+            <div class="details">
+              ${(event as any).reasons?.map((r: string) => html`<span style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${r}</span>`)}
+            </div>
         `;
       case 'note':
         return html`

@@ -32,8 +32,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('select-all', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Select All'));
+        const btn = element.shadowRoot?.querySelector('button[title="Select All"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -44,8 +43,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('clear-selection', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Clear'));
+        const btn = element.shadowRoot?.querySelector('button[title="Clear Selection"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -56,8 +54,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('exit-edit-mode', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Exit'));
+        const btn = element.shadowRoot?.querySelector('button[title="Exit Edit Mode"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -68,8 +65,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('water-selected', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Water'));
+        const btn = element.shadowRoot?.querySelector('button[title="Water Selected"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -80,8 +76,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('training-selected', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Log Training'));
+        const btn = element.shadowRoot?.querySelector('button[title="Log Training"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -92,8 +87,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('ipm-selected', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Log IPM'));
+        const btn = element.shadowRoot?.querySelector('button[title="Log IPM"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();
@@ -104,8 +98,7 @@ describe('GrowspaceEditModeBanner', () => {
         const listener = vi.fn();
         element.addEventListener('batch-add-plants', listener);
 
-        const buttons = element.shadowRoot?.querySelectorAll('button');
-        const btn = Array.from(buttons || []).find(b => b.textContent?.includes('Batch Add Plants'));
+        const btn = element.shadowRoot?.querySelector('button[title="Batch Add Plants"]');
         (btn as HTMLElement)?.click();
 
         expect(listener).toHaveBeenCalled();

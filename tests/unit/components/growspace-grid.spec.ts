@@ -210,7 +210,9 @@ describe('GrowspaceGrid', () => {
 
             const event = {
                 preventDefault: vi.fn(),
-                dataTransfer: {}
+                dataTransfer: {
+                    getData: vi.fn()
+                }
             };
 
             // Drop on 1,1
@@ -326,7 +328,11 @@ describe('GrowspaceGrid', () => {
             const slot = element.shadowRoot?.querySelector('.plant-card-empty') as HTMLElement;
             // Native drop event
             const dropEvent = new CustomEvent('drop', { bubbles: true, cancelable: true });
-            Object.defineProperty(dropEvent, 'dataTransfer', { value: {} });
+            Object.defineProperty(dropEvent, 'dataTransfer', {
+                value: {
+                    getData: vi.fn().mockReturnValue(JSON.stringify({ plant: { entity_id: 'p1' } }))
+                }
+            });
 
             // We need to set dropped plant on instance for this to work
             const plant: any = { entity_id: 'p1' };
@@ -791,5 +797,55 @@ describe('GrowspaceGrid', () => {
                 expect((overlay as HTMLElement).style.backgroundColor).toBe('transparent');
             }
         });
+
+        it('should handle invalid JSON in drop event', () => {
+            const event = {
+                preventDefault: vi.fn(),
+                dataTransfer: {
+                    getData: vi.fn().mockReturnValue('invalid-json')
+                }
+            } as any;
+            (element as any)._handleDrop(event, 1, 1, null);
+            // Should not throw and should not dispatch event
+            // And if no draggedPlant, should return
+            expect(mockStore.handleDrop).not.toHaveBeenCalled();
+        });
+
+        it('should dispatch transplant-drop event', () => {
+            const event = {
+                preventDefault: vi.fn(),
+                dataTransfer: {
+                    getData: vi.fn().mockReturnValue(JSON.stringify({
+                        type: 'transplant',
+                        plant_id: 'p1',
+                        source_growspace_id: 'src1'
+                    }))
+                }
+            } as any;
+
+            const dispatchSpy = vi.spyOn(element, 'dispatchEvent');
+            (element as any)._handleDrop(event, 1, 1, null);
+
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'transplant-drop',
+                detail: expect.objectContaining({
+                    plant_id: 'p1',
+                    source_growspace_id: 'src1',
+                    target_row: 1,
+                    target_col: 1
+                })
+            }));
+        });
+
+        it('should render list view style when cols > 5', async () => {
+            element.rows = 2;
+            element.cols = 6;
+            await element.updateComplete;
+            const grid = element.shadowRoot?.querySelector('.grid');
+            expect(grid?.classList.contains('force-list-view')).toBe(true);
+        });
+
+        // Test list view key function branch if possible?
+        // Implicitly covered by render tests.
     });
 });

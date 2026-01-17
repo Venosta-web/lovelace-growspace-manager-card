@@ -52,7 +52,12 @@ describe('GrowspaceLogbook', () => {
         vi.clearAllMocks();
 
         mockHass = {
-            callWS: vi.fn().mockResolvedValue({ gs1: [] }),
+            callWS: vi.fn().mockImplementation(async (msg) => {
+                if (msg.type === 'growspace_manager/get_log') {
+                    return { [element.growspaceId || 'gs1']: mockEvents };
+                }
+                return { [element.growspaceId || 'gs1']: [] };
+            }),
             callService: vi.fn(),
         };
 
@@ -75,7 +80,10 @@ describe('GrowspaceLogbook', () => {
 
 
     it('should fetch events when growspaceId changes', async () => {
-        mockHass.callWS.mockResolvedValue({ gs2: mockEvents });
+        mockHass.callWS.mockImplementation(async (msg: any) => {
+            if (msg.type === 'growspace_manager/get_log') return { gs2: mockEvents };
+            return { gs2: [] };
+        });
 
         element.growspaceId = 'gs2';
         await element.updateComplete;
@@ -243,6 +251,66 @@ describe('GrowspaceLogbook', () => {
             expect((element as any)._getSeverityColor(0.50, 'optimal')).toBe('var(--error-color)');
         });
 
+        it('should return correct color for environmental_report', () => {
+            expect((element as any)._getEventColor('environmental_report', 'Day Report')).toBe('#ffc107');
+            expect((element as any)._getEventColor('environmental_report', 'night_report')).toBe('#3f51b5');
+        });
+
+        describe('Lifecycle Coverage', () => {
+            it('should warn if hass is missing in willUpdate', () => {
+                const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+                element.hass = undefined as any;
+                const changed = new Map();
+                changed.set('hass', {});
+                (element as any).willUpdate(changed);
+                expect(warnSpy).toHaveBeenCalledWith('GrowspaceLogbook: No HASS context available');
+                warnSpy.mockRestore();
+            });
+        });
+
+        it('should scroll to closest timestamp', async () => {
+            // Setup multiple events
+            (element as any)._events = [
+                { ...mockEvents[0], start_time: new Date(10000).toISOString() }, // t=10000
+                { ...mockEvents[0], start_time: new Date(20000).toISOString() }, // t=20000
+                { ...mockEvents[0], start_time: new Date(30000).toISOString() }
+            ];
+            await element.updateComplete;
+
+            // Mock requestAnimationFrame
+            vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: any) => {
+                cb(0);
+                return 0;
+            });
+
+            // Target timestamp 20500 (closest to 20000 at index 1: diff 500)
+            vi.useFakeTimers();
+
+            element.scrollToTimestamp(20500);
+            await element.updateComplete;
+
+            expect((element as any)._highlightedTimestamp).toBe(20500);
+
+            // Verify index 1 has "highlighted" class
+            const card1 = element.shadowRoot?.querySelector('[data-event-index="1"]');
+            expect(card1?.classList.contains('highlighted')).toBe(true);
+
+            // Verify index 0 and 2 do NOT have it
+            const card0 = element.shadowRoot?.querySelector('[data-event-index="0"]');
+            expect(card0?.classList.contains('highlighted')).toBe(false);
+
+            const card2 = element.shadowRoot?.querySelector('[data-event-index="2"]');
+            expect(card2?.classList.contains('highlighted')).toBe(false);
+
+            // Fast forward to check clearing
+            await vi.advanceTimersByTimeAsync(3000);
+            await element.updateComplete;
+
+            expect((element as any)._highlightedTimestamp).toBeNull();
+            expect(card1?.classList.contains('highlighted')).toBe(false);
+
+            vi.useRealTimers();
+        });
         it('should _getSeverityColor for default (alert) sensors', () => {
             // Default: High is Bad (Red)
             expect((element as any)._getSeverityColor(0.95, 'temp')).toBe('var(--error-color)');

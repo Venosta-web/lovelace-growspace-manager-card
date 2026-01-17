@@ -56,7 +56,7 @@ export class TimelineService {
             return combined;
         } catch (e) {
             console.error('Error fetching growspace events:', e);
-            return [];  // Return empty array on error (matches old controller behavior)
+            throw e;
         }
     }
 

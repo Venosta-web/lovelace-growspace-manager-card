@@ -214,8 +214,16 @@ export class GrowspaceTimeline extends LitElement {
     this._isLoading = true;
     this._hasError = false;
     const service = getTimelineService(this.hass);
-    this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
-    this._isLoading = false;
+    try {
+      this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+    } catch (e: any) {
+      console.error('Error fetching growspace events:', e);
+      this._hasError = true;
+      this._errorMessage = e.message || 'Fetch failed';
+      this._events = [];
+    } finally {
+      this._isLoading = false;
+    }
   }
 
   private _getIcon(event: GrowspaceEvent) {

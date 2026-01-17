@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PlantOverviewDialog } from '../../../src/dialogs/plant-overview-dialog';
 import { PlantEntity, PlantStage } from '../../../src/types';
+import { getTimelineService } from '../../../src/services/timeline-service';
 import {
     UpdatePlantEvent,
     DeletePlantEvent,
@@ -28,6 +29,11 @@ vi.mock('../../../src/controllers/growspace-logbook-controller', () => ({
     GrowspaceLogbookController: class {
         fetchEventLog = vi.fn().mockResolvedValue([]);
     }
+}));
+
+// Mock timeline service
+vi.mock('../../../src/services/timeline-service', () => ({
+    getTimelineService: vi.fn(),
 }));
 
 // Mock ha-dialog
@@ -861,7 +867,8 @@ describe('PlantOverviewDialog', () => {
         element.hass = {
             connection: {
                 subscribeEvents: vi.fn().mockResolvedValue(() => { })
-            }
+            },
+            callWS: vi.fn().mockResolvedValue([])
         } as any;
         element.open = true;
         document.body.appendChild(element);
@@ -909,7 +916,8 @@ describe('PlantOverviewDialog', () => {
         element.hass = {
             connection: {
                 subscribeEvents: vi.fn().mockResolvedValue(() => { })
-            }
+            },
+            callWS: vi.fn().mockResolvedValue([])
         } as any;
         element.open = true;
         document.body.appendChild(element);
@@ -1839,11 +1847,7 @@ describe('PlantOverviewDialog', () => {
             expect(result).toBeDefined();
         });
 
-        it('should handle unset ref in _setActionsRef', () => {
-            // Cover the else branch when el is undefined
-            (element as any)._setActionsRef(undefined);
-            expect((element as any)._actionsContainer).toBeUndefined();
-        });
+
 
         it('should fallback to entity_id for action handlers when plant_id attribute is missing', () => {
             const plantNoAttr = {
@@ -1886,5 +1890,114 @@ describe('PlantOverviewDialog', () => {
         });
 
 
+    });
+
+    describe('Action Tab', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+            // Switch to actions tab
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+            (tabs?.[1] as HTMLElement).click();
+            await element.updateComplete;
+        });
+
+        afterEach(() => {
+            document.body.removeChild(element);
+        });
+
+        it('should dispatch open-water event', async () => {
+            const spy = vi.fn();
+            element.addEventListener('open-watering', spy);
+
+            const btn = element.shadowRoot?.querySelector('.action-card:nth-child(1)') as HTMLElement; // Water
+            btn.click();
+
+            expect(spy).toHaveBeenCalled();
+            expect(spy.mock.calls[0][0].detail).toEqual({
+                mode: 'plant',
+                growspaceId: 'gs1',
+                plantIds: ['plant_1']
+            });
+        });
+
+        it('should dispatch open-training event', async () => {
+            const spy = vi.fn();
+            element.addEventListener('open-training', spy);
+
+            const btn = element.shadowRoot?.querySelector('.action-card:nth-child(2)') as HTMLElement; // Training
+            btn.click();
+
+            expect(spy).toHaveBeenCalled();
+            expect(spy.mock.calls[0][0].detail).toEqual({
+                isOpen: true,
+                growspaceId: 'gs1',
+                plantIds: ['plant_1']
+            });
+        });
+
+        it('should dispatch open-ipm event', async () => {
+            const spy = vi.fn();
+            element.addEventListener('open-ipm', spy);
+
+            const btn = element.shadowRoot?.querySelector('.action-card:nth-child(3)') as HTMLElement; // IPM
+            btn.click();
+
+            expect(spy).toHaveBeenCalled();
+            expect(spy.mock.calls[0][0].detail).toEqual({
+                growspaceId: 'gs1',
+                plantIds: ['plant_1']
+            });
+        });
+
+        it('should dispatch open-clone event', async () => {
+            const spy = vi.fn();
+            element.addEventListener('open-clone', spy);
+
+            const btn = element.shadowRoot?.querySelector('.action-card:nth-child(4)') as HTMLElement; // Clone
+            btn.click();
+
+            expect(spy).toHaveBeenCalled();
+            expect(spy.mock.calls[0][0].detail).toEqual({
+                sourcePlant: mockPlant,
+                defaultGrowspaceId: 'gs1'
+            });
+        });
+
+        it('should not dispatch open-clone if plant is missing', async () => {
+            const spy = vi.fn();
+            element.addEventListener('open-clone', spy);
+            element.plant = undefined;
+            await element.updateComplete;
+
+            // Manually call _openClone as the button might not be rendered or data is missing
+            (element as any)._openClone();
+            expect(spy).not.toHaveBeenCalled();
+        });
+    });
+
+    it('should handle errors in _fetchLogbook gracefully', async () => {
+        // Spy on console.error
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+        // Mock timeline service to reject
+        const error = new Error('Test Error');
+        vi.mocked(getTimelineService).mockReturnValueOnce({
+            fetchGrowspaceEvents: vi.fn().mockRejectedValue(error)
+        } as any);
+
+        // Render to trigger fetching
+        element.open = true;
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        // Wait for potential async calls
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(consoleSpy).toHaveBeenCalledWith('Error fetching logbook for dialog:', error);
+
+        consoleSpy.mockRestore();
+        if (element.parentNode) document.body.removeChild(element);
     });
 });
