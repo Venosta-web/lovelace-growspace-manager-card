@@ -292,7 +292,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render error if selected device is invalid', async () => {
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs2' }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs2' }]);
             atomMocks.$selectedDevice.set('gs1');
 
             document.body.appendChild(element);
@@ -305,7 +305,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render main card with notification', async () => {
             atomMocks.$isLoading.set(false);
-            const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 4 };
+            const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 };
             atomMocks.$activeDevices.set([mockDevice]);
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
@@ -322,7 +322,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render wide card class', async () => {
             atomMocks.$isLoading.set(false);
-            const mockDevice = { device_id: 'gs1', name: 'Tent', plants_per_row: 8 };
+            const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 8 };
             atomMocks.$activeDevices.set([mockDevice]);
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
@@ -440,7 +440,7 @@ describe('GrowspaceManagerCard', () => {
             const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
 
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
             atomMocks.$selectedDevice.set('gs1');
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({});
@@ -470,7 +470,7 @@ describe('GrowspaceManagerCard', () => {
             const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
 
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
             atomMocks.$selectedDevice.set('gs1');
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({});
@@ -489,7 +489,7 @@ describe('GrowspaceManagerCard', () => {
             const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
 
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
             atomMocks.$selectedDevice.set('gs1');
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({});
@@ -526,7 +526,7 @@ describe('GrowspaceManagerCard', () => {
             const spy = vi.spyOn(element.store, 'openIPMDialog');
 
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
             atomMocks.$selectedDevice.set('gs1');
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({});
@@ -551,7 +551,7 @@ describe('GrowspaceManagerCard', () => {
             const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
 
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ device_id: 'gs1', name: 'Tent', plants_per_row: 4 }]);
+            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
             atomMocks.$selectedDevice.set('gs1');
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({});

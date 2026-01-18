@@ -56,4 +56,16 @@ playwright-report/.auth/*
 verification/
 
 tests/unit/__screenshots__/
-tests/unit/components/manager/__screenshots__/nutrient-presets-editor.spec.ts/NutrientPresetsEditor-should-render-preset-details--stage--days--1.png
+tests/unit/components/manager/__screenshots__/
+tests/unit/dialogs/__screenshots__/ 
+tests/unit/growspace-manager-card/__screenshots__/
+tests/unit/growspace-store/__screenshots__/
+tests/unit/plant-actions/__screenshots__/
+tests/unit/training-dialog/__screenshots__/
+tests/unit/components/growspace-header/__screenshots__/
+tests/unit/components/growspace-manager-card/__screenshots__/
+tests/unit/components/growspace-header/__screenshots__/
+tests/unit/schemas/__screenshots__/
+tests/unit/schemas/__screenshots__/
+tests/unit/services/api/__screenshots__/
+tests/unit/services/api/__screenshots__/

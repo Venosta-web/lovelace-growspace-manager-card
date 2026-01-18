@@ -217,7 +217,7 @@ describe('DialogHost Coverage', () => {
         expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('mandatory'), 'error');
 
         // Service failure
-        const detail = { selectedGrowspaceId: 'g1', temp_sensor: 't1', humidity_sensor: 'h1' };
+        const detail = { selectedGrowspaceId: 'g1', temperatureSensor: 't1', humiditySensor: 'h1' };
         mockStore.dataService.configureEnvironment.mockRejectedValue(new Error('API Down'));
         await (element as any)._handleEnvironmentConfig(detail);
         expect(mockStore.showToast).toHaveBeenCalledWith('Error: API Down', 'error');
@@ -255,7 +255,7 @@ describe('DialogHost Coverage', () => {
             }
         };
 
-        const result = (element as any)._renderGrowMasterDialog({ type: 'GROW_MASTER', payload });
+        const result = (element as any)._renderGrowMasterDialog({ type: 'GROW_MASTER', payload }, { deviceId: 'd1' } as any);
         // result is a TemplateResult, we check its values
         const hasPersonality = result.values.some((v: any) => v === 'Robotic');
         expect(hasPersonality).toBe(true);
@@ -494,43 +494,43 @@ describe('DialogHost Coverage', () => {
     it('should handle environment config with all optional fields populated', async () => {
         const detail = {
             selectedGrowspaceId: 'g1',
-            temp_sensor: 't1',
-            humidity_sensor: 'h1',
-            vpd_sensor: 'v1',
-            co2_sensor: 'c1',
-            circulation_fan: 'cf1',
-            stress_threshold: 1,
-            mold_threshold: 2,
-            light_sensor: 'l1',
-            exhaust_entity: 'e1',
-            humidifier_entity: 'h1',
-            dehumidifier_entity: 'd1',
-            soil_moisture_sensor: 's1',
-            control_dehumidifier: true
+            temperatureSensor: 't1',
+            humiditySensor: 'h1',
+            vpdSensor: 'v1',
+            co2Sensor: 'c1',
+            circulationFanEntity: 'cf1',
+            stressThreshold: 1,
+            moldThreshold: 2,
+            lightSensor: 'l1',
+            exhaustEntity: 'e1',
+            humidifierEntity: 'h1',
+            dehumidifierEntity: 'd1',
+            soilMoistureSensor: 's1',
+            dehumidifierControlEnabled: true
         };
 
         // We assume the dialog dispatches this, or we call the method directly
         await (element as any)._handleEnvironmentConfig(detail);
 
         expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
-            vpd_sensor: 'v1',
-            co2_sensor: 'c1',
-            circulation_fan_entity: 'cf1',
-            light_sensor: 'l1',
-            exhaust_entity: 'e1',
-            humidifier_entity: 'h1',
-            dehumidifier_entity: 'd1',
-            soil_moisture_sensor: 's1'
+            vpdSensor: 'v1',
+            co2Sensor: 'c1',
+            circulationFanEntity: 'cf1',
+            lightSensor: 'l1',
+            exhaustEntity: 'e1',
+            humidifierEntity: 'h1',
+            dehumidifierEntity: 'd1',
+            soilMoistureSensor: 's1'
         }));
         expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
-            vpd_sensor: 'v1',
-            co2_sensor: 'c1',
-            circulation_fan_entity: 'cf1',
-            light_sensor: 'l1',
-            exhaust_entity: 'e1',
-            humidifier_entity: 'h1',
-            dehumidifier_entity: 'd1',
-            soil_moisture_sensor: 's1'
+            vpdSensor: 'v1',
+            co2Sensor: 'c1',
+            circulationFanEntity: 'cf1',
+            lightSensor: 'l1',
+            exhaustEntity: 'e1',
+            humidifierEntity: 'h1',
+            dehumidifierEntity: 'd1',
+            soilMoistureSensor: 's1'
         }));
     });
 

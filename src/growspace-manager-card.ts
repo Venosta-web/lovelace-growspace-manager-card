@@ -247,7 +247,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
@@ -255,7 +255,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     // Use memoized values from grid store atoms
     const growspaceOptions = this._growspaceOptionsController.value;
     const { effectiveRows, grid } = this._gridLayoutController.value;
-    const isWide = selectedDeviceData.plants_per_row > 7;
+    const isWide = selectedDeviceData.plantsPerRow > 7;
 
     return html`
       <error-boundary 

@@ -6,32 +6,12 @@ import {
   PlantStage,
   GrowspaceAPIResponse,
   GrowspaceOverviewEntity,
-  SerializedBiologicalMetrics,
-  SerializedEnvironmentAttributes,
-  SerializedStats,
+  BiologicalMetrics,
+  EnvironmentAttributes,
+  GrowspaceStats,
+  IrrigationConfig,
+  IrrigationStrategy,
 } from '../types';
-
-// Define keys for automatic extraction (DRY)
-// These must match the keys produced by serializers.py
-const BIO_KEYS: (keyof SerializedBiologicalMetrics)[] = [
-  'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
-  'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
-];
-
-const ENV_KEYS: (keyof SerializedEnvironmentAttributes)[] = [
-  'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
-  'soil_moisture_sensor', 'light_sensor', 'light_sensors',
-  'exhaust_entity', 'exhaust_fan_entities',
-  'humidifier_entity', 'humidifier_entities',
-  'dehumidifier_entity', 'dehumidifier_entities',
-  'dehumidifier_control_enabled', 'circulation_fan_entity', 'circulation_fan_entities',
-  'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
-];
-
-const STAT_KEYS: (keyof SerializedStats)[] = [
-  'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
-  'max_stage_summary', 'total_plants'
-];
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -42,22 +22,65 @@ export class GrowspaceAdapter {
 
     const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
     const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
-    const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
+    const overviewEntityId = wsData?.overview_entity_id || overview?.entity_id || '';
 
     // 1. Loading State
     if (!wsData) {
       return createGrowspaceDevice({
-        device_id: growspace_id,
-        overview_entity_id: overview!.entity_id,
+        deviceId: growspace_id,
+        overviewEntityId: overview!.entity_id,
         name,
-        last_updated: 'Loading...',
+        lastUpdated: 'Loading...',
       });
     }
 
-    // 2. Extract Groups using Utility Helper
-    const biological_metrics = this.extractSubset<SerializedBiologicalMetrics>(wsData, BIO_KEYS);
-    const environment_attributes = this.extractSubset<SerializedEnvironmentAttributes>(wsData, ENV_KEYS);
-    const stats = this.extractSubset<SerializedStats>(wsData, STAT_KEYS);
+    // 2. Map Groups to camelCase
+    const biologicalMetrics: BiologicalMetrics = {
+      vpdStatus: wsData.vpd_status,
+      vpdTargetMin: wsData.vpd_target_min,
+      vpdTargetMax: wsData.vpd_target_max,
+      vpdDangerMin: wsData.vpd_danger_min,
+      vpdDangerMax: wsData.vpd_danger_max,
+      granularStage: wsData.granular_stage,
+      isDay: wsData.is_day,
+      vegWeek: wsData.veg_week,
+      flowerWeek: wsData.flower_week,
+      airExchange: wsData.air_exchange,
+    };
+
+    const environmentAttributes: EnvironmentAttributes = {
+      temperatureSensor: wsData.temperature_sensor,
+      humiditySensor: wsData.humidity_sensor,
+      vpdSensor: wsData.vpd_sensor,
+      co2Sensor: wsData.co2_sensor,
+      soilMoistureSensor: wsData.soil_moisture_sensor,
+      lightSensor: wsData.light_sensor,
+      lightSensors: wsData.light_sensors,
+      dehumidifierEntity: wsData.dehumidifier_entity,
+      dehumidifierEntities: wsData.dehumidifier_entities,
+      dehumidifierControlEnabled: wsData.dehumidifier_control_enabled,
+      dehumidifierThresholds: wsData.dehumidifier_thresholds,
+      dehumidifierState: wsData.dehumidifier_state,
+      humidifierEntity: wsData.humidifier_entity,
+      humidifierEntities: wsData.humidifier_entities,
+      exhaustEntity: wsData.exhaust_entity,
+      exhaustFanEntities: wsData.exhaust_fan_entities,
+      circulationFanEntity: wsData.circulation_fan_entity,
+      circulationFanEntities: wsData.circulation_fan_entities,
+      vpd: wsData.vpd,
+      soilMoistureValue: wsData.soil_moisture_value,
+      exhaustSensor: wsData.exhaust_sensor,
+      humidifierSensor: wsData.humidifier_sensor,
+    };
+
+    const stats: GrowspaceStats = {
+      maxVegDays: wsData.max_veg_days,
+      maxFlowerDays: wsData.max_flower_days,
+      vegWeek: wsData.veg_week,
+      flowerWeek: wsData.flower_week,
+      maxStageSummary: wsData.max_stage_summary,
+      totalPlants: wsData.total_plants,
+    };
 
     // 3. Transform Grid Dictionary to Plant Entity Array
     const plants: PlantEntity[] = [];
@@ -83,44 +106,53 @@ export class GrowspaceAdapter {
       });
     }
 
-    // 4. Construct Device
+    // 4. Map Configs
+    const irrigationConfigRaw = wsData.irrigation_config || {};
+    const irrigationConfig: IrrigationConfig = {
+      irrigationPumpEntity: irrigationConfigRaw.irrigation_pump_entity,
+      drainPumpEntity: irrigationConfigRaw.drain_pump_entity,
+      irrigationDuration: irrigationConfigRaw.irrigation_duration,
+      drainDuration: irrigationConfigRaw.drain_duration,
+      irrigationTimes: irrigationConfigRaw.irrigation_times,
+      drainTimes: irrigationConfigRaw.drain_times,
+      vegDayHours: irrigationConfigRaw.veg_day_hours,
+    };
+
+    const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy ? {
+      enabled: wsData.irrigation_strategy.enabled,
+      lightsOnTime: wsData.irrigation_strategy.lights_on_time,
+      p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
+      p2StopBeforeLightsOffMinutes: wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
+      targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
+      maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
+      shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
+      shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+    } : undefined;
+
+    // 5. Construct Device
     return createGrowspaceDevice({
-      device_id: growspace_id,
-      overview_entity_id,
+      deviceId: growspace_id,
+      overviewEntityId,
       name,
       type: wsData.type || 'normal',
       rows: wsData.rows,
-      plants_per_row: wsData.plants_per_row,
-      notification_target: wsData.notification_target,
-      last_updated: overview?.last_updated || new Date().toISOString(),
+      plantsPerRow: wsData.plants_per_row,
+      notificationTarget: wsData.notification_target,
+      lastUpdated: overview?.last_updated || new Date().toISOString(),
 
       // Structural Data
       plants,
       grid: wsData.grid,
 
       // Grouped Data
-      biological_metrics,
-      environment_attributes,
+      biologicalMetrics,
+      environmentAttributes,
       stats,
 
       // Configs
-      irrigation_config: wsData.irrigation_config,
-      irrigation_strategy: wsData.irrigation_strategy || undefined,
+      irrigationConfig,
+      irrigationStrategy,
     });
-  }
-
-  /**
-   * Helper to extract specific keys from the flattened API response into a typed object.
-   */
-  private static extractSubset<T>(source: object, keys: (keyof T)[]): T {
-    const result = {} as T;
-    const src = source as Record<string, unknown>;
-    keys.forEach((key) => {
-      if (key in source) {
-        result[key] = src[key as string] as T[keyof T];
-      }
-    });
-    return result;
   }
 
   /** @deprecated */

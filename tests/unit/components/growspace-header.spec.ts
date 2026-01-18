@@ -59,23 +59,23 @@ describe('GrowspaceHeader', () => {
         // Initialize Atoms
         const mockDevices: any[] = [
             {
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'Growspace 1',
                 type: 'normal',
                 plants: [],
                 grid: {},
-                biological_metrics: {},
-                environment_attributes: {},
+                biologicalMetrics: {},
+                environmentAttributes: {},
                 stats: {}
             },
             {
-                device_id: 'd2',
+                deviceId: 'd2',
                 name: 'Growspace 2',
                 type: 'normal',
                 plants: [],
                 grid: {},
-                biological_metrics: {},
-                environment_attributes: {},
+                biologicalMetrics: {},
+                environmentAttributes: {},
                 stats: {}
             }
         ];

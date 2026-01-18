@@ -174,8 +174,7 @@ export class PlantUtils {
     ];
 
     static calculateEffectiveRows(device: GrowspaceDevice): number {
-        // eslint-disable-next-line camelcase
-        const { type, plants, plants_per_row, rows } = device;
+        const { type, plants, plantsPerRow, rows } = device;
 
         // Use strict type check instead of magic string comparison
         if (this.DYNAMIC_ROW_TYPES.includes(type)) {
@@ -184,7 +183,7 @@ export class PlantUtils {
             const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
             const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
 
-            return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
+            return lastRowCount >= plantsPerRow ? maxRowUsed + 1 : maxRowUsed;
         }
 
         return rows;
@@ -441,7 +440,7 @@ export class PlantUtils {
             const img = new Image();
             img.src = url;
             img.onload = () => resolve();
-            img.onerror = () => reject();
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
         });
     }
 

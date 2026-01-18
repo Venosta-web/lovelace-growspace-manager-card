@@ -77,7 +77,7 @@ describe('GrowspaceAdapter', () => {
         expect(result).not.toBeNull();
         if (!result) return;
 
-        expect(result.device_id).toBe('test_gs');
+        expect(result.deviceId).toBe('test_gs');
         // Verify Grid Transformation
         expect(result.plants).toHaveLength(1);
         expect(result.plants[0].attributes.strain).toBe('Kush');
@@ -86,14 +86,14 @@ describe('GrowspaceAdapter', () => {
         expect(result.plants[0].attributes.stage).toBe(PlantStage.VEG);
 
         // Verify Config Mapping
-        expect(result.environment_attributes?.temperature_sensor).toBe('sensor.temp');
-        expect(result.biological_metrics?.air_exchange).toBe('100');
+        expect(result.environmentAttributes?.temperatureSensor).toBe('sensor.temp');
+        expect(result.biologicalMetrics?.airExchange).toBe('100');
     });
 
     it('should return skeleton when wsData is null', () => {
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, null);
         expect(result).not.toBeNull();
-        expect(result?.last_updated).toBe('Loading...');
+        expect(result?.lastUpdated).toBe('Loading...');
         expect(result?.plants).toHaveLength(0);
     });
 
@@ -130,9 +130,9 @@ describe('GrowspaceAdapter', () => {
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, mockWSData);
         expect(result).not.toBeNull();
-        expect(result?.environment_attributes?.exhaust_entity).toBe('fan.exhaust');
-        expect(result?.environment_attributes?.humidifier_entity).toBe('humidifier.mist');
-        expect(result?.environment_attributes?.dehumidifier_control_enabled).toBe(true);
+        expect(result?.environmentAttributes?.exhaustEntity).toBe('fan.exhaust');
+        expect(result?.environmentAttributes?.humidifierEntity).toBe('humidifier.mist');
+        expect(result?.environmentAttributes?.dehumidifierControlEnabled).toBe(true);
     });
 
     it('should handle store-injected plant data with partial fields', () => {
@@ -208,7 +208,7 @@ describe('GrowspaceAdapter', () => {
         } as any;
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithoutId);
-        expect(result?.device_id).toBe('test_gs');
+        expect(result?.deviceId).toBe('test_gs');
     });
 
     it('should use default name when both wsData and overview lack it', () => {
@@ -277,7 +277,7 @@ describe('GrowspaceAdapter', () => {
         expect(result?.plants[0].attributes.stage).toBe('unknown');
     });
 
-    it('should include irrigation_strategy when provided', () => {
+    it('should include irrigationStrategy when provided', () => {
         const wsWithStrategy: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
             name: 'Irrigated Room',
@@ -287,12 +287,12 @@ describe('GrowspaceAdapter', () => {
             total_plants: 0,
             grid: {},
             irrigation_config: { irrigation_times: [], drain_times: [] },
-            irrigation_strategy: { enabled: true, target_ml: 500 } as any,
+            irrigation_strategy: { enabled: true, target_vwc_percent: 45 } as any,
             vpd_status: 'ok'
         } as any;
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithStrategy);
-        expect(result?.irrigation_strategy).toEqual({ enabled: true, target_ml: 500 });
+        expect(result?.irrigationStrategy).toEqual(expect.objectContaining({ enabled: true, targetVwcPercent: 45 }));
     });
 
 
@@ -303,11 +303,11 @@ describe('GrowspaceAdapter', () => {
                 name: 'No ID Room',
                 type: GrowspaceTypeEnum.NORMAL,
                 rows: 1,
-                plants_per_row: 1,
-                total_plants: 0,
+                plantsPerRow: 1,
+                totalPlants: 0,
                 grid: {},
-                irrigation_config: { irrigation_times: [], drain_times: [] },
-                vpd_status: 'ok'
+                irrigationConfig: { irrigation_times: [], drain_times: [] },
+                vpdStatus: 'ok'
             } as any;
 
             const overviewWithoutId = {
@@ -316,7 +316,7 @@ describe('GrowspaceAdapter', () => {
             };
 
             const result = GrowspaceAdapter.transformGrowspace(overviewWithoutId as any, wsWithoutId);
-            expect(result?.device_id).toBe('unknown');
+            expect(result?.deviceId).toBe('unknown');
         });
 
         it('should fallback type to "normal" when wsData.type is undefined', () => {
@@ -325,11 +325,11 @@ describe('GrowspaceAdapter', () => {
                 name: 'No Type Room',
                 type: undefined as any,
                 rows: 1,
-                plants_per_row: 1,
-                total_plants: 0,
+                plantsPerRow: 1,
+                totalPlants: 0,
                 grid: {},
-                irrigation_config: { irrigation_times: [], drain_times: [] },
-                vpd_status: 'ok'
+                irrigationConfig: { irrigation_times: [], drain_times: [] },
+                vpdStatus: 'ok'
             } as any;
 
             const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithoutType);
@@ -342,8 +342,8 @@ describe('GrowspaceAdapter', () => {
                 name: 'Mixed Grid Room',
                 type: GrowspaceTypeEnum.NORMAL,
                 rows: 2,
-                plants_per_row: 2,
-                total_plants: 1,
+                plantsPerRow: 2,
+                totalPlants: 1,
                 grid: {
                     'position_0_0': {
                         plant_id: 'p1',
@@ -358,7 +358,7 @@ describe('GrowspaceAdapter', () => {
                     'position_1_0': undefined
                 } as any,
                 irrigation_config: { irrigation_times: [], drain_times: [] },
-                vpd_status: 'ok'
+                vpdStatus: 'ok'
             } as any;
 
             const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithNullSlots);
@@ -372,15 +372,15 @@ describe('GrowspaceAdapter', () => {
                 type: 'normal',
                 overview_entity_id: '',
                 rows: 1,
-                plants_per_row: 1,
-                total_plants: 0,
+                plantsPerRow: 1,
+                totalPlants: 0,
                 grid: {},
-                irrigation_config: { irrigation_times: [], drain_times: [] },
-                vpd_status: 'ok'
+                irrigationConfig: { irrigation_times: [], drain_times: [] },
+                vpdStatus: 'ok'
             } as any;
 
             const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithEmptyEntityId);
-            expect(result?.overview_entity_id).toBe('sensor.growspace_test_overview');
+            expect(result?.overviewEntityId).toBe('sensor.growspace_test_overview');
         });
     });
 });

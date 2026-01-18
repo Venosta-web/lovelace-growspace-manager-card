@@ -96,7 +96,7 @@ describe('keyboard-actions', () => {
         vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set<string>());
         vi.mocked(store.data.$selectedDevice.get).mockReturnValue('device1');
         vi.mocked(store.data.$devices.get).mockReturnValue([
-            { device_id: 'device1', name: 'Tent 1', plants: mockPlants } as any,
+            { deviceId: 'device1', name: 'Tent 1', plants: mockPlants } as any,
         ]);
         vi.mocked(store.data.$optimisticDeletedPlantIds.get).mockReturnValue(new Set<string>());
     });
@@ -218,7 +218,7 @@ describe('keyboard-actions', () => {
 
         it('should do nothing when no plants exist', () => {
             vi.mocked(store.data.$devices.get).mockReturnValue([
-                { device_id: 'device1', name: 'Tent 1', plants: [] } as any,
+                { deviceId: 'device1', name: 'Tent 1', plants: [] } as any,
             ]);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'ArrowRight');
@@ -266,7 +266,7 @@ describe('keyboard-actions', () => {
         it('should handle plant without plant_id during filtering', () => {
             const plantNoId = { ...mockPlants[0], attributes: { ...mockPlants[0].attributes, plant_id: undefined } };
             vi.mocked(store.data.$devices.get).mockReturnValue([
-                { device_id: 'device1', name: 'Tent 1', plants: [plantNoId] } as any,
+                { deviceId: 'device1', name: 'Tent 1', plants: [plantNoId] } as any,
             ]);
             vi.mocked(store.data.$optimisticDeletedPlantIds.get).mockReturnValue(new Set(['p1'])); // p1 won't match our plant since it has no id
 

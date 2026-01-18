@@ -135,7 +135,7 @@ export class HistoryAPI extends BaseAPI {
                     state: p.s,
                     last_changed: p.lu,
                     last_updated: p.lu,
-                    attributes: {},
+                    attributes: p.a || {},
                 }));
             }
             return mappedResult;

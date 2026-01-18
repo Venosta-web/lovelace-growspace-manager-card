@@ -24,6 +24,7 @@ import {
   STATUS_COLORS,
   ScrollDirection,
   EntityState,
+  BINARY_ON_STATES,
 } from './constants';
 
 import { consume } from '@lit/context';
@@ -165,8 +166,8 @@ export class GrowspaceEnvChart extends LitElement {
       dangerMax: DEFAULTS.VPD.DANGER_MAX,
     };
 
-    const overviewEntity = this.device?.overview_entity_id
-      ? this.hass?.states[this.device.overview_entity_id]
+    const overviewEntity = this.device?.overviewEntityId
+      ? this.hass?.states[this.device.overviewEntityId]
       : null;
 
     if (!overviewEntity?.attributes) return { day: defaultThresholds, night: defaultThresholds };
@@ -290,7 +291,7 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       if (initialState) {
-        const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+        const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state) ? (BINARY_ON_STATES.includes(initialState.state) ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
         if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
@@ -302,7 +303,7 @@ export class GrowspaceEnvChart extends LitElement {
 
         let val: number | undefined;
         if (key === MetricKey.OPTIMAL) {
-          val = h.state === EntityState.ON ? 1 : 0;
+          val = BINARY_ON_STATES.includes(h.state) ? 1 : 0;
           if (h.attributes?.reasons) dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
           else dataPoints.push({ time: t, value: val });
         } else {

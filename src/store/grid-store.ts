@@ -43,7 +43,7 @@ export class GrowspaceGridStore {
             (devices): Record<string, string> => {
                 const options: Record<string, string> = {};
                 for (const d of devices) {
-                    options[d.device_id] = d.name;
+                    options[d.deviceId] = d.name;
                 }
                 return options;
             }
@@ -55,7 +55,7 @@ export class GrowspaceGridStore {
                 if (!selectedId) {
                     return { effectiveRows: 0, grid: [] };
                 }
-                const device = devices.find((d) => d.device_id === selectedId);
+                const device = devices.find((d) => d.deviceId === selectedId);
                 if (!device) {
                     return { effectiveRows: 0, grid: [] };
                 }
@@ -63,7 +63,7 @@ export class GrowspaceGridStore {
                 const { grid } = PlantUtils.createGridLayout(
                     device.plants,
                     effectiveRows,
-                    device.plants_per_row
+                    device.plantsPerRow
                 );
                 return { effectiveRows, grid };
             }

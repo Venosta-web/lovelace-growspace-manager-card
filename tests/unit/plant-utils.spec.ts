@@ -248,7 +248,7 @@ describe('PlantUtils', () => {
             const device = {
                 type: 'mother', // dynamic
                 rows: 2,
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 plants: [
                     { attributes: { row: 3 } }, // Plant in row 3
                     { attributes: { row: 3 } }  // Another in row 3
@@ -263,7 +263,7 @@ describe('PlantUtils', () => {
             const device = {
                 type: 'mother',
                 rows: 2,
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 plants: [
                     { attributes: { row: 3 } },
                     { attributes: { row: 3 } } // Row 3 full (2 plants)
@@ -280,7 +280,7 @@ describe('PlantUtils', () => {
                 plants: [
                     { attributes: { row: 3 } }
                 ],
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 rows: 1
             } as any;
             const effective = PlantUtils.calculateEffectiveRows(device);
@@ -294,7 +294,7 @@ describe('PlantUtils', () => {
                 plants: [
                     { attributes: {} } // No row attribute
                 ],
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 rows: 1
             } as any;
             const effective = PlantUtils.calculateEffectiveRows(device);
@@ -677,7 +677,7 @@ describe('preloadImage', () => {
             onload: any;
             onerror: any;
         });
-        await expect(PlantUtils.preloadImage('bad.jpg')).rejects.toBeUndefined();
+        await expect(PlantUtils.preloadImage('bad.jpg')).rejects.toThrow('Failed to load image: bad.jpg');
         vi.restoreAllMocks();
     });
 });
@@ -851,7 +851,7 @@ describe('Coverage Gap Fillers', () => {
             const device = {
                 type: 'mother', // dynamic type
                 rows: 5,
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 plants: []
             } as any;
             // Should return 1

@@ -297,13 +297,13 @@ export class GrowspaceStore {
     }
 
     // eslint-disable-next-line camelcase
-    async handleAddGrowspace(detail: { name: string; rows?: number; plants_per_row?: number; notification_service?: string }) {
-        await strainActions.addGrowspace(this.context, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
+    async handleAddGrowspace(detail: { name: string; rows?: number; plantsPerRow?: number; notification_service?: string }) {
+        await strainActions.addGrowspace(this.context, detail.name, detail.rows, detail.plantsPerRow, detail.notification_service);
     }
 
     // eslint-disable-next-line camelcase
-    async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plants_per_row: number }) {
-        await strainActions.updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
+    async handleUpdateGrowspace(detail: { growspace_id: string; name: string; rows: number; plantsPerRow: number }) {
+        await strainActions.updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plantsPerRow);
     }
 
     async confirmAddPlant(detail: any) {

@@ -80,7 +80,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   get _hasRecommendedPreset(): boolean {
     if (!this.plant || !this.store) return false;
     const growspaceId = this.plant.attributes.growspace_id;
-    const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+    const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
     if (!device) return false;
 
     const nutrientPresets = this.store.data.$nutrientPresets.get();

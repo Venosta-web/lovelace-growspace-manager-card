@@ -1,4 +1,4 @@
-import { LovelaceCardConfig, HomeAssistant } from 'custom-card-helpers';
+import { LovelaceCardConfig } from 'custom-card-helpers';
 import { MetricKey, ViewMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceType as GrowspaceTypeEnum } from './constants';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
@@ -69,6 +69,27 @@ export type IrrigationTime = IrrigationScheduleItem;
 
 export interface IrrigationStrategy {
   enabled: boolean;
+  lightsOnTime: string;
+  p0DurationMinutes: number;
+  p2StopBeforeLightsOffMinutes: number;
+  targetVwcPercent: number;
+  maintenanceDrybackPercent: number;
+  shotDurationSeconds: number;
+  shotIntervalMinutes: number;
+}
+
+export interface IrrigationConfig {
+  irrigationPumpEntity?: string | null;
+  drainPumpEntity?: string | null;
+  irrigationDuration?: number | null;
+  drainDuration?: number | null;
+  irrigationTimes: IrrigationScheduleItem[];
+  drainTimes: IrrigationScheduleItem[];
+  vegDayHours?: number;
+}
+
+export interface SerializedIrrigationStrategy {
+  enabled: boolean;
   lights_on_time: string;
   p0_duration_minutes: number;
   p2_stop_before_lights_off_minutes: number;
@@ -78,7 +99,7 @@ export interface IrrigationStrategy {
   shot_interval_minutes: number;
 }
 
-export interface IrrigationConfig {
+export interface SerializedIrrigationConfig {
   irrigation_pump_entity?: string | null;
   drain_pump_entity?: string | null;
   irrigation_duration?: number | null;
@@ -142,6 +163,55 @@ export interface SerializedStats {
   flower_week: number;
   max_stage_summary: string;
   total_plants: number;
+}
+
+// --- Internal Group Models (camelCase) ---
+
+export interface BiologicalMetrics {
+  vpdStatus: string;
+  vpdTargetMin: number;
+  vpdTargetMax: number;
+  vpdDangerMin: number;
+  vpdDangerMax: number;
+  granularStage: string;
+  isDay: boolean;
+  vegWeek: number;
+  flowerWeek: number;
+  airExchange?: string | null;
+}
+
+export interface EnvironmentAttributes {
+  temperatureSensor?: string;
+  humiditySensor?: string;
+  vpdSensor?: string;
+  co2Sensor?: string;
+  soilMoistureSensor?: string;
+  lightSensor?: string;
+  lightSensors?: string[];
+  dehumidifierEntity?: string;
+  dehumidifierEntities?: string[];
+  dehumidifierControlEnabled?: boolean;
+  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  dehumidifierState?: string;
+  humidifierEntity?: string;
+  humidifierEntities?: string[];
+  exhaustEntity?: string;
+  exhaustFanEntities?: string[];
+  circulationFanEntity?: string;
+  circulationFanEntities?: string[];
+  vpd?: string;
+  soilMoistureValue?: string;
+  exhaustSensor?: string;
+  humidifierSensor?: string;
+}
+
+export interface GrowspaceStats {
+  maxVegDays: number;
+  maxFlowerDays: number;
+  vegWeek: number;
+  flowerWeek: number;
+  maxStageSummary: string;
+  totalPlants: number;
 }
 
 export interface TimelineEventMetadata {
@@ -222,45 +292,12 @@ export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, Seria
   overview_entity_id?: string;
 
   grid: Record<string, RawPlantData | null>;
-  irrigation_config: IrrigationConfig;
-  irrigation_strategy?: IrrigationStrategy | null;
+  irrigation_config: SerializedIrrigationConfig;
+  irrigation_strategy?: SerializedIrrigationStrategy | null;
   _ts?: number; // Backend serialization timestamp for efficient equality checks
 }
 
-// --- Internal Frontend Models ---
-
-export interface GrowspaceDevice {
-  device_id: string;
-  overview_entity_id?: string;
-  name: string;
-  type: GrowspaceType;
-
-  plants: PlantEntity[];
-  grid: Record<string, RawPlantData | null>;
-
-  rows: number;
-  plants_per_row: number;
-  last_updated?: string;
-  notification_target?: string | null;
-
-  // Structured Groups
-  biological_metrics: SerializedBiologicalMetrics;
-  environment_attributes: SerializedEnvironmentAttributes;
-  stats: SerializedStats;
-
-  irrigation_config: IrrigationConfig;
-  irrigation_strategy?: IrrigationStrategy;
-}
-
-export enum TrainingTechnique {
-  TOPPING = 'topping',
-  FIM = 'fim',
-  LST = 'lst',
-  SUPER_CROPPING = 'super_cropping',
-  SCROG = 'scrog',
-  DEFOLIATING = 'defoliating',
-  LOLLIPOPPING = 'lollipopping',
-}
+// --- Plant Data Model ---
 
 export interface PlantAttributes extends RawPlantData {
   friendly_name?: string;
@@ -277,12 +314,48 @@ export interface PlantEntity extends HassEntity {
   attributes: PlantAttributes & HassEntity['attributes'];
 }
 
+// --- Internal Frontend Models ---
+
+export interface GrowspaceDevice {
+  deviceId: string;
+  overviewEntityId?: string;
+  name: string;
+  type: GrowspaceType;
+
+  plants: PlantEntity[];
+  grid: Record<string, RawPlantData | null>;
+
+  rows: number;
+  plantsPerRow: number;
+  lastUpdated?: string;
+  notificationTarget?: string | null;
+
+  // Structured Groups
+  biologicalMetrics: BiologicalMetrics;
+  environmentAttributes: EnvironmentAttributes;
+  stats: GrowspaceStats;
+
+  irrigationConfig: IrrigationConfig;
+  irrigationStrategy?: IrrigationStrategy;
+}
+
+export enum TrainingTechnique {
+  TOPPING = 'topping',
+  FIM = 'fim',
+  LST = 'lst',
+  SUPER_CROPPING = 'super_cropping',
+  SCROG = 'scrog',
+  DEFOLIATING = 'defoliating',
+  LOLLIPOPPING = 'lollipopping',
+}
+
+
 export interface GrowspaceOverviewEntity extends HassEntity {
   attributes: {
     growspace_id: string;
     friendly_name?: string;
     type?: string;
-    plants_per_row?: number;
+    plantsPerRow?: number;
     rows?: number;
   };
 }
@@ -290,36 +363,36 @@ export interface GrowspaceOverviewEntity extends HassEntity {
 // --- Utils ---
 
 export function createGrowspaceDevice(
-  params: Partial<GrowspaceDevice> & { device_id: string; name: string }
+  params: Partial<GrowspaceDevice> & { deviceId: string; name: string }
 ): GrowspaceDevice {
   return {
     type: GrowspaceTypeEnum.NORMAL,
     rows: 3,
-    plants_per_row: 3,
+    plantsPerRow: 3,
     plants: [],
     grid: {},
-    irrigation_config: { irrigation_times: [], drain_times: [] },
+    irrigationConfig: { irrigation_times: [], drain_times: [] },
 
     // Default Empty Objects to prevent UI crashes
-    biological_metrics: {
-      vpd_status: 'unknown',
-      vpd_target_min: 0,
-      vpd_target_max: 0,
-      vpd_danger_min: 0,
-      vpd_danger_max: 0,
-      granular_stage: 'unknown',
-      is_day: true,
-      veg_week: 0,
-      flower_week: 0
+    biologicalMetrics: {
+      vpdStatus: 'unknown',
+      vpdTargetMin: 0,
+      vpdTargetMax: 0,
+      vpdDangerMin: 0,
+      vpdDangerMax: 0,
+      granularStage: 'unknown',
+      isDay: true,
+      vegWeek: 0,
+      flowerWeek: 0,
     },
-    environment_attributes: {},
+    environmentAttributes: {},
     stats: {
-      max_veg_days: 0,
-      max_flower_days: 0,
-      veg_week: 0,
-      flower_week: 0,
-      max_stage_summary: '',
-      total_plants: 0
+      maxVegDays: 0,
+      maxFlowerDays: 0,
+      vegWeek: 0,
+      flowerWeek: 0,
+      maxStageSummary: '',
+      total_plants: 0,
     },
     ...params,
   } as GrowspaceDevice;
@@ -419,63 +492,63 @@ export interface PlantOverviewDialogState {
 export interface StrainLibraryDialogState {
   editingStrain?: StrainEntry;
   source?: 'add-plant' | 'add-plants' | 'plant-overview';
-  returnPayload?: any;
+  returnPayload?: unknown;
 }
 
 export interface EnvironmentConfigData {
   selectedGrowspaceId: string;
-  temp_sensor: string;
-  humidity_sensor: string;
-  vpd_sensor: string;
-  co2_sensor: string;
+  temperatureSensor: string;
+  humiditySensor: string;
+  vpdSensor: string;
+  co2Sensor: string;
 
   // Fans
-  circulation_fan: string;
-  circulation_fan_entities: string[];
-  exhaust_entity: string;
-  exhaust_fan_entities: string[];
+  circulationFanEntity: string;
+  circulationFanEntities: string[];
+  exhaustEntity: string;
+  exhaustFanEntities: string[];
 
-  stress_threshold: number;
-  mold_threshold: number;
+  stressThreshold: number;
+  moldThreshold: number;
 
   // Lights
-  light_sensor: string;
-  light_sensors: string[];
+  lightSensor: string;
+  lightSensors: string[];
 
   // Humidifier
-  humidifier_entity: string;
-  humidifier_entities: string[];
+  humidifierEntity: string;
+  humidifierEntities: string[];
 
   // Dehumidifier
-  dehumidifier_entity: string;
-  dehumidifier_entities: string[];
-  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  control_dehumidifier: boolean;
+  dehumidifierEntity: string;
+  dehumidifierEntities: string[];
+  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  dehumidifierControlEnabled: boolean;
 
-  soil_moisture_sensor: string;
+  soilMoistureSensor: string;
 }
 
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
-  temp_sensor: string;
-  humidity_sensor: string;
-  vpd_sensor?: string | null;
-  co2_sensor?: string | null;
-  circulation_fan?: string | null;
-  circulation_fan_entities?: string[];
-  stress_threshold: number;
-  mold_threshold: number;
-  light_sensor?: string | null;
-  light_sensors?: string[];
-  exhaust_entity?: string | null;
-  exhaust_fan_entities?: string[];
-  humidifier_entity?: string | null;
-  humidifier_entities?: string[];
-  dehumidifier_entity?: string | null;
-  dehumidifier_entities?: string[];
-  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  soil_moisture_sensor?: string | null;
-  control_dehumidifier: boolean;
+  temperatureSensor: string;
+  humiditySensor: string;
+  vpdSensor?: string | null;
+  co2Sensor?: string | null;
+  circulationFanEntity?: string | null;
+  circulationFanEntities?: string[];
+  stressThreshold: number;
+  moldThreshold: number;
+  lightSensor?: string | null;
+  lightSensors?: string[];
+  exhaustEntity?: string | null;
+  exhaustFanEntities?: string[];
+  humidifierEntity?: string | null;
+  humidifierEntities?: string[];
+  dehumidifierEntity?: string | null;
+  dehumidifierEntities?: string[];
+  dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  soilMoistureSensor?: string | null;
+  dehumidifierControlEnabled: boolean;
 }
 
 export interface ConfigDialogState {

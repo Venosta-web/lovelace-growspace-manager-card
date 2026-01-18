@@ -90,14 +90,14 @@ describe('ConfigDialog', () => {
 
         element.devices = [
             {
-                device_id: 'gs1',
+                deviceId: 'gs1',
                 name: 'Growspace 1',
                 rows: 4,
-                plants_per_row: 4,
-                notification_target: 'mobile_app_phone',
-                environment_attributes: {
-                    temperature_sensor: 'sensor.temp',
-                    humidity_sensor: 'sensor.hum',
+                plantsPerRow: 4,
+                notificationTarget: 'mobile_app_phone',
+                environmentAttributes: {
+                    temperatureSensor: 'sensor.temp',
+                    humiditySensor: 'sensor.hum',
                 }
             } as any
         ];
@@ -137,8 +137,8 @@ describe('ConfigDialog', () => {
             element.addEventListener('add-growspace-submit', listener);
 
             // Simulate input
-            (element as any).add_name = 'New GS';
-            (element as any).add_rows = 5;
+            (element as any).addName = 'New GS';
+            (element as any).addRows = 5;
 
             // Find submit button
             const btn = element.shadowRoot?.querySelector('button.md3-button.primary');
@@ -171,16 +171,16 @@ describe('ConfigDialog', () => {
             select.dispatchEvent(new Event('change'));
             await element.updateComplete;
 
-            expect((element as any).edit_name).toBe('Growspace 1');
-            expect((element as any).edit_rows).toBe(4);
+            expect((element as any).editName).toBe('Growspace 1');
+            expect((element as any).editRows).toBe(4);
 
             const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Growspace Name"]');
             expect((nameInput as any).value).toBe('Growspace 1');
         });
 
         it('should submit updates', async () => {
-            (element as any).edit_selectedId = 'gs1';
-            (element as any).edit_name = 'Updated GS';
+            (element as any).editSelectedId = 'gs1';
+            (element as any).editName = 'Updated GS';
             await element.updateComplete;
 
             const listener = vi.fn();
@@ -195,8 +195,8 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle delete confirmation flow', async () => {
-            (element as any).edit_selectedId = 'gs1';
-            (element as any).edit_name = 'GS 1';
+            (element as any).editSelectedId = 'gs1';
+            (element as any).editName = 'GS 1';
             await element.updateComplete;
 
             // Click Delete
@@ -220,7 +220,7 @@ describe('ConfigDialog', () => {
             expect(listener.mock.calls[0][0].detail.growspace_id).toBe('gs1');
 
             // Should reset
-            expect((element as any).edit_selectedId).toBe('');
+            expect((element as any).editSelectedId).toBe('');
         });
     });
 
@@ -236,13 +236,13 @@ describe('ConfigDialog', () => {
         it('should load initial state', async () => {
             element.setInitialState(ConfigTab.ENVIRONMENT, {
                 selectedGrowspaceId: 'gs1',
-                temp_sensor: 'sensor.temp',
-                humidity_sensor: 'sensor.hum',
-                vpd_sensor: '', co2_sensor: '', circulation_fan: '',
-                stress_threshold: 0, mold_threshold: 0, light_sensor: '', light_sensors: [],
-                exhaust_entity: '', exhaust_fan_entities: [], humidifier_entity: '', humidifier_entities: [],
-                dehumidifier_entity: '', dehumidifier_entities: [], circulation_fan_entities: [],
-                soil_moisture_sensor: '', control_dehumidifier: true, dehumidifier_thresholds: {}
+                temperatureSensor: 'sensor.temp',
+                humiditySensor: 'sensor.hum',
+                vpdSensor: '', co2Sensor: '', circulationFanEntity: '',
+                stressThreshold: 0, moldThreshold: 0, lightSensor: '', lightSensors: [],
+                exhaustEntity: '', exhaustFanEntities: [], humidifierEntity: '', humidifierEntities: [],
+                dehumidifierEntity: '', dehumidifierEntities: [], circulationFanEntities: [],
+                soilMoistureSensor: '', dehumidifierControlEnabled: true, dehumidifierThresholds: {}
             });
             await element.updateComplete;
 
@@ -277,8 +277,8 @@ describe('ConfigDialog', () => {
         });
 
         it('should submit configuration', async () => {
-            (element as any).env_selectedGrowspaceId = 'gs1';
-            (element as any).env_temp_sensor = 'sensor.new';
+            (element as any).envSelectedId = 'gs1';
+            (element as any).envTemperatureSensor = 'sensor.new';
 
             const listener = vi.fn();
             element.addEventListener('configure-environment-submit', listener);
@@ -287,7 +287,7 @@ describe('ConfigDialog', () => {
             (btn as HTMLElement)?.click();
 
             expect(listener).toHaveBeenCalled();
-            expect(listener.mock.calls[0][0].detail.temp_sensor).toBe('sensor.new');
+            expect(listener.mock.calls[0][0].detail.temperatureSensor).toBe('sensor.new');
         });
     });
 
@@ -323,35 +323,35 @@ describe('ConfigDialog', () => {
             };
 
             await updatePicker('Temperature Sensor', 'sensor.temp');
-            expect((element as any).env_temp_sensor).toBe('sensor.temp');
+            expect((element as any).envTemperatureSensor).toBe('sensor.temp');
 
             await updatePicker('Humidity Sensor', 'sensor.hum');
-            expect((element as any).env_humidity_sensor).toBe('sensor.hum');
+            expect((element as any).envHumiditySensor).toBe('sensor.hum');
 
             await updatePicker('VPD Sensor (Optional)', 'sensor.vpd');
-            expect((element as any).env_vpd_sensor).toBe('sensor.vpd');
+            expect((element as any).envVpdSensor).toBe('sensor.vpd');
 
             await updatePicker('Soil Moisture Sensor', 'sensor.soil');
-            expect((element as any).env_soil_moisture_sensor).toBe('sensor.soil');
+            expect((element as any).envSoilMoistureSensor).toBe('sensor.soil');
 
             await updatePicker('CO2 Sensor', 'sensor.co2');
-            expect((element as any).env_co2_sensor).toBe('sensor.co2');
+            expect((element as any).envCo2Sensor).toBe('sensor.co2');
 
             // Multi
             await updateMultiPicker('Light Source / Sensor', 'sensor.light');
-            expect((element as any).env_light_sensors).toEqual(['sensor.light']);
+            expect((element as any).envLightSensors).toEqual(['sensor.light']);
 
             await updateMultiPicker('Exhaust Fan / Switch', 'switch.exhaust');
-            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.exhaust']);
+            expect((element as any).envExhaustFanEntities).toEqual(['switch.exhaust']);
 
             await updateMultiPicker('Circulation Fan / Switch', 'switch.circulation');
-            expect((element as any).env_circulation_fan_entities).toEqual(['switch.circulation']);
+            expect((element as any).envCirculationFanEntities).toEqual(['switch.circulation']);
 
             await updateMultiPicker('Humidifier', 'switch.humidifier');
-            expect((element as any).env_humidifier_entities).toEqual(['switch.humidifier']);
+            expect((element as any).envHumidifierEntities).toEqual(['switch.humidifier']);
 
             await updateMultiPicker('Dehumidifier', 'switch.dehumidifier');
-            expect((element as any).env_dehumidifier_entities).toEqual(['switch.dehumidifier']);
+            expect((element as any).envDehumidifierEntities).toEqual(['switch.dehumidifier']);
         });
 
 
@@ -361,12 +361,12 @@ describe('ConfigDialog', () => {
             if (numbers[0]) {
                 numbers[0].dispatchEvent(new CustomEvent('change', { detail: '1.5' }));
                 await element.updateComplete;
-                expect((element as any).env_stress_threshold).toBe(1.5);
+                expect((element as any).envStressThreshold).toBe(1.5);
             }
             if (numbers[1]) {
                 numbers[1].dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
                 await element.updateComplete;
-                expect((element as any).env_mold_threshold).toBe(2.5);
+                expect((element as any).envMoldThreshold).toBe(2.5);
             }
         });
 
@@ -375,14 +375,14 @@ describe('ConfigDialog', () => {
             check.checked = true;
             check.dispatchEvent(new Event('change'));
             await element.updateComplete;
-            expect((element as any).env_control_dehumidifier).toBe(true);
+            expect((element as any).envDehumidifierControlEnabled).toBe(true);
         });
     });
 
     describe('Dehumidifier Tab Complex Logic', () => {
         beforeEach(async () => {
             element.currentTab = ConfigTab.DEHUMIDIFIER;
-            (element as any).env_dehumidifier_thresholds = {
+            (element as any).envDehumidifierThresholds = {
                 seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
             };
             await element.updateComplete;
@@ -413,12 +413,12 @@ describe('ConfigDialog', () => {
             // Update Day Off (Index 1)
             inputs[1]?.dispatchEvent(new CustomEvent('change', { detail: '1.2' }));
             await element.updateComplete;
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.off).toBe(1.2);
+            expect((element as any).envDehumidifierThresholds.seedling.day.off).toBe(1.2);
 
             // Update Night On (Index 2)
             inputs[2]?.dispatchEvent(new CustomEvent('change', { detail: '0.95' }));
             await element.updateComplete;
-            expect((element as any).env_dehumidifier_thresholds.seedling.night.on).toBe(0.95);
+            expect((element as any).envDehumidifierThresholds.seedling.night.on).toBe(0.95);
         });
 
         it('should handle invalid inputs gracefully', async () => {
@@ -426,12 +426,12 @@ describe('ConfigDialog', () => {
             const dayOn = inputs[0];
 
             // Initial value
-            const initial = (element as any).env_dehumidifier_thresholds.seedling.day.on;
+            const initial = (element as any).envDehumidifierThresholds.seedling.day.on;
 
             dayOn?.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number' }));
             await element.updateComplete;
 
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(initial);
+            expect((element as any).envDehumidifierThresholds.seedling.day.on).toBe(initial);
         });
 
         it('should initialize stage if missing during write', async () => {
@@ -444,9 +444,9 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             // Check deep structure created
-            expect((element as any).env_dehumidifier_thresholds.drying.day.on).toBe(0.5);
+            expect((element as any).envDehumidifierThresholds.drying.day.on).toBe(0.5);
             // Verify other defaults
-            expect((element as any).env_dehumidifier_thresholds.drying.day.off).toBe(0);
+            expect((element as any).envDehumidifierThresholds.drying.day.off).toBe(0);
         });
     });
 
@@ -482,15 +482,15 @@ describe('ConfigDialog', () => {
 
             await element.updateComplete;
 
-            expect((element as any).add_name).toBe('New Name');
-            expect((element as any).add_rows).toBe(8);
-            expect((element as any).add_plants_per_row).toBe(8);
-            expect((element as any).add_notification_service).toBe('mobile_app_test');
+            expect((element as any).addName).toBe('New Name');
+            expect((element as any).addRows).toBe(8);
+            expect((element as any).addPlantsPerRow).toBe(8);
+            expect((element as any).addNotificationService).toBe('mobile_app_test');
         });
 
         it('should update Edit Growspace inputs', async () => {
             element.currentTab = ConfigTab.EDIT_GROWSPACE;
-            (element as any).edit_selectedId = 'gs1'; // Select one to show fields
+            (element as any).editSelectedId = 'gs1'; // Select one to show fields
             await element.updateComplete;
 
             // Name
@@ -517,10 +517,10 @@ describe('ConfigDialog', () => {
 
             await element.updateComplete;
 
-            expect((element as any).edit_name).toBe('Edited Name');
-            expect((element as any).edit_rows).toBe(6);
-            expect((element as any).edit_plants_per_row).toBe(6);
-            expect((element as any).edit_notification_service).toBe('mobile_app_test');
+            expect((element as any).editName).toBe('Edited Name');
+            expect((element as any).editRows).toBe(6);
+            expect((element as any).editPlantsPerRow).toBe(6);
+            expect((element as any).editNotificationService).toBe('mobile_app_test');
         });
     });
 
@@ -532,8 +532,8 @@ describe('ConfigDialog', () => {
             const listener = vi.fn();
             element.addEventListener('add-growspace-submit', listener);
 
-            (element as any).add_name = 'New GS';
-            (element as any).add_notification_service = 'mobile_app_test';
+            (element as any).addName = 'New GS';
+            (element as any).addNotificationService = 'mobile_app_test';
 
             // Trigger submit
             (element as any)._submitAddGrowspace();
@@ -543,11 +543,11 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle edit population when device is not found', () => {
-            (element as any).edit_name = 'Old Name';
+            (element as any).editName = 'Old Name';
             (element as any)._populateEditFields('non_existent_id');
             // Should set ID but not update fields
-            expect((element as any).edit_selectedId).toBe('non_existent_id');
-            expect((element as any).edit_name).toBe('Old Name');
+            expect((element as any).editSelectedId).toBe('non_existent_id');
+            expect((element as any).editName).toBe('Old Name');
         });
 
         it('should close dialog via header button', async () => {
@@ -593,7 +593,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should return 0 for missing threshold value', async () => {
-            (element as any).env_dehumidifier_thresholds = undefined;
+            (element as any).envDehumidifierThresholds = undefined;
             await element.updateComplete;
 
             const result = (element as any)._getThresholdValue('veg', 'day', 'on');
@@ -601,7 +601,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should return correct threshold value when present', async () => {
-            (element as any).env_dehumidifier_thresholds = {
+            (element as any).envDehumidifierThresholds = {
                 veg: { day: { on: 1.5, off: 1.2 } }
             };
             await element.updateComplete;
@@ -619,15 +619,15 @@ describe('ConfigDialog', () => {
             notifInput?.dispatchEvent(new CustomEvent('change', { detail: 'new_service' }));
             await element.updateComplete;
 
-            expect((element as any).add_notification_service).toBe('new_service');
+            expect((element as any).addNotificationService).toBe('new_service');
         });
 
         it('should update threshold via _updateThreshold', async () => {
-            (element as any).env_dehumidifier_thresholds = {};
+            (element as any).envDehumidifierThresholds = {};
             await element.updateComplete;
 
             (element as any)._updateThreshold('veg', 'day', 'on', 1.8);
-            expect((element as any).env_dehumidifier_thresholds.veg?.day?.on).toBe(1.8);
+            expect((element as any).envDehumidifierThresholds.veg?.day?.on).toBe(1.8);
         });
     });
 
@@ -658,8 +658,8 @@ describe('ConfigDialog', () => {
             onInputs.forEach(input => input.dispatchEvent(new CustomEvent('change', { detail: '1.2' })));
             offInputs.forEach(input => input.dispatchEvent(new CustomEvent('change', { detail: '1.5' })));
 
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(1.2);
-            expect((element as any).env_dehumidifier_thresholds.seedling.night.off).toBe(1.5);
+            expect((element as any).envDehumidifierThresholds.seedling.day.on).toBe(1.2);
+            expect((element as any).envDehumidifierThresholds.seedling.night.off).toBe(1.5);
         });
 
         it('should trigger add_growspace tab click handler', async () => {
@@ -681,21 +681,21 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
             inputs?.[0]?.dispatchEvent(new CustomEvent('change', { detail: '2.0' }));
-            expect((element as any).env_dehumidifier_thresholds.veg.day.on).toBe(2.0);
+            expect((element as any).envDehumidifierThresholds.veg.day.on).toBe(2.0);
         });
 
         it('should handle partial environment attributes in _handleEnvGrowspaceChange', () => {
             const partialDevice = {
-                device_id: 'partial',
-                environment_attributes: {
-                    temperature_sensor: 's.t'
+                deviceId: 'partial',
+                environmentAttributes: {
+                    temperatureSensor: 's.t'
                 }
             } as any;
             element.devices = [partialDevice];
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'partial' } } as any);
-            expect((element as any).env_temp_sensor).toBe('s.t');
-            expect((element as any).env_humidity_sensor).toBe('');
-            expect((element as any).env_control_dehumidifier).toBe(false);
+            expect((element as any).envTemperatureSensor).toBe('s.t');
+            expect((element as any).envHumiditySensor).toBe('');
+            expect((element as any).envDehumidifierControlEnabled).toBe(false);
         });
 
         it('should handle unknown dehumidifier stage fallback', async () => {
@@ -708,23 +708,23 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle null thresholds during _updateThreshold', () => {
-            (element as any).env_dehumidifier_thresholds = null as any;
+            (element as any).envDehumidifierThresholds = null as any;
             (element as any)._updateThreshold('seedling', 'day', 'on', 1.0);
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(1.0);
+            expect((element as any).envDehumidifierThresholds.seedling.day.on).toBe(1.0);
         });
     });
     describe('Additional Coverage Gap Fillers', () => {
         it('should populate edit fields with missing notification target', () => {
             const dev = {
-                device_id: 'no_notify',
+                deviceId: 'no_notify',
                 name: 'No Notify',
                 rows: 4,
-                plants_per_row: 4
-                // notification_target missing
+                plantsPerRow: 4
+                // notificationTarget missing
             } as any;
             element.devices = [dev];
             (element as any)._populateEditFields('no_notify');
-            expect((element as any).edit_notification_service).toBe('');
+            expect((element as any).editNotificationService).toBe('');
         });
 
         it('should render entity select fallback to entity_id if friendly_name missing', async () => {
@@ -760,33 +760,33 @@ describe('ConfigDialog', () => {
             // Better to inspect DOM if rendered.
         });
 
-        it('should handle env growspace change with device missing environment_attributes', () => {
+        it('should handle env growspace change with device missing environmentAttributes', () => {
             const dev = {
-                device_id: 'no_env',
+                deviceId: 'no_env',
                 name: 'No Env'
-                // environment_attributes missing
+                // environmentAttributes missing
             } as any;
             element.devices = [dev];
             // set initial dirty state
-            (element as any).env_temp_sensor = 'dirty';
+            (element as any).envTemperatureSensor = 'dirty';
 
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'no_env' } } as any);
 
             // Should fall to else block and reset
-            expect((element as any).env_temp_sensor).toBe('');
+            expect((element as any).envTemperatureSensor).toBe('');
         });
 
 
         it('should use default rows and plants per row if missing in device', () => {
             const dev = {
-                device_id: 'defaults',
+                deviceId: 'defaults',
                 name: 'Defaults'
-                // rows, plants_per_row missing
+                // rows, plantsPerRow missing
             } as any;
             element.devices = [dev];
             (element as any)._populateEditFields('defaults');
-            expect((element as any).edit_rows).toBe(4);
-            expect((element as any).edit_plants_per_row).toBe(4);
+            expect((element as any).editRows).toBe(4);
+            expect((element as any).editPlantsPerRow).toBe(4);
         });
     });
 
@@ -800,66 +800,66 @@ describe('ConfigDialog', () => {
         });
 
         it('should return early in _submitDeleteGrowspace if no id selected', () => {
-            (element as any).edit_selectedId = '';
+            (element as any).editSelectedId = '';
             (element as any)._showDeleteConfirm = false;
             (element as any)._submitDeleteGrowspace();
             expect((element as any)._showDeleteConfirm).toBe(false);
         });
 
         it('should handle device not found in _populateEditFields', () => {
-            (element as any).edit_name = 'Original';
+            (element as any).editName = 'Original';
             // Passing ID that doesn't exist in element.devices
             (element as any)._populateEditFields('missing_id');
-            expect((element as any).edit_selectedId).toBe('missing_id');
+            expect((element as any).editSelectedId).toBe('missing_id');
             // edit_name should NOT change
-            expect((element as any).edit_name).toBe('Original');
+            expect((element as any).editName).toBe('Original');
         });
 
         it('should fallback to defaults in _populateEditFields if device properties missing', () => {
             element.devices = [
                 {
-                    device_id: 'incomplete',
+                    deviceId: 'incomplete',
                     name: 'Incomplete Device'
-                    // missing rows, plants_per_row, notification_target
+                    // missing rows, plantsPerRow, notificationTarget
                 } as any
             ];
 
             (element as any)._populateEditFields('incomplete');
 
-            expect((element as any).edit_name).toBe('Incomplete Device');
-            expect((element as any).edit_rows).toBe(4); // Default
-            expect((element as any).edit_plants_per_row).toBe(4); // Default
-            expect((element as any).edit_notification_service).toBe(''); // Default
+            expect((element as any).editName).toBe('Incomplete Device');
+            expect((element as any).editRows).toBe(4); // Default
+            expect((element as any).editPlantsPerRow).toBe(4); // Default
+            expect((element as any).editNotificationService).toBe(''); // Default
         });
 
-        it('should handle missing environment_attributes in _handleEnvGrowspaceChange', async () => {
+        it('should handle missing environmentAttributes in _handleEnvGrowspaceChange', async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
-                    device_id: 'no_env',
+                    deviceId: 'no_env',
                     name: 'No Env',
-                    environment_attributes: undefined
+                    environmentAttributes: undefined
                 } as any
             ];
             await element.updateComplete;
 
             // Pre-set some values, expecting them to be reset
-            (element as any).env_temp_sensor = 'old_sensor';
+            (element as any).envTemperatureSensor = 'old_sensor';
 
             const event = { target: { value: 'no_env' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
-            expect((element as any).env_selectedGrowspaceId).toBe('no_env');
-            expect((element as any).env_temp_sensor).toBe('');
+            expect((element as any).envSelectedId).toBe('no_env');
+            expect((element as any).envTemperatureSensor).toBe('');
         });
 
         it('should fallback to defaults for environment attributes in _handleEnvGrowspaceChange', async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
-                    device_id: 'partial_env',
+                    deviceId: 'partial_env',
                     name: 'Partial Env',
-                    environment_attributes: {
+                    environmentAttributes: {
                         // Empty object, should trigger all || '' fallbacks
                     }
                 } as any
@@ -867,15 +867,15 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             // Pre-set to something else to verify reset
-            (element as any).env_temp_sensor = 'old';
-            (element as any).env_control_dehumidifier = true;
+            (element as any).envTemperatureSensor = 'old';
+            (element as any).envDehumidifierControlEnabled = true;
 
             const event = { target: { value: 'partial_env' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
-            expect((element as any).env_temp_sensor).toBe('');
-            expect((element as any).env_control_dehumidifier).toBe(false);
-            expect((element as any).env_dehumidifier_thresholds).toEqual({});
+            expect((element as any).envTemperatureSensor).toBe('');
+            expect((element as any).envDehumidifierControlEnabled).toBe(false);
+            expect((element as any).envDehumidifierThresholds).toEqual({});
         });
 
         it('should handle missing hass.services.notify in _getMobileAppNotifyServices', () => {
@@ -911,11 +911,11 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle empty value in _handleEditSelection', () => {
-            (element as any).edit_selectedId = 'old';
+            (element as any).editSelectedId = 'old';
             (element as any)._handleEditSelection({ target: { value: '' } } as any);
-            expect((element as any).edit_selectedId).toBe('');
+            expect((element as any).editSelectedId).toBe('');
             // Should also populate (reset) fields
-            expect((element as any).edit_name).toBe('');
+            expect((element as any).editName).toBe('');
         });
 
         it('should cancel delete growspace', () => {
@@ -939,19 +939,19 @@ describe('ConfigDialog', () => {
             // Let's try to find it in shadowRoot if possible by rendering the component with some multi-values.
 
             element.currentTab = ConfigTab.ENVIRONMENT;
-            (element as any).env_light_sensors = ['sensor.1', 'sensor.2'];
+            (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
 
             const removeBtn = element.shadowRoot?.querySelector('.chip-remove');
             (removeBtn as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any).env_light_sensors).toEqual(['sensor.2']);
+            expect((element as any).envLightSensors).toEqual(['sensor.2']);
         });
 
         it('should handle multi-select input change with empty value', async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
-            (element as any).env_light_sensors = ['sensor.1'];
+            (element as any).envLightSensors = ['sensor.1'];
             await element.updateComplete;
 
             const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
@@ -959,7 +959,7 @@ describe('ConfigDialog', () => {
             input.dispatchEvent(new Event('change'));
             await element.updateComplete;
 
-            expect((element as any).env_light_sensors).toEqual(['sensor.1']); // Unchanged
+            expect((element as any).envLightSensors).toEqual(['sensor.1']); // Unchanged
         });
 
         it('should handle initialTab pre-selection in updated', async () => {
@@ -976,14 +976,14 @@ describe('ConfigDialog', () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
-                    device_id: 'legacy',
+                    deviceId: 'legacy',
                     name: 'Legacy Device',
-                    environment_attributes: {
-                        humidifier_entity: 'switch.humidifier',
-                        dehumidifier_entity: 'switch.dehumidifier',
-                        light_sensor: 'sensor.light',
-                        exhaust_entity: 'switch.exhaust',
-                        circulation_fan_entity: 'switch.circulation'
+                    environmentAttributes: {
+                        humidifierEntity: 'switch.humidifier',
+                        dehumidifierEntity: 'switch.dehumidifier',
+                        lightSensor: 'sensor.light',
+                        exhaustEntity: 'switch.exhaust',
+                        circulationFanEntity: 'switch.circulation'
                     }
                 } as any
             ];
@@ -992,29 +992,29 @@ describe('ConfigDialog', () => {
             const event = { target: { value: 'legacy' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
-            expect((element as any).env_humidifier_entities).toEqual(['switch.humidifier']);
-            expect((element as any).env_dehumidifier_entities).toEqual(['switch.dehumidifier']);
-            expect((element as any).env_light_sensors).toEqual(['sensor.light']);
-            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.exhaust']);
-            expect((element as any).env_circulation_fan_entities).toEqual(['switch.circulation']);
+            expect((element as any).envHumidifierEntities).toEqual(['switch.humidifier']);
+            expect((element as any).envDehumidifierEntities).toEqual(['switch.dehumidifier']);
+            expect((element as any).envLightSensors).toEqual(['sensor.light']);
+            expect((element as any).envExhaustFanEntities).toEqual(['switch.exhaust']);
+            expect((element as any).envCirculationFanEntities).toEqual(['switch.circulation']);
         });
         it('should handle empty multi-entity lists with legacy fallback in _handleEnvGrowspaceChange', async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
             element.devices = [
                 {
-                    device_id: 'empty_lists',
+                    deviceId: 'empty_lists',
                     name: 'Empty Lists Device',
-                    environment_attributes: {
-                        light_sensors: [],
-                        light_sensor: 'sensor.legacy_light',
-                        exhaust_fan_entities: [],
-                        exhaust_entity: 'switch.legacy_exhaust',
-                        circulation_fan_entities: [],
-                        circulation_fan_entity: 'switch.legacy_circulation',
-                        humidifier_entities: [],
-                        humidifier_entity: 'switch.legacy_humidifier',
-                        dehumidifier_entities: [],
-                        dehumidifier_entity: 'switch.legacy_dehumidifier'
+                    environmentAttributes: {
+                        lightSensors: [],
+                        lightSensor: 'sensor.legacy_light',
+                        exhaustFanEntities: [],
+                        exhaustEntity: 'switch.legacy_exhaust',
+                        circulationFanEntities: [],
+                        circulationFanEntity: 'switch.legacy_circulation',
+                        humidifierEntities: [],
+                        humidifierEntity: 'switch.legacy_humidifier',
+                        dehumidifierEntities: [],
+                        dehumidifierEntity: 'switch.legacy_dehumidifier'
                     }
                 } as any
             ];
@@ -1023,11 +1023,11 @@ describe('ConfigDialog', () => {
             const event = { target: { value: 'empty_lists' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
-            expect((element as any).env_light_sensors).toEqual(['sensor.legacy_light']);
-            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.legacy_exhaust']);
-            expect((element as any).env_circulation_fan_entities).toEqual(['switch.legacy_circulation']);
-            expect((element as any).env_humidifier_entities).toEqual(['switch.legacy_humidifier']);
-            expect((element as any).env_dehumidifier_entities).toEqual(['switch.legacy_dehumidifier']);
+            expect((element as any).envLightSensors).toEqual(['sensor.legacy_light']);
+            expect((element as any).envExhaustFanEntities).toEqual(['switch.legacy_exhaust']);
+            expect((element as any).envCirculationFanEntities).toEqual(['switch.legacy_circulation']);
+            expect((element as any).envHumidifierEntities).toEqual(['switch.legacy_humidifier']);
+            expect((element as any).envDehumidifierEntities).toEqual(['switch.legacy_dehumidifier']);
         });
     });
 });

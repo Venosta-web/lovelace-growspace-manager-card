@@ -80,15 +80,19 @@ describe('GrowspaceAPI Extra Coverage', () => {
 
     describe('configureEnvironment gaps', () => {
         const config = {
-            growspace_id: 'gs1',
-            temperature_sensor: 'sensor.t',
-            humidity_sensor: 'sensor.h'
+            growspaceId: 'gs1',
+            temperatureSensor: 'sensor.t',
+            humiditySensor: 'sensor.h'
         };
 
         it('should call service on success', async () => {
             const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
             await service.configureEnvironment(config);
-            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'configure_environment', config);
+            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'configure_environment', {
+                growspace_id: 'gs1',
+                temperature_sensor: 'sensor.t',
+                humidity_sensor: 'sensor.h'
+            });
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Service Called'));
         });
 
@@ -119,6 +123,21 @@ describe('GrowspaceAPI Extra Coverage', () => {
             await expect(service.setDehumidifierControl('gs1', false)).rejects.toThrow('Control Fail');
             expect(consoleSpy).toHaveBeenCalled();
         });
+
+        it('should log detailed validation errors for collection', async () => {
+            const invalidCollection = {
+                gs1: { invalid_prop: true } // Missing required fields
+            };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(invalidCollection);
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            await service.fetchGrowspaceData();
+
+            // Should log collection error
+            expect(spy).toHaveBeenCalledWith(expect.stringContaining('API Validation Failed for Collection'), expect.anything());
+            // Should log individual item error
+            expect(spy).toHaveBeenCalledWith(expect.stringContaining('Found problematic item: gs1'), expect.anything());
+        });
     });
 
     describe('getGrowspaceDevices gaps', () => {
@@ -132,5 +151,73 @@ describe('GrowspaceAPI Extra Coverage', () => {
             const res = service.getGrowspaceDevices(wsMap);
             expect(res).toEqual([]);
         });
+
+        it('should return empty array for undefined input', () => {
+            const res = service.getGrowspaceDevices(undefined as any);
+            expect(res).toEqual([]);
+        });
+    });
+
+    describe('Configure Environment Coverage', () => {
+        it('should configure environment with all options', async () => {
+            await service.configureEnvironment({
+                growspaceId: 'g1',
+                temperatureSensor: 's.t',
+                humiditySensor: 's.h',
+                vpdSensor: 's.vpd',
+                co2Sensor: 's.co2',
+                circulationFanEntity: 's.fan',
+                circulationFanEntities: ['s.fan1', 's.fan2'],
+                stressThreshold: 1,
+                moldThreshold: 2,
+                lightSensor: 's.light',
+                lightSensors: ['s.l1'],
+                exhaustEntity: 's.ex',
+                exhaustFanEntities: ['s.ex1'],
+                humidifierEntity: 's.hum',
+                humidifierEntities: ['s.h1'],
+                dehumidifierEntity: 's.dehum',
+                dehumidifierEntities: ['s.d1'],
+                dehumidifierThresholds: { cure: { default: { on: 1.1, off: 1.2 } } },
+                soilMoistureSensor: 's.m',
+                controlDehumidifier: true,
+                vegDayHours: 18,
+                flowerEarlyDayHours: 12,
+                flowerMidDayHours: 12,
+                flowerLateDayHours: 12,
+                minimumSourceAirTemperature: 20
+            });
+
+            expect(mockHass.callService).toHaveBeenCalledWith(
+                'growspace_manager',
+                'configure_environment',
+                expect.objectContaining({
+                    growspace_id: 'g1',
+                    vpd_sensor: 's.vpd',
+                    co2_sensor: 's.co2',
+                    circulation_fan_entity: 's.fan',
+                    circulation_fan_entities: ['s.fan1', 's.fan2'],
+                    stress_threshold: 1,
+                    mold_threshold: 2,
+                    light_sensor: 's.light',
+                    light_sensors: ['s.l1'],
+                    exhaust_entity: 's.ex',
+                    exhaust_fan_entities: ['s.ex1'],
+                    humidifier_entity: 's.hum',
+                    humidifier_entities: ['s.h1'],
+                    dehumidifier_entity: 's.dehum',
+                    dehumidifier_entities: ['s.d1'],
+                    dehumidifier_thresholds: { cure: { default: { on: 1.1, off: 1.2 } } },
+                    soil_moisture_sensor: 's.m',
+                    control_dehumidifier: true,
+                    veg_day_hours: 18,
+                    flower_early_day_hours: 12,
+                    flower_mid_day_hours: 12,
+                    flower_late_day_hours: 12,
+                    minimum_source_air_temperature: 20
+                })
+            );
+        });
     });
 });
+

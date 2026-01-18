@@ -233,7 +233,7 @@ describe('AddPlantsDialog', () => {
                 .growspaceName=${'Tent 1'}
                 .growspaceDevice=${{
                 rows: 2,
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 plants: ['p1', 'p2', 'p3'] // 3 occupied
             }}
             ></add-plants-dialog>
@@ -260,10 +260,10 @@ describe('AddPlantsDialog', () => {
         const elementPartial = await fixture(html`
             <add-plants-dialog 
                 .open=${true} 
-                .growspaceDevice=${{ device_id: 'g1' }} 
+                .growspaceDevice=${{ deviceId: 'g1' }} 
             ></add-plants-dialog>
         `);
-        // rows/plants_per_row undefined -> 0 slots.
+        // rows/plantsPerRow undefined -> 0 slots.
         // amount 1 > 0 -> Error.
         (elementPartial as any).amount = 1;
 
@@ -282,7 +282,7 @@ describe('AddPlantsDialog', () => {
             <add-plants-dialog 
                 .open=${true} 
                 .growspaceDevice=${{
-                rows: 4, plants_per_row: 4, plants: ['p1'] // 16 slots, 1 occupied, 15 free
+                rows: 4, plantsPerRow: 4, plants: ['p1'] // 16 slots, 1 occupied, 15 free
             }}
             ></add-plants-dialog>
         `);

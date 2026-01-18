@@ -25,7 +25,7 @@ describe('GrowspaceHeaderActions', () => {
         const $isEditMode = atom(false);
         const $selectedPlants = atom(new Set<string>());
         const $selectedDevice = atom<string | null>('gs1');
-        const $devices = atom<any[]>([{ device_id: 'gs1', name: 'Growspace 1' }]);
+        const $devices = atom<any[]>([{ deviceId: 'gs1', name: 'Growspace 1' }]);
 
         mockStore = {
             openStrainLibraryDialog: vi.fn(),
@@ -309,7 +309,7 @@ describe('GrowspaceHeaderActions', () => {
             expect(mockStore.openIrrigationDialog).not.toHaveBeenCalled();
 
             // Test ipm with fallback device
-            mockStore.data.$devices.set([{ device_id: 'fallback' }]);
+            mockStore.data.$devices.set([{ deviceId: 'fallback' }]);
             (element as any)._triggerAction('ipm');
             expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({ growspaceId: 'fallback' }));
 
@@ -411,7 +411,7 @@ describe('GrowspaceHeaderActions', () => {
 
         it('should handle fallback growspaceId in ipm action', () => {
             mockStore.data.$selectedDevice.set(null);
-            mockStore.data.$devices.set([{ device_id: 'gs-fallback' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs-fallback' }]);
             (element as any)._triggerAction('ipm');
             expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({ growspaceId: 'gs-fallback' }));
 

@@ -82,7 +82,7 @@ describe('GrowspaceViewStandard', () => {
         document.body.appendChild(element);
 
         // Mock data
-        element.device = { device_id: 'gs1', name: 'GS 1', plants: [] } as any;
+        element.device = { deviceId: 'gs1', name: 'GS 1', plants: [] } as any;
         element.growspaceOptions = {};
         element.grid = [];
         element.rows = 4;

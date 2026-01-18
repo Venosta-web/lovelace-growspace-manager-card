@@ -100,6 +100,43 @@ describe('history-store', () => {
         });
     });
 
+    describe('Entity ID Resolution', () => {
+        it('should resolve snake_case keys from irrigation config if camelCase missing', () => {
+            const device = {
+                name: 'Test Device',
+                irrigationConfig: {
+                    irrigation_pump_entity: 'switch.snake_pump'
+                }
+            } as any;
+
+            // Access private method
+            const entityId = (store as any).getEntityIdForMetric(device, 'irrigation');
+            expect(entityId).toBe('switch.snake_pump');
+        });
+
+        it('should correct resolve overviewEntityID', async () => {
+            const device = {
+                deviceId: 'd1',
+                name: 'Test Device',
+                overviewEntityId: 'sensor.overview'
+            } as any;
+            dataStore.$selectedDevice.set('d1');
+            dataStore.$devices.set([device]);
+
+            (mockDataService.getHistoryStats as any).mockResolvedValue({});
+
+            await store.loadHistoryOnDemand();
+
+            expect(mockDataService.getHistoryStats).toHaveBeenCalledWith(
+                expect.arrayContaining(['sensor.overview']),
+                expect.anything(),
+                expect.anything(),
+                expect.anything(),
+                expect.anything()
+            );
+        });
+    });
+
     describe('Graph Ranges', () => {
         it('should set graph range for device', () => {
             store.setGraphRange('device1', '6h');
@@ -124,9 +161,9 @@ describe('history-store', () => {
 
         it('should handle all time ranges correctly', async () => {
             dataStore.setDevices([{
-                device_id: 'device1',
+                deviceId: 'device1',
                 name: 'Device 1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             dataStore.setSelectedDevice('device1');
 
@@ -247,10 +284,10 @@ describe('history-store', () => {
         beforeEach(() => {
             dataStore.setSelectedDevice('device1');
             dataStore.setDevices([{
-                device_id: 'device1',
+                deviceId: 'device1',
                 name: 'Device 1',
                 overview_entity_id: 'sensor.overview',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             vi.useFakeTimers();
         });
@@ -402,9 +439,9 @@ describe('history-store', () => {
     describe('Entity Mapping', () => {
         it('should get entity id for metric', () => {
             const device = {
-                device_id: 'd1', name: 'D1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' },
-                irrigation_config: { irrigation_pump_entity: 'switch.irrigation' }
+                deviceId: 'd1', name: 'D1',
+                environmentAttributes: { temperatureSensor: 'sensor.temp' },
+                irrigationConfig: { irrigationPumpEntity: 'switch.irrigation' }
             } as any;
 
             // Direct mapping
@@ -419,7 +456,7 @@ describe('history-store', () => {
 
         it('should resolve special optimal entity IDs', () => {
             const makeDevice = (name: string) => ({
-                device_id: 'd1', name, environment_attributes: {}
+                deviceId: 'd1', name, environmentAttributes: {}
             } as any);
 
             expect((store as any).getEntityIdForMetric(makeDevice('Cure'), 'optimal')).toBe('binary_sensor.cure_optimal_curing');
@@ -427,7 +464,7 @@ describe('history-store', () => {
         });
 
         it('should resolve calculated VPD if hass available', () => {
-            const device = { device_id: 'd1', name: 'Tent 1' } as any;
+            const device = { deviceId: 'd1', name: 'Tent 1' } as any;
             (store as any).dataService.hass = {
                 states: {
                     'sensor.tent_1_calculated_vpd': { state: '1.2' } as any
@@ -475,7 +512,7 @@ describe('history-store', () => {
         it('should handle overview entity correctly in _fetchHistory', async () => {
             const overviewId = 'sensor.overview';
             dataStore.setDevices([{
-                device_id: 'd1', name: 'D1', overview_entity_id: overviewId
+                deviceId: 'd1', name: 'D1', overview_entity_id: overviewId
             } as any]);
             dataStore.setSelectedDevice('d1');
 
@@ -491,9 +528,9 @@ describe('history-store', () => {
         it('should handle _fetchHistoryDelta errors', async () => {
             // Setup device
             dataStore.setDevices([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'D1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             dataStore.setSelectedDevice('d1');
 
@@ -564,19 +601,19 @@ describe('history-store', () => {
         });
 
         it('should return null for unknown metric entity id', () => {
-            const device = { device_id: 'd1' } as any;
+            const device = { deviceId: 'd1' } as any;
             expect((store as any).getEntityIdForMetric(device, 'unknown_metric')).toBeNull();
         });
 
         it('should handle VPD fallback when hass is undefined', () => {
-            const device = { device_id: 'd1', name: 'Tent 1' } as any;
+            const device = { deviceId: 'd1', name: 'Tent 1' } as any;
             (store as any).dataService.hass = undefined;
             expect((store as any).getEntityIdForMetric(device, 'vpd')).toBeNull();
         });
         it('should handle empty delta data in _fetchHistoryDelta', async () => {
             dataStore.setDevices([{
-                device_id: 'd1', name: 'D1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                deviceId: 'd1', name: 'D1',
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             dataStore.setSelectedDevice('d1');
 
@@ -622,10 +659,10 @@ describe('history-store', () => {
         it('should return early in _fetchHistoryDelta if no entities to fetch', async () => {
             // Setup device
             dataStore.setDevices([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'D1',
                 // Device has NO sensors defined here
-                environment_attributes: {}
+                environmentAttributes: {}
             } as any]);
             dataStore.setSelectedDevice('d1');
 
@@ -648,7 +685,7 @@ describe('history-store', () => {
 
         it('should return early in _fetchHistory if no entities to fetch', async () => {
             dataStore.setDevices([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'D1'
             } as any]);
             dataStore.setSelectedDevice('d1');
@@ -665,9 +702,9 @@ describe('history-store', () => {
         it('should handle deltaData branch in _fetchHistoryDelta', async () => {
             // Setup device
             dataStore.setDevices([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'D1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             dataStore.setSelectedDevice('d1');
 
@@ -707,7 +744,7 @@ describe('history-store', () => {
 
         it('should handle loadHistoryOnDemand error with no message', async () => {
             dataStore.setSelectedDevice('d1');
-            dataStore.setDevices([{ device_id: 'd1', name: 'D1' } as any]);
+            dataStore.setDevices([{ deviceId: 'd1', name: 'D1' } as any]);
             vi.mocked(mockDataService.getHistoryStats).mockRejectedValue({});
             await store.loadHistoryOnDemand();
             expect(store.$historyError.get()).toBe('Failed to load history');
@@ -747,8 +784,8 @@ describe('history-store', () => {
 
         it('should handle missing entity in batchResults in _fetchHistoryDelta', async () => {
             dataStore.setDevices([{
-                device_id: 'd1', name: 'D1',
-                environment_attributes: { temperature_sensor: 'sensor.temp' }
+                deviceId: 'd1', name: 'D1',
+                environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
             dataStore.setSelectedDevice('d1');
             store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');

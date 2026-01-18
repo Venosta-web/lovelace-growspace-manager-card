@@ -133,7 +133,7 @@ test.describe('Integration Installation & Configuration', () => {
         const rowsInput = optionsDialog.locator('ha-textfield[label*="Rows"], ha-textfield[name="rows"], input[name="rows"]').first();
         await rowsInput.fill('2');
 
-        const plantsInput = optionsDialog.locator('ha-textfield[label*="Plants"], ha-textfield[name="plants_per_row"], input[name="plants_per_row"]').first();
+        const plantsInput = optionsDialog.locator('ha-textfield[label*="Plants"], ha-textfield[name="plantsPerRow"], input[name="plantsPerRow"]').first();
         await plantsInput.fill('3');
 
         await page.screenshot({ path: 'test-results/options-step3-filled.png' });

@@ -46,13 +46,14 @@ describe('GrowspaceEnvChart VPD Logic', () => {
 
         element = new GrowspaceEnvChart();
         element.device = {
-            device_id: 'd1',
+            deviceId: 'd1',
             name: 'Device 1',
             sensors: {},
-            overview_entity_id: 'sensor.overview'
+            overviewEntityId: 'sensor.overview'
         } as any;
 
         wrapper.appendChild(element);
+        if (element) element.hass = hassMock; // Ensure hass is available even if context is slow
         await new Promise(r => setTimeout(r, 0));
     });
 

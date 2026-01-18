@@ -260,7 +260,7 @@ export class GrowspaceAnalytics extends LitElement {
 
   private _setGraphRange(range: '1h' | '6h' | '24h' | '7d') {
     if (this.device) {
-      this.store.history.setGraphRange(this.device.device_id, range);
+      this.store.history.setGraphRange(this.device.deviceId, range);
       this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
     }
   }

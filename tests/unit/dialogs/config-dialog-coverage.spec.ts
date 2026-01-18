@@ -48,14 +48,14 @@ describe('ConfigDialog Coverage Limits', () => {
         it('should safely handle missing devices array', () => {
             (element as any).devices = undefined;
             (element as any)._populateEditFields('gs1');
-            expect((element as any).edit_selectedId).toBe('gs1');
+            expect((element as any).editSelectedId).toBe('gs1');
             // Should not crash
         });
 
         it('should safely handle empty growspaceId', () => {
-            element.devices = [{ device_id: 'gs1' } as any];
+            element.devices = [{ deviceId: 'gs1' } as any];
             (element as any)._populateEditFields('');
-            expect((element as any).edit_selectedId).toBe('');
+            expect((element as any).editSelectedId).toBe('');
             // Should not try to find device
         });
     });

@@ -81,7 +81,7 @@ test.describe('Config Dialog', () => {
         // Fill data
         await tempInput.fill('sensor.temp_sensor');
         await dialog.locator('md3-text-input[label="Humidity Sensor ID"] input').fill('sensor.hum_sensor');
-        await dialog.locator('md3-text-input[label="VPD Sensor ID"] input').fill('sensor.vpd_sensor');
+        await dialog.locator('md3-text-input[label="VPD Sensor ID"] input').fill('sensor.vpdSensor');
 
         // Click Save
         const saveBtn = dialog.locator('button.md3-button.primary', { hasText: 'Save Sensors' });
@@ -93,7 +93,7 @@ test.describe('Config Dialog', () => {
 
         const configCall = serviceCalls.find(c => c.domain === 'growspace_manager' && c.service === 'configure_environment');
         expect(configCall).toBeTruthy();
-        expect(configCall.data.temperature_sensor).toBe('sensor.temp_sensor');
-        expect(configCall.data.humidity_sensor).toBe('sensor.hum_sensor');
+        expect(configCall.data.temperatureSensor).toBe('sensor.temp_sensor');
+        expect(configCall.data.humiditySensor).toBe('sensor.hum_sensor');
     });
 });

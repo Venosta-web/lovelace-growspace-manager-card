@@ -110,11 +110,11 @@ export class SyncService {
                 if (eid) this._watchedEntities.add(eid);
             });
             // Irrigation Config
-            if (d.irrigation_config?.irrigation_pump_entity) this._watchedEntities.add(d.irrigation_config.irrigation_pump_entity);
-            if (d.irrigation_config?.drain_pump_entity) this._watchedEntities.add(d.irrigation_config.drain_pump_entity);
+            if (d.irrigationConfig?.irrigationPumpEntity) this._watchedEntities.add(d.irrigationConfig.irrigationPumpEntity);
+            if (d.irrigationConfig?.drainPumpEntity) this._watchedEntities.add(d.irrigationConfig.drainPumpEntity);
             // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
-            if (d.environment_attributes) {
-                Object.values(d.environment_attributes).forEach(val => {
+            if (d.environmentAttributes) {
+                Object.values(d.environmentAttributes).forEach(val => {
                     if (typeof val === 'string' && val.includes('.')) {
                         this._watchedEntities.add(val);
                     }
@@ -133,16 +133,16 @@ export class SyncService {
             if (this.uiStore.$defaultApplied.get()) return;
 
             const defaultDevice = devices.find(
-                (d) => d.device_id === config.default_growspace || d.name === config.default_growspace
+                (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
             );
             if (defaultDevice) {
-                this.dataStore.setSelectedDevice(defaultDevice.device_id);
+                this.dataStore.setSelectedDevice(defaultDevice.deviceId);
                 this.uiStore.setDefaultApplied(true);
                 return;
             }
 
             // Fallback to first device
-            this.dataStore.setSelectedDevice(devices[0].device_id);
+            this.dataStore.setSelectedDevice(devices[0].deviceId);
         }
     }
 

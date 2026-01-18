@@ -104,21 +104,21 @@ describe('grid-store', () => {
     };
 
     const mockDevice1: GrowspaceDevice = createGrowspaceDevice({
-        device_id: 'gs1',
+        deviceId: 'gs1',
         name: 'Growspace 1',
         type: 'normal',
         plants: [mockPlant1, mockPlant2],
         rows: 2,
-        plants_per_row: 3,
+        plantsPerRow: 3,
     });
 
     const mockDevice2: GrowspaceDevice = createGrowspaceDevice({
-        device_id: 'gs2',
+        deviceId: 'gs2',
         name: 'Growspace 2',
         type: 'veg',
         plants: [mockPlant3],
         rows: 3,
-        plants_per_row: 4,
+        plantsPerRow: 4,
     });
 
     beforeEach(() => {
@@ -174,7 +174,7 @@ describe('grid-store', () => {
     });
 
     describe('$growspaceOptions', () => {
-        it('should create options map from device_id to name', () => {
+        it('should create options map from deviceId to name', () => {
             dataStore.setDevices([mockDevice1, mockDevice2]);
 
             const result = gridStore.$growspaceOptions.get();

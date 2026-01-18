@@ -39,7 +39,7 @@ export function selectAllPlants(ctx: ActionContext) {
     if (!selectedDevice) return;
 
     const devices = ctx.data.$devices.get();
-    const selectedDeviceData = devices.find((d) => d.device_id === selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
 
     const allIds: string[] = [];
 
@@ -142,7 +142,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     }
 
     const devices = ctx.data.$devices.get();
-    const device = devices.find(d => d.device_id === selectedDeviceId);
+    const device = devices.find(d => d.deviceId === selectedDeviceId);
 
     let targetRow = 0;
     let targetCol = 0;
@@ -162,7 +162,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
 
         let found = false;
         const rows = device.rows || 4;
-        const cols = device.plants_per_row || 4;
+        const cols = device.plantsPerRow || 4;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
@@ -266,26 +266,26 @@ export function openConfigDialog(ctx: ActionContext, device?: import('../types')
         payload: {
             currentTab: ConfigTab.ENVIRONMENT,
             environmentData: {
-                selectedGrowspaceId: device?.device_id || '',
-                temp_sensor: device?.environment_attributes?.temperature_sensor || '',
-                humidity_sensor: device?.environment_attributes?.humidity_sensor || '',
-                vpd_sensor: device?.environment_attributes?.vpd_sensor || '',
-                co2_sensor: device?.environment_attributes?.co2_sensor || '',
-                circulation_fan: device?.environment_attributes?.circulation_fan_entity || '',
-                circulation_fan_entities: device?.environment_attributes?.circulation_fan_entities || [],
-                stress_threshold: 0.8,
-                mold_threshold: 0.8,
-                light_sensor: device?.environment_attributes?.light_sensor || '',
-                light_sensors: device?.environment_attributes?.light_sensors || [],
-                exhaust_entity: device?.environment_attributes?.exhaust_entity || '',
-                exhaust_fan_entities: device?.environment_attributes?.exhaust_fan_entities || [],
-                humidifier_entity: device?.environment_attributes?.humidifier_entity || '',
-                humidifier_entities: device?.environment_attributes?.humidifier_entities || [],
-                dehumidifier_entity: device?.environment_attributes?.dehumidifier_entity || '',
-                dehumidifier_entities: device?.environment_attributes?.dehumidifier_entities || [],
-                soil_moisture_sensor: device?.environment_attributes?.soil_moisture_sensor || '',
-                control_dehumidifier: device?.environment_attributes?.dehumidifier_control_enabled || false,
-                dehumidifier_thresholds: device?.environment_attributes?.dehumidifier_thresholds || {},
+                selectedGrowspaceId: device?.deviceId || '',
+                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
+                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
+                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
+                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
+                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
+                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
+                stressThreshold: 0.8,
+                moldThreshold: 0.8,
+                lightSensor: device?.environmentAttributes?.lightSensor || '',
+                lightSensors: device?.environmentAttributes?.lightSensors || [],
+                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
+                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
+                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
+                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
             } as any
         }
     });

@@ -57,7 +57,7 @@ export class GrowspaceViewStandard extends LitElement {
     const detail = e.detail;
     try {
       const today = new Date().toISOString().split('T')[0];
-      const targetGrowspaceId = this.device?.device_id;
+      const targetGrowspaceId = this.device?.deviceId;
 
       if (!targetGrowspaceId) return;
 

@@ -258,7 +258,7 @@ export class WateringDialog extends LitElement {
 
     if (this.store && this.store.data && this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
       const selectedDeviceId = this.store.data.$selectedDevice.get();
-      const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
+      const selectedDevice = this.store.data.$devices.get().find(d => d.deviceId === selectedDeviceId);
       if (selectedDevice) {
         // Check if all selected plants are in the same stage
         const selectedPlants = selectedDevice.plants.filter(p =>

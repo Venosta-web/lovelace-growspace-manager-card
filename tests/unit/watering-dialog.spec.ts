@@ -66,7 +66,7 @@ describe('WateringDialog', () => {
     };
 
     const mockDevice: Partial<GrowspaceDevice> = {
-        device_id: 'gs1',
+        deviceId: 'gs1',
         name: 'Tent 1',
         plants: [
             {

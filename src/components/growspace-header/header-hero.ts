@@ -208,8 +208,8 @@ export class GrowspaceHeaderHero extends LitElement {
             const historyData = this._historyCacheController?.value?.vpd;
             const lightHistory = this._historyCacheController?.value?.light || [];
 
-            const overviewEntity = this.device.overview_entity_id
-                ? this.hass?.states[this.device.overview_entity_id]
+            const overviewEntity = this.device.overviewEntityId
+                ? this.hass?.states[this.device.overviewEntityId]
                 : null;
 
             const attrs = overviewEntity?.attributes || {};

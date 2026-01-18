@@ -85,13 +85,13 @@ describe('ActionDispatcher', () => {
 
     describe('Growspace Actions', () => {
         it('should delegate add to strainActions', () => {
-            const detail = { name: 'New Tent', rows: 4, plants_per_row: 2 };
+            const detail = { name: 'New Tent', rows: 4, plantsPerRow: 2 };
             dispatcher.growspace.add(detail);
             expect(strainActions.addGrowspace).toHaveBeenCalledWith(mockStore.context, 'New Tent', 4, 2, undefined);
         });
 
         it('should delegate update to strainActions', () => {
-            const detail = { growspace_id: 'gs1', name: 'Updated', rows: 4, plants_per_row: 2 };
+            const detail = { growspaceId: 'gs1', name: 'Updated', rows: 4, plantsPerRow: 2 };
             dispatcher.growspace.update(detail);
             expect(strainActions.updateGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 'Updated', 4, 2);
         });

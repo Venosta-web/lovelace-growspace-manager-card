@@ -224,18 +224,18 @@ const SENSOR_CHART_DEFAULTS = {
  * and GrowspaceDevice.irrigation_config. Used by header chips and history controller.
  */
 const METRIC_ENTITY_KEYS = {
-    [MetricKey.TEMPERATURE]: { primary: 'temperature_sensor' },
-    [MetricKey.HUMIDITY]: { primary: 'humidity_sensor' },
-    [MetricKey.VPD]: { primary: 'vpd_sensor' },
-    [MetricKey.CO2]: { primary: 'co2_sensor' },
-    [MetricKey.EXHAUST]: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
-    [MetricKey.HUMIDIFIER]: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
-    [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifier_entity' },
-    [MetricKey.CIRCULATION_FAN]: { primary: 'circulation_fan_entity' },
-    [MetricKey.LIGHT]: { primary: 'light_sensor' },
-    [MetricKey.SOIL_MOISTURE]: { primary: 'soil_moisture_sensor' },
-    [MetricKey.IRRIGATION]: { primary: 'irrigation_pump_entity', source: 'irrigation' },
-    [MetricKey.DRAIN]: { primary: 'drain_pump_entity', source: 'irrigation' },
+    [MetricKey.TEMPERATURE]: { primary: 'temperatureSensor' },
+    [MetricKey.HUMIDITY]: { primary: 'humiditySensor' },
+    [MetricKey.VPD]: { primary: 'vpdSensor' },
+    [MetricKey.CO2]: { primary: 'co2Sensor' },
+    [MetricKey.EXHAUST]: { primary: 'exhaustSensor', fallback: 'exhaustEntity' },
+    [MetricKey.HUMIDIFIER]: { primary: 'humidifierSensor', fallback: 'humidifierEntity' },
+    [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifierEntity' },
+    [MetricKey.CIRCULATION_FAN]: { primary: 'circulationFanEntity' },
+    [MetricKey.LIGHT]: { primary: 'lightSensor' },
+    [MetricKey.SOIL_MOISTURE]: { primary: 'soilMoistureSensor' },
+    [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
+    [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
 };
 const DOMAIN = 'growspace_manager';
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
@@ -366,30 +366,30 @@ function createGrowspaceDevice(params) {
     return {
         type: GrowspaceType.NORMAL,
         rows: 3,
-        plants_per_row: 3,
+        plantsPerRow: 3,
         plants: [],
         grid: {},
-        irrigation_config: { irrigation_times: [], drain_times: [] },
+        irrigationConfig: { irrigation_times: [], drain_times: [] },
         // Default Empty Objects to prevent UI crashes
-        biological_metrics: {
-            vpd_status: 'unknown',
-            vpd_target_min: 0,
-            vpd_target_max: 0,
-            vpd_danger_min: 0,
-            vpd_danger_max: 0,
-            granular_stage: 'unknown',
-            is_day: true,
-            veg_week: 0,
-            flower_week: 0
+        biologicalMetrics: {
+            vpdStatus: 'unknown',
+            vpdTargetMin: 0,
+            vpdTargetMax: 0,
+            vpdDangerMin: 0,
+            vpdDangerMax: 0,
+            granularStage: 'unknown',
+            isDay: true,
+            vegWeek: 0,
+            flowerWeek: 0,
         },
-        environment_attributes: {},
+        environmentAttributes: {},
         stats: {
-            max_veg_days: 0,
-            max_flower_days: 0,
-            veg_week: 0,
-            flower_week: 0,
-            max_stage_summary: '',
-            total_plants: 0
+            maxVegDays: 0,
+            maxFlowerDays: 0,
+            vegWeek: 0,
+            flowerWeek: 0,
+            maxStageSummary: '',
+            total_plants: 0,
         },
         ...params,
     };
@@ -509,15 +509,14 @@ class PlantUtils {
         return { row: 1, col: 1 };
     }
     static calculateEffectiveRows(device) {
-        // eslint-disable-next-line camelcase
-        const { type, plants, plants_per_row, rows } = device;
+        const { type, plants, plantsPerRow, rows } = device;
         // Use strict type check instead of magic string comparison
         if (this.DYNAMIC_ROW_TYPES.includes(type)) {
             if (plants.length === 0)
                 return 1;
             const maxRowUsed = Math.max(...plants.map((p) => p.attributes?.row || 1));
             const lastRowCount = plants.filter((p) => (p.attributes?.row || 1) === maxRowUsed).length;
-            return lastRowCount >= plants_per_row ? maxRowUsed + 1 : maxRowUsed;
+            return lastRowCount >= plantsPerRow ? maxRowUsed + 1 : maxRowUsed;
         }
         return rows;
     }
@@ -740,7 +739,7 @@ class PlantUtils {
             const img = new Image();
             img.src = url;
             img.onload = () => resolve();
-            img.onerror = () => reject();
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
         });
     }
     static getImgStyle(meta) {
@@ -4816,6 +4815,7 @@ const GrowspaceAPIResponseSchema = objectType({
     plants_per_row: numberType(),
     total_plants: numberType().optional().default(0),
     notification_target: stringType().nullable().optional(),
+    overview_entity_id: stringType().optional(),
     // Grid
     grid: recordType(stringType(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
     // Configs
@@ -4925,49 +4925,72 @@ const NutrientInventorySchema = objectType({
 });
 const HistoryPointSchema = objectType({
     s: unionType([stringType(), numberType()]).transform(String),
-    lu: unionType([stringType(), numberType()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))
-});
+    lu: unionType([stringType(), numberType()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v)),
+    a: recordType(anyType()).optional().default({}), // Attributes
+}).passthrough();
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
 
-// Define keys for automatic extraction (DRY)
-// These must match the keys produced by serializers.py
-const BIO_KEYS = [
-    'vpd_status', 'vpd_target_min', 'vpd_target_max', 'vpd_danger_min',
-    'vpd_danger_max', 'granular_stage', 'is_day', 'veg_week', 'flower_week', 'air_exchange'
-];
-const ENV_KEYS = [
-    'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
-    'soil_moisture_sensor', 'light_sensor', 'light_sensors',
-    'exhaust_entity', 'exhaust_fan_entities',
-    'humidifier_entity', 'humidifier_entities',
-    'dehumidifier_entity', 'dehumidifier_entities',
-    'dehumidifier_control_enabled', 'circulation_fan_entity', 'circulation_fan_entities',
-    'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
-];
-const STAT_KEYS = [
-    'max_veg_days', 'max_flower_days', 'veg_week', 'flower_week',
-    'max_stage_summary', 'total_plants'
-];
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
         if (!wsData && !overview)
             return null;
         const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
         const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
-        const overview_entity_id = wsData?.overview_entity_id || overview?.entity_id || '';
+        const overviewEntityId = wsData?.overview_entity_id || overview?.entity_id || '';
         // 1. Loading State
         if (!wsData) {
             return createGrowspaceDevice({
-                device_id: growspace_id,
-                overview_entity_id: overview.entity_id,
+                deviceId: growspace_id,
+                overviewEntityId: overview.entity_id,
                 name,
-                last_updated: 'Loading...',
+                lastUpdated: 'Loading...',
             });
         }
-        // 2. Extract Groups using Utility Helper
-        const biological_metrics = this.extractSubset(wsData, BIO_KEYS);
-        const environment_attributes = this.extractSubset(wsData, ENV_KEYS);
-        const stats = this.extractSubset(wsData, STAT_KEYS);
+        // 2. Map Groups to camelCase
+        const biologicalMetrics = {
+            vpdStatus: wsData.vpd_status,
+            vpdTargetMin: wsData.vpd_target_min,
+            vpdTargetMax: wsData.vpd_target_max,
+            vpdDangerMin: wsData.vpd_danger_min,
+            vpdDangerMax: wsData.vpd_danger_max,
+            granularStage: wsData.granular_stage,
+            isDay: wsData.is_day,
+            vegWeek: wsData.veg_week,
+            flowerWeek: wsData.flower_week,
+            airExchange: wsData.air_exchange,
+        };
+        const environmentAttributes = {
+            temperatureSensor: wsData.temperature_sensor,
+            humiditySensor: wsData.humidity_sensor,
+            vpdSensor: wsData.vpd_sensor,
+            co2Sensor: wsData.co2_sensor,
+            soilMoistureSensor: wsData.soil_moisture_sensor,
+            lightSensor: wsData.light_sensor,
+            lightSensors: wsData.light_sensors,
+            dehumidifierEntity: wsData.dehumidifier_entity,
+            dehumidifierEntities: wsData.dehumidifier_entities,
+            dehumidifierControlEnabled: wsData.dehumidifier_control_enabled,
+            dehumidifierThresholds: wsData.dehumidifier_thresholds,
+            dehumidifierState: wsData.dehumidifier_state,
+            humidifierEntity: wsData.humidifier_entity,
+            humidifierEntities: wsData.humidifier_entities,
+            exhaustEntity: wsData.exhaust_entity,
+            exhaustFanEntities: wsData.exhaust_fan_entities,
+            circulationFanEntity: wsData.circulation_fan_entity,
+            circulationFanEntities: wsData.circulation_fan_entities,
+            vpd: wsData.vpd,
+            soilMoistureValue: wsData.soil_moisture_value,
+            exhaustSensor: wsData.exhaust_sensor,
+            humidifierSensor: wsData.humidifier_sensor,
+        };
+        const stats = {
+            maxVegDays: wsData.max_veg_days,
+            maxFlowerDays: wsData.max_flower_days,
+            vegWeek: wsData.veg_week,
+            flowerWeek: wsData.flower_week,
+            maxStageSummary: wsData.max_stage_summary,
+            totalPlants: wsData.total_plants,
+        };
         // 3. Transform Grid Dictionary to Plant Entity Array
         const plants = [];
         if (wsData.grid) {
@@ -4991,40 +5014,48 @@ class GrowspaceAdapter {
                 }
             });
         }
-        // 4. Construct Device
+        // 4. Map Configs
+        const irrigationConfigRaw = wsData.irrigation_config || {};
+        const irrigationConfig = {
+            irrigationPumpEntity: irrigationConfigRaw.irrigation_pump_entity,
+            drainPumpEntity: irrigationConfigRaw.drain_pump_entity,
+            irrigationDuration: irrigationConfigRaw.irrigation_duration,
+            drainDuration: irrigationConfigRaw.drain_duration,
+            irrigationTimes: irrigationConfigRaw.irrigation_times,
+            drainTimes: irrigationConfigRaw.drain_times,
+            vegDayHours: irrigationConfigRaw.veg_day_hours,
+        };
+        const irrigationStrategy = wsData.irrigation_strategy ? {
+            enabled: wsData.irrigation_strategy.enabled,
+            lightsOnTime: wsData.irrigation_strategy.lights_on_time,
+            p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
+            p2StopBeforeLightsOffMinutes: wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
+            targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
+            maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
+            shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
+            shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+        } : undefined;
+        // 5. Construct Device
         return createGrowspaceDevice({
-            device_id: growspace_id,
-            overview_entity_id,
+            deviceId: growspace_id,
+            overviewEntityId,
             name,
             type: wsData.type || 'normal',
             rows: wsData.rows,
-            plants_per_row: wsData.plants_per_row,
-            notification_target: wsData.notification_target,
-            last_updated: overview?.last_updated || new Date().toISOString(),
+            plantsPerRow: wsData.plants_per_row,
+            notificationTarget: wsData.notification_target,
+            lastUpdated: overview?.last_updated || new Date().toISOString(),
             // Structural Data
             plants,
             grid: wsData.grid,
             // Grouped Data
-            biological_metrics,
-            environment_attributes,
+            biologicalMetrics,
+            environmentAttributes,
             stats,
             // Configs
-            irrigation_config: wsData.irrigation_config,
-            irrigation_strategy: wsData.irrigation_strategy || undefined,
+            irrigationConfig,
+            irrigationStrategy,
         });
-    }
-    /**
-     * Helper to extract specific keys from the flattened API response into a typed object.
-     */
-    static extractSubset(source, keys) {
-        const result = {};
-        const src = source;
-        keys.forEach((key) => {
-            if (key in source) {
-                result[key] = src[key];
-            }
-        });
-        return result;
     }
     /** @deprecated */
     static transformToDevices() {
@@ -5138,8 +5169,8 @@ class GrowspaceAPI extends BaseAPI {
             const payload = {
                 name: data.name,
                 rows: data.rows,
-                plants_per_row: data.plants_per_row,
-                notification_target: data.notification_service, // Map to backend field
+                plants_per_row: data.plantsPerRow,
+                notification_target: data.notificationService, // Map to backend field
             };
             await this.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
             console.log('[GrowspaceAPI:addGrowspace] Service Called');
@@ -5153,16 +5184,16 @@ class GrowspaceAPI extends BaseAPI {
         console.log('[GrowspaceAPI:updateGrowspace] Updating growspace:', data);
         try {
             const payload = {
-                growspace_id: data.growspace_id,
+                growspace_id: data.growspaceId,
             };
             if (data.name)
                 payload.name = data.name;
             if (data.rows)
                 payload.rows = data.rows;
-            if (data.plants_per_row)
-                payload.plants_per_row = data.plants_per_row;
-            if (data.notification_service)
-                payload.notification_target = data.notification_service;
+            if (data.plantsPerRow)
+                payload.plants_per_row = data.plantsPerRow;
+            if (data.notificationService)
+                payload.notification_target = data.notificationService;
             await this.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
             console.log('[GrowspaceAPI:updateGrowspace] Service Called');
         }
@@ -5187,7 +5218,57 @@ class GrowspaceAPI extends BaseAPI {
     async configureEnvironment(data) {
         console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
         try {
-            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+            // Map camelCase to snake_case for API
+            const payload = {
+                growspace_id: data.growspaceId,
+                temperature_sensor: data.temperatureSensor,
+                humidity_sensor: data.humiditySensor,
+            };
+            if (data.vpdSensor)
+                payload.vpd_sensor = data.vpdSensor;
+            if (data.co2Sensor)
+                payload.co2_sensor = data.co2Sensor;
+            if (data.circulationFanEntity)
+                payload.circulation_fan_entity = data.circulationFanEntity;
+            if (data.circulationFanEntities)
+                payload.circulation_fan_entities = data.circulationFanEntities;
+            if (data.stressThreshold)
+                payload.stress_threshold = data.stressThreshold;
+            if (data.moldThreshold)
+                payload.mold_threshold = data.moldThreshold;
+            if (data.lightSensor)
+                payload.light_sensor = data.lightSensor;
+            if (data.lightSensors)
+                payload.light_sensors = data.lightSensors;
+            if (data.exhaustEntity)
+                payload.exhaust_entity = data.exhaustEntity;
+            if (data.exhaustFanEntities)
+                payload.exhaust_fan_entities = data.exhaustFanEntities;
+            if (data.humidifierEntity)
+                payload.humidifier_entity = data.humidifierEntity;
+            if (data.humidifierEntities)
+                payload.humidifier_entities = data.humidifierEntities;
+            if (data.dehumidifierEntity)
+                payload.dehumidifier_entity = data.dehumidifierEntity;
+            if (data.dehumidifierEntities)
+                payload.dehumidifier_entities = data.dehumidifierEntities;
+            if (data.dehumidifierThresholds)
+                payload.dehumidifier_thresholds = data.dehumidifierThresholds;
+            if (data.soilMoistureSensor)
+                payload.soil_moisture_sensor = data.soilMoistureSensor;
+            if (data.controlDehumidifier !== undefined)
+                payload.control_dehumidifier = data.controlDehumidifier;
+            if (data.vegDayHours)
+                payload.veg_day_hours = data.vegDayHours;
+            if (data.flowerEarlyDayHours)
+                payload.flower_early_day_hours = data.flowerEarlyDayHours;
+            if (data.flowerMidDayHours)
+                payload.flower_mid_day_hours = data.flowerMidDayHours;
+            if (data.flowerLateDayHours)
+                payload.flower_late_day_hours = data.flowerLateDayHours;
+            if (data.minimumSourceAirTemperature)
+                payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
+            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
         catch (err) {
@@ -5702,7 +5783,7 @@ class HistoryAPI extends BaseAPI {
                     state: p.s,
                     last_changed: p.lu,
                     last_updated: p.lu,
-                    attributes: {},
+                    attributes: p.a || {},
                 }));
             }
             return mappedResult;
@@ -5865,7 +5946,8 @@ class IrrigationAPI extends BaseAPI {
     async setIrrigationSettings(params) {
         console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+            const payload = this._serializeSettings(params);
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, payload);
             console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
         }
         catch (err) {
@@ -5876,7 +5958,12 @@ class IrrigationAPI extends BaseAPI {
     async addIrrigationTime(params) {
         console.log('[IrrigationAPI:addIrrigationTime] Adding irrigation time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+                duration: params.duration,
+            };
+            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:addIrrigationTime] Service Called');
         }
         catch (err) {
@@ -5887,7 +5974,11 @@ class IrrigationAPI extends BaseAPI {
     async removeIrrigationTime(params) {
         console.log('[IrrigationAPI:removeIrrigationTime] Removing irrigation time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+            };
+            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
         }
         catch (err) {
@@ -5898,7 +5989,12 @@ class IrrigationAPI extends BaseAPI {
     async addDrainTime(params) {
         console.log('[IrrigationAPI:addDrainTime] Adding drain time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+                duration: params.duration,
+            };
+            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:addDrainTime] Service Called');
         }
         catch (err) {
@@ -5909,7 +6005,11 @@ class IrrigationAPI extends BaseAPI {
     async removeDrainTime(params) {
         console.log('[IrrigationAPI:removeDrainTime] Removing drain time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+            };
+            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:removeDrainTime] Service Called');
         }
         catch (err) {
@@ -5920,10 +6020,11 @@ class IrrigationAPI extends BaseAPI {
     async setIrrigationStrategy(growspaceId, strategy) {
         console.log('[IrrigationAPI:setIrrigationStrategy] Setting strategy:', strategy);
         try {
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+            const payload = {
                 growspace_id: growspaceId,
-                ...strategy,
-            });
+                ...this._serializeStrategy(strategy),
+            };
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, payload);
             console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
         }
         catch (err) {
@@ -5931,12 +6032,41 @@ class IrrigationAPI extends BaseAPI {
             throw err;
         }
     }
+    _serializeSettings(params) {
+        return {
+            growspace_id: params.growspaceId,
+            irrigation_pump_entity: params.irrigationPumpEntity,
+            drain_pump_entity: params.drainPumpEntity,
+            irrigation_duration: params.irrigationDuration,
+            drain_duration: params.drainDuration,
+        };
+    }
+    _serializeStrategy(strategy) {
+        const result = {};
+        if (strategy.enabled !== undefined)
+            result.enabled = strategy.enabled;
+        if (strategy.lightsOnTime !== undefined)
+            result.lights_on_time = strategy.lightsOnTime;
+        if (strategy.p0DurationMinutes !== undefined)
+            result.p0_duration_minutes = strategy.p0DurationMinutes;
+        if (strategy.p2StopBeforeLightsOffMinutes !== undefined)
+            result.p2_stop_before_lights_off_minutes = strategy.p2StopBeforeLightsOffMinutes;
+        if (strategy.targetVwcPercent !== undefined)
+            result.target_vwc_percent = strategy.targetVwcPercent;
+        if (strategy.maintenanceDrybackPercent !== undefined)
+            result.maintenance_dryback_percent = strategy.maintenanceDrybackPercent;
+        if (strategy.shotDurationSeconds !== undefined)
+            result.shot_duration_seconds = strategy.shotDurationSeconds;
+        if (strategy.shotIntervalMinutes !== undefined)
+            result.shot_interval_minutes = strategy.shotIntervalMinutes;
+        return result;
+    }
     async waterGrowspace(growspaceId, amount, nutrients, presetId) {
         console.log('[IrrigationAPI:waterGrowspace] Watering growspace:', growspaceId, 'total amount:', amount, 'preset:', presetId);
         try {
             const payload = {
                 growspace_id: growspaceId,
-                amount: amount,
+                amount,
             };
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;
@@ -7422,8 +7552,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             dangerMin: DEFAULTS.VPD.DANGER_MIN,
             dangerMax: DEFAULTS.VPD.DANGER_MAX,
         };
-        const overviewEntity = this.device?.overview_entity_id
-            ? this.hass?.states[this.device.overview_entity_id]
+        const overviewEntity = this.device?.overviewEntityId
+            ? this.hass?.states[this.device.overviewEntityId]
             : null;
         if (!overviewEntity?.attributes)
             return { day: defaultThresholds, night: defaultThresholds };
@@ -7517,7 +7647,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 initialState = h;
             }
             if (initialState) {
-                const val = key === MetricKey.OPTIMAL || initialState.state === EntityState.ON ? (initialState.state === EntityState.ON ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state) ? (BINARY_ON_STATES.includes(initialState.state) ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -7529,7 +7659,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     continue;
                 let val;
                 if (key === MetricKey.OPTIMAL) {
-                    val = h.state === EntityState.ON ? 1 : 0;
+                    val = BINARY_ON_STATES.includes(h.state) ? 1 : 0;
                     if (h.attributes?.reasons)
                         dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
                     else
@@ -9676,7 +9806,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
     }
     _confirm() {
         if (this.growspaceDevice) {
-            const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plants_per_row || 0);
+            const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
             const occupied = this.growspaceDevice.plants?.length || 0;
             const free = Math.max(0, totalSlots - occupied);
             if (this.amount > free) {
@@ -9993,7 +10123,7 @@ class TimelineService {
                 this.hass.callWS({
                     type: WS_TYPE_GET_LOG,
                     growspace_id: growspaceId,
-                    limit: limit, // User logs are less frequent, standard limit ok
+                    limit, // User logs are less frequent, standard limit ok
                 }),
                 this.hass.callWS({
                     type: WS_TYPE_GET_ALERTS,
@@ -14167,37 +14297,37 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.currentTab = ConfigTab.ENVIRONMENT;
         this._initialStateApplied = false;
         // Add Growspace Data
-        this.add_name = '';
-        this.add_rows = 4;
-        this.add_plants_per_row = 4;
-        this.add_notification_service = 'mobile_app_notify';
+        this.addName = '';
+        this.addRows = 4;
+        this.addPlantsPerRow = 4;
+        this.addNotificationService = 'mobile_app_notify';
         // Edit Growspace Data
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
-        this.edit_notification_service = '';
+        this.editSelectedId = '';
+        this.editName = '';
+        this.editRows = 0;
+        this.editPlantsPerRow = 0;
+        this.editNotificationService = '';
         // Environment Data
-        this.env_selectedGrowspaceId = '';
-        this.env_temp_sensor = '';
-        this.env_humidity_sensor = '';
-        this.env_vpd_sensor = '';
-        this.env_co2_sensor = '';
-        this.env_circulation_fan = '';
-        this.env_circulation_fan_entities = []; // Multi-device
-        this.env_stress_threshold = 0.8;
-        this.env_mold_threshold = 0.8;
-        this.env_light_sensor = '';
-        this.env_light_sensors = []; // Multi-device
-        this.env_exhaust_entity = '';
-        this.env_exhaust_fan_entities = []; // Multi-device
-        this.env_humidifier_entity = '';
-        this.env_humidifier_entities = []; // Multi-device
-        this.env_dehumidifier_entity = '';
-        this.env_dehumidifier_entities = []; // Multi-device
-        this.env_soil_moisture_sensor = '';
-        this.env_control_dehumidifier = false;
-        this.env_dehumidifier_thresholds = {};
+        this.envSelectedId = '';
+        this.envTemperatureSensor = '';
+        this.envHumiditySensor = '';
+        this.envVpdSensor = '';
+        this.envCo2Sensor = '';
+        this.envCirculationFan = '';
+        this.envCirculationFanEntities = []; // Multi-device
+        this.envStressThreshold = 0.8;
+        this.envMoldThreshold = 0.8;
+        this.envLightSensor = '';
+        this.envLightSensors = []; // Multi-device
+        this.envExhaustEntity = '';
+        this.envExhaustFanEntities = []; // Multi-device
+        this.envHumidifierEntity = '';
+        this.envHumidifierEntities = []; // Multi-device
+        this.envDehumidifierEntity = '';
+        this.envDehumidifierEntities = []; // Multi-device
+        this.envSoilMoistureSensor = '';
+        this.envDehumidifierControlEnabled = false;
+        this.envDehumidifierThresholds = {};
         this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
         this._showDeleteConfirm = false;
     }
@@ -14225,26 +14355,26 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
         this.currentTab = currentTab;
         if (environmentData) {
-            this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-            this.env_temp_sensor = environmentData.temp_sensor;
-            this.env_humidity_sensor = environmentData.humidity_sensor;
-            this.env_vpd_sensor = environmentData.vpd_sensor;
-            this.env_co2_sensor = environmentData.co2_sensor;
-            this.env_circulation_fan = environmentData.circulation_fan;
-            this.env_circulation_fan_entities = environmentData.circulation_fan_entities || [];
-            this.env_stress_threshold = environmentData.stress_threshold;
-            this.env_mold_threshold = environmentData.mold_threshold;
-            this.env_light_sensor = environmentData.light_sensor;
-            this.env_light_sensors = environmentData.light_sensors || [];
-            this.env_exhaust_entity = environmentData.exhaust_entity;
-            this.env_exhaust_fan_entities = environmentData.exhaust_fan_entities || [];
-            this.env_humidifier_entity = environmentData.humidifier_entity;
-            this.env_humidifier_entities = environmentData.humidifier_entities || [];
-            this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
-            this.env_dehumidifier_entities = environmentData.dehumidifier_entities || [];
-            this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
-            this.env_control_dehumidifier = environmentData.control_dehumidifier;
-            this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
+            this.envSelectedId = environmentData.selectedGrowspaceId;
+            this.envTemperatureSensor = environmentData.temperatureSensor;
+            this.envHumiditySensor = environmentData.humiditySensor;
+            this.envVpdSensor = environmentData.vpdSensor;
+            this.envCo2Sensor = environmentData.co2Sensor;
+            this.envCirculationFan = environmentData.circulationFanEntity;
+            this.envCirculationFanEntities = environmentData.circulationFanEntities || [];
+            this.envStressThreshold = environmentData.stressThreshold;
+            this.envMoldThreshold = environmentData.moldThreshold;
+            this.envLightSensor = environmentData.lightSensor;
+            this.envLightSensors = environmentData.lightSensors || [];
+            this.envExhaustEntity = environmentData.exhaustEntity;
+            this.envExhaustFanEntities = environmentData.exhaustFanEntities || [];
+            this.envHumidifierEntity = environmentData.humidifierEntity;
+            this.envHumidifierEntities = environmentData.humidifierEntities || [];
+            this.envDehumidifierEntity = environmentData.dehumidifierEntity;
+            this.envDehumidifierEntities = environmentData.dehumidifierEntities || [];
+            this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
+            this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
+            this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
             // Also pre-select for Edit/Delete actions
             if (environmentData.selectedGrowspaceId) {
                 console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
@@ -14262,10 +14392,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _submitAddGrowspace() {
         this.dispatchEvent(new CustomEvent('add-growspace-submit', {
             detail: {
-                name: this.add_name,
-                rows: this.add_rows,
-                plants_per_row: this.add_plants_per_row,
-                notification_service: this.add_notification_service,
+                name: this.addName,
+                rows: this.addRows,
+                plantsPerRow: this.addPlantsPerRow,
+                notification_service: this.addNotificationService,
             },
             bubbles: true,
             composed: true,
@@ -14274,79 +14404,79 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _submitEnvironment() {
         this.dispatchEvent(new CustomEvent('configure-environment-submit', {
             detail: {
-                selectedGrowspaceId: this.env_selectedGrowspaceId,
-                temp_sensor: this.env_temp_sensor,
-                humidity_sensor: this.env_humidity_sensor,
-                vpd_sensor: this.env_vpd_sensor,
-                co2_sensor: this.env_co2_sensor,
-                circulation_fan: this.env_circulation_fan,
-                circulation_fan_entities: this.env_circulation_fan_entities, // Multi
-                stress_threshold: this.env_stress_threshold,
-                mold_threshold: this.env_mold_threshold,
-                light_sensor: this.env_light_sensor,
-                light_sensors: this.env_light_sensors, // Multi
-                exhaust_entity: this.env_exhaust_entity,
-                exhaust_fan_entities: this.env_exhaust_fan_entities, // Multi
-                humidifier_entity: this.env_humidifier_entity,
-                humidifier_entities: this.env_humidifier_entities, // Multi
-                dehumidifier_entity: this.env_dehumidifier_entity,
-                dehumidifier_entities: this.env_dehumidifier_entities, // Multi
-                dehumidifier_thresholds: this.env_dehumidifier_thresholds,
-                soil_moisture_sensor: this.env_soil_moisture_sensor,
-                control_dehumidifier: this.env_control_dehumidifier,
+                selectedGrowspaceId: this.envSelectedId,
+                temperatureSensor: this.envTemperatureSensor,
+                humiditySensor: this.envHumiditySensor,
+                vpdSensor: this.envVpdSensor,
+                co2Sensor: this.envCo2Sensor,
+                circulationFanEntity: this.envCirculationFan,
+                circulationFanEntities: this.envCirculationFanEntities, // Multi
+                stressThreshold: this.envStressThreshold,
+                moldThreshold: this.envMoldThreshold,
+                lightSensor: this.envLightSensor,
+                lightSensors: this.envLightSensors, // Multi
+                exhaustEntity: this.envExhaustEntity,
+                exhaustFanEntities: this.envExhaustFanEntities, // Multi
+                humidifierEntity: this.envHumidifierEntity,
+                humidifierEntities: this.envHumidifierEntities, // Multi
+                dehumidifierEntity: this.envDehumidifierEntity,
+                dehumidifierEntities: this.envDehumidifierEntities, // Multi
+                dehumidifierThresholds: this.envDehumidifierThresholds,
+                soilMoistureSensor: this.envSoilMoistureSensor,
+                dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
             },
             bubbles: true,
             composed: true,
         }));
     }
     _submitEditGrowspace() {
-        if (!this.edit_selectedId)
+        if (!this.editSelectedId)
             return;
         this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
             detail: {
-                growspace_id: this.edit_selectedId,
-                name: this.edit_name,
-                rows: this.edit_rows,
-                plants_per_row: this.edit_plants_per_row,
-                notification_service: this.edit_notification_service,
+                growspace_id: this.editSelectedId,
+                name: this.editName,
+                rows: this.editRows,
+                plantsPerRow: this.editPlantsPerRow,
+                notification_service: this.editNotificationService,
             },
             bubbles: true,
             composed: true,
         }));
     }
     _submitDeleteGrowspace() {
-        if (!this.edit_selectedId)
+        if (!this.editSelectedId)
             return;
         this._showDeleteConfirm = true;
     }
     _confirmDeleteGrowspace() {
         this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
             detail: {
-                growspace_id: this.edit_selectedId,
+                growspace_id: this.editSelectedId,
             },
             bubbles: true,
             composed: true,
         }));
         // Reset selection after delete
-        this.edit_selectedId = '';
-        this.edit_name = '';
-        this.edit_rows = 0;
-        this.edit_plants_per_row = 0;
-        this.edit_notification_service = '';
+        this.editSelectedId = '';
+        this.editName = '';
+        this.editRows = 0;
+        this.editPlantsPerRow = 0;
+        this.editNotificationService = '';
         this._showDeleteConfirm = false;
     }
     _cancelDeleteGrowspace() {
         this._showDeleteConfirm = false;
     }
     _populateEditFields(growspaceId) {
-        this.edit_selectedId = growspaceId;
+        this.editSelectedId = growspaceId;
         if (growspaceId && this.devices) {
-            const device = this.devices.find((d) => d.device_id === growspaceId);
+            const device = this.devices.find((d) => d.deviceId === growspaceId);
             if (device) {
-                this.edit_name = device.name;
-                this.edit_rows = device.rows || 4;
-                this.edit_plants_per_row = device.plants_per_row || 4;
-                this.edit_notification_service = device.notification_target || '';
+                this.editName = device.name;
+                this.editRows = device.rows || 4;
+                this.editPlantsPerRow = device.plantsPerRow || 4;
+                this.editNotificationService = device.notificationTarget || '';
             }
         }
     }
@@ -14452,7 +14582,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
-                    ?disabled=${!this.edit_selectedId}
+                    ?disabled=${!this.editSelectedId}
                   >
                     <svg
                       style="width:18px;height:18px;fill:currentColor;margin-right:8px"
@@ -14465,7 +14595,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   <button
                     class="md3-button primary"
                     @click=${this._submitEditGrowspace}
-                    ?disabled=${!this.edit_selectedId}
+                    ?disabled=${!this.editSelectedId}
                   >
                     Save Changes
                   </button>
@@ -14483,21 +14613,21 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <h3>New Growspace Details</h3>
           <md3-text-input
             label="Growspace Name"
-            .value=${this.add_name}
-            @change=${(e) => (this.add_name = e.detail)}
+            .value=${this.addName}
+            @change=${(e) => (this.addName = e.detail)}
           >
           </md3-text-input>
           <div class="row-col-grid">
             <md3-number-input
               label="Rows"
-              .value=${this.add_rows}
-              @change=${(e) => (this.add_rows = parseInt(e.detail))}
+              .value=${this.addRows}
+              @change=${(e) => (this.addRows = parseInt(e.detail))}
             >
             </md3-number-input>
             <md3-number-input
               label="Plants per Row"
-              .value=${this.add_plants_per_row}
-              @change=${(e) => (this.add_plants_per_row = parseInt(e.detail))}
+              .value=${this.addPlantsPerRow}
+              @change=${(e) => (this.addPlantsPerRow = parseInt(e.detail))}
             >
             </md3-number-input>
           </div>
@@ -14505,13 +14635,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <label class="md3-label"> Notification Service(Mobile App) </label>
             <select
               class="md3-input"
-              .value=${this.add_notification_service}
-              @change=${(e) => (this.add_notification_service = e.target.value)}
+              .value=${this.addNotificationService}
+              @change=${(e) => (this.addNotificationService = e.target.value)}
             >
               <option value="">None</option>
               ${this._getMobileAppNotifyServices().map((service) => x `<option
                     value="${service.value}"
-                    ?selected=${this.add_notification_service === service.value}
+                    ?selected=${this.addNotificationService === service.value}
                   >
                     ${service.label}
                   </option>`)}
@@ -14519,8 +14649,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
           <md3-text-input
             label="Notification Service (Optional)"
-            .value=${this.add_notification_service}
-            @change=${(e) => (this.add_notification_service = e.detail)}
+            .value=${this.addNotificationService}
+            @change=${(e) => (this.addNotificationService = e.detail)}
             style="display:none;"
           >
           </md3-text-input>
@@ -14623,7 +14753,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
-            Are you sure you want to delete "<strong>${this.edit_name}</strong>" ? <br />
+            Are you sure you want to delete "<strong>${this.editName}</strong>" ? <br />
             This will remove all associated plants and history.<br />
             This action cannot be undone.
           </p>
@@ -14644,49 +14774,49 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.edit_selectedId}
+              .value=${this.editSelectedId}
               @change=${this._handleEditSelection}
             >
               <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.edit_selectedId}>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.editSelectedId}>
                     ${name}
                   </option>`)}
             </select>
           </div>
         </div>
 
-        ${this.edit_selectedId
+        ${this.editSelectedId
             ? x `
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
                   label="Growspace Name"
-                  .value=${this.edit_name}
-                  @change=${(e) => (this.edit_name = e.detail)}
+                  .value=${this.editName}
+                  @change=${(e) => (this.editName = e.detail)}
                 ></md3-text-input>
                 <div class="row-col-grid">
                   <md3-number-input
                     label="Rows"
-                    .value=${this.edit_rows}
-                    @change=${(e) => (this.edit_rows = parseInt(e.detail))}
+                    .value=${this.editRows}
+                    @change=${(e) => (this.editRows = parseInt(e.detail))}
                   ></md3-number-input>
                   <md3-number-input
                     label="Plants per Row"
-                    .value=${this.edit_plants_per_row}
-                    @change=${(e) => (this.edit_plants_per_row = parseInt(e.detail))}
+                    .value=${this.editPlantsPerRow}
+                    @change=${(e) => (this.editPlantsPerRow = parseInt(e.detail))}
                   ></md3-number-input>
                 </div>
                 <div class="md3-input-group">
                   <label class="md3-label">Notification Service (Mobile App)</label>
                   <select
                     class="md3-input"
-                    .value=${this.edit_notification_service}
-                    @change=${(e) => (this.edit_notification_service = e.target.value)}
+                    .value=${this.editNotificationService}
+                    @change=${(e) => (this.editNotificationService = e.target.value)}
                   >
                     <option value="">None</option>
                     ${this._getMobileAppNotifyServices().map((service) => x `<option
                           value="${service.value}"
-                          ?selected=${this.edit_notification_service === service.value}
+                          ?selected=${this.editNotificationService === service.value}
                         >
                           ${service.label}
                         </option>`)}
@@ -14712,11 +14842,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.env_selectedGrowspaceId}
+              .value=${this.envSelectedId}
               @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`)}
             </select>
@@ -14738,17 +14868,17 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
 
           <div class="row-col-grid">
-            ${this._renderEntitySelect('Temperature Sensor', this.env_temp_sensor, ['sensor', 'input_number'], 'temperature', (e) => (this.env_temp_sensor = e.detail.value))}
-            ${this._renderEntitySelect('Humidity Sensor', this.env_humidity_sensor, ['sensor', 'input_number'], 'humidity', (e) => (this.env_humidity_sensor = e.detail.value))}
+            ${this._renderEntitySelect('Temperature Sensor', this.envTemperatureSensor, ['sensor', 'input_number'], 'temperature', (e) => (this.envTemperatureSensor = e.detail.value))}
+            ${this._renderEntitySelect('Humidity Sensor', this.envHumiditySensor, ['sensor', 'input_number'], 'humidity', (e) => (this.envHumiditySensor = e.detail.value))}
           </div>
           <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderEntitySelect('VPD Sensor (Optional)', this.env_vpd_sensor, ['sensor', 'input_number'], 'pressure', (e) => (this.env_vpd_sensor = e.detail.value))}
-            ${this._renderEntitySelect('Soil Moisture Sensor', this.env_soil_moisture_sensor, ['sensor', 'input_number'], 'moisture', (e) => (this.env_soil_moisture_sensor = e.detail.value))}
+            ${this._renderEntitySelect('VPD Sensor (Optional)', this.envVpdSensor, ['sensor', 'input_number'], 'pressure', (e) => (this.envVpdSensor = e.detail.value))}
+            ${this._renderEntitySelect('Soil Moisture Sensor', this.envSoilMoistureSensor, ['sensor', 'input_number'], 'moisture', (e) => (this.envSoilMoistureSensor = e.detail.value))}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderEntitySelect('CO2 Sensor', this.env_co2_sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.env_co2_sensor = e.detail.value))}
-            ${this._renderMultiEntitySelect('Light Source / Sensor', this.env_light_sensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (values) => (this.env_light_sensors = values))}
+            ${this._renderEntitySelect('CO2 Sensor', this.envCo2Sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.envCo2Sensor = e.detail.value))}
+            ${this._renderMultiEntitySelect('Light Source / Sensor', this.envLightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (values) => (this.envLightSensors = values))}
           </div>
         </div>
 
@@ -14767,13 +14897,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
 
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Exhaust Fan / Switch', this.env_exhaust_fan_entities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (values) => (this.env_exhaust_fan_entities = values))}
-            ${this._renderMultiEntitySelect('Circulation Fan / Switch', this.env_circulation_fan_entities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (values) => (this.env_circulation_fan_entities = values))}
+            ${this._renderMultiEntitySelect('Exhaust Fan / Switch', this.envExhaustFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (values) => (this.envExhaustFanEntities = values))}
+            ${this._renderMultiEntitySelect('Circulation Fan / Switch', this.envCirculationFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (values) => (this.envCirculationFanEntities = values))}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderMultiEntitySelect('Humidifier', this.env_humidifier_entities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (values) => (this.env_humidifier_entities = values))}
-            ${this._renderMultiEntitySelect('Dehumidifier', this.env_dehumidifier_entities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (values) => (this.env_dehumidifier_entities = values))}
+            ${this._renderMultiEntitySelect('Humidifier', this.envHumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (values) => (this.envHumidifierEntities = values))}
+            ${this._renderMultiEntitySelect('Dehumidifier', this.envDehumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (values) => (this.envDehumidifierEntities = values))}
           </div>
 
           <div
@@ -14783,8 +14913,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
             <input
               type="checkbox"
-              .checked=${this.env_control_dehumidifier}
-              @change=${(e) => (this.env_control_dehumidifier = e.target.checked)}
+              .checked=${this.envDehumidifierControlEnabled}
+              @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
               style="width:20px; height:20px;"
             />
           </div>
@@ -14804,15 +14934,15 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <div class="row-col-grid">
             <md3-number-input
               label="Stress Threshold %"
-              .value=${this.env_stress_threshold}
-              @change=${(e) => (this.env_stress_threshold = parseFloat(e.detail))}
+              .value=${this.envStressThreshold}
+              @change=${(e) => (this.envStressThreshold = parseFloat(e.detail))}
               step="0.01"
             >
             </md3-number-input>
             <md3-number-input
               label="Mold Threshold %"
-              .value=${this.env_mold_threshold}
-              @change=${(e) => (this.env_mold_threshold = parseFloat(e.detail))}
+              .value=${this.envMoldThreshold}
+              @change=${(e) => (this.envMoldThreshold = parseFloat(e.detail))}
               step="0.01"
             >
             </md3-number-input>
@@ -14824,77 +14954,77 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _handleEnvGrowspaceChange(e) {
         const target = e.target;
         const growspaceId = target.value;
-        this.env_selectedGrowspaceId = growspaceId;
+        this.envSelectedId = growspaceId;
         // Find the device in the passed devices array (from store state upstream)
-        const device = this.devices.find((d) => d.device_id === growspaceId);
-        if (device && device.environment_attributes) {
-            const attrs = device.environment_attributes;
-            this.env_temp_sensor = attrs.temperature_sensor || '';
-            this.env_humidity_sensor = attrs.humidity_sensor || '';
-            this.env_vpd_sensor = attrs.vpd_sensor || '';
-            this.env_co2_sensor = attrs.co2_sensor || '';
-            this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
-            this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
-            this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
+        const device = this.devices.find((d) => d.deviceId === growspaceId);
+        if (device && device.environmentAttributes) {
+            const attrs = device.environmentAttributes;
+            this.envTemperatureSensor = attrs.temperatureSensor || '';
+            this.envHumiditySensor = attrs.humiditySensor || '';
+            this.envVpdSensor = attrs.vpdSensor || '';
+            this.envCo2Sensor = attrs.co2Sensor || '';
+            this.envSoilMoistureSensor = attrs.soilMoistureSensor || '';
+            this.envDehumidifierControlEnabled = attrs.dehumidifierControlEnabled || false;
+            this.envDehumidifierThresholds = attrs.dehumidifierThresholds || {};
             // Multi-device handling with backward compatibility
-            this.env_light_sensor = attrs.light_sensor || '';
-            this.env_light_sensors =
-                attrs.light_sensors && attrs.light_sensors.length > 0
-                    ? attrs.light_sensors
-                    : attrs.light_sensor
-                        ? [attrs.light_sensor]
+            this.envLightSensor = attrs.lightSensor || '';
+            this.envLightSensors =
+                attrs.lightSensors && attrs.lightSensors.length > 0
+                    ? attrs.lightSensors
+                    : attrs.lightSensor
+                        ? [attrs.lightSensor]
                         : [];
-            this.env_exhaust_entity = attrs.exhaust_entity || '';
-            this.env_exhaust_fan_entities =
-                attrs.exhaust_fan_entities && attrs.exhaust_fan_entities.length > 0
-                    ? attrs.exhaust_fan_entities
-                    : attrs.exhaust_entity
-                        ? [attrs.exhaust_entity]
+            this.envExhaustEntity = attrs.exhaustEntity || '';
+            this.envExhaustFanEntities =
+                attrs.exhaustFanEntities && attrs.exhaustFanEntities.length > 0
+                    ? attrs.exhaustFanEntities
+                    : attrs.exhaustEntity
+                        ? [attrs.exhaustEntity]
                         : [];
-            this.env_circulation_fan = attrs.circulation_fan_entity || '';
-            this.env_circulation_fan_entities =
-                attrs.circulation_fan_entities && attrs.circulation_fan_entities.length > 0
-                    ? attrs.circulation_fan_entities
-                    : attrs.circulation_fan_entity
-                        ? [attrs.circulation_fan_entity]
+            this.envCirculationFan = attrs.circulationFanEntity || '';
+            this.envCirculationFanEntities =
+                attrs.circulationFanEntities && attrs.circulationFanEntities.length > 0
+                    ? attrs.circulationFanEntities
+                    : attrs.circulationFanEntity
+                        ? [attrs.circulationFanEntity]
                         : [];
-            this.env_humidifier_entity = attrs.humidifier_entity || '';
-            this.env_humidifier_entities =
-                attrs.humidifier_entities && attrs.humidifier_entities.length > 0
-                    ? attrs.humidifier_entities
-                    : attrs.humidifier_entity
-                        ? [attrs.humidifier_entity]
+            this.envHumidifierEntity = attrs.humidifierEntity || '';
+            this.envHumidifierEntities =
+                attrs.humidifierEntities && attrs.humidifierEntities.length > 0
+                    ? attrs.humidifierEntities
+                    : attrs.humidifierEntity
+                        ? [attrs.humidifierEntity]
                         : [];
-            this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
-            this.env_dehumidifier_entities =
-                attrs.dehumidifier_entities && attrs.dehumidifier_entities.length > 0
-                    ? attrs.dehumidifier_entities
-                    : attrs.dehumidifier_entity
-                        ? [attrs.dehumidifier_entity]
+            this.envDehumidifierEntity = attrs.dehumidifierEntity || '';
+            this.envDehumidifierEntities =
+                attrs.dehumidifierEntities && attrs.dehumidifierEntities.length > 0
+                    ? attrs.dehumidifierEntities
+                    : attrs.dehumidifierEntity
+                        ? [attrs.dehumidifierEntity]
                         : [];
             // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
-            this.env_stress_threshold = 0.8;
-            this.env_mold_threshold = 0.8;
+            this.envStressThreshold = 0.8;
+            this.envMoldThreshold = 0.8;
         }
         else {
             // Reset if no device or no attributes
-            this.env_temp_sensor = '';
-            this.env_humidity_sensor = '';
-            this.env_vpd_sensor = '';
-            this.env_co2_sensor = '';
-            this.env_circulation_fan = '';
-            this.env_circulation_fan_entities = [];
-            this.env_light_sensor = '';
-            this.env_light_sensors = [];
-            this.env_exhaust_entity = '';
-            this.env_exhaust_fan_entities = [];
-            this.env_humidifier_entity = '';
-            this.env_humidifier_entities = [];
-            this.env_dehumidifier_entity = '';
-            this.env_dehumidifier_entities = [];
-            this.env_soil_moisture_sensor = '';
-            this.env_control_dehumidifier = false;
-            this.env_dehumidifier_thresholds = {};
+            this.envTemperatureSensor = '';
+            this.envHumiditySensor = '';
+            this.envVpdSensor = '';
+            this.envCo2Sensor = '';
+            this.envCirculationFan = '';
+            this.envCirculationFanEntities = [];
+            this.envLightSensor = '';
+            this.envLightSensors = [];
+            this.envExhaustEntity = '';
+            this.envExhaustFanEntities = [];
+            this.envHumidifierEntity = '';
+            this.envHumidifierEntities = [];
+            this.envDehumidifierEntity = '';
+            this.envDehumidifierEntities = [];
+            this.envSoilMoistureSensor = '';
+            this.envDehumidifierControlEnabled = false;
+            this.envDehumidifierThresholds = {};
         }
     }
     renderDehumidifierTab() {
@@ -14917,11 +15047,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.env_selectedGrowspaceId}
+              .value=${this.envSelectedId}
               @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
-              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`)}
             </select>
@@ -15034,19 +15164,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     `;
     }
     _getThresholdValue(stage, cycle, point) {
-        return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        return this.envDehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
     }
     _updateThreshold(stage, cycle, point, value) {
         if (isNaN(value))
             return;
         // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref
-        const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
+        const newThresholds = JSON.parse(JSON.stringify(this.envDehumidifierThresholds || {}));
         if (!newThresholds[stage])
             newThresholds[stage] = {};
         if (!newThresholds[stage][cycle])
             newThresholds[stage][cycle] = { on: 0, off: 0 };
         newThresholds[stage][cycle][point] = value;
-        this.env_dehumidifier_thresholds = newThresholds;
+        this.envDehumidifierThresholds = newThresholds;
     }
 };
 ConfigDialog.styles = [
@@ -15226,91 +15356,91 @@ __decorate([
 ], ConfigDialog.prototype, "environmentData", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "add_name", void 0);
+], ConfigDialog.prototype, "addName", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "add_rows", void 0);
+], ConfigDialog.prototype, "addRows", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "add_plants_per_row", void 0);
+], ConfigDialog.prototype, "addPlantsPerRow", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "add_notification_service", void 0);
+], ConfigDialog.prototype, "addNotificationService", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "edit_selectedId", void 0);
+], ConfigDialog.prototype, "editSelectedId", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "edit_name", void 0);
+], ConfigDialog.prototype, "editName", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "edit_rows", void 0);
+], ConfigDialog.prototype, "editRows", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "edit_plants_per_row", void 0);
+], ConfigDialog.prototype, "editPlantsPerRow", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "edit_notification_service", void 0);
+], ConfigDialog.prototype, "editNotificationService", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_selectedGrowspaceId", void 0);
+], ConfigDialog.prototype, "envSelectedId", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_temp_sensor", void 0);
+], ConfigDialog.prototype, "envTemperatureSensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_humidity_sensor", void 0);
+], ConfigDialog.prototype, "envHumiditySensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_vpd_sensor", void 0);
+], ConfigDialog.prototype, "envVpdSensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_co2_sensor", void 0);
+], ConfigDialog.prototype, "envCo2Sensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_circulation_fan", void 0);
+], ConfigDialog.prototype, "envCirculationFan", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_circulation_fan_entities", void 0);
+], ConfigDialog.prototype, "envCirculationFanEntities", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_stress_threshold", void 0);
+], ConfigDialog.prototype, "envStressThreshold", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_mold_threshold", void 0);
+], ConfigDialog.prototype, "envMoldThreshold", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_light_sensor", void 0);
+], ConfigDialog.prototype, "envLightSensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_light_sensors", void 0);
+], ConfigDialog.prototype, "envLightSensors", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_exhaust_entity", void 0);
+], ConfigDialog.prototype, "envExhaustEntity", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_exhaust_fan_entities", void 0);
+], ConfigDialog.prototype, "envExhaustFanEntities", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_humidifier_entity", void 0);
+], ConfigDialog.prototype, "envHumidifierEntity", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_humidifier_entities", void 0);
+], ConfigDialog.prototype, "envHumidifierEntities", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_dehumidifier_entity", void 0);
+], ConfigDialog.prototype, "envDehumidifierEntity", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_dehumidifier_entities", void 0);
+], ConfigDialog.prototype, "envDehumidifierEntities", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_soil_moisture_sensor", void 0);
+], ConfigDialog.prototype, "envSoilMoistureSensor", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_control_dehumidifier", void 0);
+], ConfigDialog.prototype, "envDehumidifierControlEnabled", void 0);
 __decorate([
     r$2()
-], ConfigDialog.prototype, "env_dehumidifier_thresholds", void 0);
+], ConfigDialog.prototype, "envDehumidifierThresholds", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
@@ -15701,12 +15831,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
-        this._irrigation_pump_entity = '';
-        this._drain_pump_entity = '';
-        this._irrigation_duration = 60;
-        this._drain_duration = 60;
-        this._irrigation_times = [];
-        this._drain_times = [];
+        this._irrigationPumpEntity = '';
+        this._drainPumpEntity = '';
+        this._irrigationDuration = 60;
+        this._drainDuration = 60;
+        this._irrigationTimes = [];
+        this._drainTimes = [];
         this._activeTab = 'schedules';
         this._strategy = {};
     }
@@ -15721,30 +15851,30 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        const config = this.device.irrigation_config || {};
-        this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-        this._drain_pump_entity = config.drain_pump_entity || '';
-        this._irrigation_duration = config.irrigation_duration || 60;
-        this._drain_duration = config.drain_duration || 60;
-        this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
-        this._drain_times = this.device.irrigation_config?.drain_times || [];
+        const config = this.device.irrigationConfig || {};
+        this._irrigationPumpEntity = config.irrigationPumpEntity || '';
+        this._drainPumpEntity = config.drainPumpEntity || '';
+        this._irrigationDuration = config.irrigationDuration || 60;
+        this._drainDuration = config.drainDuration || 60;
+        this._irrigationTimes = this.device.irrigationConfig?.irrigationTimes || [];
+        this._drainTimes = this.device.irrigationConfig?.drainTimes || [];
         console.log('[IrrigationDialog] Initializing State', {
             device: this.device,
-            irrigation_times: this._irrigation_times,
-            drain_times: this._drain_times,
-            raw_config: config,
+            irrigationTimes: this._irrigationTimes,
+            drainTimes: this._drainTimes,
+            rawConfig: config,
         });
         // Initialize Strategy
-        const strat = this.device.irrigation_strategy;
+        const strat = this.device.irrigationStrategy;
         this._strategy = {
             enabled: strat?.enabled || false,
-            lights_on_time: strat?.lights_on_time || '06:00:00',
-            p0_duration_minutes: strat?.p0_duration_minutes || 60,
-            p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-            target_vwc_percent: strat?.target_vwc_percent || 45.0,
-            maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-            shot_duration_seconds: strat?.shot_duration_seconds || 15,
-            shot_interval_minutes: strat?.shot_interval_minutes || 15,
+            lightsOnTime: strat?.lightsOnTime || '06:00:00',
+            p0DurationMinutes: strat?.p0DurationMinutes || 60,
+            p2StopBeforeLightsOffMinutes: strat?.p2StopBeforeLightsOffMinutes || 120,
+            targetVwcPercent: strat?.targetVwcPercent || 45.0,
+            maintenanceDrybackPercent: strat?.maintenanceDrybackPercent || 3.0,
+            shotDurationSeconds: strat?.shotDurationSeconds || 15,
+            shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
         };
     }
     // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
@@ -15762,15 +15892,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         });
     }
     async _saveSettings() {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
             await this._dataService.setIrrigationSettings({
-                growspace_id: this.device.device_id,
-                irrigation_pump_entity: this._irrigation_pump_entity,
-                drain_pump_entity: this._drain_pump_entity,
-                irrigation_duration: this._irrigation_duration,
-                drain_duration: this._drain_duration,
+                growspaceId: this.device.deviceId,
+                irrigationPumpEntity: this._irrigationPumpEntity,
+                drainPumpEntity: this._drainPumpEntity,
+                irrigationDuration: this._irrigationDuration,
+                drainDuration: this._drainDuration,
             });
         }
         catch (e) {
@@ -15778,18 +15908,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _addIrrigationTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
             await this._dataService.addIrrigationTime({
-                growspace_id: this.device.device_id,
+                growspaceId: this.device.deviceId,
                 time,
-                duration: duration || this._irrigation_duration,
+                duration: duration || this._irrigationDuration,
             });
             // Optimistic update
-            const newTime = { time, duration: duration || this._irrigation_duration };
-            this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_irrigation_time = undefined;
+            const newTime = { time, duration: duration || this._irrigationDuration };
+            this._irrigationTimes = [...this._irrigationTimes, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._addingIrrigationTime = undefined;
             this._notifyDataChanged();
         }
         catch (e) {
@@ -15797,15 +15927,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _removeIrrigationTime(time) {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
             await this._dataService.removeIrrigationTime({
-                growspace_id: this.device.device_id,
+                growspaceId: this.device.deviceId,
                 time,
             });
             // Optimistic update
-            this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+            this._irrigationTimes = this._irrigationTimes.filter((t) => t.time !== time);
             this._notifyDataChanged();
         }
         catch (e) {
@@ -15813,18 +15943,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _addDrainTime(time, duration) {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
             await this._dataService.addDrainTime({
-                growspace_id: this.device.device_id,
+                growspaceId: this.device.deviceId,
                 time,
-                duration: duration || this._drain_duration,
+                duration: duration || this._drainDuration,
             });
             // Optimistic update
-            const newTime = { time, duration: duration || this._drain_duration };
-            this._drain_times = [...this._drain_times, newTime].sort((a, b) => a.time.localeCompare(b.time));
-            this._adding_drain_time = undefined;
+            const newTime = { time, duration: duration || this._drainDuration };
+            this._drainTimes = [...this._drainTimes, newTime].sort((a, b) => a.time.localeCompare(b.time));
+            this._addingDrainTime = undefined;
             this._notifyDataChanged();
         }
         catch (e) {
@@ -15832,15 +15962,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _removeDrainTime(time) {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
             await this._dataService.removeDrainTime({
-                growspace_id: this.device.device_id,
+                growspaceId: this.device.deviceId,
                 time,
             });
             // Optimistic update
-            this._drain_times = this._drain_times.filter((t) => t.time !== time);
+            this._drainTimes = this._drainTimes.filter((t) => t.time !== time);
             this._notifyDataChanged();
         }
         catch (e) {
@@ -15856,9 +15986,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_irrigation_time = {
+        this._addingIrrigationTime = {
             time: timeStr,
-            duration: this._irrigation_duration,
+            duration: this._irrigationDuration,
         };
     }
     _startAddingDrainTime(x, width) {
@@ -15867,19 +15997,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-        this._adding_drain_time = {
+        this._addingDrainTime = {
             time: timeStr,
-            duration: this._drain_duration,
+            duration: this._drainDuration,
         };
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
     }
     async _saveStrategy() {
-        if (!this.device?.device_id || !this._dataService)
+        if (!this.device?.deviceId || !this._dataService)
             return;
         try {
-            await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+            await this._dataService.setIrrigationStrategy(this.device.deviceId, this._strategy);
         }
         catch (e) {
             console.error('Failed to save strategy:', e);
@@ -15985,8 +16115,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _renderSchedulesTab(color) {
         return x `
-      ${this._renderScheduleSection('Irrigation Schedule', this._irrigation_times, this._irrigation_duration, 'irrigation', color)}
-      ${this._renderScheduleSection('Drain Schedule', this._drain_times, this._drain_duration, 'drain', '#FF9800')}
+      ${this._renderScheduleSection('Irrigation Schedule', this._irrigationTimes, this._irrigationDuration, 'irrigation', color)}
+      ${this._renderScheduleSection('Drain Schedule', this._drainTimes, this._drainDuration, 'drain', '#FF9800')}
     `;
     }
     _getEntities(domains) {
@@ -16020,8 +16150,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
            <h3>Pump Configuration</h3>
         </div>
         <div class="section-content">
-             ${this._renderEntitySelect('Irrigation Pump', this._irrigation_pump_entity, ['switch', 'input_boolean'], (e) => (this._irrigation_pump_entity = e.target.value))}
-             ${this._renderEntitySelect('Drain Pump (Optional)', this._drain_pump_entity, ['switch', 'input_boolean'], (e) => (this._drain_pump_entity = e.target.value))}
+             ${this._renderEntitySelect('Irrigation Pump', this._irrigationPumpEntity, ['switch', 'input_boolean'], (e) => (this._irrigationPumpEntity = e.target.value))}
+             ${this._renderEntitySelect('Drain Pump (Optional)', this._drainPumpEntity, ['switch', 'input_boolean'], (e) => (this._drainPumpEntity = e.target.value))}
         </div>
       </div>
     `;
@@ -16053,14 +16183,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <md3-number-input
             label="Target VWC (%)"
-            .value=${this._strategy.target_vwc_percent}
-            @change=${(e) => this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+            .value=${this._strategy.targetVwcPercent}
+            @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Dryback (%)"
-            .value=${this._strategy.maintenance_dryback_percent}
-            @change=${(e) => this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+            .value=${this._strategy.maintenanceDrybackPercent}
+            @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
@@ -16068,41 +16198,41 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-text-input
             label="Lights On Time"
             type="time"
-            .value=${this._strategy.lights_on_time}
-            @change=${(e) => this._updateStrategyField('lights_on_time', e.target.value || e.detail)}
+            .value=${this._strategy.lightsOnTime}
+            @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
           ></md3-text-input>
 
           <md3-number-input
             label="P0 Duration (min)"
-            .value=${this._strategy.p0_duration_minutes}
-            @change=${(e) => this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+            .value=${this._strategy.p0DurationMinutes}
+            @change=${(e) => this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="P2 Stop Buffer (min)"
-            .value=${this._strategy.p2_stop_before_lights_off_minutes}
-            @change=${(e) => this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+            .value=${this._strategy.p2StopBeforeLightsOffMinutes}
+            @change=${(e) => this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
 
           <md3-number-input
             label="Shot Duration (sec)"
-            .value=${this._strategy.shot_duration_seconds}
-            @change=${(e) => this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+            .value=${this._strategy.shotDurationSeconds}
+            @change=${(e) => this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Shot Interval (min)"
-            .value=${this._strategy.shot_interval_minutes}
-            @change=${(e) => this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+            .value=${this._strategy.shotIntervalMinutes}
+            @change=${(e) => this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
           ></md3-number-input>
         </div>
       </div>
     `;
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
-        const addingTime = type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+        const addingTime = type === 'irrigation' ? this._addingIrrigationTime : this._addingDrainTime;
         return x `
       <div class="detail-card">
         <div
@@ -16183,8 +16313,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               <div
                 class="overlay-backdrop"
                 @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
+                ? (this._addingIrrigationTime = undefined)
+                : (this._addingDrainTime = undefined)}
               >
                 <div
                   class="detail-card"
@@ -16199,13 +16329,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     .value=${addingTime.time}
                     @change=${(e) => {
                 const val = e.target.value || e.detail; // md3-text-input uses detail
-                if (type === 'irrigation' && this._adding_irrigation_time)
-                    this._adding_irrigation_time = {
-                        ...this._adding_irrigation_time,
+                if (type === 'irrigation' && this._addingIrrigationTime)
+                    this._addingIrrigationTime = {
+                        ...this._addingIrrigationTime,
                         time: val,
                     };
-                if (type === 'drain' && this._adding_drain_time)
-                    this._adding_drain_time = { ...this._adding_drain_time, time: val };
+                if (type === 'drain' && this._addingDrainTime)
+                    this._addingDrainTime = { ...this._addingDrainTime, time: val };
             }}
                   ></md3-text-input>
 
@@ -16217,13 +16347,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 console.log('DEBUG: Duration Change', e.detail);
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
-                    if (type === 'irrigation' && this._adding_irrigation_time)
-                        this._adding_irrigation_time = {
-                            ...this._adding_irrigation_time,
+                    if (type === 'irrigation' && this._addingIrrigationTime)
+                        this._addingIrrigationTime = {
+                            ...this._addingIrrigationTime,
                             duration: val,
                         };
-                    if (type === 'drain' && this._adding_drain_time)
-                        this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+                    if (type === 'drain' && this._addingDrainTime)
+                        this._addingDrainTime = { ...this._addingDrainTime, duration: val };
                 }
             }}
                   ></md3-number-input>
@@ -16232,8 +16362,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button tonal"
                       @click=${() => type === 'irrigation'
-                ? (this._adding_irrigation_time = undefined)
-                : (this._adding_drain_time = undefined)}
+                ? (this._addingIrrigationTime = undefined)
+                : (this._addingDrainTime = undefined)}
                     >
                       Cancel
                     </button>
@@ -16386,28 +16516,28 @@ __decorate([
 ], IrrigationDialog.prototype, "growspaceName", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_irrigation_pump_entity", void 0);
+], IrrigationDialog.prototype, "_irrigationPumpEntity", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_drain_pump_entity", void 0);
+], IrrigationDialog.prototype, "_drainPumpEntity", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_irrigation_duration", void 0);
+], IrrigationDialog.prototype, "_irrigationDuration", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_drain_duration", void 0);
+], IrrigationDialog.prototype, "_drainDuration", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_irrigation_times", void 0);
+], IrrigationDialog.prototype, "_irrigationTimes", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_drain_times", void 0);
+], IrrigationDialog.prototype, "_drainTimes", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_adding_irrigation_time", void 0);
+], IrrigationDialog.prototype, "_addingIrrigationTime", void 0);
 __decorate([
     r$2()
-], IrrigationDialog.prototype, "_adding_drain_time", void 0);
+], IrrigationDialog.prototype, "_addingDrainTime", void 0);
 __decorate([
     r$2()
 ], IrrigationDialog.prototype, "_activeTab", void 0);
@@ -19009,7 +19139,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         let daysInStage = 0;
         if (this.store && this.store.data && this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
             const selectedDeviceId = this.store.data.$selectedDevice.get();
-            const selectedDevice = this.store.data.$devices.get().find(d => d.device_id === selectedDeviceId);
+            const selectedDevice = this.store.data.$devices.get().find(d => d.deviceId === selectedDeviceId);
             if (selectedDevice) {
                 // Check if all selected plants are in the same stage
                 const selectedPlants = selectedDevice.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
@@ -20045,6 +20175,9 @@ __decorate([
 __decorate([
     n$5({ type: Boolean })
 ], NutrientPresetsEditor.prototype, "embedded", void 0);
+__decorate([
+    n$5({ type: String })
+], NutrientPresetsEditor.prototype, "growspaceId", void 0);
 __decorate([
     r$2()
 ], NutrientPresetsEditor.prototype, "_view", void 0);
@@ -21094,48 +21227,53 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type === 'NONE')
             return x ``;
         const strainLibrary = this.strainLibrary || [];
-        const selectedDeviceData = devices.find((d) => d.device_id === selectedDeviceId);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
         // Prepare options for select dropdowns if needed
         const growspaceOptions = {};
         devices.forEach((d) => {
-            growspaceOptions[d.device_id] = d.name;
+            growspaceOptions[d.deviceId] = d.name;
         });
+        // Resolve context-specific device data (from payload or global selection)
+        const payloadGrowspaceId = active.payload?.growspaceId;
+        const effectiveDeviceData = (payloadGrowspaceId
+            ? devices.find(d => d.deviceId === payloadGrowspaceId)
+            : null) || selectedDeviceData;
         return x `
             <error-boundary .fallbackMessage=${'Dialog error occurred'}>
                 ${(() => {
             switch (active.type) {
                 case 'ADD_PLANT':
-                    return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                    return this._renderAddPlantDialog(active, strainLibrary, effectiveDeviceData);
                 case 'ADD_PLANTS':
-                    return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
+                    return this._renderAddPlantsDialog(active, strainLibrary, effectiveDeviceData);
                 case 'PLANT_OVERVIEW':
-                    return this._renderPlantOverviewDialog(active, growspaceOptions);
+                    return this._renderPlantOverviewDialog(active, growspaceOptions, effectiveDeviceData);
                 case 'STRAIN_LIBRARY':
-                    return this._renderStrainLibraryDialog(active, strainLibrary);
+                    return this._renderStrainLibraryDialog(active, strainLibrary, effectiveDeviceData);
                 case 'CONFIG':
-                    return this._renderConfigDialog(active, growspaceOptions);
+                    return this._renderConfigDialog(active, growspaceOptions, effectiveDeviceData);
                 case 'GROW_MASTER':
-                    return this._renderGrowMasterDialog(active);
+                    return this._renderGrowMasterDialog(active, effectiveDeviceData);
                 case 'STRAIN_RECOMMENDATION':
-                    return this._renderStrainRecommendationDialog(active);
+                    return this._renderStrainRecommendationDialog(active, effectiveDeviceData);
                 case 'IRRIGATION':
-                    return this._renderIrrigationDialog(active, selectedDeviceData);
+                    return this._renderIrrigationDialog(active, effectiveDeviceData);
                 case 'LOGBOOK':
-                    return this._renderLogbookDialog(active);
+                    return this._renderLogbookDialog(active, effectiveDeviceData);
                 case 'WATERING':
-                    return this._renderWateringDialog(active, selectedDeviceData);
+                    return this._renderWateringDialog(active, effectiveDeviceData);
                 case 'NUTRIENT_PRESETS':
-                    return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+                    return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
                 case 'TRAINING':
-                    return this._renderTrainingDialog(active);
+                    return this._renderTrainingDialog(active, effectiveDeviceData);
                 case 'TAKE_CLONE':
-                    return this._renderCloneDialog(active, growspaceOptions);
+                    return this._renderCloneDialog(active, growspaceOptions, effectiveDeviceData);
                 case 'IPM':
-                    return this._renderIPMDialog(active, selectedDeviceData);
+                    return this._renderIPMDialog(active, effectiveDeviceData);
                 case 'NUTRIENT_INVENTORY':
-                    return this._renderNutrientInventoryDialog(active);
+                    return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
                 case 'NUTRIENTS':
-                    return this._renderNutrientDialog(active);
+                    return this._renderNutrientDialog(active, effectiveDeviceData);
                 default:
                     return x ``;
             }
@@ -21156,7 +21294,7 @@ let DialogHost = class DialogHost extends i$3 {
         const devices = this._devicesController.value;
         const clonePlants = this._getPlantsByStage(devices, 'clone');
         const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
-        const targetGrowspaceId = selectedDeviceData?.device_id || '';
+        const targetGrowspaceId = selectedDeviceData?.deviceId || '';
         return x `
         <add-plant-dialog
             .open=${true}
@@ -21287,7 +21425,7 @@ let DialogHost = class DialogHost extends i$3 {
         ></add-plants-dialog>
         `;
     }
-    _renderPlantOverviewDialog(active, growspaceOptions) {
+    _renderPlantOverviewDialog(active, growspaceOptions, selectedDeviceData) {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
@@ -21368,7 +21506,7 @@ let DialogHost = class DialogHost extends i$3 {
         ></plant-overview-dialog>
         `;
     }
-    _renderStrainLibraryDialog(active, strainLibrary) {
+    _renderStrainLibraryDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
             return x ``;
         const payload = active.payload;
@@ -21427,7 +21565,7 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.showToast(`Import failed: ${err.message}`, 'error');
         }
     }
-    _renderConfigDialog(active, growspaceOptions) {
+    _renderConfigDialog(active, growspaceOptions, selectedDeviceData) {
         if (active.type !== 'CONFIG')
             return x ``;
         const dialogState = active.payload;
@@ -21447,35 +21585,34 @@ let DialogHost = class DialogHost extends i$3 {
         `;
     }
     async _handleEnvironmentConfig(detail) {
-        // eslint-disable-next-line camelcase
-        const { selectedGrowspaceId, temp_sensor, humidity_sensor, vpd_sensor, co2_sensor, circulation_fan, stress_threshold, mold_threshold, light_sensor, exhaust_entity, humidifier_entity, dehumidifier_entity, dehumidifier_thresholds, soil_moisture_sensor, control_dehumidifier, } = detail;
-        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+        const { selectedGrowspaceId, temperatureSensor, humiditySensor, vpdSensor, co2Sensor, circulationFanEntity, stressThreshold, moldThreshold, lightSensor, exhaustEntity, humidifierEntity, dehumidifierEntity, dehumidifierThresholds, soilMoistureSensor, dehumidifierControlEnabled, } = detail;
+        if (!selectedGrowspaceId || !temperatureSensor || !humiditySensor) {
             this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
         try {
             await this.store.dataService.configureEnvironment({
-                growspace_id: selectedGrowspaceId,
-                temperature_sensor: temp_sensor,
-                humidity_sensor,
-                vpd_sensor: vpd_sensor || undefined,
-                co2_sensor: co2_sensor || undefined,
-                circulation_fan_entity: circulation_fan || undefined,
-                stress_threshold,
-                mold_threshold,
-                light_sensor: light_sensor || undefined,
-                exhaust_entity: exhaust_entity || undefined,
-                humidifier_entity: humidifier_entity || undefined,
-                dehumidifier_entity: dehumidifier_entity || undefined,
-                dehumidifier_thresholds, // Pass thresholds if provided
-                soil_moisture_sensor: soil_moisture_sensor || undefined,
-                control_dehumidifier,
+                growspaceId: selectedGrowspaceId,
+                temperatureSensor: temperatureSensor,
+                humiditySensor: humiditySensor,
+                vpdSensor: vpdSensor || undefined,
+                co2Sensor: co2Sensor || undefined,
+                circulationFanEntity: circulationFanEntity || undefined,
+                stressThreshold: stressThreshold,
+                moldThreshold: moldThreshold,
+                lightSensor: lightSensor || undefined,
+                exhaustEntity: exhaustEntity || undefined,
+                humidifierEntity: humidifierEntity || undefined,
+                dehumidifierEntity: dehumidifierEntity || undefined,
+                dehumidifierThresholds: dehumidifierThresholds,
+                soilMoistureSensor: soilMoistureSensor || undefined,
+                controlDehumidifier: dehumidifierControlEnabled,
                 // Multi-device fields
-                circulation_fan_entities: detail.circulation_fan_entities,
-                light_sensors: detail.light_sensors,
-                exhaust_fan_entities: detail.exhaust_fan_entities,
-                humidifier_entities: detail.humidifier_entities,
-                dehumidifier_entities: detail.dehumidifier_entities,
+                circulationFanEntities: detail.circulationFanEntities,
+                lightSensors: detail.lightSensors,
+                exhaustFanEntities: detail.exhaustFanEntities,
+                humidifierEntities: detail.humidifierEntities,
+                dehumidifierEntities: detail.dehumidifierEntities,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();
@@ -21485,13 +21622,13 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.showToast(`Error: ${e.message}`, 'error');
         }
     }
-    _renderGrowMasterDialog(active) {
+    _renderGrowMasterDialog(active, selectedDeviceData) {
         if (active.type !== 'GROW_MASTER')
             return x ``;
         const dialogState = active.payload;
         let isStressed = false;
         let personality;
-        const selectedDevice = this._selectedDeviceController.value;
+        const selectedDevice = selectedDeviceData?.deviceId;
         if (selectedDevice && this.hass) {
             const id = selectedDevice;
             const stressEntityIds = [
@@ -21507,8 +21644,8 @@ let DialogHost = class DialogHost extends i$3 {
                 }
             }
             const manager = this.hass.states['sensor.growspace_manager'];
-            if (manager && manager.attributes && manager.attributes.ai_settings) {
-                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            if (manager && manager.attributes) {
+                personality = manager.attributes.personality || (manager.attributes.ai_settings && manager.attributes.ai_settings.personality);
             }
         }
         return x `
@@ -21524,7 +21661,7 @@ let DialogHost = class DialogHost extends i$3 {
         ></grow-master-dialog>
     `;
     }
-    _renderStrainRecommendationDialog(active) {
+    _renderStrainRecommendationDialog(active, selectedDeviceData) {
         if (active.type !== 'STRAIN_RECOMMENDATION')
             return x ``;
         const dialogState = active.payload;
@@ -21552,16 +21689,16 @@ let DialogHost = class DialogHost extends i$3 {
         > </irrigation-dialog>
     `;
     }
-    _renderLogbookDialog(active) {
+    _renderLogbookDialog(active, selectedDeviceData) {
         if (active.type !== 'LOGBOOK')
             return x ``;
         const dialogState = active.payload;
         return x `
     <logbook-dialog
         .open=${true}
-            .growspaceId = ${dialogState.growspaceId}
-@close=${() => this.store.ui.closeDialog()}
-        > </logbook-dialog>
+        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
+        @close=${() => this.store.ui.closeDialog()}
+    ></logbook-dialog>
     `;
     }
     _renderWateringDialog(active, selectedDeviceData) {
@@ -21586,12 +21723,13 @@ let DialogHost = class DialogHost extends i$3 {
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
+        .growspaceId=${selectedDeviceData?.deviceId}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
     ></nutrient-presets-editor>
     `;
     }
-    _renderTrainingDialog(active) {
+    _renderTrainingDialog(active, selectedDeviceData) {
         if (active.type !== 'TRAINING')
             return x ``;
         return x `
@@ -21612,14 +21750,14 @@ let DialogHost = class DialogHost extends i$3 {
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
-        .growspaceId=${dialogState.growspaceId}
+        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
         .plantIds=${dialogState.plantIds || []}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
     ></ipm-dialog>
     `;
     }
-    _renderNutrientInventoryDialog(active) {
+    _renderNutrientInventoryDialog(active, selectedDeviceData) {
         if (active.type !== 'NUTRIENT_INVENTORY')
             return x ``;
         return x `
@@ -21630,7 +21768,7 @@ let DialogHost = class DialogHost extends i$3 {
             ></nutrient-inventory-dialog>
         `;
     }
-    _renderCloneDialog(active, growspaceOptions) {
+    _renderCloneDialog(active, growspaceOptions, selectedDeviceData) {
         if (active.type !== 'TAKE_CLONE')
             return x ``;
         const dialogState = active.payload;
@@ -21642,7 +21780,7 @@ let DialogHost = class DialogHost extends i$3 {
                 .growspaceOptions=${growspaceOptions}
                 .defaultGrowspace=${dialogState.defaultGrowspaceId}
                 @take-clone-submit=${async (e) => {
-            const { motherPlantId, numClones, targetGrowspaceId } = e.detail;
+            const { numClones, targetGrowspaceId } = e.detail;
             await this.store.actions.plant.takeClone(dialogState.sourcePlant, numClones, targetGrowspaceId);
             await this._handleDataChanged();
             this.store.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
@@ -21650,7 +21788,7 @@ let DialogHost = class DialogHost extends i$3 {
             ></clone-dialog>
         `;
     }
-    _renderNutrientDialog(active) {
+    _renderNutrientDialog(active, selectedDeviceData) {
         if (active.type !== 'NUTRIENTS')
             return x ``;
         return x `
@@ -22515,7 +22653,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         if (!this.plant || !this.store)
             return false;
         const growspaceId = this.plant.attributes.growspace_id;
-        const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+        const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
         if (!device)
             return false;
         const nutrientPresets = this.store.data.$nutrientPresets.get();
@@ -30891,8 +31029,8 @@ class MetricsUtils {
         }
         // Fetch Environmental Data
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '').replace(/_overview$/, '');
+        if (device.overviewEntityId) {
+            slug = device.overviewEntityId.replace('sensor.', '').replace(/_overview$/, '');
         }
         let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
         const isCure = slug === 'cure';
@@ -30904,17 +31042,17 @@ class MetricsUtils {
             envEntityId = `binary_sensor.dry_optimal_drying`;
         }
         const envEntity = hass.states[envEntityId];
-        const overviewEntity = device.overview_entity_id
-            ? hass.states[device.overview_entity_id]
+        const overviewEntity = device.overviewEntityId
+            ? hass.states[device.overviewEntityId]
             : undefined;
-        const envAttrs = device.environment_attributes || overviewEntity?.attributes || {};
+        const envAttrs = device.environmentAttributes || overviewEntity?.attributes || {};
         const temp = this._getAttributeValue(envEntity, 'temperature');
         const hum = this._getAttributeValue(envEntity, 'humidity');
         let vpd = this._getAttributeValue(envEntity, 'vpd');
         // VPD Fallback Logic
         if (vpd === undefined || vpd === null) {
-            if (envAttrs.vpd_sensor) {
-                const vpdState = hass.states[envAttrs.vpd_sensor];
+            if (envAttrs.vpdSensor) {
+                const vpdState = hass.states[envAttrs.vpdSensor];
                 if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
@@ -30937,7 +31075,7 @@ class MetricsUtils {
                 let vpdState = hass.states[calculatedId];
                 // 2. Try UUID-based ID (Old Legacy)
                 if (!vpdState || vpdState.state === EntityState.UNKNOWN || vpdState.state === EntityState.UNAVAILABLE) {
-                    const oldId = `sensor.${device.device_id}_calculated_vpd`;
+                    const oldId = `sensor.${device.deviceId}_calculated_vpd`;
                     const oldState = hass.states[oldId];
                     if (oldState && oldState.state !== EntityState.UNKNOWN && oldState.state !== EntityState.UNAVAILABLE) {
                         vpdState = oldState;
@@ -30992,8 +31130,8 @@ class MetricsUtils {
                 .sort((a, b) => a.toMillis() - b.toMillis())[0];
             return upcoming ? upcoming.toFormat('HH:mm') : undefined;
         };
-        const nextIrrigation = getNextEvent(device.irrigation_config?.irrigation_times);
-        const nextDrain = getNextEvent(device.irrigation_config?.drain_times);
+        const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
+        const nextDrain = getNextEvent(device.irrigationConfig?.drainTimes);
         // Build Chips
         const createChipData = (key, icon, value, multiValues, entityIds, label, status, tooltip) => {
             if (value === undefined && (!multiValues || multiValues.length === 0))
@@ -31062,11 +31200,11 @@ class MetricsUtils {
             // Single device logic
             return { value: states[0], entityIds };
         };
-        const exhaustState = getAggregateState(envAttrs.exhaust_entity, envAttrs.exhaust_fan_entities, envAttrs.exhaust_sensor);
-        const humidifierState = getAggregateState(envAttrs.humidifier_entity, envAttrs.humidifier_entities, envAttrs.humidifier_sensor);
-        const dehumidifierState = getAggregateState(envAttrs.dehumidifier_entity, envAttrs.dehumidifier_entities, undefined);
-        const circulationFanState = getAggregateState(envAttrs.circulation_fan_entity, envAttrs.circulation_fan_entities, undefined);
-        const lightState = getAggregateState(envAttrs.light_sensor, envAttrs.light_sensors, undefined);
+        const exhaustState = getAggregateState(envAttrs.exhaustEntity, envAttrs.exhaustFanEntities, envAttrs.exhaustSensor);
+        const humidifierState = getAggregateState(envAttrs.humidifierEntity, envAttrs.humidifierEntities, envAttrs.humidifierSensor);
+        const dehumidifierState = getAggregateState(envAttrs.dehumidifierEntity, envAttrs.dehumidifierEntities, undefined);
+        const circulationFanState = getAggregateState(envAttrs.circulationFanEntity, envAttrs.circulationFanEntities, undefined);
+        const lightState = getAggregateState(envAttrs.lightSensor, envAttrs.lightSensors, undefined);
         const deviceChips = [
             // Moved light chip here per request
             createChipData(MetricKey.LIGHT, isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined, lightState.multiValues, lightState.entityIds),
@@ -31398,7 +31536,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
                 this.store.openAddPlantDialog();
                 break;
             case 'config': {
-                const device = this.store.data.$devices.get().find(d => d.device_id === this._selectedDeviceController.value);
+                const device = this.store.data.$devices.get().find(d => d.deviceId === this._selectedDeviceController.value);
                 if (device)
                     this.store.openConfigDialog(device);
                 break;
@@ -31436,7 +31574,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             case 'ipm': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openIPMDialog({
-                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.device_id || '', // Fallback
+                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.deviceId || '', // Fallback
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
                 });
                 break;
@@ -31782,8 +31920,8 @@ let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
         if (isVpd && this.store?.history && this.device) {
             const historyData = this._historyCacheController?.value?.vpd;
             const lightHistory = this._historyCacheController?.value?.light || [];
-            const overviewEntity = this.device.overview_entity_id
-                ? this.hass?.states[this.device.overview_entity_id]
+            const overviewEntity = this.device.overviewEntityId
+                ? this.hass?.states[this.device.overviewEntityId]
                 : null;
             const attrs = overviewEntity?.attributes || {};
             // Default thresholds fallback
@@ -32115,6 +32253,7 @@ let GrowspaceHeaderSecondary = class GrowspaceHeaderSecondary extends i$3 {
                             .tooltip=${chip.tooltip}
                             draggable="${this._chipDraggable}"
                             @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                            @dragover=${(e) => e.preventDefault()}
                             @drop=${(e) => this._handleChipDrop(e, chip.key)}
                             @click=${() => this._toggleEnvGraph(chip.key)}
                             @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
@@ -32272,7 +32411,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     _shouldUpdateMetrics() {
         const args = [
-            this.device?.device_id,
+            this.device?.deviceId,
             this.activeEnvGraphs,
             this._linkedGraphGroupsController?.value
         ];
@@ -32320,7 +32459,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         if (!this.device || !this.hass)
             return x ``;
         const devices = this._devicesController?.value || [];
-        const deviceId = this.device.device_id;
+        const deviceId = this.device.deviceId;
         // Split chips into Hero and Secondary sets (Restoring original logic)
         const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
         const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
@@ -32349,7 +32488,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
                             .value=${deviceId}
                             @change=${this._handleDeviceChange}
                         >
-                            ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+                            ${devices.map(d => x `<option value="${d.deviceId}">${d.name}</option>`)}
                         </select>
                     </div>`
             : x `<h1 class="gs-title">${this.device.name}</h1>`}
@@ -32739,7 +32878,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                         return;
                     }
                 }
-                catch (err) {
+                catch {
                     // Not transplant data, fall through to regular drop
                 }
             }
@@ -32794,17 +32933,17 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         const growspaceId = plant.attributes.growspace_id;
         if (!growspaceId)
             return OVERLAY_COLORS.TRANSPARENT;
-        const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+        const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
         if (!device)
             return OVERLAY_COLORS.TRANSPARENT;
         switch (mode) {
             case GridOverlayMode.VPD: {
-                const { vpd_status } = device.biological_metrics;
-                if (vpd_status === 'ok')
+                const { vpdStatus } = device.biologicalMetrics;
+                if (vpdStatus === 'ok')
                     return OVERLAY_COLORS.OK;
-                if (vpd_status === StatusLevel.WARNING)
+                if (vpdStatus === StatusLevel.WARNING)
                     return OVERLAY_COLORS.WARNING;
-                if (vpd_status === StatusLevel.DANGER)
+                if (vpdStatus === StatusLevel.DANGER)
                     return OVERLAY_COLORS.DANGER;
                 break;
             }
@@ -32821,8 +32960,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                 if (optimalEntity?.state === 'on') {
                     return OVERLAY_COLORS.OK;
                 }
-                const { vpd_status } = device.biological_metrics;
-                if (vpd_status === StatusLevel.WARNING || vpd_status === StatusLevel.DANGER) {
+                const { vpdStatus } = device.biologicalMetrics;
+                if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
                     return OVERLAY_COLORS.WARNING;
                 }
                 break;
@@ -34652,7 +34791,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
     }
     _setGraphRange(range) {
         if (this.device) {
-            this.store.history.setGraphRange(this.device.device_id, range);
+            this.store.history.setGraphRange(this.device.deviceId, range);
             this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
         }
     }
@@ -34903,7 +35042,7 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         const detail = e.detail;
         try {
             const today = new Date().toISOString().split('T')[0];
-            const targetGrowspaceId = this.device?.device_id;
+            const targetGrowspaceId = this.device?.deviceId;
             if (!targetGrowspaceId)
                 return;
             await this.store.hass.callService('growspace_manager', 'update_plant', {
@@ -35062,7 +35201,7 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
           <growspace-view-compact
               .grid=${this.grid}
               .rows=${this.rows}
-              .cols=${this.device.plants_per_row}
+              .cols=${this.device.plantsPerRow}
               .isLoading=${this.isLoading}
           ></growspace-view-compact>
         </error-boundary>
@@ -35086,7 +35225,7 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
           .growspaceOptions=${this.growspaceOptions}
           .grid=${this.grid}
           .rows=${this.rows}
-          .cols=${this.device.plants_per_row}
+          .cols=${this.device.plantsPerRow}
           .isEditMode=${this.isEditMode}
           .isCompact=${this.isCompact}
           .selectedCount=${this.selectedCount}
@@ -35410,7 +35549,7 @@ class GrowspaceDataStore {
                 continue;
             for (const plant of device.plants) {
                 const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-                map.set(plantId, device.device_id);
+                map.set(plantId, device.deviceId);
             }
         }
         this.$plantToDeviceMap.set(map);
@@ -35859,7 +35998,7 @@ class GrowspaceHistoryStore {
         if (!deviceId)
             return;
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.device_id === deviceId);
+        const device = devices.find(d => d.deviceId === deviceId);
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
@@ -35871,8 +36010,8 @@ class GrowspaceHistoryStore {
         const entityMap = {};
         const entitiesToFetch = new Set();
         // 1. Identify Overview Entity
-        if (device.overview_entity_id) {
-            entitiesToFetch.add(device.overview_entity_id);
+        if (device.overviewEntityId) {
+            entitiesToFetch.add(device.overviewEntityId);
             // Map main overview entity to 'main' for timestamp tracking if needed, 
             // but usually main data is split into metrics. 
             // The controller logic mapped overview_entity_id to 'main' in some places, 
@@ -35919,7 +36058,7 @@ class GrowspaceHistoryStore {
         if (!deviceId)
             return;
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.device_id === deviceId);
+        const device = devices.find(d => d.deviceId === deviceId);
         if (!device)
             return;
         const currentTimestamps = this.$lastTimestamps.get();
@@ -35937,7 +36076,7 @@ class GrowspaceHistoryStore {
         const entityMap = {};
         const entitiesToFetch = new Set();
         // Overview
-        if (device.overview_entity_id) ;
+        if (device.overviewEntityId) ;
         for (const metric of metricsToFetch) {
             const entityId = this.getEntityIdForMetric(device, metric);
             const lastTimestamp = currentTimestamps[metric];
@@ -36048,42 +36187,63 @@ class GrowspaceHistoryStore {
     getEntityIdForMetric(device, metricKey) {
         if (metricKey === 'optimal') {
             let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-            if (device.overview_entity_id) {
-                slug = device.overview_entity_id.replace('sensor.', '');
+            // Fallback to snake_case for backward compatibility/runtime safety
+            const overviewId = device.overviewEntityId || device.overview_entity_id;
+            if (overviewId) {
+                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
             }
             let optimalId = `binary_sensor.${slug}_optimal_conditions`;
             if (slug === 'cure')
                 optimalId = `binary_sensor.cure_optimal_curing`;
             else if (slug === 'dry')
                 optimalId = `binary_sensor.dry_optimal_drying`;
+            console.log(`[HistoryStore] Resolved Optimal ID for ${device.name}: ${optimalId} (slug: ${slug})`);
             return optimalId;
         }
         const mapping = METRIC_ENTITY_KEYS[metricKey];
         if (!mapping)
             return null;
         if (mapping.source === 'irrigation') {
-            const config = device.irrigation_config;
-            const entityId = config?.[mapping.primary];
+            // Handle both camelCase and snake_case for irrigationConfig
+            const config = (device.irrigationConfig || device.irrigation_config);
+            if (!config)
+                return null;
+            // Try explicit mapping primary key first
+            let entityId = config[mapping.primary];
+            // If not found, try snake_case version of the key if it looks camelCase
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                entityId = config[snakeKey];
+            }
             if (typeof entityId === 'string')
                 return entityId;
         }
-        const envAttrs = (device.environment_attributes || {});
+        // Default: environment_attributes (handle camelCase and snake_case)
+        const envAttrs = (device.environmentAttributes || device.environment_attributes || {});
         let entityId = envAttrs[mapping.primary];
+        // Try fallback if primary not found
         if (!entityId && mapping.fallback) {
             entityId = envAttrs[mapping.fallback];
         }
+        // Try snake_case mapping if not found
+        if (!entityId && /[A-Z]/.test(mapping.primary)) {
+            const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            entityId = envAttrs[snakeKey];
+        }
+        // Special fallback for VPD calculated sensor
         if (!entityId && metricKey === 'vpd' && device.name) {
-            // Calculated VPD fallback logic could go here if Hass state access available.
-            // DataService can check states if needed, but for now we skip complex calculated logic 
-            // unless strictly required. The controller had access to this.host.hass.states.
-            // We can access this.dataService.hass.states.
-            if (this.dataService.hass) {
-                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
-                const calcName = `${device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                if (this.dataService.hass.states[calculatedId]) {
-                    entityId = calculatedId;
-                }
+            const slugify = (text) => text
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '_')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+            const calcName = `${device.name} Calculated VPD`;
+            const calculatedId = `sensor.${slugify(calcName)}`;
+            if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
+                entityId = calculatedId;
             }
         }
         return entityId || null;
@@ -36129,7 +36289,7 @@ class GrowspaceGridStore {
         this.$growspaceOptions = computed(this.$activeDevices, (devices) => {
             const options = {};
             for (const d of devices) {
-                options[d.device_id] = d.name;
+                options[d.deviceId] = d.name;
             }
             return options;
         });
@@ -36137,12 +36297,12 @@ class GrowspaceGridStore {
             if (!selectedId) {
                 return { effectiveRows: 0, grid: [] };
             }
-            const device = devices.find((d) => d.device_id === selectedId);
+            const device = devices.find((d) => d.deviceId === selectedId);
             if (!device) {
                 return { effectiveRows: 0, grid: [] };
             }
             const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-            const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plants_per_row);
+            const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
             return { effectiveRows, grid };
         });
     }
@@ -36388,7 +36548,7 @@ async function handleDeletePlant(ctx, plantId) {
             const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
             if (plant) {
                 plantsToRestore.push({
-                    growspace_id: plant.attributes.growspace_id || device.device_id,
+                    growspace_id: plant.attributes.growspace_id || device.deviceId,
                     row: plant.attributes.row,
                     col: plant.attributes.col,
                     strain: plant.attributes.strain,
@@ -36569,10 +36729,9 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
     const growspaceId = sourcePlant.attributes.growspace_id;
     if (!growspaceId)
         return false;
-    // Helper to perform optimistic update on the cache AND devices store
+    // Helper to perform optimistic grid update
     const performOptimisticGridUpdate = (isRevert = false) => {
-        if (!growspaceId)
-            return;
+        // growspaceId is guaranteed truthy by closure capture from outer scope check
         const updateGridLogic = (grid) => {
             let sourceKey = null;
             let targetKey = null;
@@ -36592,14 +36751,11 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
                 const newSourceCol = isRevert ? originalCol : targetCol;
                 const newTargetRow = isRevert ? targetRow : originalRow;
                 const newTargetCol = isRevert ? targetCol : originalCol;
-                if (sData) {
-                    sData.row = newSourceRow;
-                    sData.col = newSourceCol;
-                }
-                if (tData) {
-                    tData.row = newTargetRow;
-                    tData.col = newTargetCol;
-                }
+                // sData and tData are guaranteed to exist because sourceKey and targetKey came from the grid iteration
+                sData.row = newSourceRow;
+                sData.col = newSourceCol;
+                tData.row = newTargetRow;
+                tData.col = newTargetCol;
                 grid[sourceKey] = tData;
                 grid[targetKey] = sData;
             }
@@ -36608,7 +36764,7 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
         ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
         // 2. Update Devices Atom (for immediate UI Reactivity)
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             const device = { ...newDevices[deviceIdx] };
@@ -36893,8 +37049,8 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
         await ctx.dataService.addGrowspace({
             name,
             rows,
-            plants_per_row: plantsPerRow,
-            notification_service: notificationService,
+            plantsPerRow: plantsPerRow,
+            notificationService: notificationService,
         });
         ctx.showToast('Growspace added successfully!', 'success');
         await ctx.refreshData();
@@ -36913,22 +37069,22 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
     try {
         // Optimistic update for immediate UI feedback
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             // Shallow clone device, update dimensions
             newDevices[deviceIdx] = {
                 ...newDevices[deviceIdx],
                 rows,
-                plants_per_row: plantsPerRow
+                plantsPerRow: plantsPerRow
             };
             ctx.data.$devices.set(newDevices);
         }
         await ctx.dataService.updateGrowspace({
-            growspace_id: growspaceId,
+            growspaceId: growspaceId,
             name,
             rows,
-            plants_per_row: plantsPerRow,
+            plantsPerRow: plantsPerRow,
         });
         ctx.showToast('Growspace updated successfully', 'success');
         await ctx.refreshData();
@@ -36979,8 +37135,8 @@ class ActionDispatcher {
             addBatch: (detail) => confirmAddPlants(this.ctx, detail)
         };
         this.growspace = {
-            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plants_per_row, detail.notification_service),
-            update: (detail) => updateGrowspace(this.ctx, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row),
+            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
+            update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
             remove: (id) => removeGrowspace(this.ctx, id)
         };
         this.strain = {
@@ -37039,7 +37195,7 @@ function selectAllPlants(ctx) {
     if (!selectedDevice)
         return;
     const devices = ctx.data.$devices.get();
-    const selectedDeviceData = devices.find((d) => d.device_id === selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
     const allIds = [];
     if (selectedDeviceData && selectedDeviceData.plants) {
         selectedDeviceData.plants.forEach((plant) => {
@@ -37129,7 +37285,7 @@ function openAddPlantDialog(ctx, row, col) {
         return;
     }
     const devices = ctx.data.$devices.get();
-    const device = devices.find(d => d.device_id === selectedDeviceId);
+    const device = devices.find(d => d.deviceId === selectedDeviceId);
     let targetRow = 0;
     let targetCol = 0;
     if (device) {
@@ -37145,7 +37301,7 @@ function openAddPlantDialog(ctx, row, col) {
         });
         let found = false;
         const rows = device.rows || 4;
-        const cols = device.plants_per_row || 4;
+        const cols = device.plantsPerRow || 4;
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 if (!occupied.has(`${r},${c}`)) {
@@ -37239,26 +37395,26 @@ function openConfigDialog(ctx, device) {
         payload: {
             currentTab: ConfigTab.ENVIRONMENT,
             environmentData: {
-                selectedGrowspaceId: device?.device_id || '',
-                temp_sensor: device?.environment_attributes?.temperature_sensor || '',
-                humidity_sensor: device?.environment_attributes?.humidity_sensor || '',
-                vpd_sensor: device?.environment_attributes?.vpd_sensor || '',
-                co2_sensor: device?.environment_attributes?.co2_sensor || '',
-                circulation_fan: device?.environment_attributes?.circulation_fan_entity || '',
-                circulation_fan_entities: device?.environment_attributes?.circulation_fan_entities || [],
-                stress_threshold: 0.8,
-                mold_threshold: 0.8,
-                light_sensor: device?.environment_attributes?.light_sensor || '',
-                light_sensors: device?.environment_attributes?.light_sensors || [],
-                exhaust_entity: device?.environment_attributes?.exhaust_entity || '',
-                exhaust_fan_entities: device?.environment_attributes?.exhaust_fan_entities || [],
-                humidifier_entity: device?.environment_attributes?.humidifier_entity || '',
-                humidifier_entities: device?.environment_attributes?.humidifier_entities || [],
-                dehumidifier_entity: device?.environment_attributes?.dehumidifier_entity || '',
-                dehumidifier_entities: device?.environment_attributes?.dehumidifier_entities || [],
-                soil_moisture_sensor: device?.environment_attributes?.soil_moisture_sensor || '',
-                control_dehumidifier: device?.environment_attributes?.dehumidifier_control_enabled || false,
-                dehumidifier_thresholds: device?.environment_attributes?.dehumidifier_thresholds || {},
+                selectedGrowspaceId: device?.deviceId || '',
+                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
+                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
+                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
+                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
+                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
+                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
+                stressThreshold: 0.8,
+                moldThreshold: 0.8,
+                lightSensor: device?.environmentAttributes?.lightSensor || '',
+                lightSensors: device?.environmentAttributes?.lightSensors || [],
+                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
+                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
+                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
+                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
             }
         }
     });
@@ -37403,7 +37559,7 @@ function getVisiblePlants(ctx) {
     if (!selectedDevice)
         return [];
     const devices = ctx.data.$devices.get();
-    const device = devices.find((d) => d.device_id === selectedDevice);
+    const device = devices.find((d) => d.deviceId === selectedDevice);
     if (!device)
         return [];
     return device.plants.filter((p) => !ctx.data.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
@@ -37575,13 +37731,13 @@ class SyncService {
                     this._watchedEntities.add(eid);
             });
             // Irrigation Config
-            if (d.irrigation_config?.irrigation_pump_entity)
-                this._watchedEntities.add(d.irrigation_config.irrigation_pump_entity);
-            if (d.irrigation_config?.drain_pump_entity)
-                this._watchedEntities.add(d.irrigation_config.drain_pump_entity);
+            if (d.irrigationConfig?.irrigationPumpEntity)
+                this._watchedEntities.add(d.irrigationConfig.irrigationPumpEntity);
+            if (d.irrigationConfig?.drainPumpEntity)
+                this._watchedEntities.add(d.irrigationConfig.drainPumpEntity);
             // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
-            if (d.environment_attributes) {
-                Object.values(d.environment_attributes).forEach(val => {
+            if (d.environmentAttributes) {
+                Object.values(d.environmentAttributes).forEach(val => {
                     if (typeof val === 'string' && val.includes('.')) {
                         this._watchedEntities.add(val);
                     }
@@ -37597,14 +37753,14 @@ class SyncService {
             config?.auto_select_growspace ?? true;
             if (this.uiStore.$defaultApplied.get())
                 return;
-            const defaultDevice = devices.find((d) => d.device_id === config.default_growspace || d.name === config.default_growspace);
+            const defaultDevice = devices.find((d) => d.deviceId === config.default_growspace || d.name === config.default_growspace);
             if (defaultDevice) {
-                this.dataStore.setSelectedDevice(defaultDevice.device_id);
+                this.dataStore.setSelectedDevice(defaultDevice.deviceId);
                 this.uiStore.setDefaultApplied(true);
                 return;
             }
             // Fallback to first device
-            this.dataStore.setSelectedDevice(devices[0].device_id);
+            this.dataStore.setSelectedDevice(devices[0].deviceId);
         }
     }
     _areDeviceArraysEqual(a, b) {
@@ -37975,11 +38131,11 @@ class GrowspaceStore {
     }
     // eslint-disable-next-line camelcase
     async handleAddGrowspace(detail) {
-        await addGrowspace(this.context, detail.name, detail.rows, detail.plants_per_row, detail.notification_service);
+        await addGrowspace(this.context, detail.name, detail.rows, detail.plantsPerRow, detail.notification_service);
     }
     // eslint-disable-next-line camelcase
     async handleUpdateGrowspace(detail) {
-        await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row);
+        await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plantsPerRow);
     }
     async confirmAddPlant(detail) {
         await confirmAddPlant(this.context, detail);
@@ -38303,14 +38459,14 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
-        const selectedDeviceData = devices.find((d) => d.device_id === this.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
         // Use memoized values from grid store atoms
         const growspaceOptions = this._growspaceOptionsController.value;
         const { effectiveRows, grid } = this._gridLayoutController.value;
-        const isWide = selectedDeviceData.plants_per_row > 7;
+        const isWide = selectedDeviceData.plantsPerRow > 7;
         return x `
       <error-boundary 
           .fallbackMessage=${'Failed to load Growspace Manager'}

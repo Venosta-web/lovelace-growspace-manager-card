@@ -17,7 +17,7 @@ function getVisiblePlants(ctx: ActionContext): PlantEntity[] {
     if (!selectedDevice) return [];
 
     const devices = ctx.data.$devices.get();
-    const device = devices.find((d) => d.device_id === selectedDevice);
+    const device = devices.find((d) => d.deviceId === selectedDevice);
     if (!device) return [];
 
     return device.plants.filter(

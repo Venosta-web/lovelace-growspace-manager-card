@@ -49,7 +49,7 @@ test.describe('Graph Tooltips', () => {
 
         // Setup Attributes
         if (mockHass.states[overviewId]) {
-            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.dehumidifierEntity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
             mockHass.states[overviewId].attributes.light_entity = 'switch.grow_light';
         }
@@ -181,11 +181,11 @@ test.describe('Graph Tooltips', () => {
 
         // Setup Attributes
         if (mockHass.states[overviewId]) {
-            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.dehumidifierEntity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
-            mockHass.states[overviewId].attributes.temperature_sensor = 'sensor.temp';
-            mockHass.states[overviewId].attributes.humidity_sensor = 'sensor.hum';
-            mockHass.states[overviewId].attributes.vpd_sensor = 'sensor.vpd';
+            mockHass.states[overviewId].attributes.temperatureSensor = 'sensor.temp';
+            mockHass.states[overviewId].attributes.humiditySensor = 'sensor.hum';
+            mockHass.states[overviewId].attributes.vpdSensor = 'sensor.vpd';
         }
 
         const optimalId = 'binary_sensor.4x4_tent_optimal_conditions';

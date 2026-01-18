@@ -8,15 +8,16 @@ import { IrrigationStrategy } from '../../types';
  */
 export class IrrigationAPI extends BaseAPI {
     async setIrrigationSettings(params: {
-        growspace_id: string;
-        irrigation_pump_entity: string;
-        drain_pump_entity: string;
-        irrigation_duration: number;
-        drain_duration: number;
+        growspaceId: string;
+        irrigationPumpEntity: string;
+        drainPumpEntity: string;
+        irrigationDuration: number;
+        drainDuration: number;
     }): Promise<void> {
         console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, params);
+            const payload = this._serializeSettings(params);
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, payload);
             console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:setIrrigationSettings] Error:', err);
@@ -25,13 +26,18 @@ export class IrrigationAPI extends BaseAPI {
     }
 
     async addIrrigationTime(params: {
-        growspace_id: string;
+        growspaceId: string;
         time: string;
         duration?: number;
     }): Promise<void> {
         console.log('[IrrigationAPI:addIrrigationTime] Adding irrigation time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+                duration: params.duration,
+            };
+            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:addIrrigationTime] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:addIrrigationTime] Error:', err);
@@ -39,10 +45,14 @@ export class IrrigationAPI extends BaseAPI {
         }
     }
 
-    async removeIrrigationTime(params: { growspace_id: string; time: string }): Promise<void> {
+    async removeIrrigationTime(params: { growspaceId: string; time: string }): Promise<void> {
         console.log('[IrrigationAPI:removeIrrigationTime] Removing irrigation time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+            };
+            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:removeIrrigationTime] Error:', err);
@@ -51,13 +61,18 @@ export class IrrigationAPI extends BaseAPI {
     }
 
     async addDrainTime(params: {
-        growspace_id: string;
+        growspaceId: string;
         time: string;
         duration?: number;
     }): Promise<void> {
         console.log('[IrrigationAPI:addDrainTime] Adding drain time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+                duration: params.duration,
+            };
+            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:addDrainTime] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:addDrainTime] Error:', err);
@@ -65,10 +80,14 @@ export class IrrigationAPI extends BaseAPI {
         }
     }
 
-    async removeDrainTime(params: { growspace_id: string; time: string }): Promise<void> {
+    async removeDrainTime(params: { growspaceId: string; time: string }): Promise<void> {
         console.log('[IrrigationAPI:removeDrainTime] Removing drain time:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, params);
+            const payload = {
+                growspace_id: params.growspaceId,
+                time: params.time,
+            };
+            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:removeDrainTime] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:removeDrainTime] Error:', err);
@@ -82,15 +101,45 @@ export class IrrigationAPI extends BaseAPI {
     ): Promise<void> {
         console.log('[IrrigationAPI:setIrrigationStrategy] Setting strategy:', strategy);
         try {
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, {
+            const payload = {
                 growspace_id: growspaceId,
-                ...strategy,
-            });
+                ...this._serializeStrategy(strategy),
+            };
+            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, payload);
             console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
         } catch (err) {
             console.error('[IrrigationAPI:setIrrigationStrategy] Error:', err);
             throw err;
         }
+    }
+
+    private _serializeSettings(params: {
+        growspaceId: string;
+        irrigationPumpEntity: string;
+        drainPumpEntity: string;
+        irrigationDuration: number;
+        drainDuration: number;
+    }): Record<string, unknown> {
+        return {
+            growspace_id: params.growspaceId,
+            irrigation_pump_entity: params.irrigationPumpEntity,
+            drain_pump_entity: params.drainPumpEntity,
+            irrigation_duration: params.irrigationDuration,
+            drain_duration: params.drainDuration,
+        };
+    }
+
+    private _serializeStrategy(strategy: Partial<IrrigationStrategy>): Record<string, unknown> {
+        const result: Record<string, unknown> = {};
+        if (strategy.enabled !== undefined) result.enabled = strategy.enabled;
+        if (strategy.lightsOnTime !== undefined) result.lights_on_time = strategy.lightsOnTime;
+        if (strategy.p0DurationMinutes !== undefined) result.p0_duration_minutes = strategy.p0DurationMinutes;
+        if (strategy.p2StopBeforeLightsOffMinutes !== undefined) result.p2_stop_before_lights_off_minutes = strategy.p2StopBeforeLightsOffMinutes;
+        if (strategy.targetVwcPercent !== undefined) result.target_vwc_percent = strategy.targetVwcPercent;
+        if (strategy.maintenanceDrybackPercent !== undefined) result.maintenance_dryback_percent = strategy.maintenanceDrybackPercent;
+        if (strategy.shotDurationSeconds !== undefined) result.shot_duration_seconds = strategy.shotDurationSeconds;
+        if (strategy.shotIntervalMinutes !== undefined) result.shot_interval_minutes = strategy.shotIntervalMinutes;
+        return result;
     }
 
     async waterGrowspace(

@@ -30,7 +30,7 @@ describe('MetricsUtils', () => {
                     reasons: 'Too hot'
                 }
             },
-            'sensor.vpd_sensor': {
+            'sensor.vpdSensor': {
                 state: '1.5'
             }
         },
@@ -38,15 +38,15 @@ describe('MetricsUtils', () => {
 
     const mockDevice = {
         name: 'Test Room',
-        overview_entity_id: 'sensor.test_room',
+        overviewEntityId: 'sensor.test_room',
         plants: [],
-        irrigation_config: {
-            irrigation_times: [{ time: '12:00', duration: 10 }],
-            drain_times: [{ time: '13:00', duration: 5 }],
+        irrigationConfig: {
+            irrigationTimes: [{ time: '12:00', duration: 10 }],
+            drainTimes: [{ time: '13:00', duration: 5 }],
         },
-        environment_attributes: {
-            exhaust_entity: 'fan.exhaust',
-            humidifier_entity: 'humidifier.main'
+        environmentAttributes: {
+            exhaustEntity: 'fan.exhaust',
+            humidifierEntity: 'humidifier.main'
         }
     } as any;
 
@@ -80,14 +80,14 @@ describe('MetricsUtils', () => {
                     state: 'on',
                     attributes: { temperature: 25 } // No VPD
                 },
-                'sensor.vpd_sensor': { state: '1.5' },
+                'sensor.vpdSensor': { state: '1.5' },
                 'sensor.test_room': { attributes: {} }
             }
         } as any;
 
         const fallbackDevice = {
             ...mockDevice,
-            environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' }
+            environmentAttributes: { vpdSensor: 'sensor.vpdSensor' }
         } as any;
 
         const result = MetricsUtils.computeHeaderMetrics(
@@ -229,7 +229,7 @@ describe('MetricsUtils', () => {
     it('should fallback to Legacy UUID-based Calculated VPD entity ID if Name-based missing', () => {
         const legacyDevice = {
             ...mockDevice,
-            device_id: 'aabbcc-112233'
+            deviceId: 'aabbcc-112233'
         } as any;
 
         const fallbackHass = {
@@ -240,7 +240,7 @@ describe('MetricsUtils', () => {
                 },
                 // Name based missing/unknown
                 'sensor.test_room_calculated_vpd': { state: 'unknown' },
-                // Legacy UUID based present (must match device.device_id which has dashes)
+                // Legacy UUID based present (must match device.deviceId which has dashes)
                 'sensor.aabbcc-112233_calculated_vpd': { state: '0.9' },
                 'sensor.test_room': { attributes: {} }
             }
@@ -294,8 +294,8 @@ describe('MetricsUtils', () => {
 
         const simpleDevice = {
             ...mockDevice,
-            irrigation_config: {
-                irrigation_times: [
+            irrigationConfig: {
+                irrigationTimes: [
                     { time: '14:00', duration: 10 },
                     { time: '13:00', duration: 10 }
                 ]
@@ -312,8 +312,8 @@ describe('MetricsUtils', () => {
     it('should handle legacy environment attributes correctly (slug matching)', () => {
         const dryDevice = {
             name: 'Dry',
-            overview_entity_id: 'sensor.dry',
-            environment_attributes: {}
+            overviewEntityId: 'sensor.dry',
+            environmentAttributes: {}
         } as any;
 
         const dryHass = {
@@ -345,7 +345,7 @@ describe('MetricsUtils', () => {
             }
         } as any;
 
-        const dev = { name: 'Test', overview_entity_id: 'sensor.test' } as any;
+        const dev = { name: 'Test', overviewEntityId: 'sensor.test' } as any;
 
         let res = MetricsUtils.computeHeaderMetrics(vpdHass, dev, new Set(), []);
         let vpdChip = res.mainChips.find(c => c.key === 'vpd');
@@ -371,13 +371,13 @@ describe('MetricsUtils', () => {
         const hassMissingVpd = {
             states: {
                 'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
-                'sensor.vpd_sensor': { state: 'unavailable' }
+                'sensor.vpdSensor': { state: 'unavailable' }
             }
         } as any;
 
         const dev = {
             name: 'Test',
-            environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' }
+            environmentAttributes: { vpdSensor: 'sensor.vpdSensor' }
         } as any;
 
         const res = MetricsUtils.computeHeaderMetrics(hassMissingVpd, dev, new Set(), []);
@@ -389,10 +389,10 @@ describe('MetricsUtils', () => {
         const hassNaN = {
             states: {
                 'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
-                'sensor.vpd_sensor': { state: 'not-a-number' }
+                'sensor.vpdSensor': { state: 'not-a-number' }
             }
         } as any;
-        const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+        const dev = { name: 'Test', environmentAttributes: { vpdSensor: 'sensor.vpdSensor' } } as any;
 
         const res = MetricsUtils.computeHeaderMetrics(hassNaN, dev, new Set(), []);
         const vpdChip = res.mainChips.find(c => c.key === 'vpd');
@@ -421,7 +421,7 @@ describe('MetricsUtils', () => {
                 }
             }
         } as any;
-        const dev = { name: 'Obs Test', overview_entity_id: 'sensor.obs_test' } as any;
+        const dev = { name: 'Obs Test', overviewEntityId: 'sensor.obs_test' } as any;
         const res = MetricsUtils.computeHeaderMetrics(hassObs, dev, new Set(), []);
 
         const temp = res.mainChips.find(c => c.key === 'temperature');
@@ -431,8 +431,8 @@ describe('MetricsUtils', () => {
     it('should handle Cure specific env entity logic', () => {
         const cureDevice = {
             name: 'Cure', // -> cure slug
-            overview_entity_id: 'sensor.cure',
-            environment_attributes: {}
+            overviewEntityId: 'sensor.cure',
+            environmentAttributes: {}
         } as any;
 
         const cureHass = {
@@ -513,10 +513,10 @@ describe('MetricsUtils', () => {
 
             const fallbackDev = {
                 name: 'Test',
-                overview_entity_id: 'sensor.test_room',
-                environment_attributes: {
-                    humidifier_sensor: 'sensor.humidifier_state'
-                    // No humidifier_entity
+                overviewEntityId: 'sensor.test_room',
+                environmentAttributes: {
+                    humidifierSensor: 'sensor.humidifier_state'
+                    // No humidifierEntity
                 }
             } as any;
 
@@ -530,10 +530,10 @@ describe('MetricsUtils', () => {
             const hassVpdStr = {
                 states: {
                     'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
-                    'sensor.vpd_sensor': { state: '1.2' }
+                    'sensor.vpdSensor': { state: '1.2' }
                 }
             } as any;
-            const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+            const dev = { name: 'Test', environmentAttributes: { vpdSensor: 'sensor.vpdSensor' } } as any;
 
             const res = MetricsUtils.computeHeaderMetrics(hassVpdStr, dev, new Set(), []);
             const vpd = res.mainChips.find(c => c.key === 'vpd');
@@ -544,10 +544,10 @@ describe('MetricsUtils', () => {
             const hassVpdStr = {
                 states: {
                     'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
-                    'sensor.vpd_sensor': { state: 'invalid' }
+                    'sensor.vpdSensor': { state: 'invalid' }
                 }
             } as any;
-            const dev = { name: 'Test', environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } } as any;
+            const dev = { name: 'Test', environmentAttributes: { vpdSensor: 'sensor.vpdSensor' } } as any;
 
             const res = MetricsUtils.computeHeaderMetrics(hassVpdStr, dev, new Set(), []);
             const vpd = res.mainChips.find(c => c.key === 'vpd');
@@ -558,14 +558,14 @@ describe('MetricsUtils', () => {
             const hassLegacy = {
                 states: {
                     'binary_sensor.test_optimal_conditions': { state: 'on', attributes: {} },
-                    'sensor.vpd_sensor': { state: 'unavailable' },
+                    'sensor.vpdSensor': { state: 'unavailable' },
                     'sensor.test_device_calculated_vpd': { state: '1.5' }  // Old format
                 }
             } as any;
             const dev = {
-                device_id: 'test_device',
+                deviceId: 'test_device',
                 name: 'Test',
-                environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' }
+                environmentAttributes: { vpdSensor: 'sensor.vpdSensor' }
             } as any;
 
             const res = MetricsUtils.computeHeaderMetrics(hassLegacy, dev, new Set(), []);
@@ -574,7 +574,7 @@ describe('MetricsUtils', () => {
             expect(vpd!.value).toBe('1.5 kPa');
         });
         it('should fallback to UUID-based VPD if primary slug-based ID is unavailable', () => {
-            const devUUID = { ...mockDevice, device_id: 'uuid123', name: 'Grow Space' };
+            const devUUID = { ...mockDevice, deviceId: 'uuid123', name: 'Grow Space' };
             const hassUUID = {
                 states: {
                     'sensor.uuid123_calculated_vpd': { state: '1.2' }
@@ -588,14 +588,14 @@ describe('MetricsUtils', () => {
         });
 
         it('should fallback if VPD sensor state is unknown', () => {
-            const devUUID = { ...mockDevice, device_id: 'uuid123', name: 'Grow Space' };
+            const devUUID = { ...mockDevice, deviceId: 'uuid123', name: 'Grow Space' };
             const hassUUID = {
                 states: {
-                    'sensor.vpd_sensor': { state: 'unknown' },
+                    'sensor.vpdSensor': { state: 'unknown' },
                     'sensor.uuid123_calculated_vpd': { state: '0.9' }
                 }
             } as any;
-            const devWithVpd = { ...devUUID, environment_attributes: { vpd_sensor: 'sensor.vpd_sensor' } };
+            const devWithVpd = { ...devUUID, environmentAttributes: { vpdSensor: 'sensor.vpdSensor' } };
 
             const res = MetricsUtils.computeHeaderMetrics(hassUUID, devWithVpd, new Set(), []);
             const vpdChip = res.mainChips.find(c => c.key === 'vpd');
@@ -606,8 +606,8 @@ describe('MetricsUtils', () => {
         it('should handle no events for next irrigation/drain', () => {
             const devNoEvents = {
                 ...mockDevice,
-                irrigation_config: {
-                    irrigation_times: [],
+                irrigationConfig: {
+                    irrigationTimes: [],
                     drain_times: []
                 }
             } as any;
@@ -655,9 +655,9 @@ describe('MetricsUtils', () => {
             } as any;
             const devDevices = {
                 ...mockDevice,
-                environment_attributes: {
-                    exhaust_entity: 'fan.exhaust',
-                    humidifier_sensor: 'sensor.humidifier'
+                environmentAttributes: {
+                    exhaustEntity: 'fan.exhaust',
+                    humidifierSensor: 'sensor.humidifier'
                 }
             } as any;
 
@@ -683,11 +683,11 @@ describe('MetricsUtils', () => {
             } as any;
             const devWithDevices = {
                 ...mockDevice,
-                environment_attributes: {
-                    exhaust_entity: 'fan.exhaust',
-                    humidifier_sensor: 'sensor.humidifier',
-                    dehumidifier_entity: 'switch.dehumidifier',
-                    circulation_fan_entity: 'fan.circulation'
+                environmentAttributes: {
+                    exhaustEntity: 'fan.exhaust',
+                    humidifierSensor: 'sensor.humidifier',
+                    dehumidifierEntity: 'switch.dehumidifier',
+                    circulationFanEntity: 'fan.circulation'
                 }
             } as any;
 
@@ -718,8 +718,8 @@ describe('MetricsUtils', () => {
             } as any;
             const devWithDevices = {
                 ...mockDevice,
-                environment_attributes: {
-                    dehumidifier_entity: 'switch.dehumidifier'
+                environmentAttributes: {
+                    dehumidifierEntity: 'switch.dehumidifier'
                 }
             } as any;
 
@@ -749,7 +749,7 @@ describe('MetricsUtils', () => {
             const hassEmpty = { states: { 'fan.circulation': null } } as any;
             const dev = {
                 ...mockDevice,
-                environment_attributes: { circulation_fan_entity: 'fan.circulation' }
+                environmentAttributes: { circulationFanEntity: 'fan.circulation' }
             } as any;
             const res = MetricsUtils.computeHeaderMetrics(hassEmpty, dev, new Set(), []);
             const fan = res.deviceChips.find(c => c.key === 'circulation_fan');
@@ -764,7 +764,7 @@ describe('MetricsUtils', () => {
             } as any;
             const dev = {
                 ...mockDevice,
-                environment_attributes: { vpd_sensor: 'sensor.vpd' }
+                environmentAttributes: { vpdSensor: 'sensor.vpd' }
             } as any;
             const res = MetricsUtils.computeHeaderMetrics(hassNaN, dev, new Set(), []);
             const vpd = res.mainChips.find(c => c.key === 'vpd');
@@ -780,13 +780,13 @@ describe('MetricsUtils', () => {
                     }
                 }
             } as any;
-            const dryDevice = { name: 'Dry', environment_attributes: {} } as any;
+            const dryDevice = { name: 'Dry', environmentAttributes: {} } as any;
             const res = MetricsUtils.computeHeaderMetrics(dryHass, dryDevice, new Set(), []);
             const co2 = res.mainChips.find(c => c.key === 'co2');
             expect(co2).toBeUndefined();
         });
 
-        it('should handle exhaustSensor fallback when exhaust_entity is missing', () => {
+        it('should handle exhaustSensor fallback when exhaustEntity is missing', () => {
             const hassExhaust = {
                 states: {
                     'sensor.exhaust_state': { state: 'high' }
@@ -794,7 +794,7 @@ describe('MetricsUtils', () => {
             } as any;
             const devExhaust = {
                 ...mockDevice,
-                environment_attributes: { exhaust_sensor: 'sensor.exhaust_state' }
+                environmentAttributes: { exhaustSensor: 'sensor.exhaust_state' }
             } as any;
             const res = MetricsUtils.computeHeaderMetrics(hassExhaust, devExhaust, new Set(), []);
             const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
@@ -811,8 +811,8 @@ describe('MetricsUtils', () => {
             } as any;
             const devMulti = {
                 ...mockDevice,
-                environment_attributes: {
-                    exhaust_fan_entities: ['fan.f1', 'fan.f2']
+                environmentAttributes: {
+                    exhaustFanEntities: ['fan.f1', 'fan.f2']
                 }
             } as any;
             const res = MetricsUtils.computeHeaderMetrics(hassMulti, devMulti, new Set(), []);
@@ -860,7 +860,7 @@ describe('MetricsUtils', () => {
         });
 
         it('should cover createChipData with composite active key', () => {
-            const activeEnvGraphs = new Set(['temperature:sensor1']);
+            const activeEnvGraphs = new Set(['temperature:1']);
             const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, activeEnvGraphs, []);
             const temp = res.mainChips.find(c => c.key === 'temperature');
             expect(temp!.active).toBe(true);
@@ -897,7 +897,7 @@ describe('MetricsUtils', () => {
         it('should handle getNextEvent with empty/null times', () => {
             const res = MetricsUtils.computeHeaderMetrics(mockHass, {
                 ...mockDevice,
-                irrigation_config: { irrigation_times: [], drain_times: null }
+                irrigationConfig: { irrigationTimes: [], drainTimes: null }
             } as any, new Set(), []);
             const irrigation = res.mainChips.find(c => c.key === 'irrigation');
             expect(irrigation).toBeUndefined();
@@ -910,7 +910,7 @@ describe('MetricsUtils', () => {
             } as any;
             const devSpecific = {
                 ...mockDevice,
-                environment_attributes: { exhaust_entity: 'fan.exhaust' }
+                environmentAttributes: { exhaustEntity: 'fan.exhaust' }
             } as any;
             const res = MetricsUtils.computeHeaderMetrics(hassSpecific, devSpecific, new Set(), []);
             const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
@@ -928,8 +928,8 @@ describe('MetricsUtils', () => {
 
             const devMulti = {
                 ...mockDevice,
-                environment_attributes: {
-                    exhaust_fan_entities: ['fan.e1', 'fan.e2', 'fan.e3'] // Use plural field
+                environmentAttributes: {
+                    exhaustFanEntities: ['fan.e1', 'fan.e2', 'fan.e3'] // Use plural field
                 }
             } as any;
 
@@ -1006,7 +1006,7 @@ describe('MetricsUtils', () => {
         it('should use legacy calculated VPD sensor if new one is missing', () => {
             const hassLegacy = {
                 states: {
-                    [`sensor.${mockDevice.device_id}_calculated_vpd`]: { state: '1.8' },
+                    [`sensor.${mockDevice.deviceId}_calculated_vpd`]: { state: '1.8' },
                     'binary_sensor.test_room_optimal_conditions': {
                         state: 'on',
                         attributes: { temperature: 25 }
@@ -1031,7 +1031,7 @@ describe('MetricsUtils', () => {
             const now = new Date(2023, 1, 1, 23, 0, 0); // 11 PM
             vi.setSystemTime(now);
 
-            const dev = { ...mockDevice, irrigation_config: { irrigation_times: [{ time: '10:00', duration: 10 }] } } as any; // 10 AM
+            const dev = { ...mockDevice, irrigationConfig: { irrigationTimes: [{ time: '10:00', duration: 10 }] } } as any; // 10 AM
 
             const res = MetricsUtils.computeHeaderMetrics(mockHass, dev, new Set(), []);
             const irrigation = res.mainChips.find(c => c.key === 'irrigation');

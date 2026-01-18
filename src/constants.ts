@@ -180,18 +180,18 @@ export const METRIC_ENTITY_KEYS: Record<
   string,
   { primary: string; fallback?: string; source?: 'environment' | 'irrigation' }
 > = {
-  [MetricKey.TEMPERATURE]: { primary: 'temperature_sensor' },
-  [MetricKey.HUMIDITY]: { primary: 'humidity_sensor' },
-  [MetricKey.VPD]: { primary: 'vpd_sensor' },
-  [MetricKey.CO2]: { primary: 'co2_sensor' },
-  [MetricKey.EXHAUST]: { primary: 'exhaust_sensor', fallback: 'exhaust_entity' },
-  [MetricKey.HUMIDIFIER]: { primary: 'humidifier_sensor', fallback: 'humidifier_entity' },
-  [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifier_entity' },
-  [MetricKey.CIRCULATION_FAN]: { primary: 'circulation_fan_entity' },
-  [MetricKey.LIGHT]: { primary: 'light_sensor' },
-  [MetricKey.SOIL_MOISTURE]: { primary: 'soil_moisture_sensor' },
-  [MetricKey.IRRIGATION]: { primary: 'irrigation_pump_entity', source: 'irrigation' },
-  [MetricKey.DRAIN]: { primary: 'drain_pump_entity', source: 'irrigation' },
+  [MetricKey.TEMPERATURE]: { primary: 'temperatureSensor' },
+  [MetricKey.HUMIDITY]: { primary: 'humiditySensor' },
+  [MetricKey.VPD]: { primary: 'vpdSensor' },
+  [MetricKey.CO2]: { primary: 'co2Sensor' },
+  [MetricKey.EXHAUST]: { primary: 'exhaustSensor', fallback: 'exhaustEntity' },
+  [MetricKey.HUMIDIFIER]: { primary: 'humidifierSensor', fallback: 'humidifierEntity' },
+  [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifierEntity' },
+  [MetricKey.CIRCULATION_FAN]: { primary: 'circulationFanEntity' },
+  [MetricKey.LIGHT]: { primary: 'lightSensor' },
+  [MetricKey.SOIL_MOISTURE]: { primary: 'soilMoistureSensor' },
+  [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
+  [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
 };
 
 export const DOMAIN = 'growspace_manager';

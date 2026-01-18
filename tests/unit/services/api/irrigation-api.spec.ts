@@ -24,9 +24,9 @@ describe('DataService - IrrigationAPI', () => {
 
     describe('Environment & Irrigation', () => {
         it('should configure environment', async () => {
-            const conf = { growspace_id: 'g1', temperature_sensor: 's.t', humidity_sensor: 's.h', vpd_sensor: 's.v' };
+            const conf = { growspaceId: 'g1', temperatureSensor: 's.t', humiditySensor: 's.h', vpdSensor: 's.v' };
             await service.configureEnvironment(conf);
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'configure_environment', conf);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'configure_environment', expect.objectContaining({ growspace_id: 'g1' }));
         });
 
         it('should set dehumidifier control', async () => {
@@ -35,30 +35,59 @@ describe('DataService - IrrigationAPI', () => {
         });
 
         it('should set irrigation settings', async () => {
-            const args = { growspace_id: 'g1', irrigation_pump_entity: 'switch.p', drain_pump_entity: 'switch.d', irrigation_duration: 10, drain_duration: 5 };
+            const args = { growspaceId: 'g1', irrigationPumpEntity: 'switch.p', drainPumpEntity: 'switch.d', irrigationDuration: 10, drainDuration: 5 };
+            const expectedPayload = { growspace_id: 'g1', irrigation_pump_entity: 'switch.p', drain_pump_entity: 'switch.d', irrigation_duration: 10, drain_duration: 5 };
             await service.setIrrigationSettings(args);
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', args);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expectedPayload);
         });
 
         it('should manage irrigation times', async () => {
-            await service.addIrrigationTime({ growspace_id: 'g1', time: '10:00' });
+            await service.addIrrigationTime({ growspaceId: 'g1', time: '10:00' });
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_irrigation_time', { growspace_id: 'g1', time: '10:00' });
 
-            await service.removeIrrigationTime({ growspace_id: 'g1', time: '10:00' });
+            await service.removeIrrigationTime({ growspaceId: 'g1', time: '10:00' });
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_irrigation_time', { growspace_id: 'g1', time: '10:00' });
         });
 
         it('should manage drain times', async () => {
-            await service.addDrainTime({ growspace_id: 'g1', time: '10:00' });
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_drain_time', expect.anything());
+            await service.addDrainTime({ growspaceId: 'g1', time: '10:00' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_drain_time', { growspace_id: 'g1', time: '10:00' });
 
-            await service.removeDrainTime({ growspace_id: 'g1', time: '10:00' });
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_drain_time', expect.anything());
+            await service.removeDrainTime({ growspaceId: 'g1', time: '10:00' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_drain_time', { growspace_id: 'g1', time: '10:00' });
         });
 
         it('should set irrigation strategy', async () => {
-            await service.setIrrigationStrategy('g1', { enabled: true });
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', { growspace_id: 'g1', enabled: true });
+            await service.setIrrigationStrategy('g1', { enabled: true, lightsOnTime: '06:00' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', {
+                growspace_id: 'g1',
+                enabled: true,
+                lights_on_time: '06:00'
+            });
+        });
+
+        it('should set full irrigation strategy', async () => {
+            await service.setIrrigationStrategy('g1', {
+                enabled: true,
+                lightsOnTime: '06:00',
+                p0DurationMinutes: 10,
+                p2StopBeforeLightsOffMinutes: 120,
+                targetVwcPercent: 45,
+                maintenanceDrybackPercent: 10,
+                shotDurationSeconds: 5,
+                shotIntervalMinutes: 15
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', {
+                growspace_id: 'g1',
+                enabled: true,
+                lights_on_time: '06:00',
+                p0_duration_minutes: 10,
+                p2_stop_before_lights_off_minutes: 120,
+                target_vwc_percent: 45,
+                maintenance_dryback_percent: 10,
+                shot_duration_seconds: 5,
+                shot_interval_minutes: 15
+            });
         });
     });
 
@@ -148,7 +177,7 @@ describe('DataService - IrrigationAPI', () => {
         describe('Service Error Handling', () => {
             it('configureEnvironment should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.configureEnvironment({ growspace_id: 'g1' })).rejects.toThrow('Fail');
+                await expect(service.configureEnvironment({ growspaceId: 'g1', temperatureSensor: 'v', humiditySensor: 'v' })).rejects.toThrow('Fail');
             });
 
             it('setDehumidifierControl should handle error', async () => {
@@ -158,27 +187,27 @@ describe('DataService - IrrigationAPI', () => {
 
             it('setIrrigationSettings should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.setIrrigationSettings({ growspace_id: 'g1' })).rejects.toThrow('Fail');
+                await expect(service.setIrrigationSettings({ growspaceId: 'g1', irrigationPumpEntity: 'v', drainPumpEntity: 'v', irrigationDuration: 1, drainDuration: 1 })).rejects.toThrow('Fail');
             });
 
             it('addIrrigationTime should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.addIrrigationTime({ growspace_id: 'g1', time: '1' })).rejects.toThrow('Fail');
+                await expect(service.addIrrigationTime({ growspaceId: 'g1', time: '1' })).rejects.toThrow('Fail');
             });
 
             it('removeIrrigationTime should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.removeIrrigationTime({ growspace_id: 'g1', time: '1' })).rejects.toThrow('Fail');
+                await expect(service.removeIrrigationTime({ growspaceId: 'g1', time: '1' })).rejects.toThrow('Fail');
             });
 
             it('addDrainTime should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.addDrainTime({ growspace_id: 'g1', time: '1' })).rejects.toThrow('Fail');
+                await expect(service.addDrainTime({ growspaceId: 'g1', time: '1' })).rejects.toThrow('Fail');
             });
 
             it('removeDrainTime should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.removeDrainTime({ growspace_id: 'g1', time: '1' })).rejects.toThrow('Fail');
+                await expect(service.removeDrainTime({ growspaceId: 'g1', time: '1' })).rejects.toThrow('Fail');
             });
 
             it('setIrrigationStrategy should handle error', async () => {

@@ -21,7 +21,12 @@ import { HassEntity } from 'home-assistant-js-websocket';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
-import { GrowspaceDevice, DehumidifierStage, EnvironmentConfigData } from '../types';
+import {
+  GrowspaceDevice,
+  DehumidifierStage,
+  EnvironmentConfigData,
+  EnvironmentConfigEventDetail,
+} from '../types';
 import { ConfigTab } from '../constants';
 
 @customElement('config-dialog')
@@ -48,39 +53,39 @@ export class ConfigDialog extends LitElement {
   private _initialStateApplied = false;
 
   // Add Growspace Data
-  @state() private add_name = '';
-  @state() private add_rows = 4;
-  @state() private add_plants_per_row = 4;
-  @state() private add_notification_service = 'mobile_app_notify';
+  @state() private addName = '';
+  @state() private addRows = 4;
+  @state() private addPlantsPerRow = 4;
+  @state() private addNotificationService = 'mobile_app_notify';
 
   // Edit Growspace Data
-  @state() private edit_selectedId = '';
-  @state() private edit_name = '';
-  @state() private edit_rows = 0;
-  @state() private edit_plants_per_row = 0;
-  @state() private edit_notification_service = '';
+  @state() private editSelectedId = '';
+  @state() private editName = '';
+  @state() private editRows = 0;
+  @state() private editPlantsPerRow = 0;
+  @state() private editNotificationService = '';
 
   // Environment Data
-  @state() private env_selectedGrowspaceId = '';
-  @state() private env_temp_sensor = '';
-  @state() private env_humidity_sensor = '';
-  @state() private env_vpd_sensor = '';
-  @state() private env_co2_sensor = '';
-  @state() private env_circulation_fan = '';
-  @state() private env_circulation_fan_entities: string[] = []; // Multi-device
-  @state() private env_stress_threshold = 0.8;
-  @state() private env_mold_threshold = 0.8;
-  @state() private env_light_sensor = '';
-  @state() private env_light_sensors: string[] = []; // Multi-device
-  @state() private env_exhaust_entity = '';
-  @state() private env_exhaust_fan_entities: string[] = []; // Multi-device
-  @state() private env_humidifier_entity = '';
-  @state() private env_humidifier_entities: string[] = []; // Multi-device
-  @state() private env_dehumidifier_entity = '';
-  @state() private env_dehumidifier_entities: string[] = []; // Multi-device
-  @state() private env_soil_moisture_sensor = '';
-  @state() private env_control_dehumidifier = false;
-  @state() private env_dehumidifier_thresholds: Record<
+  @state() private envSelectedId = '';
+  @state() private envTemperatureSensor = '';
+  @state() private envHumiditySensor = '';
+  @state() private envVpdSensor = '';
+  @state() private envCo2Sensor = '';
+  @state() private envCirculationFan = '';
+  @state() private envCirculationFanEntities: string[] = []; // Multi-device
+  @state() private envStressThreshold = 0.8;
+  @state() private envMoldThreshold = 0.8;
+  @state() private envLightSensor = '';
+  @state() private envLightSensors: string[] = []; // Multi-device
+  @state() private envExhaustEntity = '';
+  @state() private envExhaustFanEntities: string[] = []; // Multi-device
+  @state() private envHumidifierEntity = '';
+  @state() private envHumidifierEntities: string[] = []; // Multi-device
+  @state() private envDehumidifierEntity = '';
+  @state() private envDehumidifierEntities: string[] = []; // Multi-device
+  @state() private envSoilMoistureSensor = '';
+  @state() private envDehumidifierControlEnabled = false;
+  @state() private envDehumidifierThresholds: Record<
     string,
     Record<string, { on: number; off: number }>
   > = {};
@@ -272,26 +277,26 @@ export class ConfigDialog extends LitElement {
   ) {
     this.currentTab = currentTab as any;
     if (environmentData) {
-      this.env_selectedGrowspaceId = environmentData.selectedGrowspaceId;
-      this.env_temp_sensor = environmentData.temp_sensor;
-      this.env_humidity_sensor = environmentData.humidity_sensor;
-      this.env_vpd_sensor = environmentData.vpd_sensor;
-      this.env_co2_sensor = environmentData.co2_sensor;
-      this.env_circulation_fan = environmentData.circulation_fan;
-      this.env_circulation_fan_entities = environmentData.circulation_fan_entities || [];
-      this.env_stress_threshold = environmentData.stress_threshold;
-      this.env_mold_threshold = environmentData.mold_threshold;
-      this.env_light_sensor = environmentData.light_sensor;
-      this.env_light_sensors = environmentData.light_sensors || [];
-      this.env_exhaust_entity = environmentData.exhaust_entity;
-      this.env_exhaust_fan_entities = environmentData.exhaust_fan_entities || [];
-      this.env_humidifier_entity = environmentData.humidifier_entity;
-      this.env_humidifier_entities = environmentData.humidifier_entities || [];
-      this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
-      this.env_dehumidifier_entities = environmentData.dehumidifier_entities || [];
-      this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
-      this.env_control_dehumidifier = environmentData.control_dehumidifier;
-      this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
+      this.envSelectedId = environmentData.selectedGrowspaceId;
+      this.envTemperatureSensor = environmentData.temperatureSensor;
+      this.envHumiditySensor = environmentData.humiditySensor;
+      this.envVpdSensor = environmentData.vpdSensor;
+      this.envCo2Sensor = environmentData.co2Sensor;
+      this.envCirculationFan = environmentData.circulationFanEntity;
+      this.envCirculationFanEntities = environmentData.circulationFanEntities || [];
+      this.envStressThreshold = environmentData.stressThreshold;
+      this.envMoldThreshold = environmentData.moldThreshold;
+      this.envLightSensor = environmentData.lightSensor;
+      this.envLightSensors = environmentData.lightSensors || [];
+      this.envExhaustEntity = environmentData.exhaustEntity;
+      this.envExhaustFanEntities = environmentData.exhaustFanEntities || [];
+      this.envHumidifierEntity = environmentData.humidifierEntity;
+      this.envHumidifierEntities = environmentData.humidifierEntities || [];
+      this.envDehumidifierEntity = environmentData.dehumidifierEntity;
+      this.envDehumidifierEntities = environmentData.dehumidifierEntities || [];
+      this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
+      this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
+      this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
 
       // Also pre-select for Edit/Delete actions
       if (environmentData.selectedGrowspaceId) {
@@ -318,10 +323,10 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent('add-growspace-submit', {
         detail: {
-          name: this.add_name,
-          rows: this.add_rows,
-          plants_per_row: this.add_plants_per_row,
-          notification_service: this.add_notification_service,
+          name: this.addName,
+          rows: this.addRows,
+          plantsPerRow: this.addPlantsPerRow,
+          notification_service: this.addNotificationService,
         },
         bubbles: true,
         composed: true,
@@ -333,27 +338,27 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent('configure-environment-submit', {
         detail: {
-          selectedGrowspaceId: this.env_selectedGrowspaceId,
-          temp_sensor: this.env_temp_sensor,
-          humidity_sensor: this.env_humidity_sensor,
-          vpd_sensor: this.env_vpd_sensor,
-          co2_sensor: this.env_co2_sensor,
-          circulation_fan: this.env_circulation_fan,
-          circulation_fan_entities: this.env_circulation_fan_entities, // Multi
-          stress_threshold: this.env_stress_threshold,
-          mold_threshold: this.env_mold_threshold,
-          light_sensor: this.env_light_sensor,
-          light_sensors: this.env_light_sensors, // Multi
-          exhaust_entity: this.env_exhaust_entity,
-          exhaust_fan_entities: this.env_exhaust_fan_entities, // Multi
-          humidifier_entity: this.env_humidifier_entity,
-          humidifier_entities: this.env_humidifier_entities, // Multi
-          dehumidifier_entity: this.env_dehumidifier_entity,
-          dehumidifier_entities: this.env_dehumidifier_entities, // Multi
-          dehumidifier_thresholds: this.env_dehumidifier_thresholds,
-          soil_moisture_sensor: this.env_soil_moisture_sensor,
-          control_dehumidifier: this.env_control_dehumidifier,
-        },
+          selectedGrowspaceId: this.envSelectedId,
+          temperatureSensor: this.envTemperatureSensor,
+          humiditySensor: this.envHumiditySensor,
+          vpdSensor: this.envVpdSensor,
+          co2Sensor: this.envCo2Sensor,
+          circulationFanEntity: this.envCirculationFan,
+          circulationFanEntities: this.envCirculationFanEntities, // Multi
+          stressThreshold: this.envStressThreshold,
+          moldThreshold: this.envMoldThreshold,
+          lightSensor: this.envLightSensor,
+          lightSensors: this.envLightSensors, // Multi
+          exhaustEntity: this.envExhaustEntity,
+          exhaustFanEntities: this.envExhaustFanEntities, // Multi
+          humidifierEntity: this.envHumidifierEntity,
+          humidifierEntities: this.envHumidifierEntities, // Multi
+          dehumidifierEntity: this.envDehumidifierEntity,
+          dehumidifierEntities: this.envDehumidifierEntities, // Multi
+          dehumidifierThresholds: this.envDehumidifierThresholds,
+          soilMoistureSensor: this.envSoilMoistureSensor,
+          dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
+        } as EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
       })
@@ -363,15 +368,15 @@ export class ConfigDialog extends LitElement {
   @state() private _showDeleteConfirm = false;
 
   private _submitEditGrowspace() {
-    if (!this.edit_selectedId) return;
+    if (!this.editSelectedId) return;
     this.dispatchEvent(
       new CustomEvent('edit-growspace-submit', {
         detail: {
-          growspace_id: this.edit_selectedId,
-          name: this.edit_name,
-          rows: this.edit_rows,
-          plants_per_row: this.edit_plants_per_row,
-          notification_service: this.edit_notification_service,
+          growspace_id: this.editSelectedId,
+          name: this.editName,
+          rows: this.editRows,
+          plantsPerRow: this.editPlantsPerRow,
+          notification_service: this.editNotificationService,
         },
         bubbles: true,
         composed: true,
@@ -380,7 +385,7 @@ export class ConfigDialog extends LitElement {
   }
 
   private _submitDeleteGrowspace() {
-    if (!this.edit_selectedId) return;
+    if (!this.editSelectedId) return;
     this._showDeleteConfirm = true;
   }
 
@@ -388,7 +393,7 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent('delete-growspace-submit', {
         detail: {
-          growspace_id: this.edit_selectedId,
+          growspace_id: this.editSelectedId,
         },
         bubbles: true,
         composed: true,
@@ -396,11 +401,11 @@ export class ConfigDialog extends LitElement {
     );
 
     // Reset selection after delete
-    this.edit_selectedId = '';
-    this.edit_name = '';
-    this.edit_rows = 0;
-    this.edit_plants_per_row = 0;
-    this.edit_notification_service = '';
+    this.editSelectedId = '';
+    this.editName = '';
+    this.editRows = 0;
+    this.editPlantsPerRow = 0;
+    this.editNotificationService = '';
     this._showDeleteConfirm = false;
   }
 
@@ -409,15 +414,15 @@ export class ConfigDialog extends LitElement {
   }
 
   private _populateEditFields(growspaceId: string) {
-    this.edit_selectedId = growspaceId;
+    this.editSelectedId = growspaceId;
 
     if (growspaceId && this.devices) {
-      const device = this.devices.find((d) => d.device_id === growspaceId);
+      const device = this.devices.find((d) => d.deviceId === growspaceId);
       if (device) {
-        this.edit_name = device.name;
-        this.edit_rows = device.rows || 4;
-        this.edit_plants_per_row = device.plants_per_row || 4;
-        this.edit_notification_service = device.notification_target || '';
+        this.editName = device.name;
+        this.editRows = device.rows || 4;
+        this.editPlantsPerRow = device.plantsPerRow || 4;
+        this.editNotificationService = device.notificationTarget || '';
       }
     }
   }
@@ -525,7 +530,7 @@ export class ConfigDialog extends LitElement {
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
-                    ?disabled=${!this.edit_selectedId}
+                    ?disabled=${!this.editSelectedId}
                   >
                     <svg
                       style="width:18px;height:18px;fill:currentColor;margin-right:8px"
@@ -538,7 +543,7 @@ export class ConfigDialog extends LitElement {
                   <button
                     class="md3-button primary"
                     @click=${this._submitEditGrowspace}
-                    ?disabled=${!this.edit_selectedId}
+                    ?disabled=${!this.editSelectedId}
                   >
                     Save Changes
                   </button>
@@ -557,21 +562,21 @@ export class ConfigDialog extends LitElement {
           <h3>New Growspace Details</h3>
           <md3-text-input
             label="Growspace Name"
-            .value=${this.add_name}
-            @change=${(e: CustomEvent) => (this.add_name = e.detail)}
+            .value=${this.addName}
+            @change=${(e: CustomEvent) => (this.addName = e.detail)}
           >
           </md3-text-input>
           <div class="row-col-grid">
             <md3-number-input
               label="Rows"
-              .value=${this.add_rows}
-              @change=${(e: CustomEvent) => (this.add_rows = parseInt(e.detail))}
+              .value=${this.addRows}
+              @change=${(e: CustomEvent) => (this.addRows = parseInt(e.detail))}
             >
             </md3-number-input>
             <md3-number-input
               label="Plants per Row"
-              .value=${this.add_plants_per_row}
-              @change=${(e: CustomEvent) => (this.add_plants_per_row = parseInt(e.detail))}
+              .value=${this.addPlantsPerRow}
+              @change=${(e: CustomEvent) => (this.addPlantsPerRow = parseInt(e.detail))}
             >
             </md3-number-input>
           </div>
@@ -579,16 +584,16 @@ export class ConfigDialog extends LitElement {
             <label class="md3-label"> Notification Service(Mobile App) </label>
             <select
               class="md3-input"
-              .value=${this.add_notification_service}
+              .value=${this.addNotificationService}
               @change=${(e: Event) =>
-        (this.add_notification_service = (e.target as HTMLSelectElement).value)}
+        (this.addNotificationService = (e.target as HTMLSelectElement).value)}
             >
               <option value="">None</option>
               ${this._getMobileAppNotifyServices().map(
           (service) =>
             html`<option
                     value="${service.value}"
-                    ?selected=${this.add_notification_service === service.value}
+                    ?selected=${this.addNotificationService === service.value}
                   >
                     ${service.label}
                   </option>`
@@ -597,8 +602,8 @@ export class ConfigDialog extends LitElement {
           </div>
           <md3-text-input
             label="Notification Service (Optional)"
-            .value=${this.add_notification_service}
-            @change=${(e: CustomEvent) => (this.add_notification_service = e.detail)}
+            .value=${this.addNotificationService}
+            @change=${(e: CustomEvent) => (this.addNotificationService = e.detail)}
             style="display:none;"
           >
           </md3-text-input>
@@ -719,7 +724,7 @@ export class ConfigDialog extends LitElement {
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
-            Are you sure you want to delete "<strong>${this.edit_name}</strong>" ? <br />
+            Are you sure you want to delete "<strong>${this.editName}</strong>" ? <br />
             This will remove all associated plants and history.<br />
             This action cannot be undone.
           </p>
@@ -741,13 +746,13 @@ export class ConfigDialog extends LitElement {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.edit_selectedId}
+              .value=${this.editSelectedId}
               @change=${this._handleEditSelection}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
       ([id, name]) =>
-        html`<option value="${id}" ?selected=${id === this.edit_selectedId}>
+        html`<option value="${id}" ?selected=${id === this.editSelectedId}>
                     ${name}
                   </option>`
     )}
@@ -755,41 +760,41 @@ export class ConfigDialog extends LitElement {
           </div>
         </div>
 
-        ${this.edit_selectedId
+        ${this.editSelectedId
         ? html`
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
                   label="Growspace Name"
-                  .value=${this.edit_name}
-                  @change=${(e: CustomEvent) => (this.edit_name = e.detail)}
+                  .value=${this.editName}
+                  @change=${(e: CustomEvent) => (this.editName = e.detail)}
                 ></md3-text-input>
                 <div class="row-col-grid">
                   <md3-number-input
                     label="Rows"
-                    .value=${this.edit_rows}
-                    @change=${(e: CustomEvent) => (this.edit_rows = parseInt(e.detail))}
+                    .value=${this.editRows}
+                    @change=${(e: CustomEvent) => (this.editRows = parseInt(e.detail))}
                   ></md3-number-input>
                   <md3-number-input
                     label="Plants per Row"
-                    .value=${this.edit_plants_per_row}
-                    @change=${(e: CustomEvent) => (this.edit_plants_per_row = parseInt(e.detail))}
+                    .value=${this.editPlantsPerRow}
+                    @change=${(e: CustomEvent) => (this.editPlantsPerRow = parseInt(e.detail))}
                   ></md3-number-input>
                 </div>
                 <div class="md3-input-group">
                   <label class="md3-label">Notification Service (Mobile App)</label>
                   <select
                     class="md3-input"
-                    .value=${this.edit_notification_service}
+                    .value=${this.editNotificationService}
                     @change=${(e: Event) =>
-            (this.edit_notification_service = (e.target as HTMLSelectElement).value)}
+            (this.editNotificationService = (e.target as HTMLSelectElement).value)}
                   >
                     <option value="">None</option>
                     ${this._getMobileAppNotifyServices().map(
               (service) =>
                 html`<option
                           value="${service.value}"
-                          ?selected=${this.edit_notification_service === service.value}
+                          ?selected=${this.editNotificationService === service.value}
                         >
                           ${service.label}
                         </option>`
@@ -817,13 +822,13 @@ export class ConfigDialog extends LitElement {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.env_selectedGrowspaceId}
+              .value=${this.envSelectedId}
               @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
       ([id, name]) =>
-        html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+        html`<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`
     )}
@@ -848,50 +853,50 @@ export class ConfigDialog extends LitElement {
           <div class="row-col-grid">
             ${this._renderEntitySelect(
       'Temperature Sensor',
-      this.env_temp_sensor,
+      this.envTemperatureSensor,
       ['sensor', 'input_number'],
       'temperature',
-      (e: CustomEvent) => (this.env_temp_sensor = e.detail.value)
+      (e: CustomEvent) => (this.envTemperatureSensor = e.detail.value)
     )}
             ${this._renderEntitySelect(
       'Humidity Sensor',
-      this.env_humidity_sensor,
+      this.envHumiditySensor,
       ['sensor', 'input_number'],
       'humidity',
-      (e: CustomEvent) => (this.env_humidity_sensor = e.detail.value)
+      (e: CustomEvent) => (this.envHumiditySensor = e.detail.value)
     )}
           </div>
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect(
       'VPD Sensor (Optional)',
-      this.env_vpd_sensor,
+      this.envVpdSensor,
       ['sensor', 'input_number'],
       'pressure',
-      (e: CustomEvent) => (this.env_vpd_sensor = e.detail.value)
+      (e: CustomEvent) => (this.envVpdSensor = e.detail.value)
     )}
             ${this._renderEntitySelect(
       'Soil Moisture Sensor',
-      this.env_soil_moisture_sensor,
+      this.envSoilMoistureSensor,
       ['sensor', 'input_number'],
       'moisture',
-      (e: CustomEvent) => (this.env_soil_moisture_sensor = e.detail.value)
+      (e: CustomEvent) => (this.envSoilMoistureSensor = e.detail.value)
     )}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect(
       'CO2 Sensor',
-      this.env_co2_sensor,
+      this.envCo2Sensor,
       ['sensor', 'input_number'],
       'carbon_dioxide',
-      (e: CustomEvent) => (this.env_co2_sensor = e.detail.value)
+      (e: CustomEvent) => (this.envCo2Sensor = e.detail.value)
     )}
             ${this._renderMultiEntitySelect(
       'Light Source / Sensor',
-      this.env_light_sensors,
+      this.envLightSensors,
       ['switch', 'light', 'input_boolean', 'sensor'],
       null,
-      (values: string[]) => (this.env_light_sensors = values)
+      (values: string[]) => (this.envLightSensors = values)
     )}
           </div>
         </div>
@@ -913,34 +918,34 @@ export class ConfigDialog extends LitElement {
           <div class="row-col-grid">
             ${this._renderMultiEntitySelect(
       'Exhaust Fan / Switch',
-      this.env_exhaust_fan_entities,
+      this.envExhaustFanEntities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
-      (values: string[]) => (this.env_exhaust_fan_entities = values)
+      (values: string[]) => (this.envExhaustFanEntities = values)
     )}
             ${this._renderMultiEntitySelect(
       'Circulation Fan / Switch',
-      this.env_circulation_fan_entities,
+      this.envCirculationFanEntities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
       null,
-      (values: string[]) => (this.env_circulation_fan_entities = values)
+      (values: string[]) => (this.envCirculationFanEntities = values)
     )}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderMultiEntitySelect(
       'Humidifier',
-      this.env_humidifier_entities,
+      this.envHumidifierEntities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
-      (values: string[]) => (this.env_humidifier_entities = values)
+      (values: string[]) => (this.envHumidifierEntities = values)
     )}
             ${this._renderMultiEntitySelect(
       'Dehumidifier',
-      this.env_dehumidifier_entities,
+      this.envDehumidifierEntities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
       null,
-      (values: string[]) => (this.env_dehumidifier_entities = values)
+      (values: string[]) => (this.envDehumidifierEntities = values)
     )}
           </div>
 
@@ -951,9 +956,9 @@ export class ConfigDialog extends LitElement {
             <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
             <input
               type="checkbox"
-              .checked=${this.env_control_dehumidifier}
+              .checked=${this.envDehumidifierControlEnabled}
               @change=${(e: Event) =>
-        (this.env_control_dehumidifier = (e.target as HTMLInputElement).checked)}
+        (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
               style="width:20px; height:20px;"
             />
           </div>
@@ -973,15 +978,15 @@ export class ConfigDialog extends LitElement {
           <div class="row-col-grid">
             <md3-number-input
               label="Stress Threshold %"
-              .value=${this.env_stress_threshold}
-              @change=${(e: CustomEvent) => (this.env_stress_threshold = parseFloat(e.detail))}
+              .value=${this.envStressThreshold}
+              @change=${(e: CustomEvent) => (this.envStressThreshold = parseFloat(e.detail))}
               step="0.01"
             >
             </md3-number-input>
             <md3-number-input
               label="Mold Threshold %"
-              .value=${this.env_mold_threshold}
-              @change=${(e: CustomEvent) => (this.env_mold_threshold = parseFloat(e.detail))}
+              .value=${this.envMoldThreshold}
+              @change=${(e: CustomEvent) => (this.envMoldThreshold = parseFloat(e.detail))}
               step="0.01"
             >
             </md3-number-input>
@@ -994,83 +999,83 @@ export class ConfigDialog extends LitElement {
   private _handleEnvGrowspaceChange(e: Event) {
     const target = e.target as HTMLSelectElement;
     const growspaceId = target.value;
-    this.env_selectedGrowspaceId = growspaceId;
+    this.envSelectedId = growspaceId;
 
     // Find the device in the passed devices array (from store state upstream)
-    const device = this.devices.find((d) => d.device_id === growspaceId);
-    if (device && device.environment_attributes) {
-      const attrs = device.environment_attributes;
-      this.env_temp_sensor = attrs.temperature_sensor || '';
-      this.env_humidity_sensor = attrs.humidity_sensor || '';
-      this.env_vpd_sensor = attrs.vpd_sensor || '';
-      this.env_co2_sensor = attrs.co2_sensor || '';
-      this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
-      this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
-      this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
+    const device = this.devices.find((d) => d.deviceId === growspaceId);
+    if (device && device.environmentAttributes) {
+      const attrs = device.environmentAttributes;
+      this.envTemperatureSensor = attrs.temperatureSensor || '';
+      this.envHumiditySensor = attrs.humiditySensor || '';
+      this.envVpdSensor = attrs.vpdSensor || '';
+      this.envCo2Sensor = attrs.co2Sensor || '';
+      this.envSoilMoistureSensor = attrs.soilMoistureSensor || '';
+      this.envDehumidifierControlEnabled = attrs.dehumidifierControlEnabled || false;
+      this.envDehumidifierThresholds = attrs.dehumidifierThresholds || {};
 
       // Multi-device handling with backward compatibility
-      this.env_light_sensor = attrs.light_sensor || '';
-      this.env_light_sensors =
-        attrs.light_sensors && attrs.light_sensors.length > 0
-          ? attrs.light_sensors
-          : attrs.light_sensor
-            ? [attrs.light_sensor]
+      this.envLightSensor = attrs.lightSensor || '';
+      this.envLightSensors =
+        attrs.lightSensors && attrs.lightSensors.length > 0
+          ? attrs.lightSensors
+          : attrs.lightSensor
+            ? [attrs.lightSensor]
             : [];
 
-      this.env_exhaust_entity = attrs.exhaust_entity || '';
-      this.env_exhaust_fan_entities =
-        attrs.exhaust_fan_entities && attrs.exhaust_fan_entities.length > 0
-          ? attrs.exhaust_fan_entities
-          : attrs.exhaust_entity
-            ? [attrs.exhaust_entity]
+      this.envExhaustEntity = attrs.exhaustEntity || '';
+      this.envExhaustFanEntities =
+        attrs.exhaustFanEntities && attrs.exhaustFanEntities.length > 0
+          ? attrs.exhaustFanEntities
+          : attrs.exhaustEntity
+            ? [attrs.exhaustEntity]
             : [];
 
-      this.env_circulation_fan = attrs.circulation_fan_entity || '';
-      this.env_circulation_fan_entities =
-        attrs.circulation_fan_entities && attrs.circulation_fan_entities.length > 0
-          ? attrs.circulation_fan_entities
-          : attrs.circulation_fan_entity
-            ? [attrs.circulation_fan_entity]
+      this.envCirculationFan = attrs.circulationFanEntity || '';
+      this.envCirculationFanEntities =
+        attrs.circulationFanEntities && attrs.circulationFanEntities.length > 0
+          ? attrs.circulationFanEntities
+          : attrs.circulationFanEntity
+            ? [attrs.circulationFanEntity]
             : [];
 
-      this.env_humidifier_entity = attrs.humidifier_entity || '';
-      this.env_humidifier_entities =
-        attrs.humidifier_entities && attrs.humidifier_entities.length > 0
-          ? attrs.humidifier_entities
-          : attrs.humidifier_entity
-            ? [attrs.humidifier_entity]
+      this.envHumidifierEntity = attrs.humidifierEntity || '';
+      this.envHumidifierEntities =
+        attrs.humidifierEntities && attrs.humidifierEntities.length > 0
+          ? attrs.humidifierEntities
+          : attrs.humidifierEntity
+            ? [attrs.humidifierEntity]
             : [];
 
-      this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
-      this.env_dehumidifier_entities =
-        attrs.dehumidifier_entities && attrs.dehumidifier_entities.length > 0
-          ? attrs.dehumidifier_entities
-          : attrs.dehumidifier_entity
-            ? [attrs.dehumidifier_entity]
+      this.envDehumidifierEntity = attrs.dehumidifierEntity || '';
+      this.envDehumidifierEntities =
+        attrs.dehumidifierEntities && attrs.dehumidifierEntities.length > 0
+          ? attrs.dehumidifierEntities
+          : attrs.dehumidifierEntity
+            ? [attrs.dehumidifierEntity]
             : [];
 
       // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
-      this.env_stress_threshold = 0.8;
-      this.env_mold_threshold = 0.8;
+      this.envStressThreshold = 0.8;
+      this.envMoldThreshold = 0.8;
     } else {
       // Reset if no device or no attributes
-      this.env_temp_sensor = '';
-      this.env_humidity_sensor = '';
-      this.env_vpd_sensor = '';
-      this.env_co2_sensor = '';
-      this.env_circulation_fan = '';
-      this.env_circulation_fan_entities = [];
-      this.env_light_sensor = '';
-      this.env_light_sensors = [];
-      this.env_exhaust_entity = '';
-      this.env_exhaust_fan_entities = [];
-      this.env_humidifier_entity = '';
-      this.env_humidifier_entities = [];
-      this.env_dehumidifier_entity = '';
-      this.env_dehumidifier_entities = [];
-      this.env_soil_moisture_sensor = '';
-      this.env_control_dehumidifier = false;
-      this.env_dehumidifier_thresholds = {};
+      this.envTemperatureSensor = '';
+      this.envHumiditySensor = '';
+      this.envVpdSensor = '';
+      this.envCo2Sensor = '';
+      this.envCirculationFan = '';
+      this.envCirculationFanEntities = [];
+      this.envLightSensor = '';
+      this.envLightSensors = [];
+      this.envExhaustEntity = '';
+      this.envExhaustFanEntities = [];
+      this.envHumidifierEntity = '';
+      this.envHumidifierEntities = [];
+      this.envDehumidifierEntity = '';
+      this.envDehumidifierEntities = [];
+      this.envSoilMoistureSensor = '';
+      this.envDehumidifierControlEnabled = false;
+      this.envDehumidifierThresholds = {};
     }
   }
 
@@ -1096,13 +1101,13 @@ export class ConfigDialog extends LitElement {
             <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
-              .value=${this.env_selectedGrowspaceId}
+              .value=${this.envSelectedId}
               @change=${this._handleEnvGrowspaceChange}
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
       ([id, name]) =>
-        html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+        html`<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`
     )}
@@ -1223,20 +1228,20 @@ export class ConfigDialog extends LitElement {
   }
 
   private _getThresholdValue(stage: string, cycle: string, point: 'on' | 'off'): number {
-    return this.env_dehumidifier_thresholds?.[stage]?.[cycle]?.[point] ?? 0;
+    return this.envDehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
   }
 
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
     if (isNaN(value)) return;
 
     // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref
-    const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
+    const newThresholds = JSON.parse(JSON.stringify(this.envDehumidifierThresholds || {}));
 
     if (!newThresholds[stage]) newThresholds[stage] = {};
     if (!newThresholds[stage][cycle]) newThresholds[stage][cycle] = { on: 0, off: 0 };
 
     newThresholds[stage][cycle][point] = value;
 
-    this.env_dehumidifier_thresholds = newThresholds;
+    this.envDehumidifierThresholds = newThresholds;
   }
 }

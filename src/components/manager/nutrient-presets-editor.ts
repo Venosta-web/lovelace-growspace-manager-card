@@ -29,6 +29,7 @@ export class NutrientPresetsEditor extends LitElement {
 
   @property({ type: Boolean }) open = false;
   @property({ type: Boolean }) embedded = false;
+  @property({ type: String }) growspaceId?: string;
 
   @state() private _view: 'LIST' | 'EDIT' = 'LIST';
   @state() private _editingPreset: Partial<NutrientPreset> | null = null;

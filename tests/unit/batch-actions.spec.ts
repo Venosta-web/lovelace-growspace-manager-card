@@ -62,24 +62,24 @@ describe('Batch Actions', () => {
 
         mockDevices = [
             {
-                device_id: 'gs1',
+                deviceId: 'gs1',
                 name: 'Growspace 1',
                 plants: [plant1, plant2],
                 sensors: [],
                 temp_sensor: 'sensor.temp',
-                humidity_sensor: 'sensor.hum',
+                humiditySensor: 'sensor.hum',
                 rows: 2,
-                plants_per_row: 2
+                plantsPerRow: 2
             },
             {
-                device_id: 'gs2',
+                deviceId: 'gs2',
                 name: 'Growspace 2',
                 plants: [plant3],
                 sensors: [],
                 temp_sensor: 'sensor.temp',
-                humidity_sensor: 'sensor.hum',
+                humiditySensor: 'sensor.hum',
                 rows: 2,
-                plants_per_row: 2
+                plantsPerRow: 2
             }
         ] as any;
 

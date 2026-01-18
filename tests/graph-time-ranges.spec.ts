@@ -35,7 +35,7 @@ test.describe('Graph Time Ranges', () => {
 
         // Setup Attributes (Dehumidifier is separate from standard env sensors)
         if (mockHass.states[overviewId]) {
-            mockHass.states[overviewId].attributes.dehumidifier_entity = 'switch.dehumidifier';
+            mockHass.states[overviewId].attributes.dehumidifierEntity = 'switch.dehumidifier';
             mockHass.states[overviewId].attributes.dehumidifier_state = 'on';
             mockHass.states[overviewId].attributes.light_entity = 'switch.grow_light';
         }
@@ -130,10 +130,10 @@ test.describe('Graph Time Ranges', () => {
             mockHass.states[optimalId].attributes.is_lights_on = true;
         }
 
-        // Add light_sensor to attributes to ensure light chip is rendered (if needed by other logic)
+        // Add lightSensor to attributes to ensure light chip is rendered (if needed by other logic)
         const overviewId = 'sensor.4x4_tent';
         if (mockHass.states[overviewId]) {
-            mockHass.states[overviewId].attributes.light_sensor = 'binary_sensor.light';
+            mockHass.states[overviewId].attributes.lightSensor = 'binary_sensor.light';
         }
         // Add the light sensor state
         mockHass.states['binary_sensor.light'] = {

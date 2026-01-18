@@ -601,7 +601,7 @@ describe('GrowspaceGrid', () => {
 
         it('should return transparent when growspaceId is missing', async () => {
             $gridOverlayMode.set('vpd');
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'ok' } }]);
 
             const plant: any = {
                 entity_id: 'p1',
@@ -637,7 +637,7 @@ describe('GrowspaceGrid', () => {
 
         it('should return green overlay for vpd status ok', async () => {
             $gridOverlayMode.set('vpd');
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'ok' } }]);
 
             const plant: any = {
                 entity_id: 'p1',
@@ -655,7 +655,7 @@ describe('GrowspaceGrid', () => {
 
         it('should return orange overlay for vpd status warning', async () => {
             $gridOverlayMode.set('vpd');
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'warning' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'warning' } }]);
 
             const plant: any = {
                 entity_id: 'p1',
@@ -673,7 +673,7 @@ describe('GrowspaceGrid', () => {
 
         it('should return red overlay for vpd status danger', async () => {
             $gridOverlayMode.set('vpd');
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'danger' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'danger' } }]);
 
             const plant: any = {
                 entity_id: 'p1',
@@ -691,7 +691,7 @@ describe('GrowspaceGrid', () => {
 
         it('should return transparent for unknown vpd status', async () => {
             $gridOverlayMode.set('vpd');
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'unknown' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'unknown' } }]);
 
             const plant: any = {
                 entity_id: 'p1',
@@ -711,7 +711,7 @@ describe('GrowspaceGrid', () => {
         let $devices: any;
 
         beforeEach(() => {
-            $devices = atom([{ device_id: 'gs1', biological_metrics: { vpd_status: 'ok' } }]);
+            $devices = atom([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'ok' } }]);
             mockStore.data = { $devices };
             mockStore.hass = {
                 states: {}
@@ -774,7 +774,7 @@ describe('GrowspaceGrid', () => {
             // No binary sensors on
 
             // Set VPD warning
-            $devices.set([{ device_id: 'gs1', biological_metrics: { vpd_status: 'warning' } }]);
+            $devices.set([{ deviceId: 'gs1', biologicalMetrics: { vpdStatus: 'warning' } }]);
             element.requestUpdate();
 
             const plant: any = {

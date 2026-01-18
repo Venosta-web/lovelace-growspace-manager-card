@@ -65,7 +65,7 @@ export class GrowspaceHeaderActions extends LitElement {
         switch (action) {
             case 'add_plant': this.store.openAddPlantDialog(); break;
             case 'config': {
-                const device = this.store.data.$devices.get().find(d => d.device_id === this._selectedDeviceController.value);
+                const device = this.store.data.$devices.get().find(d => d.deviceId === this._selectedDeviceController.value);
                 if (device) this.store.openConfigDialog(device);
                 break;
             }
@@ -95,7 +95,7 @@ export class GrowspaceHeaderActions extends LitElement {
             case 'ipm': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openIPMDialog({
-                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.device_id || '', // Fallback
+                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.deviceId || '', // Fallback
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
                 });
                 break;

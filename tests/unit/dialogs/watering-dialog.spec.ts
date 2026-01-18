@@ -46,7 +46,7 @@ describe('WateringDialog', () => {
                 }),
                 $devices: atom([
                     {
-                        device_id: 'd1',
+                        deviceId: 'd1',
                         plants: [
                             { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', stage: 'flower', days_in_stage: 12 } },
                             { entity_id: 'sensor.p2', attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 12 } }

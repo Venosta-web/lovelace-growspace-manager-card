@@ -112,7 +112,7 @@ describe('WateringDialog Batch Submission', () => {
     it('should show recommendations when plants match preset stage', async () => {
         // Mock store with device and presets
         const mockDevice = {
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [
                 { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', stage: 'flower', days_in_stage: 20 } },
                 { entity_id: 'sensor.p2', attributes: { plant_id: 'p2', stage: 'flower', days_in_stage: 25 } }

@@ -5,7 +5,7 @@ import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus, mdiGrid, mdiCheck } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
 import { StoreController } from '@nanostores/lit';
-import { PlantEntity, StrainEntry } from '../types';
+import { PlantEntity } from '../types';
 import { GridOverlayMode, StatusLevel } from '../constants';
 import { storeContext } from '../context';
 import type { GrowspaceStore } from '../store/growspace-store';
@@ -59,7 +59,7 @@ export class GrowspaceGrid extends LitElement {
   public focusPlant(index: number) {
     const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
     if (cards && cards[index]) {
-      (cards[index] as any).focus();
+      (cards[index] as HTMLElement).focus();
     }
   }
 
@@ -440,7 +440,7 @@ export class GrowspaceGrid extends LitElement {
             }));
             return;
           }
-        } catch (err) {
+        } catch {
           // Not transplant data, fall through to regular drop
         }
       }
@@ -501,15 +501,15 @@ export class GrowspaceGrid extends LitElement {
     const growspaceId = plant.attributes.growspace_id;
     if (!growspaceId) return OVERLAY_COLORS.TRANSPARENT;
 
-    const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+    const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
     if (!device) return OVERLAY_COLORS.TRANSPARENT;
 
     switch (mode) {
       case GridOverlayMode.VPD: {
-        const { vpd_status } = device.biological_metrics;
-        if (vpd_status === 'ok') return OVERLAY_COLORS.OK;
-        if (vpd_status === StatusLevel.WARNING) return OVERLAY_COLORS.WARNING;
-        if (vpd_status === StatusLevel.DANGER) return OVERLAY_COLORS.DANGER;
+        const { vpdStatus } = device.biologicalMetrics;
+        if (vpdStatus === 'ok') return OVERLAY_COLORS.OK;
+        if (vpdStatus === StatusLevel.WARNING) return OVERLAY_COLORS.WARNING;
+        if (vpdStatus === StatusLevel.DANGER) return OVERLAY_COLORS.DANGER;
         break;
       }
       case GridOverlayMode.BIO_STATUS: {
@@ -527,8 +527,8 @@ export class GrowspaceGrid extends LitElement {
           return OVERLAY_COLORS.OK;
         }
 
-        const { vpd_status } = device.biological_metrics;
-        if (vpd_status === StatusLevel.WARNING || vpd_status === StatusLevel.DANGER) {
+        const { vpdStatus } = device.biologicalMetrics;
+        if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
           return OVERLAY_COLORS.WARNING;
         }
         break;

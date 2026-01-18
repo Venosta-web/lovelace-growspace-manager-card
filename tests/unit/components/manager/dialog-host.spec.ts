@@ -200,8 +200,8 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
         const detail = {
             selectedGrowspaceId: 'g1',
-            temp_sensor: 't1',
-            humidity_sensor: 'h1'
+            temperatureSensor: 't1',
+            humiditySensor: 'h1'
         };
 
         // We fake the private method call internal to dialog host OR just check if handling works
@@ -210,7 +210,7 @@ describe('DialogHost', () => {
         dialog.dispatchEvent(new CustomEvent('configure-environment-submit', { detail }));
 
         // Allow async handling
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(mockStore.dataService.configureEnvironment).toHaveBeenCalled();
         expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('successfully'), 'success');
@@ -232,22 +232,22 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
         const detail = {
             selectedGrowspaceId: 'g1',
-            temp_sensor: 't1',
-            humidity_sensor: 'h1',
-            exhaust_fan_entities: ['fan.1', 'fan.2'],
-            circulation_fan_entities: ['fan.3', 'fan.4'],
-            light_sensors: ['light.1', 'light.2']
+            temperatureSensor: 't1',
+            humiditySensor: 'h1',
+            exhaustFanEntities: ['fan.1', 'fan.2'],
+            circulationFanEntities: ['fan.3', 'fan.4'],
+            lightSensors: ['light.1', 'light.2']
         };
 
         dialog.dispatchEvent(new CustomEvent('configure-environment-submit', { detail }));
 
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
 
         expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
-            growspace_id: 'g1',
-            exhaust_fan_entities: ['fan.1', 'fan.2'],
-            circulation_fan_entities: ['fan.3', 'fan.4'],
-            light_sensors: ['light.1', 'light.2']
+            growspaceId: 'g1',
+            exhaustFanEntities: ['fan.1', 'fan.2'],
+            circulationFanEntities: ['fan.3', 'fan.4'],
+            lightSensors: ['light.1', 'light.2']
         }));
     });
 
@@ -274,8 +274,8 @@ describe('DialogHost', () => {
     it('should handle environment config API failure', async () => {
         const detail = {
             selectedGrowspaceId: 'g1',
-            temp_sensor: 'sensor.temp',
-            humidity_sensor: 'sensor.hum'
+            temperatureSensor: 'sensor.temp',
+            humiditySensor: 'sensor.hum'
         };
         (mockStore.dataService.configureEnvironment as any).mockRejectedValue(new Error('Config failed'));
 
@@ -343,6 +343,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
 
         // Update state
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1' }] as any);
         $selectedDevice.set('g1');
         $activeDialog.set({
             type: 'GROW_MASTER',
@@ -350,7 +351,7 @@ describe('DialogHost', () => {
         });
 
         // Use a small timeout + updateComplete loop to ensure stability
-        await new Promise(r => setTimeout(r, 0));
+        await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
 
         const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
@@ -368,7 +369,7 @@ describe('DialogHost', () => {
 
     it('should handle connectedCallback without store', () => {
         const el = document.createElement('growspace-dialog-host') as DialogHost;
-        // @ts-ignore
+        // @ts-expect-error
         el.store = undefined;
         el.connectedCallback();
         // Should not have initialized controllers
@@ -377,8 +378,8 @@ describe('DialogHost', () => {
 
     it('should map growspace options correctly in render', async () => {
         $devices.set([
-            { device_id: 'd1', name: 'Grow 1' } as any,
-            { device_id: 'd2', name: 'Grow 2' } as any
+            { deviceId: 'd1', name: 'Grow 1' } as any,
+            { deviceId: 'd2', name: 'Grow 2' } as any
         ]);
         $activeDialog.set({
             type: 'CONFIG',
@@ -749,7 +750,7 @@ describe('DialogHost', () => {
         await element.updateComplete;
 
         const dialog = element.shadowRoot?.querySelector('config-dialog');
-        const detail = { device_id: 'g1', name: 'Updated Growspace' };
+        const detail = { deviceId: 'g1', name: 'Updated Growspace' };
         dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', { detail }));
 
         expect(mockStore.actions.growspace.update).toHaveBeenCalledWith(detail);
@@ -785,7 +786,7 @@ describe('DialogHost', () => {
     });
 
     it('should render WATERING dialog', async () => {
-        $devices.set([{ device_id: 'g1', name: 'Grow 1' } as any]);
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1' } as any]);
         $selectedDevice.set('g1');
         $activeDialog.set({
             type: 'WATERING',
@@ -836,7 +837,7 @@ describe('DialogHost', () => {
 
     it('should render NUTRIENT_PRESETS dialog', async () => {
         $devices.set([{
-            device_id: 'g1',
+            deviceId: 'g1',
             name: 'Grow 1'
         } as any]);
         $nutrientPresets.set({ 'p1': { id: 'p1', name: 'Preset 1', nutrients: [] } });
@@ -854,7 +855,7 @@ describe('DialogHost', () => {
 
     it('should handle data-changed event on NUTRIENT_PRESETS dialog', async () => {
         vi.useFakeTimers();
-        $devices.set([{ device_id: 'g1', name: 'Grow 1', nutrient_presets: {} } as any]);
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1', nutrientPresets: {} } as any]);
         $selectedDevice.set('g1');
         $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
         document.body.appendChild(element);
@@ -886,7 +887,7 @@ describe('DialogHost', () => {
 
     it('should render IPM dialog and handle events', async () => {
         vi.useFakeTimers();
-        $devices.set([{ device_id: 'g1', name: 'Grow 1' } as any]);
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1' } as any]);
         $ipmPresets.set({});
         $selectedDevice.set('g1');
         $activeDialog.set({
@@ -955,7 +956,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle close event on NUTRIENT_PRESETS dialog', async () => {
-        $devices.set([{ device_id: 'g1', name: 'Grow 1', nutrient_presets: {} } as any]);
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1', nutrientPresets: {} } as any]);
         $selectedDevice.set('g1');
         $activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
         document.body.appendChild(element);
@@ -968,6 +969,7 @@ describe('DialogHost', () => {
     });
 
     it('should cover growspace_manager sensor attributes in GROW_MASTER', async () => {
+        $devices.set([{ deviceId: 'g1', name: 'Grow 1' }] as any);
         $selectedDevice.set('g1');
         mockHass.states['sensor.growspace_manager'] = {
             attributes: {
@@ -1091,7 +1093,7 @@ describe('DialogHost', () => {
 
     it('should handle undefined strainLibrary', async () => {
         $activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 1 } });
-        // @ts-ignore
+        // @ts-expect-error
         element.strainLibrary = undefined;
         document.body.appendChild(element);
         await element.updateComplete;
@@ -1127,7 +1129,7 @@ describe('DialogHost', () => {
 
     it('should extract personality when ai_settings present', async () => {
         $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, response: '', growspaceId: 'g1', mode: 'single' } });
-        const devices: GrowspaceDevice[] = [{ device_id: 'g1', name: 'Grow 1', sensors: {} } as any];
+        const devices: GrowspaceDevice[] = [{ deviceId: 'g1', name: 'Grow 1', sensors: {} } as any];
         (mockStore.data.$devices as any).set(devices);
         (mockStore.data.$selectedDevice as any).set('g1');
 
@@ -1152,7 +1154,7 @@ describe('DialogHost', () => {
 
     it('should handle missing attributes in GROW_MASTER', async () => {
         $activeDialog.set({ type: 'GROW_MASTER', payload: { isLoading: false, response: '', growspaceId: 'g1', mode: 'single' } });
-        const devices: GrowspaceDevice[] = [{ device_id: 'g1', name: 'Grow 1', sensors: {} } as any];
+        const devices: GrowspaceDevice[] = [{ deviceId: 'g1', name: 'Grow 1', sensors: {} } as any];
         (mockStore.data.$devices as any).set(devices);
         (mockStore.data.$selectedDevice as any).set('g1');
 

@@ -66,13 +66,13 @@ describe('GrowspacePlantCard Branch Coverage', () => {
         });
 
         it('should return false if device is not found', () => {
-            mockStore.data.$devices.set([{ device_id: 'd1' }]);
+            mockStore.data.$devices.set([{ deviceId: 'd1' }]);
             element.plant = { attributes: { plant_id: 'p1', growspace_id: 'd2' } } as any;
             expect(element._hasRecommendedPreset).toBe(false);
         });
 
         it('should return false if no matching preset found', () => {
-            mockStore.data.$devices.set([{ device_id: 'top_grow' }]);
+            mockStore.data.$devices.set([{ deviceId: 'top_grow' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg': { stage: 'veg', min_days_in_stage: 10 }
             });
@@ -87,7 +87,7 @@ describe('GrowspacePlantCard Branch Coverage', () => {
         });
 
         it('should return true if matching preset found', () => {
-            mockStore.data.$devices.set([{ device_id: 'top_grow' }]);
+            mockStore.data.$devices.set([{ deviceId: 'top_grow' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg': { stage: 'veg', min_days_in_stage: 5 }
             });

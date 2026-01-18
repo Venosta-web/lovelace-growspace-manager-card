@@ -41,6 +41,7 @@ export const GrowspaceAPIResponseSchema = z.object({
     plants_per_row: z.number(),
     total_plants: z.number().optional().default(0),
     notification_target: z.string().nullable().optional(),
+    overview_entity_id: z.string().optional(),
 
     // Grid
     grid: z.record(z.string(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
@@ -176,8 +177,9 @@ export type NutrientInventoryResponse = z.infer<typeof NutrientInventorySchema>;
 
 export const HistoryPointSchema = z.object({
     s: z.union([z.string(), z.number()]).transform(String),
-    lu: z.union([z.string(), z.number()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))
-});
+    lu: z.union([z.string(), z.number()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v)),
+    a: z.record(z.any()).optional().default({}), // Attributes
+}).passthrough();
 
 export const HistoryStatsResponseSchema = z.record(z.string(), z.array(HistoryPointSchema));
 export type HistoryStatsResponse = z.infer<typeof HistoryStatsResponseSchema>;

@@ -21,15 +21,15 @@ export class IrrigationDialog extends LitElement {
 
   @property({ type: String }) public growspaceName = '';
 
-  @state() private _irrigation_pump_entity = '';
-  @state() private _drain_pump_entity = '';
-  @state() private _irrigation_duration = 60;
-  @state() private _drain_duration = 60;
-  @state() private _irrigation_times: IrrigationTime[] = [];
-  @state() private _drain_times: IrrigationTime[] = [];
+  @state() private _irrigationPumpEntity = '';
+  @state() private _drainPumpEntity = '';
+  @state() private _irrigationDuration = 60;
+  @state() private _drainDuration = 60;
+  @state() private _irrigationTimes: IrrigationTime[] = [];
+  @state() private _drainTimes: IrrigationTime[] = [];
 
-  @state() private _adding_irrigation_time: { time: string; duration: number } | undefined;
-  @state() private _adding_drain_time: { time: string; duration: number } | undefined;
+  @state() private _addingIrrigationTime: { time: string; duration: number } | undefined;
+  @state() private _addingDrainTime: { time: string; duration: number } | undefined;
 
   private _dataService?: DataService;
 
@@ -164,34 +164,34 @@ export class IrrigationDialog extends LitElement {
   private _initializeState() {
     if (!this.device) return;
 
-    const config = this.device.irrigation_config || {};
+    const config = this.device.irrigationConfig || {};
 
-    this._irrigation_pump_entity = config.irrigation_pump_entity || '';
-    this._drain_pump_entity = config.drain_pump_entity || '';
-    this._irrigation_duration = config.irrigation_duration || 60;
-    this._drain_duration = config.drain_duration || 60;
+    this._irrigationPumpEntity = config.irrigationPumpEntity || '';
+    this._drainPumpEntity = config.drainPumpEntity || '';
+    this._irrigationDuration = config.irrigationDuration || 60;
+    this._drainDuration = config.drainDuration || 60;
 
-    this._irrigation_times = this.device.irrigation_config?.irrigation_times || [];
-    this._drain_times = this.device.irrigation_config?.drain_times || [];
+    this._irrigationTimes = this.device.irrigationConfig?.irrigationTimes || [];
+    this._drainTimes = this.device.irrigationConfig?.drainTimes || [];
 
     console.log('[IrrigationDialog] Initializing State', {
       device: this.device,
-      irrigation_times: this._irrigation_times,
-      drain_times: this._drain_times,
-      raw_config: config,
+      irrigationTimes: this._irrigationTimes,
+      drainTimes: this._drainTimes,
+      rawConfig: config,
     });
 
     // Initialize Strategy
-    const strat = this.device.irrigation_strategy;
+    const strat = this.device.irrigationStrategy;
     this._strategy = {
       enabled: strat?.enabled || false,
-      lights_on_time: strat?.lights_on_time || '06:00:00',
-      p0_duration_minutes: strat?.p0_duration_minutes || 60,
-      p2_stop_before_lights_off_minutes: strat?.p2_stop_before_lights_off_minutes || 120,
-      target_vwc_percent: strat?.target_vwc_percent || 45.0,
-      maintenance_dryback_percent: strat?.maintenance_dryback_percent || 3.0,
-      shot_duration_seconds: strat?.shot_duration_seconds || 15,
-      shot_interval_minutes: strat?.shot_interval_minutes || 15,
+      lightsOnTime: strat?.lightsOnTime || '06:00:00',
+      p0DurationMinutes: strat?.p0DurationMinutes || 60,
+      p2StopBeforeLightsOffMinutes: strat?.p2StopBeforeLightsOffMinutes || 120,
+      targetVwcPercent: strat?.targetVwcPercent || 45.0,
+      maintenanceDrybackPercent: strat?.maintenanceDrybackPercent || 3.0,
+      shotDurationSeconds: strat?.shotDurationSeconds || 15,
+      shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
     };
   }
 
@@ -210,15 +210,15 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _saveSettings() {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
 
     try {
       await this._dataService.setIrrigationSettings({
-        growspace_id: this.device.device_id,
-        irrigation_pump_entity: this._irrigation_pump_entity,
-        drain_pump_entity: this._drain_pump_entity,
-        irrigation_duration: this._irrigation_duration,
-        drain_duration: this._drain_duration,
+        growspaceId: this.device.deviceId,
+        irrigationPumpEntity: this._irrigationPumpEntity,
+        drainPumpEntity: this._drainPumpEntity,
+        irrigationDuration: this._irrigationDuration,
+        drainDuration: this._drainDuration,
       });
     } catch (e) {
       console.error('Failed to save settings:', e);
@@ -226,21 +226,21 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _addIrrigationTime(time: string, duration?: number) {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
 
     try {
       await this._dataService.addIrrigationTime({
-        growspace_id: this.device.device_id,
+        growspaceId: this.device.deviceId,
         time,
-        duration: duration || this._irrigation_duration,
+        duration: duration || this._irrigationDuration,
       });
 
       // Optimistic update
-      const newTime: IrrigationTime = { time, duration: duration || this._irrigation_duration };
-      this._irrigation_times = [...this._irrigation_times, newTime].sort((a, b) =>
+      const newTime: IrrigationTime = { time, duration: duration || this._irrigationDuration };
+      this._irrigationTimes = [...this._irrigationTimes, newTime].sort((a, b) =>
         a.time.localeCompare(b.time)
       );
-      this._adding_irrigation_time = undefined;
+      this._addingIrrigationTime = undefined;
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add irrigation time:', e);
@@ -248,16 +248,16 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _removeIrrigationTime(time: string) {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
 
     try {
       await this._dataService.removeIrrigationTime({
-        growspace_id: this.device.device_id,
+        growspaceId: this.device.deviceId,
         time,
       });
 
       // Optimistic update
-      this._irrigation_times = this._irrigation_times.filter((t) => t.time !== time);
+      this._irrigationTimes = this._irrigationTimes.filter((t) => t.time !== time);
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove irrigation time:', e);
@@ -265,21 +265,21 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _addDrainTime(time: string, duration?: number) {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
 
     try {
       await this._dataService.addDrainTime({
-        growspace_id: this.device.device_id,
+        growspaceId: this.device.deviceId,
         time,
-        duration: duration || this._drain_duration,
+        duration: duration || this._drainDuration,
       });
 
       // Optimistic update
-      const newTime: IrrigationTime = { time, duration: duration || this._drain_duration };
-      this._drain_times = [...this._drain_times, newTime].sort((a, b) =>
+      const newTime: IrrigationTime = { time, duration: duration || this._drainDuration };
+      this._drainTimes = [...this._drainTimes, newTime].sort((a, b) =>
         a.time.localeCompare(b.time)
       );
-      this._adding_drain_time = undefined;
+      this._addingDrainTime = undefined;
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add drain time:', e);
@@ -287,16 +287,16 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _removeDrainTime(time: string) {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
 
     try {
       await this._dataService.removeDrainTime({
-        growspace_id: this.device.device_id,
+        growspaceId: this.device.deviceId,
         time,
       });
 
       // Optimistic update
-      this._drain_times = this._drain_times.filter((t) => t.time !== time);
+      this._drainTimes = this._drainTimes.filter((t) => t.time !== time);
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove drain time:', e);
@@ -314,9 +314,9 @@ export class IrrigationDialog extends LitElement {
     const minutes = totalMinutes % 60;
     const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-    this._adding_irrigation_time = {
+    this._addingIrrigationTime = {
       time: timeStr,
-      duration: this._irrigation_duration,
+      duration: this._irrigationDuration,
     };
   }
 
@@ -327,9 +327,9 @@ export class IrrigationDialog extends LitElement {
     const minutes = totalMinutes % 60;
     const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 
-    this._adding_drain_time = {
+    this._addingDrainTime = {
       time: timeStr,
-      duration: this._drain_duration,
+      duration: this._drainDuration,
     };
   }
 
@@ -338,9 +338,9 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _saveStrategy() {
-    if (!this.device?.device_id || !this._dataService) return;
+    if (!this.device?.deviceId || !this._dataService) return;
     try {
-      await this._dataService.setIrrigationStrategy(this.device.device_id, this._strategy);
+      await this._dataService.setIrrigationStrategy(this.device.deviceId, this._strategy);
     } catch (e) {
       console.error('Failed to save strategy:', e);
     }
@@ -451,15 +451,15 @@ export class IrrigationDialog extends LitElement {
     return html`
       ${this._renderScheduleSection(
       'Irrigation Schedule',
-      this._irrigation_times,
-      this._irrigation_duration,
+      this._irrigationTimes,
+      this._irrigationDuration,
       'irrigation',
       color
     )}
       ${this._renderScheduleSection(
       'Drain Schedule',
-      this._drain_times,
-      this._drain_duration,
+      this._drainTimes,
+      this._drainDuration,
       'drain',
       '#FF9800'
     )}
@@ -512,15 +512,15 @@ export class IrrigationDialog extends LitElement {
         <div class="section-content">
              ${this._renderEntitySelect(
       'Irrigation Pump',
-      this._irrigation_pump_entity,
+      this._irrigationPumpEntity,
       ['switch', 'input_boolean'],
-      (e) => (this._irrigation_pump_entity = (e.target as HTMLSelectElement).value)
+      (e) => (this._irrigationPumpEntity = (e.target as HTMLSelectElement).value)
     )}
              ${this._renderEntitySelect(
       'Drain Pump (Optional)',
-      this._drain_pump_entity,
+      this._drainPumpEntity,
       ['switch', 'input_boolean'],
-      (e) => (this._drain_pump_entity = (e.target as HTMLSelectElement).value)
+      (e) => (this._drainPumpEntity = (e.target as HTMLSelectElement).value)
     )}
         </div>
       </div>
@@ -554,16 +554,16 @@ export class IrrigationDialog extends LitElement {
 
           <md3-number-input
             label="Target VWC (%)"
-            .value=${this._strategy.target_vwc_percent}
+            .value=${this._strategy.targetVwcPercent}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('target_vwc_percent', parseFloat(e.detail))}
+        this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Dryback (%)"
-            .value=${this._strategy.maintenance_dryback_percent}
+            .value=${this._strategy.maintenanceDrybackPercent}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('maintenance_dryback_percent', parseFloat(e.detail))}
+        this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
@@ -571,42 +571,42 @@ export class IrrigationDialog extends LitElement {
           <md3-text-input
             label="Lights On Time"
             type="time"
-            .value=${this._strategy.lights_on_time}
+            .value=${this._strategy.lightsOnTime}
             @change=${(e: CustomEvent) =>
         this._updateStrategyField(
-          'lights_on_time',
+          'lightsOnTime',
           (e.target as HTMLInputElement).value || e.detail
         )}
           ></md3-text-input>
 
           <md3-number-input
             label="P0 Duration (min)"
-            .value=${this._strategy.p0_duration_minutes}
+            .value=${this._strategy.p0DurationMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('p0_duration_minutes', parseInt(e.detail))}
+        this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="P2 Stop Buffer (min)"
-            .value=${this._strategy.p2_stop_before_lights_off_minutes}
+            .value=${this._strategy.p2StopBeforeLightsOffMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('p2_stop_before_lights_off_minutes', parseInt(e.detail))}
+        this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
 
           <md3-number-input
             label="Shot Duration (sec)"
-            .value=${this._strategy.shot_duration_seconds}
+            .value=${this._strategy.shotDurationSeconds}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shot_duration_seconds', parseInt(e.detail))}
+        this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Shot Interval (min)"
-            .value=${this._strategy.shot_interval_minutes}
+            .value=${this._strategy.shotIntervalMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shot_interval_minutes', parseInt(e.detail))}
+        this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
           ></md3-number-input>
         </div>
       </div>
@@ -621,7 +621,7 @@ export class IrrigationDialog extends LitElement {
     color: string
   ) {
     const addingTime =
-      type === 'irrigation' ? this._adding_irrigation_time : this._adding_drain_time;
+      type === 'irrigation' ? this._addingIrrigationTime : this._addingDrainTime;
 
     return html`
       <div class="detail-card">
@@ -706,8 +706,8 @@ export class IrrigationDialog extends LitElement {
                 class="overlay-backdrop"
                 @click=${() =>
             type === 'irrigation'
-              ? (this._adding_irrigation_time = undefined)
-              : (this._adding_drain_time = undefined)}
+              ? (this._addingIrrigationTime = undefined)
+              : (this._addingDrainTime = undefined)}
               >
                 <div
                   class="detail-card"
@@ -722,13 +722,13 @@ export class IrrigationDialog extends LitElement {
                     .value=${addingTime.time}
                     @change=${(e: CustomEvent) => {
             const val = (e.target as HTMLInputElement).value || e.detail; // md3-text-input uses detail
-            if (type === 'irrigation' && this._adding_irrigation_time)
-              this._adding_irrigation_time = {
-                ...this._adding_irrigation_time,
+            if (type === 'irrigation' && this._addingIrrigationTime)
+              this._addingIrrigationTime = {
+                ...this._addingIrrigationTime,
                 time: val,
               };
-            if (type === 'drain' && this._adding_drain_time)
-              this._adding_drain_time = { ...this._adding_drain_time, time: val };
+            if (type === 'drain' && this._addingDrainTime)
+              this._addingDrainTime = { ...this._addingDrainTime, time: val };
           }}
                   ></md3-text-input>
 
@@ -740,13 +740,13 @@ export class IrrigationDialog extends LitElement {
             console.log('DEBUG: Duration Change', e.detail);
             const val = parseInt(e.detail);
             if (!isNaN(val)) {
-              if (type === 'irrigation' && this._adding_irrigation_time)
-                this._adding_irrigation_time = {
-                  ...this._adding_irrigation_time,
+              if (type === 'irrigation' && this._addingIrrigationTime)
+                this._addingIrrigationTime = {
+                  ...this._addingIrrigationTime,
                   duration: val,
                 };
-              if (type === 'drain' && this._adding_drain_time)
-                this._adding_drain_time = { ...this._adding_drain_time, duration: val };
+              if (type === 'drain' && this._addingDrainTime)
+                this._addingDrainTime = { ...this._addingDrainTime, duration: val };
             }
           }}
                   ></md3-number-input>
@@ -756,8 +756,8 @@ export class IrrigationDialog extends LitElement {
                       class="md3-button tonal"
                       @click=${() =>
             type === 'irrigation'
-              ? (this._adding_irrigation_time = undefined)
-              : (this._adding_drain_time = undefined)}
+              ? (this._addingIrrigationTime = undefined)
+              : (this._addingDrainTime = undefined)}
                     >
                       Cancel
                     </button>

@@ -11,7 +11,7 @@ describe('DataStore', () => {
     it('should set devices and rebuild plant map', () => {
         const devices = [
             {
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [
                     { attributes: { plant_id: 'p1' }, entity_id: 'sensor.p1' },
                     { attributes: {}, entity_id: 'sensor.p2' } // Fallback to entity_id
@@ -177,7 +177,7 @@ describe('DataStore', () => {
     });
 
     it('should skip devices with no plants in setDevices', () => {
-        const devices = [{ device_id: 'd1', plants: null }] as any[];
+        const devices = [{ deviceId: 'd1', plants: null }] as any[];
         store.setDevices(devices);
         expect(store.$devices.get()).toEqual(devices);
         expect(store.$plantToDeviceMap.get().size).toBe(0);
@@ -384,7 +384,7 @@ describe('DataStore', () => {
         it('should handle plant_id from attributes case in setDevices', () => {
             const devices = [
                 {
-                    device_id: 'd100',
+                    deviceId: 'd100',
                     plants: [
                         { variables: {}, attributes: { plant_id: 'p100' }, entity_id: 'sensor.ignore_me' }
                     ]

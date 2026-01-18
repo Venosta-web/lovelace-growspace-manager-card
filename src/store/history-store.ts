@@ -255,7 +255,7 @@ export class GrowspaceHistoryStore {
         if (!deviceId) return;
 
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.device_id === deviceId);
+        const device = devices.find(d => d.deviceId === deviceId);
         if (!device) return;
 
         const { start, end } = this.calculateTimeRange(range);
@@ -270,8 +270,8 @@ export class GrowspaceHistoryStore {
         const entitiesToFetch = new Set<string>();
 
         // 1. Identify Overview Entity
-        if (device.overview_entity_id) {
-            entitiesToFetch.add(device.overview_entity_id);
+        if (device.overviewEntityId) {
+            entitiesToFetch.add(device.overviewEntityId);
             // Map main overview entity to 'main' for timestamp tracking if needed, 
             // but usually main data is split into metrics. 
             // The controller logic mapped overview_entity_id to 'main' in some places, 
@@ -334,7 +334,7 @@ export class GrowspaceHistoryStore {
         if (!deviceId) return;
 
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.device_id === deviceId);
+        const device = devices.find(d => d.deviceId === deviceId);
         if (!device) return;
 
         const currentTimestamps = this.$lastTimestamps.get();
@@ -356,7 +356,7 @@ export class GrowspaceHistoryStore {
         const entitiesToFetch = new Set<string>();
 
         // Overview
-        if (device.overview_entity_id) {
+        if (device.overviewEntityId) {
             // Logic for overview delta if needed
         }
 
@@ -492,12 +492,17 @@ export class GrowspaceHistoryStore {
     private getEntityIdForMetric(device: GrowspaceDevice, metricKey: string): string | null {
         if (metricKey === 'optimal') {
             let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-            if (device.overview_entity_id) {
-                slug = device.overview_entity_id.replace('sensor.', '');
+            // Fallback to snake_case for backward compatibility/runtime safety
+            const overviewId = device.overviewEntityId || (device as any).overview_entity_id;
+
+            if (overviewId) {
+                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
             }
             let optimalId = `binary_sensor.${slug}_optimal_conditions`;
             if (slug === 'cure') optimalId = `binary_sensor.cure_optimal_curing`;
             else if (slug === 'dry') optimalId = `binary_sensor.dry_optimal_drying`;
+
+            console.log(`[HistoryStore] Resolved Optimal ID for ${device.name}: ${optimalId} (slug: ${slug})`);
             return optimalId;
         }
 
@@ -505,31 +510,53 @@ export class GrowspaceHistoryStore {
         if (!mapping) return null;
 
         if (mapping.source === 'irrigation') {
-            const config = device.irrigation_config as unknown as Record<string, unknown>;
-            const entityId = config?.[mapping.primary];
+            // Handle both camelCase and snake_case for irrigationConfig
+            const config = (device.irrigationConfig || (device as any).irrigation_config) as unknown as Record<string, unknown>;
+            if (!config) return null;
+
+            // Try explicit mapping primary key first
+            let entityId = config[mapping.primary];
+
+            // If not found, try snake_case version of the key if it looks camelCase
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                entityId = config[snakeKey];
+            }
+
             if (typeof entityId === 'string') return entityId;
         }
 
-        const envAttrs = (device.environment_attributes || {}) as Record<string, unknown>;
+        // Default: environment_attributes (handle camelCase and snake_case)
+        const envAttrs = (device.environmentAttributes || (device as any).environment_attributes || {}) as Record<string, unknown>;
         let entityId = envAttrs[mapping.primary] as string | undefined;
 
+        // Try fallback if primary not found
         if (!entityId && mapping.fallback) {
             entityId = envAttrs[mapping.fallback] as string | undefined;
         }
 
-        if (!entityId && metricKey === 'vpd' && device.name) {
-            // Calculated VPD fallback logic could go here if Hass state access available.
-            // DataService can check states if needed, but for now we skip complex calculated logic 
-            // unless strictly required. The controller had access to this.host.hass.states.
-            // We can access this.dataService.hass.states.
+        // Try snake_case mapping if not found
+        if (!entityId && /[A-Z]/.test(mapping.primary)) {
+            const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            entityId = envAttrs[snakeKey] as string | undefined;
+        }
 
-            if (this.dataService.hass) {
-                const slugify = (text: string) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
-                const calcName = `${device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                if (this.dataService.hass.states[calculatedId]) {
-                    entityId = calculatedId;
-                }
+        // Special fallback for VPD calculated sensor
+        if (!entityId && metricKey === 'vpd' && device.name) {
+            const slugify = (text: string) =>
+                text
+                    .toString()
+                    .toLowerCase()
+                    .replace(/\s+/g, '_')
+                    .replace(/[^\w\-]+/g, '')
+                    .replace(/\-\-+/g, '_')
+                    .replace(/^-+/, '')
+                    .replace(/-+$/, '');
+
+            const calcName = `${device.name} Calculated VPD`;
+            const calculatedId = `sensor.${slugify(calcName)}`;
+            if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
+                entityId = calculatedId;
             }
         }
 

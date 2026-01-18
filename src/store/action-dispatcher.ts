@@ -53,8 +53,8 @@ export class ActionDispatcher {
     };
 
     public readonly growspace = {
-        add: (detail: any) => strainActions.addGrowspace(this.ctx, detail.name, detail.rows, detail.plants_per_row, detail.notification_service),
-        update: (detail: any) => strainActions.updateGrowspace(this.ctx, detail.growspace_id, detail.name, detail.rows, detail.plants_per_row),
+        add: (detail: any) => strainActions.addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
+        update: (detail: any) => strainActions.updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
         remove: (id: string) => strainActions.removeGrowspace(this.ctx, id)
     };
 

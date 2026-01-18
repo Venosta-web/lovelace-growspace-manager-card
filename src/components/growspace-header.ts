@@ -117,7 +117,7 @@ export class GrowspaceHeader extends LitElement {
 
   private _shouldUpdateMetrics(): boolean {
     const args = [
-      this.device?.device_id,
+      this.device?.deviceId,
       this.activeEnvGraphs,
       this._linkedGraphGroupsController?.value
     ];
@@ -176,7 +176,7 @@ export class GrowspaceHeader extends LitElement {
     if (!this.device || !this.hass) return html``;
 
     const devices = this._devicesController?.value || [];
-    const deviceId = this.device.device_id;
+    const deviceId = this.device.deviceId;
 
     // Split chips into Hero and Secondary sets (Restoring original logic)
     const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
@@ -209,7 +209,7 @@ export class GrowspaceHeader extends LitElement {
                             .value=${deviceId}
                             @change=${this._handleDeviceChange}
                         >
-                            ${devices.map(d => html`<option value="${d.device_id}">${d.name}</option>`)}
+                            ${devices.map(d => html`<option value="${d.deviceId}">${d.name}</option>`)}
                         </select>
                     </div>`
         : html`<h1 class="gs-title">${this.device.name}</h1>`

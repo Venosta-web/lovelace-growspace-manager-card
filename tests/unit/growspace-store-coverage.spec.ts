@@ -222,12 +222,12 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should track environment sensor entities', async () => {
             // 1. Mock DataService to return a device with env attributes
             const mockDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 name: 'D1',
                 plants: [],
-                environment_attributes: {
-                    temperature_sensor: 'sensor.temp',
-                    humidity_sensor: 'sensor.hum',
+                environmentAttributes: {
+                    temperatureSensor: 'sensor.temp',
+                    humiditySensor: 'sensor.hum',
                     simple_value: 123
                 }
             }];
@@ -254,7 +254,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should skip update if watched entities have not changed', () => {
             // Setup initial state with watched entity
             const mockDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ entity_id: 'sensor.plant1', attributes: { plant_id: 'p1' } } as any],
             }];
             (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
@@ -282,7 +282,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should proceed with update if watched entity changed', () => {
             // Setup
             const mockDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ entity_id: 'sensor.plant1', attributes: { plant_id: 'p1' } } as any],
             }];
             (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
@@ -584,9 +584,9 @@ describe('GrowspaceStore Branch Coverage', () => {
                 // 0,1 empty
             ];
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 rows: 2,
-                plants_per_row: 2,
+                plantsPerRow: 2,
                 plants
             }]);
 
@@ -784,7 +784,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
         it('should handle handleDeletePlant with non-existent plant', async () => {
             (dataStore.$devices.get as any).mockReturnValue([
-                { device_id: 'd1', plants: [] }
+                { deviceId: 'd1', plants: [] }
             ]);
             await store.handleDeletePlant('p-missing');
             expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p-missing');
@@ -793,7 +793,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('confirmAddPlants should handle devices with undefined plants array', async () => {
             // Mock devices with missing plants array
             (dataStore.$devices.get as any).mockReturnValue([
-                { device_id: 'd1', plants: undefined }
+                { deviceId: 'd1', plants: undefined }
             ]);
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
 
@@ -904,14 +904,14 @@ describe('GrowspaceStore Branch Coverage', () => {
 
     describe('Deep Branch Coverage', () => {
         it('should handle selectAllPlants with missing device data', () => {
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd2' }]); // mismatch
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd2' }]); // mismatch
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             store.selectAllPlants();
             expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
         });
 
         it('should handle selectAllPlants with undefined plants array', () => {
-            const device = { device_id: 'd1', plants: undefined };
+            const device = { deviceId: 'd1', plants: undefined };
             (dataStore.$devices.get as any).mockReturnValue([device]);
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             store.selectAllPlants();
@@ -1031,7 +1031,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should handle confirmAddPlants with missing plant_id in existing plants', async () => {
             // Mock devices with missing plants array
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ attributes: { plant_id: null } }] // Plant without ID
             }]);
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
@@ -1046,7 +1046,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should handle confirmAddPlants where added plant misses ID', async () => {
             // This covers the logic where we filter out invalid IDs from the "addedIds" list logic
             // Setup:
-            const beforeDevices = [{ device_id: 'd1', plants: [] }];
+            const beforeDevices = [{ deviceId: 'd1', plants: [] }];
 
             // Mock sequence of device states
             const getMock = dataStore.$devices.get as any;
@@ -1054,7 +1054,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
             // After refresh, return a plant with no ID (simulating failure or weird state)
             const afterDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ attributes: { plant_id: null } }]
             }];
             getMock.mockReturnValueOnce(afterDevices); // Second read check

@@ -260,7 +260,7 @@ describe('plant-actions', () => {
             // Mock plants to be restored
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
-                    device_id: 'growspace1',
+                    deviceId: 'growspace1',
                     plants: [{
                         attributes: { plant_id: 'plant1', strain: 'Restored Strain', row: 1, col: 1 }
                     }]
@@ -282,7 +282,7 @@ describe('plant-actions', () => {
         });
         it('should handle deletion of non-existent plant (graceful handling)', async () => {
             (ctx.data.$devices.get as any).mockReturnValue([
-                { device_id: 'gs1', plants: [] }
+                { deviceId: 'gs1', plants: [] }
             ]);
 
             await handleDeletePlant(ctx, 'non_existent');
@@ -297,9 +297,32 @@ describe('plant-actions', () => {
         });
 
         it('should handle deletion when device plants array is undefined', async () => {
-            (ctx.data.$devices.get as any).mockReturnValue([{ device_id: 'gs1' }]); // No plants property
+            (ctx.data.$devices.get as any).mockReturnValue([{ deviceId: 'gs1' }]); // No plants property
             await handleDeletePlant(ctx, 'any');
             expect(mockDataService.removePlant).toHaveBeenCalledWith('any');
+            expect(mockDataService.removePlant).toHaveBeenCalledWith('any');
+        });
+
+        it('should handle deletion when plant_id is missing (use entity_id match)', async () => {
+            const devices = [
+                {
+                    deviceId: 'gs1',
+                    plants: [
+                        {
+                            attributes: { plant_id: '', strain: 'NoID Plant', growspace_id: 'gs1' },
+                            entity_id: 'sensor.noid_plant'
+                        }
+                    ]
+                }
+            ];
+            (ctx.data.$devices.get as any).mockReturnValue(devices);
+
+            // 'noid_plant' matches result of entity_id.replace('sensor.', '') which is 'noid_plant'
+            await handleDeletePlant(ctx, 'noid_plant');
+
+            // Verify correct ID was passed to removePlant (the passed ID is matched against entity)
+            expect(mockDataService.removePlant).toHaveBeenCalledWith('noid_plant');
+            expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
         });
     });
 
@@ -543,7 +566,7 @@ describe('plant-actions', () => {
 
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
-                    device_id: 'gs1',
+                    deviceId: 'gs1',
                     grid: {
                         'pos1': { plant_id: 'test123', row: 1, col: 1 },
                         'pos2': { plant_id: 'target456', row: 2, col: 2 }
@@ -605,7 +628,7 @@ describe('plant-actions', () => {
             });
 
             (ctx.dataService.swapPlants as any).mockResolvedValue(true);
-            (ctx.data.$devices.get as any).mockReturnValue([{ device_id: 'gs1', grid: mockGrid }]);
+            (ctx.data.$devices.get as any).mockReturnValue([{ deviceId: 'gs1', grid: mockGrid }]);
 
             const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1', plant_id: 'test123' } };
             const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1', plant_id: 'target456' } };
@@ -629,7 +652,7 @@ describe('plant-actions', () => {
 
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
-                    device_id: 'gs1',
+                    deviceId: 'gs1',
                     grid: {
                         'pos1': { plant_id: 'test123', row: 1, col: 1 },
                         'pos2': { plant_id: 'target456', row: 1, col: 1 }
@@ -702,7 +725,7 @@ describe('plant-actions', () => {
             const targetWithInvalidGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'invalid_gs' } };
 
             (ctx.data.$devices.get as any).mockReturnValue([
-                { device_id: 'gs1', grid: {} }
+                { deviceId: 'gs1', grid: {} }
             ]);
             ctx.data.updateWsDataCacheGrid = vi.fn();
 
@@ -720,7 +743,7 @@ describe('plant-actions', () => {
 
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
-                    device_id: 'gs1',
+                    deviceId: 'gs1',
                     grid: {
                         'pos1': { plant_id: 'test123', row: 1, col: 1 },
                         'pos2': null, // Null entry to cover line 323
@@ -740,6 +763,45 @@ describe('plant-actions', () => {
             // Actually, we already have a test for swap, so let's just ensure line 323 is hit.
             await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
             expect(ctx.data.updateWsDataCacheGrid).toHaveBeenCalled();
+        });
+
+        it('should handle grid items with missing plant_id (fallback to entity_id in updateGridLogic)', async () => {
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1', plant_id: 'source_pid' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1', plant_id: 'target_pid' } };
+
+            // Grid items have empty plant_id but valid entity_id
+            // The logic being tested is: const pId = plant.plant_id || plant.entity_id.replace('sensor.', '');
+            const mockGrid = {
+                'pos1': { plant_id: '', entity_id: 'sensor.source_pid', row: 1, col: 1 },
+                'pos2': { plant_id: '', entity_id: 'sensor.target_pid', row: 2, col: 2 }
+            };
+
+            (ctx.data.$devices.get as any).mockReturnValue([
+                { deviceId: 'gs1', grid: mockGrid }
+            ]);
+
+            // We need to ensure the callback is executed so that the loop runs
+            // updateWsDataCacheGrid mock implementation needs to actually call the callback
+            (ctx.data.updateWsDataCacheGrid as any).mockImplementation((_id: string, callback: any) => {
+                callback(mockGrid);
+            });
+
+            await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
+
+            // If the fallback worked, the source_pid (from entity) would match sourceId, setting sourceKey
+            // And then sData would be found and updated.
+
+            // After swap:
+            // 'pos1' key now holds the Target Plant (moved to source position: 1,1)
+            // 'pos2' key now holds the Source Plant (moved to target position: 2,2)
+
+            expect(mockGrid['pos1'].row).toBe(1);
+            expect(mockGrid['pos1'].col).toBe(1);
+            expect(mockGrid['pos1'].entity_id).toBe('sensor.target_pid');
+
+            expect(mockGrid['pos2'].row).toBe(2);
+            expect(mockGrid['pos2'].col).toBe(2);
+            expect(mockGrid['pos2'].entity_id).toBe('sensor.source_pid');
         });
     });
 
@@ -878,7 +940,7 @@ describe('plant-actions', () => {
             };
             (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
             (ctx.data.$devices.get as any).mockReturnValue([
-                { device_id: 'growspace1', plants: [] }
+                { deviceId: 'growspace1', plants: [] }
             ]);
 
             // Mock subsequent devices call to simulate added plants
@@ -889,8 +951,8 @@ describe('plant-actions', () => {
             ];
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Before
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: mockAddedPlants }]); // After
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [] }]) // Before
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: mockAddedPlants }]); // After
 
 
             await confirmAddPlants(ctx, detail);
@@ -981,8 +1043,8 @@ describe('plant-actions', () => {
             const mockAddedPlants = [{ attributes: { plant_id: 'p1' } }];
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }])
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: mockAddedPlants }]);
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [] }])
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: mockAddedPlants }]);
 
             await confirmAddPlants(ctx, { count: 1 });
 
@@ -1006,10 +1068,10 @@ describe('plant-actions', () => {
             (ctx.data.$devices.get as any).mockReset();
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Initial state (Before)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]) // Initial state (After)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [] }]) // Redo state (Before)
-                .mockReturnValueOnce([{ device_id: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]); // Redo state (After)
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [] }]) // Initial state (Before)
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]) // Initial state (After)
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [] }]) // Redo state (Before)
+                .mockReturnValueOnce([{ deviceId: 'growspace1', plants: [{ attributes: { plant_id: 'p1' } }] }]); // Redo state (After)
 
             await confirmAddPlants(ctx, { count: 1 });
 
@@ -1029,8 +1091,8 @@ describe('plant-actions', () => {
             const newPlant = { attributes: { plant_id: 'new1' } };
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'gs1', plants: [existingPlant] }]) // Before
-                .mockReturnValueOnce([{ device_id: 'gs1', plants: [existingPlant, newPlant] }]); // After
+                .mockReturnValueOnce([{ deviceId: 'gs1', plants: [existingPlant] }]) // Before
+                .mockReturnValueOnce([{ deviceId: 'gs1', plants: [existingPlant, newPlant] }]); // After
 
             await confirmAddPlants(ctx, detail);
 
@@ -1044,8 +1106,8 @@ describe('plant-actions', () => {
             (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'gs1' }]) // Before: plants undefined
-                .mockReturnValueOnce([{ device_id: 'gs1', plants: [{ attributes: { plant_id: 'new1' } }] }]); // After
+                .mockReturnValueOnce([{ deviceId: 'gs1' }]) // Before: plants undefined
+                .mockReturnValueOnce([{ deviceId: 'gs1', plants: [{ attributes: { plant_id: 'new1' } }] }]); // After
 
             await confirmAddPlants(ctx, detail);
 
@@ -1060,8 +1122,8 @@ describe('plant-actions', () => {
             const existingPlant = { attributes: { plant_id: 'p1' } };
 
             (ctx.data.$devices.get as any)
-                .mockReturnValueOnce([{ device_id: 'gs1', plants: [existingPlant] }]) // Before
-                .mockReturnValueOnce([{ device_id: 'gs1', plants: [existingPlant] }]); // After (No change)
+                .mockReturnValueOnce([{ deviceId: 'gs1', plants: [existingPlant] }]) // Before
+                .mockReturnValueOnce([{ deviceId: 'gs1', plants: [existingPlant] }]); // After (No change)
 
             await confirmAddPlants(ctx, detail);
 

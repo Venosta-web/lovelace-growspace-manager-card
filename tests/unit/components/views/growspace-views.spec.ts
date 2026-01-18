@@ -117,7 +117,7 @@ describe('Growspace Views', () => {
 
         beforeEach(() => {
             element = new GrowspaceViewHeader();
-            element.device = { device_id: 'd1' } as any;
+            element.device = { deviceId: 'd1' } as any;
         });
 
         it('should render growspace-header', async () => {
@@ -199,7 +199,7 @@ describe('Growspace Views', () => {
 
         beforeEach(() => {
             element = new GrowspaceViewStandard();
-            element.device = { device_id: 'd1' } as any;
+            element.device = { deviceId: 'd1' } as any;
         });
 
         it('should render header, analytics and grid', async () => {

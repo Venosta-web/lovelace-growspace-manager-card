@@ -90,8 +90,8 @@ export async function addGrowspace(
         await ctx.dataService.addGrowspace({
             name,
             rows,
-            plants_per_row: plantsPerRow,
-            notification_service: notificationService,
+            plantsPerRow: plantsPerRow,
+            notificationService: notificationService,
         });
         ctx.showToast('Growspace added successfully!', 'success');
         await ctx.refreshData();
@@ -116,7 +116,7 @@ export async function updateGrowspace(
     try {
         // Optimistic update for immediate UI feedback
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
 
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
@@ -124,16 +124,16 @@ export async function updateGrowspace(
             newDevices[deviceIdx] = {
                 ...newDevices[deviceIdx],
                 rows,
-                plants_per_row: plantsPerRow
+                plantsPerRow: plantsPerRow
             };
             ctx.data.$devices.set(newDevices);
         }
 
         await ctx.dataService.updateGrowspace({
-            growspace_id: growspaceId,
+            growspaceId: growspaceId,
             name,
             rows,
-            plants_per_row: plantsPerRow,
+            plantsPerRow: plantsPerRow,
         });
         ctx.showToast('Growspace updated successfully', 'success');
         await ctx.refreshData();

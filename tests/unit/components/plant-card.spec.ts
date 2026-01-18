@@ -467,7 +467,7 @@ describe('PlantCard', () => {
         });
 
         it('should return false if no preset matches current stage', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Test' }]);
             mockStore.data.$nutrientPresets.set({
                 'flower1': { id: 'flower1', stage: 'flower', nutrients: [] }
             });
@@ -480,7 +480,7 @@ describe('PlantCard', () => {
         });
 
         it('should return false if stage matches but min_days_in_stage not met', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Test' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 20, nutrients: [] }
             });
@@ -495,7 +495,7 @@ describe('PlantCard', () => {
         });
 
         it('should return true if preset matches stage with no min_days requirement', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Test' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg_basic': { id: 'veg_basic', stage: 'veg', nutrients: [] }
             });
@@ -510,7 +510,7 @@ describe('PlantCard', () => {
         });
 
         it('should return true if preset matches stage and min_days_in_stage is met', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Test' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 10, nutrients: [] }
             });
@@ -525,7 +525,7 @@ describe('PlantCard', () => {
         });
 
         it('should handle missing days_in_stage attribute (defaults to 0)', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Test' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Test' }]);
             mockStore.data.$nutrientPresets.set({
                 'veg_late': { id: 'veg_late', stage: 'veg', min_days_in_stage: 1, nutrients: [] }
             });
@@ -602,7 +602,7 @@ describe('PlantCard', () => {
         });
 
         it('should render star icon when _hasRecommendedPreset is true', async () => {
-            mockStore.data.$devices.set([{ device_id: 'gs1', name: 'Grow 1' }]);
+            mockStore.data.$devices.set([{ deviceId: 'gs1', name: 'Grow 1' }]);
             mockStore.data.$nutrientPresets.set({ 'p1': { id: 'p1', stage: 'veg', nutrients: [] } });
             element.plant = { attributes: { growspace_id: 'gs1', stage: 'veg' } } as any;
 

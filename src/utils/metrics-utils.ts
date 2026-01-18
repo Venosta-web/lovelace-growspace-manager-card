@@ -95,8 +95,8 @@ export class MetricsUtils {
 
         // Fetch Environmental Data
         let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overview_entity_id) {
-            slug = device.overview_entity_id.replace('sensor.', '').replace(/_overview$/, '');
+        if (device.overviewEntityId) {
+            slug = device.overviewEntityId.replace('sensor.', '').replace(/_overview$/, '');
         }
 
         let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
@@ -110,11 +110,11 @@ export class MetricsUtils {
         }
 
         const envEntity = hass.states[envEntityId];
-        const overviewEntity = device.overview_entity_id
-            ? hass.states[device.overview_entity_id]
+        const overviewEntity = device.overviewEntityId
+            ? hass.states[device.overviewEntityId]
             : undefined;
         const envAttrs =
-            device.environment_attributes || overviewEntity?.attributes || ({} as any);
+            device.environmentAttributes || overviewEntity?.attributes || ({} as any);
 
         const temp = this._getAttributeValue(envEntity, 'temperature');
         const hum = this._getAttributeValue(envEntity, 'humidity');
@@ -122,8 +122,8 @@ export class MetricsUtils {
 
         // VPD Fallback Logic
         if (vpd === undefined || vpd === null) {
-            if (envAttrs.vpd_sensor) {
-                const vpdState = hass.states[envAttrs.vpd_sensor];
+            if (envAttrs.vpdSensor) {
+                const vpdState = hass.states[envAttrs.vpdSensor];
                 if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val)) vpd = val;
@@ -148,7 +148,7 @@ export class MetricsUtils {
 
                 // 2. Try UUID-based ID (Old Legacy)
                 if (!vpdState || vpdState.state === EntityState.UNKNOWN || vpdState.state === EntityState.UNAVAILABLE) {
-                    const oldId = `sensor.${device.device_id}_calculated_vpd`;
+                    const oldId = `sensor.${device.deviceId}_calculated_vpd`;
                     const oldState = hass.states[oldId];
                     if (oldState && oldState.state !== EntityState.UNKNOWN && oldState.state !== EntityState.UNAVAILABLE) {
                         vpdState = oldState;
@@ -209,8 +209,8 @@ export class MetricsUtils {
             return upcoming ? upcoming.toFormat('HH:mm') : undefined;
         };
 
-        const nextIrrigation = getNextEvent(device.irrigation_config?.irrigation_times);
-        const nextDrain = getNextEvent(device.irrigation_config?.drain_times);
+        const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
+        const nextDrain = getNextEvent(device.irrigationConfig?.drainTimes);
 
         // Build Chips
         const createChipData = (
@@ -325,32 +325,32 @@ export class MetricsUtils {
         };
 
         const exhaustState = getAggregateState(
-            envAttrs.exhaust_entity,
-            envAttrs.exhaust_fan_entities,
-            envAttrs.exhaust_sensor
+            envAttrs.exhaustEntity,
+            envAttrs.exhaustFanEntities,
+            envAttrs.exhaustSensor
         );
 
         const humidifierState = getAggregateState(
-            envAttrs.humidifier_entity,
-            envAttrs.humidifier_entities,
-            envAttrs.humidifier_sensor
+            envAttrs.humidifierEntity,
+            envAttrs.humidifierEntities,
+            envAttrs.humidifierSensor
         );
 
         const dehumidifierState = getAggregateState(
-            envAttrs.dehumidifier_entity,
-            envAttrs.dehumidifier_entities,
+            envAttrs.dehumidifierEntity,
+            envAttrs.dehumidifierEntities,
             undefined
         );
 
         const circulationFanState = getAggregateState(
-            envAttrs.circulation_fan_entity,
-            envAttrs.circulation_fan_entities,
+            envAttrs.circulationFanEntity,
+            envAttrs.circulationFanEntities,
             undefined
         );
 
         const lightState = getAggregateState(
-            envAttrs.light_sensor,
-            envAttrs.light_sensors,
+            envAttrs.lightSensor,
+            envAttrs.lightSensors,
             undefined
         );
 

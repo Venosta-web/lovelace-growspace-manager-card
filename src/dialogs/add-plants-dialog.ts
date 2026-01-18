@@ -117,7 +117,7 @@ export class AddPlantsDialog extends LitElement {
 
   private _confirm() {
     if (this.growspaceDevice) {
-      const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plants_per_row || 0);
+      const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
       const occupied = this.growspaceDevice.plants?.length || 0;
       const free = Math.max(0, totalSlots - occupied);
 

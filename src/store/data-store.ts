@@ -56,7 +56,7 @@ export class GrowspaceDataStore {
             if (!device.plants) continue;
             for (const plant of device.plants) {
                 const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-                map.set(plantId, device.device_id);
+                map.set(plantId, device.deviceId);
             }
         }
         this.$plantToDeviceMap.set(map);

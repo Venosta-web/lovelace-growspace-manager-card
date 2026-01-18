@@ -52,33 +52,33 @@ customElements.define('ha-dialog', HaDialogMock);
 describe('IrrigationDialog', () => {
     let element: IrrigationDialog;
     const mockDevice: GrowspaceDevice = {
-        device_id: 'gs1',
+        deviceId: 'gs1',
         name: 'Growspace 1',
         type: GrowspaceType.NORMAL,
         rows: 4,
-        plants_per_row: 4,
+        plantsPerRow: 4,
         plants: [],
         grid: {},
-        biological_metrics: {} as any,
-        environment_attributes: {} as any,
+        biologicalMetrics: {} as any,
+        environmentAttributes: {} as any,
         stats: {} as any,
-        irrigation_config: {
-            irrigation_pump_entity: 'switch.pump',
-            drain_pump_entity: 'switch.drain',
-            irrigation_duration: 60,
-            drain_duration: 60,
-            irrigation_times: [{ time: '08:00', duration: 60 }],
-            drain_times: [{ time: '08:30', duration: 60 }]
+        irrigationConfig: {
+            irrigationPumpEntity: 'switch.pump',
+            drainPumpEntity: 'switch.drain',
+            irrigationDuration: 60,
+            drainDuration: 60,
+            irrigationTimes: [{ time: '08:00', duration: 60 }],
+            drainTimes: [{ time: '08:30', duration: 60 }]
         },
-        irrigation_strategy: {
+        irrigationStrategy: {
             enabled: false,
-            lights_on_time: '06:00',
-            p0_duration_minutes: 60,
-            p2_stop_before_lights_off_minutes: 120,
-            target_vwc_percent: 45,
-            maintenance_dryback_percent: 3,
-            shot_duration_seconds: 15,
-            shot_interval_minutes: 15
+            lightsOnTime: '06:00',
+            p0DurationMinutes: 60,
+            p2StopBeforeLightsOffMinutes: 120,
+            targetVwcPercent: 45,
+            maintenanceDrybackPercent: 3,
+            shotDurationSeconds: 15,
+            shotIntervalMinutes: 15
         }
     };
 
@@ -158,7 +158,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspace_id: 'gs1',
+                growspaceId: 'gs1',
                 time: '12:00',
                 duration: 120
             }));
@@ -177,7 +177,7 @@ describe('IrrigationDialog', () => {
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspace_id: 'gs1',
+                growspaceId: 'gs1',
                 time: '08:00'
             }));
         });
@@ -218,7 +218,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspace_id: 'gs1',
+                growspaceId: 'gs1',
                 time: '14:00',
                 duration: 45
             }));
@@ -241,7 +241,7 @@ describe('IrrigationDialog', () => {
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mocks.removeDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspace_id: 'gs1',
+                growspaceId: 'gs1',
                 time: '08:30'
             }));
         });
@@ -290,7 +290,7 @@ describe('IrrigationDialog', () => {
             (saveBtn as HTMLElement).click();
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                target_vwc_percent: 55
+                targetVwcPercent: 55
             }));
         });
 
@@ -304,7 +304,7 @@ describe('IrrigationDialog', () => {
             (saveBtn as HTMLElement).click();
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                lights_on_time: '08:00'
+                lightsOnTime: '08:00'
             }));
         });
     });
@@ -434,25 +434,25 @@ describe('IrrigationDialog', () => {
             element.device = undefined;
             (element as any)._initializeState();
             // Should just return safely
-            expect((element as any)._irrigation_times).toEqual([]);
+            expect((element as any)._irrigationTimes).toEqual([]);
         });
 
         it('should initialize state with empty config', () => {
-            element.device = { device_id: '1' } as any;
+            element.device = { deviceId: '1' } as any;
             (element as any)._initializeState();
-            expect((element as any)._irrigation_pump_entity).toBe('');
-            expect((element as any)._irrigation_duration).toBe(60);
+            expect((element as any)._irrigationPumpEntity).toBe('');
+            expect((element as any)._irrigationDuration).toBe(60);
         });
 
         it('should re-initialize state when device property changes', async () => {
             document.body.appendChild(element); // Connect to DOM
             element.device = {
                 ...mockDevice,
-                irrigation_config: { ...mockDevice.irrigation_config, irrigation_duration: 999 }
+                irrigationConfig: { ...mockDevice.irrigationConfig, irrigationDuration: 999 }
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._irrigation_duration).toBe(999);
+            expect((element as any)._irrigationDuration).toBe(999);
         });
 
         it('should create DataService if missing when hass changes', async () => {
@@ -595,12 +595,12 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             const strategyFields = [
-                { label: 'Target VWC (%)', key: 'target_vwc_percent', val: '60', expected: 60 },
-                { label: 'Dryback (%)', key: 'maintenance_dryback_percent', val: '5', expected: 5 },
-                { label: 'P0 Duration (min)', key: 'p0_duration_minutes', val: '30', expected: 30 },
-                { label: 'P2 Stop Buffer (min)', key: 'p2_stop_before_lights_off_minutes', val: '60', expected: 60 },
-                { label: 'Shot Duration (sec)', key: 'shot_duration_seconds', val: '10', expected: 10 },
-                { label: 'Shot Interval (min)', key: 'shot_interval_minutes', val: '20', expected: 20 },
+                { label: 'Target VWC (%)', key: 'targetVwcPercent', val: '60', expected: 60 },
+                { label: 'Dryback (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
+                { label: 'P0 Duration (min)', key: 'p0DurationMinutes', val: '30', expected: 30 },
+                { label: 'P2 Stop Buffer (min)', key: 'p2StopBeforeLightsOffMinutes', val: '60', expected: 60 },
+                { label: 'Shot Duration (sec)', key: 'shotDurationSeconds', val: '10', expected: 10 },
+                { label: 'Shot Interval (min)', key: 'shotIntervalMinutes', val: '20', expected: 20 },
             ];
 
             for (const field of strategyFields) {
@@ -618,12 +618,12 @@ describe('IrrigationDialog', () => {
             saveBtn.click();
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                target_vwc_percent: 60,
-                maintenance_dryback_percent: 5,
-                p0_duration_minutes: 30,
-                p2_stop_before_lights_off_minutes: 60,
-                shot_duration_seconds: 10,
-                shot_interval_minutes: 20
+                targetVwcPercent: 60,
+                maintenanceDrybackPercent: 5,
+                p0DurationMinutes: 30,
+                p2StopBeforeLightsOffMinutes: 60,
+                shotDurationSeconds: 10,
+                shotIntervalMinutes: 20
             }));
         });
     });
@@ -723,8 +723,8 @@ describe('IrrigationDialog', () => {
             durInput.dispatchEvent(new CustomEvent('change', { detail: '15' }));
             await element.updateComplete;
 
-            expect((element as any)._adding_drain_time.time).toBe('13:00');
-            expect((element as any)._adding_drain_time.duration).toBe(15);
+            expect((element as any)._addingDrainTime.time).toBe('13:00');
+            expect((element as any)._addingDrainTime.duration).toBe(15);
         });
 
         it('should parse schedule string with duration and spaces', () => {
@@ -779,7 +779,7 @@ describe('IrrigationDialog', () => {
             dateInput?.dispatchEvent(evt);
             await element.updateComplete;
 
-            expect((element as any)._strategy.lights_on_time).toBe('07:00');
+            expect((element as any)._strategy.lightsOnTime).toBe('07:00');
             document.body.removeChild(element);
         });
 
@@ -815,7 +815,7 @@ describe('IrrigationDialog', () => {
             // trigger click
             (drainTimeBar as HTMLElement).click();
 
-            expect((element as any)._adding_drain_time).toBeDefined();
+            expect((element as any)._addingDrainTime).toBeDefined();
             document.body.removeChild(element);
         });
 
@@ -888,7 +888,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Activate adding mode
-            (element as any)._adding_irrigation_time = { time: '12:00', duration: 60 };
+            (element as any)._addingIrrigationTime = { time: '12:00', duration: 60 };
             await element.updateComplete;
 
             // Find inputs in overlay
@@ -901,7 +901,7 @@ describe('IrrigationDialog', () => {
             Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
             textInput?.dispatchEvent(evt);
 
-            expect((element as any)._adding_irrigation_time.time).toBe('12:30');
+            expect((element as any)._addingIrrigationTime.time).toBe('12:30');
 
             // Test number input with NaN
             const nanEvt = new CustomEvent('change', { detail: 'invalid' });
@@ -910,7 +910,7 @@ describe('IrrigationDialog', () => {
             // Valid change
             const validEvt = new CustomEvent('change', { detail: '120' });
             numInput?.dispatchEvent(validEvt);
-            expect((element as any)._adding_irrigation_time.duration).toBe(120);
+            expect((element as any)._addingIrrigationTime.duration).toBe(120);
 
             document.body.removeChild(element);
         });
@@ -923,7 +923,7 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
 
                 // Activate adding mode
-                (element as any)._adding_drain_time = { time: '12:00', duration: 60 };
+                (element as any)._addingDrainTime = { time: '12:00', duration: 60 };
                 await element.updateComplete;
 
                 // Find inputs in overlay
@@ -936,7 +936,7 @@ describe('IrrigationDialog', () => {
                 Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
                 textInput?.dispatchEvent(evt);
 
-                expect((element as any)._adding_drain_time.time).toBe('12:30');
+                expect((element as any)._addingDrainTime.time).toBe('12:30');
 
                 // Test number input with NaN
                 const nanEvt = new CustomEvent('change', { detail: 'invalid' });
@@ -945,7 +945,7 @@ describe('IrrigationDialog', () => {
                 // Valid change
                 const validEvt = new CustomEvent('change', { detail: '120' });
                 numInput?.dispatchEvent(validEvt);
-                expect((element as any)._adding_drain_time.duration).toBe(120);
+                expect((element as any)._addingDrainTime.duration).toBe(120);
 
                 document.body.removeChild(element);
             });
@@ -955,9 +955,9 @@ describe('IrrigationDialog', () => {
             document.body.appendChild(element);
             const deviceWithMissionDuration = {
                 ...mockDevice,
-                irrigation_config: {
-                    ...mockDevice.irrigation_config!,
-                    irrigation_times: [{ time: '09:00' }] // no duration
+                irrigationConfig: {
+                    ...mockDevice.irrigationConfig!,
+                    irrigationTimes: [{ time: '09:00' }] // no duration
                 }
             };
             element.device = deviceWithMissionDuration as any;
@@ -996,12 +996,12 @@ describe('IrrigationDialog', () => {
         it('should fallback to defaults in _initializeState when strategy fields are missing', async () => {
             element.device = {
                 ...mockDevice,
-                irrigation_strategy: { enabled: true } as any // missing other fields
+                irrigationStrategy: { enabled: true } as any // missing other fields
             };
             (element as any)._initializeState();
 
-            expect((element as any)._strategy.lights_on_time).toBe('06:00:00');
-            expect((element as any)._strategy.p0_duration_minutes).toBe(60);
+            expect((element as any)._strategy.lightsOnTime).toBe('06:00:00');
+            expect((element as any)._strategy.p0DurationMinutes).toBe(60);
         });
 
         it('should handle _updateStrategyField directly', () => {
@@ -1070,7 +1070,7 @@ describe('IrrigationDialog', () => {
             (saveBtn as HTMLElement).click();
 
             expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
-                irrigation_pump_entity: 'switch.pump2'
+                irrigationPumpEntity: 'switch.pump2'
             }));
         });
 
@@ -1088,7 +1088,7 @@ describe('IrrigationDialog', () => {
             (saveBtn as HTMLElement).click();
 
             expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
-                drain_pump_entity: 'input_boolean.valve'
+                drainPumpEntity: 'input_boolean.valve'
             }));
         });
 

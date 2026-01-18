@@ -94,7 +94,7 @@ describe('GrowspaceAnalytics', () => {
         new ContextProvider(wrapper, hassContext, hassMock);
 
         const device = {
-            device_id: 'd1',
+            deviceId: 'd1',
             name: 'Grow Tent',
             sensors: {},
             overview_entity_id: 'sensor.grow_tent_overview'

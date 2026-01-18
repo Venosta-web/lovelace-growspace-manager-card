@@ -93,7 +93,7 @@ describe('API Schemas', () => {
                 rows: 1,
                 plants_per_row: 1,
                 grid: {},
-                irrigation_config: {}
+                irrigationConfig: {}
             };
             const result = validateGrowspaceResponse(validData);
             expect(result.success).toBe(true);

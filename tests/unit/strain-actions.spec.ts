@@ -176,8 +176,8 @@ describe('strain-actions', () => {
                 expect(mockDataService.addGrowspace).toHaveBeenCalledWith({
                     name: 'Flower Room',
                     rows: 4,
-                    plants_per_row: 4,
-                    notification_service: 'mobile_app_notify',
+                    plantsPerRow: 4,
+                    notificationService: 'mobile_app_notify',
                 });
                 expect(ctx.refreshData).toHaveBeenCalled();
                 expect(ctx.closeDialog).toHaveBeenCalled();
@@ -190,8 +190,8 @@ describe('strain-actions', () => {
                 expect(mockDataService.addGrowspace).toHaveBeenCalledWith({
                     name: 'Veg Tent',
                     rows: 6,
-                    plants_per_row: 8,
-                    notification_service: 'custom_notify',
+                    plantsPerRow: 8,
+                    notificationService: 'custom_notify',
                 });
             });
 
@@ -218,10 +218,10 @@ describe('strain-actions', () => {
 
                 expect(result).toBe(true);
                 expect(mockDataService.updateGrowspace).toHaveBeenCalledWith({
-                    growspace_id: 'gs123',
+                    growspaceId: 'gs123',
                     name: 'Updated Name',
                     rows: 5,
-                    plants_per_row: 6,
+                    plantsPerRow: 6,
                 });
                 expect(ctx.showToast).toHaveBeenCalledWith('Growspace updated successfully', 'success');
                 expect(ctx.refreshData).toHaveBeenCalled();
@@ -230,16 +230,16 @@ describe('strain-actions', () => {
 
             it('should perform optimistic update', async () => {
                 // Mock existing devices
-                const devices = [{ device_id: 'gs123', rows: 4, plants_per_row: 4 }];
+                const devices = [{ deviceId: 'gs123', rows: 4, plantsPerRow: 4 }];
                 (ctx.data.$devices.get as any).mockReturnValue(devices);
 
                 await updateGrowspace(ctx, 'gs123', 'Updated Name', 5, 6);
 
                 expect(ctx.data.$devices.set).toHaveBeenCalledWith(expect.arrayContaining([
                     expect.objectContaining({
-                        device_id: 'gs123',
+                        deviceId: 'gs123',
                         rows: 5,
-                        plants_per_row: 6
+                        plantsPerRow: 6
                     })
                 ]));
             });

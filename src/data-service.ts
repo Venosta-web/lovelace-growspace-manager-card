@@ -94,46 +94,46 @@ export class DataService {
   addGrowspace = (data: {
     name: string;
     rows: number;
-    plants_per_row: number;
-    notification_service?: string;
+    plantsPerRow: number;
+    notificationService?: string;
   }) => this._growspaceAPI.addGrowspace(data);
 
   updateGrowspace = (data: {
-    growspace_id: string;
+    growspaceId: string;
     name?: string;
     rows?: number;
-    plants_per_row?: number;
-    notification_service?: string;
+    plantsPerRow?: number;
+    notificationService?: string;
   }) => this._growspaceAPI.updateGrowspace(data);
 
   removeGrowspace = (growspaceId: string) => this._growspaceAPI.removeGrowspace(growspaceId);
 
   configureEnvironment = (data: {
-    growspace_id: string;
-    temperature_sensor: string;
-    humidity_sensor: string;
-    vpd_sensor?: string;
-    co2_sensor?: string;
-    circulation_fan_entity?: string;
-    circulation_fan_entities?: string[];
-    stress_threshold?: number;
-    mold_threshold?: number;
-    light_sensor?: string;
-    light_sensors?: string[];
-    exhaust_entity?: string;
-    exhaust_fan_entities?: string[];
-    humidifier_entity?: string;
-    humidifier_entities?: string[];
-    dehumidifier_entity?: string;
-    dehumidifier_entities?: string[];
-    dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-    soil_moisture_sensor?: string;
-    control_dehumidifier?: boolean;
-    veg_day_hours?: number;
-    flower_early_day_hours?: number;
-    flower_mid_day_hours?: number;
-    flower_late_day_hours?: number;
-    minimum_source_air_temperature?: number;
+    growspaceId: string;
+    temperatureSensor: string;
+    humiditySensor: string;
+    vpdSensor?: string;
+    co2Sensor?: string;
+    circulationFanEntity?: string;
+    circulationFanEntities?: string[];
+    stressThreshold?: number;
+    moldThreshold?: number;
+    lightSensor?: string;
+    lightSensors?: string[];
+    exhaustEntity?: string;
+    exhaustFanEntities?: string[];
+    humidifierEntity?: string;
+    humidifierEntities?: string[];
+    dehumidifierEntity?: string;
+    dehumidifierEntities?: string[];
+    dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+    soilMoistureSensor?: string;
+    controlDehumidifier?: boolean;
+    vegDayHours?: number;
+    flowerEarlyDayHours?: number;
+    flowerMidDayHours?: number;
+    flowerLateDayHours?: number;
+    minimumSourceAirTemperature?: number;
   }) => this._growspaceAPI.configureEnvironment(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
@@ -310,23 +310,23 @@ export class DataService {
   // ========================================
 
   setIrrigationSettings = (params: {
-    growspace_id: string;
-    irrigation_pump_entity: string;
-    drain_pump_entity: string;
-    irrigation_duration: number;
-    drain_duration: number;
+    growspaceId: string;
+    irrigationPumpEntity: string;
+    drainPumpEntity: string;
+    irrigationDuration: number;
+    drainDuration: number;
   }) => this._irrigationAPI.setIrrigationSettings(params);
 
-  addIrrigationTime = (params: { growspace_id: string; time: string; duration?: number }) =>
+  addIrrigationTime = (params: { growspaceId: string; time: string; duration?: number }) =>
     this._irrigationAPI.addIrrigationTime(params);
 
-  removeIrrigationTime = (params: { growspace_id: string; time: string }) =>
+  removeIrrigationTime = (params: { growspaceId: string; time: string }) =>
     this._irrigationAPI.removeIrrigationTime(params);
 
-  addDrainTime = (params: { growspace_id: string; time: string; duration?: number }) =>
+  addDrainTime = (params: { growspaceId: string; time: string; duration?: number }) =>
     this._irrigationAPI.addDrainTime(params);
 
-  removeDrainTime = (params: { growspace_id: string; time: string }) =>
+  removeDrainTime = (params: { growspaceId: string; time: string }) =>
     this._irrigationAPI.removeDrainTime(params);
 
   setIrrigationStrategy = (growspaceId: string, strategy: Partial<IrrigationStrategy>) =>

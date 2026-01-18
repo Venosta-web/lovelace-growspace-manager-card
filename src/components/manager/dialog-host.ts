@@ -1,5 +1,5 @@
-import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, html, TemplateResult } from 'lit';
+import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/growspace-store';
@@ -64,50 +64,56 @@ export class DialogHost extends LitElement {
         if (active.type === 'NONE') return html``;
 
         const strainLibrary = this.strainLibrary || [];
-        const selectedDeviceData = devices.find((d) => d.device_id === selectedDeviceId);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
 
         // Prepare options for select dropdowns if needed
         const growspaceOptions: Record<string, string> = {};
         devices.forEach((d) => {
-            growspaceOptions[d.device_id] = d.name;
+            growspaceOptions[d.deviceId] = d.name;
         });
+
+        // Resolve context-specific device data (from payload or global selection)
+        const payloadGrowspaceId = (active.payload as any)?.growspaceId;
+        const effectiveDeviceData = (payloadGrowspaceId
+            ? devices.find(d => d.deviceId === payloadGrowspaceId)
+            : null) || selectedDeviceData;
 
         return html`
             <error-boundary .fallbackMessage=${'Dialog error occurred'}>
                 ${(() => {
                 switch (active.type) {
                     case 'ADD_PLANT':
-                        return this._renderAddPlantDialog(active, strainLibrary, selectedDeviceData);
+                        return this._renderAddPlantDialog(active, strainLibrary, effectiveDeviceData);
                     case 'ADD_PLANTS':
-                        return this._renderAddPlantsDialog(active, strainLibrary, selectedDeviceData);
+                        return this._renderAddPlantsDialog(active, strainLibrary, effectiveDeviceData);
                     case 'PLANT_OVERVIEW':
-                        return this._renderPlantOverviewDialog(active, growspaceOptions);
+                        return this._renderPlantOverviewDialog(active, growspaceOptions, effectiveDeviceData);
                     case 'STRAIN_LIBRARY':
-                        return this._renderStrainLibraryDialog(active, strainLibrary);
+                        return this._renderStrainLibraryDialog(active, strainLibrary, effectiveDeviceData);
                     case 'CONFIG':
-                        return this._renderConfigDialog(active, growspaceOptions);
+                        return this._renderConfigDialog(active, growspaceOptions, effectiveDeviceData);
                     case 'GROW_MASTER':
-                        return this._renderGrowMasterDialog(active);
+                        return this._renderGrowMasterDialog(active, effectiveDeviceData);
                     case 'STRAIN_RECOMMENDATION':
-                        return this._renderStrainRecommendationDialog(active);
+                        return this._renderStrainRecommendationDialog(active, effectiveDeviceData);
                     case 'IRRIGATION':
-                        return this._renderIrrigationDialog(active, selectedDeviceData);
+                        return this._renderIrrigationDialog(active, effectiveDeviceData);
                     case 'LOGBOOK':
-                        return this._renderLogbookDialog(active);
+                        return this._renderLogbookDialog(active, effectiveDeviceData);
                     case 'WATERING':
-                        return this._renderWateringDialog(active, selectedDeviceData);
+                        return this._renderWateringDialog(active, effectiveDeviceData);
                     case 'NUTRIENT_PRESETS':
-                        return this._renderNutrientPresetsDialog(active, selectedDeviceData);
+                        return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
                     case 'TRAINING':
-                        return this._renderTrainingDialog(active);
+                        return this._renderTrainingDialog(active, effectiveDeviceData);
                     case 'TAKE_CLONE':
-                        return this._renderCloneDialog(active, growspaceOptions);
+                        return this._renderCloneDialog(active, growspaceOptions, effectiveDeviceData);
                     case 'IPM':
-                        return this._renderIPMDialog(active, selectedDeviceData);
+                        return this._renderIPMDialog(active, effectiveDeviceData);
                     case 'NUTRIENT_INVENTORY':
-                        return this._renderNutrientInventoryDialog(active);
+                        return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
                     case 'NUTRIENTS':
-                        return this._renderNutrientDialog(active);
+                        return this._renderNutrientDialog(active, effectiveDeviceData);
                     default:
                         return html``;
                 }
@@ -134,7 +140,7 @@ export class DialogHost extends LitElement {
         const devices = this._devicesController.value;
         const clonePlants = this._getPlantsByStage(devices, 'clone');
         const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
-        const targetGrowspaceId = selectedDeviceData?.device_id || '';
+        const targetGrowspaceId = selectedDeviceData?.deviceId || '';
 
         return html`
         <add-plant-dialog
@@ -283,7 +289,8 @@ export class DialogHost extends LitElement {
 
     private _renderPlantOverviewDialog(
         active: ActiveDialogState,
-        growspaceOptions: Record<string, string>
+        growspaceOptions: Record<string, string>,
+        selectedDeviceData?: GrowspaceDevice
     ): TemplateResult {
         if (active.type !== 'PLANT_OVERVIEW') return html``;
         const dialogState = active.payload;
@@ -379,7 +386,8 @@ export class DialogHost extends LitElement {
 
     private _renderStrainLibraryDialog(
         active: ActiveDialogState,
-        strainLibrary: StrainEntry[]
+        strainLibrary: StrainEntry[],
+        selectedDeviceData?: GrowspaceDevice
     ): TemplateResult {
         if (active.type !== 'STRAIN_LIBRARY') return html``;
         const payload = active.payload as any;
@@ -439,7 +447,8 @@ export class DialogHost extends LitElement {
 
     private _renderConfigDialog(
         active: ActiveDialogState,
-        growspaceOptions: Record<string, string>
+        growspaceOptions: Record<string, string>,
+        selectedDeviceData?: GrowspaceDevice
     ): TemplateResult {
         if (active.type !== 'CONFIG') return html``;
         const dialogState = active.payload;
@@ -460,53 +469,52 @@ export class DialogHost extends LitElement {
     }
 
     private async _handleEnvironmentConfig(detail: EnvironmentConfigEventDetail) {
-        // eslint-disable-next-line camelcase
         const {
             selectedGrowspaceId,
-            temp_sensor,
-            humidity_sensor,
-            vpd_sensor,
-            co2_sensor,
-            circulation_fan,
-            stress_threshold,
-            mold_threshold,
-            light_sensor,
-            exhaust_entity,
-            humidifier_entity,
-            dehumidifier_entity,
-            dehumidifier_thresholds,
-            soil_moisture_sensor,
-            control_dehumidifier,
+            temperatureSensor,
+            humiditySensor,
+            vpdSensor,
+            co2Sensor,
+            circulationFanEntity,
+            stressThreshold,
+            moldThreshold,
+            lightSensor,
+            exhaustEntity,
+            humidifierEntity,
+            dehumidifierEntity,
+            dehumidifierThresholds,
+            soilMoistureSensor,
+            dehumidifierControlEnabled,
         } = detail;
 
-        if (!selectedGrowspaceId || !temp_sensor || !humidity_sensor) {
+        if (!selectedGrowspaceId || !temperatureSensor || !humiditySensor) {
             this.store.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
 
         try {
             await this.store.dataService.configureEnvironment({
-                growspace_id: selectedGrowspaceId,
-                temperature_sensor: temp_sensor,
-                humidity_sensor,
-                vpd_sensor: vpd_sensor || undefined,
-                co2_sensor: co2_sensor || undefined,
-                circulation_fan_entity: circulation_fan || undefined,
-                stress_threshold,
-                mold_threshold,
-                light_sensor: light_sensor || undefined,
-                exhaust_entity: exhaust_entity || undefined,
-                humidifier_entity: humidifier_entity || undefined,
-                dehumidifier_entity: dehumidifier_entity || undefined,
-                dehumidifier_thresholds, // Pass thresholds if provided
-                soil_moisture_sensor: soil_moisture_sensor || undefined,
-                control_dehumidifier,
+                growspaceId: selectedGrowspaceId,
+                temperatureSensor: temperatureSensor,
+                humiditySensor: humiditySensor,
+                vpdSensor: vpdSensor || undefined,
+                co2Sensor: co2Sensor || undefined,
+                circulationFanEntity: circulationFanEntity || undefined,
+                stressThreshold: stressThreshold,
+                moldThreshold: moldThreshold,
+                lightSensor: lightSensor || undefined,
+                exhaustEntity: exhaustEntity || undefined,
+                humidifierEntity: humidifierEntity || undefined,
+                dehumidifierEntity: dehumidifierEntity || undefined,
+                dehumidifierThresholds: dehumidifierThresholds,
+                soilMoistureSensor: soilMoistureSensor || undefined,
+                controlDehumidifier: dehumidifierControlEnabled,
                 // Multi-device fields
-                circulation_fan_entities: detail.circulation_fan_entities,
-                light_sensors: detail.light_sensors,
-                exhaust_fan_entities: detail.exhaust_fan_entities,
-                humidifier_entities: detail.humidifier_entities,
-                dehumidifier_entities: detail.dehumidifier_entities,
+                circulationFanEntities: detail.circulationFanEntities,
+                lightSensors: detail.lightSensors,
+                exhaustFanEntities: detail.exhaustFanEntities,
+                humidifierEntities: detail.humidifierEntities,
+                dehumidifierEntities: detail.dehumidifierEntities,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();
@@ -516,13 +524,13 @@ export class DialogHost extends LitElement {
         }
     }
 
-    private _renderGrowMasterDialog(active: ActiveDialogState): TemplateResult {
+    private _renderGrowMasterDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'GROW_MASTER') return html``;
         const dialogState = active.payload;
 
         let isStressed = false;
         let personality;
-        const selectedDevice = this._selectedDeviceController.value;
+        const selectedDevice = selectedDeviceData?.deviceId;
 
         if (selectedDevice && this.hass) {
             const id = selectedDevice;
@@ -541,8 +549,8 @@ export class DialogHost extends LitElement {
             }
 
             const manager = this.hass.states['sensor.growspace_manager'];
-            if (manager && manager.attributes && manager.attributes.ai_settings) {
-                personality = manager.attributes.personality || manager.attributes.ai_settings.personality;
+            if (manager && manager.attributes) {
+                personality = manager.attributes.personality || (manager.attributes.ai_settings && manager.attributes.ai_settings.personality);
             }
         }
 
@@ -561,7 +569,7 @@ export class DialogHost extends LitElement {
     `;
     }
 
-    private _renderStrainRecommendationDialog(active: ActiveDialogState): TemplateResult {
+    private _renderStrainRecommendationDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'STRAIN_RECOMMENDATION') return html``;
         const dialogState = active.payload;
         return html`
@@ -594,15 +602,15 @@ export class DialogHost extends LitElement {
     `;
     }
 
-    private _renderLogbookDialog(active: ActiveDialogState): TemplateResult {
+    private _renderLogbookDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'LOGBOOK') return html``;
         const dialogState = active.payload;
         return html`
     <logbook-dialog
         .open=${true}
-            .growspaceId = ${dialogState.growspaceId}
-@close=${() => this.store.ui.closeDialog()}
-        > </logbook-dialog>
+        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
+        @close=${() => this.store.ui.closeDialog()}
+    ></logbook-dialog>
     `;
     }
 
@@ -633,13 +641,14 @@ export class DialogHost extends LitElement {
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
+        .growspaceId=${selectedDeviceData?.deviceId}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
     ></nutrient-presets-editor>
     `;
     }
 
-    private _renderTrainingDialog(active: ActiveDialogState): TemplateResult {
+    private _renderTrainingDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'TRAINING') return html``;
         return html`
     <training-dialog
@@ -662,7 +671,7 @@ export class DialogHost extends LitElement {
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
-        .growspaceId=${dialogState.growspaceId}
+        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
         .plantIds=${dialogState.plantIds || []}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
@@ -670,7 +679,7 @@ export class DialogHost extends LitElement {
     `;
     }
 
-    private _renderNutrientInventoryDialog(active: ActiveDialogState): TemplateResult {
+    private _renderNutrientInventoryDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'NUTRIENT_INVENTORY') return html``;
         return html`
             <nutrient-inventory-dialog
@@ -683,7 +692,8 @@ export class DialogHost extends LitElement {
 
     private _renderCloneDialog(
         active: ActiveDialogState,
-        growspaceOptions: Record<string, string>
+        growspaceOptions: Record<string, string>,
+        selectedDeviceData?: GrowspaceDevice
     ): TemplateResult {
         if (active.type !== 'TAKE_CLONE') return html``;
         const dialogState = active.payload;
@@ -695,7 +705,7 @@ export class DialogHost extends LitElement {
                 .growspaceOptions=${growspaceOptions}
                 .defaultGrowspace=${dialogState.defaultGrowspaceId}
                 @take-clone-submit=${async (e: CustomEvent) => {
-                const { motherPlantId, numClones, targetGrowspaceId } = e.detail;
+                const { numClones, targetGrowspaceId } = e.detail;
                 await this.store.actions.plant.takeClone(
                     dialogState.sourcePlant,
                     numClones,
@@ -708,7 +718,7 @@ export class DialogHost extends LitElement {
         `;
     }
 
-    private _renderNutrientDialog(active: ActiveDialogState): TemplateResult {
+    private _renderNutrientDialog(active: ActiveDialogState, selectedDeviceData?: GrowspaceDevice): TemplateResult {
         if (active.type !== 'NUTRIENTS') return html``;
         return html`
             <nutrient-dialog

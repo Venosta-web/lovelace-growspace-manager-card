@@ -128,16 +128,16 @@ export class GrowspaceAPI extends BaseAPI {
     async addGrowspace(data: {
         name: string;
         rows: number;
-        plants_per_row: number;
-        notification_service?: string;
+        plantsPerRow: number;
+        notificationService?: string;
     }): Promise<void> {
         console.log('[GrowspaceAPI:addGrowspace] Adding growspace:', data);
         try {
             const payload = {
                 name: data.name,
                 rows: data.rows,
-                plants_per_row: data.plants_per_row,
-                notification_target: data.notification_service, // Map to backend field
+                plants_per_row: data.plantsPerRow,
+                notification_target: data.notificationService, // Map to backend field
             };
             await this.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
             console.log('[GrowspaceAPI:addGrowspace] Service Called');
@@ -148,21 +148,21 @@ export class GrowspaceAPI extends BaseAPI {
     }
 
     async updateGrowspace(data: {
-        growspace_id: string;
+        growspaceId: string;
         name?: string;
         rows?: number;
-        plants_per_row?: number;
-        notification_service?: string;
+        plantsPerRow?: number;
+        notificationService?: string;
     }): Promise<void> {
         console.log('[GrowspaceAPI:updateGrowspace] Updating growspace:', data);
         try {
             const payload: Record<string, unknown> = {
-                growspace_id: data.growspace_id,
+                growspace_id: data.growspaceId,
             };
             if (data.name) payload.name = data.name;
             if (data.rows) payload.rows = data.rows;
-            if (data.plants_per_row) payload.plants_per_row = data.plants_per_row;
-            if (data.notification_service) payload.notification_target = data.notification_service;
+            if (data.plantsPerRow) payload.plants_per_row = data.plantsPerRow;
+            if (data.notificationService) payload.notification_target = data.notificationService;
 
             await this.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
             console.log('[GrowspaceAPI:updateGrowspace] Service Called');
@@ -186,35 +186,65 @@ export class GrowspaceAPI extends BaseAPI {
     }
 
     async configureEnvironment(data: {
-        growspace_id: string;
-        temperature_sensor: string;
-        humidity_sensor: string;
-        vpd_sensor?: string;
-        co2_sensor?: string;
-        circulation_fan_entity?: string;
-        circulation_fan_entities?: string[];
-        stress_threshold?: number;
-        mold_threshold?: number;
-        light_sensor?: string;
-        light_sensors?: string[];
-        exhaust_entity?: string;
-        exhaust_fan_entities?: string[];
-        humidifier_entity?: string;
-        humidifier_entities?: string[];
-        dehumidifier_entity?: string;
-        dehumidifier_entities?: string[];
-        dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
-        soil_moisture_sensor?: string;
-        control_dehumidifier?: boolean;
-        veg_day_hours?: number;
-        flower_early_day_hours?: number;
-        flower_mid_day_hours?: number;
-        flower_late_day_hours?: number;
-        minimum_source_air_temperature?: number;
+        growspaceId: string;
+        temperatureSensor: string;
+        humiditySensor: string;
+        vpdSensor?: string;
+        co2Sensor?: string;
+        circulationFanEntity?: string;
+        circulationFanEntities?: string[];
+        stressThreshold?: number;
+        moldThreshold?: number;
+        lightSensor?: string;
+        lightSensors?: string[];
+        exhaustEntity?: string;
+        exhaustFanEntities?: string[];
+        humidifierEntity?: string;
+        humidifierEntities?: string[];
+        dehumidifierEntity?: string;
+        dehumidifierEntities?: string[];
+        dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+        soilMoistureSensor?: string;
+        controlDehumidifier?: boolean;
+        vegDayHours?: number;
+        flowerEarlyDayHours?: number;
+        flowerMidDayHours?: number;
+        flowerLateDayHours?: number;
+        minimumSourceAirTemperature?: number;
     }): Promise<void> {
         console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
         try {
-            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, data);
+            // Map camelCase to snake_case for API
+            const payload: Record<string, any> = {
+                growspace_id: data.growspaceId,
+                temperature_sensor: data.temperatureSensor,
+                humidity_sensor: data.humiditySensor,
+            };
+
+            if (data.vpdSensor) payload.vpd_sensor = data.vpdSensor;
+            if (data.co2Sensor) payload.co2_sensor = data.co2Sensor;
+            if (data.circulationFanEntity) payload.circulation_fan_entity = data.circulationFanEntity;
+            if (data.circulationFanEntities) payload.circulation_fan_entities = data.circulationFanEntities;
+            if (data.stressThreshold) payload.stress_threshold = data.stressThreshold;
+            if (data.moldThreshold) payload.mold_threshold = data.moldThreshold;
+            if (data.lightSensor) payload.light_sensor = data.lightSensor;
+            if (data.lightSensors) payload.light_sensors = data.lightSensors;
+            if (data.exhaustEntity) payload.exhaust_entity = data.exhaustEntity;
+            if (data.exhaustFanEntities) payload.exhaust_fan_entities = data.exhaustFanEntities;
+            if (data.humidifierEntity) payload.humidifier_entity = data.humidifierEntity;
+            if (data.humidifierEntities) payload.humidifier_entities = data.humidifierEntities;
+            if (data.dehumidifierEntity) payload.dehumidifier_entity = data.dehumidifierEntity;
+            if (data.dehumidifierEntities) payload.dehumidifier_entities = data.dehumidifierEntities;
+            if (data.dehumidifierThresholds) payload.dehumidifier_thresholds = data.dehumidifierThresholds;
+            if (data.soilMoistureSensor) payload.soil_moisture_sensor = data.soilMoistureSensor;
+            if (data.controlDehumidifier !== undefined) payload.control_dehumidifier = data.controlDehumidifier;
+            if (data.vegDayHours) payload.veg_day_hours = data.vegDayHours;
+            if (data.flowerEarlyDayHours) payload.flower_early_day_hours = data.flowerEarlyDayHours;
+            if (data.flowerMidDayHours) payload.flower_mid_day_hours = data.flowerMidDayHours;
+            if (data.flowerLateDayHours) payload.flower_late_day_hours = data.flowerLateDayHours;
+            if (data.minimumSourceAirTemperature) payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
+
+            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         } catch (err) {
             console.error('[GrowspaceAPI:configureEnvironment] Error:', err);

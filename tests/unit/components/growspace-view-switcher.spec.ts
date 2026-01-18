@@ -21,8 +21,8 @@ describe('GrowspaceViewSwitcher', () => {
 
     beforeEach(async () => {
         mockDevice = {
-            device_id: 'd1',
-            plants_per_row: 4
+            deviceId: 'd1',
+            plantsPerRow: 4
         } as unknown as GrowspaceDevice;
 
         element = await fixture(html`

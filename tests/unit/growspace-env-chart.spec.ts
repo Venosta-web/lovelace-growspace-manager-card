@@ -11,10 +11,10 @@ describe('GrowspaceEnvChart', () => {
     let hassMock: any;
 
     const mockDevice: any = {
-        device_id: 'd1',
+        deviceId: 'd1',
         name: 'Device 1',
         sensors: {},
-        overview_entity_id: 'sensor.overview'
+        overviewEntityId: 'sensor.overview'
     };
 
     beforeEach(async () => {
@@ -122,7 +122,7 @@ describe('GrowspaceEnvChart', () => {
         const wrapper = await fixture(html`
             <div style="width: 200px; display: block;">
                 <growspace-env-chart
-                    .device=${{ ...mockDevice, overview_entity_id: '' }}
+                    .device=${{ ...mockDevice, overviewEntityId: '' }}
                     .isCombined=${true}
                     .metrics=${['temp']}
                     .range=${'24h'}
@@ -263,7 +263,7 @@ describe('GrowspaceEnvChart', () => {
 
     it('should use fallback VPD thresholds when device has no overview entity', async () => {
         element.device = {
-            device_id: 'd1',
+            deviceId: 'd1',
             name: 'Device 1',
             sensors: {}
         } as any;
@@ -736,7 +736,7 @@ describe('GrowspaceEnvChart', () => {
                     }
                 }
             };
-            (element as any).device = { overview_entity_id: 'sensor.overview' };
+            (element as any).device = { overviewEntityId: 'sensor.overview' };
 
             let thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBe(1.0);
@@ -759,12 +759,12 @@ describe('GrowspaceEnvChart', () => {
             expect(thresholds.day.targetMin).toBe(1.5);
 
             // Test 4: No Overview Entity (Defaults)
-            (element as any).device = { overview_entity_id: 'sensor.missing' };
+            (element as any).device = { overviewEntityId: 'sensor.missing' };
             thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBeDefined();
 
             // Test 5: Device has no overview_entity_id
-            (element as any).device = { overview_entity_id: null };
+            (element as any).device = { overviewEntityId: null };
             thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBeDefined();
         });
@@ -1265,7 +1265,7 @@ describe('GrowspaceEnvChart', () => {
                     }
                 }
             };
-            (element as any).device = { overview_entity_id: 'sensor.overview' };
+            (element as any).device = { overviewEntityId: 'sensor.overview' };
 
             let thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBe(1.0);
@@ -1288,12 +1288,12 @@ describe('GrowspaceEnvChart', () => {
             expect(thresholds.day.targetMin).toBe(1.5);
 
             // Test 4: No Overview Entity (Defaults)
-            (element as any).device = { overview_entity_id: 'sensor.missing' };
+            (element as any).device = { overviewEntityId: 'sensor.missing' };
             thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBeDefined();
 
             // Test 5: Device has no overview_entity_id
-            (element as any).device = { overview_entity_id: null };
+            (element as any).device = { overviewEntityId: null };
             thresholds = (element as any)._getVpdThresholds();
             expect(thresholds.day.targetMin).toBeDefined();
         });

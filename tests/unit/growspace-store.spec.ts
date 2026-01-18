@@ -22,24 +22,22 @@ vi.mock('../../src/store/optimistic-manager', () => {
             private _undoRedoManager: any;
             constructor(_data: any, undoRedoManager: any) {
                 this._undoRedoManager = undoRedoManager;
-                return {
-                    applyOptimisticUpdate: vi.fn(async (_type, _payload, apply) => {
-                        await apply();
-                        return 'mock-action-id';
-                    }),
-                    confirmUpdate: vi.fn((_id, options) => {
-                        if (options && this._undoRedoManager) {
-                            this._undoRedoManager.pushAction({
-                                redo: options.redo,
-                                undo: vi.fn(),
-                                description: options.description
-                            });
-                        }
-                    }),
-                    rollbackUpdate: vi.fn(),
-                    checkPending: vi.fn().mockReturnValue(false)
-                };
             }
+            applyOptimisticUpdate = vi.fn(async (_type: any, payload: any, apply: any) => {
+                await apply(payload);
+                return 'mock-action-id';
+            });
+            confirmUpdate = vi.fn((_id, options) => {
+                if (options && this._undoRedoManager) {
+                    this._undoRedoManager.pushAction({
+                        redo: options.redo,
+                        undo: vi.fn(),
+                        description: options.description
+                    });
+                }
+            });
+            rollbackUpdate = vi.fn();
+            checkPending = vi.fn().mockReturnValue(false);
         }
     };
 });
@@ -158,6 +156,7 @@ const mockDataServiceInstance: any = {
     addPlants: vi.fn().mockResolvedValue({}),
     waterPlant: vi.fn().mockResolvedValue({}),
     waterGrowspace: vi.fn().mockResolvedValue({}),
+    applyIPM: vi.fn().mockResolvedValue({}),
     hass: { connection: {} } // Default to avoid early returns
 };
 
@@ -213,7 +212,7 @@ describe('GrowspaceStore', () => {
 
     describe('Initialization', () => {
         it('should initialize selected device from config', () => {
-            const devices = [{ device_id: 'd1', name: 'Grow 1' }] as any;
+            const devices = [{ deviceId: 'd1', name: 'Grow 1' }] as any;
             (dataStore.$wsDataCache.get as any).mockReturnValue({ 'd1': {} });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
             (dataStore.$devices.get as any).mockReturnValue(devices);
@@ -229,7 +228,7 @@ describe('GrowspaceStore', () => {
         });
 
         it('should fallback to first device if config default invalid', () => {
-            const devices = [{ device_id: 'd1', name: 'Grow 1' }] as any;
+            const devices = [{ deviceId: 'd1', name: 'Grow 1' }] as any;
             (dataStore.$wsDataCache.get as any).mockReturnValue({ 'd1': {} });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
             (dataStore.$devices.get as any).mockReturnValue(devices);
@@ -263,7 +262,7 @@ describe('GrowspaceStore', () => {
                 { entity_id: 's.2', attributes: { plant_id: 'p2', strain: 'S2' } },
                 { entity_id: 's.3', attributes: { plant_id: 'p3', strain: 'S3' } }
             ];
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd1', plants }]);
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd1', plants }]);
         });
 
         it('should handle Enter key to open plant dialog', () => {
@@ -309,7 +308,7 @@ describe('GrowspaceStore', () => {
                 { entity_id: 's.1', attributes: { plant_id: 'p1' } },
                 { entity_id: 's.2', attributes: { plant_id: 'p2' } }
             ];
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd1', plants }]);
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd1', plants }]);
 
             store.selectAllPlants();
             expect(uiStore.selectAllPlants).toHaveBeenCalledWith(['p1', 'p2']);
@@ -439,14 +438,14 @@ describe('GrowspaceStore', () => {
         });
 
         it('should handle update growspace success', async () => {
-            await store.handleUpdateGrowspace({ growspace_id: 'g1', name: 'G1', rows: 4, plants_per_row: 4 });
+            await store.handleUpdateGrowspace({ growspace_id: 'g1', name: 'G1', rows: 4, plantsPerRow: 4 });
             expect(store.dataService.updateGrowspace).toHaveBeenCalled();
             expect(uiStore.closeDialog).toHaveBeenCalled();
         });
 
         it('should handle update growspace error', async () => {
             mockDataServiceInstance.updateGrowspace.mockRejectedValue(new Error('Fail'));
-            await store.handleUpdateGrowspace({ growspace_id: 'g1', name: 'G1', rows: 4, plants_per_row: 4 });
+            await store.handleUpdateGrowspace({ growspace_id: 'g1', name: 'G1', rows: 4, plantsPerRow: 4 });
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to update'), 'error', undefined);
         });
 
@@ -454,6 +453,18 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             store.openLogbookDialog();
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'LOGBOOK' }));
+        });
+
+        it('should open plant overview dialog', () => {
+            const plant = { attributes: { plant_id: 'p1' } } as any;
+            store.openPlantOverviewDialog(plant, ['p2']);
+            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW', payload: expect.objectContaining({ plant, selectedPlantIds: ['p2'] }) }));
+        });
+
+        it('should call applyIPM', async () => {
+            const details = { preset_id: 'ipm1', growspace_id: 'g1' };
+            await store.applyIPM(details);
+            expect(store.dataService.applyIPM).toHaveBeenCalledWith(details);
         });
     });
 
@@ -626,7 +637,7 @@ describe('GrowspaceStore', () => {
             // Device has 2x2 grid. Plant at 0,0 (1,1 in attr).
             // Should find 0,1
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1', plants_per_row: 2, rows: 2,
+                deviceId: 'd1', plantsPerRow: 2, rows: 2,
                 plants: [{ attributes: { row: 1, col: 1, plant_id: 'p1' } }]
             }]);
 
@@ -643,7 +654,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['p1']));
             // Plant p1 is at 0,0 but marked deleted. So 0,0 should be free.
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1', plants_per_row: 2, rows: 2,
+                deviceId: 'd1', plantsPerRow: 2, rows: 2,
                 plants: [{ attributes: { row: 1, col: 1, plant_id: 'p1' } }]
             }]);
 
@@ -911,7 +922,7 @@ describe('GrowspaceStore', () => {
         });
 
         it('should not show loading if devices already exist', async () => {
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd1' }]);
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd1' }]);
             await store.refreshData();
             expect(uiStore.setIsLoading).not.toHaveBeenCalledWith(true);
         });
@@ -940,7 +951,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['p1']));
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1', plants_per_row: 2, rows: 2,
+                deviceId: 'd1', plantsPerRow: 2, rows: 2,
                 plants: [
                     { attributes: { row: 1, col: 1, plant_id: 'p1' } }, // Deleted
                     { attributes: { row: 1, col: 2, plant_id: 'p2' } }  // Occupied
@@ -969,9 +980,9 @@ describe('GrowspaceStore', () => {
 
     describe('Coverage Gap Filling', () => {
         it('should not update devices if arrays are equal', () => {
-            const devices = [{ device_id: 'd1', plants: [] }];
+            const devices = [{ deviceId: 'd1', plants: [] }];
             (dataStore.$devices.get as any).mockReturnValue(devices);
-            (dataStore.$wsDataCache.get as any).mockReturnValue({ d1: { device_id: 'd1', plants: [] } });
+            (dataStore.$wsDataCache.get as any).mockReturnValue({ d1: { deviceId: 'd1', plants: [] } });
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
 
             const spy = vi.spyOn(dataStore, 'setDevices');
@@ -980,7 +991,7 @@ describe('GrowspaceStore', () => {
         });
 
         it('should skip auto-select if default already applied', () => {
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'd1' }]);
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd1' }]);
             (dataStore.$selectedDevice.get as any).mockReturnValue(undefined);
             (uiStore.$defaultApplied.get as any).mockReturnValue(true);
 
@@ -990,7 +1001,7 @@ describe('GrowspaceStore', () => {
 
         it('should fallback to first device if default config not found', () => {
             // devices exist, no selected device, defaultApplied false
-            const devices = [{ device_id: 'd1' }, { device_id: 'd2' }];
+            const devices = [{ deviceId: 'd1' }, { deviceId: 'd2' }];
             (store as any).dataService.getGrowspaceDevices.mockReturnValue(devices);
             (dataStore.$devices.get as any).mockReturnValue([]); // trigger change
             (dataStore.$selectedDevice.get as any).mockReturnValue(undefined);
@@ -1051,8 +1062,8 @@ describe('GrowspaceStore', () => {
         it('should handle full grid in openAddPlantDialog', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
-                plants_per_row: 1,
+                deviceId: 'd1',
+                plantsPerRow: 1,
                 rows: 1,
                 plants: [{ attributes: { row: 1, col: 1, plant_id: 'p1' } }] // 1x1 grid full
             }]);
@@ -1086,8 +1097,8 @@ describe('GrowspaceStore', () => {
     });
 
     it('should handle _areDeviceArraysEqual false on content mismatch', () => {
-        const a = [{ device_id: 'd1' }] as any;
-        const b = [{ device_id: 'd2' }] as any; // Same length, diff content
+        const a = [{ deviceId: 'd1' }] as any;
+        const b = [{ deviceId: 'd2' }] as any; // Same length, diff content
         expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
     });
 
@@ -1370,7 +1381,7 @@ describe('GrowspaceStore', () => {
 
         it('should update devices state when cache is not empty', () => {
             (dataStore.$wsDataCache.get as any).mockReturnValue({ gs1: { growspace_id: 'gs1' } });
-            const devices = [{ device_id: 'gs1', plants: [] }];
+            const devices = [{ deviceId: 'gs1', plants: [] }];
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
 
             store.updateHass({ connection: { subscribeEvents: vi.fn() } } as any);
@@ -1397,25 +1408,25 @@ describe('GrowspaceStore', () => {
 
     describe('_areDeviceArraysEqual', () => {
         it('should return true for same reference', () => {
-            const devices: any[] = [{ device_id: 'd1' }];
+            const devices: any[] = [{ deviceId: 'd1' }];
             expect((store.syncService as any)._areDeviceArraysEqual(devices, devices)).toBe(true);
         });
 
         it('should return false for different lengths', () => {
-            const a: any[] = [{ device_id: 'd1' }];
-            const b: any[] = [{ device_id: 'd1' }, { device_id: 'd2' }];
+            const a: any[] = [{ deviceId: 'd1' }];
+            const b: any[] = [{ deviceId: 'd1' }, { deviceId: 'd2' }];
             expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
         });
 
         it('should return false for different elements', () => {
-            const a: any[] = [{ device_id: 'd1' }];
-            const b: any[] = [{ device_id: 'd2' }];
+            const a: any[] = [{ deviceId: 'd1' }];
+            const b: any[] = [{ deviceId: 'd2' }];
             expect((store.syncService as any)._areDeviceArraysEqual(a, b)).toBe(false);
         });
 
         it('should return true for identical arrays', () => {
-            const d1 = { device_id: 'd1' };
-            const d2 = { device_id: 'd1' };
+            const d1 = { deviceId: 'd1' };
+            const d2 = { deviceId: 'd1' };
             // Same objects in both arrays
             const a: any[] = [d1];
             const b: any[] = [d1];
@@ -1572,10 +1583,10 @@ describe('GrowspaceStore', () => {
         } as any;
 
         const mockDevice1 = {
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [mockPlant1],
             rows: 4,
-            plants_per_row: 4
+            plantsPerRow: 4
         } as any;
 
         const mockHass = {
@@ -1590,10 +1601,10 @@ describe('GrowspaceStore', () => {
                 ...mockDevice1,
                 plants: [plant1],
                 rows: 1,
-                plants_per_row: 1
+                plantsPerRow: 1
             };
             (dataStore.$devices.get as any).mockReturnValue([device]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.deviceId);
 
             store.openAddPlantDialog();
 
@@ -1615,13 +1626,13 @@ describe('GrowspaceStore', () => {
             store.updateHass(mockHass);
 
             // Expectation via spy
-            expect(dataStore.setSelectedDevice).toHaveBeenCalledWith(mockDevice1.device_id);
+            expect(dataStore.setSelectedDevice).toHaveBeenCalledWith(mockDevice1.deviceId);
         });
 
         it('select all plants should clear if no plants', () => {
             const device = { ...mockDevice1, plants: [] };
             (dataStore.$devices.get as any).mockReturnValue([device]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.deviceId);
 
             store.selectAllPlants();
             expect(uiStore.selectAllPlants).toHaveBeenCalledWith([]);
@@ -1663,10 +1674,10 @@ describe('GrowspaceStore', () => {
         } as any;
 
         const mockDevice1 = {
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [mockPlant1],
             rows: 4,
-            plants_per_row: 4
+            plantsPerRow: 4
         } as any;
 
         // Missing branches:
@@ -1676,7 +1687,7 @@ describe('GrowspaceStore', () => {
         it('openAddPlantDialog should handle device with undefined defaults', () => {
             const device = {
                 ...mockDevice1,
-                plants_per_row: undefined,
+                plantsPerRow: undefined,
                 rows: undefined,
                 plants: [{
                     ...mockPlant1,
@@ -1684,7 +1695,7 @@ describe('GrowspaceStore', () => {
                 }]
             };
             (dataStore.$devices.get as any).mockReturnValue([device]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.deviceId);
 
             store.openAddPlantDialog();
 
@@ -1746,7 +1757,7 @@ describe('GrowspaceStore', () => {
                 }]
             };
             (dataStore.$devices.get as any).mockReturnValue([device]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue(device.device_id);
+            (dataStore.$selectedDevice.get as any).mockReturnValue(device.deviceId);
 
             (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['fallback_id']));
 
@@ -1765,10 +1776,10 @@ describe('GrowspaceStore', () => {
         } as any;
 
         const mockDevice1 = {
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [mockPlant1],
             rows: 4,
-            plants_per_row: 4
+            plantsPerRow: 4
         } as any;
 
         beforeEach(() => {
@@ -1815,10 +1826,10 @@ describe('GrowspaceStore', () => {
             attributes: { plant_id: 'p1', row: 1, col: 1 }
         } as any;
         const mockDevice1 = {
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [mockPlant1],
             rows: 4,
-            plants_per_row: 4
+            plantsPerRow: 4
         } as any;
 
         const mockHass = {
@@ -1966,7 +1977,7 @@ describe('GrowspaceStore', () => {
 
         it('should handle openAddPlantDialog with unknown device ID', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('unknown');
-            (dataStore.$devices.get as any).mockReturnValue([{ device_id: 'other', plants: [] }]);
+            (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'other', plants: [] }]);
             (store as any).openAddPlantDialog();
             expect(uiStore.setActiveDialog).toHaveBeenCalled();
         });
@@ -1985,7 +1996,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue(null);
             (uiStore.$defaultApplied.get as any).mockReturnValue(false);
             (dataStore.$config.get as any).mockReturnValue({ auto_select_growspace: true });
-            mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([{ device_id: 'd1' }]);
+            mockDataServiceInstance.getGrowspaceDevices.mockReturnValue([{ deviceId: 'd1' }]);
             (store.syncService as any).updateDevicesState();
             expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
         });
@@ -2025,7 +2036,7 @@ describe('GrowspaceStore', () => {
         it('selectAllPlants should skip plants without plant_id', () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ attributes: { plant_id: '' } }]
             }]);
         });
@@ -2050,7 +2061,7 @@ describe('GrowspaceStore', () => {
     it('selectAllPlants should skip plants in optimistic deletions', () => {
         (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
         (dataStore.$devices.get as any).mockReturnValue([{
-            device_id: 'd1',
+            deviceId: 'd1',
             plants: [{ attributes: { plant_id: 'p1' } }]
         }]);
         (dataStore.$optimisticDeletedPlantIds.get as any).mockReturnValue(new Set(['p1']));
@@ -2156,7 +2167,7 @@ describe('GrowspaceStore', () => {
         beforeEach(() => {
             vi.spyOn(store.undoRedoManager, 'pushAction');
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ attributes: { plant_id: 'p1', growspace_id: 'gs1', nickname: 'P1' } }]
             }]);
         });
@@ -2443,7 +2454,7 @@ describe('GrowspaceStore', () => {
 
             // Initial plants
             const initialDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [{ entity_id: 's.p1', attributes: { plant_id: 'p1', row: 1, col: 1 } }]
             }];
             (dataStore.$devices.get as any).mockReturnValue(initialDevices);
@@ -2454,7 +2465,7 @@ describe('GrowspaceStore', () => {
             // Mock refreshData to simulate plants being added
             mockDataServiceInstance.getGrowspaceDevices.mockReturnValueOnce(initialDevices);
             const afterDevices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [
                     { entity_id: 's.p1', attributes: { plant_id: 'p1', row: 1, col: 1 } },
                     { entity_id: 's.p2', attributes: { plant_id: 'p2', row: 1, col: 2 } }
@@ -2495,7 +2506,7 @@ describe('GrowspaceStore', () => {
                 attributes: { plant_id: 'p1', growspace_id: 'd1', strain: 'S1' }
             };
             (dataStore.$devices.get as any).mockReturnValue([{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [plant]
             }]);
             mockDataServiceInstance.removePlant.mockResolvedValue(true);
@@ -2572,10 +2583,10 @@ describe('GrowspaceStore', () => {
 
                 // Setup watched entities by triggering an update with devices
                 const devices = [{
-                    device_id: 'd1',
+                    deviceId: 'd1',
                     plants: [{ entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } }],
-                    irrigation_config: { irrigation_pump_entity: 'switch.irrigation', drain_pump_entity: 'switch.drain' },
-                    environment_attributes: { temp: 'sensor.temp' }
+                    irrigationConfig: { irrigation_pump_entity: 'switch.irrigation', drain_pump_entity: 'switch.drain' },
+                    environmentAttributes: { temp: 'sensor.temp' }
                 }] as any;
                 mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
                 (dataStore.$devices.get as any).mockReturnValue(devices);
@@ -2599,7 +2610,7 @@ describe('GrowspaceStore', () => {
                 const hass2 = { states: { 'sensor.p1': { state: 'off' } } } as any; // Change
 
                 const devices = [{
-                    device_id: 'd1',
+                    deviceId: 'd1',
                     plants: [{ entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } }]
                 }] as any;
                 mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
@@ -2642,7 +2653,7 @@ describe('GrowspaceStore', () => {
             it('should handle confirmAddPlants with no new plants added', async () => {
                 (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
                 const devices = [{
-                    device_id: 'd1',
+                    deviceId: 'd1',
                     plants: [{ attributes: { plant_id: 'p1' } }]
                 }];
                 (dataStore.$devices.get as any).mockReturnValue(devices);
@@ -2673,7 +2684,7 @@ describe('GrowspaceStore', () => {
                 (uiStore.$defaultApplied.get as any).mockReturnValue(false);
                 (dataStore.$config.get as any).mockReturnValue(null); // No config
 
-                const devices = [{ device_id: 'd1', name: 'G1' }];
+                const devices = [{ deviceId: 'd1', name: 'G1' }];
                 mockDataServiceInstance.getGrowspaceDevices.mockReturnValue(devices);
 
                 store.initializeSelectedDevice({} as any);
@@ -2698,7 +2709,7 @@ describe('GrowspaceStore', () => {
             (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1', 'p2']));
             // Setup devices for restoring if needed or finding logic
             const devices = [{
-                device_id: 'd1',
+                deviceId: 'd1',
                 plants: [
                     { entity_id: 's.p1', attributes: { plant_id: 'p1', growspace_id: 'd1' } },
                     { entity_id: 's.p2', attributes: { plant_id: 'p2', growspace_id: 'd1' } }

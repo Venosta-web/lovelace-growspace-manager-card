@@ -36,9 +36,9 @@ describe('ui-actions', () => {
                     currentTab: ConfigTab.ENVIRONMENT,
                     environmentData: expect.objectContaining({
                         selectedGrowspaceId: '',
-                        temp_sensor: '',
-                        control_dehumidifier: false,
-                        dehumidifier_thresholds: {}
+                        temperatureSensor: '',
+                        dehumidifierControlEnabled: false,
+                        dehumidifierThresholds: {}
                     })
                 })
             });
@@ -46,20 +46,20 @@ describe('ui-actions', () => {
 
         it('should map device attributes correctly', () => {
             const mockDevice = {
-                device_id: 'dev1',
-                environment_attributes: {
-                    temperature_sensor: 'sensor.temp',
-                    humidity_sensor: 'sensor.hum',
-                    vpd_sensor: 'sensor.vpd',
-                    co2_sensor: 'sensor.co2',
-                    circulation_fan_entity: 'fan.circ',
-                    light_sensor: 'sensor.light',
-                    exhaust_entity: 'fan.exhaust',
-                    humidifier_entity: 'humidifier.main',
-                    dehumidifier_entity: 'dehumidifier.main',
-                    soil_moisture_sensor: 'sensor.soil',
-                    dehumidifier_control_enabled: true,
-                    dehumidifier_thresholds: { min: 40, max: 60 }
+                deviceId: 'dev1',
+                environmentAttributes: {
+                    temperatureSensor: 'sensor.temp',
+                    humiditySensor: 'sensor.hum',
+                    vpdSensor: 'sensor.vpd',
+                    co2Sensor: 'sensor.co2',
+                    circulationFanEntity: 'fan.circ',
+                    lightSensor: 'sensor.light',
+                    exhaustEntity: 'fan.exhaust',
+                    humidifierEntity: 'humidifier.main',
+                    dehumidifierEntity: 'dehumidifier.main',
+                    soilMoistureSensor: 'sensor.soil',
+                    dehumidifierControlEnabled: true,
+                    dehumidifierThresholds: { min: 40, max: 60 }
                 }
             } as any;
 
@@ -70,9 +70,9 @@ describe('ui-actions', () => {
                 payload: expect.objectContaining({
                     environmentData: expect.objectContaining({
                         selectedGrowspaceId: 'dev1',
-                        temp_sensor: 'sensor.temp',
-                        control_dehumidifier: true,
-                        dehumidifier_thresholds: { min: 40, max: 60 }
+                        temperatureSensor: 'sensor.temp',
+                        dehumidifierControlEnabled: true,
+                        dehumidifierThresholds: { min: 40, max: 60 }
                     })
                 })
             });

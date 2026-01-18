@@ -93,7 +93,7 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
             const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
             if (plant) {
                 plantsToRestore.push({
-                    growspace_id: plant.attributes.growspace_id || device.device_id,
+                    growspace_id: plant.attributes.growspace_id || device.deviceId,
                     row: plant.attributes.row,
                     col: plant.attributes.col,
                     strain: plant.attributes.strain,
@@ -318,9 +318,9 @@ export async function handlePlantDrop(
 
     if (!growspaceId) return false;
 
-    // Helper to perform optimistic update on the cache AND devices store
+    // Helper to perform optimistic grid update
     const performOptimisticGridUpdate = (isRevert: boolean = false) => {
-        if (!growspaceId) return;
+        // growspaceId is guaranteed truthy by closure capture from outer scope check
 
         const updateGridLogic = (grid: Record<string, any>) => {
             let sourceKey: string | null = null;
@@ -342,8 +342,11 @@ export async function handlePlantDrop(
                 const newTargetRow = isRevert ? targetRow : originalRow;
                 const newTargetCol = isRevert ? targetCol : originalCol;
 
-                if (sData) { sData.row = newSourceRow; sData.col = newSourceCol; }
-                if (tData) { tData.row = newTargetRow; tData.col = newTargetCol; }
+                // sData and tData are guaranteed to exist because sourceKey and targetKey came from the grid iteration
+                sData.row = newSourceRow;
+                sData.col = newSourceCol;
+                tData.row = newTargetRow;
+                tData.col = newTargetCol;
 
                 grid[sourceKey] = tData;
                 grid[targetKey] = sData;
@@ -355,7 +358,7 @@ export async function handlePlantDrop(
 
         // 2. Update Devices Atom (for immediate UI Reactivity)
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.device_id === growspaceId);
+        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             const device = { ...newDevices[deviceIdx] };

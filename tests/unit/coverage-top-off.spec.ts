@@ -38,8 +38,8 @@ describe('Coverage Top-off', () => {
 
             const device = {
                 name: 'Tent',
-                device_id: 'tent_123',
-                environment_attributes: {},
+                deviceId: 'tent_123',
+                environmentAttributes: {},
                 plants: []
             } as unknown as GrowspaceDevice;
 
@@ -63,8 +63,8 @@ describe('Coverage Top-off', () => {
 
             const device = {
                 name: 'Tent',
-                device_id: 'tent_123',
-                environment_attributes: {},
+                deviceId: 'tent_123',
+                environmentAttributes: {},
                 plants: []
             } as unknown as GrowspaceDevice;
 
@@ -82,8 +82,8 @@ describe('Coverage Top-off', () => {
 
             const device = {
                 name: 'Tent',
-                irrigation_config: {
-                    irrigation_times: [{ time: timeStr }] as IrrigationTime[]
+                irrigationConfig: {
+                    irrigationTimes: [{ time: timeStr }] as IrrigationTime[]
                 },
                 plants: []
             } as unknown as GrowspaceDevice;
@@ -106,8 +106,8 @@ describe('Coverage Top-off', () => {
 
             const device = {
                 name: 'Tent',
-                device_id: 'tent_123',
-                environment_attributes: {},
+                deviceId: 'tent_123',
+                environmentAttributes: {},
                 plants: []
             } as unknown as GrowspaceDevice;
 

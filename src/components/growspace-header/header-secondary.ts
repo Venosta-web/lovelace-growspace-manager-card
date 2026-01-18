@@ -76,6 +76,7 @@ export class GrowspaceHeaderSecondary extends LitElement {
                             .tooltip=${chip.tooltip}
                             draggable="${this._chipDraggable}"
                             @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                            @dragover=${(e: DragEvent) => e.preventDefault()}
                             @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
                             @click=${() => this._toggleEnvGraph(chip.key)}
                             @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
