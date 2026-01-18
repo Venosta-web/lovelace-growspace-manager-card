@@ -6192,20 +6192,20 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$4=globalThis,e$7=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$7=new WeakMap;let n$8 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$7&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}};const r$6=t=>new n$8("string"==typeof t?t:t+"",void 0,s$8),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$8(o,t,s$8)},S$1=(s,o)=>{if(e$7)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$7?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
+const t$4=globalThis,e$9=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$7=new WeakMap;let n$8 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$9&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}};const r$6=t=>new n$8("string"==typeof t?t:t+"",void 0,s$8),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$8(o,t,s$8)},S$1=(s,o)=>{if(e$9)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$9?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$6(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$5,defineProperty:e$6,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$6,getPrototypeOf:n$7}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:true,type:String,converter:u$3,reflect:false,useDefault:false,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$6(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$7(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+ */const{is:i$5,defineProperty:e$8,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$5,getOwnPropertySymbols:o$6,getPrototypeOf:n$7}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:true,type:String,converter:u$3,reflect:false,useDefault:false,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$8(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$7(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$5(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$3=globalThis,i$4=t$3.trustedTypes,s$7=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$5="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$5="?"+h$2,n$6=`<${o$5}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$6:d>=0?(o.push(a),s.slice(0,d)+e$5+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$5)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$5)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}let M$1 = class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,true);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}};class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(false,true,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={I:R},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+const t$3=globalThis,i$4=t$3.trustedTypes,s$7=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$7="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$5="?"+h$2,n$6=`<${o$5}>`,r$4=document,l$1=()=>r$4.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$4.createTreeWalker(r$4,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$6:d>=0?(o.push(a),s.slice(0,d)+e$7+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$7)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$5)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$4.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}let M$1 = class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$4).importNode(i,true);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$4,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}};class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$4.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(false,true,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={I:R},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
@@ -6231,6 +6231,19 @@ const t$2=t=>(e,o)=>{ void 0!==o?o.addInitializer((()=>{customElements.define(t,
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */function r$2(r){return n$5({...r,state:true,attribute:false})}
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const e$6=(e,t,c)=>(c.configurable=true,c.enumerable=true,Reflect.decorate&&"object"!=typeof t&&Object.defineProperty(e,t,c),c);
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function e$5(e,r){return (n,s,i)=>{const o=t=>t.renderRoot?.querySelector(e)??null;return e$6(n,s,{get(){return o(this)}})}}
 
 /**
  * @license
@@ -14529,7 +14542,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _getEntities(domains, deviceClass) {
         if (!this.hass)
             return [];
-        return Object.keys(this.hass.states)
+        return Object.keys(this.hass.states || {})
             .filter((eid) => {
             const state = this.hass.states[eid];
             if (!state)
@@ -30916,7 +30929,7 @@ class MetricsUtils {
                     .toLowerCase()
                     .replace(/\s+/g, '_')
                     .replace(/[^\w-]+/g, '')
-                    .replace(/--+/g, '_')
+                    .replace(/[_-]+/g, '_')
                     .replace(/^-+/, '')
                     .replace(/-+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
@@ -31066,619 +31079,7 @@ class MetricsUtils {
     }
 }
 
-let GrowspaceHeader = class GrowspaceHeader extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.compact = false;
-        this.isEditMode = false;
-        // activeEnvGraphs and linkedGraphGroups removed as props, accessed via historyController in render or getters
-        this.growspaceOptions = {};
-        this.historyData = null;
-        this._canScrollLeft = false;
-        this._canScrollRight = false;
-        this._canScrollStageLeft = false;
-        this._canScrollStageRight = false;
-        this._canScrollDeviceLeft = false;
-        this._canScrollDeviceRight = false;
-        this._mobileLink = false;
-        this._chipsContainerRef = e$1();
-        this._stageContainerRef = e$1();
-        this._deviceChipsContainerRef = e$1();
-        this._resizeController = new ResizeController(this, () => this._checkScroll());
-        // Cached metrics to avoid re-computation on every render
-        this._mainChips = [];
-        this._deviceChips = [];
-        this._envAttrs = {};
-        this._draggedMetric = null;
-    }
-    // Helper getters for clarity in render/compute
-    get activeEnvGraphs() {
-        return this._activeEnvGraphsController?.value || new Set();
-    }
-    _scrollChips(direction) {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
-        }
-    }
-    _scrollStage(direction) {
-        const container = this._stageContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
-        }
-    }
-    _scrollDeviceChips(direction) {
-        const container = this._deviceChipsContainerRef.value;
-        if (container) {
-            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -100 : 100, behavior: 'smooth' });
-        }
-    }
-    _checkScroll() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            // 1px buffer to handle subpixels
-            this._canScrollLeft = container.scrollLeft > 1;
-            this._canScrollRight =
-                container.scrollLeft < container.scrollWidth - container.clientWidth - 1;
-        }
-        const stageContainer = this._stageContainerRef.value;
-        if (stageContainer) {
-            this._canScrollStageLeft = stageContainer.scrollLeft > 1;
-            this._canScrollStageRight =
-                stageContainer.scrollLeft < stageContainer.scrollWidth - stageContainer.clientWidth - 1;
-        }
-        const deviceContainer = this._deviceChipsContainerRef.value;
-        if (deviceContainer) {
-            this._canScrollDeviceLeft = deviceContainer.scrollLeft > 1;
-            this._canScrollDeviceRight =
-                deviceContainer.scrollLeft < deviceContainer.scrollWidth - deviceContainer.clientWidth - 1;
-        }
-    }
-    /*
-     * Computes derived metrics for rendering.
-     * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
-     */
-    _updateMetrics() {
-        if (!this.device || !this.hass) {
-            this._mainChips = [];
-            this._deviceChips = [];
-            this._dominant = undefined;
-            this._envAttrs = {};
-            return;
-        }
-        const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
-        this._mainChips = mainChips;
-        this._deviceChips = deviceChips;
-        this._dominant = dominant;
-        this._envAttrs = envAttrs;
-    }
-    updated(changedProps) {
-        if (changedProps.has('device')) {
-            // Content might change size
-            setTimeout(() => this._checkScroll(), 0);
-        }
-    }
-    firstUpdated() {
-        const container = this._chipsContainerRef.value;
-        if (container) {
-            container.addEventListener('scroll', () => this._checkScroll());
-            this._resizeController.observe(container);
-        }
-        const stageContainer = this._stageContainerRef.value;
-        if (stageContainer) {
-            stageContainer.addEventListener('scroll', () => this._checkScroll());
-            this._resizeController.observe(stageContainer);
-        }
-        const deviceContainer = this._deviceChipsContainerRef.value;
-        if (deviceContainer) {
-            deviceContainer.addEventListener('scroll', () => this._checkScroll());
-            this._resizeController.observe(deviceContainer);
-        }
-        // Initial check
-        setTimeout(() => this._checkScroll(), 0);
-    }
-    _handleDeviceChange(e) {
-        const target = e.target;
-        this.store.handleDeviceChange(target.value);
-    }
-    _toggleEnvGraph(metric) {
-        if (!this.store)
-            return;
-        // Check if this metric belongs to a multi-device chip
-        const chip = [...this._mainChips, ...this._deviceChips].find(c => c.key === metric);
-        if (chip && chip.entityIds && chip.entityIds.length > 0) {
-            // Toggle all individual graphs for the devices
-            // We use a composite key format: "metric:entity_id"
-            chip.entityIds.forEach(entityId => {
-                this.store.toggleEnvGraph(`${metric}:${entityId}`);
-            });
-        }
-        else {
-            // Standard single graph behavior
-            this.store.toggleEnvGraph(metric);
-        }
-    }
-    _handleChipDragStart(e, metric) {
-        this._draggedMetric = metric;
-        if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', metric);
-        }
-    }
-    _handleChipDrop(e, targetMetric) {
-        e.preventDefault();
-        if (!this._draggedMetric || this._draggedMetric === targetMetric) {
-            this._draggedMetric = null;
-            return;
-        }
-        if (this.store?.history) {
-            this.store.history.linkGraphs(this._draggedMetric, targetMetric);
-        }
-        this._draggedMetric = null;
-    }
-    _handleDragOver(e) {
-        if (this._draggedMetric) {
-            e.preventDefault();
-        }
-    }
-    _unlinkGraphs(groupIndex) {
-        if (this.store?.history) {
-            this.store.history.unlinkGraphGroup(groupIndex);
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.store) {
-            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
-            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
-            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
-            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
-            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
-            this._nutrientInventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
-            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
-            // Trigger history loading for sparklines on initial load
-            this.store.history.loadHistoryOnDemand();
-        }
-        this._updateMetrics();
-    }
-    willUpdate(changedProperties) {
-        // Update metrics if key dependencies changed or if active graphs changed (StoreController handles the reactivity)
-        if (changedProperties.has('device') ||
-            changedProperties.has('hass') ||
-            this._activeEnvGraphsController?.value) {
-            this._updateMetrics();
-        }
-    }
-    get _chipDraggable() {
-        if (this._resizeController.isMobile || this._resizeController.hasTouch) {
-            return this._mobileLink.toString();
-        }
-        return 'true';
-    }
-    _triggerAction(action) {
-        // Menu state now managed by Popover API
-        // Explicitly close popover on action trigger to prevent overlap with dialogs
-        const menu = this.shadowRoot?.getElementById('header-menu');
-        if (menu && typeof menu.hidePopover === 'function') {
-            try {
-                menu.hidePopover();
-            }
-            catch (e) {
-                // Context might differ or already hidden
-            }
-        }
-        // Direct store method calls
-        switch (action) {
-            case 'add_plant':
-                this.store.openAddPlantDialog();
-                break;
-            case 'config':
-                this.store.openConfigDialog(this.device);
-                break;
-            case 'edit':
-                this.store.ui.setEditMode(!this._isEditModeController.value);
-                break;
-            case 'compact':
-                // Legacy mapping; now should set ViewMode
-                const currentMode = this._viewModeController.value;
-                this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
-                break;
-            case 'strains':
-                this.store.openStrainLibraryDialog();
-                break;
-            case 'irrigation':
-                if (this._selectedDeviceController.value) {
-                    this.store.openIrrigationDialog();
-                }
-                break;
-            case 'ai':
-                this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
-                break;
-            case 'logbook':
-                this.store.openLogbookDialog();
-                break;
-            case 'water': {
-                const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openWateringDialog({
-                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-                    growspaceId: this._selectedDeviceController.value || undefined,
-                    mode: selectedPlants.size > 0 ? 'plant' : 'growspace'
-                });
-                break;
-            }
-            case 'control_dehumidifier':
-                // Implementation for dehumidifier toggle
-                if (this.device?.overview_entity_id) {
-                    this.hass.callService('growspace_manager', 'update_environment_config', {
-                        growspace_id: this._selectedDeviceController.value,
-                        dehumidifier_control_enabled: !this._envAttrs.dehumidifier_control_enabled
-                    });
-                }
-                break;
-            case 'ipm': {
-                const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openIPMDialog({
-                    growspaceId: this._selectedDeviceController.value || this.device?.device_id,
-                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
-                });
-                break;
-            }
-            case 'training': {
-                const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this._selectedDeviceController.value || undefined);
-                break;
-            }
-            case 'nutrients':
-                this.store.openNutrientsDialog();
-                break;
-        }
-    }
-    render() {
-        if (!this.device || !this.hass)
-            return x ``;
-        const dominant = this._dominant;
-        const devices = this._devicesController.value;
-        // ⚡ Performance: Single-pass partitioning with Set.has() O(1) instead of Array.includes() O(n)
-        // Reduces from 2 array iterations to 1, ~50% fewer iterations for chip splitting
-        const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
-        const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
-            if (heroKeySet.has(chip.key)) {
-                acc.heroChips.push(chip);
-            }
-            else {
-                acc.secondaryChips.push(chip);
-            }
-            return acc;
-        }, { heroChips: [], secondaryChips: [] });
-        return x `
-      <div class="gs-stats-container">
-        
-        <!-- TOP HEADER: Title + Actions -->
-        <div class="gs-header-top">
-          
-          <!-- Row 1 Left: Title/Select -->
-          <div class="header-title-area">
-            ${!this.config?.default_growspace
-            ? x `
-            <div class="select-wrapper">
-                <span class="select-sizer">${devices.find(d => d.device_id === this.device.device_id)?.name || this.device.name}</span>
-                <select
-                    class="growspace-select-header"
-                    .value=${this.device.device_id}
-                    @change=${this._handleDeviceChange}
-                >
-                    ${devices.map((d) => x `<option value=${d.device_id}>${d.name}</option>`)}
-                </select>
-            </div>`
-            : x `<h1 class="gs-title">${this.device.name}</h1>`}
-          </div>
-
-          <!-- Row 1 Right: Header Actions (Device Chips + Menu) -->
-          <div class="header-actions">
-              <div class="gs-device-chips-container">
-                  <div class="scroll-arrow ${!this._canScrollDeviceLeft ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.LEFT)}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                  </div>
-                  <div class="gs-device-chips-header" ${n$2(this._deviceChipsContainerRef)}>
-                    ${this._deviceChips.map(chip => x `
-                        <growspace-chip
-                            .icon=${chip.icon}
-                            .label=${chip.label}
-                            .value=${chip.value}
-                            .multiValues=${chip.multiValues}
-                            .status=${chip.status}
-                            .active=${chip.active}
-                            .linked=${chip.linked}
-                            .tooltip=${chip.tooltip}
-                            draggable="${this._chipDraggable}"
-                            @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                            @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                            @dragover=${this._handleDragOver}
-                            @click=${() => this._toggleEnvGraph(chip.key)}
-                            @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
-                        ></growspace-chip>
-                    `)}
-                  </div>
-                  <div class="scroll-arrow ${!this._canScrollDeviceRight ? 'hidden' : ''}" @click=${() => this._scrollDeviceChips(ScrollDirection.RIGHT)}>
-                      <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                  </div>
-              </div>
-
-             ${(this._resizeController.isMobile || this._resizeController.hasTouch) ? x `
-                <div 
-                    class="icon-button mobile-link ${this._mobileLink ? 'active' : ''}"
-                    @click=${() => this._mobileLink = !this._mobileLink} 
-                    title="Toggle Link Mode"
-                >
-                    <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-                </div>
-             ` : ''}
-
-             <div class="menu-container">
-                <button 
-                  class="icon-button" 
-                  id="menu-trigger"
-                  popovertarget="header-menu"
-                  title="Open Menu"
-                >
-                    <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </button>
-                ${this._renderMenu()}
-             </div>
-          </div>
-          
-           <!-- Row 2 Left: Stage Chips -->
-           <div class="header-stage-area-wrapper" style="grid-column: 1; grid-row: 2; display: flex; align-items: center; min-width: 0; position: relative;">
-               <!-- Added arrows for stage if needed, using same logic or simplified -->
-                <div class="scroll-arrow ${!this._canScrollStageLeft ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.LEFT)}>
-                    <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-                </div>
-               <div class="header-stage-area" ${n$2(this._stageContainerRef)}>
-                 ${dominant
-            ? x `
-                         <div class="gs-stage-pill">
-                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                             ${dominant.daysLabel}
-                         </div>
-                         <div class="gs-stage-pill">
-                             <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${dominant.icon}"></path></svg>
-                             ${dominant.weeksLabel}
-                         </div>
-                       `
-            : ''}
-               </div>
-                <div class="scroll-arrow ${!this._canScrollStageRight ? 'hidden' : ''}" @click=${() => this._scrollStage(ScrollDirection.RIGHT)}>
-                    <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-                </div>
-           </div>
-
-          <!-- Row 2 Right: Secondary Strip -->
-          <div class="secondary-strip-container">
-            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.LEFT)}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-            </div>
-            
-            <div 
-                class="secondary-strip ${this._mobileLink ? 'mobile-wrap' : ''}"
-                ${n$2(this._chipsContainerRef)}
-            >
-                ${secondaryChips.map((chip) => x `
-                    <growspace-chip
-                        .icon=${chip.icon}
-                        .label=${chip.label}
-                        .value=${chip.value}
-                        .multiValues=${chip.multiValues}
-                        .status=${chip.status}
-                        .active=${chip.active}
-                        .linked=${chip.linked}
-                        .tooltip=${chip.tooltip}
-                        draggable="${this._chipDraggable}"
-                        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                        @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                        @dragover=${this._handleDragOver}
-                        @click=${() => this._toggleEnvGraph(chip.key)}
-                        @unlink=${(e) => this._unlinkGraphs(chip.groupIndex)}
-                    ></growspace-chip>
-                `)}
-                
-                ${this._nutrientInventoryController.value?.stocks
-            ? Object.values(this._nutrientInventoryController.value.stocks).map(stock => x `
-                        <nutrient-stock-chip
-                            .stock=${stock}
-                            .compact=${this.compact}
-                            @click=${() => this.store.openNutrientsDialog()}
-                            style="cursor: pointer;"
-                        ></nutrient-stock-chip>
-                    `)
-            : ''}
-            </div>
-
-            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollChips(ScrollDirection.RIGHT)}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-            </div>
-          </div>
-
-        </div>
-
-
-        <!-- HERO GRID (Vital Stats) -->
-        <div class="hero-grid">
-            ${heroChips.map((chip) => this._renderHeroCard(chip))}
-        </div>
-      </div>
-    `;
-    }
-    _renderHeroCard(chip) {
-        const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
-        const val = match ? match[1] : chip.value;
-        const unit = match ? match[2] : '';
-        // Generate sparkline path for this metric
-        const sparklineWidth = 140; // Approximate card width
-        const sparklineHeight = 80; // Approximate card height minus padding
-        // Get current time range from controller
-        const timeRange = this.store?.history?.getRange() || '24h';
-        // For VPD, try multi-segment coloring first, fall back to standard if no segments
-        const isVpd = chip.key === 'vpd';
-        let vpdSegments = [];
-        if (isVpd && this.store?.history && this.device) {
-            const historyData = this._historyCacheController?.value?.vpd;
-            const lightHistory = this._historyCacheController?.value?.light || [];
-            // Get VPD thresholds from device overview entity
-            const overviewEntity = this.device.overview_entity_id
-                ? this.hass?.states[this.device.overview_entity_id]
-                : null;
-            const attrs = overviewEntity?.attributes || {};
-            const day = {
-                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
-                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
-                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
-                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
-            };
-            const night = {
-                targetMin: attrs.night_vpd_target_min ?? day.targetMin,
-                targetMax: attrs.night_vpd_target_max ?? day.targetMax,
-                dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
-                dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
-            };
-            vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, { day, night }, lightHistory, timeRange);
-        }
-        const useVpdSegments = isVpd && vpdSegments.length > 0;
-        let sparklinePath = '';
-        if (!useVpdSegments && this.store?.history) {
-            sparklinePath = ChartUtils.generateSparklinePath(this._historyCacheController?.value?.[chip.key], sparklineWidth, sparklineHeight, timeRange);
-        }
-        const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
-        return x `
-        <div 
-            class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
-            draggable="${this._chipDraggable}"
-            @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-            @drop=${(e) => this._handleChipDrop(e, chip.key)}
-            @dragover=${this._handleDragOver}
-            @click=${() => this._toggleEnvGraph(chip.key)}
-            title="${chip.tooltip || ''}"
-        >
-            <!-- Mini sparkline background -->
-            ${useVpdSegments ? x `
-              <svg 
-                class="hero-sparkline" 
-                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" 
-                preserveAspectRatio="none"
-                style="overflow: visible;"
-              >
-                <!-- Transparent rect to establish dimensions -->
-                <rect x="0" y="0" width="${sparklineWidth}" height="${sparklineHeight}" fill="transparent" />
-                ${vpdSegments.map(seg => b `
-                  <path 
-                    d="${seg.path}" 
-                    fill="none" 
-                    stroke="${seg.color}" 
-                    stroke-width="2.5" 
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                `)}
-              </svg>
-            ` : sparklinePath ? x `
-              <svg 
-                class="hero-sparkline" 
-                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" 
-                preserveAspectRatio="none"
-              >
-                <defs>
-                  <linearGradient id="sparkline-grad-${chip.key}" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
-                    <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-                <path 
-                  d="${sparklinePath} V ${sparklineHeight} H 0 Z" 
-                  fill="url(#sparkline-grad-${chip.key})" 
-                />
-                <path 
-                  d="${sparklinePath}" 
-                  fill="none" 
-                  stroke="${sparklineColor}" 
-                  stroke-width="2" 
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            ` : ''}
-
-            <div class="hero-value-group">
-                <span class="hero-value">${val}</span>
-                <span class="hero-unit">${unit}</span>
-            </div>
-        </div>
-    `;
-    }
-    _renderMenu() {
-        return x `
-      <div id="header-menu" popover="auto" class="menu-dropdown">
-        <div class="menu-header">Configuration</div>
-        <div class="menu-item" @click=${() => this._triggerAction('config')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-            <span class="menu-item-label">Settings</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-             <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-             <span class="menu-item-label">Edit Mode</span>
-             <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController.value })}></div>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-header">Plant Care</div>
-        <div class="menu-item" @click=${() => this._triggerAction('water')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Water Selected' : 'Water Growspace'}</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            <span class="menu-item-label">Irrigation</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('training')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-            <span class="menu-item-label">${this._selectedPlantsController.value.size > 0 ? 'Train Selected' : 'Log Training'}</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-            <span class="menu-item-label">Nutrients</span>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-header">Tools</div>
-        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-            <span class="menu-item-label">Add Plant</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-            <span class="menu-item-label">Strains</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-            <span class="menu-item-label">Logbook</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-            <span class="menu-item-label">Ask AI</span>
-        </div>
-      </div>
-    `;
-    }
-};
-GrowspaceHeader.styles = i$6 `
+const headerStyles = i$6 `
     :host {
       display: block;
     }
@@ -31736,21 +31137,6 @@ GrowspaceHeader.styles = i$6 `
         background-color: initial;
     }
 
-    .gs-stage-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      width: fit-content;
-      backdrop-filter: blur(8px);
-    }
-
     /* --- Header Top Section --- */
     .gs-header-top {
       display: grid;
@@ -31767,441 +31153,1259 @@ GrowspaceHeader.styles = i$6 `
         align-items: center;
     }
 
-    .header-actions {
+    /* New component slots */
+    growspace-header-actions {
         grid-column: 2;
         grid-row: 1;
-        display: flex;
-        align-items: center;
-        gap: 12px;
     }
     
-    .header-stage-area {
+    .header-stage-area-wrapper {
         grid-column: 1;
         grid-row: 2;
         display: flex;
         align-items: center;
-        gap: 8px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        width: 100%;
         min-width: 0;
-        max-width: 100%;
-        padding-right: 16px;
-        box-sizing: border-box;
-        mask-image: linear-gradient(to right, black 90%, transparent 100%);
-    }
-
-    .gs-device-chips-container {
-      display: flex;
-      align-items: center;
-      margin-right: 8px;
-      overflow: hidden;
-      min-width: 0;
-      max-width: 100%;
-      box-sizing: border-box;
-      position: relative;
-      margin-left: auto;
-    }
-
-    .gs-device-chips-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      min-width: 0;
-      padding: 0 4px; /* Small padding for focus rings etc */
-      scroll-behavior: smooth;
-    }
-    
-    .gs-device-chips-header::-webkit-scrollbar { display: none; }
-    
-    .gs-device-chips-header growspace-chip {
-        flex-shrink: 0;
-    }
-
-    /* --- Hero Grid (Vital Stats) --- */
-    .hero-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-      width: 100%;
-      min-height: 50px;
-    }
-
-    .hero-card {
-      background: var(--glass-bg, rgba(255, 255, 255, 0.05));
-      border: var(--divider-color, rgba(255, 255, 255, 0.1));
-      backdrop-filter: var(--glass-blur);
-      box-shadow:
-        0 4px 24px -1px rgba(0, 0, 0, 0.2),
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-      
-      border-radius: 24px; /* Increased rounded corners */
-      padding: 20px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      cursor: grab;
-      transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-      overflow: hidden;
-      min-height: 110px;
-    }
-
-    .hero-card:active {
-      cursor: grabbing;
-      transform: scale(0.98);
-    }
-    
-    .hero-card:hover {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08)); /* Slightly lighter on hover */
-        border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
-        box-shadow: 
-             0 8px 32px -4px rgba(0, 0, 0, 0.3),
-             0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-        transform: translateY(-2px);
-    }
-
-    .hero-card.linked {
-        border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-    }
-
-    .hero-value-group {
-      display: flex;
-      align-items: baseline;
-      gap: 4px;
-    }
-
-    .hero-value {
-      font-size: 2rem;
-      font-weight: 400; /* Thinner for modern look */
-      color: var(--primary-text-color, #fff);
-      line-height: 1;
-    }
-
-    .hero-unit {
-      font-size: 1rem;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-      font-weight: 500;
-    }
-    .hero-icon {
-        width: 20px;
-        height: 20px;
-        fill: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-    }
-
-    .hero-label {
-        font-size: 0.9rem;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-        font-weight: 500;
-    }
-    /* Active graph indication */
-    .hero-card.active {
-        background: color-mix(in srgb, var(--primary-color, #2196f3) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
-        border-color: var(--primary-color, #2196f3);
-        box-shadow: 
-            0 8px 32px -4px rgba(0, 0, 0, 0.3),
-            0 0 0 1px var(--primary-color, #2196f3) inset;
-    }
-    
-    .hero-card.active .hero-value,
-    .hero-card.active .hero-label, 
-    .hero-card.active .hero-unit,
-    .hero-card.active .hero-icon {
-        color: var(--primary-text-color, #fff) !important;
-        fill: var(--primary-text-color, #fff) !important;
-    }
-
-    /* Mini sparkline background for hero cards */
-    .hero-sparkline {
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 50%;
-        pointer-events: none;
-        z-index: 0;
-        opacity: 0.7;
-    }
-
-    .hero-sparkline path {
-        transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill 0.3s ease;
-    }
-
-    .hero-value, .hero-unit {
-        transition: color 0.3s ease, transform 0.3s ease;
-    }
-
-    .hero-value-group {
         position: relative;
-        z-index: 1;
+        /* height for scroll container consistency */
     }
 
     /* --- Secondary Strip (Scrollable) --- */
     .secondary-strip-container {
         position: relative;
-        display: flex;
-        align-items: center;
         border-radius: 16px;
         grid-column: 2;
         min-width: 0;
         width: 100%;
+        height: 60px; /* specific height for generic scroll container usage */
         overflow: hidden; 
         box-sizing: border-box;
     }
-
-    .scroll-arrow {
-        min-width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color, rgba(255,255,255,0.7));
-        cursor: pointer;
-        border-radius: 50%;
-        transition: background 0.2s;
-    }
-    .scroll-arrow:hover {
-        background: rgba(255,255,255,0.1);
-        color: var(--primary-text-color, #fff);
-    }
-    .scroll-arrow.hidden {
-        opacity: 0;
-        pointer-events: none;
-        min-width: 0;
-        width: 0;
-        min-height: 0;
-        height: 0;
-    }
-    .scroll-arrow svg { width: 20px; height: 20px; fill: currentColor; }
 
     .secondary-strip {
         display: flex;
         justify-content: flex-start;
         align-items: center;
         gap: 12px;
-        overflow-x: auto;
-        overflow-y: hidden;
         flex: 1;
-        width: 0;
-        min-width: 0;
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE */
-        padding: 8px 4px 8px 4px; 
-        scroll-behavior: smooth;
+        width: 100%;
+        height: 100%;
+        padding: 0 4px; 
     }
+    
     .secondary-strip > growspace-chip:first-child {
         margin-left: auto;
     }
-    .secondary-strip::-webkit-scrollbar { display: none; }
 
-    .secondary-divider {
-        width: 1px;
-        height: 24px;
-        background: var(--divider-color, rgba(255,255,255,0.15));
-        flex-shrink: 0;
-        margin: 0 4px;
-    }
-
-    /* Secondary Chips styling tweaks if needed */
-    /* Reuse existing .stat-chip or use growspace-chip component */
-    
     /* --- Mobile & Responsive --- */
     @media (max-width: 600px) {
         .gs-title { font-size: 2rem; }
-        .hero-grid {
-            gap: 12px;
-        }
         .header-title-area {
           max-width: 70%;
         }
-        .hero-value { font-size: 1.75rem; }
         
-        .header-actions {
+        growspace-header-actions {
             grid-column: 1;
             grid-row: 3;
             justify-content: flex-start;
             justify-self: auto;
         }
+
         .gs-header-top {
             grid-template-columns: minmax(0, 1fr);
             position: relative; /* For absolute actions */
             gap: 8px;
         }
 
-        /* Wrap secondary strip when link mode active */
-        .secondary-strip.mobile-wrap {
-            flex-wrap: wrap;
-            height: auto;
-            overflow-x: visible;
-        }
+        /* Wrap secondary strip when link mode active - managed via props now or css? */
+        /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
+        /* Or we just allow scrolling on mobile always */
 
-        /* Absolute positioning for mobile actions */
-        .icon-button.mobile-link {
-            position: absolute;
-            top: 0;
-            right: 48px;
-        }
-        .menu-container {
-            position: absolute !important;
-            top: 0 !important;
-            right: 0 !important;
-        }
-
-        /* Fix scroll issue with flex-end on mobile */
-        .secondary-strip {
-            justify-content: flex-start;
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            width: 100%; /* Ensure width is defined */
-            max-width: 100%;
-        }
         .secondary-strip-container {
             grid-row: 4;
             grid-column: 1;
         }
-        /* Allow arrows if they fit logic */
-        /* .secondary-strip-container .scroll-arrow { display: none; } REMOVED to allow arrows */
     }
+`;
 
-    /* Menu & Buttons (Reused/Refined) */
-    .menu-container { position: relative; }
-    .icon-button {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary-text-color, #fff);
-      cursor: pointer;
-      transition: all 0.2s;
-      /* Define anchor for menu positioning */
-      anchor-name: --menu-trigger;
+let ScrollContainer = class ScrollContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.scrollAmount = 200;
+        this.containerClass = '';
+        this._canScrollLeft = false;
+        this._canScrollRight = false;
+        this._resizeController = new ResizeController(this, () => this.checkScroll());
     }
-    .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
-    .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
+    firstUpdated() {
+        this.checkScroll();
+        this._resizeController.observe(this._scrollContent);
+    }
+    checkScroll() {
+        if (!this._scrollContent)
+            return;
+        const el = this._scrollContent;
+        // 1px buffer
+        this._canScrollLeft = el.scrollLeft > 1;
+        this._canScrollRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 1;
+    }
+    scrollContentLeft() {
+        if (this._scrollContent) {
+            this._scrollContent.scrollBy({ left: -this.scrollAmount, behavior: 'smooth' });
+        }
+    }
+    scrollContentRight() {
+        if (this._scrollContent) {
+            this._scrollContent.scrollBy({ left: this.scrollAmount, behavior: 'smooth' });
+        }
+    }
+    render() {
+        return x `
+            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this.scrollContentLeft()}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+            </div>
+            
+            <div 
+                class="scroll-content ${this.containerClass}" 
+                @scroll=${() => this.checkScroll()}
+            >
+                <slot></slot>
+            </div>
+
+            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this.scrollContentRight()}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+            </div>
+        `;
+    }
+};
+ScrollContainer.styles = i$6 `
+        :host {
+            display: flex;
+            align-items: center;
+            position: relative;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .scroll-content {
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            min-width: 0;
+            flex: 1;
+            scroll-behavior: smooth;
+            height: 100%;
+        }
+
+        .scroll-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scroll-arrow {
+            min-width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text-color, rgba(255,255,255,0.7));
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s, opacity 0.2s;
+            flex-shrink: 0;
+            z-index: 2;
+        }
+
+        .scroll-arrow:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--primary-text-color, #fff);
+        }
+
+        .scroll-arrow.hidden {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            padding: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .scroll-arrow svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Allow slotted content to fill height */
+        ::slotted(*) {
+            height: 100%;
+        }
+    `;
+__decorate([
+    n$5({ type: Number })
+], ScrollContainer.prototype, "scrollAmount", void 0);
+__decorate([
+    n$5({ type: String })
+], ScrollContainer.prototype, "containerClass", void 0);
+__decorate([
+    r$2()
+], ScrollContainer.prototype, "_canScrollLeft", void 0);
+__decorate([
+    r$2()
+], ScrollContainer.prototype, "_canScrollRight", void 0);
+__decorate([
+    e$5('.scroll-content')
+], ScrollContainer.prototype, "_scrollContent", void 0);
+ScrollContainer = __decorate([
+    t$2('scroll-container')
+], ScrollContainer);
+
+let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.deviceChips = [];
+        this.isMobile = false;
+        this.mobileLink = false;
+        this._draggedMetric = null; // Local drag state
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
+            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        }
+    }
+    get _chipDraggable() {
+        if (this.isMobile) {
+            return this.mobileLink.toString();
+        }
+        return 'true';
+    }
+    _triggerAction(action) {
+        // Popover closing is handled by browser for 'popover="auto"', but specific logic for custom events might be needed
+        const menu = this.shadowRoot?.getElementById('header-menu');
+        if (menu && typeof menu.hidePopover === 'function') {
+            try {
+                menu.hidePopover();
+            }
+            catch { /* ignore */ }
+        }
+        switch (action) {
+            case 'add_plant':
+                this.store.openAddPlantDialog();
+                break;
+            case 'config': {
+                const device = this.store.data.$devices.get().find(d => d.device_id === this._selectedDeviceController.value);
+                if (device)
+                    this.store.openConfigDialog(device);
+                break;
+            }
+            case 'edit':
+                this.store.ui.setEditMode(!this._isEditModeController.value);
+                break;
+            case 'compact': {
+                const currentMode = this._viewModeController.value;
+                this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
+                break;
+            }
+            case 'strains':
+                this.store.openStrainLibraryDialog();
+                break;
+            case 'irrigation':
+                if (this._selectedDeviceController.value)
+                    this.store.openIrrigationDialog();
+                break;
+            case 'ai':
+                this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
+                break;
+            case 'logbook':
+                this.store.openLogbookDialog();
+                break;
+            case 'water': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.openWateringDialog({
+                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
+                    growspaceId: this._selectedDeviceController.value || undefined,
+                    mode: selectedPlants.size > 0 ? 'plant' : 'growspace'
+                });
+                break;
+            }
+            case 'ipm': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.openIPMDialog({
+                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.device_id || '', // Fallback
+                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
+                });
+                break;
+            }
+            case 'training': {
+                const selectedPlants = this.store.ui.$selectedPlants.get();
+                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this._selectedDeviceController.value || undefined);
+                break;
+            }
+            case 'nutrients':
+                this.store.openNutrientsDialog();
+                break;
+        }
+    }
+    _handleChipDragStart(e, metric) {
+        this._draggedMetric = metric;
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', metric);
+        }
+        // Also bubble up if needed
+        this.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    _handleChipDrop(e, targetMetric) {
+        e.preventDefault();
+        // Internal link logic if we want, or bubble up
+        // The original code handled linking in GrowspaceHeader
+        // But since both chips are in this container or header-hero, we delegate history linking to store here or bubble
+        if (!this._draggedMetric || this._draggedMetric === targetMetric) {
+            this._draggedMetric = null;
+            return;
+        }
+        if (this.store?.history) {
+            this.store.history.linkGraphs(this._draggedMetric, targetMetric);
+        }
+        this._draggedMetric = null;
+    }
+    _handleDragOver(e) {
+        if (this._draggedMetric)
+            e.preventDefault();
+    }
+    _unlinkGraphs(groupIndex) {
+        this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: { groupIndex }, bubbles: true, composed: true }));
+    }
+    // Pass through toggle event
+    _toggleEnvGraph(metric) {
+        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+            <div class="gs-device-chips-container">
+                <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
+                    <div class="chips-wrapper">
+                        ${this.deviceChips.map(chip => x `
+                            <growspace-chip
+                                .icon=${chip.icon}
+                                .label=${chip.label}
+                                .value=${chip.value}
+                                .multiValues=${chip.multiValues}
+                                .status=${chip.status}
+                                .active=${chip.active}
+                                .linked=${chip.linked}
+                                .tooltip=${chip.tooltip}
+                                draggable="${this._chipDraggable}"
+                                @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                                @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                                @dragover=${this._handleDragOver}
+                                @click=${() => this._toggleEnvGraph(chip.key)}
+                                @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+                            ></growspace-chip>
+                        `)}
+                    </div>
+                </scroll-container>
+            </div>
+
+            ${this.isMobile ? x `
+                <div 
+                    class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
+                    @click=${() => this.dispatchEvent(new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true }))} 
+                    title="Toggle Link Mode"
+                >
+                    <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
+                </div>
+            ` : ''}
+
+            <div class="menu-container">
+                <button 
+                  class="icon-button" 
+                  id="menu-trigger"
+                  popovertarget="header-menu"
+                  title="Open Menu"
+                >
+                    <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+                </button>
+                ${this._renderMenu()}
+            </div>
+        `;
+    }
+    _renderMenu() {
+        return x `
+          <div id="header-menu" popover="auto" class="menu-dropdown">
+            <div class="menu-header">Configuration</div>
+            <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                <span class="menu-item-label">Settings</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+                 <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                 <span class="menu-item-label">Edit Mode</span>
+                 <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController?.value || false })}></div>
+            </div>
     
-    .icon-button.mobile-link.active {
-        background: var(--primary-color, #2196f3);
-        border-color: var(--primary-color, #2196f3);
-    }
-
-
-    .menu-dropdown {
-      /* Popover API handles positioning in top layer */
-      position: fixed;
-      inset: auto;
-      
-      /* Anchor positioning - attach to trigger button */
-      position-anchor: --menu-trigger;
-      top: anchor(bottom);
-      right: anchor(right);
-      
-      /* Auto-flip if no space below */
-      position-try-fallbacks: flip-block;
-      
-      margin-top: 8px;
-      background: var(--card-background-color, #2a2a2a);
-      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-      border-radius: 12px;
-      font-size: 0.9rem;
-      min-width: 180px;
-      padding: 0;
-      overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-    }
+            <div class="menu-divider"></div>
     
-    .menu-dropdown:popover-open {
-      display: block;
-      animation: slide-in 0.2s ease-out;
-    }
+            <div class="menu-header">Plant Care</div>
+            <div class="menu-item" @click=${() => this._triggerAction('water')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Water Selected' : 'Water Growspace'}</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                <span class="menu-item-label">Irrigation</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('training')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Train Selected' : 'Log Training'}</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+                <span class="menu-item-label">Nutrients</span>
+            </div>
     
-    @keyframes slide-in {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+            <div class="menu-divider"></div>
     
-    /* Mobile: Convert to bottom sheet */
-    @media (max-width: 600px) {
-      .menu-dropdown:popover-open {
-        inset: auto 0 0 0;
-        width: 100%;
-        position-anchor: none;
-        border-radius: 20px 20px 0 0;
-        margin: 0;
-        animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
-      }
-      
-      @keyframes slide-up {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
-      }
+            <div class="menu-header">Tools</div>
+            <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                <span class="menu-item-label">Add Plant</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+                <span class="menu-item-label">Strains</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+                <span class="menu-item-label">Logbook</span>
+            </div>
+            <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+                <span class="menu-item-label">Ask AI</span>
+            </div>
+          </div>
+        `;
     }
-    .menu-item {
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        cursor: pointer;
-        color: var(--primary-text-color, #ddd);
-        transition: background 0.2s;
-    }
-    .menu-item:hover { background: var(--secondary-background-color, rgba(255,255,255,0.1)); color: var(--primary-text-color, #fff); }
-    .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
-    .menu-item-label { flex: 1; }
+};
+GrowspaceHeaderActions.styles = i$6 `
+        :host {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            min-width: 0;
+            gap: 12px;
+        }
 
-    .menu-toggle-switch {
-      width: 40px;
-      height: 20px;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
-      border-radius: 10px;
-      position: relative;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
+        .gs-device-chips-container {
+             display: flex;
+             align-items: center;
+             overflow: hidden;
+             min-width: 0;
+             max-width: 100%;
+             flex: 1;
+             height: 48px; /* Fixed height for scroll container */
+        }
+        
+        /* Styles copied/adapted from GrowspaceHeader */
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-text-color, #fff);
+            cursor: pointer;
+            transition: all 0.2s;
+            anchor-name: --menu-trigger;
+            flex-shrink: 0; 
+        }
+        .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
+        .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
+        
+        .icon-button.mobile-link.active {
+            background: var(--primary-color, #2196f3);
+            border-color: var(--primary-color, #2196f3);
+        }
 
-    .menu-toggle-switch::after {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.2s;
-    }
+        .menu-dropdown {
+            position: fixed;
+            inset: auto;
+            position-anchor: --menu-trigger;
+            top: anchor(bottom);
+            right: anchor(right);
+            position-try-fallbacks: flip-block;
+            margin-top: 8px;
+            background: var(--card-background-color, #2a2a2a);
+            border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+            border-radius: 12px;
+            font-size: 0.9rem;
+            min-width: 180px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
 
-    .menu-toggle-switch.active {
-      background: var(--primary-color, #03a9f4);
-    }
+        .menu-dropdown:popover-open {
+            display: block;
+            animation: slide-in 0.2s ease-out;
+        }
 
-    .menu-toggle-switch.active::after {
-      transform: translateX(20px);
-    }
+        @keyframes slide-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .menu-divider {
-      height: 1px;
-      background: var(--divider-color, rgba(255,255,255,0.1));
-      margin: 4px 0;
-    }
+        .menu-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary-text-color, #ddd); }
+        .menu-item:hover { background: var(--secondary-background-color, rgba(255,255,255,0.1)); color: var(--primary-text-color, #fff); }
+        .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
+        .menu-item-label { flex: 1; }
+        .menu-header { padding: 8px 16px 4px; font-size: 0.75rem; font-weight: 700; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 1px; }
+        .menu-divider { height: 1px; background: var(--divider-color, rgba(255,255,255,0.1)); margin: 4px 0; }
+        
+         .menu-toggle-switch {
+              width: 40px;
+              height: 20px;
+              background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+              border-radius: 10px;
+              position: relative;
+              transition: background 0.2s;
+              flex-shrink: 0;
+         }
+        .menu-toggle-switch::after {
+              content: '';
+              position: absolute;
+              width: 16px;
+              height: 16px;
+              background: white;
+              border-radius: 50%;
+              top: 2px;
+              left: 2px;
+              transition: transform 0.2s;
+        }
+        .menu-toggle-switch.active { background: var(--primary-color, #03a9f4); }
+        .menu-toggle-switch.active::after { transform: translateX(20px); }
 
-    .menu-header {
-      padding: 8px 16px 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--secondary-text-color);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+        @media (max-width: 600px) {
+             .menu-dropdown:popover-open {
+                inset: auto 0 0 0;
+                width: 100%;
+                position-anchor: none;
+                border-radius: 20px 20px 0 0;
+                margin: 0;
+                animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+             }
+             @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        }
+
+        /* Chips wrapper in scroll container */
+        .chips-wrapper { display: flex; gap: 8px; padding: 0 4px; }
+    `;
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], GrowspaceHeaderActions.prototype, "store", void 0);
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceHeaderActions.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderActions.prototype, "deviceChips", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderActions.prototype, "isMobile", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderActions.prototype, "mobileLink", void 0);
+__decorate([
+    r$2()
+], GrowspaceHeaderActions.prototype, "_draggedMetric", void 0);
+GrowspaceHeaderActions = __decorate([
+    t$2('growspace-header-actions')
+], GrowspaceHeaderActions);
+
+let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.chips = [];
+        this.isMobile = false;
+        this.mobileLink = false;
     }
-  `;
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
+        }
+    }
+    _handleChipDragStart(e, metric) {
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', metric);
+        }
+        this.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    _handleChipDrop(e, targetMetric) {
+        e.preventDefault();
+        this.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric }, bubbles: true, composed: true }));
+    }
+    _handleDragOver(e) {
+        e.preventDefault(); // Allow drop
+    }
+    _toggleEnvGraph(metric) {
+        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+            ${c(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
+        `;
+    }
+    _renderHeroCard(chip) {
+        const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
+        const val = match ? match[1] : chip.value;
+        const unit = match ? match[2] : '';
+        const sparklineWidth = 140;
+        const sparklineHeight = 80;
+        const timeRange = this.store?.history?.getRange() || '24h';
+        const isVpd = chip.key === 'vpd';
+        let vpdSegments = [];
+        if (isVpd && this.store?.history && this.device) {
+            const historyData = this._historyCacheController?.value?.vpd;
+            const lightHistory = this._historyCacheController?.value?.light || [];
+            const overviewEntity = this.device.overview_entity_id
+                ? this.hass?.states[this.device.overview_entity_id]
+                : null;
+            const attrs = overviewEntity?.attributes || {};
+            // Default thresholds fallback
+            const day = {
+                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+            };
+            const night = {
+                targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+                targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+                dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+                dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+            };
+            vpdSegments = ChartUtils.generateVpdSparklineSegments(historyData, sparklineWidth, sparklineHeight, { day, night }, lightHistory, timeRange);
+        }
+        const useVpdSegments = isVpd && vpdSegments.length > 0;
+        let sparklinePath = '';
+        if (!useVpdSegments && this.store?.history) {
+            sparklinePath = ChartUtils.generateSparklinePath(this._historyCacheController?.value?.[chip.key], sparklineWidth, sparklineHeight, timeRange);
+        }
+        const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
+        return x `
+            <div 
+                class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
+                draggable="${!this.isMobile || this.mobileLink}"
+                @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                @dragover=${(e) => this._handleDragOver(e)}
+                @click=${() => this._toggleEnvGraph(chip.key)}
+                title="${chip.tooltip || ''}"
+            >
+
+                ${useVpdSegments ? x `
+                  <svg class="hero-sparkline" viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" preserveAspectRatio="none" style="overflow: visible;">
+                    <rect x="0" y="0" width="${sparklineWidth}" height="${sparklineHeight}" fill="transparent" />
+                    ${vpdSegments.map(seg => b `
+                      <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    `)}
+                  </svg>
+                ` : sparklinePath ? x `
+                  <svg class="hero-sparkline" viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="sparkline-grad-${chip.key}" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
+                        <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d="${sparklinePath} V ${sparklineHeight} H 0 Z" fill="url(#sparkline-grad-${chip.key})" />
+                    <path d="${sparklinePath}" fill="none" stroke="${sparklineColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                ` : ''}
+    
+                <div class="hero-value-group">
+                    ${chip.multiValues && chip.multiValues.length > 0
+            ? x `
+                        <div class="hero-multi-values">
+                            ${chip.multiValues.map((v, i) => x `
+                                ${i > 0 ? x `<div class="hero-multi-divider"></div>` : ''}
+                                <span>${v}</span>
+                            `)}
+                        </div>
+                        `
+            : x `
+                        <span class="hero-value">${val}</span>
+                        <span class="hero-unit">${unit}</span>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+};
+GrowspaceHeaderHero.styles = [
+    sharedStyles,
+    i$6 `
+        :host {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            width: 100%;
+            min-height: 50px;
+        }
+
+        .hero-card {
+            background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+            backdrop-filter: var(--glass-blur);
+            box-shadow:
+                0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+            
+            border-radius: 24px;
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            cursor: grab;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+            overflow: hidden;
+            min-height: 110px;
+        }
+
+        .hero-card:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+        
+        .hero-card:hover {
+            background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+            border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
+            box-shadow: 
+                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            transform: translateY(-2px);
+        }
+
+        .hero-card.linked {
+            border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+            background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        }
+
+        .hero-value-group {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-value {
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--primary-text-color, #fff);
+            line-height: 1;
+        }
+
+        .hero-unit {
+            font-size: 1rem;
+            color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+            font-weight: 500;
+        }
+        
+        .hero-card.active {
+            background: color-mix(in srgb, var(--primary-color, #2196f3) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
+            border-color: var(--primary-color, #2196f3);
+            box-shadow: 
+                0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                0 0 0 1px var(--primary-color, #2196f3) inset;
+        }
+        
+        .hero-card.active .hero-value,
+        .hero-card.active .hero-label, 
+        .hero-card.active .hero-unit,
+        .hero-card.active .hero-icon {
+            color: var(--primary-text-color, #fff) !important;
+            fill: var(--primary-text-color, #fff) !important;
+        }
+
+        .hero-sparkline {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 50%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.7;
+        }
+
+        .hero-sparkline path {
+            transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill 0.3s ease;
+        }
+        
+        @media (max-width: 600px) {
+            :host {
+                gap: 12px;
+            }
+            .hero-value { font-size: 1.75rem; }
+        }
+
+        .hero-multi-values {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            color: var(--primary-text-color);
+        }
+
+        .hero-multi-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--divider-color, rgba(255,255,255,0.1));
+        }
+    `
+];
+__decorate([
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
+], GrowspaceHeaderHero.prototype, "store", void 0);
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceHeaderHero.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderHero.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderHero.prototype, "chips", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderHero.prototype, "isMobile", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderHero.prototype, "mobileLink", void 0);
+GrowspaceHeaderHero = __decorate([
+    t$2('growspace-header-hero')
+], GrowspaceHeaderHero);
+
+let GrowspaceHeaderStages = class GrowspaceHeaderStages extends i$3 {
+    render() {
+        if (!this.dominant)
+            return x ``;
+        return x `
+            <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
+                <div class="stages-wrapper">
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${this.dominant.icon}"></path></svg>
+                        ${this.dominant.daysLabel}
+                    </div>
+                    <div class="gs-stage-pill">
+                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${this.dominant.icon}"></path></svg>
+                        ${this.dominant.weeksLabel}
+                    </div>
+                </div>
+            </scroll-container>
+        `;
+    }
+};
+GrowspaceHeaderStages.styles = i$6 `
+        :host {
+            display: block;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gs-stage-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+            width: fit-content;
+            backdrop-filter: blur(8px);
+            white-space: nowrap;
+            margin-right: 8px; /* Spacing between pills */
+        }
+
+        /* Ensure pills don't shrink */
+        .gs-stage-pill {
+            flex-shrink: 0;
+        }
+
+        .stages-wrapper {
+             /* Needed for flex layout inside scroll container */
+             display: flex;
+             align-items: center;
+             height: 100%;
+        }
+    `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderStages.prototype, "dominant", void 0);
+GrowspaceHeaderStages = __decorate([
+    t$2('growspace-header-stages')
+], GrowspaceHeaderStages);
+
+let GrowspaceHeaderSecondary = class GrowspaceHeaderSecondary extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.chips = [];
+        this.inventory = null;
+        this.compact = false;
+        this.isMobile = false;
+        this.mobileLink = false;
+    }
+    get _chipDraggable() {
+        if (this.isMobile) {
+            return this.mobileLink.toString();
+        }
+        return 'true';
+    }
+    _handleChipDragStart(e, metric) {
+        this.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    _handleChipDrop(e, targetMetric) {
+        this.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric }, bubbles: true, composed: true }));
+    }
+    _toggleEnvGraph(metric) {
+        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true }));
+    }
+    _unlinkGraphs(groupIndex) {
+        this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: { groupIndex }, bubbles: true, composed: true }));
+    }
+    _openNutrientsDialog() {
+        this.dispatchEvent(new CustomEvent('open-nutrients', { bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+            <scroll-container .scrollAmount=${150}>
+                <div class="secondary-strip">
+                    ${this.chips.map(chip => x `
+                        <growspace-chip
+                            .icon=${chip.icon}
+                            .label=${chip.label}
+                            .value=${chip.value}
+                            .status=${chip.status}
+                            .active=${chip.active}
+                            .linked=${chip.linked}
+                            .tooltip=${chip.tooltip}
+                            draggable="${this._chipDraggable}"
+                            @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                            @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                            @click=${() => this._toggleEnvGraph(chip.key)}
+                            @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+                        ></growspace-chip>
+                    `)}
+
+                    ${this.inventory?.stocks
+            ? Object.values(this.inventory.stocks).map(stock => x `
+                            <nutrient-stock-chip
+                                .stock=${stock}
+                                .compact=${this.compact}
+                                @click=${() => this._openNutrientsDialog()}
+                                style="cursor: pointer;"
+                            ></nutrient-stock-chip>
+                        `)
+            : ''}
+                </div>
+            </scroll-container>
+        `;
+    }
+};
+GrowspaceHeaderSecondary.styles = i$6 `
+        :host {
+            display: block;
+            min-width: 0;
+            width: 100%;
+            height: 60px; /* consistent height */
+        }
+
+        .secondary-strip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 4px;
+        }
+
+        .secondary-strip > growspace-chip:first-child {
+            margin-left: auto;
+        }
+    `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderSecondary.prototype, "chips", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderSecondary.prototype, "inventory", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderSecondary.prototype, "compact", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderSecondary.prototype, "isMobile", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderSecondary.prototype, "mobileLink", void 0);
+GrowspaceHeaderSecondary = __decorate([
+    t$2('growspace-header-secondary')
+], GrowspaceHeaderSecondary);
+
+class HeaderDragController {
+    constructor(host) {
+        this._draggedMetric = null;
+        this._host = host;
+        this._host.addController(this);
+    }
+    hostConnected() {
+        // No specific listeners to attach globally
+    }
+    hostDisconnected() {
+        // Cleanup if needed
+    }
+    handleDragStart(e, metric) {
+        this._draggedMetric = metric;
+        if (e?.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', metric);
+        }
+        // Request update if UI depends on dragged state (though usually handled by CSS/classes)
+        this._host.requestUpdate();
+    }
+    handleDrop(e, targetMetric, onLink) {
+        if (e)
+            e.preventDefault();
+        if (!this._draggedMetric || this._draggedMetric === targetMetric) {
+            this._draggedMetric = null;
+            this._host.requestUpdate();
+            return;
+        }
+        onLink(this._draggedMetric, targetMetric);
+        this._draggedMetric = null;
+        this._host.requestUpdate();
+    }
+    handleDragOver(e) {
+        e.preventDefault(); // Allow drop
+    }
+    get draggedMetric() {
+        return this._draggedMetric;
+    }
+}
+
+let GrowspaceHeader = class GrowspaceHeader extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.compact = false;
+        this.isEditMode = false;
+        this.growspaceOptions = {};
+        this.historyData = null;
+        this._resizeController = new ResizeController(this, () => { });
+        // Cached metrics to avoid re-computation on every render
+        this._mainChips = [];
+        this._deviceChips = [];
+        this._envAttrs = {};
+        this._dragController = new HeaderDragController(this);
+        this._mobileLink = false;
+        // Memoization helper to prevent re-calc if inputs haven't changed
+        this._lastUpdateArgs = [];
+    }
+    // Helper getters
+    get activeEnvGraphs() {
+        return this._activeEnvGraphsController?.value || new Set();
+    }
+    /*
+     * Computes derived metrics for rendering.
+     * Called by willUpdate (for reactive props) and _handleControllerUpdate (for controller events).
+     */
+    _updateMetrics() {
+        if (!this.device || !this.hass) {
+            this._mainChips = [];
+            this._deviceChips = [];
+            this._dominant = undefined;
+            this._envAttrs = {};
+            return;
+        }
+        const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
+        this._mainChips = mainChips;
+        this._deviceChips = deviceChips;
+        this._dominant = dominant;
+        this._envAttrs = envAttrs;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
+            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
+            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
+            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
+            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
+            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
+            this._nutrientInventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
+            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
+        }
+    }
+    _shouldUpdateMetrics() {
+        const args = [
+            this.device?.device_id,
+            this.activeEnvGraphs,
+            this._linkedGraphGroupsController?.value
+        ];
+        const changed = !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
+        if (changed) {
+            this._lastUpdateArgs = args;
+        }
+        return changed;
+    }
+    // Perform metrics calculation before update to ensure data is ready for render
+    willUpdate(changedProps) {
+        // Only update metrics if relevant data changed
+        if (changedProps.has('device') || this._shouldUpdateMetrics()) {
+            this._updateMetrics();
+        }
+    }
+    _handleDeviceChange(e) {
+        const target = e.target;
+        this.store.handleDeviceChange(target.value);
+    }
+    _toggleEnvGraph(metric) {
+        if (!this.store)
+            return;
+        this.store.toggleEnvGraph(metric);
+    }
+    _handleChipDragStart(e, metric) {
+        this._dragController.handleDragStart(e, metric);
+    }
+    _handleChipDrop(e, targetMetric) {
+        this._dragController.handleDrop(e, targetMetric, (source, target) => {
+            if (this.store?.history) {
+                this.store.history.linkGraphs(source, target);
+            }
+        });
+    }
+    _unlinkGraphs(groupIndex) {
+        if (this.store?.history) {
+            this.store.history.unlinkGraphGroup(groupIndex);
+        }
+    }
+    _handleToggleMobileLink() {
+        this._mobileLink = !this._mobileLink;
+    }
+    render() {
+        if (!this.device || !this.hass)
+            return x ``;
+        const devices = this._devicesController?.value || [];
+        const deviceId = this.device.device_id;
+        // Split chips into Hero and Secondary sets (Restoring original logic)
+        const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
+        const { heroChips, secondaryChips } = this._mainChips.reduce((acc, chip) => {
+            if (heroKeySet.has(chip.key)) {
+                acc.heroChips.push(chip);
+            }
+            else {
+                acc.secondaryChips.push(chip);
+            }
+            return acc;
+        }, { heroChips: [], secondaryChips: [] });
+        return x `
+      <div class="gs-stats-container">
+        
+        <!-- TOP HEADER GRID -->
+        <div class="gs-header-top">
+          
+          <!-- Row 1 Left: Title/Select -->
+          <div class="header-title-area">
+             ${!this.config?.default_growspace
+            ? x `
+                    <div class="select-wrapper">
+                        <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                        <select 
+                            class="growspace-select-header" 
+                            .value=${deviceId}
+                            @change=${this._handleDeviceChange}
+                        >
+                            ${devices.map(d => x `<option value="${d.device_id}">${d.name}</option>`)}
+                        </select>
+                    </div>`
+            : x `<h1 class="gs-title">${this.device.name}</h1>`}
+          </div>
+          
+          <!-- Row 1 Right: Actions & Device Chips -->
+          <growspace-header-actions
+            class="header-actions"
+            .deviceChips=${this._deviceChips}
+            .isMobile=${this._resizeController.isMobile}
+            .mobileLink=${this._mobileLink}
+            @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
+            @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+            @toggle-mobile-link=${() => this._handleToggleMobileLink()}
+          ></growspace-header-actions>
+
+          <!-- Row 2 Left: Stages -->
+          <div class="header-stage-area-wrapper">
+            <growspace-header-stages
+                .dominant=${this._dominant}
+            ></growspace-header-stages>
+          </div>
+
+          <!-- Row 2 Right: Secondary Chips & Inventory -->
+          <div class="secondary-strip-container">
+             <growspace-header-secondary
+                .chips=${secondaryChips}
+                .inventory=${this._nutrientInventoryController?.value || null}
+                .compact=${this.compact}
+                .isMobile=${this._resizeController.isMobile}
+                .mobileLink=${this._mobileLink}
+                @open-nutrients=${() => this.store.openNutrientsDialog()}
+                @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
+                @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+                @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+                @unlink-graphs=${(e) => this._unlinkGraphs(e.detail.groupIndex)}
+             ></growspace-header-secondary>
+          </div>
+        </div>
+
+        <!-- HERO GRID (Vital Stats) -->
+        <growspace-header-hero
+            .chips=${heroChips}
+            .device=${this.device}
+            .isMobile=${this._resizeController.isMobile}
+            .mobileLink=${this._mobileLink}
+            @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
+            @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+        ></growspace-header-hero>
+      </div>
+    `;
+    }
+};
+GrowspaceHeader.styles = headerStyles;
 __decorate([
     c$2({ context: hassContext, subscribe: true })
 ], GrowspaceHeader.prototype, "hass", void 0);
@@ -32227,24 +32431,6 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeader.prototype, "historyData", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollLeft", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollRight", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollStageLeft", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollStageRight", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollDeviceLeft", void 0);
-__decorate([
-    r$2()
-], GrowspaceHeader.prototype, "_canScrollDeviceRight", void 0);
 __decorate([
     r$2()
 ], GrowspaceHeader.prototype, "_mobileLink", void 0);
@@ -36392,12 +36578,16 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
         return false;
     const originalRow = sourcePlant.attributes.row;
     const originalCol = sourcePlant.attributes.col;
-    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
-    // Fix: extract growspace ID properly
+    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+    console.log('handlePlantDrop:', { sourceId, targetId, growspaceId: sourcePlant.attributes.growspace_id });
+    if (sourceId === targetId)
+        return false;
     const growspaceId = sourcePlant.attributes.growspace_id;
+    if (!growspaceId)
+        return false;
     // Helper to perform optimistic update on the cache AND devices store
-    const optimisticUpdate = (isRevert = false) => {
+    const performOptimisticGridUpdate = (isRevert = false) => {
         if (!growspaceId)
             return;
         const updateGridLogic = (grid) => {
@@ -36415,9 +36605,6 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
             if (sourceKey && targetKey) {
                 const sData = grid[sourceKey];
                 const tData = grid[targetKey];
-                // Determine new coordinates based on direction
-                // Forward: s -> target, t -> original
-                // Revert: s -> original, t -> target
                 const newSourceRow = isRevert ? originalRow : targetRow;
                 const newSourceCol = isRevert ? originalCol : targetCol;
                 const newTargetRow = isRevert ? targetRow : originalRow;
@@ -36450,50 +36637,42 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
         }
     };
     try {
-        // Optimistically update if swapping two existing plants
         if (targetPlant && growspaceId) {
-            optimisticUpdate(false);
-        }
-        if (targetPlant) {
-            if (sourceId === targetId)
-                return false;
-            if (targetId) {
-                await ctx.dataService.swapPlants(sourceId, targetId);
-            }
+            // Use OptimisticManager
+            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', { sourceId, targetId: targetId, growspaceId, originalRow, originalCol, targetRow, targetCol }, () => performOptimisticGridUpdate(false), // Apply
+            () => performOptimisticGridUpdate(true) // Revert
+            );
+            // Perform actual API call
+            await ctx.dataService.swapPlants(sourceId, targetId);
+            // Confirm update and add to history
+            ctx.optimisticManager.confirmUpdate(actionId, {
+                description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+                }
+            });
+            return true;
         }
         else {
-            // Non-swap move (to empty) - no optimistic update for now
+            // Non-swap move (to empty) - keep existing logic for now or refactor later
             await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
-            // Re-fetch immediately for non-optimistic moves
-            await ctx.refreshData();
-        }
-        ctx.undoRedoManager.pushAction({
-            type: 'move',
-            description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-            reverse: async () => {
-                if (targetPlant && targetId) {
-                    // APPLY OPTIMISTIC UNDO
-                    optimisticUpdate(true);
-                    await ctx.dataService.swapPlants(sourceId, targetId);
-                }
-                else {
+            ctx.undoRedoManager.pushAction({
+                type: 'move',
+                description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                reverse: async () => {
                     await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+                    await ctx.refreshData();
+                },
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
                 }
-                await ctx.refreshData();
-            },
-            redo: async () => {
-                await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-            }
-        });
-        if (targetPlant) {
-            // For optimistic swaps, we still refresh to be safe, but can delay slightly or just let it happen in background
-            ctx.refreshData();
+            });
+            await ctx.refreshData();
+            return true;
         }
-        return true;
     }
     catch (err) {
         console.error('Error during drag-and-drop:', err);
-        // If error, force refresh to sync state
         ctx.refreshData();
         return false;
     }
@@ -36568,9 +36747,9 @@ async function confirmAddPlants(ctx, detail) {
                 for (let i = 0; i < amount; i++) {
                     const currentNumber = startNumber + i;
                     // Format: "Phenotype #1"
-                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name, 
+                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name,
                     // but typically we only add to library if phenotype is explicit or we want "Strain #1".
-                    // User request specific to "phenotype + #Number". 
+                    // User request specific to "phenotype + #Number".
                     const phenoName = detail.phenotype
                         ? `${detail.phenotype} #${currentNumber}`
                         : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
@@ -37518,6 +37697,101 @@ class UndoRedoManager {
     }
 }
 
+class OptimisticManager {
+    constructor(data, undoRedoManager) {
+        this.data = data;
+        this.undoRedoManager = undoRedoManager;
+        this._pendingActions = new Map();
+    }
+    /**
+     * Apply an optimistic update immediately.
+     * Returns the action ID to be used for confirmation or rollback.
+     */
+    async applyOptimisticUpdate(type, payload, applyFn, revertFn) {
+        const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Math.random().toString(36).substring(2) + Date.now().toString(36);
+        // 1. Store the action for potential rollback
+        this._pendingActions.set(id, {
+            id,
+            type,
+            payload,
+            revert: revertFn,
+            timestamp: Date.now()
+        });
+        // 2. Execute the optimistic change immediately
+        try {
+            await applyFn(payload);
+        }
+        catch (e) {
+            console.error("Failed to apply optimistic update", e); // Assuming _LOGGER is console.error
+            this.rollbackUpdate(id);
+            throw e; // Rethrow so caller knows it failed
+        }
+        return id;
+    }
+    /**
+     * Mark an optimistic action as successfully committed to the backend.
+     * If `addToHistory` is true, we push a "reverse" action to the UndoRedoManager.
+     */
+    confirmUpdate(actionId, historyOptions) {
+        const action = this._pendingActions.get(actionId);
+        if (!action)
+            return; // Already cleared or handled
+        if (historyOptions) {
+            // Transform the Revert function into an Undo action
+            this.undoRedoManager.pushAction({
+                type: action.type,
+                description: historyOptions.description,
+                reverse: async () => {
+                    // When user clicks Undo, we execute the revert logic
+                    // Note: Revert logic usually re-applies the old state to API
+                    await action.revert();
+                },
+                redo: historyOptions.redo
+            });
+        }
+        this._pendingActions.delete(actionId);
+    }
+    /**
+     * Rollback an optimistic action because the backend call failed.
+     */
+    async rollbackUpdate(actionId) {
+        const action = this._pendingActions.get(actionId);
+        if (!action)
+            return;
+        console.warn(`Rolling back optimistic action: ${action.type}`, action.payload);
+        try {
+            await action.revert();
+        }
+        catch (e) {
+            console.error('Critical: Failed to rollback optimistic update', e);
+            // Force a full refresh as a fallback if rollback fails
+            // this.dataStore.requestRefetch(); // detailed implementation depends on store
+        }
+        finally {
+            this._pendingActions.delete(actionId);
+        }
+    }
+    /**
+     * Check if there are pending actions for a specific entity ID (if payload has IDs)
+     * Helpful for UI loading states or disabling interactions
+     */
+    isEntityPending(entityId) {
+        for (const action of this._pendingActions.values()) {
+            const p = action.payload;
+            // Naive check for common ID fields
+            if (p?.plantId === entityId || p?.plant_id === entityId || p?.entity_id === entityId) {
+                return true;
+            }
+            if (Array.isArray(p?.plantIds) && p.plantIds.includes(entityId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 class GrowspaceStore {
     /** Unified Action Context */
     get context() {
@@ -37528,6 +37802,7 @@ class GrowspaceStore {
             history: this.history,
             grid: this.grid,
             undoRedoManager: this.undoRedoManager,
+            optimisticManager: this.optimisticManager,
             syncService: this.syncService,
             hass: this.hass,
             showToast: (msg, type, action) => this.showToast(msg, type, action),
@@ -37556,6 +37831,7 @@ class GrowspaceStore {
         // Initialize services
         this.syncService = new SyncService(this.dataService, this.data, this.ui);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
+        this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
     }
     /** Cleanup all subscriptions and resources */
     destroy() {
@@ -37697,6 +37973,8 @@ class GrowspaceStore {
         return await movePlantToGrowspace(this.context, plant, targetGrowspace);
     }
     async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        if (!this.data.$selectedDevice.get())
+            return false;
         return await handlePlantDrop(this.context, targetRow, targetCol, targetPlant, sourcePlant);
     }
     async movePlant(plant, newRow, newCol) {

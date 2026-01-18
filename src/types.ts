@@ -190,6 +190,7 @@ export interface RawPlantData {
   flower_days: number;
   dry_days: number;
   cure_days: number;
+  days_in_stage?: number;
 
   // Dates
   seedling_start: string | null;

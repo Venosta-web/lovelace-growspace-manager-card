@@ -94,11 +94,12 @@ describe('NutrientPresetsEditor', () => {
     });
 
     it('should switch to edit preset', async () => {
-        const preset = { id: 'p1', name: 'Test', nutrients: [] };
+        const preset = { id: 'p1', name: 'Test', nutrients: [{ name: 'N1', dose_ml_l: 1 }] };
         (element as any)._editPreset(preset);
         await element.updateComplete;
         const title = element.shadowRoot?.querySelector('h2');
         expect(title?.textContent).toContain('Edit Preset');
+        expect((element as any)._editingPreset.nutrients).toHaveLength(1);
     });
 
     it('should save preset successfully', async () => {
@@ -368,5 +369,100 @@ describe('NutrientPresetsEditor', () => {
         const details = element.shadowRoot?.querySelector('.preset-details')?.textContent;
         expect(details).toContain('veg');
         expect(details).toContain('Day 14+');
+    });
+
+    it('should include nutrients from inventory in suggestions', () => {
+        const mockInventory = {
+            stocks: {
+                s1: { name: 'Grow' },
+                s2: { name: 'Bloom' }
+            }
+        };
+        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(mockInventory);
+
+        const suggestions = (element as any)._getNutrientSuggestions();
+        expect(suggestions).toContain('Grow');
+        expect(suggestions).toContain('Bloom');
+    });
+
+    it('should handle missing inventory or stocks in suggestions', () => {
+        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(null);
+        let suggestions = (element as any)._getNutrientSuggestions();
+        expect(suggestions).toEqual([]);
+
+        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue({});
+        suggestions = (element as any)._getNutrientSuggestions();
+        expect(suggestions).toEqual([]);
+    });
+
+    it('should handle missing store in connectedCallback', () => {
+        const partialElement = new NutrientPresetsEditor() as any;
+        partialElement.store = undefined;
+        // Should not throw
+        partialElement.connectedCallback();
+        expect(partialElement._presetsController).toBeUndefined();
+    });
+
+    it('should handle mission controller value in _startNew', () => {
+        vi.spyOn(mockStore.data.$nutrientPresets, 'get').mockReturnValue(null);
+        (element as any)._startNew();
+        expect((element as any)._view).toBe('EDIT');
+        expect((element as any)._editingPreset.name).toBe('');
+    });
+
+    it('should cover branch in suggest inventory with missing stock name', () => {
+        const mockInventory = {
+            stocks: {
+                s1: { name: 'Grow' },
+                s2: { /* missing name */ }
+            }
+        };
+        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(mockInventory);
+        const suggestions = (element as any)._getNutrientSuggestions();
+        expect(suggestions).toEqual(['Grow']);
+    });
+
+    it('should cover branch in _renderEdit when no preset', () => {
+        (element as any)._editingPreset = null;
+        const result = (element as any)._renderEdit();
+        expect(result).toBeDefined(); // nothing in Lit is a symbol/value
+    });
+
+    it('should cover branch in _renderList when nutrients missing', async () => {
+        const partialPreset = { id: 'p1', name: 'Partial' };
+        mockStore.data.$nutrientPresets.get = () => ({ 'p1': partialPreset });
+        (element as any)._view = 'LIST';
+        element.requestUpdate();
+        await element.updateComplete;
+        const details = element.shadowRoot?.querySelector('.preset-details')?.textContent;
+        expect(details).toContain('0 nutrients');
+    });
+
+    it('should cover branch in _savePreset with null dose', async () => {
+        (element as any)._editingPreset = {
+            name: 'Null Dose',
+            nutrients: [{ name: 'N', dose_ml_l: null as any }]
+        };
+        // This should fail validation because parseFloat(String(null)) is NaN or something that doesn't pass > 0
+        await (element as any)._savePreset();
+        expect((element as any)._error).toContain('At least one valid nutrient is required');
+    });
+
+    it('should cover isNaN branch in _updateNutrient', () => {
+        (element as any)._editingPreset = {
+            name: 'Test',
+            nutrients: [{ name: 'N', dose_ml_l: 1 }]
+        };
+        (element as any)._updateNutrient(0, { dose_ml_l: 'not-a-number' as any });
+        expect((element as any)._editingPreset.nutrients[0].dose_ml_l).toBe(0);
+    });
+
+    it('should cover branch in render when open but other fields missing', async () => {
+        element.open = true;
+        (element as any)._view = 'EDIT';
+        (element as any)._editingPreset = { name: 'Simple' };
+        element.requestUpdate();
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('.preset-form')).toBeTruthy();
     });
 });

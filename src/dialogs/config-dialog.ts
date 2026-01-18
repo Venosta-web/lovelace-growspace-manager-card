@@ -619,7 +619,7 @@ export class ConfigDialog extends LitElement {
 
   private _getEntities(domains: string[], deviceClass: string | null): string[] {
     if (!this.hass) return [];
-    return Object.keys(this.hass.states)
+    return Object.keys(this.hass.states || {})
       .filter((eid) => {
         const state = this.hass.states[eid];
         if (!state) return false;

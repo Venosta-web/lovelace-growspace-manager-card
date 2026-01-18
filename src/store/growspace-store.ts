@@ -26,6 +26,7 @@ import * as ipmActions from './ipm-actions';
 // Services
 import { SyncService } from '../services/sync-service';
 import { UndoRedoManager, UndoableAction } from '../services/undo-redo-manager';
+import { OptimisticManager } from './optimistic-manager';
 
 export class GrowspaceStore {
     dataService!: DataService;
@@ -40,6 +41,7 @@ export class GrowspaceStore {
     // Services
     public readonly syncService: SyncService;
     public readonly undoRedoManager: UndoRedoManager;
+    public readonly optimisticManager: OptimisticManager;
 
     /** Unified Action Context */
     public get context(): ActionContext {
@@ -50,6 +52,7 @@ export class GrowspaceStore {
             history: this.history,
             grid: this.grid,
             undoRedoManager: this.undoRedoManager,
+            optimisticManager: this.optimisticManager,
             syncService: this.syncService,
             hass: this.hass,
             showToast: (msg, type, action) => this.showToast(msg, type, action),
@@ -79,6 +82,7 @@ export class GrowspaceStore {
         this.undoRedoManager = new UndoRedoManager(
             (msg, type, action) => this.showToast(msg, type, action)
         );
+        this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
     }
 
     /** Cleanup all subscriptions and resources */
@@ -271,6 +275,7 @@ export class GrowspaceStore {
     }
 
     async handleDrop(targetRow: number, targetCol: number, targetPlant: PlantEntity | null, sourcePlant: PlantEntity | null): Promise<boolean> {
+        if (!this.data.$selectedDevice.get()) return false;
         return await plantActions.handlePlantDrop(this.context, targetRow, targetCol, targetPlant, sourcePlant);
     }
 

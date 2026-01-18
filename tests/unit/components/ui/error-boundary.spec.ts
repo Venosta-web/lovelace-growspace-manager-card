@@ -128,4 +128,23 @@ describe('GrowspaceErrorBoundary', () => {
     const details = element.shadowRoot?.querySelector('.error-details');
     expect(details).toBeNull();
   });
+
+  it('handles error event with proper error object', async () => {
+    // Covers the branch where event.error is truthy in:
+    // this._error = event.error || new Error(...)
+    const originalError = new Error('Original Error Object');
+    const event = new ErrorEvent('error', {
+      error: originalError,
+      message: 'Message ignored if error present',
+      bubbles: true,
+      composed: true
+    });
+
+    element.dispatchEvent(event);
+    await element.updateComplete;
+
+    const details = element.shadowRoot?.querySelector('.error-details');
+    // Should use the message from the error object, not the event message fallback
+    expect(details?.textContent).toBe('Original Error Object');
+  });
 });

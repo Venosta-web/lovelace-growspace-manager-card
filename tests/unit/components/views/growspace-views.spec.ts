@@ -337,5 +337,65 @@ describe('Growspace Views', () => {
             expect(listener).toHaveBeenCalled();
             document.body.removeChild(element);
         });
+
+        describe('_getPlantsByStage', () => {
+            beforeEach(() => {
+                // Mock controller value
+                const mockDevices = [
+                    {
+                        name: 'Veg Tent',
+                        plants: [
+                            { entity_id: 'plant_1', attributes: { stage: 'vegetative' } },
+                            { entity_id: 'plant_2', attributes: { stage: 'vegetative' } }
+                        ]
+                    },
+                    {
+                        name: 'Flower Tent',
+                        plants: [
+                            { entity_id: 'plant_3', attributes: { stage: 'flowering' } }
+                        ]
+                    },
+                    {
+                        name: 'Clone Rack',
+                        plants: [
+                            { entity_id: 'plant_5', attributes: { stage: 'clone' } }
+                        ]
+                    },
+                    {
+                        name: 'Empty Tent',
+                        plants: [] as any[]
+                    },
+                    {
+                        name: 'Null Plants',
+                        plants: undefined
+                    }
+                ];
+                (element as any)._devicesController = { value: mockDevices };
+            });
+
+            it('should correctly filter plants for the "vegetative" stage', () => {
+                const plants = (element as any)._getPlantsByStage('vegetative');
+                expect(plants).toHaveLength(2);
+                expect(plants[0].entity_id).toBe('plant_1');
+                expect(plants[0]._growspaceName).toBe('Veg Tent');
+            });
+
+            it('should correctly filter plants for the "clone" stage', () => {
+                const plants = (element as any)._getPlantsByStage('clone');
+                expect(plants).toHaveLength(1);
+                expect(plants[0].entity_id).toBe('plant_5');
+                expect(plants[0]._growspaceName).toBe('Clone Rack');
+            });
+
+            it('should return an empty array for a stage with no matching plants', () => {
+                const plants = (element as any)._getPlantsByStage('cured');
+                expect(plants).toEqual([]);
+            });
+
+            it('should handle devices with empty or null plant arrays gracefully', () => {
+                const plants = (element as any)._getPlantsByStage('vegetative');
+                expect(plants).toHaveLength(2);
+            });
+        });
     });
 });

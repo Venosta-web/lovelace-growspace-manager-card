@@ -5,6 +5,7 @@ import { GrowspaceHistoryStore } from './history-store';
 import { UndoRedoManager } from '../services/undo-redo-manager';
 import { SyncService } from '../services/sync-service';
 import { GrowspaceGridStore } from './grid-store';
+import { OptimisticManager } from './optimistic-manager';
 
 export interface ActionContext {
     dataService: DataService;
@@ -13,6 +14,7 @@ export interface ActionContext {
     history: GrowspaceHistoryStore;
     grid: GrowspaceGridStore;
     undoRedoManager: UndoRedoManager;
+    optimisticManager: OptimisticManager;
     syncService: SyncService;
     hass: any;
 

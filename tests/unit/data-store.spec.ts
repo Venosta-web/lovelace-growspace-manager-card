@@ -433,5 +433,11 @@ describe('DataStore', () => {
             expect(store.isActive).toBe(false);
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unmounted'));
         });
+
+        it('should set nutrient inventory', () => {
+            const inventory = { stock: [] } as any;
+            store.setNutrientInventory(inventory);
+            expect(store.$nutrientInventory.get()).toEqual(inventory);
+        });
     });
 });

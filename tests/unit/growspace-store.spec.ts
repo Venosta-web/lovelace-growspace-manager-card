@@ -16,6 +16,34 @@ import * as aiActions from '../../src/store/ai-actions';
 import * as keyboardActions from '../../src/store/keyboard-actions';
 import * as uiActions from '../../src/store/ui-actions';
 
+vi.mock('../../src/store/optimistic-manager', () => {
+    return {
+        OptimisticManager: class {
+            private _undoRedoManager: any;
+            constructor(_data: any, undoRedoManager: any) {
+                this._undoRedoManager = undoRedoManager;
+                return {
+                    applyOptimisticUpdate: vi.fn(async (_type, _payload, apply) => {
+                        await apply();
+                        return 'mock-action-id';
+                    }),
+                    confirmUpdate: vi.fn((_id, options) => {
+                        if (options && this._undoRedoManager) {
+                            this._undoRedoManager.pushAction({
+                                redo: options.redo,
+                                undo: vi.fn(),
+                                description: options.description
+                            });
+                        }
+                    }),
+                    rollbackUpdate: vi.fn(),
+                    checkPending: vi.fn().mockReturnValue(false)
+                };
+            }
+        }
+    };
+});
+
 
 
 // Mock ui-store
@@ -808,8 +836,8 @@ describe('GrowspaceStore', () => {
     describe('Advanced Drag & Drop', () => {
         it('should swap plants if target is occupied', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const source = { entity_id: 's.1', attributes: { plant_id: 'p1' } } as any;
-            const target = { entity_id: 's.2', attributes: { plant_id: 'p2' } } as any;
+            const source = { entity_id: 's.1', attributes: { plant_id: 'p1', growspace_id: 'd1' } } as any;
+            const target = { entity_id: 's.2', attributes: { plant_id: 'p2', growspace_id: 'd1' } } as any;
 
             await store.handleDrop(1, 1, target, source);
 
@@ -818,7 +846,7 @@ describe('GrowspaceStore', () => {
 
         it('should move plant if target is empty', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const source = { entity_id: 's.1', attributes: { plant_id: 'p1' } } as any;
+            const source = { entity_id: 's.1', attributes: { plant_id: 'p1', growspace_id: 'd1' } } as any;
 
             await store.handleDrop(3, 3, null, source);
 
@@ -864,15 +892,15 @@ describe('GrowspaceStore', () => {
 
         it('should handle drop with same source and target', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const p1 = { entity_id: 's.1', attributes: { plant_id: 'p1' } } as any;
+            const p1 = { entity_id: 's.1', attributes: { plant_id: 'p1', growspace_id: 'd1' } } as any;
             await store.handleDrop(1, 1, p1, p1); // Same plant
             expect(store.dataService.swapPlants).not.toHaveBeenCalled();
         });
 
         it('should handle drop error', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const p1 = { entity_id: 's.1', attributes: { plant_id: 'p1' } } as any;
-            const p2 = { entity_id: 's.2', attributes: { plant_id: 'p2' } } as any;
+            const p1 = { entity_id: 's.1', attributes: { plant_id: 'p1', growspace_id: 'd1' } } as any;
+            const p2 = { entity_id: 's.2', attributes: { plant_id: 'p2', growspace_id: 'd1' } } as any;
 
             // Revert updatePlant mock, assume swapPlants failure
             mockDataServiceInstance.swapPlants.mockRejectedValue(new Error('Swap Fail'));
@@ -1733,7 +1761,7 @@ describe('GrowspaceStore', () => {
     describe('handleDrop Coverage', () => {
         const mockPlant1 = {
             entity_id: 'sensor.plant1',
-            attributes: { plant_id: 'p1', row: 1, col: 1 }
+            attributes: { plant_id: 'p1', row: 1, col: 1, growspace_id: 'd1' }
         } as any;
 
         const mockDevice1 = {
@@ -1775,7 +1803,7 @@ describe('GrowspaceStore', () => {
             (dataStore.$devices.get as any).mockReturnValue([device]);
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
 
-            const targetPlant = { entity_id: 's.p2', attributes: { plant_id: 'p2', row: 1, col: 2 } } as any;
+            const targetPlant = { entity_id: 's.p2', attributes: { plant_id: 'p2', row: 1, col: 2, growspace_id: 'd1' } } as any;
             await store.handleDrop(1, 2, targetPlant, mockPlant1);
             expect(store.dataService.swapPlants).toHaveBeenCalled();
         });
@@ -1932,7 +1960,7 @@ describe('GrowspaceStore', () => {
         it('should handle handleDrop with no selectedDevice', async () => {
             vi.spyOn(store.dataService, 'updatePlant');
             (dataStore.$selectedDevice.get as any).mockReturnValue(null);
-            await store.handleDrop(0, 0, { attributes: { plant_id: 'src' } } as any, { attributes: { plant_id: 'p1' } } as any);
+            await store.handleDrop(0, 0, { attributes: { plant_id: 'src', growspace_id: 'd1' } } as any, { attributes: { plant_id: 'p1', growspace_id: 'd1' } } as any);
             expect(store.dataService.updatePlant).not.toHaveBeenCalled();
         });
 
@@ -2161,7 +2189,7 @@ describe('GrowspaceStore', () => {
 
         it('should push undo action when reordering plants (drag-drop)', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
+            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1', growspace_id: 'd1' } } as any;
 
             mockDataServiceInstance.updatePlant.mockResolvedValue({ success: true });
 
@@ -2178,8 +2206,8 @@ describe('GrowspaceStore', () => {
 
         it('should push undo action when swapping plants (drag-drop)', async () => {
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
-            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1' } } as any;
-            const target = { attributes: { plant_id: 'p2', row: 2, col: 2, strain: 'S2' } } as any;
+            const source = { attributes: { plant_id: 'p1', row: 1, col: 1, strain: 'S1', growspace_id: 'd1' } } as any;
+            const target = { attributes: { plant_id: 'p2', row: 2, col: 2, strain: 'S2', growspace_id: 'd1' } } as any;
 
             mockDataServiceInstance.swapPlants.mockResolvedValue({ success: true });
 

@@ -877,6 +877,158 @@ describe('ConfigDialog', () => {
             expect((element as any).env_control_dehumidifier).toBe(false);
             expect((element as any).env_dehumidifier_thresholds).toEqual({});
         });
+
+        it('should handle missing hass.services.notify in _getMobileAppNotifyServices', () => {
+            element.hass = { services: {} } as any;
+            const res1 = (element as any)._getMobileAppNotifyServices();
+            expect(res1).toEqual([]);
+
+            element.hass = { states: {} } as any; // No services at all
+            const res2 = (element as any)._getMobileAppNotifyServices();
+            expect(res2).toEqual([]);
+        });
+
+        it('should handle missing states in _getEntities', () => {
+            element.hass = { states: undefined } as any;
+            const res = (element as any)._getEntities(['sensor'], null);
+            expect(res).toEqual([]);
+        });
+
+        it('should handle null environmentData in willUpdate', async () => {
+            element.environmentData = undefined as any;
+            await element.updateComplete;
+            // No error should occur
+        });
+
+        it('should reset _initialStateApplied when dialog closes', async () => {
+            element.open = true;
+            await element.updateComplete;
+            expect((element as any)._initialStateApplied).toBe(true);
+
+            element.open = false;
+            await element.updateComplete;
+            expect((element as any)._initialStateApplied).toBe(false);
+        });
+
+        it('should handle empty value in _handleEditSelection', () => {
+            (element as any).edit_selectedId = 'old';
+            (element as any)._handleEditSelection({ target: { value: '' } } as any);
+            expect((element as any).edit_selectedId).toBe('');
+            // Should also populate (reset) fields
+            expect((element as any).edit_name).toBe('');
+        });
+
+        it('should cancel delete growspace', () => {
+            (element as any)._showDeleteConfirm = true;
+            (element as any)._cancelDeleteGrowspace();
+            expect((element as any)._showDeleteConfirm).toBe(false);
+        });
+
+        it('should handle multi-select chip removal', async () => {
+            const spy = vi.fn();
+            const result = (element as any)._renderMultiEntitySelect(
+                'Test',
+                ['entity1', 'entity2'],
+                ['sensor'],
+                null,
+                spy
+            );
+
+            // Directly call the changeHandler via the spy since we can't easily click in TemplateResult without rendering
+            // But actually we can render it to a temporary div or just assume the logic works if we see it in the code.
+            // Let's try to find it in shadowRoot if possible by rendering the component with some multi-values.
+
+            element.currentTab = ConfigTab.ENVIRONMENT;
+            (element as any).env_light_sensors = ['sensor.1', 'sensor.2'];
+            await element.updateComplete;
+
+            const removeBtn = element.shadowRoot?.querySelector('.chip-remove');
+            (removeBtn as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any).env_light_sensors).toEqual(['sensor.2']);
+        });
+
+        it('should handle multi-select input change with empty value', async () => {
+            element.currentTab = ConfigTab.ENVIRONMENT;
+            (element as any).env_light_sensors = ['sensor.1'];
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
+            input.value = ''; // Empty string
+            input.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+
+            expect((element as any).env_light_sensors).toEqual(['sensor.1']); // Unchanged
+        });
+
+        it('should handle initialTab pre-selection in updated', async () => {
+            element.open = false;
+            element.currentTab = ConfigTab.ENVIRONMENT;
+            await element.updateComplete;
+
+            element.open = true;
+            await element.updateComplete;
+            expect((element as any)._initialStateApplied).toBe(true);
+        });
+
+        it('should handle legacy singular entity fallbacks in _handleEnvGrowspaceChange', async () => {
+            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.devices = [
+                {
+                    device_id: 'legacy',
+                    name: 'Legacy Device',
+                    environment_attributes: {
+                        humidifier_entity: 'switch.humidifier',
+                        dehumidifier_entity: 'switch.dehumidifier',
+                        light_sensor: 'sensor.light',
+                        exhaust_entity: 'switch.exhaust',
+                        circulation_fan_entity: 'switch.circulation'
+                    }
+                } as any
+            ];
+            await element.updateComplete;
+
+            const event = { target: { value: 'legacy' } } as any;
+            (element as any)._handleEnvGrowspaceChange(event);
+
+            expect((element as any).env_humidifier_entities).toEqual(['switch.humidifier']);
+            expect((element as any).env_dehumidifier_entities).toEqual(['switch.dehumidifier']);
+            expect((element as any).env_light_sensors).toEqual(['sensor.light']);
+            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.exhaust']);
+            expect((element as any).env_circulation_fan_entities).toEqual(['switch.circulation']);
+        });
+        it('should handle empty multi-entity lists with legacy fallback in _handleEnvGrowspaceChange', async () => {
+            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.devices = [
+                {
+                    device_id: 'empty_lists',
+                    name: 'Empty Lists Device',
+                    environment_attributes: {
+                        light_sensors: [],
+                        light_sensor: 'sensor.legacy_light',
+                        exhaust_fan_entities: [],
+                        exhaust_entity: 'switch.legacy_exhaust',
+                        circulation_fan_entities: [],
+                        circulation_fan_entity: 'switch.legacy_circulation',
+                        humidifier_entities: [],
+                        humidifier_entity: 'switch.legacy_humidifier',
+                        dehumidifier_entities: [],
+                        dehumidifier_entity: 'switch.legacy_dehumidifier'
+                    }
+                } as any
+            ];
+            await element.updateComplete;
+
+            const event = { target: { value: 'empty_lists' } } as any;
+            (element as any)._handleEnvGrowspaceChange(event);
+
+            expect((element as any).env_light_sensors).toEqual(['sensor.legacy_light']);
+            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.legacy_exhaust']);
+            expect((element as any).env_circulation_fan_entities).toEqual(['switch.legacy_circulation']);
+            expect((element as any).env_humidifier_entities).toEqual(['switch.legacy_humidifier']);
+            expect((element as any).env_dehumidifier_entities).toEqual(['switch.legacy_dehumidifier']);
+        });
     });
 });
 

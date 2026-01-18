@@ -1,5 +1,5 @@
 export interface UndoableAction {
-    type: 'move' | 'delete' | 'batch-delete';
+    type: 'move' | 'delete' | 'batch-delete' | 'update' | 'swap';
     description: string;
     reverse: () => Promise<void>;
     redo: () => Promise<void>;

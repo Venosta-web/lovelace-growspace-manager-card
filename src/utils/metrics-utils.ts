@@ -138,7 +138,7 @@ export class MetricsUtils {
                         .toLowerCase()
                         .replace(/\s+/g, '_')
                         .replace(/[^\w-]+/g, '')
-                        .replace(/--+/g, '_')
+                        .replace(/[_-]+/g, '_')
                         .replace(/^-+/, '')
                         .replace(/-+$/, '');
 

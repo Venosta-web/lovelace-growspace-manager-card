@@ -1,346 +1,122 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fixture, html } from '@open-wc/testing-helpers';
+import { fixture, html, elementUpdated } from '@open-wc/testing-helpers';
 import { GrowspaceHeader } from '../../../src/components/growspace-header';
 import { MetricsUtils } from '../../../src/utils/metrics-utils';
-import { ChartUtils } from '../../../src/utils/chart-utils';
 import { GrowspaceDevice } from '../../../src/types';
 import { atom, map } from 'nanostores';
 
-// Mock dependencies
+// Helper to silence specific console errors during tests (if needed) or mocks
 vi.mock('../../../src/utils/metrics-utils', () => ({
     MetricsUtils: {
         computeHeaderMetrics: vi.fn()
     }
 }));
 
-vi.mock('../../../src/utils/chart-utils', () => ({
-    ChartUtils: {
-        generateSparklinePath: vi.fn().mockReturnValue('M0,0 L100,100'),
-        getSparklineColor: vi.fn().mockReturnValue('green'),
-        generateVpdSparklineSegments: vi.fn().mockReturnValue([])
-    }
-}));
+// Mock child components to avoid deep rendering and focus on passing props
+vi.mock('../../../src/components/growspace-header/header-hero', () => {
+    return {
+        GrowspaceHeaderHero: class extends HTMLElement { }
+    };
+});
+vi.mock('../../../src/components/growspace-header/header-stages', () => {
+    return {
+        GrowspaceHeaderStages: class extends HTMLElement { }
+    };
+});
+vi.mock('../../../src/components/growspace-header/header-actions', () => {
+    return {
+        GrowspaceHeaderActions: class extends HTMLElement { }
+    };
+});
 
+// Mock ResizeController
 vi.mock('../../../src/controllers/resize-controller', () => {
     return {
         ResizeController: class {
             observe = vi.fn();
             unobserve = vi.fn();
-            isMobile = false;
-            hasTouch = false;
             constructor(host: any, callback: any) { }
         }
     };
 });
 
-vi.mock('../../../src/components/growspace-chip', () => {
-    return {
-        GrowspaceChip: class extends HTMLElement { }
-    };
-});
-
-// Mock ui-store using explicit implementation for control
-vi.mock('../../../src/store/ui-store', () => ({
-    $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $isEditMode: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $viewMode: { get: vi.fn(() => 'standard'), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $defaultApplied: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $gridOverlayMode: { get: vi.fn(() => 'none'), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
-    setEditMode: vi.fn(),
-    setViewMode: vi.fn(),
-    setIsLoading: vi.fn(),
-    closeDialog: vi.fn(),
-    setDefaultApplied: vi.fn(),
-    setFocusedPlantIndex: vi.fn(),
-    togglePlantSelection: vi.fn(),
-    selectAllPlants: vi.fn(),
-    clearPlantSelection: vi.fn(),
-    setMenuOpen: vi.fn(),
-    showToast: vi.fn(),
-    $notification: { set: vi.fn() }
-}));
-
-// Mock data-store with real atoms
-vi.mock('../../../src/store/data-store', async () => {
-    const { atom } = await import('nanostores');
-    return {
-        $devices: atom([]),
-        $selectedDevice: atom(null)
-    };
-});
-
-// Mock history-store
-vi.mock('../../../src/store/history-store', () => ({
-    $historyCache: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $historyLoading: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $historyLoaded: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $activeEnvGraphs: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    $linkedGraphGroups: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-    setGraphRange: vi.fn(),
-    toggleEnvGraph: vi.fn(),
-    unlinkGraphGroup: vi.fn(),
-    unlinkGraphMetric: vi.fn(),
-    linkGraphs: vi.fn(),
-    getGraphRange: vi.fn().mockReturnValue('24h'),
-    loadHistoryOnDemand: vi.fn()
-}));
-
 describe('GrowspaceHeader', () => {
     let element: GrowspaceHeader;
     let mockStore: any;
-    let mockHistory: any;
     let mockHass: any;
     let deviceMock: GrowspaceDevice;
-    let configMock: any;
 
-    beforeEach(async () => {
-        vi.clearAllMocks(); // Clear mocks for fresh start
-
-        // Mock matchMedia
-        Object.defineProperty(window, 'matchMedia', {
-            writable: true,
-            value: vi.fn().mockImplementation(query => ({
-                matches: false,
-                media: query,
-                onchange: null,
-                addListener: vi.fn(), // deprecated
-                removeListener: vi.fn(), // deprecated
-                addEventListener: vi.fn(),
-                removeEventListener: vi.fn(),
-                dispatchEvent: vi.fn(),
-            })),
-        });
-
-        // Mock scrollBy for JSDOM (not implemented in JSDOM)
-        if (!Element.prototype.scrollBy) {
-            Element.prototype.scrollBy = vi.fn();
-        }
-    });
-
-    // Local atoms for testing
+    // Atoms
     const $devices = atom<any[]>([]);
     const $selectedDevice = atom<string | null>(null);
-    const $historyCache = map<Record<string, any>>({});
-    const $historyLoading = atom(false);
-    const $historyLoaded = atom(false);
     const $activeEnvGraphs = atom(new Set<string>());
     const $linkedGraphGroups = atom<any[]>([]);
-    const $combinedHistory = atom({ temperature: [], vpd: [] });
-    const $nutrientInventory = atom<any>(null);
-
-    // UI Store atoms
-    const $activeDialog = atom<any>({ type: 'NONE' });
-    const $focusedPlantIndex = atom(-1);
-    const $selectedPlants = atom(new Set());
-    const $isEditMode = atom(false);
-    const $viewMode = atom('standard');
-    const $gridOverlayMode = atom<any>('none');
-    const $defaultApplied = atom(false);
-    const $isLoading = atom(false);
 
     beforeEach(async () => {
-        // Reset all atoms
-        $devices.set([]);
-        $selectedDevice.set(null);
-        $historyCache.set({});
-        $activeEnvGraphs.set(new Set());
-        $nutrientInventory.set(null);
-        $isEditMode.set(false);
-        $gridOverlayMode.set('none');
-        $viewMode.set('standard');
-
         vi.clearAllMocks();
-        vi.spyOn($activeDialog, 'set');
 
-        // Initialize Atoms based on mock state
+        // Initialize Atoms
         const mockDevices: any[] = [
             {
-                device_id: 'device1',
-                name: 'Main Tent',
-                sensors: {
-                    temperature: 'sensor.temp',
-                    humidity: 'sensor.hum',
-                    vpd: 'sensor.vpd',
-                    light: 'sensor.light'
-                },
-                vpd_config: { leaf_temp_offset: -2 }
+                device_id: 'd1',
+                name: 'Growspace 1',
+                type: 'normal',
+                plants: [],
+                grid: {},
+                biological_metrics: {},
+                environment_attributes: {},
+                stats: {}
+            },
+            {
+                device_id: 'd2',
+                name: 'Growspace 2',
+                type: 'normal',
+                plants: [],
+                grid: {},
+                biological_metrics: {},
+                environment_attributes: {},
+                stats: {}
             }
         ];
         $devices.set(mockDevices);
-        $selectedDevice.set('device1');
+        $selectedDevice.set('d1');
 
-        // Mock History Store Object
-        mockHistory = {
-            $historyCache,
-            $historyLoading,
-            $historyLoaded,
-            $activeEnvGraphs,
-            $linkedGraphGroups,
-            $combinedHistory,
-            setGraphRange: vi.fn(),
-            toggleEnvGraph: vi.fn(),
-            unlinkGraphGroup: vi.fn(),
-            unlinkGraphMetric: vi.fn(),
-            linkGraphs: vi.fn(),
-            getRange: vi.fn().mockReturnValue('24h'),
-            startAutoRefresh: vi.fn(),
-            stopAutoRefresh: vi.fn(),
-            loadHistoryOnDemand: vi.fn()
-        };
-
-        // Setup Mocks
         mockStore = {
             data: {
                 $devices,
                 $selectedDevice,
-                $nutrientInventory,
+                $nutrientInventory: atom(null),
             },
             ui: {
-                $viewMode,
-                $isEditMode,
-                $isLoading,
-                $activeDialog,
-                $focusedPlantIndex,
-                $selectedPlants,
-                $gridOverlayMode,
-                $defaultApplied,
-                setEditMode: vi.fn(),
-                setViewMode: vi.fn(),
-                setActiveDialog: vi.fn(),
+                $viewMode: atom('standard'),
+                $isEditMode: atom(false),
+                $selectedPlants: atom(new Set()),
+                $gridOverlayMode: atom('none'),
             },
-            history: mockHistory,
+            history: {
+                $historyCache: map({}),
+                $historyLoading: atom(false),
+                $activeEnvGraphs,
+                $linkedGraphGroups,
+                linkGraphs: vi.fn(),
+                unlinkGraphGroup: vi.fn(),
+            },
             handleDeviceChange: vi.fn(),
-            openAddPlantDialog: vi.fn(),
-            setActiveDialog: vi.fn(),
-            setEditMode: vi.fn(),
-            setViewMode: vi.fn(),
-            fetchStrainLibrary: vi.fn(),
-            openLogbookDialog: vi.fn(),
-            openNutrientPresetsDialog: vi.fn(),
-            openIPMDialog: vi.fn(),
-            openConfigDialog: vi.fn(),
-            openStrainLibraryDialog: vi.fn(),
-            openIrrigationDialog: vi.fn(),
-            openGrowMasterDialog: vi.fn(),
-            openWateringDialog: vi.fn(),
-            openTrainingDialog: vi.fn(),
-            openNutrientsDialog: vi.fn(),
-            toggleEnvGraph: vi.fn()
-        };
-
-        // Initialize Atoms based on mock state
-        $devices.set(mockStore?.state?.devices || []);
-        $selectedDevice.set(mockStore?.state?.selectedDevice || null);
-
-        // Mock History Store Object
-        mockHistory = {
-            $historyCache: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-            $historyLoading: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-            $historyLoaded: { get: vi.fn(), subscribe: vi.fn(() => vi.fn()) },
-            $activeEnvGraphs: { get: vi.fn(() => new Set()), subscribe: vi.fn(() => vi.fn()) },
-            $linkedGraphGroups: { get: vi.fn(() => []), subscribe: vi.fn(() => vi.fn()) },
-            $combinedHistory: { get: vi.fn(() => ({ temperature: [], vpd: [] })), subscribe: vi.fn(() => vi.fn()) },
-            setGraphRange: vi.fn(),
             toggleEnvGraph: vi.fn(),
-            unlinkGraphGroup: vi.fn(),
-            unlinkGraphMetric: vi.fn(),
-            linkGraphs: vi.fn(),
-            getRange: vi.fn().mockReturnValue('24h'),
-            startAutoRefresh: vi.fn(),
-            stopAutoRefresh: vi.fn(),
-            loadHistoryOnDemand: vi.fn()
-        };
-
-        // Setup Mocks
-        mockStore = {
-            data: {
-                $devices: $devices,
-                $selectedDevice: $selectedDevice,
-                $nutrientInventory: $nutrientInventory,
-            },
-            ui: {
-                $viewMode: $viewMode,
-                $isEditMode: $isEditMode,
-                $isLoading: $isLoading,
-                $activeDialog: $activeDialog,
-                $focusedPlantIndex: $focusedPlantIndex,
-                $selectedPlants: $selectedPlants,
-                $gridOverlayMode: $gridOverlayMode,
-                $defaultApplied: $defaultApplied,
-                setEditMode: vi.fn(),
-                setViewMode: vi.fn(),
-                setActiveDialog: vi.fn(),
-            },
-            history: mockHistory,
-            handleDeviceChange: vi.fn(),
-            openAddPlantDialog: vi.fn(),
-            setActiveDialog: vi.fn(),
-            setEditMode: vi.fn(),
-            setViewMode: vi.fn(),
-            fetchStrainLibrary: vi.fn(),
-            openLogbookDialog: vi.fn(),
-            openNutrientPresetsDialog: vi.fn(),
-            openIPMDialog: vi.fn(),
-            openConfigDialog: vi.fn(),
-            openStrainLibraryDialog: vi.fn(),
-            openIrrigationDialog: vi.fn(),
-            openGrowMasterDialog: vi.fn(),
-            openWateringDialog: vi.fn(),
-            openTrainingDialog: vi.fn(),
             openNutrientsDialog: vi.fn(),
-            toggleEnvGraph: vi.fn()
         };
 
         mockHass = { states: {}, callService: vi.fn() };
 
-        deviceMock = {
-            device_id: 'd1',
-            name: 'Growspace 1',
-            overview_entity_id: 'sensor.ov',
-            type: 'normal',
-            plants: [],
-            rows: 0,
-            plants_per_row: 0,
-            grid: { rows: [], size: 0 },
-            biological_metrics: {
-                average_plant_age: 0,
-                average_plant_height: 0,
-                weeks_in_stage: 0,
-                days_in_stage: 0
-            },
-            environment_attributes: {
-                temperature_sensor: 'sensor.t',
-                humidity_sensor: 'sensor.h'
-            },
-            stats: {
-                total_plants: 0
-            },
-            irrigation_config: {
-                irrigation_times: [],
-                drain_times: []
-            }
-        } as unknown as GrowspaceDevice;
-        configMock = { default_growspace: 'd1' } as any;
+        deviceMock = mockDevices[0];
 
         // Default Metrics Mock
         (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-            mainChips: [
-                { key: 'temperature', value: '25°C', label: 'Temp', icon: 'path', status: 'ok' },
-                { key: 'humidity', value: '60%', label: 'Hum', icon: 'path', status: 'ok' },
-                { key: 'vpd', value: '1.2kPa', label: 'VPD', icon: 'path', status: 'ok' },
-                { key: 'co2', value: '800ppm', label: 'CO2', icon: 'path', status: 'warning' },
-                // Secondary
-                { key: 'ppfd', value: '500', label: 'PPFD', icon: 'path', status: 'ok' }
-            ],
-            deviceChips: [
-                { key: 'fan', label: 'Fan', icon: 'path', value: 'on' }
-            ],
-            dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
-            envAttrs: { dehumidifier_control_enabled: true }
+            mainChips: [{ key: 'temp', value: '25' }],
+            deviceChips: [{ key: 'fan', value: 'on' }],
+            dominant: { label: 'Day 30' },
+            envAttrs: {}
         });
 
         element = await fixture(html`
@@ -348,1355 +124,317 @@ describe('GrowspaceHeader', () => {
                 .store=${mockStore}
                 .hass=${mockHass}
                 .device=${deviceMock}
-                .config=${configMock}
+                .config=${{}}
             ></growspace-header>
         `);
-    });
-
-    afterEach(() => {
-        vi.clearAllMocks();
     });
 
     it('should be defined', () => {
         expect(element).toBeInstanceOf(GrowspaceHeader);
     });
 
-    describe('Rendering', () => {
-        it('should render title if default_growspace is set', async () => {
-            const title = element.shadowRoot?.querySelector('.gs-title');
-            expect(title).not.toBeNull();
-            expect(title?.textContent).toBe('Growspace 1');
-            expect(element.shadowRoot?.querySelector('select')).toBeNull();
+    it('should render child components', () => {
+        const hero = element.shadowRoot?.querySelector('growspace-header-hero');
+        const stages = element.shadowRoot?.querySelector('growspace-header-stages');
+        const actions = element.shadowRoot?.querySelector('growspace-header-actions');
+
+        expect(hero).not.toBeNull();
+        expect(stages).not.toBeNull();
+        expect(actions).not.toBeNull();
+    });
+
+    it('should render device selector when no default_growspace is set', () => {
+        // If config is empty, select should be present
+        const select = element.shadowRoot?.querySelector('select.growspace-select-header');
+        expect(select).not.toBeNull();
+    });
+
+    it('should handle device change', async () => {
+        const select = element.shadowRoot?.querySelector('select.growspace-select-header') as HTMLSelectElement;
+        // Mock change
+        select.value = 'd2';
+        select.dispatchEvent(new Event('change'));
+        expect(mockStore.handleDeviceChange).toHaveBeenCalledWith('d2');
+    });
+
+    it('should update metrics when device changes', async () => {
+        // Since we mock computeHeaderMetrics, we check if it was called
+        expect(MetricsUtils.computeHeaderMetrics).toHaveBeenCalled();
+
+        // Update device
+        element.device = { ...deviceMock, name: 'New Device' };
+        await element.updateComplete;
+
+        expect(MetricsUtils.computeHeaderMetrics).toHaveBeenCalled();
+    });
+
+    describe('Actions and Events', () => {
+        it('should handle chip drag start with native event', () => {
+            const dragEvent = { dataTransfer: { effectAllowed: '', setData: vi.fn() } } as any;
+            (element as any)._handleChipDragStart(dragEvent, 'vpd');
+            expect((element as any)._dragController.draggedMetric).toBe('vpd');
+            expect(dragEvent.dataTransfer.effectAllowed).toBe('move');
+            expect(dragEvent.dataTransfer.setData).toHaveBeenCalledWith('text/plain', 'vpd');
         });
 
-        it('should render select dropdown if default_growspace is not set', async () => {
-            // Re-render with new config (no default_growspace means show selector)
-            element.config = {} as any;
-            await element.updateComplete;
+        it('should handle chip drop edge cases', () => {
+            mockStore.history.linkGraphs = vi.fn();
 
+            // Case 1: Same metric
+            const dragController = (element as any)._dragController;
+            // set private state via cast or method
+            dragController['handleDragStart']({ dataTransfer: { setData: () => { } } } as any, 'temp');
+
+            (element as any)._handleChipDrop(null, 'temp');
+            expect(mockStore.history.linkGraphs).not.toHaveBeenCalled();
+            expect(dragController.draggedMetric).toBeNull();
+
+            // Case 2: No dragged metric
+            // Ensure null
+            if (dragController.draggedMetric) dragController['handleDrop'](null, '', () => { });
+
+            (element as any)._handleChipDrop(null, 'vpd');
+            expect(mockStore.history.linkGraphs).not.toHaveBeenCalled();
+            expect(dragController.draggedMetric).toBeNull();
+        });
+
+        it('should call store.openNutrientsDialog', () => {
+            const secondary = element.shadowRoot?.querySelector('growspace-header-secondary');
+            secondary?.dispatchEvent(new CustomEvent('open-nutrients'));
+            expect(mockStore.openNutrientsDialog).toHaveBeenCalled();
+        });
+    });
+
+    describe('Rendering Branches', () => {
+        it('should render title instead of select when default_growspace is set', async () => {
+            element.config = { default_growspace: 'd1' } as any;
+            await elementUpdated(element);
+            const title = element.shadowRoot?.querySelector('h1.gs-title');
+            const select = element.shadowRoot?.querySelector('select');
+            expect(title).not.toBeNull();
+            expect(select).toBeNull();
+        });
+
+        it('should call _unlinkGraphs direktly', () => {
+            (element as any)._unlinkGraphs(1);
+            expect(mockStore.history.unlinkGraphGroup).toHaveBeenCalledWith(1);
+        });
+
+        it('should call _handleToggleMobileLink direktly', () => {
+            (element as any)._mobileLink = false;
+            (element as any)._handleToggleMobileLink();
+            expect((element as any)._mobileLink).toBe(true);
+        });
+
+        it('should split chips correctly', async () => {
+            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+                mainChips: [
+                    { key: 'temperature', value: '25' },
+                    { key: 'co2', value: '800' },
+                    { key: 'lux', value: '5000' }
+                ],
+                deviceChips: [],
+                dominant: undefined,
+                envAttrs: {}
+            });
+            element.requestUpdate();
+            await elementUpdated(element);
+
+            const hero = element.shadowRoot?.querySelector('growspace-header-hero') as any;
+            const secondary = element.shadowRoot?.querySelector('growspace-header-secondary') as any;
+
+            expect(hero.chips.length).toBe(2); // temperature, co2
+            expect(secondary.chips.length).toBe(1); // lux
+        });
+        it('should handle all events from all child components', async () => {
+            const el = await fixture<GrowspaceHeader>(html`
+            <growspace-header .hass=${mockHass} .device=${deviceMock} .store=${mockStore}></growspace-header>
+        `);
+
+            const storeSpy = vi.spyOn(mockStore, 'toggleEnvGraph');
+            const nutrientsSpy = vi.spyOn(mockStore, 'openNutrientsDialog');
+            const historySpy = vi.spyOn(mockStore.history, 'linkGraphs');
+            const unlinkSpy = vi.spyOn(mockStore.history, 'unlinkGraphGroup');
+            const updateSpy = vi.spyOn(el as any, '_handleToggleMobileLink'); // Spy on method itself
+
+            // 1. Actions
+            const actions = el.shadowRoot!.querySelector('growspace-header-actions') as any;
+            actions.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temp' } }));
+            expect(storeSpy).toHaveBeenCalledWith('temp');
+
+            actions.dispatchEvent(new CustomEvent('toggle-mobile-link'));
+            expect(updateSpy).toHaveBeenCalled();
+
+            actions.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'humi' } }));
+            expect((el as any)._dragController.draggedMetric).toBe('humi');
+
+            actions.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'vpd' } }));
+            expect(historySpy).toHaveBeenCalledWith('humi', 'vpd');
+
+            // 2. Secondary
+            const secondary = el.shadowRoot!.querySelector('growspace-header-secondary') as any;
+            secondary.dispatchEvent(new CustomEvent('open-nutrients'));
+            expect(nutrientsSpy).toHaveBeenCalled();
+
+            secondary.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'co2' } }));
+            expect(storeSpy).toHaveBeenCalledWith('co2');
+
+            secondary.dispatchEvent(new CustomEvent('unlink-graphs', { detail: { groupIndex: 1 } }));
+            expect(unlinkSpy).toHaveBeenCalledWith(1);
+
+            // Reset dragged metric for secondary drop test
+            const controller = (el as any)._dragController;
+            controller.handleDragStart({ dataTransfer: { setData: () => { } } } as any, 'temp');
+            secondary.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'temp' } }));
+            secondary.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'co2' } }));
+            expect(historySpy).toHaveBeenCalledWith('temp', 'co2');
+
+            // 3. Hero
+            const hero = el.shadowRoot!.querySelector('growspace-header-hero') as any;
+            hero.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
+            expect(storeSpy).toHaveBeenCalledWith('vpd');
+
+            expect(updateSpy).toHaveBeenCalledTimes(1);
+
+            (el as any)._dragController.handleDragStart({ dataTransfer: { setData: () => { } } } as any, 'humi');
+            hero.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'humi' } }));
+            hero.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'temp' } }));
+            expect(historySpy).toHaveBeenCalledWith('humi', 'temp');
+        });
+
+        it('should handle device change from select', async () => {
+            // Need config with NO default_growspace to show select
+            const el = await fixture<GrowspaceHeader>(html`
+            <growspace-header .hass=${mockHass} .device=${deviceMock} .store=${mockStore} .config=${{}}></growspace-header>
+        `);
+
+            const spy = vi.spyOn(mockStore, 'handleDeviceChange');
+            const select = el.shadowRoot!.querySelector('select');
+            expect(select).not.toBeNull();
+
+            if (select) {
+                select.value = 'd2';
+                select.dispatchEvent(new Event('change'));
+                expect(spy).toHaveBeenCalledWith('d2');
+            }
+        });
+
+        it('should handle missing device or hass', async () => {
+            const el = await fixture<GrowspaceHeader>(html`
+            <growspace-header></growspace-header>
+        `);
+            expect(el.shadowRoot!.innerHTML).toContain('<!---->');
+        });
+    });
+
+    describe('Store Integration', () => {
+        it('should handle connectedCallback without store', async () => {
+            const detached = document.createElement('growspace-header') as GrowspaceHeader;
+            // store is undefined
+            document.body.appendChild(detached);
+            expect((detached as any)._viewModeController).toBeUndefined();
+            document.body.removeChild(detached);
+        });
+
+        it('should handle toggle-graph event from children', () => {
+            mockStore.toggleEnvGraph = vi.fn();
+            const hero = element.shadowRoot?.querySelector('growspace-header-hero');
+            hero?.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
+            expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('vpd');
+        });
+    });
+
+    describe('Branch Coverage Edge Cases', () => {
+        it('should safely handle _toggleEnvGraph when store is missing', () => {
+            (element as any).store = undefined;
+            (element as any)._toggleEnvGraph('kPa');
+            // Should not throw
+        });
+
+        it('should safely handle _unlinkGraphs when store or history is missing', () => {
+            (element as any).store = undefined;
+            (element as any)._unlinkGraphs(1);
+            // Should not throw
+
+            (element as any).store = { history: undefined };
+            (element as any)._unlinkGraphs(1);
+            // Should not throw
+        });
+
+        it('should safely handle _handleChipDragStart with null event or missing dataTransfer', () => {
+            (element as any)._handleChipDragStart(null, 'metric');
+            expect((element as any)._dragController.draggedMetric).toBe('metric');
+
+            (element as any)._handleChipDragStart({} as any, 'metric');
+            expect((element as any)._dragController.draggedMetric).toBe('metric');
+        });
+
+        it('should safely handle _handleChipDrop interaction with store', () => {
+            const dragController = (element as any)._dragController;
+
+            // Case 1: Store missing
+            (element as any).store = undefined;
+            dragController.handleDragStart({ dataTransfer: { setData: () => { } } } as any, 'source');
+            (element as any)._handleChipDrop(new DragEvent('drop'), 'target');
+            expect(dragController.draggedMetric).toBeNull();
+
+            // Case 2: History missing
+            (element as any).store = { history: undefined };
+            dragController.handleDragStart({ dataTransfer: { setData: () => { } } } as any, 'source');
+            (element as any)._handleChipDrop(new DragEvent('drop'), 'target');
+            expect(dragController.draggedMetric).toBeNull();
+        });
+
+        it('should return default Set for activeEnvGraphs when controller is missing', () => {
+            (element as any)._activeEnvGraphsController = undefined;
+            expect(element.activeEnvGraphs).toBeInstanceOf(Set);
+            expect(element.activeEnvGraphs.size).toBe(0);
+        });
+
+        it('should handle missing config in render', async () => {
+            (element as any).config = undefined;
+            await elementUpdated(element);
+            // Should assume !config.default_growspace is true/undefined -> check for Select
             const select = element.shadowRoot?.querySelector('select.growspace-select-header');
             expect(select).not.toBeNull();
         });
 
-        it('should render hero stats', async () => {
-            const heroCards = element.shadowRoot?.querySelectorAll('.hero-card');
-            expect(heroCards?.length).toBe(4); // Temp, Hum, VPD, CO2
-
-            const tempValue = heroCards?.[0].querySelector('.hero-value')?.textContent;
-            expect(tempValue).toBe('25');
-        });
-
-        it('should apply linked class to hero card when metric is active in graphs', async () => {
-            // metric key 'temperature' is active
-            const activeSet = new Set(['temperature']);
-            $activeEnvGraphs.set(activeSet);
-
-            // Re-mock MetricsUtils to return linked: true for temperature
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [
-                    { key: 'temperature', value: '25°C', label: 'Temp', icon: 'path', status: 'ok', linked: true },
-                    { key: 'humidity', value: '60%', label: 'Hum', icon: 'path', status: 'ok' }
-                ],
-                deviceChips: [],
-                dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
-                envAttrs: {}
-            });
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const tempCard = element.shadowRoot?.querySelector('.hero-card.linked');
-            expect(tempCard).not.toBeNull();
-            expect(tempCard?.textContent).toContain('25');
-        });
-
-        it('should show matching device name in sizer when ID exists in list', async () => {
-            // Re-render without default_growspace
-            element.config = {} as any;
-            const devicesList = [
-                { device_id: 'matching_id', name: 'Matched Name' },
-                { device_id: 'other', name: 'Other' }
-            ];
-            $devices.set(devicesList);
-            element.device = { ...deviceMock, device_id: 'matching_id' } as any;
-
-            await element.updateComplete;
-
+        it('should fallback to Select Growspace if device name is empty', async () => {
+            element.device = { ...element.device, name: '' };
+            await elementUpdated(element);
             const sizer = element.shadowRoot?.querySelector('.select-sizer');
-            expect(sizer?.textContent).toBe('Matched Name');
+            expect(sizer?.textContent).toBe('Select Growspace');
         });
-        it('should render secondary chips', async () => {
-            const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
-            expect(chips?.length).toBeGreaterThanOrEqual(2);
-        });
-    });
-
-    describe('Interactions', () => {
-        it('should handle device change', async () => {
-            element.config = {} as any;
-            await element.updateComplete;
-
-            const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-            // Force value property since JSDOM sometimes doesn't sync attribute to value property instantly
-            Object.defineProperty(select, 'value', { value: 'd2', writable: true });
-            select.dispatchEvent(new Event('change'));
-
-            expect(mockStore.handleDeviceChange).toHaveBeenCalledWith('d2');
-        });
-
-        it('should toggle graph on hero card click', async () => {
-            const card = element.shadowRoot?.querySelector('.hero-card') as HTMLElement;
-            card.click();
-            await element.updateComplete;
-
-            expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
-        });
-
-        it('should handle menu actions', async () => {
-            // Menu is always rendered with Popover API
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            expect(menu).not.toBeNull();
-
-            // Config
-            const configItem = menu?.querySelectorAll('.menu-item')[0] as HTMLElement;
-            configItem.click();
-            expect(mockStore.openConfigDialog).toHaveBeenCalled();
-            expect(mockStore.openConfigDialog).toHaveBeenCalledWith(element.device);
-        });
-    });
-
-    describe('Responsiveness', () => {
-        it('should show mobile link button on mobile', async () => {
-            // We need to preserve observe method
-            (element as any)._resizeController = {
-                isMobile: true,
-                observe: vi.fn(),
-                unobserve: vi.fn(),
-                hasTouch: false
-            };
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const linkBtn = element.shadowRoot?.querySelector('.mobile-link');
-            expect(linkBtn).not.toBeNull();
-            expect(linkBtn?.classList.contains('mobile-link')).toBe(true);
-        });
-    });
-
-    describe('Drag & Drop', () => {
-        it('should handle drop to link graphs', async () => {
-            // Mock drag start
-            (element as any)._draggedMetric = 'temperature';
-
-            // Call handleChipDrop directly
-            (element as any)._handleChipDrop(new Event('drop'), 'humidity');
-
-            expect(mockHistory.linkGraphs).toHaveBeenCalledWith('temperature', 'humidity');
-            expect((element as any)._draggedMetric).toBeNull(); // Reset
-        });
-    });
-
-    describe('Menu Actions Coverage', () => {
-        beforeEach(async () => {
-            // Menu is always rendered with Popover API
-            await element.updateComplete;
-        });
-
-        it('should handle add_plant action', () => {
-            (element as any)._triggerAction('add_plant');
-            expect(mockStore.openAddPlantDialog).toHaveBeenCalled();
-        });
-
-        it('should handle edit action', () => {
-            vi.spyOn($isEditMode, 'get').mockReturnValue(true);
-            (element as any)._isEditModeController = { value: false };
-            (element as any)._triggerAction('edit');
-            expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(true);
-        });
-
-        it('should handle compact action', async () => {
-            $viewMode.set('compact');
-            (element as any)._viewModeController = { value: 'compact' };
-            await element.updateComplete;
-
-            (element as any)._triggerAction('compact');
-            expect(mockStore.ui.setViewMode).toHaveBeenCalledWith('standard');
-        });
-
-        it('should handle irrigation action', () => {
-            $selectedDevice.set('d1');
-            (element as any)._triggerAction('irrigation');
-            expect(mockStore.openIrrigationDialog).toHaveBeenCalled();
-
-            $selectedDevice.set(null);
-            vi.clearAllMocks();
-            (element as any)._triggerAction('irrigation');
-            expect($activeDialog.set).not.toHaveBeenCalled();
-        });
-
-        it('should handle ai action', () => {
-            $selectedDevice.set('d1');
-            (element as any)._triggerAction('ai');
-            expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('d1');
-        });
-
-        it('should handle logbook action', () => {
-            (element as any)._triggerAction('logbook');
-            expect(mockStore.openLogbookDialog).toHaveBeenCalled();
-        });
-
-        it('should handle config action', () => {
-            $selectedDevice.set('d1');
-            (element as any)._triggerAction('config');
-            expect(mockStore.openConfigDialog).toHaveBeenCalledWith(element.device);
-        });
-
-        it('should handle strains action', () => {
-            (element as any)._triggerAction('strains');
-            expect(mockStore.openStrainLibraryDialog).toHaveBeenCalled();
-        });
-
-        it('should handle control_dehumidifier action (no-op in switch)', () => {
-            (element as any)._triggerAction('control_dehumidifier');
-            // No state to check - Popover API handles menu visibility
-        });
-
-        it('should handle water action with no plants selected', () => {
-            $selectedPlants.set(new Set());
-            (element as any)._triggerAction('water');
-            expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
-                mode: 'growspace',
-                plantIds: undefined
-            }));
-        });
-
-        it('should handle control_dehumidifier action with overview_entity_id', () => {
-            element.device = { ...deviceMock, overview_entity_id: 'sensor.gs1' } as any;
-            (element as any)._envAttrs = { dehumidifier_control_enabled: false };
-            (element as any)._triggerAction('control_dehumidifier');
-            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'update_environment_config', expect.objectContaining({
-                dehumidifier_control_enabled: true
-            }));
-        });
-
-        it('should handle control_dehumidifier action without overview_entity_id (no-op)', () => {
-            element.device = { ...deviceMock, overview_entity_id: undefined } as any;
-            (element as any)._triggerAction('control_dehumidifier');
-            expect(mockHass.callService).not.toHaveBeenCalled();
-        });
-
-        it('should handle nutrients action', () => {
-            (element as any)._triggerAction('nutrients');
-            expect(mockStore.openNutrientsDialog).toHaveBeenCalled();
-        });
-
-        it('should handle ai action with no selected device', () => {
-            $selectedDevice.set(null);
-            (element as any)._triggerAction('ai');
-            expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
-        });
-
-        it('should handle irrigation action with no selected device', () => {
-            $selectedDevice.set(null);
-            (element as any)._triggerAction('irrigation');
-            expect($activeDialog.set).not.toHaveBeenCalled();
-        });
-    });
-
-    describe('Render Methods Coverage', () => {
-        it('should render menu with Popover API', async () => {
-            // Menu is always rendered in DOM with popover="auto"
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            expect(menu).not.toBeNull();
-            expect(menu?.getAttribute('popover')).toBe('auto');
-        });
-
-        it('should render hero card for main chips', async () => {
-            const heroCards = element.shadowRoot?.querySelectorAll('.hero-card');
-            expect(heroCards?.length).toBeGreaterThan(0);
-        });
-
-        it('should call _renderMenu method directly', () => {
-            // Menu is always rendered with Popover API
-            const menuResult = (element as any)._renderMenu();
-            expect(menuResult).toBeDefined();
-        });
-
-        it('should call _renderHeroCard method directly', () => {
-            const chip = { key: 'temperature', value: '25°C', label: 'Temp', icon: 'path', status: 'ok' };
-            const result = (element as any)._renderHeroCard(chip);
-            expect(result).toBeDefined();
-        });
-
-        it('should call _renderHeroCard with vpd chip', () => {
-            const chip = { key: 'vpd', value: '1.2', label: 'VPD', icon: 'path', status: 'warning' };
-            const result = (element as any)._renderHeroCard(chip);
-            expect(result).toBeDefined();
-        });
-
-        it('should call _renderHeroCard with optimal chip', () => {
-            const chip = { key: 'optimal', value: 'Yes', label: 'Optimal', icon: 'path', status: 'ok' };
-            const result = (element as any)._renderHeroCard(chip);
-            expect(result).toBeDefined();
-        });
-
-        it('should handle _renderHeroCard with no value', () => {
-            const chip = { key: 'temp', value: undefined, label: 'Temp' };
-            const result = (element as any)._renderHeroCard(chip);
-            expect(JSON.stringify(result)).toContain('hero-value');
-        });
-
-        it('should handle _renderHeroCard with non-numeric value', () => {
-            const chip = { key: 'status', value: 'Ready', label: 'Status' };
-            const result = (element as any)._renderHeroCard(chip);
-            expect(JSON.stringify(result)).toContain('Ready');
-        });
-
-        it('should render "Water Growspace" label when no plants selected', async () => {
-            $selectedPlants.set(new Set());
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[2] as HTMLElement;
-            expect(waterItem.textContent).toContain('Water Growspace');
-        });
-
-        it('should render "Water Selected" label when plants are selected', async () => {
-            $selectedPlants.set(new Set(['p1']));
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-            const waterItem = menu?.querySelectorAll('.menu-item')[2] as HTMLElement;
-            expect(waterItem.textContent).toContain('Water Selected');
-        });
-    });
-
-    describe('Unlink Graphs', () => {
-        it('should unlink graph group', async () => {
-            (element as any)._unlinkGraphs(1);
-            expect(mockHistory.unlinkGraphGroup).toHaveBeenCalledWith(1);
-        });
-    });
-
-    describe('Getters Coverage', () => {
-        it('should return activeEnvGraphs from controller', () => {
-            const set = new Set(['temp']);
-            (mockHistory.$activeEnvGraphs.get as any).mockReturnValue(set);
-            // Re-render or force update not needed as we mock the controller's value access implicitly via accessing property which accesses controller.
-            // Actually, element.activeEnvGraphs reads this._activeEnvGraphsController.value
-            // We need to ensure the controller sees this value.
-            // Since we mocked `new GrowspaceStore`, we should ensure the atom is what we think it is.
-            // But here we are testing the getter on the element.
-            // The element initializes controllers in connectedCallback using this.store.history.$activeEnvGraphs.
-            // So if we update the mock return value, the controller (which subscribes) should update? 
-            // Nanostores StoreController: "Subscribes to the atom and requests an update when the atom changes."
-            // But `.value` on controller reads from atom.get().
-
-            // Let's rely on the fact that we mocked `$activeEnvGraphs.get` before creating the element?
-            // No, the test changes it inside `it`.
-            // But since it's a mock function, we can change return value.
-            expect(element.activeEnvGraphs).toBe(set);
-        });
-
-        it('should return empty set if controller missing', () => {
-            // Mock store.history.activeEnvGraphs to return null/empty
-            (mockHistory.$activeEnvGraphs.get as any).mockReturnValue(undefined);
-            expect(element.activeEnvGraphs).toEqual(new Set());
-        });
-
-
-    });
-
-    describe('Toggle Env Graph', () => {
-        it('should toggle graph visibility using controller', () => {
-            (element as any)._toggleEnvGraph('temp');
-            expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temp');
-        });
-    });
-
-    describe('Scroll Logic', () => {
-        describe('Scroll Logic Details', () => {
-            it('should update scroll state when determining scrollability', () => {
-                const container = document.createElement('div');
-                Object.defineProperty(container, 'scrollLeft', { value: 10, writable: true });
-                Object.defineProperty(container, 'scrollWidth', { value: 500, writable: true });
-                Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
-
-                (element as any)._chipsContainerRef = { value: container };
-                (element as any)._stageContainerRef = { value: container }; // Reuse for simplicity
-                (element as any)._deviceChipsContainerRef = { value: container };
-
-                (element as any)._checkScroll();
-
-                expect((element as any)._canScrollLeft).toBe(true);
-                expect((element as any)._canScrollRight).toBe(true);
-                expect((element as any)._canScrollStageLeft).toBe(true);
-                expect((element as any)._canScrollDeviceLeft).toBe(true);
-            });
-
-            it('should handle stage and device scrolls', () => {
-                const stageContainer = document.createElement('div');
-                stageContainer.scrollBy = vi.fn();
-                (element as any)._stageContainerRef = { value: stageContainer };
-                (element as any)._scrollStage('right');
-                expect(stageContainer.scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: 100 }));
-
-                const deviceContainer = document.createElement('div');
-                deviceContainer.scrollBy = vi.fn();
-                (element as any)._deviceChipsContainerRef = { value: deviceContainer };
-                (element as any)._scrollDeviceChips('left');
-                expect(deviceContainer.scrollBy).toHaveBeenCalledWith(expect.objectContaining({ left: -100 }));
-            });
 
-            it('should trigger checkScroll on updated when device changes', async () => {
-                vi.useFakeTimers();
-                const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
-
-                (element as any).updated(new Map([['device', {}]]));
-                vi.runAllTimers();
-
-                expect(checkScrollSpy).toHaveBeenCalled();
-                vi.useRealTimers();
-            });
-
-            it('should update canScroll states to false when no overflow', () => {
-                const container = document.createElement('div');
-                Object.defineProperty(container, 'scrollLeft', { value: 0, writable: true });
-                Object.defineProperty(container, 'scrollWidth', { value: 200, writable: true });
-                Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
-
-                (element as any)._chipsContainerRef = { value: container };
-                (element as any)._stageContainerRef = { value: container };
-                (element as any)._deviceChipsContainerRef = { value: container };
-
-                (element as any)._checkScroll();
-
-                expect((element as any)._canScrollLeft).toBe(false);
-                expect((element as any)._canScrollRight).toBe(false);
-                expect((element as any)._canScrollStageLeft).toBe(false);
-                expect((element as any)._canScrollDeviceLeft).toBe(false);
-            });
-        });
-
-        describe('Advanced Interactions', () => {
-            it('should prevent default on dragover if dragging metric', () => {
-                (element as any)._draggedMetric = 'temp';
-                const evt = new Event('dragover');
-                const spy = vi.spyOn(evt, 'preventDefault');
-                (element as any)._handleDragOver(evt);
-                expect(spy).toHaveBeenCalled();
-            });
-
-            it('should not prevent default on dragover if not dragging', () => {
-                (element as any)._draggedMetric = null;
-                const evt = new Event('dragover');
-                const spy = vi.spyOn(evt, 'preventDefault');
-                (element as any)._handleDragOver(evt);
-                expect(spy).not.toHaveBeenCalled();
-            });
-
-            it('should start drag correctly', () => {
-                const evt = { dataTransfer: { setData: vi.fn(), effectAllowed: '' } } as any;
-                (element as any)._handleChipDragStart(evt, 'temp');
-                expect(evt.dataTransfer.setData).toHaveBeenCalledWith('text/plain', 'temp');
-                expect((element as any)._draggedMetric).toBe('temp');
-            });
-
-            it('should ignore drop if same metric', () => {
-                (element as any)._draggedMetric = 'temp';
-                (element as any)._handleChipDrop(new Event('drop'), 'temp'); // Same
-                expect(mockHistory.linkGraphs).not.toHaveBeenCalled();
-                expect((element as any)._draggedMetric).toBeNull();
-            });
-
-            it('should return correct draggable state', () => {
-                // Desktop
-                (element as any)._resizeController = { isMobile: false, hasTouch: false };
-                expect((element as any)._chipDraggable).toBe('true');
-
-                // Mobile
-                (element as any)._resizeController = { isMobile: true, hasTouch: true };
-                (element as any)._mobileLink = true;
-                expect((element as any)._chipDraggable).toBe('true');
-
-                (element as any)._mobileLink = false;
-                expect((element as any)._chipDraggable).toBe('false');
-            });
-        });
-
-        describe('Menu DOM Interactions', () => {
-            beforeEach(async () => {
-                // Menu is always rendered with Popover API
-                await element.updateComplete;
-            });
-
-            it('should handle all menu item clicks in DOM', () => {
-                const menu = element.shadowRoot?.querySelector('.menu-dropdown');
-                expect(menu).not.toBeNull();
-
-                // Helper to click and verify
-                const clickItem = (index: number, type: string) => {
-                    const item = menu?.querySelectorAll('.menu-item')[index] as HTMLElement;
-                    if (!item) throw new Error(`Menu item ${index} not found`);
-                    item.click();
-                };
-
-                // Order: Config, Edit, Compact, Dehumidifier, Strains, Irrigation, AI, Logbook
-
-                // Order: Config, Edit, Compact, Dehumidifier, Water, Irrigation, IPM, Nutrient Presets, Add Plant, Strains, Logbook, AI
-
-                // 2. Edit (Index 1)
-                const editSpy = vi.spyOn(mockStore.ui, 'setEditMode');
-                clickItem(1, 'edit');
-                expect(editSpy).toHaveBeenCalled();
-
-                // 3. Water (Index 2)
-                const triggerSpy = vi.spyOn(element as any, '_triggerAction');
-                clickItem(2, 'water');
-                expect(triggerSpy).toHaveBeenCalledWith('water');
-
-                // 4. Irrigation (Index 3)
-                clickItem(3, 'irrigation');
-                expect(triggerSpy).toHaveBeenCalledWith('irrigation');
-
-                // 5. IPM (Index 4)
-                clickItem(4, 'ipm');
-                expect(triggerSpy).toHaveBeenCalledWith('ipm');
-
-                // 6. Training (Index 5) - NEW
-                clickItem(5, 'training');
-                expect(triggerSpy).toHaveBeenCalledWith('training');
-
-                // 7. Nutrients (Index 6)
-                clickItem(6, 'nutrients');
-                expect(triggerSpy).toHaveBeenCalledWith('nutrients');
-
-                // 8. Add Plant (Index 7)
-                clickItem(7, 'add_plant');
-                expect(triggerSpy).toHaveBeenCalledWith('add_plant');
-
-                // 9. Strains (Index 8)
-                clickItem(8, 'strains');
-                expect(triggerSpy).toHaveBeenCalledWith('strains');
-
-                // 10. Logbook (Index 9)
-                clickItem(9, 'logbook');
-                expect(triggerSpy).toHaveBeenCalledWith('logbook');
-
-                // 11. AI (Index 10)
-                clickItem(10, 'ai');
-                expect(triggerSpy).toHaveBeenCalledWith('ai');
-            });
-        });
-
-        describe('Sparkline Rendering', () => {
-            it('should render sparkline paths', () => {
-                // Mock ChartUtils to return specific paths
-                (ChartUtils.generateSparklinePath as any).mockReturnValue('M0,0 L10 10');
-                (ChartUtils.getSparklineColor as any).mockReturnValue('red');
-
-                // Test Vpd Chip (uses generateVpdSparklineSegments which returns array of paths)
-                (ChartUtils.generateVpdSparklineSegments as any).mockReturnValue([
-                    { d: 'M0,0 L10,10', color: 'blue' }
-                ]);
-
-                const vpdChip = { key: 'vpd', value: '1.0', label: 'VPD', icon: 'i', status: 'ok' };
-                const vpdResult = (element as any)._renderHeroCard(vpdChip);
-                // Verify it contains multiple paths
-                expect(JSON.stringify(vpdResult)).toContain('draggable');
-
-                // Test normal chip (simple path)
-                const tempChip = { key: 'temperature', value: '20', label: 'T', icon: 'i', status: 'ok' };
-                const tempResult = (element as any)._renderHeroCard(tempChip);
-                expect(JSON.stringify(tempResult)).toContain('hero-sparkline');
-            });
-        });
-    });
-    describe('Template Bindings Coverage', () => {
-        it('should trigger drag handlers from hero card DOM', () => {
-            const hero = element.shadowRoot?.querySelector('.hero-card');
-            expect(hero).toBeTruthy();
-
-            // Drag Start
-            const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
-            const dragStartEvent = new Event('dragstart');
-            hero?.dispatchEvent(dragStartEvent);
-            expect(startSpy).toHaveBeenCalled();
-
-            // Drop
-            const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-            const dropEvent = new Event('drop');
-            hero?.dispatchEvent(dropEvent);
-            expect(dropSpy).toHaveBeenCalled();
-        });
-
-        it('should trigger drag handlers from secondary chips DOM', () => {
-            // Second chip typically (first is device chip, subsequent are secondary)
-            const secondaryStrip = element.shadowRoot?.querySelector('.secondary-strip');
-            const chip = secondaryStrip?.querySelector('growspace-chip');
-
-            if (chip) {
-                const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
-                chip.dispatchEvent(new Event('dragstart'));
-                expect(startSpy).toHaveBeenCalled();
-
-                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-                chip.dispatchEvent(new Event('drop'));
-                expect(dropSpy).toHaveBeenCalled();
-            }
-        });
-
-        it('should trigger scroll click from DOM', async () => {
-            // Force scrollable state
-            (element as any)._canScrollRight = true;
-            (element as any)._canScrollLeft = true;
-            element.requestUpdate();
-        });
-
-        it('should trigger drag handlers from device chips DOM', () => {
-            // Verify device chips are rendered
-            const deviceChipsContainer = element.shadowRoot?.querySelector('.gs-device-chips-header');
-            expect(deviceChipsContainer).toBeTruthy();
-            const deviceChips = deviceChipsContainer?.querySelectorAll('growspace-chip');
-            expect(deviceChips?.length).toBeGreaterThan(0);
+        it('should handle null nutrient inventory in render', async () => {
+            // Already null in default setup, but verifying render pass
+            const secondary = element.shadowRoot?.querySelector('growspace-header-secondary');
+            expect((secondary as any).inventory).toBeNull();
         });
-
-        it('should trigger unlink from secondary strip chips', () => {
-            // Verify secondary strip chips are rendered
-            const secondaryStrip = element.shadowRoot?.querySelector('.secondary-strip');
-            expect(secondaryStrip).toBeTruthy();
-            const chips = secondaryStrip?.querySelectorAll('growspace-chip');
-            // Secondary strip should have chips
-            expect(chips).toBeTruthy();
-        });
-
-        it('should call _handleDragOver directly', () => {
-            const mockEvent = { preventDefault: vi.fn() } as any;
-            (element as any)._draggedMetric = 'temperature';
-            (element as any)._handleDragOver(mockEvent);
-            expect(mockEvent.preventDefault).toHaveBeenCalled();
-        });
-
-        it('should call _toggleEnvGraph directly', () => {
-            // Mock controller
-            // Mock history store method
-            // We can't reassign store.history because it's read-only, but we can spy on the method of the existing mock
-            // mockHistory is already
-            const spy = vi.spyOn(mockStore, 'toggleEnvGraph');
-            (element as any)._toggleEnvGraph('humidity');
-            expect(spy).toHaveBeenCalledWith('humidity');
-        });
-    });
-
-    describe('Scroll Functions Coverage', () => {
-        it('should scroll chips left when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._chipsContainerRef = { value: container };
-            (element as any)._scrollChips('left');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: -200, behavior: 'smooth' });
-        });
-
-        it('should scroll chips right when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._chipsContainerRef = { value: container };
-            (element as any)._scrollChips('right');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: 200, behavior: 'smooth' });
-        });
-
-        it('should not scroll chips when container is null', () => {
-            (element as any)._chipsContainerRef = { value: null };
-            expect(() => (element as any)._scrollChips('left')).not.toThrow();
-        });
-
-        it('should scroll stage left when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._stageContainerRef = { value: container };
-            (element as any)._scrollStage('left');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: -100, behavior: 'smooth' });
-        });
-
-        it('should scroll stage right when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._stageContainerRef = { value: container };
-            (element as any)._scrollStage('right');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: 100, behavior: 'smooth' });
-        });
-
-        it('should not scroll stage when container is null', () => {
-            (element as any)._stageContainerRef = { value: null };
-            expect(() => (element as any)._scrollStage('left')).not.toThrow();
-        });
-
-        it('should scroll device chips left when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._deviceChipsContainerRef = { value: container };
-            (element as any)._scrollDeviceChips('left');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: -100, behavior: 'smooth' });
-        });
-
-        it('should scroll device chips right when container exists', () => {
-            const container = document.createElement('div');
-            container.scrollBy = vi.fn();
-            (element as any)._deviceChipsContainerRef = { value: container };
-            (element as any)._scrollDeviceChips('right');
-            expect(container.scrollBy).toHaveBeenCalledWith({ left: 100, behavior: 'smooth' });
-        });
-
-        it('should not scroll device chips when container is null', () => {
-            (element as any)._deviceChipsContainerRef = { value: null };
-            expect(() => (element as any)._scrollDeviceChips('right')).not.toThrow();
-        });
-
-        it('should handle _checkScroll with null containers', () => {
-            (element as any)._chipsContainerRef = { value: null };
-            (element as any)._stageContainerRef = { value: null };
-            (element as any)._deviceChipsContainerRef = { value: null };
-            expect(() => (element as any)._checkScroll()).not.toThrow();
-        });
-
-        it('should handle _checkScroll when scrolled to start', () => {
-            const container = document.createElement('div');
-            Object.defineProperty(container, 'scrollLeft', { value: 0, writable: true });
-            Object.defineProperty(container, 'scrollWidth', { value: 500, writable: true });
-            Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
-
-            (element as any)._chipsContainerRef = { value: container };
-            (element as any)._stageContainerRef = { value: container };
-            (element as any)._deviceChipsContainerRef = { value: container };
-            (element as any)._checkScroll();
-
-            expect((element as any)._canScrollLeft).toBe(false);
-            expect((element as any)._canScrollRight).toBe(true);
-        });
-
-        it('should handle _checkScroll when scrolled to end', () => {
-            const container = document.createElement('div');
-            Object.defineProperty(container, 'scrollLeft', { value: 300, writable: true });
-            Object.defineProperty(container, 'scrollWidth', { value: 500, writable: true });
-            Object.defineProperty(container, 'clientWidth', { value: 200, writable: true });
-
-            (element as any)._chipsContainerRef = { value: container };
-            (element as any)._stageContainerRef = { value: container };
-            (element as any)._deviceChipsContainerRef = { value: container };
-            (element as any)._checkScroll();
-
-            expect((element as any)._canScrollLeft).toBe(true);
-            expect((element as any)._canScrollRight).toBe(false);
-        });
-    });
-
-    describe('Toggle Env Graph Edge Cases', () => {
-        it('should not toggle when store.history is undefined', () => {
-            const originalHistory = element.store?.history;
-            (element as any).store = { ...mockStore, history: undefined };
-            expect(() => (element as any)._toggleEnvGraph('temp')).not.toThrow();
-            (element as any).store = mockStore;
-        });
-
-        it('should not unlink when store.history is undefined', () => {
-            const originalHistory = element.store?.history;
-            (element as any).store = { ...mockStore, history: undefined };
-            expect(() => (element as any)._unlinkGraphs(0)).not.toThrow();
-            (element as any).store = mockStore;
-        });
-    });
-
-    describe('Chip Drop Edge Cases', () => {
-        it('should reset dragged metric when no metric is dragged', () => {
-            (element as any)._draggedMetric = null;
-            const evt = new Event('drop');
-            (element as any)._handleChipDrop(evt, 'humidity');
-            expect((element as any)._draggedMetric).toBeNull();
-        });
-
-        it('should link graphs when store.history exists', () => {
-            (element as any)._draggedMetric = 'temperature';
-            const evt = { preventDefault: vi.fn() } as any;
-            (element as any)._handleChipDrop(evt, 'humidity');
-            expect(mockHistory.linkGraphs).toHaveBeenCalledWith('temperature', 'humidity');
-        });
-
-        it('should not link when store.history is undefined', () => {
-            (element as any)._draggedMetric = 'temperature';
-            const originalStore = element.store;
-            (element as any).store = { ...mockStore, history: undefined };
-            const evt = { preventDefault: vi.fn() } as any;
-            expect(() => (element as any)._handleChipDrop(evt, 'humidity')).not.toThrow();
-            (element as any).store = originalStore;
-            expect((element as any)._draggedMetric).toBeNull();
-        });
-    });
-
-
 
-    describe('_updateMetrics Edge Cases', () => {
-        it('should reset metrics when device is null', () => {
-            element.device = null as any;
+        it('should return safely if updateMetrics called without device or hass', () => {
+            (element as any).device = undefined;
             (element as any)._updateMetrics();
             expect((element as any)._mainChips).toEqual([]);
-            expect((element as any)._deviceChips).toEqual([]);
-            expect((element as any)._dominant).toBeUndefined();
-        });
 
-        it('should reset metrics when hass is null', () => {
-            element.hass = null as any;
+            (element as any).device = deviceMock;
+            (element as any).hass = undefined;
             (element as any)._updateMetrics();
             expect((element as any)._mainChips).toEqual([]);
         });
-    });
 
-    describe('connectedCallback Edge Cases', () => {
-        it('should not initialize controllers when store is undefined', async () => {
-            const newElement = document.createElement('growspace-header') as GrowspaceHeader;
-            (newElement as any).store = undefined;
-            document.body.appendChild(newElement);
-            expect((newElement as any)._viewModeController).toBeUndefined();
-            document.body.removeChild(newElement);
-        });
-    });
-
-    describe('Chip Drag Start', () => {
-        it('should handle drag start without dataTransfer', () => {
-            const evt = {} as DragEvent;
-            expect(() => (element as any)._handleChipDragStart(evt, 'temp')).not.toThrow();
-            expect((element as any)._draggedMetric).toBe('temp');
-        });
-    });
-
-    describe('Mobile Link Toggle', () => {
-        it('should toggle mobile link state', async () => {
-            (element as any)._resizeController = { isMobile: true, hasTouch: true, observe: vi.fn() };
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const initialState = (element as any)._mobileLink;
-            const linkBtn = element.shadowRoot?.querySelector('.mobile-link') as HTMLElement;
-            if (linkBtn) {
-                linkBtn.click();
-                expect((element as any)._mobileLink).toBe(!initialState);
-            }
-        });
-    });
-
-    describe('Inline Template Callback Coverage', () => {
-        it('should trigger scroll left on device chips via DOM click', async () => {
-            (element as any)._canScrollDeviceLeft = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const scrollSpy = vi.spyOn(element as any, '_scrollDeviceChips');
-            const leftArrow = element.shadowRoot?.querySelectorAll('.scroll-arrow')[0] as HTMLElement;
-            if (leftArrow && !leftArrow.classList.contains('hidden')) {
-                leftArrow.click();
-                expect(scrollSpy).toHaveBeenCalledWith('left');
-            }
+        it('should handle missing linkedGraphGroupsController value safely', () => {
+            // In _updateMetrics: this._linkedGraphGroupsController?.value || []
+            (element as any)._linkedGraphGroupsController = undefined;
+            (element as any)._updateMetrics();
+            // Should verify it didn't throw and ran with []
+            expect(MetricsUtils.computeHeaderMetrics).toHaveBeenCalled();
         });
 
-        it('should trigger scroll right on device chips via DOM click', async () => {
-            (element as any)._canScrollDeviceRight = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const scrollSpy = vi.spyOn(element as any, '_scrollDeviceChips');
-            const arrows = element.shadowRoot?.querySelectorAll('.scroll-arrow');
-            const rightArrow = arrows?.[1] as HTMLElement;
-            if (rightArrow && !rightArrow.classList.contains('hidden')) {
-                rightArrow.click();
-                expect(scrollSpy).toHaveBeenCalledWith('right');
-            }
+        it('should render nothing if device or hass is missing', async () => {
+            (element as any).device = undefined;
+            await elementUpdated(element);
+            expect(element.shadowRoot?.innerHTML).toContain('<!---->');
         });
-
-        it('should trigger scroll on stage area via DOM click', async () => {
-            (element as any)._canScrollStageLeft = true;
-            (element as any)._canScrollStageRight = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const scrollSpy = vi.spyOn(element as any, '_scrollStage');
-            // Stage arrows are the 3rd and 4th scroll arrows
-            const arrows = element.shadowRoot?.querySelectorAll('.scroll-arrow');
-            // Look for visible stage arrows
-            for (let i = 0; i < (arrows?.length || 0); i++) {
-                const arrow = arrows?.[i] as HTMLElement;
-                if (arrow && !arrow.classList.contains('hidden')) {
-                    arrow.click();
-                }
-            }
-        });
-
-        it('should trigger scroll left on secondary strip via DOM click', async () => {
-            (element as any)._canScrollLeft = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const scrollSpy = vi.spyOn(element as any, '_scrollChips');
-            const container = element.shadowRoot?.querySelector('.secondary-strip-container');
-            const leftArrow = container?.querySelector('.scroll-arrow:not(.hidden)') as HTMLElement;
-            if (leftArrow) {
-                leftArrow.click();
-                expect(scrollSpy).toHaveBeenCalled();
-            }
-        });
-
-        it('should trigger scroll right on secondary strip via DOM click', async () => {
-            (element as any)._canScrollRight = true;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const scrollSpy = vi.spyOn(element as any, '_scrollChips');
-            const container = element.shadowRoot?.querySelector('.secondary-strip-container');
-            const arrows = container?.querySelectorAll('.scroll-arrow');
-            if (arrows && arrows.length > 1) {
-                const rightArrow = arrows[1] as HTMLElement;
-                if (!rightArrow.classList.contains('hidden')) {
-                    rightArrow.click();
-                    expect(scrollSpy).toHaveBeenCalled();
-                }
-            }
-        });
-
-        it('should verify menu button has popovertarget attribute', async () => {
-            const menuBtn = element.shadowRoot?.querySelector('.menu-container button') as HTMLButtonElement;
-            expect(menuBtn).not.toBeNull();
-            expect(menuBtn?.getAttribute('popovertarget')).toBe('header-menu');
-        });
-
-        it('should register scroll listeners in firstUpdated', async () => {
-            // Create a fresh element to test firstUpdated
-            const newElement = document.createElement('growspace-header') as GrowspaceHeader;
-            (newElement as any).store = mockStore;
-            (newElement as any).hass = mockHass;
-            (newElement as any).device = deviceMock;
-            (newElement as any).config = configMock;
-
-            // Mock refs with containers
-            const mockContainer = document.createElement('div');
-            mockContainer.addEventListener = vi.fn();
-
-            (newElement as any)._chipsContainerRef = { value: mockContainer };
-            (newElement as any)._stageContainerRef = { value: mockContainer };
-            (newElement as any)._deviceChipsContainerRef = { value: mockContainer };
-            (newElement as any)._resizeController = { observe: vi.fn() };
-
-            vi.useFakeTimers();
-            (newElement as any).firstUpdated();
-            vi.runAllTimers();
-            vi.useRealTimers();
-
-            expect(mockContainer.addEventListener).toHaveBeenCalledWith('scroll', expect.any(Function));
-        });
-
-        it('should call _checkScroll after firstUpdated timeout', async () => {
-            const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
-
-            vi.useFakeTimers();
-            (element as any).firstUpdated();
-            vi.runAllTimers();
-            vi.useRealTimers();
-
-            expect(checkScrollSpy).toHaveBeenCalled();
-        });
-    });
-
-    describe('Add Plant Action', () => {
-        it('should call openAddPlantDialog for add_plant action', () => {
-            (element as any)._triggerAction('add_plant');
-            expect(mockStore.openAddPlantDialog).toHaveBeenCalled();
-        });
-    });
-
-    describe('willUpdate Coverage', () => {
-        it('should call _updateMetrics when device changes', () => {
-            const updateSpy = vi.spyOn(element as any, '_updateMetrics');
-            const changedProps = new Map([['device', {}]]);
-            // Ensure controllers exist
-            (element as any)._activeEnvGraphsController = { value: new Set() };
-            (element as any).willUpdate(changedProps);
-            expect(updateSpy).toHaveBeenCalled();
-        });
-
-        it('should call _updateMetrics when hass changes', () => {
-            const updateSpy = vi.spyOn(element as any, '_updateMetrics');
-            const changedProps = new Map([['hass', {}]]);
-            (element as any)._activeEnvGraphsController = { value: new Set() };
-            (element as any).willUpdate(changedProps);
-            expect(updateSpy).toHaveBeenCalled();
-        });
-    });
-
-    describe('Device Chip Template Handlers Coverage', () => {
-        it('should trigger handlers on device chips via DOM events', async () => {
-            // Force device chips to render
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [],
-                deviceChips: [
-                    { key: 'exhaust', label: 'Exhaust', icon: 'path', value: 'On', status: 'ok', active: false, linked: false, tooltip: '', groupIndex: 0 }
-                ],
-                dominant: { icon: 'path', daysLabel: 'Day 30', weeksLabel: 'Week 5' },
-                envAttrs: { dehumidifier_control_enabled: true }
-            });
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const deviceChip = element.shadowRoot?.querySelector('.gs-device-chips-header growspace-chip');
-            expect(deviceChip).toBeTruthy();
-
-            if (deviceChip) {
-                // Trigger dragstart
-                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
-                deviceChip.dispatchEvent(new Event('dragstart'));
-                expect(dragStartSpy).toHaveBeenCalled();
-
-                // Trigger drop
-                const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-                deviceChip.dispatchEvent(new Event('drop'));
-                expect(dropSpy).toHaveBeenCalled();
-
-                // Trigger click
-                const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
-                (deviceChip as HTMLElement).click();
-                expect(toggleSpy).toHaveBeenCalled();
-
-                // Trigger unlink
-                const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
-                deviceChip.dispatchEvent(new CustomEvent('unlink'));
-                expect(unlinkSpy).toHaveBeenCalled();
-            }
-        });
-    });
-
-    describe('Secondary Chip Template Handlers Coverage', () => {
-        it('should trigger handlers on secondary chips via DOM events', async () => {
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const secondaryStrip = element.shadowRoot?.querySelector('.secondary-strip');
-            const chip = secondaryStrip?.querySelector('growspace-chip');
-            expect(chip).toBeTruthy();
-
-            // Drag Start
-            const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
-            chip?.dispatchEvent(new Event('dragstart'));
-            expect(startSpy).toHaveBeenCalled();
-
-            // Drop
-            const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-            chip?.dispatchEvent(new Event('drop'));
-            expect(dropSpy).toHaveBeenCalled();
-
-            // Toggle (Click)
-            const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
-            chip?.dispatchEvent(new Event('click'));
-            expect(toggleSpy).toHaveBeenCalled();
-
-            // Unlink
-            const unlinkSpy = vi.spyOn(element as any, '_unlinkGraphs');
-            chip?.dispatchEvent(new CustomEvent('unlink', { detail: { groupIndex: 1 } }));
-            expect(unlinkSpy).toHaveBeenCalled();
-        });
-    });
-
-    describe('Hero Card Template Handlers Coverage', () => {
-        it('should trigger all handlers on hero cards via DOM events', async () => {
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const hero = element.shadowRoot?.querySelector('.hero-card');
-            expect(hero).toBeTruthy();
-
-            // Click (Toggle)
-            const toggleSpy = vi.spyOn(element as any, '_toggleEnvGraph');
-            hero?.dispatchEvent(new Event('click'));
-            expect(toggleSpy).toHaveBeenCalled();
-
-            // Drag Over
-            const overSpy = vi.fn();
-            (element as any)._handleDragOver = overSpy;
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const heroAfterUpdate = element.shadowRoot?.querySelector('.hero-card');
-            heroAfterUpdate?.dispatchEvent(new Event('dragover'));
-            expect(overSpy).toHaveBeenCalled();
-
-            // Drag Start
-            const startSpy = vi.spyOn(element as any, '_handleChipDragStart');
-            heroAfterUpdate?.dispatchEvent(new Event('dragstart'));
-            expect(startSpy).toHaveBeenCalled();
-
-            // Drop
-            const dropSpy = vi.spyOn(element as any, '_handleChipDrop');
-            heroAfterUpdate?.dispatchEvent(new Event('drop'));
-            expect(dropSpy).toHaveBeenCalled();
-        });
-    });
-
-    describe('VPD Thresholds and Sparkline Coverage', () => {
-        it('should handle VPD with custom attributes and night fallbacks', async () => {
-            const mockHass = {
-                states: {
-                    'sensor.growspace_overview': {
-                        attributes: {
-                            day_vpd_target_min: 0.9,
-                            // day_vpd_target_max missing
-                            night_vpd_target_min: 0.7
-                        }
-                    }
-                }
-            };
-            element.hass = mockHass as any;
-            element.device = {
-                ...element.device,
-                overview_entity_id: 'sensor.growspace_overview'
-            };
-
-            // Mock computeHeaderMetrics to return a vpd chip
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [{ key: 'vpd', value: '1.0 kPa', status: 'ok' }],
-                deviceChips: [],
-                dominant: null,
-                envAttrs: {}
-            });
-
-            // Mock history segments
-            const segmentSpy = vi.spyOn(ChartUtils, 'generateVpdSparklineSegments').mockReturnValue([
-                { path: 'M0,0 L10,10', color: 'green' }
-            ]);
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            expect(segmentSpy).toHaveBeenCalled();
-            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
-            expect(svg).toBeTruthy();
-            expect(svg?.innerHTML).toContain('path');
-            // Check that it rendered paths from segments
-            expect(svg?.querySelectorAll('path').length).toBeGreaterThan(0);
-        });
-
-        it('should handle VPD with no segments (fall back to standard sparkline)', async () => {
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [{ key: 'vpd', value: '1.0 kPa', status: 'ok' }],
-                deviceChips: [],
-                dominant: null,
-                envAttrs: {}
-            });
-
-            vi.spyOn(ChartUtils, 'generateVpdSparklineSegments').mockReturnValue([]);
-            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M0,0 L20,20');
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
-            expect(svg).toBeTruthy();
-            expect(svg?.innerHTML).toContain('linearGradient'); // Standard sparkline has gradient
-        });
-
-        it('should handle hero card branch coverage (status/overview)', async () => {
-            // Test missing status
-            const chipNoStatus = { key: 'temp', value: '25', label: 'T' };
-            const result1 = (element as any)._renderHeroCard(chipNoStatus);
-            expect(JSON.stringify(result1)).not.toContain('status-');
-
-            // Test missing overview_entity_id for VPD
-            element.device = { ...deviceMock, overview_entity_id: undefined } as any;
-            const vpdChip = { key: 'vpd', value: '1.2', label: 'VPD' };
-            const result2 = (element as any)._renderHeroCard(vpdChip);
-            expect(result2).toBeDefined();
-        });
-
-        it('should handle non-VPD sparkline with history', async () => {
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [{ key: 'temperature', value: '75 F', status: 'ok' }],
-                deviceChips: [],
-                dominant: null,
-                envAttrs: {}
-            });
-
-            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('M0,0 L10,10');
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
-            expect(svg).toBeTruthy();
-            expect(svg?.innerHTML).toContain('linearGradient');
-        });
-
-        it('should handle missing history for sparkline', async () => {
-            (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-                mainChips: [{ key: 'temperature', value: '75 F', status: 'ok' }],
-                deviceChips: [],
-                dominant: null,
-                envAttrs: {}
-            });
-
-            vi.spyOn(ChartUtils, 'generateSparklinePath').mockReturnValue('');
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const svg = element.shadowRoot?.querySelector('.hero-sparkline');
-            expect(svg).toBeFalsy();
-        });
-        it('should handle dragging hero chips', async () => {
-            // Render specific state with hero chips
-            Object.defineProperty(element, '_mainChips', { value: [{ key: 'temperature', value: '25', status: 'ok' }] });
-            // Ensure devices controller has value to avoid render crash
-            Object.defineProperty(element, '_devicesController', { value: { value: [{ device_id: 'gs1' }] } });
-
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const heroCard = element.shadowRoot?.querySelector('.hero-card');
-            expect(heroCard).toBeTruthy();
-
-            if (heroCard) {
-                const dragStartSpy = vi.spyOn(element as any, '_handleChipDragStart');
-                heroCard.dispatchEvent(new Event('dragstart'));
-                expect(dragStartSpy).toHaveBeenCalled();
-            }
-        });
-    });
-
-
-    describe('Template Interactions', () => {
-        beforeEach(async () => {
-            // Setup standard state
-            (element as any)._devicesController = { value: [{ device_id: 'gs1', name: 'GS1' }] };
-            element.device = { ...deviceMock, device_id: 'gs1' };
-            element.hass = mockHass;
-            Object.defineProperty(element, '_mainChips', {
-                value: [
-                    { key: 'temperature', value: '25', status: 'ok', icon: 'mdi:thermometer' },
-                    { key: 'humidity', value: '60', status: 'ok', icon: 'mdi:water-percent' } // Secondary
-                ]
-            });
-            // Mock dominant for stage area
-            Object.defineProperty(element, '_dominant', { value: { icon: 'mdi:flower', daysLabel: 'Day 10', weeksLabel: 'Week 2' } });
-
-            // Mock scroll capabilities to ensure arrows are rendered
-            Object.defineProperty(element, '_canScrollDeviceLeft', { value: true, writable: true });
-            Object.defineProperty(element, '_canScrollDeviceRight', { value: true, writable: true });
-            Object.defineProperty(element, '_canScrollStageLeft', { value: true, writable: true });
-            Object.defineProperty(element, '_canScrollStageRight', { value: true, writable: true });
-            Object.defineProperty(element, '_canScrollLeft', { value: true, writable: true }); // Secondary
-            Object.defineProperty(element, '_canScrollRight', { value: true, writable: true }); // Secondary
-
-            element.requestUpdate();
-            await element.updateComplete;
-        });
-
-        it('should trigger scroll arrows', async () => {
-            const spyScrollDevice = vi.spyOn(element as any, '_scrollDeviceChips');
-            const spyScrollStage = vi.spyOn(element as any, '_scrollStage');
-            const spyScrollChips = vi.spyOn(element as any, '_scrollChips');
-
-            // Device Chips Arrows
-            const deviceLeft = element.shadowRoot?.querySelector('.gs-device-chips-container .scroll-arrow:first-child') as HTMLElement;
-            const deviceRight = element.shadowRoot?.querySelector('.gs-device-chips-container .scroll-arrow:last-child') as HTMLElement;
-            deviceLeft?.click();
-            expect(spyScrollDevice).toHaveBeenCalledWith('left');
-            deviceRight?.click();
-            expect(spyScrollDevice).toHaveBeenCalledWith('right');
-
-            // Stage Arrows
-            const stageLeft = element.shadowRoot?.querySelector('.header-stage-area-wrapper .scroll-arrow:first-child') as HTMLElement;
-            const stageRight = element.shadowRoot?.querySelector('.header-stage-area-wrapper .scroll-arrow:last-child') as HTMLElement;
-            stageLeft?.click();
-            expect(spyScrollStage).toHaveBeenCalledWith('left');
-            stageRight?.click();
-            expect(spyScrollStage).toHaveBeenCalledWith('right');
-
-            // Secondary Chips Arrows
-            const secondaryLeft = element.shadowRoot?.querySelector('.secondary-strip-container .scroll-arrow:first-child') as HTMLElement;
-            const secondaryRight = element.shadowRoot?.querySelector('.secondary-strip-container .scroll-arrow:last-child') as HTMLElement;
-            secondaryLeft?.click();
-            expect(spyScrollChips).toHaveBeenCalledWith('left');
-            secondaryRight?.click();
-            expect(spyScrollChips).toHaveBeenCalledWith('right');
-        });
-
-        it('should trigger mobile link toggle', async () => {
-            // Force mobile
-            (element as any)._resizeController = { isMobile: true };
-            element.requestUpdate();
-            await element.updateComplete;
-
-            const mobileToggle = element.shadowRoot?.querySelector('.mobile-link') as HTMLElement;
-
-            mobileToggle?.click();
-            expect((element as any)._mobileLink).toBe(true);
-        });
-
-        it('should trigger chip drag events (secondary)', async () => {
-            const chip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip') as HTMLElement;
-            expect(chip).toBeTruthy();
-
-            const spyDragStart = vi.spyOn(element as any, '_handleChipDragStart');
-            const spyDrop = vi.spyOn(element as any, '_handleChipDrop');
-
-            chip.dispatchEvent(new Event('dragstart'));
-            expect(spyDragStart).toHaveBeenCalledWith(expect.any(Event), 'ppfd'); // secondary
-
-            chip.dispatchEvent(new Event('drop'));
-            expect(spyDrop).toHaveBeenCalledWith(expect.any(Event), 'ppfd');
-        });
-
-        it('should trigger chip click/unlink (secondary)', async () => {
-            const chip = element.shadowRoot?.querySelector('.secondary-strip growspace-chip') as HTMLElement;
-            const spyToggle = vi.spyOn(element as any, '_toggleEnvGraph');
-            const spyUnlink = vi.spyOn(element as any, '_unlinkGraphs');
-
-            chip.click();
-            expect(spyToggle).toHaveBeenCalledWith('ppfd');
-
-            chip.dispatchEvent(new CustomEvent('unlink'));
-            expect(spyUnlink).toHaveBeenCalled();
-        });
-    });
-
-    it('should trigger scroll event listeners', async () => {
-        const spyCheckScroll = vi.spyOn(element as any, '_checkScroll');
-
-        const deviceContainer = element.shadowRoot?.querySelector('.gs-device-chips-header');
-        const stageContainer = element.shadowRoot?.querySelector('.header-stage-area');
-        const secondaryContainer = element.shadowRoot?.querySelector('.secondary-strip');
-
-        expect(deviceContainer, 'deviceContainer').toBeTruthy();
-        expect(stageContainer, 'stageContainer').toBeTruthy();
-        expect(secondaryContainer, 'secondaryContainer').toBeTruthy();
-
-        deviceContainer?.dispatchEvent(new Event('scroll'));
-        expect(spyCheckScroll).toHaveBeenCalledTimes(1);
-
-        stageContainer?.dispatchEvent(new Event('scroll'));
-        expect(spyCheckScroll).toHaveBeenCalledTimes(2);
-
-        secondaryContainer?.dispatchEvent(new Event('scroll'));
-        expect(spyCheckScroll).toHaveBeenCalledTimes(3);
-    });
-
-    it('should trigger initial scroll check timeout', async () => {
-        vi.useFakeTimers();
-        const spyCheckScroll = vi.spyOn(element as any, '_checkScroll');
-
-        // Re-run firstUpdated to trigger timeout
-        element.firstUpdated();
-
-        vi.runAllTimers();
-        expect(spyCheckScroll).toHaveBeenCalled();
-        vi.useRealTimers();
     });
 });
-
-

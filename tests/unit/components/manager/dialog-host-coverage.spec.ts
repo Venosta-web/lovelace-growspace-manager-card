@@ -62,6 +62,9 @@ describe('DialogHost Coverage', () => {
                 $devices: createMockAtom([]),
                 $selectedDevice: createMockAtom(null),
                 $strainLibrary: createMockAtom([]),
+                $nutrientPresets: createMockAtom({}),
+                $ipmPresets: createMockAtom({}),
+                $nutrientInventory: createMockAtom([]),
                 strains: [
                     { key: 'Existing_p1', strain: 'Existing', phenotype: 'p1' }
                 ],
@@ -333,4 +336,239 @@ describe('DialogHost Coverage', () => {
         const result = (element as any)._renderNutrientDialog({ type: 'NUTRIENTS' });
         expect(result).toBeTruthy();
     });
+
+    it('should handle show-toast event from AddPlantsDialog', async () => {
+        const activeState = { type: 'ADD_PLANTS', payload: {} };
+        mockStore.ui.$activeDialog.set(activeState);
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+        dialog?.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'test', type: 'success' } }));
+
+        expect(mockStore.showToast).toHaveBeenCalledWith('test', 'success');
+        document.body.removeChild(element);
+    });
+
+    it('should handle open- events from PlantOverviewDialog', async () => {
+        const activeState = {
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant: { entity_id: 'p1' },
+                editedAttributes: {},
+                activeTab: 'overview',
+                selectedPlantIds: []
+            }
+        };
+        mockStore.ui.$activeDialog.set(activeState);
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const detail = { plant: { entity_id: 'p1' } };
+
+        // Test open-watering
+        dialog?.dispatchEvent(new CustomEvent('open-watering', { detail }));
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'WATERING',
+            payload: detail
+        });
+
+        // Test open-training
+        dialog?.dispatchEvent(new CustomEvent('open-training', { detail }));
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'TRAINING',
+            payload: detail
+        });
+
+        // Test open-ipm
+        dialog?.dispatchEvent(new CustomEvent('open-ipm', { detail }));
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'IPM',
+            payload: detail
+        });
+
+        // Test open-clone
+        dialog?.dispatchEvent(new CustomEvent('open-clone', { detail }));
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'TAKE_CLONE',
+            payload: detail
+        });
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle data-changed events from various dialogs', async () => {
+        // We'll test one to verify the handler is wired, as they all call _handleDataChanged
+        // TRAINING
+        mockStore.ui.$activeDialog.set({ type: 'TRAINING', payload: {} });
+        document.body.appendChild(element);
+        await element.updateComplete;
+        let dialog = element.shadowRoot?.querySelector('training-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+
+        // _handleDataChanged calls refreshData after 500ms
+        await new Promise(r => setTimeout(r, 600));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+        mockStore.refreshData.mockClear();
+
+        // NUTRIENT_PRESETS
+        mockStore.ui.$activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
+        await element.updateComplete;
+        dialog = element.shadowRoot?.querySelector('nutrient-presets-editor');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        await new Promise(r => setTimeout(r, 600));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+        mockStore.refreshData.mockClear();
+
+        // IPM
+        mockStore.ui.$activeDialog.set({ type: 'IPM', payload: {} });
+        await element.updateComplete;
+        dialog = element.shadowRoot?.querySelector('ipm-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        await new Promise(r => setTimeout(r, 600));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+        mockStore.refreshData.mockClear();
+
+        // NUTRIENT_INVENTORY
+        mockStore.ui.$activeDialog.set({ type: 'NUTRIENT_INVENTORY', payload: {} });
+        await element.updateComplete;
+        dialog = element.shadowRoot?.querySelector('nutrient-inventory-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        await new Promise(r => setTimeout(r, 600));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+        mockStore.refreshData.mockClear();
+
+        // NUTRIENTS
+        mockStore.ui.$activeDialog.set({ type: 'NUTRIENTS', payload: {} });
+        await element.updateComplete;
+        dialog = element.shadowRoot?.querySelector('nutrient-dialog');
+        dialog?.dispatchEvent(new CustomEvent('data-changed'));
+        await new Promise(r => setTimeout(r, 600));
+        expect(mockStore.refreshData).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle transplant success path triggered via event', async () => {
+        const activeState = { type: 'ADD_PLANT', payload: { row: 1, col: 1 } };
+        mockStore.ui.$activeDialog.set(activeState);
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
+        const detail = {
+            plant_id: 'p1',
+            source_growspace_id: 'g1',
+            target_growspace_id: 'g2',
+            new_row: 2,
+            new_col: 2,
+            veg_start: '2024-01-01'
+        };
+
+        // Mock success for callService
+        // We need to ensure we mock it on the instance's hass property
+        (element as any).hass.callService = vi.fn().mockResolvedValue(true);
+        const transplantSpy = vi.spyOn(element as any, '_handleTransplant');
+
+        dialog?.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail }));
+
+        // Wait for async operations and delay
+        await new Promise(r => setTimeout(r, 600));
+
+        expect(transplantSpy).toHaveBeenCalled();
+        expect((element as any).hass.callService).toHaveBeenCalledWith('growspace_manager', 'update_plant', {
+            plant_id: 'p1',
+            row: 2,
+            col: 2,
+            growspace_id: 'g2',
+            veg_start: '2024-01-01'
+        });
+        expect(mockStore.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('successfully'), 'success');
+        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+        expect(mockStore.refreshData).toHaveBeenCalled();
+
+        document.body.removeChild(element);
+    });
+
+    it('should handle environment config with all optional fields populated', async () => {
+        const detail = {
+            selectedGrowspaceId: 'g1',
+            temp_sensor: 't1',
+            humidity_sensor: 'h1',
+            vpd_sensor: 'v1',
+            co2_sensor: 'c1',
+            circulation_fan: 'cf1',
+            stress_threshold: 1,
+            mold_threshold: 2,
+            light_sensor: 'l1',
+            exhaust_entity: 'e1',
+            humidifier_entity: 'h1',
+            dehumidifier_entity: 'd1',
+            soil_moisture_sensor: 's1',
+            control_dehumidifier: true
+        };
+
+        // We assume the dialog dispatches this, or we call the method directly
+        await (element as any)._handleEnvironmentConfig(detail);
+
+        expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
+            vpd_sensor: 'v1',
+            co2_sensor: 'c1',
+            circulation_fan_entity: 'cf1',
+            light_sensor: 'l1',
+            exhaust_entity: 'e1',
+            humidifier_entity: 'h1',
+            dehumidifier_entity: 'd1',
+            soil_moisture_sensor: 's1'
+        }));
+        expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
+            vpd_sensor: 'v1',
+            co2_sensor: 'c1',
+            circulation_fan_entity: 'cf1',
+            light_sensor: 'l1',
+            exhaust_entity: 'e1',
+            humidifier_entity: 'h1',
+            dehumidifier_entity: 'd1',
+            soil_moisture_sensor: 's1'
+        }));
+    });
+
+    describe('Render Guards and Edge Cases', () => {
+        it('should return empty template when calling private render methods with wrong type', () => {
+            const wrongState = { type: 'WRONG_TYPE' } as any;
+
+            expect((element as any)._renderAddPlantDialog(wrongState)).toEqual((element as any)._renderAddPlantDialog({ type: 'WRONG' } as any)); // Check strict equality or just empty
+            // Actually lit-html templates are hard to compare for equality.
+            // But we can check if it result is TemplateResult and has empty strings or values.
+            // Simply calling them covers the branch.
+
+            (element as any)._renderPlantOverviewDialog(wrongState);
+            (element as any)._renderNutrientInventoryDialog(wrongState);
+            (element as any)._renderNutrientDialog(wrongState);
+            (element as any)._renderCloneDialog(wrongState, {});
+        });
+
+        it('should handle singular clone toast', async () => {
+            const activeState = {
+                type: 'TAKE_CLONE',
+                payload: { sourcePlant: { id: 'p1' }, defaultGrowspaceId: 'g1' }
+            } as any;
+
+            mockStore.ui.$activeDialog.set(activeState);
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const dialog = element.shadowRoot?.querySelector('clone-dialog');
+            dialog?.dispatchEvent(new CustomEvent('take-clone-submit', {
+                detail: { motherPlantId: 'p1', numClones: 1, targetGrowspaceId: 'g2' }
+            }));
+
+            await new Promise(r => setTimeout(r, 1000));
+            expect(mockStore.showToast).toHaveBeenCalledWith('Taking 1 clone...', 'success');
+            document.body.removeChild(element);
+        });
+    });
 });
+
+

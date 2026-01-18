@@ -3,6 +3,7 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import "../../../../src/components/plant/plant-timeline";
 import { PlantTimeline } from '../../../../src/components/plant/plant-timeline';
 import { PlantTimelineEvent } from '../../../../src/types';
+import { HomeAssistant } from 'custom-card-helpers';
 
 // Capture original createElement once, cleanly to avoid recursion in spies
 const originalCreateElement = document.createElement.bind(document);
@@ -415,7 +416,7 @@ describe('PlantTimeline', () => {
         const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
         await el.updateComplete;
 
-        el.hass = { callWS: vi.fn().mockRejectedValue(new Error('WS Error')) as any };
+        el.hass = { callWS: vi.fn().mockRejectedValue(new Error('WS Error')) as any } as unknown as HomeAssistant;
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         // Click delete icon
@@ -628,6 +629,44 @@ describe('PlantTimeline', () => {
             const el: PlantTimeline = await fixture(html`<plant-timeline .events=${undefined}></plant-timeline>`);
             await el.updateComplete;
             expect(el.shadowRoot?.textContent).toContain('No entries for this plant yet.');
+        });
+
+        it('should render environmental report events correctly', async () => {
+            const dayEvent: PlantTimelineEvent = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: ['High VPD', 'Low Temp']
+            } as any;
+
+            const nightEvent: PlantTimelineEvent = {
+                date: '2023-01-01T00:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'night_report',
+                reasons: []
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[dayEvent, nightEvent]}></plant-timeline>`);
+            await el.updateComplete;
+
+            // Check Day Report
+            expect(el.shadowRoot?.textContent).toContain('Day Environmental Report');
+            expect(el.shadowRoot?.textContent).toContain('High VPD');
+            expect(el.shadowRoot?.textContent).toContain('Low Temp');
+
+            // Check Night Report
+            expect(el.shadowRoot?.textContent).toContain('Night Environmental Report');
+
+            // Check Icons
+            const dayIcon = (el as any)._getIcon(dayEvent);
+            const nightIcon = (el as any)._getIcon(nightEvent);
+            const defaultIcon = (el as any)._getIcon({ type: 'environmental_report', sensor_type: 'unknown' });
+
+            expect(dayIcon).toBeDefined();
+            expect(nightIcon).toBeDefined();
+            expect(dayIcon).not.toBe(nightIcon);
+            // Default falls through to day icon logic if not night, or mdiWeatherSunny
+            expect(defaultIcon).toBeDefined();
         });
     });
 

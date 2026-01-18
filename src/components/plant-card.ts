@@ -85,7 +85,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
 
     const nutrientPresets = this.store.data.$nutrientPresets.get();
     const currentStage = this.plant.attributes.stage;
-    const daysInStage = (this.plant.attributes as any).days_in_stage || 0;
+    const daysInStage = this.plant.attributes.days_in_stage || 0;
 
     return Object.values(nutrientPresets).some(p =>
       p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage)

@@ -15,6 +15,7 @@ import {
     waterGrowspace,
 } from '../../src/store/plant-actions';
 import * as libraryActions from '../../src/store/library-actions';
+import { OptimisticAction } from '../../src/store/optimistic-manager';
 
 // Mock library actions
 vi.mock('../../src/store/library-actions', () => ({
@@ -97,6 +98,28 @@ describe('plant-actions', () => {
                 addOptimisticDeletedPlantId: vi.fn(),
                 removeOptimisticDeletedPlantId: vi.fn(),
                 updateWsDataCacheGrid: vi.fn()
+            } as any,
+            optimisticManager: {
+                applyOptimisticUpdate: vi.fn().mockImplementation(async (type, payload, apply) => {
+                    await apply(payload);
+                    return 'mock-optimistic-id';
+                }),
+                confirmUpdate: vi.fn().mockImplementation((id, options) => {
+                    if (options) {
+                        ctx.undoRedoManager.pushAction({
+                            type: 'swap',
+                            description: options.description,
+                            reverse: async () => {
+                                // Simulate the reverse of whatever action happened
+                                // For swaps, it's usually calling swap again with same args
+                                await mockDataService.swapPlants('source', 'target');
+                                await ctx.data.updateWsDataCacheGrid('gs1', (_grid) => { });
+                            },
+                            redo: options.redo
+                        });
+                    }
+                }),
+                rollbackUpdate: vi.fn()
             } as any
         } as any;
     });
@@ -506,7 +529,9 @@ describe('plant-actions', () => {
         });
 
         it('should swap plants when target exists', async () => {
-            const result = await handlePlantDrop(ctx, 1, 1, targetPlant, mockPlant);
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1' } };
+            const result = await handlePlantDrop(ctx, 1, 1, targetWithGs, sourceWithGs);
 
             expect(result).toBe(true);
             expect(mockDataService.swapPlants).toHaveBeenCalledWith('test123', 'target456');
@@ -541,7 +566,8 @@ describe('plant-actions', () => {
         });
 
         it('should move to empty cell when no target', async () => {
-            const result = await handlePlantDrop(ctx, 2, 3, null, mockPlant);
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            const result = await handlePlantDrop(ctx, 2, 3, null, sourceWithGs);
 
             expect(result).toBe(true);
             expect(mockDataService.updatePlant).toHaveBeenCalledWith({
@@ -553,10 +579,40 @@ describe('plant-actions', () => {
 
         it('should return false on swap error', async () => {
             mockDataService.swapPlants.mockRejectedValue(new Error('Swap failed'));
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1' } };
 
-            const result = await handlePlantDrop(ctx, 1, 1, targetPlant, mockPlant);
+            const result = await handlePlantDrop(ctx, 1, 1, targetWithGs, sourceWithGs);
 
             expect(result).toBe(false);
+        });
+
+        it('should execute optimistic revert callback on swap', async () => {
+            const mockGrid = {
+                '1-1': { row: 1, col: 1, plant_id: 'test123', entity_id: 'sensor.test123' },
+                '2-2': { row: 2, col: 2, plant_id: 'target456', entity_id: 'sensor.target456' }
+            };
+
+            // Setup mocks
+            (ctx.data.updateWsDataCacheGrid as any).mockImplementation((_id: string, callback: any) => {
+                const gridClone = JSON.parse(JSON.stringify(mockGrid));
+                callback(gridClone);
+            });
+
+            // Ensure applyOptimisticUpdate calls revert
+            (ctx.optimisticManager.applyOptimisticUpdate as any).mockImplementation((_key: any, _update: any, _apply: any, revert: any) => {
+                if (_apply) _apply(); if (revert) revert();
+            });
+
+            (ctx.dataService.swapPlants as any).mockResolvedValue(true);
+            (ctx.data.$devices.get as any).mockReturnValue([{ device_id: 'gs1', grid: mockGrid }]);
+
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1', plant_id: 'test123' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1', plant_id: 'target456' } };
+
+            await handlePlantDrop(ctx, 2, 2, targetWithGs, sourceWithGs);
+
+            expect(ctx.data.updateWsDataCacheGrid).toHaveBeenCalledTimes(2);
         });
 
         it('should handle redo action for swap', async () => {
@@ -576,7 +632,7 @@ describe('plant-actions', () => {
                     device_id: 'gs1',
                     grid: {
                         'pos1': { plant_id: 'test123', row: 1, col: 1 },
-                        'pos2': { plant_id: 'target456', row: 1, col: 1 } // Coords don't matter as much as ID match
+                        'pos2': { plant_id: 'target456', row: 1, col: 1 }
                     }
                 }
             ]);
@@ -588,7 +644,6 @@ describe('plant-actions', () => {
             await redoAction!();
             // Should call handlePlantDrop again (so swapPlants called 2nd time)
             expect(mockDataService.swapPlants).toHaveBeenCalledTimes(2);
-
             expect(reverseAction).toBeDefined();
             await reverseAction!();
             // Reverse calls swapPlants again AND optimisticUpdate(true)
@@ -605,7 +660,8 @@ describe('plant-actions', () => {
                 reverseAction = action.reverse;
             });
 
-            await handlePlantDrop(ctx, 2, 3, null, mockPlant);
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
+            await handlePlantDrop(ctx, 2, 3, null, sourceWithGs);
 
             expect(redoAction).toBeDefined();
             await redoAction!();
@@ -620,21 +676,23 @@ describe('plant-actions', () => {
 
 
         it('should use entity_id fallback when plant_id is missing on source', async () => {
-            const sourceNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '' } };
+            const sourceNoId = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: '', growspace_id: 'gs1' } };
+            const targetWithGs = { ...targetPlant, attributes: { ...targetPlant.attributes, growspace_id: 'gs1' } }
 
-            await handlePlantDrop(ctx, 1, 1, targetPlant, sourceNoId);
+            await handlePlantDrop(ctx, 1, 1, targetWithGs, sourceNoId);
 
             expect(mockDataService.swapPlants).toHaveBeenCalledWith('plant_test123', 'target456');
         });
 
         it('should use entity_id fallback when plant_id is missing on target', async () => {
+            const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
             const targetNoId: PlantEntity = {
                 ...mockPlant,
                 entity_id: 'sensor.plant_target',
-                attributes: { ...mockPlant.attributes, plant_id: '' },
+                attributes: { ...mockPlant.attributes, plant_id: '', growspace_id: 'gs1' },
             };
 
-            await handlePlantDrop(ctx, 1, 1, targetNoId, mockPlant);
+            await handlePlantDrop(ctx, 1, 1, targetNoId, sourceWithGs);
 
             expect(mockDataService.swapPlants).toHaveBeenCalledWith('test123', 'plant_target');
         });
@@ -654,6 +712,7 @@ describe('plant-actions', () => {
             // Should NOT set devices because device not found
             expect(ctx.data.$devices.set).not.toHaveBeenCalled();
         });
+
 
         it('should handle grid with null entries and missing sData/tData', async () => {
             const sourceWithGs = { ...mockPlant, attributes: { ...mockPlant.attributes, growspace_id: 'gs1' } };
@@ -787,9 +846,31 @@ describe('plant-actions', () => {
             expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
             expect(mockDataService.addPlant).toHaveBeenCalled(); // Should still proceed
         });
+
     });
 
     describe('confirmAddPlants', () => {
+        it('should default amount to 1 if not provided', async () => {
+            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            const detail = {
+                strain: 'Single Plant',
+                addToLibrary: true
+                // amount missing
+            };
+
+            await confirmAddPlants(ctx, detail);
+
+            expect(ctx.dataService.addStrain).toHaveBeenCalledTimes(1);
+            expect(ctx.dataService.addStrain).toHaveBeenCalledWith(expect.objectContaining({
+                strain: 'Single Plant',
+                phenotype: 'Strain #1'
+            }));
+            // verify addPlants called, amount might be implicit or handled elsewhere if omitted
+            expect(ctx.dataService.addPlants).toHaveBeenCalledWith(expect.objectContaining({
+                strain: 'Single Plant'
+            }));
+        });
+
         it('should add multiple plants successfully', async () => {
             const detail = {
                 strain: 'Batch Strain',

@@ -801,6 +801,71 @@ describe('MetricsUtils', () => {
             expect(exhaust!.value).toBe('high');
         });
 
+        it('should cover createChipData branch where value is undefined but multiValues has content', () => {
+            // We need a device chip with multiple entities but no single value
+            const hassMulti = {
+                states: {
+                    'fan.f1': { state: 'on' },
+                    'fan.f2': { state: 'off' }
+                }
+            } as any;
+            const devMulti = {
+                ...mockDevice,
+                environment_attributes: {
+                    exhaust_fan_entities: ['fan.f1', 'fan.f2']
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassMulti, devMulti, new Set(), []);
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust).toBeDefined();
+            expect(exhaust!.multiValues).toEqual(['on', 'off']);
+            expect(exhaust!.value).toBe('Multiple');
+        });
+
+        it('should handle slugify with various special characters', () => {
+            const devComplex = {
+                ...mockDevice,
+                name: 'Grow! Space @ Home 123'
+            };
+            const hassVpd = {
+                states: {
+                    'sensor.grow_space_home_123_calculated_vpd': { state: '1.1' }
+                }
+            } as any;
+            // This will trigger slugify via Calculated VPD fallback
+            const res = MetricsUtils.computeHeaderMetrics(hassVpd, devComplex, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            // If the slugify produced grow_space__home_123_calculated_vpd, we should see it here.
+            // But wait, if I want to TEST slugify, I should probably use what IT produces.
+            // Let's try to debug by logging or just using a more standard name in the test if I want to avoid double underscores.
+            // Or better, I'll fix the slugify in the source to be what it SHOULD be.
+            expect(vpd).toBeDefined();
+            expect(vpd!.value).toBe('1.1 kPa');
+        });
+
+        it('should handle optimalLabel with multiple reasons array', () => {
+            const hassReasons = {
+                ...mockHass,
+                states: {
+                    ...mockHass.states,
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'off',
+                        attributes: { reasons: ['Low Temp', 'High Hum'] }
+                    }
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassReasons, mockDevice, new Set(), []);
+            const optimal = res.mainChips.find(c => c.key === 'optimal');
+            expect(optimal!.value).toBe('Not Optimal: Low Temp, High Hum');
+        });
+
+        it('should cover createChipData with composite active key', () => {
+            const activeEnvGraphs = new Set(['temperature:sensor1']);
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, activeEnvGraphs, []);
+            const temp = res.mainChips.find(c => c.key === 'temperature');
+            expect(temp!.active).toBe(true);
+        });
+
         it('should cover vpd status optimal branch', () => {
             const vpdHass = {
                 states: {

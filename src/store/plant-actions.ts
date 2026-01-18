@@ -307,14 +307,19 @@ export async function handlePlantDrop(
 
     const originalRow = sourcePlant.attributes.row;
     const originalCol = sourcePlant.attributes.col;
-    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id.replace('sensor.', '');
-    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id.replace('sensor.', '');
+    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
 
-    // Fix: extract growspace ID properly
+    console.log('handlePlantDrop:', { sourceId, targetId, growspaceId: sourcePlant.attributes.growspace_id });
+
+    if (sourceId === targetId) return false;
+
     const growspaceId = sourcePlant.attributes.growspace_id;
 
+    if (!growspaceId) return false;
+
     // Helper to perform optimistic update on the cache AND devices store
-    const optimisticUpdate = (isRevert: boolean = false) => {
+    const performOptimisticGridUpdate = (isRevert: boolean = false) => {
         if (!growspaceId) return;
 
         const updateGridLogic = (grid: Record<string, any>) => {
@@ -332,9 +337,6 @@ export async function handlePlantDrop(
                 const sData = grid[sourceKey];
                 const tData = grid[targetKey];
 
-                // Determine new coordinates based on direction
-                // Forward: s -> target, t -> original
-                // Revert: s -> original, t -> target
                 const newSourceRow = isRevert ? originalRow : targetRow;
                 const newSourceCol = isRevert ? originalCol : targetCol;
                 const newTargetRow = isRevert ? targetRow : originalRow;
@@ -368,50 +370,48 @@ export async function handlePlantDrop(
     };
 
     try {
-        // Optimistically update if swapping two existing plants
         if (targetPlant && growspaceId) {
-            optimisticUpdate(false);
-        }
+            // Use OptimisticManager
+            const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
+                'swap',
+                { sourceId, targetId: targetId!, growspaceId, originalRow, originalCol, targetRow, targetCol },
+                () => performOptimisticGridUpdate(false), // Apply
+                () => performOptimisticGridUpdate(true)  // Revert
+            );
 
-        if (targetPlant) {
-            if (sourceId === targetId) return false;
-            if (targetId) {
-                await ctx.dataService.swapPlants(sourceId, targetId);
-            }
-        } else {
-            // Non-swap move (to empty) - no optimistic update for now
-            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
-            // Re-fetch immediately for non-optimistic moves
-            await ctx.refreshData();
-        }
+            // Perform actual API call
+            await ctx.dataService.swapPlants(sourceId, targetId!);
 
-        ctx.undoRedoManager.pushAction({
-            type: 'move',
-            description: targetPlant ? `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}` : `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-            reverse: async () => {
-                if (targetPlant && targetId) {
-                    // APPLY OPTIMISTIC UNDO
-                    optimisticUpdate(true);
-                    await ctx.dataService.swapPlants(sourceId, targetId);
-                } else {
-                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+            // Confirm update and add to history
+            ctx.optimisticManager.confirmUpdate(actionId, {
+                description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
                 }
-                await ctx.refreshData();
-            },
-            redo: async () => {
-                await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-            }
-        });
+            });
 
-        if (targetPlant) {
-            // For optimistic swaps, we still refresh to be safe, but can delay slightly or just let it happen in background
-            ctx.refreshData();
+            return true;
+        } else {
+            // Non-swap move (to empty) - keep existing logic for now or refactor later
+            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+
+            ctx.undoRedoManager.pushAction({
+                type: 'move',
+                description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                reverse: async () => {
+                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+                    await ctx.refreshData();
+                },
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+                }
+            });
+
+            await ctx.refreshData();
+            return true;
         }
-
-        return true;
-    } catch (err) {
+    } catch (err: any) {
         console.error('Error during drag-and-drop:', err);
-        // If error, force refresh to sync state
         ctx.refreshData();
         return false;
     }
@@ -521,9 +521,9 @@ export async function confirmAddPlants(
                 for (let i = 0; i < amount; i++) {
                     const currentNumber = startNumber + i;
                     // Format: "Phenotype #1"
-                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name, 
+                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name,
                     // but typically we only add to library if phenotype is explicit or we want "Strain #1".
-                    // User request specific to "phenotype + #Number". 
+                    // User request specific to "phenotype + #Number".
                     const phenoName = detail.phenotype
                         ? `${detail.phenotype} #${currentNumber}`
                         : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming

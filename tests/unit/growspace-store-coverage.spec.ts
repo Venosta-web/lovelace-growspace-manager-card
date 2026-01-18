@@ -163,6 +163,34 @@ vi.mock('../../src/data-service', () => {
     };
 });
 
+vi.mock('../../src/store/optimistic-manager', () => {
+    return {
+        OptimisticManager: class {
+            private _undoRedoManager: any;
+            constructor(_data: any, undoRedoManager: any) {
+                this._undoRedoManager = undoRedoManager;
+                return {
+                    applyOptimisticUpdate: vi.fn(async (_type, _payload, apply) => {
+                        await apply();
+                        return 'mock-action-id';
+                    }),
+                    confirmUpdate: vi.fn((_id, options) => {
+                        if (options && this._undoRedoManager) {
+                            this._undoRedoManager.pushAction({
+                                redo: options.redo,
+                                undo: vi.fn(),
+                                description: options.description
+                            });
+                        }
+                    }),
+                    rollbackUpdate: vi.fn(),
+                    checkPending: vi.fn().mockReturnValue(false)
+                };
+            }
+        }
+    };
+});
+
 // Helper
 const createMockHass = () => ({
     states: {},
@@ -496,8 +524,8 @@ describe('GrowspaceStore Branch Coverage', () => {
 
     describe('Additional Coverage', () => {
         it('should handle handleDrop swap logic', async () => {
-            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1 } } as any;
-            const target = { entity_id: 's2', attributes: { plant_id: 'p2', strain: 'S2', row: 2, col: 2 } } as any;
+            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1, growspace_id: 'd1' } } as any;
+            const target = { entity_id: 's2', attributes: { plant_id: 'p2', strain: 'S2', row: 2, col: 2, growspace_id: 'd1' } } as any;
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
 
             // Pass through plantActions real logic (which uses mocked service)
@@ -520,7 +548,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should handle handleDrop move to empty logic', async () => {
-            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1 } } as any;
+            const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1, growspace_id: 'd1' } } as any;
             (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
 
             await store.handleDrop(3, 3, null, source);

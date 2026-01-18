@@ -339,4 +339,20 @@ describe('UI Store', () => {
         });
     });
 
+    describe('Transplant Mode', () => {
+        it('should toggle transplant mode', () => {
+            expect(store.$isTransplantMode.get()).toBe(false);
+            store.toggleTransplantMode();
+            expect(store.$isTransplantMode.get()).toBe(true);
+            store.toggleTransplantMode();
+            expect(store.$isTransplantMode.get()).toBe(false);
+        });
+
+        it('should exit transplant mode', () => {
+            store.$isTransplantMode.set(true);
+            store.exitTransplantMode();
+            expect(store.$isTransplantMode.get()).toBe(false);
+        });
+    });
+
 });
