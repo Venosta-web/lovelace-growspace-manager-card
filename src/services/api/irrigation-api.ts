@@ -110,7 +110,7 @@ export class IrrigationAPI extends BaseAPI {
         try {
             const payload: Record<string, unknown> = {
                 growspace_id: growspaceId,
-                amount: amount,
+                amount,
             };
             if (nutrients && Object.keys(nutrients).length > 0) {
                 payload.nutrients = nutrients;

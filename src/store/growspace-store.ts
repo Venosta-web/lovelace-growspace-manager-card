@@ -211,6 +211,7 @@ export class GrowspaceStore {
     async waterGrowspace(growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) {
         await plantActions.waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
     }
+
     togglePlantSelection(plantOrId: string | PlantEntity) {
         uiActions.togglePlantSelection(this.context, plantOrId);
     }
@@ -360,35 +361,32 @@ export class GrowspaceStore {
     }
 
     async getStrainRecommendation(userQuery: string) {
-        const currentDialog = this.ui.$activeDialog.get();
-
-        if (currentDialog.type === 'STRAIN_RECOMMENDATION') {
-            this.ui.setActiveDialog({
-                ...currentDialog,
-                payload: { ...currentDialog.payload, isLoading: true }
-            });
-        }
+        this._updateStrainRecommendationDialog({ isLoading: true });
 
         try {
             const res = await aiActions.getStrainRecommendation(this.context, userQuery);
-            const d = this.ui.$activeDialog.get();
-            if (d.type === 'STRAIN_RECOMMENDATION') {
-                this.ui.setActiveDialog({
-                    ...d,
-                    payload: { ...d.payload, isLoading: false, response: typeof res === 'string' ? res : JSON.stringify(res) }
-                });
-            }
+            this._updateStrainRecommendationDialog({
+                isLoading: false,
+                response: typeof res === 'string' ? res : JSON.stringify(res)
+            });
             return res;
         } catch (e: any) {
             console.error('Error getting strain recommendation:', e);
-            const d = this.ui.$activeDialog.get();
-            if (d.type === 'STRAIN_RECOMMENDATION') {
-                this.ui.setActiveDialog({
-                    ...d,
-                    payload: { ...d.payload, isLoading: false, response: "Error: " + e.message }
-                });
-            }
+            this._updateStrainRecommendationDialog({
+                isLoading: false,
+                response: "Error: " + e.message
+            });
             throw e;
+        }
+    }
+
+    private _updateStrainRecommendationDialog(payload: Partial<{ isLoading: boolean; response: string }>) {
+        const currentDialog = this.ui.$activeDialog.get();
+        if (currentDialog.type === 'STRAIN_RECOMMENDATION') {
+            this.ui.setActiveDialog({
+                ...currentDialog,
+                payload: { ...currentDialog.payload, ...payload }
+            });
         }
     }
 

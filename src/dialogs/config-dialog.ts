@@ -84,6 +84,7 @@ export class ConfigDialog extends LitElement {
     string,
     Record<string, { on: number; off: number }>
   > = {};
+
   @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
 
   static styles = [

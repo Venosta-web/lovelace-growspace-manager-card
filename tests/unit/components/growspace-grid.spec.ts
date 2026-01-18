@@ -169,12 +169,14 @@ describe('GrowspaceGrid', () => {
         // Mobile Interactions
         it('should handle mobile drop', () => {
             const plant = { entity_id: 'p1', state: 'ok' };
-            const mockTarget = {
+            const mockTarget: any = {
                 tagName: 'DIV',
-                classList: { contains: (cls: string) => cls === 'plant-card-empty' },
+                classList: { contains: vi.fn().mockImplementation((cls: string) => cls === 'plant-card-empty') },
                 getAttribute: (attr: string) => (attr === 'data-row' ? '2' : attr === 'data-col' ? '2' : null),
-                parentElement: null
+                parentElement: null,
+                closest: vi.fn()
             };
+            mockTarget.closest.mockReturnValue(mockTarget);
 
             const mockShadowRoot = {
                 elementFromPoint: vi.fn().mockReturnValue(mockTarget)
@@ -290,17 +292,22 @@ describe('GrowspaceGrid', () => {
                 row: 2,
                 col: 3,
                 plant: { entity_id: 'p2' },
+                classList: { contains: vi.fn().mockReturnValue(false) },
                 parentElement: { parentElement: element } // Eventually reaches element
             };
 
             // Wrap in some divs
-            const deepTarget = {
+            const deepTarget: any = {
                 tagName: 'DIV',
                 classList: { contains: () => false },
                 parentElement: {
                     tagName: 'DIV',
                     parentElement: mockCorrectCard
-                }
+                },
+                closest: vi.fn().mockImplementation((sel) => {
+                    if (sel.includes('growspace-plant-card')) return mockCorrectCard;
+                    return null;
+                })
             };
 
             const plant = { entity_id: 'dragged' };
@@ -414,10 +421,11 @@ describe('GrowspaceGrid', () => {
 
         it('should not call handleDrop when no valid target found (traversal stops at element)', () => {
             // Target that traverses up to element without finding a valid card
-            const mockTarget = {
+            const mockTarget: any = {
                 tagName: 'DIV',
-                classList: { contains: () => false },
-                parentElement: element // directly points to element
+                classList: { contains: vi.fn().mockReturnValue(false) },
+                parentElement: element, // directly points to element
+                closest: vi.fn().mockReturnValue(null)
             };
 
             const mockShadowRoot = {
@@ -438,12 +446,14 @@ describe('GrowspaceGrid', () => {
         });
 
         it('should handle mobile drop with row and col at 0', () => {
-            const mockTarget = {
+            const mockTarget: any = {
                 tagName: 'DIV',
-                classList: { contains: (cls: string) => cls === 'plant-card-empty' },
+                classList: { contains: vi.fn().mockImplementation((cls: string) => cls === 'plant-card-empty') },
                 getAttribute: (attr: string) => (attr === 'data-row' ? '0' : '0'),
-                parentElement: null
+                parentElement: null,
+                closest: vi.fn()
             };
+            mockTarget.closest.mockReturnValue(mockTarget);
 
             const mockShadowRoot = {
                 elementFromPoint: vi.fn().mockReturnValue(mockTarget)
@@ -463,13 +473,15 @@ describe('GrowspaceGrid', () => {
         });
 
         it('handles mobile drop with missing row and col attributes', () => {
-            const mockTarget = {
+            const mockTarget: any = {
                 tagName: 'DIV',
-                classList: { contains: (cls: string) => cls === 'plant-card-empty' },
-                // Return null to trigger || '0'
+                classList: { contains: vi.fn().mockImplementation((cls: string) => cls === 'plant-card-empty') },
+                // Return null to trigger || '1' (refactored default)
                 getAttribute: () => null,
-                parentElement: null
+                parentElement: null,
+                closest: vi.fn()
             };
+            mockTarget.closest.mockReturnValue(mockTarget);
 
             const mockShadowRoot = {
                 elementFromPoint: vi.fn().mockReturnValue(mockTarget)
@@ -485,8 +497,8 @@ describe('GrowspaceGrid', () => {
                 detail: { x: 10, y: 10, plant }
             });
 
-            // Should default to 0,0
-            expect(mockStore.handleDrop).toHaveBeenCalledWith(0, 0, null, plant);
+            // Should default to 1,1
+            expect(mockStore.handleDrop).toHaveBeenCalledWith(1, 1, null, plant);
         });
     });
 

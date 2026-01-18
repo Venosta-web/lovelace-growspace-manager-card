@@ -34,7 +34,7 @@ export class TimelineService {
                 this.hass.callWS<Record<string, GrowspaceEvent[]>>({
                     type: WS_TYPE_GET_LOG,
                     growspace_id: growspaceId,
-                    limit: limit, // User logs are less frequent, standard limit ok
+                    limit, // User logs are less frequent, standard limit ok
                 }),
                 this.hass.callWS<Record<string, GrowspaceEvent[]>>({
                     type: WS_TYPE_GET_ALERTS,

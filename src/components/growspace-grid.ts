@@ -14,55 +14,16 @@ import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
 
-// Helper to determine overlay color
-function getOverlayColor(mode: GridOverlayMode, plant: PlantEntity, store: GrowspaceStore): string {
-  if (mode === GridOverlayMode.NONE) return 'transparent';
-
-  const growspaceId = plant.attributes.growspace_id;
-  if (!growspaceId) return 'transparent';
-
-  const device = store.data.$devices.get().find(d => d.device_id === growspaceId);
-  if (!device) return 'transparent';
-
-  if (mode === GridOverlayMode.VPD) {
-    const status = device.biological_metrics.vpd_status;
-    if (status === 'ok') return 'rgba(76, 175, 80, 0.15)'; // Green
-    if (status === StatusLevel.WARNING) return 'rgba(255, 152, 0, 0.15)'; // Orange
-    if (status === StatusLevel.DANGER) return 'rgba(244, 67, 54, 0.15)'; // Red
-  }
-
-  if (mode === GridOverlayMode.BIO_STATUS) {
-    // Check Bayesian sensors for biological status
-    // Priority: optimal > stress/mold (danger) > warnings
-    const hass = store.hass;
-    if (!hass) return 'transparent';
-
-    const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
-    const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
-    const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
-
-    // Danger: Stress or mold detected
-    if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
-      return 'rgba(244, 67, 54, 0.2)'; // Red with higher opacity for alerts
-    }
-
-    // Optimal conditions
-    if (optimalEntity?.state === 'on') {
-      return 'rgba(76, 175, 80, 0.15)'; // Green
-    }
-
-    // Warning: VPD out of range but not critical
-    const vpdStatus = device.biological_metrics.vpd_status;
-    if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
-      return 'rgba(255, 152, 0, 0.15)'; // Amber
-    }
-  }
-
-  // Placeholder for direct sensor reading logic (requires hydration which we don't have fully here yet)
-  // For now, we only implement VPD visualization as it's the most "calculated" metric available
-
-  return 'transparent';
-}
+/**
+ * Defines the RGBA color values for various grid overlay states.
+ */
+const OVERLAY_COLORS = {
+  OK: 'var(--overlay-ok-color, rgba(76, 175, 80, 0.15))',
+  WARNING: 'var(--overlay-warning-color, rgba(255, 152, 0, 0.15))',
+  DANGER: 'var(--overlay-danger-color, rgba(244, 67, 54, 0.15))',
+  ALERT: 'var(--overlay-alert-color, rgba(244, 67, 54, 0.2))',
+  TRANSPARENT: 'transparent',
+};
 
 @customElement('growspace-grid')
 export class GrowspaceGrid extends LitElement {
@@ -110,6 +71,11 @@ export class GrowspaceGrid extends LitElement {
       display: block;
       container-type: inline-size;
       container-name: growspace-grid;
+      /* Overlay colors for theming */
+      --overlay-ok-color: rgba(76, 175, 80, 0.15);
+      --overlay-warning-color: rgba(255, 152, 0, 0.15);
+      --overlay-danger-color: rgba(244, 67, 54, 0.15);
+      --overlay-alert-color: rgba(244, 67, 54, 0.2);
     }
 
     .grid {
@@ -132,13 +98,10 @@ export class GrowspaceGrid extends LitElement {
       justify-content: center;
       height: 100%;
       aspect-ratio: 1;
-      height: 100%;
-      aspect-ratio: 1;
       border: var(--glass-border);
       border-radius: var(--border-radius-lg, 16px);
       color: var(--secondary-text-color);
       cursor: pointer;
-      transition: all 0.2s ease;
       transition: all 0.2s ease;
       background: var(--glass-bg);
     }
@@ -389,7 +352,6 @@ export class GrowspaceGrid extends LitElement {
       }
     }
 
-    /* Container Query: List view when card itself is narrow (not viewport) */
     @container growspace-grid (max-width: 400px) {
       .grid {
         display: flex !important;
@@ -505,79 +467,86 @@ export class GrowspaceGrid extends LitElement {
   }
 
   private _handleMobileDrop(e: CustomEvent) {
-    const { x, y, plant } = e.detail;
+    const { x, y, plant: sourcePlant } = e.detail;
+    if (!this.shadowRoot) return;
 
-    // Hide the dragged element temporarily so we can see what's underneath
-    // Note: The dragged element (avatar) usually follows pointer, but here 'plant' is the source data.
-    // The "ghost" or original card might be under the finger if we are not careful.
-    // However, usually pointer-events: none is set on the drag avatar.
-    // If we are dragging the actual card element via transform, it IS under the finger.
-    // WE MUST HIDE IT or use pointer-events.
-
-    // The DragDropController scales the card and moves it.
-    // We can't easily access the specific card DOM element here to hide it without traversing.
-    // But `document.elementsFromPoint` returns ALL elements.
-
-    // const elements = document.elementsFromPoint(x, y); // Removed unused call causing JSDOM error
-
-    // Look for a drop target
-    // We are looking for <growspace-plant-card> or <div class="plant-card-empty">
-    // But these are inside shadow roots potentially?
-    // "document.elementsFromPoint" does NOT penetrate shadow roots automatically in all browsers/modes,
-    // but usually "composed path" is needed.
-    // Actually, GrowspaceGrid is in Shadow DOM of GrowspaceManagerCard? No, it's a lit element.
-    // The plants are inside GrowspaceGrid's shadow root.
-    // elementsFromPoint on document might stop at GrowspaceGrid host.
-
-    // Better strategy: Use the ShadowRoot of this grid if possible, or recursive probing.
-    // But `this.shadowRoot.elementFromPoint(x, y)` exists!
-
-    const shadowRoot = this.shadowRoot;
-    if (!shadowRoot) return;
-
-    const targetEl = shadowRoot.elementFromPoint(x, y);
-
+    const targetEl = this.shadowRoot.elementFromPoint(x, y);
     if (!targetEl) return;
 
-    // Traverse up from targetEl to find a slot or card
-    let current: Element | null = targetEl;
+    const dropTarget = targetEl.closest('.plant-card-empty, growspace-plant-card');
+    if (!dropTarget) return;
+
     let targetRow: number | undefined;
     let targetCol: number | undefined;
     let targetPlant: PlantEntity | null = null;
 
-    while (current && current !== this) {
-      // Check for empty slot
-      if (current.classList?.contains('plant-card-empty')) {
-        targetRow = parseInt(current.getAttribute('data-row') || '0');
-        targetCol = parseInt(current.getAttribute('data-col') || '0');
-        break;
-      }
-
-      // Check for populated card
-      if (current.tagName.toLowerCase() === 'growspace-plant-card') {
-        targetRow = (current as any).row; // We set .row prop on it
-        targetCol = (current as any).col;
-        targetPlant = (current as any).plant;
-        break;
-      }
-
-      current = current.parentElement;
+    if (dropTarget.classList.contains('plant-card-empty')) {
+      targetRow = parseInt(dropTarget.getAttribute('data-row') ?? '1', 10);
+      targetCol = parseInt(dropTarget.getAttribute('data-col') ?? '1', 10);
+    } else if (dropTarget.tagName.toLowerCase() === 'growspace-plant-card') {
+      const card = dropTarget as any;
+      targetRow = card.row;
+      targetCol = card.col;
+      targetPlant = card.plant;
     }
 
     if (targetRow !== undefined && targetCol !== undefined) {
-      this.store.handleDrop(targetRow, targetCol, targetPlant, plant);
+      this.store.handleDrop(targetRow, targetCol, targetPlant, sourcePlant);
     }
+  }
+
+  private _getOverlayColor(mode: GridOverlayMode, plant: PlantEntity): string {
+    if (mode === GridOverlayMode.NONE) return OVERLAY_COLORS.TRANSPARENT;
+
+    const growspaceId = plant.attributes.growspace_id;
+    if (!growspaceId) return OVERLAY_COLORS.TRANSPARENT;
+
+    const device = this.store.data.$devices.get().find(d => d.device_id === growspaceId);
+    if (!device) return OVERLAY_COLORS.TRANSPARENT;
+
+    switch (mode) {
+      case GridOverlayMode.VPD: {
+        const { vpd_status } = device.biological_metrics;
+        if (vpd_status === 'ok') return OVERLAY_COLORS.OK;
+        if (vpd_status === StatusLevel.WARNING) return OVERLAY_COLORS.WARNING;
+        if (vpd_status === StatusLevel.DANGER) return OVERLAY_COLORS.DANGER;
+        break;
+      }
+      case GridOverlayMode.BIO_STATUS: {
+        const { hass } = this.store;
+        if (!hass) return OVERLAY_COLORS.TRANSPARENT;
+
+        const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
+        const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
+        const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
+
+        if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
+          return OVERLAY_COLORS.ALERT;
+        }
+        if (optimalEntity?.state === 'on') {
+          return OVERLAY_COLORS.OK;
+        }
+
+        const { vpd_status } = device.biological_metrics;
+        if (vpd_status === StatusLevel.WARNING || vpd_status === StatusLevel.DANGER) {
+          return OVERLAY_COLORS.WARNING;
+        }
+        break;
+      }
+    }
+    return OVERLAY_COLORS.TRANSPARENT;
   }
 
 
 
   render() {
-    const isListView = this.cols > 5; // Simplified check for inline style
+    const isListView = this.cols > 5;
     const gridStyle = isListView
       ? ''
       : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
 
     const flatGrid = this.plants.flat();
+    const isLoading = this._isLoadingController?.value;
 
     return html`
       <div
@@ -587,42 +556,43 @@ export class GrowspaceGrid extends LitElement {
         @dragover=${this._handleDragOver}
         ${ref(this._gridRef)}
       >
-        ${this._isLoadingController?.value ? this.renderSkeletonGrid() : ''}
-        ${!this._isLoadingController?.value
-        ? repeat(
+        ${isLoading
+        ? this.renderSkeletonGrid()
+        : repeat(
           flatGrid,
           (plant, index) =>
             plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
-          (plant, index) => {
-            const row = Math.floor(index / this.cols) + 1;
-            const col = (index % this.cols) + 1;
-
-            if (!plant) {
-              return this.renderEmptySlot(row, col);
-            }
-
-            const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
-            const overlayColor = getOverlayColor(overlayMode, plant, this.store);
-
-            return html`
-                <div class="grid-item-wrapper">
-                  <growspace-plant-card
-                    .plant=${plant}
-                    .row=${row}
-                    .col=${col}
-                    @plant-click=${() => this._handlePlantClick(plant)}
-                    @plant-drag-start=${() => this._handleDragStart(plant)}
-                    @plant-drop=${(e: CustomEvent) =>
-                this._handleDrop(e.detail.originalEvent, row, col, plant)}
-                    @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-                  ></growspace-plant-card>
-                  ${overlayMode !== GridOverlayMode.NONE ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>` : ''}
-                </div>
-                `;
-          }
-        )
-        : ''}
+          (plant, index) => this._renderGridCell(plant, index)
+        )}
       </div>
+    `;
+  }
+
+  private _renderGridCell(plant: PlantEntity | null, index: number): TemplateResult {
+    const row = Math.floor(index / this.cols) + 1;
+    const col = (index % this.cols) + 1;
+
+    if (!plant) {
+      return this.renderEmptySlot(row, col);
+    }
+
+    const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
+    const overlayColor = this._getOverlayColor(overlayMode, plant);
+
+    return html`
+      <div class="grid-item-wrapper">
+        <growspace-plant-card
+          .plant=${plant}
+          .row=${row}
+          .col=${col}
+          @plant-click=${() => this._handlePlantClick(plant)}
+          @plant-drag-start=${() => this._handleDragStart(plant)}
+          @plant-drop=${(e: CustomEvent) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+          @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+        ></growspace-plant-card>
+        ${overlayMode !== GridOverlayMode.NONE
+        ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
+        : nothing}
       </div>
     `;
   }
