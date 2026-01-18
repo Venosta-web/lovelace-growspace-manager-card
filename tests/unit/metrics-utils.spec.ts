@@ -642,7 +642,7 @@ describe('MetricsUtils', () => {
             const res = MetricsUtils.computeHeaderMetrics(hassOff, mockDevice, new Set(), []);
             const optimal = res.mainChips.find(c => c.key === 'optimal');
             expect(optimal).toBeDefined();
-            expect(optimal!.value).toBe('Low Humidity');
+            expect(optimal!.value).toBe('Not Optimal: Low Humidity');
             expect(optimal!.status).toBe('warning');
         });
 
@@ -836,6 +836,144 @@ describe('MetricsUtils', () => {
             } as any, new Set(), []);
             const irrigation = res.mainChips.find(c => c.key === 'irrigation');
             expect(irrigation).toBeUndefined();
+        });
+        it('should preserve specific numeric states like "10"', () => {
+            const hassSpecific = {
+                states: {
+                    'fan.exhaust': { state: '10' }
+                }
+            } as any;
+            const devSpecific = {
+                ...mockDevice,
+                environment_attributes: { exhaust_entity: 'fan.exhaust' }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassSpecific, devSpecific, new Set(), []);
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust!.value).toBe('10');
+        });
+
+        it('should generate multiValues for multiple devices', () => {
+            const hassMulti = {
+                states: {
+                    'fan.e1': { state: '10' },
+                    'fan.e2': { state: '50' },
+                    'fan.e3': { state: 'on' }
+                }
+            } as any;
+
+            const devMulti = {
+                ...mockDevice,
+                environment_attributes: {
+                    exhaust_fan_entities: ['fan.e1', 'fan.e2', 'fan.e3'] // Use plural field
+                }
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassMulti, devMulti, new Set(), []);
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+
+            expect(exhaust).toBeDefined();
+            expect(exhaust!.value).toBe('Multiple');
+            expect(exhaust!.multiValues).toEqual(['10', '50', 'on']);
+        });
+
+        it('should format Optimal reasons correctly (string vs array)', () => {
+            const hassString = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'off',
+                        attributes: {
+                            reasons: 'Too hot'
+                        }
+                    },
+                    'sensor.test_room': {}
+                }
+            } as any;
+
+            const res1 = MetricsUtils.computeHeaderMetrics(hassString, mockDevice, new Set(), []);
+            const opt1 = res1.mainChips.find(c => c.key === 'optimal');
+            expect(opt1!.value).toBe('Not Optimal: Too hot');
+            expect(opt1!.status).toBe('warning');
+
+            const hassArray = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'off',
+                        attributes: {
+                            reasons: ['Too hot', 'Too humid']
+                        }
+                    },
+                    'sensor.test_room': {}
+                }
+            } as any;
+
+            const res2 = MetricsUtils.computeHeaderMetrics(hassArray, mockDevice, new Set(), []);
+            const opt2 = res2.mainChips.find(c => c.key === 'optimal');
+            expect(opt2!.value).toBe('Not Optimal: Too hot, Too humid');
+
+            const hassOptimal = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'on',
+                        attributes: {}
+                    },
+                    'sensor.test_room': {}
+                }
+            } as any;
+            const res3 = MetricsUtils.computeHeaderMetrics(hassOptimal, mockDevice, new Set(), []);
+            const opt3 = res3.mainChips.find(c => c.key === 'optimal');
+            expect(opt3!.value).toBe('Optimal Conditions');
+            expect(opt3!.status).toBe('optimal');
+
+            const hassNoReasons = {
+                states: {
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'off',
+                        attributes: { reasons: [] }
+                    },
+                    'sensor.test_room': {}
+                }
+            } as any;
+            const res4 = MetricsUtils.computeHeaderMetrics(hassNoReasons, mockDevice, new Set(), []);
+            const opt4 = res4.mainChips.find(c => c.key === 'optimal');
+            expect(opt4!.value).toBe('Not Optimal');
+        });
+
+        it('should use legacy calculated VPD sensor if new one is missing', () => {
+            const hassLegacy = {
+                states: {
+                    [`sensor.${mockDevice.device_id}_calculated_vpd`]: { state: '1.8' },
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'on',
+                        attributes: { temperature: 25 }
+                    },
+                    'sensor.test_room': {}
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hassLegacy, mockDevice, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+            expect(vpd?.value).toBe('1.8 kPa');
+        });
+
+        it('should handle getNextEvent for time that has passed today (move to tomorrow)', () => {
+            // Mock DateTime to be late in the day, e.g. 23:00
+            const lateTime = DateTime.fromObject({ hour: 23, minute: 0, second: 0 });
+            // Tests run with system time by default, but we can't easily mock Luxon DateTime.now() globally without complex setup or specific mock/spy.
+            // However, getNextEvent uses DateTime.now().
+            // If we provide a time earlier than now, it should be tomorrow.
+            // Best way: use vi.useFakeTimers() and set system time.
+
+            vi.useFakeTimers();
+            const now = new Date(2023, 1, 1, 23, 0, 0); // 11 PM
+            vi.setSystemTime(now);
+
+            const dev = { ...mockDevice, irrigation_config: { irrigation_times: [{ time: '10:00', duration: 10 }] } } as any; // 10 AM
+
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, dev, new Set(), []);
+            const irrigation = res.mainChips.find(c => c.key === 'irrigation');
+
+            expect(irrigation?.value).toBe('10:00');
+
+            vi.useRealTimers();
         });
     });
 });

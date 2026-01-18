@@ -288,6 +288,18 @@ export class GrowspaceHistoryStore {
             }
         }
 
+        // 3. Identify Composite Keys (Multi-Device Graphs)
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach(key => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                if (metric && entityId) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
+
         if (entitiesToFetch.size === 0) return;
 
         const batchResults = await this.dataService.getHistoryStats(
@@ -356,6 +368,19 @@ export class GrowspaceHistoryStore {
                 entitiesToFetch.add(entityId);
             }
         }
+
+        // Composite Keys Delta
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach(key => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                const lastTimestamp = currentTimestamps[key];
+                if (metric && entityId && lastTimestamp) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
 
         if (entitiesToFetch.size === 0) return;
 

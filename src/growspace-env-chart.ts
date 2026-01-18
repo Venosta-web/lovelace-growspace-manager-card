@@ -46,6 +46,9 @@ export class GrowspaceEnvChart extends LitElement {
   @property({ type: String }) range: '1h' | '6h' | '24h' | '7d' = '24h';
   @property({ type: String }) type: ChartType = ChartType.LINE;
 
+  @property({ type: String }) chartTitle: string | undefined;
+  @property({ type: String }) customSensorId: string | undefined;
+
   // For combined graphs
   @property({ type: Array }) metrics: string[] = [];
   @property({ type: Boolean }) isCombined = false;
@@ -267,9 +270,10 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     metricKeys.forEach((key) => {
+      const isMultiple = this.isCombined && this.metrics.length > 1;
       const config = this.metricConfig[key] || {
         color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
-        title: this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title,
+        title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title),
         unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
         icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
       };

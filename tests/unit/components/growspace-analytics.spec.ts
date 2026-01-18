@@ -346,4 +346,54 @@ describe('GrowspaceAnalytics', () => {
         // Lit's connectedCallback might try to request update.
         expect(() => el.connectedCallback()).not.toThrow();
     });
+    it('should handle composite metric keys correctly', async () => {
+        $activeEnvGraphs.get.mockReturnValue(new Set(['circulation_fan:sensor.fan_1']));
+        hassMock.states['sensor.fan_1'] = {
+            state: 'on',
+            attributes: { friendly_name: 'Fan 1' }
+        };
+        $combinedHistory.get.mockReturnValue({
+            'circulation_fan:sensor.fan_1': [{ time: 1, value: 10 }]
+        });
+
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const chart = element.shadowRoot?.querySelector('growspace-env-chart');
+        expect(chart).toBeTruthy();
+        expect((chart as any).metricKey).toBe('circulation_fan');
+        expect((chart as any).customSensorId).toBe('sensor.fan_1');
+        expect((chart as any).sensorHistory['circulation_fan']).toEqual([{ time: 1, value: 10 }]);
+        expect((chart as any).chartTitle).toContain('Fan 1');
+    });
+
+    it('should handle composite metric key missing history and friendly name', async () => {
+        $activeEnvGraphs.get.mockReturnValue(new Set(['circulation_fan:sensor.fan_2']));
+        // No hass state for fan_2
+        $combinedHistory.get.mockReturnValue({}); // No history
+
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const chart = element.shadowRoot?.querySelector('growspace-env-chart');
+        expect(chart).toBeTruthy();
+        expect((chart as any).metricKey).toBe('circulation_fan');
+        // Fallback to entity ID in title
+        expect((chart as any).chartTitle).toContain('sensor.fan_2');
+    });
+
+    it('should ignore toggle-graph event with non-string detail', () => {
+        const spy = vi.fn();
+        (element as any).store = { toggleEnvGraph: spy } as any;
+        (element as any)._handleToggleGraph({ stopPropagation: () => { }, detail: 123 } as any);
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should handle toggle-graph event with valid string', () => {
+        const spy = vi.fn();
+        (element as any).store = { toggleEnvGraph: spy } as any;
+        const event = new CustomEvent('toggle-graph', { detail: 'temperature' });
+        (element as any)._handleToggleGraph(event);
+        expect(spy).toHaveBeenCalledWith('temperature');
+    });
 });

@@ -8,6 +8,7 @@ export class GrowspaceChip extends LitElement {
   @property({ type: String }) icon = '';
   @property({ type: String }) label = '';
   @property({ type: String }) value: string | number | undefined = undefined;
+  @property({ type: Array }) multiValues: string[] | undefined = undefined;
   @property({ type: String }) status: 'optimal' | 'warning' | 'danger' | '' = '';
   @property({ type: Boolean, reflect: true }) active = false;
   @property({ type: Boolean }) linked = false;
@@ -129,8 +130,12 @@ export class GrowspaceChip extends LitElement {
       <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
-        </div>
-        ${this.label ? html`${this.label}: ` : ''}${this.value}
+        </div>${this.label ? html`${this.label}: ` : ''}${this.multiValues && this.multiValues.length > 0
+        ? html`<div style="display: flex; align-items: center; gap: 8px;">
+                ${this.multiValues.map((val, idx) => html`${idx > 0 ? html`<div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2);"></div>` : ''}<span>${val}</span>`)}
+              </div>`
+        : this.value}
+
         ${this.linked
         ? html`
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">

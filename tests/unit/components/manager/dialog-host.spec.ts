@@ -216,6 +216,41 @@ describe('DialogHost', () => {
         expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('successfully'), 'success');
     });
 
+    it('should handle environment config with multiple entities', async () => {
+        $activeDialog.set({
+            type: 'CONFIG',
+            payload: {
+                currentTab: 'environment',
+                environmentData: {
+                    selectedGrowspaceId: 'g1'
+                } as any
+            }
+        });
+        document.body.appendChild(element);
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('config-dialog') as HTMLElement;
+        const detail = {
+            selectedGrowspaceId: 'g1',
+            temp_sensor: 't1',
+            humidity_sensor: 'h1',
+            exhaust_fan_entities: ['fan.1', 'fan.2'],
+            circulation_fan_entities: ['fan.3', 'fan.4'],
+            light_sensors: ['light.1', 'light.2']
+        };
+
+        dialog.dispatchEvent(new CustomEvent('configure-environment-submit', { detail }));
+
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(mockStore.dataService.configureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
+            growspace_id: 'g1',
+            exhaust_fan_entities: ['fan.1', 'fan.2'],
+            circulation_fan_entities: ['fan.3', 'fan.4'],
+            light_sensors: ['light.1', 'light.2']
+        }));
+    });
+
     it('should close dialog when requested', async () => {
         $activeDialog.set({ type: 'ADD_PLANT', payload: { row: 1, col: 1 } });
         document.body.appendChild(element);
@@ -368,7 +403,7 @@ describe('DialogHost', () => {
     });
 
     it('should render IRRIGATION dialog', async () => {
-        $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
+        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('irrigation-dialog')).toBeTruthy();
@@ -407,7 +442,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle close event on IRRIGATION dialog', async () => {
-        $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
+        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -418,7 +453,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle closed event on IRRIGATION dialog', async () => {
-        $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
+        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -906,7 +941,7 @@ describe('DialogHost', () => {
 
     it('should handle data-changed event on IRRIGATION dialog', async () => {
         vi.useFakeTimers();
-        $activeDialog.set({ type: 'IRRIGATION', payload: { device: {} as any } });
+        $activeDialog.set({ type: 'IRRIGATION', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -954,7 +989,7 @@ describe('DialogHost', () => {
     });
 
     it('should render ADD_PLANTS dialog', async () => {
-        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -963,7 +998,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle add-plants-submit event', async () => {
-        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 
@@ -975,7 +1010,7 @@ describe('DialogHost', () => {
     });
 
     it('should handle close event on ADD_PLANTS dialog', async () => {
-        $activeDialog.set({ type: 'ADD_PLANTS', payload: { growspaceId: 'g1' } });
+        $activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
         document.body.appendChild(element);
         await element.updateComplete;
 

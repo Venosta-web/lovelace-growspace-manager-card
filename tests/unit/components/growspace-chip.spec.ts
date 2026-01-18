@@ -59,4 +59,16 @@ describe('GrowspaceChip', () => {
 
         expect(listener).toHaveBeenCalled();
     });
+
+    it('should render multiValues with separators', async () => {
+        element = await fixture(html`<growspace-chip .multiValues=${['10', '20', '30']}></growspace-chip>`);
+        const chip = element.shadowRoot?.querySelector('.stat-chip');
+        const items = chip?.querySelectorAll('span');
+        expect(items?.length).toBe(3);
+        expect(items?.[0].textContent).toBe('10');
+
+        // Separators are divs with specific style
+        const separators = chip?.querySelectorAll('div[style*="width: 1px"]');
+        expect(separators?.length).toBe(2);
+    });
 });

@@ -735,7 +735,20 @@ export class GrowspaceHeader extends LitElement {
 
   private _toggleEnvGraph(metric: string) {
     if (!this.store) return;
-    this.store.toggleEnvGraph(metric);
+
+    // Check if this metric belongs to a multi-device chip
+    const chip = [...this._mainChips, ...this._deviceChips].find(c => c.key === metric);
+
+    if (chip && chip.entityIds && chip.entityIds.length > 0) {
+      // Toggle all individual graphs for the devices
+      // We use a composite key format: "metric:entity_id"
+      chip.entityIds.forEach(entityId => {
+        this.store.toggleEnvGraph(`${metric}:${entityId}`);
+      });
+    } else {
+      // Standard single graph behavior
+      this.store.toggleEnvGraph(metric);
+    }
   }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
@@ -956,6 +969,7 @@ export class GrowspaceHeader extends LitElement {
                             .icon=${chip.icon}
                             .label=${chip.label}
                             .value=${chip.value}
+                            .multiValues=${chip.multiValues}
                             .status=${chip.status}
                             .active=${chip.active}
                             .linked=${chip.linked}
@@ -1037,6 +1051,7 @@ export class GrowspaceHeader extends LitElement {
                         .icon=${chip.icon}
                         .label=${chip.label}
                         .value=${chip.value}
+                        .multiValues=${chip.multiValues}
                         .status=${chip.status}
                         .active=${chip.active}
                         .linked=${chip.linked}

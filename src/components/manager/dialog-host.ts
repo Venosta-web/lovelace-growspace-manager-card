@@ -6,7 +6,7 @@ import { GrowspaceStore } from '../../store/growspace-store';
 // Global store imports removed
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../ui-state';
-import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../types';
+import { GrowspaceDevice, PlantEntity, StrainEntry, EnvironmentConfigEventDetail } from '../../types';
 
 import '../../dialogs/add-plant-dialog';
 import '../../dialogs/add-plants-dialog';
@@ -459,7 +459,7 @@ export class DialogHost extends LitElement {
         `;
     }
 
-    private async _handleEnvironmentConfig(detail: any) {
+    private async _handleEnvironmentConfig(detail: EnvironmentConfigEventDetail) {
         // eslint-disable-next-line camelcase
         const {
             selectedGrowspaceId,
@@ -501,6 +501,12 @@ export class DialogHost extends LitElement {
                 dehumidifier_thresholds, // Pass thresholds if provided
                 soil_moisture_sensor: soil_moisture_sensor || undefined,
                 control_dehumidifier,
+                // Multi-device fields
+                circulation_fan_entities: detail.circulation_fan_entities,
+                light_sensors: detail.light_sensors,
+                exhaust_fan_entities: detail.exhaust_fan_entities,
+                humidifier_entities: detail.humidifier_entities,
+                dehumidifier_entities: detail.dehumidifier_entities,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();

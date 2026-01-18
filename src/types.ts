@@ -111,15 +111,20 @@ export interface SerializedEnvironmentAttributes {
   co2_sensor?: string;
   soil_moisture_sensor?: string;
   light_sensor?: string;
+  light_sensors?: string[];
 
   // Actuators / Complex Entities
   dehumidifier_entity?: string;
+  dehumidifier_entities?: string[];
   dehumidifier_control_enabled?: boolean;
   dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifier_state?: string;
   humidifier_entity?: string;
+  humidifier_entities?: string[];
   exhaust_entity?: string;
+  exhaust_fan_entities?: string[];
   circulation_fan_entity?: string;
+  circulation_fan_entities?: string[];
 
   // Values calculated by serializer
   vpd?: string;
@@ -422,15 +427,53 @@ export interface EnvironmentConfigData {
   humidity_sensor: string;
   vpd_sensor: string;
   co2_sensor: string;
+
+  // Fans
   circulation_fan: string;
+  circulation_fan_entities: string[];
+  exhaust_entity: string;
+  exhaust_fan_entities: string[];
+
   stress_threshold: number;
   mold_threshold: number;
+
+  // Lights
   light_sensor: string;
-  exhaust_entity: string;
+  light_sensors: string[];
+
+  // Humidifier
   humidifier_entity: string;
+  humidifier_entities: string[];
+
+  // Dehumidifier
   dehumidifier_entity: string;
+  dehumidifier_entities: string[];
   dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  control_dehumidifier: boolean;
+
   soil_moisture_sensor: string;
+}
+
+export interface EnvironmentConfigEventDetail {
+  selectedGrowspaceId: string;
+  temp_sensor: string;
+  humidity_sensor: string;
+  vpd_sensor?: string | null;
+  co2_sensor?: string | null;
+  circulation_fan?: string | null;
+  circulation_fan_entities?: string[];
+  stress_threshold: number;
+  mold_threshold: number;
+  light_sensor?: string | null;
+  light_sensors?: string[];
+  exhaust_entity?: string | null;
+  exhaust_fan_entities?: string[];
+  humidifier_entity?: string | null;
+  humidifier_entities?: string[];
+  dehumidifier_entity?: string | null;
+  dehumidifier_entities?: string[];
+  dehumidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  soil_moisture_sensor?: string | null;
   control_dehumidifier: boolean;
 }
 
@@ -586,7 +629,9 @@ export interface HistorySensorState {
   last_updated?: string;
 }
 
-export type SensorHistories = Record<string, HistorySensorState[]>;
+export interface SensorHistories {
+  [key: string]: HistorySensorState[];
+}
 
 export interface GraphSeries {
   id: string;

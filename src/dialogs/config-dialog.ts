@@ -1,6 +1,20 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiCog, mdiViewDashboard, mdiThermometer, mdiPencil, mdiDelete, mdiWaterPercent, mdiWhiteBalanceSunny, mdiWeatherNight, mdiInformation, mdiGauge, mdiFan, mdiAlert } from '@mdi/js';
+import {
+  mdiClose,
+  mdiCog,
+  mdiViewDashboard,
+  mdiThermometer,
+  mdiPencil,
+  mdiDelete,
+  mdiWaterPercent,
+  mdiWhiteBalanceSunny,
+  mdiWeatherNight,
+  mdiInformation,
+  mdiGauge,
+  mdiFan,
+  mdiAlert,
+} from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -23,8 +37,7 @@ export class ConfigDialog extends LitElement {
   @property({ attribute: false })
   public devices: GrowspaceDevice[] = [];
 
-  @property({ type: String }) initialTab: ConfigTab =
-    ConfigTab.ENVIRONMENT;
+  @property({ type: String }) initialTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
   @property({ type: String })
   public currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
@@ -54,15 +67,23 @@ export class ConfigDialog extends LitElement {
   @state() private env_vpd_sensor = '';
   @state() private env_co2_sensor = '';
   @state() private env_circulation_fan = '';
+  @state() private env_circulation_fan_entities: string[] = []; // Multi-device
   @state() private env_stress_threshold = 0.8;
   @state() private env_mold_threshold = 0.8;
   @state() private env_light_sensor = '';
+  @state() private env_light_sensors: string[] = []; // Multi-device
   @state() private env_exhaust_entity = '';
+  @state() private env_exhaust_fan_entities: string[] = []; // Multi-device
   @state() private env_humidifier_entity = '';
+  @state() private env_humidifier_entities: string[] = []; // Multi-device
   @state() private env_dehumidifier_entity = '';
+  @state() private env_dehumidifier_entities: string[] = []; // Multi-device
   @state() private env_soil_moisture_sensor = '';
   @state() private env_control_dehumidifier = false;
-  @state() private env_dehumidifier_thresholds: Record<string, Record<string, { on: number; off: number }>> = {};
+  @state() private env_dehumidifier_thresholds: Record<
+    string,
+    Record<string, { on: number; off: number }>
+  > = {};
   @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
 
   static styles = [
@@ -141,6 +162,84 @@ export class ConfigDialog extends LitElement {
         }
       }
     `,
+
+    css`
+      /* Multi-Entity Select Styles */
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 20px;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px; /* Match MD3 padding */
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .multi-select-box:hover {
+        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
+        border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
+      }
+      .multi-select-box:focus-within {
+        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
+        border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
+        padding-bottom: 5px; /* Adjust for border width change */
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+      .entity-select-container {
+        position: relative;
+        z-index: 5;
+        margin-bottom: 20px;
+      }
+    `,
   ];
 
   protected willUpdate(changedProperties: Map<string, unknown>) {
@@ -178,19 +277,27 @@ export class ConfigDialog extends LitElement {
       this.env_vpd_sensor = environmentData.vpd_sensor;
       this.env_co2_sensor = environmentData.co2_sensor;
       this.env_circulation_fan = environmentData.circulation_fan;
+      this.env_circulation_fan_entities = environmentData.circulation_fan_entities || [];
       this.env_stress_threshold = environmentData.stress_threshold;
       this.env_mold_threshold = environmentData.mold_threshold;
       this.env_light_sensor = environmentData.light_sensor;
+      this.env_light_sensors = environmentData.light_sensors || [];
       this.env_exhaust_entity = environmentData.exhaust_entity;
+      this.env_exhaust_fan_entities = environmentData.exhaust_fan_entities || [];
       this.env_humidifier_entity = environmentData.humidifier_entity;
+      this.env_humidifier_entities = environmentData.humidifier_entities || [];
       this.env_dehumidifier_entity = environmentData.dehumidifier_entity;
+      this.env_dehumidifier_entities = environmentData.dehumidifier_entities || [];
       this.env_soil_moisture_sensor = environmentData.soil_moisture_sensor;
       this.env_control_dehumidifier = environmentData.control_dehumidifier;
       this.env_dehumidifier_thresholds = environmentData.dehumidifier_thresholds || {};
 
       // Also pre-select for Edit/Delete actions
       if (environmentData.selectedGrowspaceId) {
-        console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
+        console.log(
+          'DEBUG: Pre-selecting growspace for edit:',
+          environmentData.selectedGrowspaceId
+        );
         this._populateEditFields(environmentData.selectedGrowspaceId);
       }
     }
@@ -231,12 +338,17 @@ export class ConfigDialog extends LitElement {
           vpd_sensor: this.env_vpd_sensor,
           co2_sensor: this.env_co2_sensor,
           circulation_fan: this.env_circulation_fan,
+          circulation_fan_entities: this.env_circulation_fan_entities, // Multi
           stress_threshold: this.env_stress_threshold,
           mold_threshold: this.env_mold_threshold,
           light_sensor: this.env_light_sensor,
+          light_sensors: this.env_light_sensors, // Multi
           exhaust_entity: this.env_exhaust_entity,
+          exhaust_fan_entities: this.env_exhaust_fan_entities, // Multi
           humidifier_entity: this.env_humidifier_entity,
+          humidifier_entities: this.env_humidifier_entities, // Multi
           dehumidifier_entity: this.env_dehumidifier_entity,
+          dehumidifier_entities: this.env_dehumidifier_entities, // Multi
           dehumidifier_thresholds: this.env_dehumidifier_thresholds,
           soil_moisture_sensor: this.env_soil_moisture_sensor,
           control_dehumidifier: this.env_control_dehumidifier,
@@ -326,7 +438,7 @@ export class ConfigDialog extends LitElement {
         .escapeKeyAction=${''}
       >
         <div class="glass-dialog-container">
-          <!-- Header -->
+          <!--Header -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -348,7 +460,7 @@ export class ConfigDialog extends LitElement {
             </button>
           </div>
 
-          <!-- Tabs -->
+          <!--Tabs -->
           <div class="config-tabs">
             <div
               class="config-tab ${this.currentTab === ConfigTab.ADD_GROWSPACE ? 'active' : ''}"
@@ -380,15 +492,17 @@ export class ConfigDialog extends LitElement {
             </div>
           </div>
 
-          <!-- Content -->
+          <!--Content -->
           <div class="config-content">
             ${this.currentTab === ConfigTab.ADD_GROWSPACE ? this.renderAddGrowspaceTab() : nothing}
-            ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? this.renderEditGrowspaceTab() : nothing}
+            ${this.currentTab === ConfigTab.EDIT_GROWSPACE
+        ? this.renderEditGrowspaceTab()
+        : nothing}
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
           </div>
 
-          <!-- Actions -->
+          <!--Actions -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
             ${this.currentTab === ConfigTab.ADD_GROWSPACE
@@ -444,21 +558,24 @@ export class ConfigDialog extends LitElement {
             label="Growspace Name"
             .value=${this.add_name}
             @change=${(e: CustomEvent) => (this.add_name = e.detail)}
-          ></md3-text-input>
+          >
+          </md3-text-input>
           <div class="row-col-grid">
             <md3-number-input
               label="Rows"
               .value=${this.add_rows}
               @change=${(e: CustomEvent) => (this.add_rows = parseInt(e.detail))}
-            ></md3-number-input>
+            >
+            </md3-number-input>
             <md3-number-input
               label="Plants per Row"
               .value=${this.add_plants_per_row}
               @change=${(e: CustomEvent) => (this.add_plants_per_row = parseInt(e.detail))}
-            ></md3-number-input>
+            >
+            </md3-number-input>
           </div>
           <div class="md3-input-group">
-            <label class="md3-label">Notification Service (Mobile App)</label>
+            <label class="md3-label"> Notification Service(Mobile App) </label>
             <select
               class="md3-input"
               .value=${this.add_notification_service}
@@ -480,33 +597,13 @@ export class ConfigDialog extends LitElement {
           <md3-text-input
             label="Notification Service (Optional)"
             .value=${this.add_notification_service}
-             @change=${(e: CustomEvent) => (this.add_notification_service = e.detail)}
-             style="display:none;" 
-          ></md3-text-input>
+            @change=${(e: CustomEvent) => (this.add_notification_service = e.detail)}
+            style="display:none;"
+          >
+          </md3-text-input>
         </div>
       </div>
     `;
-  }
-
-  // Add helper to filter entities
-  private _getEntities(domains: string[], deviceClass: string | null) {
-    if (!this.hass) return [];
-    return Object.values(this.hass.states)
-      .filter((stateObj) => {
-        const domain = stateObj.entity_id.split('.')[0];
-        if (!domains.includes(domain)) return false;
-
-        // If deviceClass is provided, match strictly. If null, match any (or no) device class.
-        if (deviceClass !== null) {
-          return stateObj.attributes.device_class === deviceClass;
-        }
-        return true;
-      })
-      .sort((a, b) =>
-        (a.attributes.friendly_name || a.entity_id).localeCompare(
-          b.attributes.friendly_name || b.entity_id
-        )
-      );
   }
 
   private _getMobileAppNotifyServices() {
@@ -520,27 +617,97 @@ export class ConfigDialog extends LitElement {
       .sort((a, b) => a.label.localeCompare(b.label));
   }
 
+  private _getEntities(domains: string[], deviceClass: string | null): string[] {
+    if (!this.hass) return [];
+    return Object.keys(this.hass.states)
+      .filter((eid) => {
+        const state = this.hass.states[eid];
+        if (!state) return false;
+        const domain = eid.split('.')[0];
+        const hasDomain = domains.includes(domain);
+        const hasDeviceClass = !deviceClass || state.attributes.device_class === deviceClass;
+        return hasDomain && hasDeviceClass;
+      })
+      .sort();
+  }
+
+  // Helper to render multi-select entities
+  private _renderMultiEntitySelect(
+    label: string,
+    values: string[],
+    domains: string[],
+    deviceClass: string | null,
+    changeHandler: (values: string[]) => void
+  ) {
+    const listId = `list-multi-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()} `;
+    const entities = this._getEntities(domains, deviceClass);
+
+    return html`
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${label}</label>
+        <div class="multi-select-box">
+          ${values.map(
+      (val) => html`
+              <div class="chip">
+                ${val}
+                <span
+                  class="chip-remove"
+                  @click=${() => changeHandler(values.filter((v) => v !== val))}
+                  >×</span
+                >
+              </div>
+            `
+    )}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? "Add Entity..." : ""}
+            @change=${(e: Event) => {
+        const input = e.target as HTMLInputElement;
+        const val = input.value;
+        if (val && !values.includes(val)) {
+          changeHandler([...values, val]);
+        }
+        input.value = "";
+      }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${entities.map(eid => html`<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+  }
+
   // Add helper to render selects
   private _renderEntitySelect(
     label: string,
     value: string,
     domains: string[],
     deviceClass: string | null,
-    changeHandler: (e: Event) => void
+    changeHandler: (e: CustomEvent) => void
   ) {
+    const listId = `list-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
     const entities = this._getEntities(domains, deviceClass);
+
     return html`
-      <div class="md3-input-group">
-        <label class="md3-label">${label}</label>
-        <select class="md3-input" .value=${value} @change=${changeHandler}>
-          <option value="">Select Entity...</option>
-          ${entities.map(
-      (e) =>
-        html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
-                ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
-              </option>`
-    )}
-        </select>
+      <div class="entity-select-container">
+        <div class="md3-input-group">
+          <label class="md3-label">${label}</label>
+          <input
+            class="md3-input"
+            list="${listId}"
+            .value=${value}
+            @change=${(e: Event) => {
+        const val = (e.target as HTMLInputElement).value;
+        changeHandler(new CustomEvent('change', { detail: { value: val } }));
+      }}
+            placeholder="Search entity..."
+          />
+          <datalist id="${listId}">
+            ${entities.map((eid) => html`<option value="${eid}"></option>`)}
+          </datalist>
+        </div>
       </div>
     `;
   }
@@ -551,7 +718,7 @@ export class ConfigDialog extends LitElement {
         <div class="detail-card" style="text-align: center; padding: 40px 20px;">
           <h3 style="color: var(--error-color, #ff5252);">Delete Growspace?</h3>
           <p style="margin-bottom: 30px; color: var(--secondary-text-color);">
-            Are you sure you want to delete "<strong>${this.edit_name}</strong>"?<br />
+            Are you sure you want to delete "<strong>${this.edit_name}</strong>" ? <br />
             This will remove all associated plants and history.<br />
             This action cannot be undone.
           </p>
@@ -570,7 +737,7 @@ export class ConfigDialog extends LitElement {
         <div class="detail-card">
           <h3>Select Growspace to Edit</h3>
           <div class="md3-input-group">
-            <label class="md3-label">Growspace</label>
+            <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
               .value=${this.edit_selectedId}
@@ -578,7 +745,10 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-      ([id, name]) => html`<option value="${id}" ?selected=${id === this.edit_selectedId}>${name}</option>`
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.edit_selectedId}>
+                    ${name}
+                  </option>`
     )}
             </select>
           </div>
@@ -639,11 +809,11 @@ export class ConfigDialog extends LitElement {
   private renderEnvironmentTab() {
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
-        <!-- Target Selection -->
+        <!--Target Selection-->
         <div class="detail-card">
           <h3>Select Target</h3>
           <div class="md3-input-group">
-            <label class="md3-label">Growspace</label>
+            <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
               .value=${this.env_selectedGrowspaceId}
@@ -651,33 +821,43 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-      ([id, name]) => html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+                    ${name}
+                  </option>`
     )}
             </select>
           </div>
         </div>
 
-        <!-- Monitoring Section -->
+        <!--Monitoring Section-->
         <div class="detail-card">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
-            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiGauge}"></path></svg>
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg
+              style="width:20px;height:20px;fill:var(--primary-color, #4caf50);"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiGauge}"></path>
+            </svg>
             <h3 style="margin:0; border:none; padding:0;">Monitoring</h3>
           </div>
-          
+
           <div class="row-col-grid">
             ${this._renderEntitySelect(
       'Temperature Sensor',
       this.env_temp_sensor,
       ['sensor', 'input_number'],
       'temperature',
-      (e: Event) => (this.env_temp_sensor = (e.target as HTMLSelectElement).value)
+      (e: CustomEvent) => (this.env_temp_sensor = e.detail.value)
     )}
             ${this._renderEntitySelect(
       'Humidity Sensor',
       this.env_humidity_sensor,
       ['sensor', 'input_number'],
       'humidity',
-      (e: Event) => (this.env_humidity_sensor = (e.target as HTMLSelectElement).value)
+      (e: CustomEvent) => (this.env_humidity_sensor = e.detail.value)
     )}
           </div>
           <div class="row-col-grid" style="margin-top:16px;">
@@ -686,14 +866,14 @@ export class ConfigDialog extends LitElement {
       this.env_vpd_sensor,
       ['sensor', 'input_number'],
       'pressure',
-      (e: Event) => (this.env_vpd_sensor = (e.target as HTMLSelectElement).value)
+      (e: CustomEvent) => (this.env_vpd_sensor = e.detail.value)
     )}
             ${this._renderEntitySelect(
       'Soil Moisture Sensor',
       this.env_soil_moisture_sensor,
       ['sensor', 'input_number'],
       'moisture',
-      (e: Event) => (this.env_soil_moisture_sensor = (e.target as HTMLSelectElement).value)
+      (e: CustomEvent) => (this.env_soil_moisture_sensor = e.detail.value)
     )}
           </div>
 
@@ -703,73 +883,89 @@ export class ConfigDialog extends LitElement {
       this.env_co2_sensor,
       ['sensor', 'input_number'],
       'carbon_dioxide',
-      (e: Event) => (this.env_co2_sensor = (e.target as HTMLSelectElement).value)
+      (e: CustomEvent) => (this.env_co2_sensor = e.detail.value)
     )}
-            ${this._renderEntitySelect(
+            ${this._renderMultiEntitySelect(
       'Light Source / Sensor',
-      this.env_light_sensor,
+      this.env_light_sensors,
       ['switch', 'light', 'input_boolean', 'sensor'],
       null,
-      (e: Event) => (this.env_light_sensor = (e.target as HTMLSelectElement).value)
+      (values: string[]) => (this.env_light_sensors = values)
     )}
           </div>
         </div>
 
-        <!-- Climate Control Section -->
+        <!--Climate Control Section-->
         <div class="detail-card">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
-            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24"><path d="${mdiFan}"></path></svg>
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg
+              style="width:20px;height:20px;fill:var(--primary-color, #4caf50);"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiFan}"></path>
+            </svg>
             <h3 style="margin:0; border:none; padding:0;">Climate Control</h3>
           </div>
 
           <div class="row-col-grid">
-            ${this._renderEntitySelect(
+            ${this._renderMultiEntitySelect(
       'Exhaust Fan / Switch',
-      this.env_exhaust_entity,
+      this.env_exhaust_fan_entities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
-      (e: Event) => (this.env_exhaust_entity = (e.target as HTMLSelectElement).value)
+      (values: string[]) => (this.env_exhaust_fan_entities = values)
     )}
-            ${this._renderEntitySelect(
+            ${this._renderMultiEntitySelect(
       'Circulation Fan / Switch',
-      this.env_circulation_fan,
+      this.env_circulation_fan_entities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
       null,
-      (e: Event) => (this.env_circulation_fan = (e.target as HTMLSelectElement).value)
+      (values: string[]) => (this.env_circulation_fan_entities = values)
     )}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderEntitySelect(
+            ${this._renderMultiEntitySelect(
       'Humidifier',
-      this.env_humidifier_entity,
+      this.env_humidifier_entities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
-      (e: Event) => (this.env_humidifier_entity = (e.target as HTMLSelectElement).value)
+      (values: string[]) => (this.env_humidifier_entities = values)
     )}
-            ${this._renderEntitySelect(
+            ${this._renderMultiEntitySelect(
       'Dehumidifier',
-      this.env_dehumidifier_entity,
+      this.env_dehumidifier_entities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
       null,
-      (e: Event) => (this.env_dehumidifier_entity = (e.target as HTMLSelectElement).value)
+      (values: string[]) => (this.env_dehumidifier_entities = values)
     )}
           </div>
-          
-          <div class="md3-input-group" style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;">
-             <label class="md3-label" style="margin:0">Control Dehumidifier</label>
-             <input type="checkbox" 
-                .checked=${this.env_control_dehumidifier}
-                @change=${(e: Event) => (this.env_control_dehumidifier = (e.target as HTMLInputElement).checked)}
-                style="width:20px; height:20px;"
-             />
+
+          <div
+            class="md3-input-group"
+            style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;"
+          >
+            <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
+            <input
+              type="checkbox"
+              .checked=${this.env_control_dehumidifier}
+              @change=${(e: Event) =>
+        (this.env_control_dehumidifier = (e.target as HTMLInputElement).checked)}
+              style="width:20px; height:20px;"
+            />
           </div>
         </div>
 
-        <!-- Thresholds Section -->
+        <!--Thresholds Section-->
         <div class="detail-card">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;">
-            <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiAlert}"></path></svg>
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24">
+              <path d="${mdiAlert}"></path>
+            </svg>
             <h3 style="margin:0; border:none; padding:0;">Thresholds</h3>
           </div>
 
@@ -779,16 +975,17 @@ export class ConfigDialog extends LitElement {
               .value=${this.env_stress_threshold}
               @change=${(e: CustomEvent) => (this.env_stress_threshold = parseFloat(e.detail))}
               step="0.01"
-            ></md3-number-input>
+            >
+            </md3-number-input>
             <md3-number-input
               label="Mold Threshold %"
               .value=${this.env_mold_threshold}
               @change=${(e: CustomEvent) => (this.env_mold_threshold = parseFloat(e.detail))}
               step="0.01"
-            ></md3-number-input>
+            >
+            </md3-number-input>
           </div>
         </div>
-
       </div>
     `;
   }
@@ -806,14 +1003,50 @@ export class ConfigDialog extends LitElement {
       this.env_humidity_sensor = attrs.humidity_sensor || '';
       this.env_vpd_sensor = attrs.vpd_sensor || '';
       this.env_co2_sensor = attrs.co2_sensor || '';
-      this.env_circulation_fan = attrs.circulation_fan_entity || '';
-      this.env_light_sensor = attrs.light_sensor || '';
-      this.env_exhaust_entity = attrs.exhaust_entity || '';
-      this.env_humidifier_entity = attrs.humidifier_entity || '';
-      this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
       this.env_soil_moisture_sensor = attrs.soil_moisture_sensor || '';
       this.env_control_dehumidifier = attrs.dehumidifier_control_enabled || false;
       this.env_dehumidifier_thresholds = attrs.dehumidifier_thresholds || {};
+
+      // Multi-device handling with backward compatibility
+      this.env_light_sensor = attrs.light_sensor || '';
+      this.env_light_sensors =
+        attrs.light_sensors && attrs.light_sensors.length > 0
+          ? attrs.light_sensors
+          : attrs.light_sensor
+            ? [attrs.light_sensor]
+            : [];
+
+      this.env_exhaust_entity = attrs.exhaust_entity || '';
+      this.env_exhaust_fan_entities =
+        attrs.exhaust_fan_entities && attrs.exhaust_fan_entities.length > 0
+          ? attrs.exhaust_fan_entities
+          : attrs.exhaust_entity
+            ? [attrs.exhaust_entity]
+            : [];
+
+      this.env_circulation_fan = attrs.circulation_fan_entity || '';
+      this.env_circulation_fan_entities =
+        attrs.circulation_fan_entities && attrs.circulation_fan_entities.length > 0
+          ? attrs.circulation_fan_entities
+          : attrs.circulation_fan_entity
+            ? [attrs.circulation_fan_entity]
+            : [];
+
+      this.env_humidifier_entity = attrs.humidifier_entity || '';
+      this.env_humidifier_entities =
+        attrs.humidifier_entities && attrs.humidifier_entities.length > 0
+          ? attrs.humidifier_entities
+          : attrs.humidifier_entity
+            ? [attrs.humidifier_entity]
+            : [];
+
+      this.env_dehumidifier_entity = attrs.dehumidifier_entity || '';
+      this.env_dehumidifier_entities =
+        attrs.dehumidifier_entities && attrs.dehumidifier_entities.length > 0
+          ? attrs.dehumidifier_entities
+          : attrs.dehumidifier_entity
+            ? [attrs.dehumidifier_entity]
+            : [];
 
       // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
       this.env_stress_threshold = 0.8;
@@ -825,10 +1058,15 @@ export class ConfigDialog extends LitElement {
       this.env_vpd_sensor = '';
       this.env_co2_sensor = '';
       this.env_circulation_fan = '';
+      this.env_circulation_fan_entities = [];
       this.env_light_sensor = '';
+      this.env_light_sensors = [];
       this.env_exhaust_entity = '';
+      this.env_exhaust_fan_entities = [];
       this.env_humidifier_entity = '';
+      this.env_humidifier_entities = [];
       this.env_dehumidifier_entity = '';
+      this.env_dehumidifier_entities = [];
       this.env_soil_moisture_sensor = '';
       this.env_control_dehumidifier = false;
       this.env_dehumidifier_thresholds = {};
@@ -844,17 +1082,17 @@ export class ConfigDialog extends LitElement {
       { id: DehumidifierStage.MID_FLOWER, label: 'Mid Flower' },
       { id: DehumidifierStage.LATE_FLOWER, label: 'Late Flower' },
       { id: DehumidifierStage.DRYING, label: 'Drying' },
-      { id: DehumidifierStage.CURING, label: 'Curing' }
+      { id: DehumidifierStage.CURING, label: 'Curing' },
     ];
 
-    const activeStage = stages.find(s => s.id === this._activeDehumidifierStage) || stages[0];
+    const activeStage = stages.find((s) => s.id === this._activeDehumidifierStage) || stages[0];
 
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div class="detail-card">
           <h3>Select Target</h3>
           <div class="md3-input-group">
-            <label class="md3-label">Growspace</label>
+            <label class="md3-label"> Growspace </label>
             <select
               class="md3-input"
               .value=${this.env_selectedGrowspaceId}
@@ -862,86 +1100,120 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-      ([id, name]) => html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>${name}</option>`
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.env_selectedGrowspaceId}>
+                    ${name}
+                  </option>`
     )}
             </select>
           </div>
         </div>
 
         <div class="detail-card">
-          <h3>Dehumidifier Thresholds (VPD/kPa)</h3>
-          
-          <!-- Sub-navigation for Stages -->
-          <div class="config-tabs sub-tabs" style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;">
-            ${stages.map(stage => html`
-              <div
-                class="config-tab ${this._activeDehumidifierStage === stage.id ? 'active' : ''}"
-                @click=${() => this._activeDehumidifierStage = stage.id}
-                style="padding: 12px 16px; font-size: 0.9rem;"
-              >
-                ${stage.label}
-              </div>
-            `)}
+          <h3>Dehumidifier Thresholds(VPD / kPa)</h3>
+
+          <!--Sub-navigation for Stages-->
+          <div
+            class="config-tabs sub-tabs"
+            style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;"
+          >
+            ${stages.map(
+      (stage) => html`
+                <div
+                  class="config-tab ${this._activeDehumidifierStage === stage.id ? 'active' : ''}"
+                  @click=${() => (this._activeDehumidifierStage = stage.id)}
+                  style="padding: 12px 16px; font-size: 0.9rem;"
+                >
+                  ${stage.label}
+                </div>
+              `
+    )}
           </div>
 
           <div style="padding-top: 24px;">
-             <!-- Info Box -->
-             <div style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;">
-                <svg style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);" viewBox="0 0 24 24">
-                  <path d="${mdiInformation}"></path>
-                </svg>
-                <div style="opacity: 0.8;">
-                  Configuring <strong>${activeStage.label}</strong> stage.<br>
-                  Ensure <b>On</b> threshold is lower than <b>Off</b> threshold for proper hysteresis.
+            <!--Info Box-->
+            <div
+              style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;"
+            >
+              <svg
+                style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiInformation}"></path>
+              </svg>
+              <div style="opacity: 0.8;">
+                Configuring <strong> ${activeStage.label} </strong> stage.<br />
+                Ensure <strong> On </strong> threshold is lower than <strong>Off</strong> threshold
+                for proper hysteresis.
+              </div>
+            </div>
+
+            <div class="row-col-grid">
+              <!--Day Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24">
+                    <path d="${mdiWhiteBalanceSunny}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
                 </div>
-             </div>
 
-             <div class="row-col-grid">
-               <!-- Day Cycle -->
-               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
-                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
-                    <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24"><path d="${mdiWhiteBalanceSunny}"></path></svg>
-                    <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
-                 </div>
-                 
-                 <md3-number-input
-                    label="On"
-                    .value=${this._getThresholdValue(activeStage.id, 'day', 'on')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
-                    step="0.01"
-                    .unit=${"kPa"}
-                 ></md3-number-input>
-                 <md3-number-input
-                    label="Off"
-                    .value=${this._getThresholdValue(activeStage.id, 'day', 'off')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
-                    step="0.01"
-                    .unit=${"kPa"}
-                 ></md3-number-input>
-               </div>
+                <md3-number-input
+                  label="On"
+                  .value=${this._getThresholdValue(activeStage.id, 'day', 'on')}
+                  @change=${(e: CustomEvent) =>
+        this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getThresholdValue(activeStage.id, 'day', 'off')}
+                  @change=${(e: CustomEvent) =>
+        this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
 
-               <!-- Night Cycle -->
-               <div style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;">
-                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);">
-                    <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24"><path d="${mdiWeatherNight}"></path></svg>
-                    <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
-                 </div>
+              <!--Night Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24">
+                    <path d="${mdiWeatherNight}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
+                </div>
 
-                 <md3-number-input
-                    label="On"
-                    .value=${this._getThresholdValue(activeStage.id, 'night', 'on')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
-                    step="0.01"
-                    .unit=${"kPa"}
-                 ></md3-number-input>
-                 <md3-number-input
-                    label="Off"
-                    .value=${this._getThresholdValue(activeStage.id, 'night', 'off')}
-                    @change=${(e: CustomEvent) => this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
-                    step="0.01"
-                    .unit=${"kPa"}
-                 ></md3-number-input>
-               </div>
+                <md3-number-input
+                  label="On"
+                  .value=${this._getThresholdValue(activeStage.id, 'night', 'on')}
+                  @change=${(e: CustomEvent) =>
+        this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getThresholdValue(activeStage.id, 'night', 'off')}
+                  @change=${(e: CustomEvent) =>
+        this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
             </div>
           </div>
         </div>
@@ -956,7 +1228,7 @@ export class ConfigDialog extends LitElement {
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
     if (isNaN(value)) return;
 
-    // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref 
+    // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref
     const newThresholds = JSON.parse(JSON.stringify(this.env_dehumidifier_thresholds || {}));
 
     if (!newThresholds[stage]) newThresholds[stage] = {};

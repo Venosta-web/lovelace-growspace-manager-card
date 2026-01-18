@@ -24,6 +24,8 @@ export interface HeaderChip {
     key: string;
     icon: string;
     value: string;
+    multiValues?: string[];
+    entityIds?: string[];
     label?: string;
     status?: string;
     tooltip?: string;
@@ -215,47 +217,65 @@ export class MetricsUtils {
             key: string,
             icon: string,
             value: string | undefined,
+            multiValues: string[] | undefined,
+            entityIds?: string[],
             label?: string,
             status?: string,
             tooltip?: string
         ) => {
-            if (value === undefined) return null;
+            if (value === undefined && (!multiValues || multiValues.length === 0)) return null;
             const { linked, groupIndex } = this._isMetricLinked(key, linkedGraphGroups);
-            const active = activeEnvGraphs.has(key);
-            return { key, icon, value, label, status, tooltip, active, linked, groupIndex };
+            const hasCompositeActive = Array.from(activeEnvGraphs).some(k => k.startsWith(`${key}:`));
+            const active = activeEnvGraphs.has(key) || hasCompositeActive;
+            return { key, icon, value: value || '', multiValues, entityIds, label, status, tooltip, active, linked, groupIndex };
         };
 
+        let optimalLabel = 'Optimal Conditions';
+        if (envEntity && envEntity.state !== EntityState.ON) {
+            const reasons = envEntity.attributes.reasons;
+            if (reasons && reasons.length > 0) {
+                const reasonText = Array.isArray(reasons) ? reasons.join(', ') : reasons;
+                optimalLabel = `Not Optimal: ${reasonText}`;
+            } else {
+                optimalLabel = 'Not Optimal';
+            }
+        }
+
         const mainChips = [
-            createChipData(MetricKey.TEMPERATURE, mdiThermometer, temp !== undefined ? `${temp}°C` : undefined),
-            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined),
+            createChipData(MetricKey.TEMPERATURE, mdiThermometer, temp !== undefined ? `${temp}°C` : undefined, undefined, undefined),
+            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, hum !== undefined ? `${hum}%` : undefined, undefined, undefined),
             createChipData(
                 MetricKey.VPD,
                 mdiCloudOutline,
                 vpd !== undefined ? `${vpd} kPa` : undefined,
+                undefined,
+                undefined,
                 undefined,
                 vpdStatus,
                 vpdTargetMin !== undefined && vpdTargetMax !== undefined
                     ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
                     : ''
             ),
-            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined),
+            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2 !== undefined ? `${co2} ppm` : undefined, undefined, undefined),
             createChipData(
                 MetricKey.SOIL_MOISTURE,
                 mdiWaterPercent,
                 this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
                     ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
                     : undefined,
+                undefined,
+                undefined,
                 'Moisture'
             ),
-            createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, 'Next'),
-            createChipData(MetricKey.DRAIN, mdiWater, nextDrain, 'Next'),
+            createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
+            createChipData(MetricKey.DRAIN, mdiWater, nextDrain, undefined, undefined, 'Next'),
             envEntity
                 ? createChipData(
                     MetricKey.OPTIMAL,
                     envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
-                    envEntity.state === EntityState.ON
-                        ? 'Optimal Conditions'
-                        : envEntity.attributes.reasons || 'Not Optimal',
+                    optimalLabel,
+                    undefined,
+                    undefined,
                     undefined,
                     envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
                 )
@@ -263,65 +283,116 @@ export class MetricsUtils {
         ].filter((c): c is NonNullable<typeof c> => c !== null);
 
         // Device Chips
-        const exhaustId = envAttrs.exhaust_entity;
-        const exhaustSensor = envAttrs.exhaust_sensor;
-        const exhaustState =
-            exhaustId && hass.states[exhaustId]
-                ? hass.states[exhaustId].state
-                : exhaustSensor && hass.states[exhaustSensor]
-                    ? hass.states[exhaustSensor].state
-                    : undefined;
+        const getAggregateState = (
+            single: string | undefined,
+            multi: string[] | undefined,
+            sensor: string | undefined
+        ): { value: string | undefined, multiValues?: string[], entityIds?: string[] } => {
+            const ids = new Set<string>();
+            // Optional: Filter by active graphs if needed in future
 
-        const humidifierId = envAttrs.humidifier_entity;
-        const humidifierSensor = envAttrs.humidifier_sensor;
-        const humidifierState =
-            humidifierId && hass.states[humidifierId]
-                ? hass.states[humidifierId].state
-                : humidifierSensor && hass.states[humidifierSensor]
-                    ? hass.states[humidifierSensor].state
-                    : undefined;
 
-        const dehumidifierId = envAttrs.dehumidifier_entity;
-        const dehumidifierState =
-            dehumidifierId && hass.states[dehumidifierId]
-                ? hass.states[dehumidifierId].state
-                : undefined;
+            if (multi && multi.length > 0) {
+                multi.forEach(id => ids.add(id));
+            } else if (single) {
+                ids.add(single);
+            }
+            // Sensor overrides/augments? For simplicity, prefer controlled entities, but if nothing else, use sensor.
+            if (ids.size === 0 && sensor) ids.add(sensor);
 
-        const circulationFanId = envAttrs.circulation_fan_entity;
-        const circulationFanState =
-            circulationFanId && hass.states[circulationFanId]
-                ? hass.states[circulationFanId].state
-                : undefined;
+            if (ids.size === 0) return { value: undefined, entityIds: [] };
+
+            const states: string[] = [];
+            const entityIds: string[] = Array.from(ids);
+
+            ids.forEach((id) => {
+                const s = hass.states[id];
+                if (s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN) {
+                    states.push(s.state);
+                } else {
+                    states.push('-');
+                }
+            });
+
+
+
+            if (ids.size > 1) {
+                return { value: 'Multiple', multiValues: states, entityIds };
+            }
+
+            // Single device logic
+            return { value: states[0], entityIds };
+        };
+
+        const exhaustState = getAggregateState(
+            envAttrs.exhaust_entity,
+            envAttrs.exhaust_fan_entities,
+            envAttrs.exhaust_sensor
+        );
+
+        const humidifierState = getAggregateState(
+            envAttrs.humidifier_entity,
+            envAttrs.humidifier_entities,
+            envAttrs.humidifier_sensor
+        );
+
+        const dehumidifierState = getAggregateState(
+            envAttrs.dehumidifier_entity,
+            envAttrs.dehumidifier_entities,
+            undefined
+        );
+
+        const circulationFanState = getAggregateState(
+            envAttrs.circulation_fan_entity,
+            envAttrs.circulation_fan_entities,
+            undefined
+        );
+
+        const lightState = getAggregateState(
+            envAttrs.light_sensor,
+            envAttrs.light_sensors,
+            undefined
+        );
 
         const deviceChips = [
             // Moved light chip here per request
             createChipData(
                 MetricKey.LIGHT,
                 isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
-                hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined
+                hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined,
+                lightState.multiValues,
+                lightState.entityIds
             ),
             createChipData(
                 MetricKey.EXHAUST,
                 mdiFan,
-                exhaustId || exhaustSensor ? `${exhaustState ?? '-'}` : undefined,
+                exhaustState.value,
+                exhaustState.multiValues,
+                exhaustState.entityIds,
                 'Exhaust'
             ),
             createChipData(
                 MetricKey.CIRCULATION_FAN,
                 mdiFan,
-                circulationFanId ? `${circulationFanState ?? '-'}` : undefined,
+                circulationFanState.value,
+                circulationFanState.multiValues,
+                circulationFanState.entityIds,
                 'Fan'
             ),
             createChipData(
                 MetricKey.HUMIDIFIER,
                 mdiAirHumidifier,
-                humidifierId || humidifierSensor ? `${humidifierState ?? '-'}` : undefined,
+                humidifierState.value,
+                humidifierState.multiValues,
+                humidifierState.entityIds,
                 'Humidifier'
             ),
             createChipData(
                 MetricKey.DEHUMIDIFIER,
                 mdiAirHumidifierOff,
-                dehumidifierId ? `${dehumidifierState ?? '-'}` : undefined,
+                dehumidifierState.value,
+                dehumidifierState.multiValues,
+                dehumidifierState.entityIds,
                 'Dehumidifier'
             ),
         ].filter((c): c is NonNullable<typeof c> => c !== null);

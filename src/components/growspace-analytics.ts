@@ -132,11 +132,14 @@ export class GrowspaceAnalytics extends LitElement {
 
     // Process Individual Metrics
     activeEnvGraphs.forEach((metric) => {
+      // Check for composite keys (e.g. circulation_fan:sensor.fan_1)
+      const baseMetric = metric.includes(':') ? metric.split(':')[0] : metric;
+
       if (!processedMetrics.has(metric)) {
         items.push({
           type: 'single',
           metrics: [metric],
-          sortIndex: getSortIndex(metric),
+          sortIndex: getSortIndex(baseMetric),
         });
       }
     });
@@ -162,7 +165,7 @@ export class GrowspaceAnalytics extends LitElement {
       `;
     }
 
-    const sensorHistory = this._combinedHistoryController.value;
+    let sensorHistory = this._combinedHistoryController.value;
     const range = this.store.history.getRange();
 
     const graphs = repeat(
@@ -172,6 +175,8 @@ export class GrowspaceAnalytics extends LitElement {
         item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`,
       // Render function
       (item) => {
+        let customSensorId: string | undefined;
+
         if (item.type === 'group') {
           return html`
             <growspace-env-chart
@@ -188,22 +193,43 @@ export class GrowspaceAnalytics extends LitElement {
             ></growspace-env-chart>
           `;
         } else {
-          const metric = item.metrics[0];
-          const config = METRIC_CONFIG[metric] || DEFAULT_METRIC_CONFIG;
+          const metricKey = item.metrics[0];
+          let baseMetric = metricKey;
+          let chartTitle: string | undefined;
+
+          // Handle Composite Key
+          if (metricKey.includes(':')) {
+            const [metric, entityId] = metricKey.split(':');
+            baseMetric = metric;
+            // Synthetic History: Map 'baseMetric' to the data stored under 'metricKey'
+            // We create a new object to avoid mutating the global cache structure for this render pass
+            // This effectively "renames" the data key so the chart component finds it under the expected metric name
+            if (sensorHistory[metricKey]) {
+              sensorHistory = { ...sensorHistory, [baseMetric]: sensorHistory[metricKey] };
+            }
+
+            // Try to get a friendly name for the title
+            const stateObj = this.hass.states[entityId];
+            const friendlyName = stateObj?.attributes?.friendly_name || entityId;
+            chartTitle = `${METRIC_CONFIG[baseMetric]?.title || baseMetric} (${friendlyName})`;
+            customSensorId = entityId; // Pass the specific sensor ID
+          }
 
           return html`
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${sensorHistory}
-              .metricKey=${metric}
-              .unit=${config.unit}
-              .color=${config.color}
-              .title=${config.title}
-              .icon=${config.icon}
+              .sensorHistory=${sensorHistory} 
+              .metricKey=${baseMetric}        
+              .metrics=${[baseMetric]}
+              .metricConfig=${METRIC_CONFIG}
               .range=${range}
-              .type=${config.type || ChartType.LINE}
-              @toggle-graph=${this._handleToggleGraph}
+              .chartTitle=${chartTitle}       
+              .customSensorId=${customSensorId} 
+              @toggle-graph=${(e: CustomEvent) => {
+              e.stopPropagation();
+              this.store.toggleEnvGraph(metricKey);
+            }}
             ></growspace-env-chart>
           `;
         }

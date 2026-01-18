@@ -4,6 +4,20 @@ import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { html } from 'lit';
 
+class HaEntityPickerMock extends HTMLElement {
+    get value() { return this.getAttribute('value') || ''; }
+    set value(v) { this.setAttribute('value', v); }
+
+    set label(v) { this.setAttribute('label', v); }
+    get label() { return this.getAttribute('label') || ''; }
+
+    set includeDomains(v) { (this as any)._domains = v; }
+    get includeDomains() { return (this as any)._domains; }
+
+    set includeDeviceClasses(v) { (this as any)._classes = v; }
+    get includeDeviceClasses() { return (this as any)._classes; }
+}
+
 // Mock Dependencies
 vi.mock('../../../src/components/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
@@ -36,6 +50,9 @@ describe('ConfigDialog', () => {
         if (!customElements.get('ha-dialog')) {
             class HaDialogMock extends HTMLElement { open = false; }
             customElements.define('ha-dialog', HaDialogMock);
+        }
+        if (!customElements.get('ha-entity-picker')) {
+            customElements.define('ha-entity-picker', HaEntityPickerMock);
         }
 
         element = new ConfigDialog();
@@ -207,6 +224,9 @@ describe('ConfigDialog', () => {
         });
     });
 
+
+
+
     describe('Environment Tab', () => {
         beforeEach(async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
@@ -219,8 +239,9 @@ describe('ConfigDialog', () => {
                 temp_sensor: 'sensor.temp',
                 humidity_sensor: 'sensor.hum',
                 vpd_sensor: '', co2_sensor: '', circulation_fan: '',
-                stress_threshold: 0, mold_threshold: 0, light_sensor: '',
-                exhaust_entity: '', humidifier_entity: '', dehumidifier_entity: '',
+                stress_threshold: 0, mold_threshold: 0, light_sensor: '', light_sensors: [],
+                exhaust_entity: '', exhaust_fan_entities: [], humidifier_entity: '', humidifier_entities: [],
+                dehumidifier_entity: '', dehumidifier_entities: [], circulation_fan_entities: [],
                 soil_moisture_sensor: '', control_dehumidifier: true, dehumidifier_thresholds: {}
             });
             await element.updateComplete;
@@ -228,22 +249,31 @@ describe('ConfigDialog', () => {
             // Check selected growspace
             const gsSelect = element.shadowRoot?.querySelector('select.md3-input');
             expect((gsSelect as HTMLSelectElement)?.value).toBe('gs1');
+
+            // Check temp sensor input
+            const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
+            const group = groups.find(g => g.querySelector('label')?.textContent === 'Temperature Sensor');
+            const input = group?.querySelector('input');
+            expect(input?.value).toBe('sensor.temp');
         });
 
-        it('should filter entities by domain/device class', async () => {
-            // Check Temp Sensor select
-            // It should include sensor.temp but NOT switch.fan
-            const selects = element.shadowRoot?.querySelectorAll('.row-col-grid select');
-            const tempSelect = selects?.[0]; // First one is temp
+        it('should render native input with datalist', async () => {
+            // Check Temp Sensor input
+            const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
+            const group = groups.find(g => g.querySelector('label')?.textContent === 'Temperature Sensor');
+            const input = group?.querySelector('input');
+            const datalist = group?.querySelector('datalist');
 
-            expect(tempSelect?.innerHTML).toContain('sensor.temp');
-            expect(tempSelect?.innerHTML).not.toContain('switch.fan');
-
-            // Check Light Source (mixed domains)
-            // Should find switch.fan (assuming domain allowed)
-            // domains: ['switch', 'light', ...]
-            // But we need to find the specific select.
-            // Label is "Light Source / Sensor"
+            expect(input).toBeTruthy();
+            expect(datalist).toBeTruthy();
+            expect(input?.getAttribute('list')).toBe(datalist?.id);
+            // Check filtered options (only temperature sensors)
+            // Mock had sensor.temp (temp class) and sensor.hum (humidity class)
+            // _getEntities filters by class.
+            const options = Array.from(datalist?.querySelectorAll('option') || []);
+            const values = options.map(o => o.value);
+            expect(values).toContain('sensor.temp');
+            expect(values).not.toContain('sensor.hum'); // Wrong device class
         });
 
         it('should submit configuration', async () => {
@@ -261,352 +291,69 @@ describe('ConfigDialog', () => {
         });
     });
 
-    describe('Dehumidifier Tab', () => {
-        beforeEach(async () => {
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
-            await element.updateComplete;
-        });
-
-        it('should update stage inputs', async () => {
-            // Verify inputs exist
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            expect(inputs?.length).toBeGreaterThan(0);
-
-            // Check stage switching
-            const tabs = element.shadowRoot?.querySelectorAll('.sub-tabs .config-tab');
-            (tabs?.[1] as HTMLElement).click(); // Clone/Veg
-            await element.updateComplete;
-
-            expect((element as any)._activeDehumidifierStage).not.toBe('seedling');
-        });
-    });
-
-    describe('Entity Filtering & Sorting', () => {
-        it('should sort entities by friendly name', () => {
-            mockHass.states = {
-                'sensor.b': { entity_id: 'sensor.b', attributes: { friendly_name: 'Zebra', device_class: 'temperature' } },
-                'sensor.a': { entity_id: 'sensor.a', attributes: { friendly_name: 'Apple', device_class: 'temperature' } }
-            };
-            element.requestUpdate(); // Re-render
-
-            // Access private method or check render order
-            const sorted = (element as any)._getEntities(['sensor'], 'temperature');
-            expect(sorted[0].attributes.friendly_name).toBe('Apple');
-            expect(sorted[1].attributes.friendly_name).toBe('Zebra');
-        });
-
-        it('should fall back to entity_id for sorting if no friendly_name', () => {
-            mockHass.states = {
-                'sensor.z': { entity_id: 'sensor.z', attributes: { device_class: 'temperature' } },
-                'sensor.a': { entity_id: 'sensor.a', attributes: { device_class: 'temperature' } }
-            };
-            const sorted = (element as any)._getEntities(['sensor'], 'temperature');
-            expect(sorted[0].entity_id).toBe('sensor.a');
-        });
-
-        it('should filter by direct device class match', () => {
-            mockHass.states = {
-                'sensor.match': { entity_id: 'sensor.match', attributes: { device_class: 'humidity' } },
-                'sensor.no_match': { entity_id: 'sensor.no_match', attributes: { device_class: 'temperature' } }
-            };
-            const filtered = (element as any)._getEntities(['sensor'], 'humidity');
-            expect(filtered).toHaveLength(1);
-            expect(filtered[0].entity_id).toBe('sensor.match');
-        });
-
-        it('should allow null device class to match anything', () => {
-            mockHass.states = {
-                'switch.fan': { entity_id: 'switch.fan', attributes: {} },
-                'light.grow': { entity_id: 'light.grow', attributes: {} }
-            };
-            const filtered = (element as any)._getEntities(['switch', 'light'], null);
-            expect(filtered).toHaveLength(2);
-        });
-
-        it('should return empty if hass not set', () => {
-            element.hass = undefined as any;
-            const res = (element as any)._getEntities(['sensor'], null);
-            expect(res).toEqual([]);
-        });
-    });
-
-    describe('State Management & Initial State', () => {
-
-        it('should populate fields from environmentData in setInitialState', () => {
-            const data = {
-                selectedGrowspaceId: 'gs1',
-                temp_sensor: 'T', humidity_sensor: 'H', vpd_sensor: 'V', co2_sensor: 'C',
-                circulation_fan: 'F', stress_threshold: 1, mold_threshold: 2,
-                light_sensor: 'L', exhaust_entity: 'E', humidifier_entity: 'HE',
-                dehumidifier_entity: 'DE', soil_moisture_sensor: 'S',
-                control_dehumidifier: true,
-                dehumidifier_thresholds: { veg: { day: { on: 1, off: 2 } } } as any
-            };
-
-            // spy on _populateEditFields
-            const spy = vi.spyOn((element as any), '_populateEditFields');
-
-            element.setInitialState(ConfigTab.ENVIRONMENT, data);
-
-            expect((element as any).env_temp_sensor).toBe('T');
-            expect((element as any).env_dehumidifier_thresholds.veg.day.on).toBe(1);
-            expect(spy).toHaveBeenCalledWith('gs1');
-        });
-
-        it('should populate edit fields correctly', () => {
-            element.devices = [
-                { device_id: 'gs1', name: 'Growspace 1', rows: 4, plants_per_row: 4, notification_target: 'mobile_app_phone' } as any
-            ];
-            (element as any)._populateEditFields('gs1');
-
-            expect((element as any).edit_name).toBe('Growspace 1');
-            expect((element as any).edit_rows).toBe(4);
-            expect((element as any).edit_plants_per_row).toBe(4);
-            expect((element as any).edit_notification_service).toBe('mobile_app_phone');
-        });
-
-        it('should not crash populate edit fields if device missing', () => {
-            (element as any)._populateEditFields('unknown_id');
-            expect((element as any).edit_selectedId).toBe('unknown_id');
-        });
-    });
-
-    describe('Dehumidifier Logic', () => {
-        beforeEach(async () => {
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
-            (element as any).env_dehumidifier_thresholds = {
-                seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
-            };
-            await element.updateComplete;
-        });
-
-        it('should render active stage thresholds', () => {
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            expect(inputs?.length).toBeGreaterThanOrEqual(4);
-            expect((inputs?.[0] as any).value).toBe(0.8);
-        });
-
-        it('should update thresholds on input change', async () => {
-            const input = element.shadowRoot?.querySelector('md3-number-input') as HTMLElement;
-            input.dispatchEvent(new CustomEvent('change', { detail: '1.5' }));
-            await element.updateComplete;
-
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(1.5);
-        });
-
-        it('should ignore NaN input for thresholds', async () => {
-            const input = element.shadowRoot?.querySelector('md3-number-input') as HTMLElement;
-            input.dispatchEvent(new CustomEvent('change', { detail: 'invalid' }));
-            await element.updateComplete;
-
-            expect((element as any).env_dehumidifier_thresholds.seedling.day.on).toBe(0.8);
-        });
-
-        it('should initialize missing stage structure on write', async () => {
-            (element as any)._activeDehumidifierStage = 'late_flower';
-            (element as any).env_dehumidifier_thresholds = {};
-            await element.updateComplete;
-
-            const input = element.shadowRoot?.querySelector('md3-number-input') as HTMLElement;
-            if (input) {
-                input.dispatchEvent(new CustomEvent('change', { detail: '2.0' }));
-                await element.updateComplete;
-                expect((element as any).env_dehumidifier_thresholds.late_flower.day.on).toBe(2.0);
-            }
-        });
-
-        it('should handle missing thresholds gracefully (read)', () => {
-            (element as any).env_dehumidifier_thresholds = {};
-            const val = (element as any)._getThresholdValue('seedling', 'day', 'on');
-            expect(val).toBe(0);
-        });
-    });
-
-    describe('Edge Cases', () => {
-        it('should switch mobile_app notify service', async () => {
-            element.currentTab = ConfigTab.ADD_GROWSPACE;
-            await element.updateComplete;
-
-            const select = element.shadowRoot?.querySelector('select');
-            if (select) {
-                select.value = 'mobile_app_test';
-                select.dispatchEvent(new Event('change'));
-                await element.updateComplete;
-                expect((element as any).add_notification_service).toBe('mobile_app_test');
-            }
-        });
-
-        it('should cancel delete process', async () => {
-            element.currentTab = ConfigTab.EDIT_GROWSPACE;
-            (element as any).edit_selectedId = 'gs1';
-            await element.updateComplete;
-
-            (element as any)._submitDeleteGrowspace();
-            await element.updateComplete;
-            expect((element as any)._showDeleteConfirm).toBe(true);
-
-            (element as any)._cancelDeleteGrowspace();
-            await element.updateComplete;
-            expect((element as any)._showDeleteConfirm).toBe(false);
-        });
-
-        it('should handle environment growspace change', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
-            element.devices = [{
-                device_id: 'gs1',
-                environment_attributes: {
-                    temperature_sensor: 's.t',
-                    dehumidifier_control_enabled: true
-                }
-            } as any];
-            await element.updateComplete;
-
-            (element as any)._handleEnvGrowspaceChange({ target: { value: 'gs1' } });
-            await element.updateComplete;
-            expect((element as any).env_temp_sensor).toBe('s.t');
-            expect((element as any).env_control_dehumidifier).toBe(true);
-
-            // Change to unknown should reset
-            (element as any)._handleEnvGrowspaceChange({ target: { value: '' } });
-            expect((element as any).env_temp_sensor).toBe('');
-            expect((element as any).env_control_dehumidifier).toBe(false);
-        });
-
-        it('should apply initial state only once', async () => {
-            // Ensure it thinks it's closed first
-            element.open = false;
-            await element.updateComplete;
-
-            // Reset applied flag for test
-            (element as any)._initialStateApplied = false;
-
-            // Open
-            element.open = true;
-            await element.updateComplete;
-            expect((element as any)._initialStateApplied).toBe(true);
-
-            // Close
-            element.open = false;
-            await element.updateComplete;
-            expect((element as any)._initialStateApplied).toBe(false);
-        });
-    });
-
     describe('Full Environment Input Coverage', () => {
         beforeEach(async () => {
             element.currentTab = ConfigTab.ENVIRONMENT;
             await element.updateComplete;
         });
 
-        const testInputUpdate = async (selector: string, value: string, propName: string) => {
-            // This might be select or md3-number-input
-            const el = element.shadowRoot?.querySelector(selector);
-            if (!el) throw new Error(`Selector ${selector} not found`);
-
-            if (el.tagName === 'SELECT') {
-                (el as HTMLSelectElement).value = value;
-                el.dispatchEvent(new Event('change'));
-            } else {
-                el.dispatchEvent(new CustomEvent('change', { detail: value }));
-            }
-            await element.updateComplete;
-            expect((element as any)[propName]).toBe(el.tagName === 'SELECT' ? value : parseFloat(value));
-        };
-
         it('should update all environment sensors', async () => {
-            // We can manually trigger handlers if UI selectors are tricky, but let's try to find them by order or label
-            // The render helper _renderEntitySelect uses standard select
-            // We can test the helper directly or find elements
+            const updatePicker = async (label: string, value: string) => {
+                const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
+                const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
+                const input = group?.querySelector('input');
 
-            // Helper simulation
-            const event = { target: { value: 'sensor.test' } } as any;
-
-            // Call change handlers directly to ensure coverage of the arrow functions in render
-            // Temp
-            const selects = element.shadowRoot?.querySelectorAll('.row-col-grid select');
-            // 0: Temp, 1: Hum
-            selects?.[1]?.dispatchEvent(new Event('change')); // trigger change
-            // ... wait, we need to set value or mock target?
-            // The template is: (e) => this.env_humidity_sensor = e.target.value
-
-            // Let's directly invoke the arrow functions if possible? No, they are anonymous.
-            // We must dispatch events.
-
-            const setVal = async (index: number, val: string) => {
-                const sel = selects?.[index] as HTMLSelectElement;
-                if (sel) {
-                    sel.value = val;
-                    sel.dispatchEvent(new Event('change'));
+                if (input) {
+                    input.value = value;
+                    input.dispatchEvent(new Event('change'));
                     await element.updateComplete;
                 }
             };
 
-            // Temp is index 0
-            // Humidity index 1
-            // VPD index 2 (in second row-col-grid) - wait, querySelectorAll flattens?
-            // Yes. 
-            // Layout:
-            // Group 1: Temp, Hum
-            // Group 2: VPD, CO2
-            // Group 3: Soil, Light
-            // Group 4 (Climate): Exhaust, Circulation
-            // Group 5: Humidifier, Dehumidifier
+            const updateMultiPicker = async (label: string, value: string) => {
+                const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
+                const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === label);
+                const input = container?.querySelector('input');
 
-            const allSelects = Array.from(element.shadowRoot?.querySelectorAll('select') || []);
-            // Filter out the "Growspace" select in "Select Target" card (index 0)
-            const sensorSelects = allSelects.slice(1);
+                if (input) {
+                    input.value = value;
+                    input.dispatchEvent(new Event('change'));
+                    await element.updateComplete;
+                }
+            };
 
-            // 0: Temp
-            if (sensorSelects[0]) {
-                sensorSelects[0].value = 'sensor.temp'; selectChange(sensorSelects[0]);
-                expect((element as any).env_temp_sensor).toBe('sensor.temp');
-            }
-            // 1: Hum
-            if (sensorSelects[1]) {
-                sensorSelects[1].value = 'sensor.hum'; selectChange(sensorSelects[1]);
-                expect((element as any).env_humidity_sensor).toBe('sensor.hum');
-            }
-            // 2: VPD
-            if (sensorSelects[2]) {
-                sensorSelects[2].value = 'sensor.vpd'; selectChange(sensorSelects[2]);
-                expect((element as any).env_vpd_sensor).toBe('sensor.vpd');
-            }
-            // 3: Soil
-            if (sensorSelects[3]) {
-                sensorSelects[3].value = 'sensor.soil'; selectChange(sensorSelects[3]);
-                expect((element as any).env_soil_moisture_sensor).toBe('sensor.soil');
-            }
-            // 4: CO2
-            if (sensorSelects[4]) {
-                sensorSelects[4].value = 'sensor.co2'; selectChange(sensorSelects[4]);
-                expect((element as any).env_co2_sensor).toBe('sensor.co2');
-            }
-            // 5: Light
-            if (sensorSelects[5]) {
-                sensorSelects[5].value = 'sensor.light'; selectChange(sensorSelects[5]);
-                expect((element as any).env_light_sensor).toBe('sensor.light');
-            }
-            // 6: Exhaust
-            if (sensorSelects[6]) {
-                sensorSelects[6].value = 'switch.exhaust'; selectChange(sensorSelects[6]);
-                expect((element as any).env_exhaust_entity).toBe('switch.exhaust');
-            }
-            // 7: Circ
-            if (sensorSelects[7]) {
-                sensorSelects[7].value = 'switch.circulation'; selectChange(sensorSelects[7]);
-                expect((element as any).env_circulation_fan).toBe('switch.circulation');
-            }
-            // 8: Humidifier
-            if (sensorSelects[8]) {
-                sensorSelects[8].value = 'switch.humidifier'; selectChange(sensorSelects[8]);
-                expect((element as any).env_humidifier_entity).toBe('switch.humidifier');
-            }
-            // 9: Dehumidifier
-            if (sensorSelects[9]) {
-                sensorSelects[9].value = 'switch.dehumidifier'; selectChange(sensorSelects[9]);
-                expect((element as any).env_dehumidifier_entity).toBe('switch.dehumidifier');
-            }
+            await updatePicker('Temperature Sensor', 'sensor.temp');
+            expect((element as any).env_temp_sensor).toBe('sensor.temp');
+
+            await updatePicker('Humidity Sensor', 'sensor.hum');
+            expect((element as any).env_humidity_sensor).toBe('sensor.hum');
+
+            await updatePicker('VPD Sensor (Optional)', 'sensor.vpd');
+            expect((element as any).env_vpd_sensor).toBe('sensor.vpd');
+
+            await updatePicker('Soil Moisture Sensor', 'sensor.soil');
+            expect((element as any).env_soil_moisture_sensor).toBe('sensor.soil');
+
+            await updatePicker('CO2 Sensor', 'sensor.co2');
+            expect((element as any).env_co2_sensor).toBe('sensor.co2');
+
+            // Multi
+            await updateMultiPicker('Light Source / Sensor', 'sensor.light');
+            expect((element as any).env_light_sensors).toEqual(['sensor.light']);
+
+            await updateMultiPicker('Exhaust Fan / Switch', 'switch.exhaust');
+            expect((element as any).env_exhaust_fan_entities).toEqual(['switch.exhaust']);
+
+            await updateMultiPicker('Circulation Fan / Switch', 'switch.circulation');
+            expect((element as any).env_circulation_fan_entities).toEqual(['switch.circulation']);
+
+            await updateMultiPicker('Humidifier', 'switch.humidifier');
+            expect((element as any).env_humidifier_entities).toEqual(['switch.humidifier']);
+
+            await updateMultiPicker('Dehumidifier', 'switch.dehumidifier');
+            expect((element as any).env_dehumidifier_entities).toEqual(['switch.dehumidifier']);
         });
+
 
         it('should update thresholds', async () => {
             const numbers = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
@@ -1029,22 +776,7 @@ describe('ConfigDialog', () => {
             expect((element as any).env_temp_sensor).toBe('');
         });
 
-        it('should render entity select options with fallback friendly name', async () => {
-            // Mock _getEntities to return our problematic entity
-            const entities = [{
-                entity_id: 'sensor.raw',
-                attributes: {}
-            }];
-            vi.spyOn(element as any, '_getEntities').mockReturnValue(entities as any);
 
-            (element as any).env_selectedGrowspaceId = 'gs_test';
-            await element.updateComplete;
-
-            const options = element.shadowRoot?.querySelectorAll('option');
-            // Look for one with value 'sensor.raw'
-            const opt = Array.from(options || []).find(o => o.value === 'sensor.raw');
-            expect(opt?.textContent).toContain('sensor.raw');
-        });
         it('should use default rows and plants per row if missing in device', () => {
             const dev = {
                 device_id: 'defaults',

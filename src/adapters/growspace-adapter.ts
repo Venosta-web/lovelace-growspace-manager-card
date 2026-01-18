@@ -20,8 +20,11 @@ const BIO_KEYS: (keyof SerializedBiologicalMetrics)[] = [
 
 const ENV_KEYS: (keyof SerializedEnvironmentAttributes)[] = [
   'temperature_sensor', 'humidity_sensor', 'vpd_sensor', 'co2_sensor',
-  'soil_moisture_sensor', 'light_sensor', 'exhaust_entity', 'humidifier_entity',
-  'dehumidifier_entity', 'dehumidifier_control_enabled', 'circulation_fan_entity',
+  'soil_moisture_sensor', 'light_sensor', 'light_sensors',
+  'exhaust_entity', 'exhaust_fan_entities',
+  'humidifier_entity', 'humidifier_entities',
+  'dehumidifier_entity', 'dehumidifier_entities',
+  'dehumidifier_control_enabled', 'circulation_fan_entity', 'circulation_fan_entities',
   'dehumidifier_state', 'dehumidifier_thresholds', 'vpd', 'soil_moisture_value'
 ];
 
