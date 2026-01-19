@@ -55,21 +55,24 @@ export class GrowspaceHistoryStore {
             }
         });
 
-        this.$combinedHistory = computed(this.$historyCache, (cache): SensorHistories => ({
-            temperature: cache.temperature || [],
-            humidity: cache.humidity || [],
-            vpd: cache.vpd || [],
-            co2: cache.co2 || [],
-            dehumidifier: cache.dehumidifier || [],
-            exhaust: cache.exhaust || [],
-            humidifier: cache.humidifier || [],
-            circulation_fan: cache.circulation_fan || [],
-            soil_moisture: cache.soil_moisture || [],
-            light: cache.light || [],
-            irrigation: cache.irrigation || [],
-            drain: cache.drain || [],
-            optimal: cache.optimal || [],
-        }));
+        this.$combinedHistory = computed(
+            this.$historyCache,
+            (cache): SensorHistories => ({
+                temperature: cache.temperature || [],
+                humidity: cache.humidity || [],
+                vpd: cache.vpd || [],
+                co2: cache.co2 || [],
+                dehumidifier: cache.dehumidifier || [],
+                exhaust: cache.exhaust || [],
+                humidifier: cache.humidifier || [],
+                circulation_fan: cache.circulation_fan || [],
+                soil_moisture: cache.soil_moisture || [],
+                light: cache.light || [],
+                irrigation: cache.irrigation || [],
+                drain: cache.drain || [],
+                optimal: cache.optimal || [],
+            })
+        );
     }
 
     // --- Actions ---
@@ -136,7 +139,7 @@ export class GrowspaceHistoryStore {
     public linkGraphs(metric1: string, metric2: string): void {
         const groups = this.$linkedGraphGroups.get();
         const existingGroupIndex = groups.findIndex(
-            group => group.includes(metric1) || group.includes(metric2)
+            (group) => group.includes(metric1) || group.includes(metric2)
         );
 
         const newGroups = [...groups];
@@ -170,8 +173,8 @@ export class GrowspaceHistoryStore {
     public unlinkGraphMetric(metric: string): void {
         const groups = this.$linkedGraphGroups.get();
         const newGroups = groups
-            .map(group => group.filter(m => m !== metric))
-            .filter(group => group.length > 1);
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
         this.$linkedGraphGroups.set(newGroups);
     }
 
@@ -213,9 +216,12 @@ export class GrowspaceHistoryStore {
 
     public startAutoRefresh() {
         if (this._refreshInterval) return;
-        this._refreshInterval = window.setInterval(() => {
-            this._fetchHistoryDelta();
-        }, 5 * 60 * 1000); // 5 minutes
+        this._refreshInterval = window.setInterval(
+            () => {
+                this._fetchHistoryDelta();
+            },
+            5 * 60 * 1000
+        ); // 5 minutes
 
         // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
         this._visibilityHandler = () => {
@@ -255,15 +261,25 @@ export class GrowspaceHistoryStore {
         if (!deviceId) return;
 
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.deviceId === deviceId);
+        const device = devices.find((d) => d.deviceId === deviceId);
         if (!device) return;
 
         const { start, end } = this.calculateTimeRange(range);
 
         const metricsToFetch = [
-            'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
-            'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
-            'circulation_fan', 'irrigation', 'drain'
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
         ];
 
         const entityMap: Record<string, string> = {};
@@ -272,11 +288,10 @@ export class GrowspaceHistoryStore {
         // 1. Identify Overview Entity
         if (device.overviewEntityId) {
             entitiesToFetch.add(device.overviewEntityId);
-            // Map main overview entity to 'main' for timestamp tracking if needed, 
-            // but usually main data is split into metrics. 
-            // The controller logic mapped overview_entity_id to 'main' in some places, 
+            // Map main overview entity to 'main' for timestamp tracking if needed,
+            // but usually main data is split into metrics.
+            // The controller logic mapped overview_entity_id to 'main' in some places,
             // let's follow that pattern if consistent.
-
         }
 
         // 2. Identify Metric Entities
@@ -290,7 +305,7 @@ export class GrowspaceHistoryStore {
 
         // 3. Identify Composite Keys (Multi-Device Graphs)
         const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach(key => {
+        activeGraphs.forEach((key) => {
             if (key.includes(':')) {
                 const [metric, entityId] = key.split(':');
                 if (metric && entityId) {
@@ -311,7 +326,6 @@ export class GrowspaceHistoryStore {
         );
 
         // Overview/Main
-
 
         // Metrics
         const formattedUpdates: Record<string, HistorySensorState[]> = {};
@@ -334,7 +348,7 @@ export class GrowspaceHistoryStore {
         if (!deviceId) return;
 
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.deviceId === deviceId);
+        const device = devices.find((d) => d.deviceId === deviceId);
         if (!device) return;
 
         const currentTimestamps = this.$lastTimestamps.get();
@@ -347,9 +361,19 @@ export class GrowspaceHistoryStore {
 
         const now = new Date();
         const metricsToFetch = [
-            'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
-            'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
-            'circulation_fan', 'irrigation', 'drain'
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
         ];
 
         const entityMap: Record<string, string> = {};
@@ -371,7 +395,7 @@ export class GrowspaceHistoryStore {
 
         // Composite Keys Delta
         const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach(key => {
+        activeGraphs.forEach((key) => {
             if (key.includes(':')) {
                 const [metric, entityId] = key.split(':');
                 const lastTimestamp = currentTimestamps[key];
@@ -387,8 +411,8 @@ export class GrowspaceHistoryStore {
         try {
             const oldestTimestamp = Math.min(
                 ...Object.values(currentTimestamps)
-                    .filter(t => t)
-                    .map(t => new Date(t).getTime())
+                    .filter((t) => t)
+                    .map((t) => new Date(t).getTime())
             );
             const start = new Date(oldestTimestamp);
 
@@ -424,9 +448,11 @@ export class GrowspaceHistoryStore {
         }
 
         const lastExisting = existing[existing.length - 1];
-        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
+        const lastTimestamp = new Date(
+            lastExisting.last_updated || lastExisting.last_changed
+        ).getTime();
 
-        const newData = deltaData.filter(point => {
+        const newData = deltaData.filter((point) => {
             const pointTime = new Date(point.last_updated || point.last_changed).getTime();
             return pointTime > lastTimestamp;
         });
@@ -478,14 +504,13 @@ export class GrowspaceHistoryStore {
                 version: 1,
                 timestamp: Date.now(),
                 history: this.$historyCache.get(),
-                timestamps: this.$lastTimestamps.get()
+                timestamps: this.$lastTimestamps.get(),
             };
             localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {
             console.error('[HistoryStore] Failed to save to storage', e);
         }
     }
-
 
     // --- Utils ---
 
@@ -502,7 +527,9 @@ export class GrowspaceHistoryStore {
             if (slug === 'cure') optimalId = `binary_sensor.cure_optimal_curing`;
             else if (slug === 'dry') optimalId = `binary_sensor.dry_optimal_drying`;
 
-            console.log(`[HistoryStore] Resolved Optimal ID for ${device.name}: ${optimalId} (slug: ${slug})`);
+            console.log(
+                `[HistoryStore] Resolved Optimal ID for ${device.name}: ${optimalId} (slug: ${slug})`
+            );
             return optimalId;
         }
 
@@ -511,7 +538,8 @@ export class GrowspaceHistoryStore {
 
         if (mapping.source === 'irrigation') {
             // Handle both camelCase and snake_case for irrigationConfig
-            const config = (device.irrigationConfig || (device as any).irrigation_config) as unknown as Record<string, unknown>;
+            const config = (device.irrigationConfig ||
+                (device as any).irrigation_config) as unknown as Record<string, unknown>;
             if (!config) return null;
 
             // Try explicit mapping primary key first
@@ -519,7 +547,7 @@ export class GrowspaceHistoryStore {
 
             // If not found, try snake_case version of the key if it looks camelCase
             if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
                 entityId = config[snakeKey];
             }
 
@@ -527,7 +555,9 @@ export class GrowspaceHistoryStore {
         }
 
         // Default: environment_attributes (handle camelCase and snake_case)
-        const envAttrs = (device.environmentAttributes || (device as any).environment_attributes || {}) as Record<string, unknown>;
+        const envAttrs = (device.environmentAttributes ||
+            (device as any).environment_attributes ||
+            {}) as Record<string, unknown>;
         let entityId = envAttrs[mapping.primary] as string | undefined;
 
         // Try fallback if primary not found
@@ -537,7 +567,7 @@ export class GrowspaceHistoryStore {
 
         // Try snake_case mapping if not found
         if (!entityId && /[A-Z]/.test(mapping.primary)) {
-            const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
             entityId = envAttrs[snakeKey] as string | undefined;
         }
 
@@ -548,8 +578,8 @@ export class GrowspaceHistoryStore {
                     .toString()
                     .toLowerCase()
                     .replace(/\s+/g, '_')
-                    .replace(/[^\w\-]+/g, '')
-                    .replace(/\-\-+/g, '_')
+                    .replace(/[^\w-]+/g, '')
+                    .replace(/--+/g, '_')
                     .replace(/^-+/, '')
                     .replace(/-+$/, '');
 
@@ -567,20 +597,31 @@ export class GrowspaceHistoryStore {
         const now = new Date();
         let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         switch (range) {
-            case '1h': startTime = new Date(now.getTime() - 60 * 60 * 1000); break;
-            case '6h': startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000); break;
-            case '7d': startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
         }
         return { start: startTime, end: now };
     }
 
     private _getIntervalForRange(range: '1h' | '6h' | '24h' | '7d'): number {
         switch (range) {
-            case '7d': return 240;
-            case '24h': return 30;
-            case '6h': return 15;
-            case '1h': return 5;
-            default: return 15;
+            case '7d':
+                return 240;
+            case '24h':
+                return 30;
+            case '6h':
+                return 15;
+            case '1h':
+                return 5;
+            default:
+                return 15;
         }
     }
 }

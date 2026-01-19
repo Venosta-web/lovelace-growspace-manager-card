@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { PlantEntity } from '../types';
 import { sharedStyles } from '../styles/shared.styles';
@@ -7,13 +7,13 @@ import './plant-card';
 
 @customElement('transplant-source-panel')
 export class TransplantSourcePanel extends LitElement {
-    @property({ type: Array }) clonePlants: PlantEntity[] = [];
-    @property({ type: Array }) seedlingPlants: PlantEntity[] = [];
+  @property({ type: Array }) clonePlants: PlantEntity[] = [];
+  @property({ type: Array }) seedlingPlants: PlantEntity[] = [];
 
-    static styles = [
-        variables,
-        sharedStyles,
-        css`
+  static styles = [
+    variables,
+    sharedStyles,
+    css`
       :host {
         display: block;
         margin-bottom: 24px;
@@ -91,35 +91,42 @@ export class TransplantSourcePanel extends LitElement {
           grid-template-columns: 1fr;
         }
       }
-    `
-    ];
+    `,
+  ];
 
-    private _handleDragStart(e: DragEvent, plant: PlantEntity) {
-        if (!e.dataTransfer) return;
+  private _handleDragStart(e: DragEvent, plant: PlantEntity) {
+    if (!e.dataTransfer) return;
 
-        // Set dragged plant data
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('application/json', JSON.stringify({
-            type: 'transplant',
-            plant_id: plant.attributes.plant_id,
-            source_growspace_id: plant.attributes.growspace_id,
-            strain: plant.attributes.strain,
-            phenotype: plant.attributes.phenotype,
-            stage: plant.attributes.stage
-        }));
+    // Set dragged plant data
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData(
+      'application/json',
+      JSON.stringify({
+        type: 'transplant',
+        plant_id: plant.attributes.plant_id,
+        source_growspace_id: plant.attributes.growspace_id,
+        strain: plant.attributes.strain,
+        phenotype: plant.attributes.phenotype,
+        stage: plant.attributes.stage,
+      })
+    );
 
-        // Set visual feedback
-        const target = e.currentTarget as HTMLElement;
-        target.setAttribute('dragging', '');
+    // Set visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.setAttribute('dragging', '');
 
-        // Remove dragging attribute on drag end
-        target.addEventListener('dragend', () => {
-            target.removeAttribute('dragging');
-        }, { once: true });
-    }
+    // Remove dragging attribute on drag end
+    target.addEventListener(
+      'dragend',
+      () => {
+        target.removeAttribute('dragging');
+      },
+      { once: true }
+    );
+  }
 
-    render() {
-        return html`
+  render() {
+    return html`
       <div class="transplant-panel">
         <div class="section">
           <div class="section-header">
@@ -128,9 +135,8 @@ export class TransplantSourcePanel extends LitElement {
           </div>
           <div class="source-grid">
             ${this.clonePlants.length === 0
-                ? html`<div class="empty-state">No clones available</div>`
-                : this.clonePlants.map(p => this._renderDraggablePlant(p, 'clone'))
-            }
+        ? html`<div class="empty-state">No clones available</div>`
+        : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
           </div>
         </div>
 
@@ -141,19 +147,18 @@ export class TransplantSourcePanel extends LitElement {
           </div>
           <div class="source-grid">
             ${this.seedlingPlants.length === 0
-                ? html`<div class="empty-state">No seedlings available</div>`
-                : this.seedlingPlants.map(p => this._renderDraggablePlant(p, 'seedling'))
-            }
+        ? html`<div class="empty-state">No seedlings available</div>`
+        : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
           </div>
         </div>
       </div>
     `;
-    }
+  }
 
-    private _renderDraggablePlant(plant: PlantEntity, stage: 'clone' | 'seedling') {
-        const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
+  private _renderDraggablePlant(plant: PlantEntity, _stage: 'clone' | 'seedling') {
 
-        return html`
+
+    return html`
       <growspace-plant-card
         class="source-plant-card"
         .plant=${plant}
@@ -164,5 +169,5 @@ export class TransplantSourcePanel extends LitElement {
         @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
       ></growspace-plant-card>
     `;
-    }
+  }
 }

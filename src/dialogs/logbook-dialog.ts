@@ -134,23 +134,23 @@ export class LogbookDialog extends LitElement {
         <div class="content-wrapper">
           <!-- Tab Switcher -->
           <div class="tab-bar">
-            <button 
+            <button
               class="tab ${this._activeTab === 'list' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'list'}
+              @click=${() => (this._activeTab = 'list')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiFormatListBulleted}"></path></svg>
               <span>List View</span>
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'timeline' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'timeline'}
+              @click=${() => (this._activeTab = 'timeline')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>Timeline</span>
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'vpd' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'vpd'}
+              @click=${() => (this._activeTab = 'vpd')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>VPD</span>
@@ -159,37 +159,41 @@ export class LogbookDialog extends LitElement {
 
           <!-- Content -->
           ${this._activeTab === 'list'
-        ? html`
-              <growspace-logbook
-                .hass=${this.hass}
-                .growspaceId=${this.growspaceId}
-              ></growspace-logbook>
-            `
-        : this._activeTab === 'timeline'
-          ? html`
-              <growspace-timeline
-                .hass=${this.hass}
-                .growspaceId=${this.growspaceId}
-              ></growspace-timeline>
-            `
-          : html`
-            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
-              <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
-              <vpd-heatmap
-                .hass=${this.hass}
-                .temperature=${24} 
-                .humidity=${60}
-                .stage=${'vegetative'}
-              ></vpd-heatmap>
-              <p style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;">
-                Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current stage.<br>
-                Targeting 0.8 - 1.2 kPa.
-              </p>
-            </div>
-          `
-      }
+            ? html`
+                <growspace-logbook
+                  .hass=${this.hass}
+                  .growspaceId=${this.growspaceId}
+                ></growspace-logbook>
+              `
+            : this._activeTab === 'timeline'
+              ? html`
+                  <growspace-timeline
+                    .hass=${this.hass}
+                    .growspaceId=${this.growspaceId}
+                  ></growspace-timeline>
+                `
+              : html`
+                  <div
+                    style="padding: 20px; display: flex; flex-direction: column; align-items: center;"
+                  >
+                    <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
+                    <vpd-heatmap
+                      .hass=${this.hass}
+                      .temperature=${24}
+                      .humidity=${60}
+                      .stage=${'vegetative'}
+                    ></vpd-heatmap>
+                    <p
+                      style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;"
+                    >
+                      Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current
+                      stage.<br />
+                      Targeting 0.8 - 1.2 kPa.
+                    </p>
+                  </div>
+                `}
         </div>
-  </ha-dialog>
+      </ha-dialog>
     `;
   }
 }

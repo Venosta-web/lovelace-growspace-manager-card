@@ -6,9 +6,14 @@ import { getTimelineService } from '../../services/timeline-service';
 import { getEventTimestamp, formatDateTime, formatShortDate } from '../../utils/date-utils';
 import { sharedStyles } from '../../styles/shared.styles';
 import {
-  mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
-  mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlash,
-  mdiDumbbell, mdiFlower, mdiHairDryer
+  mdiWater,
+  mdiAlertCircle,
+  mdiNoteText,
+  mdiLeaf,
+  mdiThermometer,
+  mdiWaterPercent,
+  mdiGauge,
+  mdiDumbbell,
 } from '@mdi/js';
 import '../error-boundary';
 
@@ -79,7 +84,7 @@ export class GrowspaceTimeline extends LitElement {
       .event-marker:hover {
         transform: translate(-50%, -50%) scale(1.2);
         z-index: 10;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       }
 
       .event-marker svg {
@@ -89,22 +94,38 @@ export class GrowspaceTimeline extends LitElement {
       }
 
       /* Event Types */
-      .marker-alert { border-color: var(--error-color); }
-      .marker-alert svg { fill: var(--error-color); }
-      
-      .marker-water { border-color: var(--info-color, #2196f3); }
-      .marker-water svg { fill: var(--info-color, #2196f3); }
-      
-      .marker-note { border-color: var(--warning-color); }
-      .marker-note svg { fill: var(--warning-color); }
-      
-      .marker-stage { 
-        width: 40px; 
-        height: 40px; 
-        border-color: var(--success-color);
-        background: var(--success-color); 
+      .marker-alert {
+        border-color: var(--error-color);
       }
-      .marker-stage svg { fill: white; width: 24px; height: 24px; }
+      .marker-alert svg {
+        fill: var(--error-color);
+      }
+
+      .marker-water {
+        border-color: var(--info-color, #2196f3);
+      }
+      .marker-water svg {
+        fill: var(--info-color, #2196f3);
+      }
+
+      .marker-note {
+        border-color: var(--warning-color);
+      }
+      .marker-note svg {
+        fill: var(--warning-color);
+      }
+
+      .marker-stage {
+        width: 40px;
+        height: 40px;
+        border-color: var(--success-color);
+        background: var(--success-color);
+      }
+      .marker-stage svg {
+        fill: white;
+        width: 24px;
+        height: 24px;
+      }
 
       .date-axis {
         position: absolute;
@@ -142,7 +163,7 @@ export class GrowspaceTimeline extends LitElement {
         border: 1px solid var(--divider-color);
         padding: 12px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         z-index: 20;
         min-width: 200px;
         pointer-events: none;
@@ -188,7 +209,7 @@ export class GrowspaceTimeline extends LitElement {
         justify-content: center;
         font-weight: bold;
       }
-      
+
       .zoom-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
@@ -200,7 +221,7 @@ export class GrowspaceTimeline extends LitElement {
         height: 100%;
         color: var(--secondary-text-color);
       }
-    `
+    `,
   ];
 
   protected willUpdate(changedProps: Map<string, any>) {
@@ -262,11 +283,14 @@ export class GrowspaceTimeline extends LitElement {
 
   render() {
     if (this._isLoading) return html`<div class="empty-state">Loading timeline...</div>`;
-    if (this._hasError) return html`<div class="empty-state" style="color: var(--error-color)">${this._errorMessage}</div>`;
+    if (this._hasError)
+      return html`<div class="empty-state" style="color: var(--error-color)">
+        ${this._errorMessage}
+      </div>`;
     if (this._events.length === 0) return html`<div class="empty-state">No events to display</div>`;
 
     // Process times using new utility
-    const timestamps = this._events.map(e => getEventTimestamp(e));
+    const timestamps = this._events.map((e) => getEventTimestamp(e));
     const minTime = Math.min(...timestamps);
     const maxTime = Math.max(...timestamps);
 
@@ -282,45 +306,57 @@ export class GrowspaceTimeline extends LitElement {
     return html`
       <error-boundary .fallbackMessage=${'Failed to render timeline'}>
         <div class="controls">
-          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
-          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
+          <button
+            class="zoom-btn"
+            @click=${() => (this._zoomLevel = Math.max(1, this._zoomLevel - 0.5))}
+          >
+            -
+          </button>
+          <button
+            class="zoom-btn"
+            @click=${() => (this._zoomLevel = Math.min(5, this._zoomLevel + 0.5))}
+          >
+            +
+          </button>
         </div>
 
         <div class="timeline-container">
           <div class="timeline-track" style="width: ${width}%">
-            ${this._events.map(event => {
+            ${this._events.map((event) => {
       const left = this._getPosition(event, start, totalDuration);
       const icon = this._getIcon(event);
       const className = this._getClass(event);
 
       return html`
-                <div 
-                  class="event-marker ${className}" 
+                <div
+                  class="event-marker ${className}"
                   style="left: ${left}%"
-                  @mouseenter=${() => this._hoveredEvent = event}
-                  @mouseleave=${() => this._hoveredEvent = null}
+                  @mouseenter=${() => (this._hoveredEvent = event)}
+                  @mouseleave=${() => (this._hoveredEvent = null)}
                 >
                   <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                  
-                  ${this._hoveredEvent === event ? html`
-                    <div class="tooltip visible" style="left: ${left}%">
-                      <div class="tooltip-header">
-                        ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
-                      </div>
-                      <div class="tooltip-time">
-                        ${formatDateTime(new Date(getEventTimestamp(event)))}
-                      </div>
-                      <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                    </div>
-                  ` : nothing}
+
+                  ${this._hoveredEvent === event
+          ? html`
+                        <div class="tooltip visible" style="left: ${left}%">
+                          <div class="tooltip-header">
+                            ${event.category === 'note' ? 'Note' : event.sensor_type || 'Event'}
+                          </div>
+                          <div class="tooltip-time">
+                            ${formatDateTime(new Date(getEventTimestamp(event)))}
+                          </div>
+                          <div>${event.notes || event.reasons?.join(', ') || ''}</div>
+                        </div>
+                      `
+          : nothing}
                 </div>
               `;
     })}
 
             <div class="date-axis">
               <!-- Generate ticks every 20% -->
-              ${[0, 20, 40, 60, 80, 100].map(pct => {
-      const time = start + (totalDuration * (pct / 100));
+              ${[0, 20, 40, 60, 80, 100].map((pct) => {
+      const time = start + totalDuration * (pct / 100);
       return html`
                   <div class="date-tick" style="left: ${pct}%">
                     ${formatShortDate(new Date(time))}

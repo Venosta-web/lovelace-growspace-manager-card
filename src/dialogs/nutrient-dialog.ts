@@ -13,29 +13,29 @@ type Tab = 'inventory' | 'presets';
 
 @customElement('nutrient-dialog')
 export class NutrientDialog extends LitElement {
-    @consume({ context: hassContext, subscribe: true })
-    public hass!: HomeAssistant;
+  @consume({ context: hassContext, subscribe: true })
+  public hass!: HomeAssistant;
 
-    @consume({ context: storeContext, subscribe: true })
-    @property({ attribute: false })
-    public store!: GrowspaceStore;
+  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
+  public store!: GrowspaceStore;
 
-    @property({ type: Boolean }) public open = false;
-    @state() private _activeTab: Tab = 'inventory';
+  @property({ type: Boolean }) public open = false;
+  @state() private _activeTab: Tab = 'inventory';
 
-    static styles = [
-        dialogStyles,
-        css`
+  static styles = [
+    dialogStyles,
+    css`
       :host {
         --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
       }
-      
+
       .dialog-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 16px;
         margin-bottom: 0 !important;
       }
-      
+
       .tab-bar {
         display: flex;
         gap: 24px;
@@ -43,7 +43,7 @@ export class NutrientDialog extends LitElement {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         margin-bottom: 24px;
       }
-      
+
       .tab {
         padding: 16px 0;
         color: var(--secondary-text-color);
@@ -55,15 +55,15 @@ export class NutrientDialog extends LitElement {
         align-items: center;
         gap: 8px;
       }
-      
+
       .tab:hover {
         color: var(--primary-text-color);
       }
-      
+
       .tab.active {
-        color: var(--primary-color, #4CAF50);
+        color: var(--primary-color, #4caf50);
       }
-      
+
       .tab.active::after {
         content: '';
         position: absolute;
@@ -71,7 +71,7 @@ export class NutrientDialog extends LitElement {
         left: 0;
         width: 100%;
         height: 2px;
-        background: var(--primary-color, #4CAF50);
+        background: var(--primary-color, #4caf50);
         border-radius: 2px 2px 0 0;
       }
 
@@ -93,21 +93,21 @@ export class NutrientDialog extends LitElement {
         background: rgba(255, 255, 255, 0.2);
         border-radius: 4px;
       }
-    `
-    ];
+    `,
+  ];
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close'));
+  }
 
-    private _setTab(tab: Tab) {
-        this._activeTab = tab;
-    }
+  private _setTab(tab: Tab) {
+    this._activeTab = tab;
+  }
 
-    protected render() {
-        if (!this.open) return nothing;
+  protected render() {
+    if (!this.open) return nothing;
 
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
@@ -134,15 +134,19 @@ export class NutrientDialog extends LitElement {
           </div>
 
           <div class="tab-bar">
-            <div class="tab ${this._activeTab === 'inventory' ? 'active' : ''}" 
-                 @click=${() => this._setTab('inventory')}>
+            <div
+              class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
+              @click=${() => this._setTab('inventory')}
+            >
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClipboardList}"></path>
               </svg>
               Inventory
             </div>
-            <div class="tab ${this._activeTab === 'presets' ? 'active' : ''}" 
-                 @click=${() => this._setTab('presets')}>
+            <div
+              class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
+              @click=${() => this._setTab('presets')}
+            >
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiFormatListBulleted}"></path>
               </svg>
@@ -152,12 +156,19 @@ export class NutrientDialog extends LitElement {
 
           <div class="content-area">
             ${this._activeTab === 'inventory'
-                ? html`<nutrient-inventory-dialog .open=${true} .embedded=${true} .store=${this.store}></nutrient-inventory-dialog>`
-                : html`<nutrient-presets-editor .open=${true} .embedded=${true} .store=${this.store}></nutrient-presets-editor>`
-            }
+              ? html`<nutrient-inventory-dialog
+                  .open=${true}
+                  .embedded=${true}
+                  .store=${this.store}
+                ></nutrient-inventory-dialog>`
+              : html`<nutrient-presets-editor
+                  .open=${true}
+                  .embedded=${true}
+                  .store=${this.store}
+                ></nutrient-presets-editor>`}
           </div>
         </div>
       </ha-dialog>
     `;
-    }
+  }
 }

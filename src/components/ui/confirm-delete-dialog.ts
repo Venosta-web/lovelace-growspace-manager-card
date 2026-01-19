@@ -8,12 +8,12 @@ import { mdiDelete, mdiClose } from '@mdi/js';
  */
 @customElement('confirm-delete-dialog')
 export class ConfirmDeleteDialog extends LitElement {
-    @property({ type: Boolean }) open = false;
-    @property({ type: String }) title = 'Confirm Deletion';
-    @property({ type: String }) message =
-        'Are you sure you want to delete this entry? This action cannot be undone.';
+  @property({ type: Boolean }) open = false;
+  @property({ type: String }) title = 'Confirm Deletion';
+  @property({ type: String }) message =
+    'Are you sure you want to delete this entry? This action cannot be undone.';
 
-    static styles = css`
+  static styles = css`
     :host {
       display: none;
     }
@@ -66,7 +66,7 @@ export class ConfirmDeleteDialog extends LitElement {
       align-items: center;
       gap: 6px;
       padding: 10px 20px;
-     border-radius: 8px;
+      border-radius: 8px;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
@@ -100,28 +100,28 @@ export class ConfirmDeleteDialog extends LitElement {
     }
   `;
 
-    private _handleCancel(e: Event) {
-        e.stopPropagation();
-        this.open = false;
-        this.dispatchEvent(new CustomEvent('cancel'));
+  private _handleCancel(e: Event) {
+    e.stopPropagation();
+    this.open = false;
+    this.dispatchEvent(new CustomEvent('cancel'));
+  }
+
+  private _handleConfirm(e: Event) {
+    e.stopPropagation();
+    this.open = false;
+    this.dispatchEvent(new CustomEvent('confirm'));
+  }
+
+  private _handleOverlayClick(e: Event) {
+    if (e.target === e.currentTarget) {
+      this._handleCancel(e);
     }
+  }
 
-    private _handleConfirm(e: Event) {
-        e.stopPropagation();
-        this.open = false;
-        this.dispatchEvent(new CustomEvent('confirm'));
-    }
+  render() {
+    if (!this.open) return null;
 
-    private _handleOverlayClick(e: Event) {
-        if (e.target === e.currentTarget) {
-            this._handleCancel(e);
-        }
-    }
-
-    render() {
-        if (!this.open) return null;
-
-        return html`
+    return html`
       <div class="overlay" @click=${this._handleOverlayClick}>
         <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
           <h2>${this.title}</h2>
@@ -143,11 +143,11 @@ export class ConfirmDeleteDialog extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'confirm-delete-dialog': ConfirmDeleteDialog;
-    }
+  interface HTMLElementTagNameMap {
+    'confirm-delete-dialog': ConfirmDeleteDialog;
+  }
 }

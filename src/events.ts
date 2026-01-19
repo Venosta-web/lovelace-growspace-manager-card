@@ -1,7 +1,5 @@
 import { PlantEntity, PlantOverviewEditedAttributes } from './types';
 
-
-
 export class PlantClickEvent extends CustomEvent<{ plant: PlantEntity }> {
   static readonly TYPE = 'plant-click';
   constructor(plant: PlantEntity) {
@@ -150,4 +148,3 @@ declare global {
     [LibraryExportReadyEvent.TYPE]: LibraryExportReadyEvent;
   }
 }
-

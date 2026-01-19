@@ -1,4 +1,4 @@
-import { LitElement, html, css, svg, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, css, svg, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiMagnify, mdiLink, mdiChevronLeft, mdiChevronRight } from '@mdi/js';
@@ -23,7 +23,6 @@ import {
   StatusLevel,
   STATUS_COLORS,
   ScrollDirection,
-  EntityState,
   BINARY_ON_STATES,
 } from './constants';
 
@@ -75,7 +74,10 @@ export class GrowspaceEnvChart extends LitElement {
   private _scrollChips(direction: ScrollDirection) {
     const container = this._chipsContainerRef.value;
     if (container) {
-      container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
+      container.scrollBy({
+        left: direction === ScrollDirection.LEFT ? -200 : 200,
+        behavior: 'smooth',
+      });
     }
   }
 
@@ -235,7 +237,7 @@ export class GrowspaceEnvChart extends LitElement {
       } else {
         if (currentSegment.length >= 1) {
           currentSegment.push(p);
-          const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+          const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
           segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
         }
         currentSegment = [p];
@@ -243,7 +245,7 @@ export class GrowspaceEnvChart extends LitElement {
       }
     }
     if (currentSegment.length >= 2) {
-      const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+      const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
       segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
     }
     return segments;
@@ -271,7 +273,6 @@ export class GrowspaceEnvChart extends LitElement {
     }
 
     metricKeys.forEach((key) => {
-      const isMultiple = this.isCombined && this.metrics.length > 1;
       const config = this.metricConfig[key] || {
         color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
         title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title),
@@ -291,7 +292,12 @@ export class GrowspaceEnvChart extends LitElement {
       }
 
       if (initialState) {
-        const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state) ? (BINARY_ON_STATES.includes(initialState.state) ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+        const val =
+          key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
+            ? BINARY_ON_STATES.includes(initialState.state)
+              ? 1
+              : 0
+            : GraphDataTransformer.normalizeSensorValue(initialState, key);
         if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
@@ -304,7 +310,8 @@ export class GrowspaceEnvChart extends LitElement {
         let val: number | undefined;
         if (key === MetricKey.OPTIMAL) {
           val = BINARY_ON_STATES.includes(h.state) ? 1 : 0;
-          if (h.attributes?.reasons) dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
+          if (h.attributes?.reasons)
+            dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
           else dataPoints.push({ time: t, value: val });
         } else {
           val = GraphDataTransformer.normalizeSensorValue(h, key);
@@ -332,27 +339,43 @@ export class GrowspaceEnvChart extends LitElement {
         }
         const avg = sum / dataPoints.length;
 
-        const isStep = (config as any).type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
-        if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) { min = 0; max = 10; }
-        else if (key === MetricKey.DEHUMIDIFIER) { min = 0; max = 1; }
-        else if (isStep) { min = 0; max = 1; }
+        const isStep =
+          (config as any).type === ChartType.STEP ||
+          key === MetricKey.OPTIMAL ||
+          key === MetricKey.DEHUMIDIFIER ||
+          key === MetricKey.LIGHT ||
+          key === MetricKey.IRRIGATION ||
+          key === MetricKey.DRAIN;
+        if (
+          key === MetricKey.EXHAUST ||
+          key === MetricKey.HUMIDIFIER ||
+          key === MetricKey.CIRCULATION_FAN
+        ) {
+          min = 0;
+          max = 10;
+        } else if (key === MetricKey.DEHUMIDIFIER) {
+          min = 0;
+          max = 1;
+        } else if (isStep) {
+          min = 0;
+          max = 1;
+        }
 
-        if (!this.isCombined && max === min && !isStep) { max += 1; min -= 1; }
+        if (!this.isCombined && max === min && !isStep) {
+          max += 1;
+          min -= 1;
+        }
 
         const paddedRange = max - min || 1;
 
-        const pathStr = ChartUtils.generatePathFromValues(
-          dataPoints,
-          width,
-          height,
-          {
-            min, max,
-            startTime: startTimeMs,
-            endTime: startTimeMs + durationMillis,
-            type: isStep ? ChartType.STEP : ChartType.LINE,
-            timeRange: this.range
-          }
-        );
+        const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
+          min,
+          max,
+          startTime: startTimeMs,
+          endTime: startTimeMs + durationMillis,
+          type: isStep ? ChartType.STEP : ChartType.LINE,
+          timeRange: this.range,
+        });
 
         let vpdSegments;
         let seriesColor = config.color || '#fff';
@@ -363,7 +386,7 @@ export class GrowspaceEnvChart extends LitElement {
             x: ((p.time - startTimeMs) / durationMillis) * width,
             y: height - ((p.value - min) / paddedRange) * height,
             value: p.value,
-            time: p.time
+            time: p.time,
           }));
           vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
 
@@ -371,7 +394,7 @@ export class GrowspaceEnvChart extends LitElement {
             // Determine current status (last point)
             const lastPoint = dataPoints[dataPoints.length - 1];
             // Get current light state for last point color
-            // Or just rely on current environment active state? 
+            // Or just rely on current environment active state?
             // Better to match the graph logic:
             let isDay = true;
             if (lightHistoryPoints.length > 0) {
@@ -379,7 +402,9 @@ export class GrowspaceEnvChart extends LitElement {
               // If last light point is recent enough... usually it covers 'now'
               isDay = lastLight.value === 1;
             }
-            seriesColor = this._getVpdStatusColor(this._getVpdStatusForValue(lastPoint.value, thresholds, isDay));
+            seriesColor = this._getVpdStatusColor(
+              this._getVpdStatusForValue(lastPoint.value, thresholds, isDay)
+            );
           }
         }
 
@@ -390,7 +415,10 @@ export class GrowspaceEnvChart extends LitElement {
           unit: config.unit || '',
           icon: config.icon || '',
           points: dataPoints,
-          min, max, avg, path: pathStr,
+          min,
+          max,
+          avg,
+          path: pathStr,
           fillType: this.isCombined ? 'flat' : 'gradient',
           vpdSegments,
         });
@@ -450,13 +478,15 @@ export class GrowspaceEnvChart extends LitElement {
       return html`
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
-             <div style="display:flex; align-items:center; gap:8px;">
-               ${this.icon ? html`<ha-icon .icon=${this.icon}></ha-icon>` : ''}
-               <span>${this.title || 'Graph'}</span>
-             </div>
-             <span style="opacity:0.6; font-size:0.9em">No Data</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${this.icon ? html`<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              <span>${this.title || 'Graph'}</span>
+            </div>
+            <span style="opacity:0.6; font-size:0.9em">No Data</span>
           </div>
-          <div class="gs-env-chart-container empty">No history data available for ${this.range}</div>
+          <div class="gs-env-chart-container empty">
+            No history data available for ${this.range}
+          </div>
         </div>
       `;
     }
@@ -464,7 +494,9 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
         <div class="gs-env-graph-card">
-          ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
+          ${this.isCombined
+        ? this._renderCombinedHeader(series)
+        : this._renderSingleHeader(series[0])}
 
           <div
             class="gs-env-chart-container"
@@ -474,31 +506,33 @@ export class GrowspaceEnvChart extends LitElement {
             @click=${() => this._onChartClick()}
           >
             ${this._renderTooltip()}
-            ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+            ${!this.isCombined
+        ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+        : ''}
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
               ${series.map((s) => {
-      // Handle VPD segments separately (they have their own path validation)
-      if (s.vpdSegments?.length) {
-        return svg`${s.vpdSegments.map(seg => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
-      }
+          // Handle VPD segments separately (they have their own path validation)
+          if (s.vpdSegments?.length) {
+            return svg`${s.vpdSegments.map((seg) => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+          }
 
-      // Skip rendering regular paths if no valid path data
-      if (!s.path || s.path.trim() === '' || s.points.length === 0) {
-        return svg``;
-      }
+          // Skip rendering regular paths if no valid path data
+          if (!s.path || s.path.trim() === '' || s.points.length === 0) {
+            return svg``;
+          }
 
-      return svg`
+          return svg`
                   ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
                   ${s.fillType === 'gradient'
-          ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-          : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
-        }
+              ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
+              : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
+            }
                   <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
                 `;
-    })}
+        })}
             </svg>
           </div>
         </div>
@@ -506,7 +540,12 @@ export class GrowspaceEnvChart extends LitElement {
     `;
   }
 
-  private _onMouseMove(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number) {
+  private _onMouseMove(
+    e: MouseEvent,
+    seriesList: GraphSeries[],
+    startTime: Date,
+    durationMillis: number
+  ) {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 
     this._tooltipRafId = requestAnimationFrame(() => {
@@ -519,7 +558,7 @@ export class GrowspaceEnvChart extends LitElement {
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
     this._activeTooltip = null;
     this._hoverTime = null;
-  }
+  };
 
   private _onChartClick() {
     if (this._hoverTime) {
@@ -533,7 +572,12 @@ export class GrowspaceEnvChart extends LitElement {
     }
   }
 
-  private _handleGraphHover(e: MouseEvent, seriesList: GraphSeries[], startTime: Date, durationMillis: number) {
+  private _handleGraphHover(
+    e: MouseEvent,
+    seriesList: GraphSeries[],
+    startTime: Date,
+    durationMillis: number
+  ) {
     if (!this._cachedChartRect) {
       const container = this._chartContainerRef.value;
       if (!container) return;
@@ -562,18 +606,32 @@ export class GrowspaceEnvChart extends LitElement {
         for (let i = Math.max(0, lo - 1); i <= Math.min(s.points.length - 1, lo + 1); i++) {
           const p = s.points[i];
           const diff = Math.abs(p.time - hoverTime);
-          if (diff < minDiff) { minDiff = diff; closest = p; }
+          if (diff < minDiff) {
+            minDiff = diff;
+            closest = p;
+          }
         }
       }
 
       let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
       const defaults = SENSOR_CHART_DEFAULTS[s.id];
-      const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
+      const isBinary =
+        defaults?.binary ||
+        s.id === MetricKey.OPTIMAL ||
+        s.id === MetricKey.DEHUMIDIFIER ||
+        s.unit === 'state';
 
       if (isBinary) {
-        if (s.id === MetricKey.OPTIMAL) valStr = closest.value === 1 ? 'Optimal' : ((closest.meta as Record<string, unknown>)?.reasons as string || 'Not Optimal');
+        if (s.id === MetricKey.OPTIMAL)
+          valStr =
+            closest.value === 1
+              ? 'Optimal'
+              : ((closest.meta as Record<string, unknown>)?.reasons as string) || 'Not Optimal';
         else valStr = closest.value === 1 ? 'ON' : 'OFF';
-      } else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && (closest.meta as Record<string, unknown>)?.state) {
+      } else if (
+        (s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) &&
+        (closest.meta as Record<string, unknown>)?.state
+      ) {
         valStr = (closest.meta as Record<string, unknown>).state as string;
       }
 
@@ -595,12 +653,25 @@ export class GrowspaceEnvChart extends LitElement {
     if (series.points.length > 0) {
       const last = series.points[series.points.length - 1];
       const defaults = SENSOR_CHART_DEFAULTS[series.id];
-      const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
+      const isBinary =
+        defaults?.binary ||
+        series.id === MetricKey.OPTIMAL ||
+        series.id === MetricKey.DEHUMIDIFIER ||
+        series.id === MetricKey.LIGHT ||
+        series.id === MetricKey.IRRIGATION ||
+        series.id === MetricKey.DRAIN;
 
       if (isBinary) {
-        if (series.id === MetricKey.OPTIMAL) valStr = last.value === 1 ? 'Optimal' : ((last.meta as Record<string, unknown>)?.reasons as string || 'Not Optimal');
+        if (series.id === MetricKey.OPTIMAL)
+          valStr =
+            last.value === 1
+              ? 'Optimal'
+              : ((last.meta as Record<string, unknown>)?.reasons as string) || 'Not Optimal';
         else valStr = last.value === 1 ? 'ON' : 'OFF';
-      } else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && (last.meta as Record<string, unknown>)?.state) {
+      } else if (
+        (series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) &&
+        (last.meta as Record<string, unknown>)?.state
+      ) {
         valStr = (last.meta as Record<string, unknown>).state as string;
       } else {
         valStr = `${last.value.toFixed(1)} ${series.unit}`;
@@ -610,8 +681,12 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <div class="gs-env-graph-header" @click=${() => this._toggleEnvGraph()}>
         <div style="display:flex; align-items:center; gap:8px;">
-          <div style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;">
-            <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="${series.icon || this.icon}"></path></svg>
+          <div
+            style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;"
+          >
+            <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;">
+              <path d="${series.icon || this.icon}"></path>
+            </svg>
           </div>
           <span style="color:${series.color}; font-weight:500;">${series.title}</span>
         </div>
@@ -626,23 +701,84 @@ export class GrowspaceEnvChart extends LitElement {
     return html`
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft ? html`<div class="scroll-nav left" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips(ScrollDirection.LEFT) }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
-          
-          <div class="chips-scroll-container" ${ref(this._chipsContainerRef)} @click=${(e: Event) => e.stopPropagation()}>
-            ${seriesList.map(s => html`
-                <div class=${classMap({ 'gs-legend-item': true, 'mask-left': this._canScrollLeft, 'mask-right': this._canScrollRight })}
-                  @click=${(e: Event) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true })); }}>
-                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"></span>
-                  ${s.icon ? html`<div style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"><svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="${s.icon}"></path></svg></div>` : ''}
+          ${this._canScrollLeft
+        ? html`<div
+                class="scroll-nav left"
+                @click=${(e: Event) => {
+            e.stopPropagation();
+            this._scrollChips(ScrollDirection.LEFT);
+          }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+              </div>`
+        : ''}
+
+          <div
+            class="chips-scroll-container"
+            ${ref(this._chipsContainerRef)}
+            @click=${(e: Event) => e.stopPropagation()}
+          >
+            ${seriesList.map(
+          (s) => html`
+                <div
+                  class=${classMap({
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight,
+          })}
+                  @click=${(e: Event) => {
+              e.stopPropagation();
+              this.dispatchEvent(
+                new CustomEvent('unlink-graph', {
+                  detail: s.id,
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+            }}
+                >
+                  <span
+                    style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"
+                  ></span>
+                  ${s.icon
+              ? html`<div
+                        style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          style="width:100%; height:100%; fill:currentColor;"
+                        >
+                          <path d="${s.icon}"></path>
+                        </svg>
+                      </div>`
+              : ''}
                   <span style="color:${s.color}; font-weight:500;">${s.title}</span>
                 </div>
-            `)}
+              `
+        )}
           </div>
 
-          ${this._canScrollRight ? html`<div class="scroll-nav right" @click=${(e: Event) => { e.stopPropagation(); this._scrollChips(ScrollDirection.RIGHT) }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
+          ${this._canScrollRight
+        ? html`<div
+                class="scroll-nav right"
+                @click=${(e: Event) => {
+            e.stopPropagation();
+            this._scrollChips(ScrollDirection.RIGHT);
+          }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+              </div>`
+        : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
-           <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))} title="Unlink Graphs"></ha-icon-button>
+          <ha-icon-button
+            .path=${mdiLink}
+            @click=${() =>
+        this.dispatchEvent(
+          new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
+        )}
+            title="Unlink Graphs"
+          ></ha-icon-button>
         </div>
       </div>
     `;
@@ -653,15 +789,33 @@ export class GrowspaceEnvChart extends LitElement {
     const { x, time, items } = this._activeTooltip;
     return html`
       <div class="gs-tooltip" style=${styleMap({ left: `${x}px`, top: '0' })}>
-        <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;">${time}</div>
-        ${items.map(i => html`
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;">
+        <div
+          style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;"
+        >
+          ${time}
+        </div>
+        ${items.map(
+      (i) => html`
+            <div
+              style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;"
+            >
               <span style="color:${i.color};">${i.title}:</span>
               <span style="font-family:monospace; font-weight:bold;">${i.value}</span>
             </div>
-        `)}
+          `
+    )}
       </div>
-      <div class="gs-cursor-line" style=${styleMap({ left: `${x}px`, height: '100%', top: '0', position: 'absolute', borderLeft: '1px dashed rgba(255,255,255,0.3)', pointerEvents: 'none' })}></div>
+      <div
+        class="gs-cursor-line"
+        style=${styleMap({
+      left: `${x}px`,
+      height: '100%',
+      top: '0',
+      position: 'absolute',
+      borderLeft: '1px dashed rgba(255,255,255,0.3)',
+      pointerEvents: 'none',
+    })}
+      ></div>
     `;
   }
 
@@ -683,18 +837,24 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _renderXAxisHTML(range: string) {
-    const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-    return html`<div style="${labelStyle} left: 50px;">-${range}</div><div style="${labelStyle} right: 40px;">Now</div>`;
+    const labelStyle =
+      'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
+    return html`<div style="${labelStyle} left: 50px;">-${range}</div>
+      <div style="${labelStyle} right: 40px;">Now</div>`;
   }
 
   private _renderYAxisHTML(min: number, max: number, unit: string) {
-    const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
+    const labelStyle =
+      'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
     if (unit === 'state' || (max === 1 && min === 0)) {
-      return html`<div style="${labelStyle} top: 20px;">ON</div><div style="${labelStyle} bottom: 30px;">OFF</div>`;
+      return html`<div style="${labelStyle} top: 20px;">ON</div>
+        <div style="${labelStyle} bottom: 30px;">OFF</div>`;
     }
     return html`
       <div style="${labelStyle} top: 20px;">${max.toFixed(0)}${unit}</div>
-      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
+      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+        ${((max + min) / 2).toFixed(1)}
+      </div>
       <div style="${labelStyle} bottom: 30px;">${min.toFixed(0)}${unit}</div>
     `;
   }
@@ -706,33 +866,166 @@ export class GrowspaceEnvChart extends LitElement {
     return 86400000;
   }
 
-  private _toggleEnvGraph() { this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })); }
+  private _toggleEnvGraph() {
+    this.dispatchEvent(
+      new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })
+    );
+  }
 
   static styles = css`
-    :host { display: block; position: relative; }
-    .gs-env-graph-card { margin-top: 12px; background: var(--card-background-color, #1a1a1a); border-radius: 12px; padding: 16px; contain: content; }
-    .gs-env-graph-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
-    .gs-env-chart-container { position: relative; height: 180px; background: var(--secondary-background-color, #0d0d0d); border-radius: 8px; padding: 20px 40px 30px 50px; cursor: crosshair; overflow: hidden; }
-    .gs-env-chart-container.empty { display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color, #444); cursor: default; }
-    .chart-svg { width: 100%; height: 100%; overflow: visible; display: block; }
-    
-    svg path { transition: d 0.3s ease-out, stroke 0.3s ease; will-change: d; }
+    :host {
+      display: block;
+      position: relative;
+    }
+    .gs-env-graph-card {
+      margin-top: 12px;
+      background: var(--card-background-color, #1a1a1a);
+      border-radius: 12px;
+      padding: 16px;
+      contain: content;
+    }
+    .gs-env-graph-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .gs-env-chart-container {
+      position: relative;
+      height: 180px;
+      background: var(--secondary-background-color, #0d0d0d);
+      border-radius: 8px;
+      padding: 20px 40px 30px 50px;
+      cursor: crosshair;
+      overflow: hidden;
+    }
+    .gs-env-chart-container.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color, #444);
+      cursor: default;
+    }
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display: block;
+    }
 
-    .gs-tooltip { position: absolute; background: var(--card-background-color, rgba(30, 30, 35, 0.95)); color: var(--primary-text-color, #fff); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; pointer-events: none; transform: translate(-50%, 0); z-index: 100; white-space: nowrap; border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); line-height: 1.4; text-align: center; }
-    .gs-cursor-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 5; border-left: 1px dashed rgba(255, 255, 255, 0.5); }
-    
-    .gs-legend-item { display: flex; align-items: center; margin-right: 12px; font-size: 0.85rem; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
-    .gs-legend-item:hover { opacity: 1; }
-    
-    .chips-scroll-container { display: flex; align-items: center; gap: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth; flex: 1; min-width: 0; padding: 0 10px; transition: mask-image 0.3s; }
-    .chips-scroll-container.mask-right { mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%); -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%); }
-    .chips-scroll-container.mask-left { mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%); }
-    .chips-scroll-container.mask-left.mask-right { mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%); }
-    .chips-scroll-container::-webkit-scrollbar { display: none; }
-    
-    .scroll-nav { display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; min-width: 24px; color: var(--primary-text-color, #fff); }
-    .scroll-nav:hover { opacity: 1; }
-    .scroll-nav svg { width: 24px; height: 24px; fill: currentColor; }
-    @media (pointer: coarse) { .scroll-nav { display: none; } }
+    svg path {
+      transition:
+        d 0.3s ease-out,
+        stroke 0.3s ease;
+      will-change: d;
+    }
+
+    .gs-tooltip {
+      position: absolute;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.95));
+      color: var(--primary-text-color, #fff);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      transform: translate(-50%, 0);
+      z-index: 100;
+      white-space: nowrap;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      line-height: 1.4;
+      text-align: center;
+    }
+    .gs-cursor-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 5;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+    }
+
+    .gs-legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .gs-legend-item:hover {
+      opacity: 1;
+    }
+
+    .chips-scroll-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      flex: 1;
+      min-width: 0;
+      padding: 0 10px;
+      transition: mask-image 0.3s;
+    }
+    .chips-scroll-container.mask-right {
+      mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+    }
+    .chips-scroll-container.mask-left {
+      mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+    }
+    .chips-scroll-container.mask-left.mask-right {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+    }
+    .chips-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scroll-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: var(--primary-text-color, #fff);
+    }
+    .scroll-nav:hover {
+      opacity: 1;
+    }
+    .scroll-nav svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+    @media (pointer: coarse) {
+      .scroll-nav {
+        display: none;
+      }
+    }
   `;
 }

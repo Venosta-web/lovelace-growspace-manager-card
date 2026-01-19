@@ -33,10 +33,10 @@ export class Md3Select extends LitElement {
         <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
           <option value="">Select...</option>
           ${this.options.map((opt) => {
-      const label = typeof opt === 'string' ? opt : opt.label;
-      const val = typeof opt === 'string' ? opt : opt.value;
-      return html`<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-    })}
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return html`<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+          })}
         </select>
       </div>
     `;

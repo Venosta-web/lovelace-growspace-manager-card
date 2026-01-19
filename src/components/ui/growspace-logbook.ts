@@ -3,7 +3,12 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceEvent } from '../../types';
 import { getTimelineService } from '../../services/timeline-service';
-import { getEventTimestamp, formatDateTime, formatDuration, formatProbability } from '../../utils/date-utils';
+import {
+  getEventTimestamp,
+  formatDateTime,
+  formatDuration,
+  formatProbability,
+} from '../../utils/date-utils';
 import { dialogStyles } from '../../styles/dialog.styles';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
@@ -73,8 +78,13 @@ export class GrowspaceLogbook extends LitElement {
         animation: highlight-pulse 1.5s ease;
       }
       @keyframes highlight-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+        }
       }
       .event-header {
         display: flex;
@@ -184,7 +194,8 @@ export class GrowspaceLogbook extends LitElement {
 
     if (t.includes('ipm')) return '#9c27b0';
     if (cat === 'training' || t.includes('training')) return 'var(--gm-warning-color, #ff9800)';
-    if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient')) return 'var(--gm-info-color, #2196f3)';
+    if (t.includes('water') || t.includes('irrigation') || t.includes('nutrient'))
+      return 'var(--gm-info-color, #2196f3)';
 
     // Severity/Alerts
     if (cat === 'alert') return 'var(--error-color, #f44336)';
@@ -235,19 +246,6 @@ export class GrowspaceLogbook extends LitElement {
     } finally {
       this._isLoading = false;
     }
-  }
-
-  private _formatDuration(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  }
-
-  private _formatProb(val: number | undefined): string {
-    if (val === undefined || val === null || isNaN(val)) {
-      return '--%';
-    }
-    return `${Math.round(Number(val) * 100)}%`;
   }
 
   private _formatTime(isoString: string): string {
@@ -308,44 +306,56 @@ export class GrowspaceLogbook extends LitElement {
     let filteredEvents = allEvents;
 
     if (this._activeFilter === 'watering') {
-      filteredEvents = allEvents.filter(e => {
+      filteredEvents = allEvents.filter((e) => {
         const cat = this._normalize(e.category);
         const type = this._normalize(e.sensor_type);
-        return cat === 'irrigation' ||
+        return (
+          cat === 'irrigation' ||
           (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
           ['irrigation', 'drain', 'water'].includes(type) ||
-          type.includes('water');
+          type.includes('water')
+        );
       });
     } else if (this._activeFilter === 'training') {
-      const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
-      filteredEvents = allEvents.filter(e => {
+      const techniques = [
+        'topping',
+        'fim',
+        'lst',
+        'super_cropping',
+        'scrog',
+        'defoliating',
+        'lollipopping',
+      ];
+      filteredEvents = allEvents.filter((e) => {
         const cat = this._normalize(e.category);
         const type = this._normalize(e.sensor_type);
-        return cat === 'training' || techniques.some(t => type.includes(t));
+        return cat === 'training' || techniques.some((t) => type.includes(t));
       });
     } else if (this._activeFilter === 'alerts') {
-      filteredEvents = allEvents.filter(e => {
+      filteredEvents = allEvents.filter((e) => {
         const cat = this._normalize(e.category);
         return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
       });
     } else if (this._activeFilter === 'environment') {
-      filteredEvents = allEvents.filter(e => {
+      filteredEvents = allEvents.filter((e) => {
         const type = this._normalize(e.sensor_type);
         const cat = this._normalize(e.category);
-        return ['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report';
+        return (
+          ['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report'
+        );
       });
     } else if (this._activeFilter === 'notes') {
-      filteredEvents = allEvents.filter(e => this._normalize(e.category) === 'note');
+      filteredEvents = allEvents.filter((e) => this._normalize(e.category) === 'note');
     }
 
     // Schwartzian transform for efficient sorting
     const sortedEvents = filteredEvents
-      .map(e => ({
+      .map((e) => ({
         event: e,
-        time: getEventTimestamp(e)
+        time: getEventTimestamp(e),
       }))
       .sort((a, b) => b.time - a.time)
-      .map(item => item.event);
+      .map((item) => item.event);
 
     const filters = [
       { id: 'all', label: 'All' },
@@ -373,7 +383,7 @@ export class GrowspaceLogbook extends LitElement {
       <div class="log-container" ${ref(this._containerRef)}>
         ${sortedEvents.length > 0
         ? html`
-            ${virtualize({
+              ${virtualize({
           items: sortedEvents,
           scroller: true,
           renderItem: (event: GrowspaceEvent) => {
@@ -393,58 +403,94 @@ export class GrowspaceLogbook extends LitElement {
             const eventColor = this._getEventColor(event.category, event.sensor_type);
 
             return html`
-                    <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
+                    <div
+                      class="event-card ${this._highlightedTimestamp &&
+                Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000
+                ? 'highlighted'
+                : ''}"
+                      data-event-index="${index}"
+                    >
                       <div class="event-header">
                         <div>
                           <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
                         ${event.duration_sec > 0
-                ? html`<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                ? html`<div class="event-duration">
+                              ${formatDuration(event.duration_sec)}
+                            </div>`
                 : nothing}
                       </div>
-                      
+
                       <div class="event-details">
                         <div class="event-reasons">
-                          ${isNote ? html`
-                            <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
-                              ${(event as any).notes}
-                            </div>
-                            ${(event as any).tags?.length > 0 ? html`
-                              <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
-                                ${(event as any).tags.map((tag: string) => html`
-                                  <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
-                                `)}
-                              </div>
-                            ` : nothing}
-                            ${(event as any).images?.length > 0 ? html`
-                              <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
-                                ${(event as any).images.length} Image${(event as any).images.length > 1 ? 's' : ''} attached
-                              </div>
-                            ` : nothing}
-                          ` : (event.reasons && event.reasons.length > 0
-                ? event.reasons
-                  .filter((r: string) => !r.trim().toLowerCase().startsWith('plant_id:'))
-                  .map((reason: string) => html`<span class="reason-badge">${reason}</span>`)
-                : nothing)}
+                          ${isNote
+                ? html`
+                                <div
+                                  class="note-text"
+                                  style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;"
+                                >
+                                  ${(event as any).notes}
+                                </div>
+                                ${(event as any).tags?.length > 0
+                    ? html`
+                                      <div
+                                        style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;"
+                                      >
+                                        ${(event as any).tags.map(
+                      (tag: string) => html`
+                                            <span
+                                              class="reason-badge"
+                                              style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);"
+                                              >#${tag}</span
+                                            >
+                                          `
+                    )}
+                                      </div>
+                                    `
+                    : nothing}
+                                ${(event as any).images?.length > 0
+                    ? html`
+                                      <div
+                                        style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
+                                      >
+                                        ${(event as any).images.length}
+                                        Image${(event as any).images.length > 1 ? 's' : ''} attached
+                                      </div>
+                                    `
+                    : nothing}
+                              `
+                : event.reasons && event.reasons.length > 0
+                  ? event.reasons
+                    .filter(
+                      (r: string) => !r.trim().toLowerCase().startsWith('plant_id:')
+                    )
+                    .map(
+                      (reason: string) =>
+                        html`<span class="reason-badge">${reason}</span>`
+                    )
+                  : nothing}
                         </div>
-                        
+
                         ${!isNote && event.severity > 0.5 && event.category !== 'training'
                 ? html`
-                              <div 
+                              <div
                                 class="event-probability"
-                                style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
+                                style="color: ${this._getSeverityColor(
+                  event.severity,
+                  event.sensor_type
+                )}"
                               >
-                                ${this._formatProb(event.severity)}
+                                ${formatProbability(event.severity)}
                               </div>
                             `
                 : nothing}
                       </div>
                     </div>
                   `;
-          }
+          },
         })}
-          `
+            `
         : html`
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".

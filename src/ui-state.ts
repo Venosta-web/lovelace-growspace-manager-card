@@ -32,4 +32,3 @@ export type ActiveDialogState =
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> };
-

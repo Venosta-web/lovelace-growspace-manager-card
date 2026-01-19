@@ -5,5 +5,6 @@ import type { GrowspaceStore } from './store/growspace-store';
 
 export const hassContext = createContext<HomeAssistant>('hass');
 export const configContext = createContext<GrowspaceManagerCardConfig>('config');
-export const strainLibraryContext = createContext<import('./types').StrainEntry[]>('strain-library');
+export const strainLibraryContext =
+  createContext<import('./types').StrainEntry[]>('strain-library');
 export const storeContext = createContext<GrowspaceStore>('store');

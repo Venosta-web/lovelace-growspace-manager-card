@@ -46,11 +46,13 @@ export class GrowspaceViewStandard extends LitElement {
   private _getPlantsByStage(stage: string): (PlantEntity & { _growspaceName?: string })[] {
     const devices = this._devicesController?.value || [];
     return devices
-      .flatMap(d => (d.plants || []).map(p => ({
-        ...p,
-        _growspaceName: d.name
-      })))
-      .filter(p => p.attributes.stage === stage);
+      .flatMap((d) =>
+        (d.plants || []).map((p) => ({
+          ...p,
+          _growspaceName: d.name,
+        }))
+      )
+      .filter((p) => p.attributes.stage === stage);
   }
 
   private async _handleTransplantDrop(e: CustomEvent) {
@@ -66,13 +68,13 @@ export class GrowspaceViewStandard extends LitElement {
         growspace_id: targetGrowspaceId,
         row: detail.target_row,
         col: detail.target_col,
-        veg_start: today
+        veg_start: today,
       });
 
       this.store.ui.showToast('Plant transplanted successfully', 'success');
 
       // Refresh data after a small delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       await this.store.refreshData();
     } catch (error) {
       console.error('[GrowspaceViewStandard] Transplant failed:', error);
@@ -109,7 +111,6 @@ export class GrowspaceViewStandard extends LitElement {
             ></growspace-edit-mode-banner>
           `
         : ''}
-
       ${this._isTransplantModeController?.value
         ? html`
             <transplant-source-panel
@@ -128,7 +129,11 @@ export class GrowspaceViewStandard extends LitElement {
 
       ${this.config?.initial_view_mode === 'header'
         ? html`
-            <button class="collapse-handle" @click=${this._dispatchToggle} aria-label="Toggle view expansion">
+            <button
+              class="collapse-handle"
+              @click=${this._dispatchToggle}
+              aria-label="Toggle view expansion"
+            >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
@@ -150,8 +155,6 @@ export class GrowspaceViewStandard extends LitElement {
   }
 
   private _dispatchToggle() {
-    this.dispatchEvent(
-      new CustomEvent('toggle-expansion', { bubbles: true, composed: true })
-    );
+    this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
   }
 }

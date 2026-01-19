@@ -256,7 +256,7 @@ describe('GrowspaceAnalytics', () => {
 
     it('should handle getSortIndex for unknown metric', async () => {
         $activeEnvGraphs.get.mockReturnValue(new Set(['unknown_metric']));
-        (element as any)._computeItemsToRender();
+
 
         const items = (element as any)._itemsToRender;
         expect(items[0].sortIndex).toBe(999); // Default for unknown
@@ -281,7 +281,7 @@ describe('GrowspaceAnalytics', () => {
     it('should sort items correctly with mixed known/unknown metrics', async () => {
         $activeEnvGraphs.get.mockReturnValue(new Set(['unknown', 'temperature']));
         // temperature index 0 approx, unknown 999
-        (element as any)._computeItemsToRender();
+
         const items = (element as any)._itemsToRender;
         expect(items[0].metrics[0]).toBe('temperature');
         expect(items[1].metrics[0]).toBe('unknown');
@@ -322,7 +322,7 @@ describe('GrowspaceAnalytics', () => {
         $activeEnvGraphs.get.mockReturnValue(new Set(['temperature']));
         $linkedGraphGroups.get.mockReturnValue([['humidity', 'vpd']]); // None active
 
-        (element as any)._computeItemsToRender();
+
         const items = (element as any)._itemsToRender;
         // Should only have temperature as single
         expect(items.length).toBe(1);

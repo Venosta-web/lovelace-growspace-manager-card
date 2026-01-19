@@ -44,12 +44,12 @@ export class Md3TextInput extends LitElement {
           @input=${this._handleInput}
         />
         ${this.suggestions.length > 0
-        ? html`
+          ? html`
               <datalist id=${this._listId}>
                 ${this.suggestions.map((s) => html`<option value=${s}></option>`)}
               </datalist>
             `
-        : nothing}
+          : nothing}
       </div>
     `;
   }

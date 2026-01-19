@@ -50,10 +50,10 @@ export class GrowspaceViewSwitcher extends LitElement {
       return html`
         <error-boundary heading="Detailed View Error">
           <growspace-view-compact
-              .grid=${this.grid}
-              .rows=${this.rows}
-              .cols=${this.device.plantsPerRow}
-              .isLoading=${this.isLoading}
+            .grid=${this.grid}
+            .rows=${this.rows}
+            .cols=${this.device.plantsPerRow}
+            .isLoading=${this.isLoading}
           ></growspace-view-compact>
         </error-boundary>
       `;
@@ -63,8 +63,8 @@ export class GrowspaceViewSwitcher extends LitElement {
       return html`
         <error-boundary heading="Header View Error">
           <growspace-view-header
-              .device=${this.device}
-              .growspaceOptions=${this.growspaceOptions}
+            .device=${this.device}
+            .growspaceOptions=${this.growspaceOptions}
           ></growspace-view-header>
         </error-boundary>
       `;
@@ -84,7 +84,14 @@ export class GrowspaceViewSwitcher extends LitElement {
           .selectedCount=${this.selectedCount}
           .config=${this.config}
           .isLoading=${this.isLoading}
-          @batch-add-plants=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
+          @batch-add-plants=${(e: CustomEvent) =>
+            this.dispatchEvent(
+              new CustomEvent('batch-add-plants', {
+                detail: e.detail,
+                bubbles: true,
+                composed: true,
+              })
+            )}
         ></growspace-view-standard>
       </error-boundary>
     `;

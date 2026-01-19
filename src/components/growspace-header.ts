@@ -20,7 +20,6 @@ import { HeaderDragController } from '../controllers/header-drag-controller';
 
 @customElement('growspace-header')
 export class GrowspaceHeader extends LitElement {
-
   @consume({ context: hassContext, subscribe: true })
   public hass!: HomeAssistant;
 
@@ -54,7 +53,7 @@ export class GrowspaceHeader extends LitElement {
   private _nutrientInventoryController!: StoreController<NutrientInventory | null>;
   private _overlayModeController!: StoreController<GridOverlayMode>;
 
-  private _resizeController = new ResizeController(this, () => { });
+  private _resizeController = new ResizeController(this, () => {});
 
   // Cached metrics to avoid re-computation on every render
   private _mainChips: HeaderChip[] = [];
@@ -104,10 +103,22 @@ export class GrowspaceHeader extends LitElement {
       this._devicesController = new StoreController(this, this.store.data.$devices);
       this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
       this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
-      this._historyLoadingController = new StoreController(this, this.store.history.$historyLoading);
-      this._activeEnvGraphsController = new StoreController(this, this.store.history.$activeEnvGraphs);
-      this._linkedGraphGroupsController = new StoreController(this, this.store.history.$linkedGraphGroups);
-      this._nutrientInventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+      this._historyLoadingController = new StoreController(
+        this,
+        this.store.history.$historyLoading
+      );
+      this._activeEnvGraphsController = new StoreController(
+        this,
+        this.store.history.$activeEnvGraphs
+      );
+      this._linkedGraphGroupsController = new StoreController(
+        this,
+        this.store.history.$linkedGraphGroups
+      );
+      this._nutrientInventoryController = new StoreController(
+        this,
+        this.store.data.$nutrientInventory
+      );
       this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
     }
   }
@@ -119,9 +130,10 @@ export class GrowspaceHeader extends LitElement {
     const args = [
       this.device?.deviceId,
       this.activeEnvGraphs,
-      this._linkedGraphGroupsController?.value
+      this._linkedGraphGroupsController?.value,
     ];
-    const changed = !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
+    const changed =
+      !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
     if (changed) {
       this._lastUpdateArgs = args;
     }
@@ -135,7 +147,6 @@ export class GrowspaceHeader extends LitElement {
       this._updateMetrics();
     }
   }
-
 
   private _handleDeviceChange(e: Event) {
     const target = e.target as HTMLSelectElement;
@@ -157,7 +168,6 @@ export class GrowspaceHeader extends LitElement {
         this.store.history.linkGraphs(source, target);
       }
     });
-
   }
 
   private _unlinkGraphs(groupIndex: number) {
@@ -194,28 +204,24 @@ export class GrowspaceHeader extends LitElement {
 
     return html`
       <div class="gs-stats-container">
-        
         <!-- TOP HEADER GRID -->
         <div class="gs-header-top">
-          
           <!-- Row 1 Left: Title/Select -->
           <div class="header-title-area">
-             ${!this.config?.default_growspace
-        ? html`
-                    <div class="select-wrapper">
-                        <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
-                        <select 
-                            class="growspace-select-header" 
-                            .value=${deviceId}
-                            @change=${this._handleDeviceChange}
-                        >
-                            ${devices.map(d => html`<option value="${d.deviceId}">${d.name}</option>`)}
-                        </select>
-                    </div>`
-        : html`<h1 class="gs-title">${this.device.name}</h1>`
-      }
+            ${!this.config?.default_growspace
+              ? html` <div class="select-wrapper">
+                  <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                  <select
+                    class="growspace-select-header"
+                    .value=${deviceId}
+                    @change=${this._handleDeviceChange}
+                  >
+                    ${devices.map((d) => html`<option value="${d.deviceId}">${d.name}</option>`)}
+                  </select>
+                </div>`
+              : html`<h1 class="gs-title">${this.device.name}</h1>`}
           </div>
-          
+
           <!-- Row 1 Right: Actions & Device Chips -->
           <growspace-header-actions
             class="header-actions"
@@ -230,40 +236,38 @@ export class GrowspaceHeader extends LitElement {
 
           <!-- Row 2 Left: Stages -->
           <div class="header-stage-area-wrapper">
-            <growspace-header-stages
-                .dominant=${this._dominant}
-            ></growspace-header-stages>
+            <growspace-header-stages .dominant=${this._dominant}></growspace-header-stages>
           </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">
-             <growspace-header-secondary
-                .chips=${secondaryChips}
-                .inventory=${this._nutrientInventoryController?.value || null}
-                .compact=${this.compact}
-                .isMobile=${this._resizeController.isMobile}
-                .mobileLink=${this._mobileLink}
-                @open-nutrients=${() => this.store.openNutrientsDialog()}
-                @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
-                @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
-                @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-                @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
-             ></growspace-header-secondary>
+            <growspace-header-secondary
+              .chips=${secondaryChips}
+              .inventory=${this._nutrientInventoryController?.value || null}
+              .compact=${this.compact}
+              .isMobile=${this._resizeController.isMobile}
+              .mobileLink=${this._mobileLink}
+              @open-nutrients=${() => this.store.openNutrientsDialog()}
+              @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
+              @chip-drag-start=${(e: CustomEvent) =>
+                this._handleChipDragStart(null, e.detail.metric)}
+              @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+              @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
+            ></growspace-header-secondary>
           </div>
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
         <growspace-header-hero
-            .chips=${heroChips}
-            .device=${this.device}
-            .isMobile=${this._resizeController.isMobile}
-            .mobileLink=${this._mobileLink}
-            @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
-            @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
-            @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+          .chips=${heroChips}
+          .device=${this.device}
+          .isMobile=${this._resizeController.isMobile}
+          .mobileLink=${this._mobileLink}
+          @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
+          @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+          @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero>
       </div>
     `;
   }
-
 }

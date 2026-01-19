@@ -3,91 +3,91 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDataStore } from '../store/data-store';
 
 export class SubscriptionController implements ReactiveController {
-    private host: ReactiveControllerHost;
-    private _unsubEvents?: () => void;
-    private _hass?: HomeAssistant;
-    private _onUpdate?: () => void;
-    private dataStore: GrowspaceDataStore;
+  private host: ReactiveControllerHost;
+  private _unsubEvents?: () => void;
+  private _hass?: HomeAssistant;
+  private _onUpdate?: () => void;
+  private dataStore: GrowspaceDataStore;
 
-    constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: () => void) {
-        this.host = host;
-        this.dataStore = dataStore;
-        this._onUpdate = onUpdate;
-        host.addController(this);
+  constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: () => void) {
+    this.host = host;
+    this.dataStore = dataStore;
+    this._onUpdate = onUpdate;
+    host.addController(this);
+  }
+
+  hostConnected() {
+    if (this._hass) {
+      this.subscribe(this._hass);
+    }
+  }
+
+  hostDisconnected() {
+    this.unsubscribe();
+  }
+
+  updateHass(hass: HomeAssistant) {
+    if (this._hass !== hass) {
+      this._hass = hass;
+      // Subscribe if not already subscribed
+      if (!this._unsubEvents) {
+        this.subscribe(hass);
+      }
+    }
+  }
+
+  async subscribe(hass: HomeAssistant) {
+    if (this._unsubEvents || !hass) return;
+    this._hass = hass;
+
+    try {
+      this._unsubEvents = await hass.connection.subscribeEvents(
+        (event) => this._handleEvent(event),
+        'growspace_manager_updated'
+      );
+    } catch (err) {
+      console.error('Failed to subscribe to growspace events', err);
+    }
+  }
+
+  unsubscribe() {
+    if (this._unsubEvents) {
+      this._unsubEvents();
+      this._unsubEvents = undefined;
+    }
+  }
+
+  private _handleEvent(event: any) {
+    // eslint-disable-next-line camelcase
+    const { event_type, data } = event.data;
+
+    // eslint-disable-next-line camelcase
+    if (event_type === 'plant_added' || event_type === 'plant_updated') {
+      this._handlePlantUpdate(data.plant);
+      // eslint-disable-next-line camelcase
+    } else if (event_type === 'plant_removed') {
+      this._handlePlantRemoval(data.plant_id, data.growspace_id);
     }
 
-    hostConnected() {
-        if (this._hass) {
-            this.subscribe(this._hass);
-        }
+    if (this._onUpdate) this._onUpdate();
+  }
+
+  // Logic moved from GrowspaceStore, adapted to use dataStore actions
+  private _handlePlantUpdate(plantData: any) {
+    // 1. Remove old instance (handle moves) - simplified cache update
+    this.dataStore.removePlantFromWsCache(plantData.plant_id);
+
+    // 2. Add to new location
+    const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
+    if (gsId) {
+      const correctKey = `position_${plantData.row}_${plantData.col}`;
+      this.dataStore.updateWsDataCacheGrid(gsId, (grid) => {
+        grid[correctKey] = plantData;
+      });
     }
+  }
 
-    hostDisconnected() {
-        this.unsubscribe();
-    }
-
-    updateHass(hass: HomeAssistant) {
-        if (this._hass !== hass) {
-            this._hass = hass;
-            // Subscribe if not already subscribed
-            if (!this._unsubEvents) {
-                this.subscribe(hass);
-            }
-        }
-    }
-
-    async subscribe(hass: HomeAssistant) {
-        if (this._unsubEvents || !hass) return;
-        this._hass = hass;
-
-        try {
-            this._unsubEvents = await hass.connection.subscribeEvents(
-                (event) => this._handleEvent(event),
-                'growspace_manager_updated'
-            );
-        } catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-
-    unsubscribe() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
-
-    private _handleEvent(event: any) {
-        // eslint-disable-next-line camelcase
-        const { event_type, data } = event.data;
-
-        // eslint-disable-next-line camelcase
-        if (event_type === 'plant_added' || event_type === 'plant_updated') {
-            this._handlePlantUpdate(data.plant);
-            // eslint-disable-next-line camelcase
-        } else if (event_type === 'plant_removed') {
-            this._handlePlantRemoval(data.plant_id, data.growspace_id);
-        }
-
-        if (this._onUpdate) this._onUpdate();
-    }
-
-    // Logic moved from GrowspaceStore, adapted to use dataStore actions
-    private _handlePlantUpdate(plantData: any) {
-        // 1. Remove old instance (handle moves) - simplified cache update
-        this.dataStore.removePlantFromWsCache(plantData.plant_id);
-
-        // 2. Add to new location
-        const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
-        if (gsId) {
-            const correctKey = `position_${plantData.row}_${plantData.col}`;
-            this.dataStore.updateWsDataCacheGrid(gsId, (grid) => {
-                grid[correctKey] = plantData;
-            });
-        }
-    }
-
-    private _handlePlantRemoval(plantId: string, growspaceId?: string) {
-        this.dataStore.removePlantFromWsCache(plantId, growspaceId);
-    }
+  private _handlePlantRemoval(plantId: string, growspaceId?: string) {
+    this.dataStore.removePlantFromWsCache(plantId, growspaceId);
+  }
 }

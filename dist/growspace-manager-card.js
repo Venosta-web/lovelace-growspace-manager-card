@@ -121,14 +121,40 @@ var ChartType;
     ChartType["STEP"] = "step";
 })(ChartType || (ChartType = {}));
 const METRIC_CONFIG = {
-    [MetricKey.TEMPERATURE]: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+    [MetricKey.TEMPERATURE]: {
+        color: '#ff5252',
+        title: 'Temperature',
+        unit: '°C',
+        icon: mdiThermometer,
+    },
     [MetricKey.HUMIDITY]: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
     [MetricKey.VPD]: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-    [MetricKey.CALCULATED_VPD]: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
+    [MetricKey.CALCULATED_VPD]: {
+        color: '#ab47bc',
+        title: 'Calc. VPD',
+        unit: 'kPa',
+        icon: mdiCalculator,
+    },
     [MetricKey.CO2]: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-    [MetricKey.AIR_EXCHANGE]: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
-    [MetricKey.SOIL_MOISTURE]: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-    [MetricKey.LIGHT]: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: ChartType.STEP },
+    [MetricKey.AIR_EXCHANGE]: {
+        color: '#8d6e63',
+        title: 'Air Exchange',
+        unit: 'm³/h',
+        icon: mdiAirFilter,
+    },
+    [MetricKey.SOIL_MOISTURE]: {
+        color: '#03a9f4',
+        title: 'Soil Moisture',
+        unit: '%',
+        icon: mdiWaterPercent,
+    },
+    [MetricKey.LIGHT]: {
+        color: '#ffc107',
+        title: 'Light',
+        unit: 'state',
+        icon: mdiLightbulbOn,
+        type: ChartType.STEP,
+    },
     [MetricKey.IRRIGATION]: {
         color: '#03a9f4',
         title: 'Irrigation',
@@ -136,7 +162,13 @@ const METRIC_CONFIG = {
         icon: mdiWater,
         type: ChartType.STEP,
     },
-    [MetricKey.DRAIN]: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: ChartType.STEP },
+    [MetricKey.DRAIN]: {
+        color: '#ff9800',
+        title: 'Drain',
+        unit: 'state',
+        icon: mdiWater,
+        type: ChartType.STEP,
+    },
     [MetricKey.EXHAUST]: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
     [MetricKey.CIRCULATION_FAN]: {
         color: '#243491',
@@ -144,7 +176,12 @@ const METRIC_CONFIG = {
         unit: '',
         icon: mdiFan,
     },
-    [MetricKey.HUMIDIFIER]: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+    [MetricKey.HUMIDIFIER]: {
+        color: '#00bcd4',
+        title: 'Humidifier',
+        unit: '',
+        icon: mdiAirHumidifier,
+    },
     [MetricKey.DEHUMIDIFIER]: {
         color: '#009688',
         title: 'Dehumidifier',
@@ -313,12 +350,7 @@ const BINARY_ON_STATES = [
     'drying',
     EntityState.ACTIVE,
 ];
-[
-    EntityState.OFF,
-    EntityState.FALSE,
-    '0',
-    EntityState.IDLE,
-];
+[EntityState.OFF, EntityState.FALSE, '0', EntityState.IDLE];
 
 // --- Enums ---
 var PlantStage;
@@ -343,7 +375,11 @@ var DehumidifierStage;
 })(DehumidifierStage || (DehumidifierStage = {}));
 // --- Configuration Constants ---
 const STAGE_CONFIG = {
-    [PlantStage.SEEDLING]: { icon: mdiSprout, title: 'Seedling', colorVar: '--state-seedling-color' },
+    [PlantStage.SEEDLING]: {
+        icon: mdiSprout,
+        title: 'Seedling',
+        colorVar: '--state-seedling-color',
+    },
     [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
     [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
     [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
@@ -824,7 +860,8 @@ class PlantUtils {
             imageUrl = `/growspace_manager/static/stages/${normalized}.png`;
         }
         // Stages logic
-        const stagesData = Object.entries(STAGE_CONFIG).map(([stage, config]) => {
+        const stagesData = Object.entries(STAGE_CONFIG)
+            .map(([stage, config]) => {
             const daysAttr = `${stage}_days`;
             const days = plant.attributes?.[daysAttr];
             return {
@@ -833,7 +870,8 @@ class PlantUtils {
                 icon: config.icon,
                 title: config.title,
             };
-        }).filter(d => d.days !== undefined && d.days !== null);
+        })
+            .filter((d) => d.days !== undefined && d.days !== null);
         const currentStage = (plant.state || '').toLowerCase();
         let visibleDays = stagesData.filter((d) => d.days);
         if (currentStage === PlantStage.DRY) {
@@ -884,7 +922,7 @@ PlantUtils.DYNAMIC_ROW_TYPES = [
     GrowspaceType.DRY,
     GrowspaceType.CURE,
     GrowspaceType.MOTHER,
-    GrowspaceType.CLONE
+    GrowspaceType.CLONE,
 ];
 /** Date fields used for plant lifecycle */
 PlantUtils.DATE_FIELDS = [
@@ -4805,7 +4843,9 @@ const PlantSlotSchema = objectType({
     flower_start: stringType().nullable().optional().default(null),
     dry_start: stringType().nullable().optional().default(null),
     cure_start: stringType().nullable().optional().default(null),
-}).catchall(anyType()).nullable();
+})
+    .catchall(anyType())
+    .nullable();
 const GrowspaceAPIResponseSchema = objectType({
     // Root Identity
     growspace_id: stringType(),
@@ -4817,7 +4857,10 @@ const GrowspaceAPIResponseSchema = objectType({
     notification_target: stringType().nullable().optional(),
     overview_entity_id: stringType().optional(),
     // Grid
-    grid: recordType(stringType(), PlantSlotSchema).nullable().optional().transform(v => v ?? {}),
+    grid: recordType(stringType(), PlantSlotSchema)
+        .nullable()
+        .optional()
+        .transform((v) => v ?? {}),
     // Configs
     irrigation_config: objectType({
         irrigation_pump_entity: stringType().nullable().optional(),
@@ -4827,7 +4870,10 @@ const GrowspaceAPIResponseSchema = objectType({
         irrigation_times: arrayType(anyType()).optional(),
         drain_times: arrayType(anyType()).optional(),
         veg_day_hours: numberType().optional(),
-    }).passthrough().optional().default({}),
+    })
+        .passthrough()
+        .optional()
+        .default({}),
     irrigation_strategy: anyType().nullable().default(null),
     // Flattened Environment Config (Root Level)
     temperature_sensor: stringType().optional(),
@@ -4849,7 +4895,9 @@ const GrowspaceAPIResponseSchema = objectType({
     vpd: stringType().nullable().optional(),
     soil_moisture_value: stringType().nullable().optional(),
     dehumidifier_state: stringType().nullable().optional(),
-    dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() }))).optional().default({}),
+    dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
+        .optional()
+        .default({}),
     // Statistics
     max_veg_days: numberType().optional().default(0),
     max_flower_days: numberType().optional().default(0),
@@ -4864,16 +4912,20 @@ const GrowspaceAPIResponseSchema = objectType({
     vpd_danger_max: numberType().optional().default(0),
     granular_stage: stringType().optional().default('unknown'),
     is_day: booleanType().optional().default(false),
-    air_exchange: unionType([stringType(), numberType().transform(String)]).nullable().optional(), // Default handled by optionality
-}).passthrough(); // Allow extra fields at root
+    air_exchange: unionType([stringType(), numberType().transform(String)])
+        .nullable()
+        .optional(), // Default handled by optionality
+})
+    .passthrough(); // Allow extra fields at root
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 const StrainPhenotypeSchema = objectType({
     description: stringType().optional(),
     image_path: stringType().optional(),
     image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() }).optional(),
     flower_days_min: numberType().optional(),
-    flower_days_max: numberType().optional()
-}).catchall(anyType());
+    flower_days_max: numberType().optional(),
+})
+    .catchall(anyType());
 const StrainDataSchema = objectType({
     meta: objectType({
         breeder: stringType().optional(),
@@ -4881,15 +4933,20 @@ const StrainDataSchema = objectType({
         lineage: stringType().optional(),
         sex: stringType().optional(),
         sativa_percentage: numberType().optional(),
-        indica_percentage: numberType().optional()
-    }).passthrough().optional().default({}),
-    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({})
-}).passthrough();
+        indica_percentage: numberType().optional(),
+    })
+        .passthrough()
+        .optional()
+        .default({}),
+    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({}),
+})
+    .passthrough();
 const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
 const StrainLibraryWrapperSchema = objectType({
     strains: StrainLibrarySchema,
-    strain_list: arrayType(stringType()).optional()
-}).passthrough();
+    strain_list: arrayType(stringType()).optional(),
+})
+    .passthrough();
 const NutrientPresetsSchema = recordType(stringType(), objectType({
     id: stringType(),
     name: stringType(),
@@ -4897,9 +4954,14 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
         name: stringType(),
         dose_ml_l: numberType(),
     })),
-    stage: stringType().nullish().transform(v => v || undefined),
-    min_days_in_stage: numberType().nullish().transform(v => v || undefined),
-}).passthrough());
+    stage: stringType()
+        .nullish()
+        .transform((v) => v || undefined),
+    min_days_in_stage: numberType()
+        .nullish()
+        .transform((v) => v || undefined),
+})
+    .passthrough());
 const IPMPresetSchema = objectType({
     id: stringType(),
     name: stringType(),
@@ -4909,9 +4971,14 @@ const IPMPresetSchema = objectType({
         dose_amount: numberType(),
         dose_unit: stringType(),
     })),
-    stage: stringType().nullish().transform(v => v || undefined),
-    min_days_in_stage: numberType().nullish().transform(v => v || undefined),
-}).passthrough();
+    stage: stringType()
+        .nullish()
+        .transform((v) => v || undefined),
+    min_days_in_stage: numberType()
+        .nullish()
+        .transform((v) => v || undefined),
+})
+    .passthrough();
 const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
 const NutrientStockSchema = objectType({
     nutrient_id: stringType(),
@@ -4921,26 +4988,28 @@ const NutrientStockSchema = objectType({
     last_updated: stringType(),
 });
 const NutrientInventorySchema = objectType({
-    stocks: recordType(stringType(), NutrientStockSchema)
+    stocks: recordType(stringType(), NutrientStockSchema),
 });
 const HistoryPointSchema = objectType({
     s: unionType([stringType(), numberType()]).transform(String),
-    lu: unionType([stringType(), numberType()]).transform(v => typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v)),
+    lu: unionType([stringType(), numberType()])
+        .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
     a: recordType(anyType()).optional().default({}), // Attributes
-}).passthrough();
+})
+    .passthrough();
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
 
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
         if (!wsData && !overview)
             return null;
-        const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
-        const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
+        const growspaceId = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+        const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
         const overviewEntityId = wsData?.overview_entity_id || overview?.entity_id || '';
         // 1. Loading State
         if (!wsData) {
             return createGrowspaceDevice({
-                deviceId: growspace_id,
+                deviceId: growspaceId,
                 overviewEntityId: overview.entity_id,
                 name,
                 lastUpdated: 'Loading...',
@@ -5003,7 +5072,7 @@ class GrowspaceAdapter {
                             ...slot, // Spread raw plant data
                             row: Number(slot.row),
                             col: Number(slot.col),
-                            growspace_id,
+                            growspace_id: growspaceId,
                             friendly_name: `${slot.strain} ${slot.phenotype}`,
                             stage: slot.stage || 'unknown',
                         },
@@ -5025,19 +5094,21 @@ class GrowspaceAdapter {
             drainTimes: irrigationConfigRaw.drain_times,
             vegDayHours: irrigationConfigRaw.veg_day_hours,
         };
-        const irrigationStrategy = wsData.irrigation_strategy ? {
-            enabled: wsData.irrigation_strategy.enabled,
-            lightsOnTime: wsData.irrigation_strategy.lights_on_time,
-            p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
-            p2StopBeforeLightsOffMinutes: wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
-            targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
-            maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
-            shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
-            shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
-        } : undefined;
+        const irrigationStrategy = wsData.irrigation_strategy
+            ? {
+                enabled: wsData.irrigation_strategy.enabled,
+                lightsOnTime: wsData.irrigation_strategy.lights_on_time,
+                p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
+                p2StopBeforeLightsOffMinutes: wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
+                targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
+                maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
+                shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
+                shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+            }
+            : undefined;
         // 5. Construct Device
         return createGrowspaceDevice({
-            deviceId: growspace_id,
+            deviceId: growspaceId,
             overviewEntityId,
             name,
             type: wsData.type || 'normal',
@@ -5722,9 +5793,7 @@ class HistoryAPI extends BaseAPI {
         if (endTime) {
             url += `&end_time=${endTime.toISOString()}`;
         }
-        const duration = endTime
-            ? (endTime.getTime() - startTime.getTime()) / 1000
-            : 'undefined';
+        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
         console.log(`[HistoryAPI.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
         console.log(`[HistoryAPI.getBatchHistory] About to call API with URL: ${url}`);
         try {
@@ -6552,7 +6621,7 @@ class ChartUtils {
         // AUTO-OPTIMIZATION: If we already have sparse data (e.g. from backend downsampling),
         // skip further downsampling to prevent data loss.
         // Assuming ~100px width, if we have < 150 points, just render them.
-        const skipDownsampling = len < (width * 1.5);
+        const skipDownsampling = len < width * 1.5;
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -6588,7 +6657,8 @@ class ChartUtils {
                     case '1h':
                         keep = minutes % 5 === 0;
                         break;
-                    default: keep = minutes % 30 === 0;
+                    default:
+                        keep = minutes % 30 === 0;
                 }
             }
             if (keep)
@@ -6643,9 +6713,12 @@ class ChartUtils {
     static getSparklineColor(metricKey, status) {
         if (metricKey === 'vpd' && status) {
             switch (status) {
-                case 'optimal': return '#4caf50'; // Green
-                case 'warning': return '#ff9800'; // Orange
-                case 'danger': return '#f44336'; // Red
+                case 'optimal':
+                    return '#4caf50'; // Green
+                case 'warning':
+                    return '#ff9800'; // Orange
+                case 'danger':
+                    return '#f44336'; // Red
             }
         }
         const config = METRIC_CONFIG[metricKey];
@@ -6699,7 +6772,7 @@ class ChartUtils {
         }
         const validData = [];
         const len = sortedData.length;
-        const skipDownsampling = len < (width * 1.5);
+        const skipDownsampling = len < width * 1.5;
         for (let i = 0; i < len; i++) {
             const h = sortedData[i];
             const val = parseFloat(h.state);
@@ -6730,7 +6803,8 @@ class ChartUtils {
                     case '1h':
                         keep = minutes % 5 === 0;
                         break;
-                    default: keep = minutes % 30 === 0;
+                    default:
+                        keep = minutes % 30 === 0;
                 }
             }
             if (keep)
@@ -6758,7 +6832,7 @@ class ChartUtils {
         const timeRangeVal = maxTime - minTime || 1;
         const xFactor = width / timeRangeVal;
         const padding = 5;
-        const usableHeight = height - (padding * 2);
+        const usableHeight = height - padding * 2;
         const yFactor = usableHeight / valueRange;
         // Generate Points with Status
         const points = validData.map((d) => {
@@ -6905,7 +6979,7 @@ class ChartUtils {
         // Filter valid binary/numeric data
         const sortedData = [...historyData]
             .sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime())
-            .filter(h => {
+            .filter((h) => {
             const val = parseFloat(h.state);
             const isBinary = h.state === 'on' || h.state === 'off';
             return isBinary || (!isNaN(val) && h.state !== 'unavailable' && h.state !== 'unknown');
@@ -6913,7 +6987,7 @@ class ChartUtils {
         if (sortedData.length < 2)
             return '';
         // Map to { time, value }
-        const values = sortedData.map(h => {
+        const values = sortedData.map((h) => {
             const t = new Date(h.last_changed).getTime();
             let v = 0;
             if (h.state === 'on')
@@ -6927,7 +7001,7 @@ class ChartUtils {
         // Delegate to optimized generator
         return this.generatePathFromValues(values, width, height, {
             type: 'step',
-            timeRange
+            timeRange,
         });
     }
     /**
@@ -6947,7 +7021,11 @@ class ChartUtils {
             // For now, let's include everything and let charts filter/clip.
             let val = 0;
             let isValid = false;
-            if (metricKey === 'light' || metricKey === 'irrigation' || metricKey === 'drain' || h.state === 'on' || h.state === 'off') {
+            if (metricKey === 'light' ||
+                metricKey === 'irrigation' ||
+                metricKey === 'drain' ||
+                h.state === 'on' ||
+                h.state === 'off') {
                 if (h.state === 'on') {
                     val = 1;
                     isValid = true;
@@ -7243,166 +7321,161 @@ let ErrorBoundary = class ErrorBoundary extends i$3 {
         this._errorInfo = null;
     }
     get _isDev() {
-        return window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1';
+        return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     }
     render() {
         // Check for too many errors (potential infinite loop)
         if (this._errorCount >= this.MAX_ERROR_COUNT) {
             return x `
-                <div class="too-many-errors">
-                    <p><strong>Too many errors detected</strong></p>
-                    <p>
-                        This component has encountered ${this._errorCount} errors in a short time.
-                        This may indicate a critical issue.
-                    </p>
-                    <button class="error-button" @click=${this._handleReset}>
-                        <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
-                        Force Reset
-                    </button>
-                </div>
-            `;
+        <div class="too-many-errors">
+          <p><strong>Too many errors detected</strong></p>
+          <p>
+            This component has encountered ${this._errorCount} errors in a short time. This may
+            indicate a critical issue.
+          </p>
+          <button class="error-button" @click=${this._handleReset}>
+            <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+            Force Reset
+          </button>
+        </div>
+      `;
         }
         // Show error fallback if error exists
         if (this._error) {
             const isDev = this._isDev;
             return x `
-                <div class="error-container">
-                    <div class="error-header">
-                        <ha-svg-icon class="error-icon" .path=${mdiAlertCircle}></ha-svg-icon>
-                        <h3 class="error-title">${this.fallbackMessage}</h3>
-                    </div>
+        <div class="error-container">
+          <div class="error-header">
+            <ha-svg-icon class="error-icon" .path=${mdiAlertCircle}></ha-svg-icon>
+            <h3 class="error-title">${this.fallbackMessage}</h3>
+          </div>
 
-                    <p class="error-message">
-                        ${this._error.message || 'An unexpected error occurred'}
-                    </p>
+          <p class="error-message">${this._error.message || 'An unexpected error occurred'}</p>
 
-                    ${isDev && this._error.stack
+          ${isDev && this._error.stack
                 ? x `
-                            <details ?open=${this.showDetails}>
-                                <summary>
-                                    ${this.showDetails ? 'Hide' : 'Show'} technical details
-                                </summary>
-                                <div class="error-details">${this._error.stack}</div>
-                            </details>
-                          `
+                <details ?open=${this.showDetails}>
+                  <summary>${this.showDetails ? 'Hide' : 'Show'} technical details</summary>
+                  <div class="error-details">${this._error.stack}</div>
+                </details>
+              `
                 : E}
 
-                    <div class="error-actions">
-                        <button class="error-button" @click=${this._handleRetry}>
-                            <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
-                            Retry
-                        </button>
-                        ${this.onReset
+          <div class="error-actions">
+            <button class="error-button" @click=${this._handleRetry}>
+              <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+              Retry
+            </button>
+            ${this.onReset
                 ? x `
-                                <button class="error-button" @click=${this._handleReset}>
-                                    <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
-                                    Reset
-                                </button>
-                              `
+                  <button class="error-button" @click=${this._handleReset}>
+                    <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+                    Reset
+                  </button>
+                `
                 : E}
-                    </div>
-                </div>
-            `;
+          </div>
+        </div>
+      `;
         }
         // No error - render children
         return x `<slot></slot>`;
     }
 };
 ErrorBoundary.styles = i$6 `
-        :host {
-            display: block;
-        }
+    :host {
+      display: block;
+    }
 
-        .error-container {
-            padding: 24px;
-            background: var(--error-color, #f44336);
-            color: white;
-            border-radius: 8px;
-            margin: 16px;
-        }
+    .error-container {
+      padding: 24px;
+      background: var(--error-color, #f44336);
+      color: white;
+      border-radius: 8px;
+      margin: 16px;
+    }
 
-        .error-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
+    .error-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
 
-        .error-icon {
-            --mdc-icon-size: 32px;
-        }
+    .error-icon {
+      --mdc-icon-size: 32px;
+    }
 
-        .error-title {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin: 0;
-        }
+    .error-title {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin: 0;
+    }
 
-        .error-message {
-            margin: 0 0 16px 0;
-            opacity: 0.9;
-            line-height: 1.5;
-        }
+    .error-message {
+      margin: 0 0 16px 0;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
 
-        .error-details {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
+    .error-details {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
-        .error-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-        .error-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s;
-        }
+    .error-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
 
-        .error-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
+    .error-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
 
-        .error-button ha-svg-icon {
-            --mdc-icon-size: 18px;
-        }
+    .error-button ha-svg-icon {
+      --mdc-icon-size: 18px;
+    }
 
-        .too-many-errors {
-            background: var(--error-color, #d32f2f);
-            padding: 16px;
-            border-radius: 8px;
-            margin: 16px;
-            color: white;
-        }
+    .too-many-errors {
+      background: var(--error-color, #d32f2f);
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px;
+      color: white;
+    }
 
-        .too-many-errors p {
-            margin: 0 0 12px 0;
-        }
+    .too-many-errors p {
+      margin: 0 0 12px 0;
+    }
 
-        details summary {
-            cursor: pointer;
-            margin-bottom: 8px;
-            user-select: none;
-        }
-    `;
+    details summary {
+      cursor: pointer;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+  `;
 __decorate([
     n$5({ type: String })
 ], ErrorBoundary.prototype, "fallbackMessage", void 0);
@@ -7470,7 +7543,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     _scrollChips(direction) {
         const container = this._chipsContainerRef.value;
         if (container) {
-            container.scrollBy({ left: direction === ScrollDirection.LEFT ? -200 : 200, behavior: 'smooth' });
+            container.scrollBy({
+                left: direction === ScrollDirection.LEFT ? -200 : 200,
+                behavior: 'smooth',
+            });
         }
     }
     _checkScroll() {
@@ -7605,7 +7681,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             else {
                 if (currentSegment.length >= 1) {
                     currentSegment.push(p);
-                    const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+                    const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
                     segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
                 }
                 currentSegment = [p];
@@ -7613,7 +7689,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             }
         }
         if (currentSegment.length >= 2) {
-            const pathStr = `M ${currentSegment.map(pt => `${pt.x},${pt.y}`).join(' L ')}`;
+            const pathStr = `M ${currentSegment.map((pt) => `${pt.x},${pt.y}`).join(' L ')}`;
             segments.push({ path: pathStr, color: this._getVpdStatusColor(currentStatus) });
         }
         return segments;
@@ -7629,7 +7705,6 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             lightHistoryPoints = ChartUtils.normalizeHistory(this.sensorHistory[MetricKey.LIGHT], MetricKey.LIGHT);
         }
         metricKeys.forEach((key) => {
-            this.isCombined && this.metrics.length > 1;
             const config = this.metricConfig[key] || {
                 color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
                 title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title),
@@ -7647,7 +7722,11 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 initialState = h;
             }
             if (initialState) {
-                const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state) ? (BINARY_ON_STATES.includes(initialState.state) ? 1 : 0) : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
+                    ? BINARY_ON_STATES.includes(initialState.state)
+                        ? 1
+                        : 0
+                    : GraphDataTransformer.normalizeSensorValue(initialState, key);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -7691,8 +7770,15 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     sum += val;
                 }
                 const avg = sum / dataPoints.length;
-                const isStep = config.type === ChartType.STEP || key === MetricKey.OPTIMAL || key === MetricKey.DEHUMIDIFIER || key === MetricKey.LIGHT || key === MetricKey.IRRIGATION || key === MetricKey.DRAIN;
-                if (key === MetricKey.EXHAUST || key === MetricKey.HUMIDIFIER || key === MetricKey.CIRCULATION_FAN) {
+                const isStep = config.type === ChartType.STEP ||
+                    key === MetricKey.OPTIMAL ||
+                    key === MetricKey.DEHUMIDIFIER ||
+                    key === MetricKey.LIGHT ||
+                    key === MetricKey.IRRIGATION ||
+                    key === MetricKey.DRAIN;
+                if (key === MetricKey.EXHAUST ||
+                    key === MetricKey.HUMIDIFIER ||
+                    key === MetricKey.CIRCULATION_FAN) {
                     min = 0;
                     max = 10;
                 }
@@ -7710,11 +7796,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 }
                 const paddedRange = max - min || 1;
                 const pathStr = ChartUtils.generatePathFromValues(dataPoints, width, height, {
-                    min, max,
+                    min,
+                    max,
                     startTime: startTimeMs,
                     endTime: startTimeMs + durationMillis,
                     type: isStep ? ChartType.STEP : ChartType.LINE,
-                    timeRange: this.range
+                    timeRange: this.range,
                 });
                 let vpdSegments;
                 let seriesColor = config.color || '#fff';
@@ -7724,14 +7811,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         x: ((p.time - startTimeMs) / durationMillis) * width,
                         y: height - ((p.value - min) / paddedRange) * height,
                         value: p.value,
-                        time: p.time
+                        time: p.time,
                     }));
                     vpdSegments = this._generateVpdSegments(vpdPoints, thresholds, lightHistoryPoints);
                     if (dataPoints.length > 0) {
                         // Determine current status (last point)
                         const lastPoint = dataPoints[dataPoints.length - 1];
                         // Get current light state for last point color
-                        // Or just rely on current environment active state? 
+                        // Or just rely on current environment active state?
                         // Better to match the graph logic:
                         let isDay = true;
                         if (lightHistoryPoints.length > 0) {
@@ -7749,7 +7836,10 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     unit: config.unit || '',
                     icon: config.icon || '',
                     points: dataPoints,
-                    min, max, avg, path: pathStr,
+                    min,
+                    max,
+                    avg,
+                    path: pathStr,
                     fillType: this.isCombined ? 'flat' : 'gradient',
                     vpdSegments,
                 });
@@ -7801,20 +7891,24 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             return x `
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
-             <div style="display:flex; align-items:center; gap:8px;">
-               ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
-               <span>${this.title || 'Graph'}</span>
-             </div>
-             <span style="opacity:0.6; font-size:0.9em">No Data</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+              ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              <span>${this.title || 'Graph'}</span>
+            </div>
+            <span style="opacity:0.6; font-size:0.9em">No Data</span>
           </div>
-          <div class="gs-env-chart-container empty">No history data available for ${this.range}</div>
+          <div class="gs-env-chart-container empty">
+            No history data available for ${this.range}
+          </div>
         </div>
       `;
         }
         return x `
       <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
         <div class="gs-env-graph-card">
-          ${this.isCombined ? this._renderCombinedHeader(series) : this._renderSingleHeader(series[0])}
+          ${this.isCombined
+            ? this._renderCombinedHeader(series)
+            : this._renderSingleHeader(series[0])}
 
           <div
             class="gs-env-chart-container"
@@ -7824,7 +7918,9 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             @click=${() => this._onChartClick()}
           >
             ${this._renderTooltip()}
-            ${!this.isCombined ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit) : ''}
+            ${!this.isCombined
+            ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+            : ''}
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
@@ -7832,7 +7928,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
               ${series.map((s) => {
             // Handle VPD segments separately (they have their own path validation)
             if (s.vpdSegments?.length) {
-                return b `${s.vpdSegments.map(seg => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+                return b `${s.vpdSegments.map((seg) => b `<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
             }
             // Skip rendering regular paths if no valid path data
             if (!s.path || s.path.trim() === '' || s.points.length === 0) {
@@ -7905,14 +8001,21 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             }
             let valStr = `${closest.value.toFixed(1)} ${s.unit}`;
             const defaults = SENSOR_CHART_DEFAULTS[s.id];
-            const isBinary = defaults?.binary || s.id === MetricKey.OPTIMAL || s.id === MetricKey.DEHUMIDIFIER || s.unit === 'state';
+            const isBinary = defaults?.binary ||
+                s.id === MetricKey.OPTIMAL ||
+                s.id === MetricKey.DEHUMIDIFIER ||
+                s.unit === 'state';
             if (isBinary) {
                 if (s.id === MetricKey.OPTIMAL)
-                    valStr = closest.value === 1 ? 'Optimal' : (closest.meta?.reasons || 'Not Optimal');
+                    valStr =
+                        closest.value === 1
+                            ? 'Optimal'
+                            : closest.meta?.reasons || 'Not Optimal';
                 else
                     valStr = closest.value === 1 ? 'ON' : 'OFF';
             }
-            else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) && closest.meta?.state) {
+            else if ((s.id === MetricKey.EXHAUST || s.id === MetricKey.HUMIDIFIER) &&
+                closest.meta?.state) {
                 valStr = closest.meta.state;
             }
             return { title: s.title, value: valStr, color: s.color };
@@ -7931,14 +8034,23 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         if (series.points.length > 0) {
             const last = series.points[series.points.length - 1];
             const defaults = SENSOR_CHART_DEFAULTS[series.id];
-            const isBinary = defaults?.binary || series.id === MetricKey.OPTIMAL || series.id === MetricKey.DEHUMIDIFIER || series.id === MetricKey.LIGHT || series.id === MetricKey.IRRIGATION || series.id === MetricKey.DRAIN;
+            const isBinary = defaults?.binary ||
+                series.id === MetricKey.OPTIMAL ||
+                series.id === MetricKey.DEHUMIDIFIER ||
+                series.id === MetricKey.LIGHT ||
+                series.id === MetricKey.IRRIGATION ||
+                series.id === MetricKey.DRAIN;
             if (isBinary) {
                 if (series.id === MetricKey.OPTIMAL)
-                    valStr = last.value === 1 ? 'Optimal' : (last.meta?.reasons || 'Not Optimal');
+                    valStr =
+                        last.value === 1
+                            ? 'Optimal'
+                            : last.meta?.reasons || 'Not Optimal';
                 else
                     valStr = last.value === 1 ? 'ON' : 'OFF';
             }
-            else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) && last.meta?.state) {
+            else if ((series.id === MetricKey.EXHAUST || series.id === MetricKey.HUMIDIFIER) &&
+                last.meta?.state) {
                 valStr = last.meta.state;
             }
             else {
@@ -7948,8 +8060,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         return x `
       <div class="gs-env-graph-header" @click=${() => this._toggleEnvGraph()}>
         <div style="display:flex; align-items:center; gap:8px;">
-          <div style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;">
-            <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="${series.icon || this.icon}"></path></svg>
+          <div
+            style="width:24px; height:24px; color:${series.color}; display:flex; align-items:center; justify-content:center;"
+          >
+            <svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;">
+              <path d="${series.icon || this.icon}"></path>
+            </svg>
           </div>
           <span style="color:${series.color}; font-weight:500;">${series.title}</span>
         </div>
@@ -7963,23 +8079,77 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         return x `
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
-          ${this._canScrollLeft ? x `<div class="scroll-nav left" @click=${(e) => { e.stopPropagation(); this._scrollChips(ScrollDirection.LEFT); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg></div>` : ''}
-          
-          <div class="chips-scroll-container" ${n$2(this._chipsContainerRef)} @click=${(e) => e.stopPropagation()}>
-            ${seriesList.map(s => x `
-                <div class=${e({ 'gs-legend-item': true, 'mask-left': this._canScrollLeft, 'mask-right': this._canScrollRight })}
-                  @click=${(e) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('unlink-graph', { detail: s.id, bubbles: true, composed: true })); }}>
-                  <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"></span>
-                  ${s.icon ? x `<div style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"><svg viewBox="0 0 24 24" style="width:100%; height:100%; fill:currentColor;"><path d="${s.icon}"></path></svg></div>` : ''}
+          ${this._canScrollLeft
+            ? x `<div
+                class="scroll-nav left"
+                @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips(ScrollDirection.LEFT);
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+              </div>`
+            : ''}
+
+          <div
+            class="chips-scroll-container"
+            ${n$2(this._chipsContainerRef)}
+            @click=${(e) => e.stopPropagation()}
+          >
+            ${seriesList.map((s) => x `
+                <div
+                  class=${e({
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight,
+        })}
+                  @click=${(e) => {
+            e.stopPropagation();
+            this.dispatchEvent(new CustomEvent('unlink-graph', {
+                detail: s.id,
+                bubbles: true,
+                composed: true,
+            }));
+        }}
+                >
+                  <span
+                    style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"
+                  ></span>
+                  ${s.icon
+            ? x `<div
+                        style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          style="width:100%; height:100%; fill:currentColor;"
+                        >
+                          <path d="${s.icon}"></path>
+                        </svg>
+                      </div>`
+            : ''}
                   <span style="color:${s.color}; font-weight:500;">${s.title}</span>
                 </div>
-            `)}
+              `)}
           </div>
 
-          ${this._canScrollRight ? x `<div class="scroll-nav right" @click=${(e) => { e.stopPropagation(); this._scrollChips(ScrollDirection.RIGHT); }}><svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg></div>` : ''}
+          ${this._canScrollRight
+            ? x `<div
+                class="scroll-nav right"
+                @click=${(e) => {
+                e.stopPropagation();
+                this._scrollChips(ScrollDirection.RIGHT);
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+              </div>`
+            : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
-           <ha-icon-button .path=${mdiLink} @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))} title="Unlink Graphs"></ha-icon-button>
+          <ha-icon-button
+            .path=${mdiLink}
+            @click=${() => this.dispatchEvent(new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true }))}
+            title="Unlink Graphs"
+          ></ha-icon-button>
         </div>
       </div>
     `;
@@ -7990,15 +8160,31 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         const { x: x$1, time, items } = this._activeTooltip;
         return x `
       <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
-        <div style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;">${time}</div>
-        ${items.map(i => x `
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;">
+        <div
+          style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;"
+        >
+          ${time}
+        </div>
+        ${items.map((i) => x `
+            <div
+              style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;"
+            >
               <span style="color:${i.color};">${i.title}:</span>
               <span style="font-family:monospace; font-weight:bold;">${i.value}</span>
             </div>
-        `)}
+          `)}
       </div>
-      <div class="gs-cursor-line" style=${o({ left: `${x$1}px`, height: '100%', top: '0', position: 'absolute', borderLeft: '1px dashed rgba(255,255,255,0.3)', pointerEvents: 'none' })}></div>
+      <div
+        class="gs-cursor-line"
+        style=${o({
+            left: `${x$1}px`,
+            height: '100%',
+            top: '0',
+            position: 'absolute',
+            borderLeft: '1px dashed rgba(255,255,255,0.3)',
+            pointerEvents: 'none',
+        })}
+      ></div>
     `;
     }
     _renderGrid(width, height) {
@@ -8018,16 +8204,20 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     }
     _renderXAxisHTML(range) {
         const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-        return x `<div style="${labelStyle} left: 50px;">-${range}</div><div style="${labelStyle} right: 40px;">Now</div>`;
+        return x `<div style="${labelStyle} left: 50px;">-${range}</div>
+      <div style="${labelStyle} right: 40px;">Now</div>`;
     }
     _renderYAxisHTML(min, max, unit) {
         const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
         if (unit === 'state' || (max === 1 && min === 0)) {
-            return x `<div style="${labelStyle} top: 20px;">ON</div><div style="${labelStyle} bottom: 30px;">OFF</div>`;
+            return x `<div style="${labelStyle} top: 20px;">ON</div>
+        <div style="${labelStyle} bottom: 30px;">OFF</div>`;
         }
         return x `
       <div style="${labelStyle} top: 20px;">${max.toFixed(0)}${unit}</div>
-      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">${((max + min) / 2).toFixed(1)}</div>
+      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+        ${((max + min) / 2).toFixed(1)}
+      </div>
       <div style="${labelStyle} bottom: 30px;">${min.toFixed(0)}${unit}</div>
     `;
     }
@@ -8040,34 +8230,165 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             return 604800000;
         return 86400000;
     }
-    _toggleEnvGraph() { this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true })); }
+    _toggleEnvGraph() {
+        this.dispatchEvent(new CustomEvent('toggle-graph', { detail: this.metricKey, bubbles: true, composed: true }));
+    }
 };
 GrowspaceEnvChart.styles = i$6 `
-    :host { display: block; position: relative; }
-    .gs-env-graph-card { margin-top: 12px; background: var(--card-background-color, #1a1a1a); border-radius: 12px; padding: 16px; contain: content; }
-    .gs-env-graph-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
-    .gs-env-chart-container { position: relative; height: 180px; background: var(--secondary-background-color, #0d0d0d); border-radius: 8px; padding: 20px 40px 30px 50px; cursor: crosshair; overflow: hidden; }
-    .gs-env-chart-container.empty { display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color, #444); cursor: default; }
-    .chart-svg { width: 100%; height: 100%; overflow: visible; display: block; }
-    
-    svg path { transition: d 0.3s ease-out, stroke 0.3s ease; will-change: d; }
+    :host {
+      display: block;
+      position: relative;
+    }
+    .gs-env-graph-card {
+      margin-top: 12px;
+      background: var(--card-background-color, #1a1a1a);
+      border-radius: 12px;
+      padding: 16px;
+      contain: content;
+    }
+    .gs-env-graph-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .gs-env-chart-container {
+      position: relative;
+      height: 180px;
+      background: var(--secondary-background-color, #0d0d0d);
+      border-radius: 8px;
+      padding: 20px 40px 30px 50px;
+      cursor: crosshair;
+      overflow: hidden;
+    }
+    .gs-env-chart-container.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color, #444);
+      cursor: default;
+    }
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      display: block;
+    }
 
-    .gs-tooltip { position: absolute; background: var(--card-background-color, rgba(30, 30, 35, 0.95)); color: var(--primary-text-color, #fff); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; pointer-events: none; transform: translate(-50%, 0); z-index: 100; white-space: nowrap; border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); backdrop-filter: blur(4px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); line-height: 1.4; text-align: center; }
-    .gs-cursor-line { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 5; border-left: 1px dashed rgba(255, 255, 255, 0.5); }
-    
-    .gs-legend-item { display: flex; align-items: center; margin-right: 12px; font-size: 0.85rem; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
-    .gs-legend-item:hover { opacity: 1; }
-    
-    .chips-scroll-container { display: flex; align-items: center; gap: 16px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth; flex: 1; min-width: 0; padding: 0 10px; transition: mask-image 0.3s; }
-    .chips-scroll-container.mask-right { mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%); -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%); }
-    .chips-scroll-container.mask-left { mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%); }
-    .chips-scroll-container.mask-left.mask-right { mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black calc(100% - 30px), transparent 100%); }
-    .chips-scroll-container::-webkit-scrollbar { display: none; }
-    
-    .scroll-nav { display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.5; transition: opacity 0.2s; min-width: 24px; color: var(--primary-text-color, #fff); }
-    .scroll-nav:hover { opacity: 1; }
-    .scroll-nav svg { width: 24px; height: 24px; fill: currentColor; }
-    @media (pointer: coarse) { .scroll-nav { display: none; } }
+    svg path {
+      transition:
+        d 0.3s ease-out,
+        stroke 0.3s ease;
+      will-change: d;
+    }
+
+    .gs-tooltip {
+      position: absolute;
+      background: var(--card-background-color, rgba(30, 30, 35, 0.95));
+      color: var(--primary-text-color, #fff);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      pointer-events: none;
+      transform: translate(-50%, 0);
+      z-index: 100;
+      white-space: nowrap;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      backdrop-filter: blur(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      line-height: 1.4;
+      text-align: center;
+    }
+    .gs-cursor-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.3);
+      pointer-events: none;
+      z-index: 5;
+      border-left: 1px dashed rgba(255, 255, 255, 0.5);
+    }
+
+    .gs-legend-item {
+      display: flex;
+      align-items: center;
+      margin-right: 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .gs-legend-item:hover {
+      opacity: 1;
+    }
+
+    .chips-scroll-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      scroll-behavior: smooth;
+      flex: 1;
+      min-width: 0;
+      padding: 0 10px;
+      transition: mask-image 0.3s;
+    }
+    .chips-scroll-container.mask-right {
+      mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 30px), transparent 100%);
+    }
+    .chips-scroll-container.mask-left {
+      mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 30px, black 100%);
+    }
+    .chips-scroll-container.mask-left.mask-right {
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 30px,
+        black calc(100% - 30px),
+        transparent 100%
+      );
+    }
+    .chips-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .scroll-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+      min-width: 24px;
+      color: var(--primary-text-color, #fff);
+    }
+    .scroll-nav:hover {
+      opacity: 1;
+    }
+    .scroll-nav svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+    @media (pointer: coarse) {
+      .scroll-nav {
+        display: none;
+      }
+    }
   `;
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -8414,8 +8735,6 @@ const sharedStyles = i$6 `
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }
-
-
 `;
 
 const uiStyles = i$6 `
@@ -8665,8 +8984,6 @@ const uiStyles = i$6 `
     color: var(--error-color, #f44336);
   }
 
-
-
   /* --- Toast Notification --- */
   .toast-notification {
     position: absolute;
@@ -8740,125 +9057,125 @@ const dialogStyles = [
     sharedStyles,
     uiStyles,
     i$6 `
-  .glass-dialog-container {
-    display: flex;
-    flex-direction: column;
-    max-height: 85vh;
-    color: var(--primary-text-color, #fff);
-    font-family: 'Roboto', sans-serif;
-    /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
-  }
-
-  /* Restored from 1.0.24.3.0 */
-  .dialog-content-grid {
-    padding: 24px;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 16px;
-  }
-
-  .dialog-header {
-    display: flex;
-    align-items: center;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-  }
-
-  .dialog-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 16px;
-    color: var(--stage-color, #4caf50);
-  }
-
-  .dialog-title-group {
-    flex: 1;
-  }
-
-  .dialog-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-  }
-
-  .dialog-subtitle {
-    font-size: 0.85rem;
-    opacity: 0.7;
-    margin-top: 2px;
-    color: var(--secondary-text-color);
-  }
-
-  .detail-card h3 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    font-size: 1rem;
-    font-weight: 500;
-    opacity: 0.9;
-    color: var(--primary-text-color, #fff);
-    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-    padding-bottom: 8px;
-  }
-
-  .button-group {
-    padding: 16px 24px;
-    border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-    background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .row-col-grid {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .row-col-grid > * {
-    flex: 1;
-    min-width: 0;
-  }
-
-  @media (max-width: 450px) {
     .glass-dialog-container {
-      width: 100vw;
-      max-width: 100%;
-      height: 100vh;
-      border-radius: 0;
-    }
-    .button-group {
-      justify-content: center;
-    }
-    .md3-button {
-      flex: 1 1 auto;
-      min-width: 100px;
-    }
-    .dialog-header {
-      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
+      /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
     }
 
-    /* Restored responsive rules */
+    /* Restored from 1.0.24.3.0 */
     .dialog-content-grid {
+      padding: 24px;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+    }
+
+    .dialog-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      color: var(--stage-color, #4caf50);
+    }
+
+    .dialog-title-group {
       flex: 1;
-      min-height: 0;
-      padding: 8px;
     }
-    .dialog-header .md3-button.text,
-    .dialog-header .md3-button.text.close {
-      flex: unset;
+
+    .dialog-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
     }
-    .detail-card .md3-button {
-      flex: 1 1 1;
+
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+      color: var(--secondary-text-color);
     }
-  }
-`
+
+    .detail-card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 1rem;
+      font-weight: 500;
+      opacity: 0.9;
+      color: var(--primary-text-color, #fff);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      padding-bottom: 8px;
+    }
+
+    .button-group {
+      padding: 16px 24px;
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .row-col-grid {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .row-col-grid > * {
+      flex: 1;
+      min-width: 0;
+    }
+
+    @media (max-width: 450px) {
+      .glass-dialog-container {
+        width: 100vw;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+      .button-group {
+        justify-content: center;
+      }
+      .md3-button {
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
+      .dialog-header {
+        padding: 12px 16px;
+      }
+
+      /* Restored responsive rules */
+      .dialog-content-grid {
+        flex: 1;
+        min-height: 0;
+        padding: 8px;
+      }
+      .dialog-header .md3-button.text,
+      .dialog-header .md3-button.text.close {
+        flex: unset;
+      }
+      .detail-card .md3-button {
+        flex: 1 1 1;
+      }
+    }
+  `,
 ];
 
 let Md3TextInput = class Md3TextInput extends i$3 {
@@ -8951,26 +9268,27 @@ let Md3NumberInput = class Md3NumberInput extends i$3 {
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <div style="display: flex; align-items: center;">
-             <input
-               type="number"
-               class="md3-input"
-               .min=${this.min}
-               .max=${this.max}
-               .value=${this.value}
-               .placeholder=${this.placeholder}
-               @input=${this._handleInput}
-               style="${this.unit ? 'padding-bottom: 16px;' : ''}"
-             />
-             ${this.unit
-            ? x `<span 
-                    style="
+          <input
+            type="number"
+            class="md3-input"
+            .min=${this.min}
+            .max=${this.max}
+            .value=${this.value}
+            .placeholder=${this.placeholder}
+            @input=${this._handleInput}
+            style="${this.unit ? 'padding-bottom: 16px;' : ''}"
+          />
+          ${this.unit
+            ? x `<span
+                style="
                       position: absolute;
                       right: 12px;
                       pointer-events: none;
                       color: var(--secondary-text-color, rgba(255,255,255,0.5));
                       font-size: 0.9em;
                     "
-                  >${this.unit}</span>`
+                >${this.unit}</span
+              >`
             : E}
         </div>
       </div>
@@ -9264,8 +9582,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                     clone_start: this.clone_start,
                     dry_start: this.dry_start,
                     cure_start: this.cure_start,
-                }
-            }
+                },
+            },
         }));
     }
     _confirm() {
@@ -9319,14 +9637,19 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
         // Filter phenotypes based on selected strain
         const relevantPhenotypes = this.strain
-            ? [...new Set(this.strainLibrary
-                    .filter(s => s.strain === this.strain && s.phenotype)
-                    .map(s => s.phenotype))].sort()
+            ? [
+                ...new Set(this.strainLibrary
+                    .filter((s) => s.strain === this.strain && s.phenotype)
+                    .map((s) => s.phenotype)),
+            ].sort()
             : [];
-        const dialogTitle = this._activeTab === 'add' ? 'Add New Plant'
-            : this._activeTab === 'clone' ? 'Transplant Clone'
+        const dialogTitle = this._activeTab === 'add'
+            ? 'Add New Plant'
+            : this._activeTab === 'clone'
+                ? 'Transplant Clone'
                 : 'Transplant Seedling';
-        const dialogSubtitle = this._activeTab === 'add' ? 'Enter plant details below'
+        const dialogSubtitle = this._activeTab === 'add'
+            ? 'Enter plant details below'
             : 'Select a plant to transplant to this location';
         const buttonText = this._activeTab === 'add' ? 'Add Plant' : 'Transplant';
         const isButtonDisabled = this._activeTab !== 'add' && !this._selectedTransplantPlant;
@@ -9363,23 +9686,32 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
 
           <!-- TAB BAR -->
           <div class="tab-bar">
-            <button 
+            <button
               class="tab ${this._activeTab === 'add' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'add'; this._selectedTransplantPlant = null; }}
+              @click=${() => {
+            this._activeTab = 'add';
+            this._selectedTransplantPlant = null;
+        }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Add Plant
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'clone'; this._selectedTransplantPlant = null; }}
+              @click=${() => {
+            this._activeTab = 'clone';
+            this._selectedTransplantPlant = null;
+        }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
               Clone
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'seedling'; this._selectedTransplantPlant = null; }}
+              @click=${() => {
+            this._activeTab = 'seedling';
+            this._selectedTransplantPlant = null;
+        }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Seedling
@@ -9395,8 +9727,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <!-- ACTION BUTTONS -->
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button 
-              class="md3-button primary" 
+            <button
+              class="md3-button primary"
               @click=${this._confirm}
               ?disabled=${isButtonDisabled}
             >
@@ -9491,13 +9823,18 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           @change=${(e) => (this.phenotype = e.detail)}
         ></md3-text-input>
 
-        <div class="toggle-container" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
-            <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
-            <md3-switch
-                .checked=${this.addToLibrary}
-                @change=${(e) => this.addToLibrary = e.target.checked}
-                ?disabled=${!this.strain}
-            ></md3-switch>
+        <div
+          class="toggle-container"
+          style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+        >
+          <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+            >Add to Strain Library</span
+          >
+          <md3-switch
+            .checked=${this.addToLibrary}
+            @change=${(e) => (this.addToLibrary = e.target.checked)}
+            ?disabled=${!this.strain}
+          ></md3-switch>
         </div>
         <div class="row-col-grid">
           <md3-number-input
@@ -9525,7 +9862,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
         const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
         // Build options for select with format: StrainName, Phenotype, Growspace, Col, Row, Days
-        const options = plants.map(p => {
+        const options = plants.map((p) => {
             const strain = p.attributes.strain || 'Unknown';
             const pheno = p.attributes.phenotype || '-';
             const growspace = p._growspaceName || 'Unknown';
@@ -9534,7 +9871,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             const days = p.attributes[daysField] || 0;
             return {
                 value: p.attributes.plant_id,
-                label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`
+                label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`,
             };
         });
         const selectedPlant = this._selectedTransplantPlant;
@@ -9543,37 +9880,45 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
       <div class="detail-card">
         <h3>Select ${stageLabel} to Transplant</h3>
         ${plants.length === 0
-            ? x `<p style="color: var(--secondary-text-color); font-style: italic;">No ${stageLabel.toLowerCase()}s available for transplant</p>`
+            ? x `<p style="color: var(--secondary-text-color); font-style: italic;">
+              No ${stageLabel.toLowerCase()}s available for transplant
+            </p>`
             : x `
-            <md3-select
-              label="Select Plant"
-              .value=${selectedPlant?.attributes.plant_id || ''}
-              .options=${options}
-              @change=${(e) => {
+              <md3-select
+                label="Select Plant"
+                .value=${selectedPlant?.attributes.plant_id || ''}
+                .options=${options}
+                @change=${(e) => {
                 const plantId = e.detail;
-                this._selectedTransplantPlant = plants.find(p => p.attributes.plant_id === plantId) || null;
+                this._selectedTransplantPlant =
+                    plants.find((p) => p.attributes.plant_id === plantId) || null;
             }}
-            ></md3-select>
-          `}
-        
-        ${selectedPlant ? x `
-          <div class="plant-info-grid">
-            <span class="info-label">Strain:</span>
-            <span class="info-value">${selectedPlant.attributes.strain}</span>
-            
-            <span class="info-label">Phenotype:</span>
-            <span class="info-value">${selectedPlant.attributes.phenotype || 'N/A'}</span>
-            
-            <span class="info-label">Current Position:</span>
-            <span class="info-value">Row ${selectedPlant.attributes.row}, Col ${selectedPlant.attributes.col}</span>
-            
-            <span class="info-label">Days in Stage:</span>
-            <span class="info-value">${selectedPlant.attributes[daysField] || 0} days</span>
-            
-            <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
-            <span class="info-value">${selectedPlant.attributes[stage === 'clone' ? 'clone_start' : 'seedling_start'] || 'N/A'}</span>
-          </div>
-        ` : E}
+              ></md3-select>
+            `}
+        ${selectedPlant
+            ? x `
+              <div class="plant-info-grid">
+                <span class="info-label">Strain:</span>
+                <span class="info-value">${selectedPlant.attributes.strain}</span>
+
+                <span class="info-label">Phenotype:</span>
+                <span class="info-value">${selectedPlant.attributes.phenotype || 'N/A'}</span>
+
+                <span class="info-label">Current Position:</span>
+                <span class="info-value"
+                  >Row ${selectedPlant.attributes.row}, Col ${selectedPlant.attributes.col}</span
+                >
+
+                <span class="info-label">Days in Stage:</span>
+                <span class="info-value">${selectedPlant.attributes[daysField] || 0} days</span>
+
+                <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
+                <span class="info-value"
+                  >${selectedPlant.attributes[stage === 'clone' ? 'clone_start' : 'seedling_start'] || 'N/A'}</span
+                >
+              </div>
+            `
+            : E}
       </div>
 
       <!-- NEW LOCATION CARD -->
@@ -9618,7 +9963,7 @@ AddPlantDialog.styles = [
           padding: 16px;
         }
       }
-      
+
       /* Tab bar styles */
       .tab-bar {
         display: flex;
@@ -9627,7 +9972,7 @@ AddPlantDialog.styles = [
         background: rgba(255, 255, 255, 0.03);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
-      
+
       .tab {
         flex: 1;
         display: flex;
@@ -9644,22 +9989,22 @@ AddPlantDialog.styles = [
         font-size: 0.85rem;
         font-family: inherit;
       }
-      
+
       .tab:hover {
         background: rgba(255, 255, 255, 0.05);
       }
-      
+
       .tab.active {
         background: rgba(var(--rgb-primary-color), 0.15);
         color: var(--primary-color);
       }
-      
+
       .tab svg {
         width: 18px;
         height: 18px;
         fill: currentColor;
       }
-      
+
       .plant-info-grid {
         display: grid;
         grid-template-columns: auto 1fr;
@@ -9669,12 +10014,12 @@ AddPlantDialog.styles = [
         border-radius: 8px;
         margin-top: 12px;
       }
-      
+
       .info-label {
         color: var(--secondary-text-color);
         font-size: 0.9rem;
       }
-      
+
       .info-value {
         font-weight: 500;
       }
@@ -9800,8 +10145,8 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                     clone_start: this.clone_start,
                     dry_start: this.dry_start,
                     cure_start: this.cure_start,
-                }
-            }
+                },
+            },
         }));
     }
     _confirm() {
@@ -9813,7 +10158,10 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                 this.dispatchEvent(new CustomEvent('show-toast', {
                     bubbles: true,
                     composed: true,
-                    detail: { message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`, type: 'error' }
+                    detail: {
+                        message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`,
+                        type: 'error',
+                    },
                 }));
                 return;
             }
@@ -9879,16 +10227,19 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                 <path d="${mdiInformationOutline}"></path>
               </svg>
               <div>
-                Batch adding will automatically find available positions in the growspace. 
-                Plants will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>.
-                For example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and OG Kush #3.
+                Batch adding will automatically find available positions in the growspace. Plants
+                will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>. For
+                example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and
+                OG Kush #3.
               </div>
             </div>
 
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Batch Configuration</h3>
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+              <div
+                style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;"
+              >
                 <md3-select
                   style="width: 100%;"
                   label="Strain *"
@@ -9907,22 +10258,27 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                   </svg>
                 </button>
               </div>
-              
+
               <md3-text-input
                 label="Phenotype (Optional)"
                 .value=${this.phenotype}
                 @change=${(e) => (this.phenotype = e.detail)}
               ></md3-text-input>
 
-              <div class="toggle-container" style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
-                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
-                  <md3-switch
-                      .checked=${this.addToLibrary}
-                      @change=${(e) => this.addToLibrary = e.target.checked}
-                      ?disabled=${!this.strain}
-                  ></md3-switch>
+              <div
+                class="toggle-container"
+                style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+              >
+                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                  >Add to Strain Library</span
+                >
+                <md3-switch
+                  .checked=${this.addToLibrary}
+                  @change=${(e) => (this.addToLibrary = e.target.checked)}
+                  ?disabled=${!this.strain}
+                ></md3-switch>
               </div>
-              
+
               <div class="row-col-grid">
                 <md3-number-input
                   label="Amount"
@@ -10129,7 +10485,7 @@ class TimelineService {
                     type: WS_TYPE_GET_ALERTS,
                     growspace_id: growspaceId,
                     limit: 300, // Alerts are frequent, need higher limit to not miss recent ones
-                })
+                }),
             ]);
             const logs = logsResponse?.[growspaceId] || [];
             const alerts = alertsResponse?.[growspaceId] || [];
@@ -10247,6 +10603,23 @@ function formatShortDate(date) {
  */
 function getDateKey(date) {
     return date.toDateString();
+}
+/**
+ * Format duration in seconds to "5m 30s"
+ */
+function formatDuration(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+}
+/**
+ * Format probability as percentage (e.g., 0.85 → "85%")
+ */
+function formatProbability(value) {
+    if (value === undefined || value === null || isNaN(value)) {
+        return '--%';
+    }
+    return `${Math.round(Number(value) * 100)}%`;
 }
 
 /**
@@ -10702,7 +11075,7 @@ ConfirmDeleteDialog.styles = i$6 `
       align-items: center;
       gap: 6px;
       padding: 10px 20px;
-     border-radius: 8px;
+      border-radius: 8px;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
@@ -10771,8 +11144,10 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                     return mdiCannabis;
                 return mdiSprout;
             }
-            case 'alert': return mdiAlertCircle;
-            case 'note': return mdiNoteText;
+            case 'alert':
+                return mdiAlertCircle;
+            case 'note':
+                return mdiNoteText;
             case 'milestone': {
                 const label = event.label?.toLowerCase() || '';
                 if (label.includes('flower'))
@@ -10783,7 +11158,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                     return mdiCannabis;
                 return mdiSprout;
             }
-            case 'action':
+            case 'action': {
                 const action = event.action;
                 if (action === 'water' || action === 'watering')
                     return mdiWater;
@@ -10792,21 +11167,31 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                 if (action === 'training')
                     return mdiDumbbell;
                 return mdiLeaf;
+            }
             case 'environmental_report':
                 return event.sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
-            default: return mdiLeaf;
+            default:
+                return mdiLeaf;
         }
     }
     _getStageColor(stage) {
         switch (stage?.toLowerCase()) {
-            case 'flower': return '#e91e63';
-            case 'veg': return '#4caf50';
-            case 'seedling': return '#8bc34a';
-            case 'clone': return '#66bb6a';
-            case 'mother': return '#2e7d32';
-            case 'dry': return '#ff9800';
-            case 'cure': return '#795548';
-            default: return 'var(--divider-color)';
+            case 'flower':
+                return '#e91e63';
+            case 'veg':
+                return '#4caf50';
+            case 'seedling':
+                return '#8bc34a';
+            case 'clone':
+                return '#66bb6a';
+            case 'mother':
+                return '#2e7d32';
+            case 'dry':
+                return '#ff9800';
+            case 'cure':
+                return '#795548';
+            default:
+                return 'var(--divider-color)';
         }
     }
     _isCorrelated(event, allEvents) {
@@ -10814,7 +11199,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             return false;
         const noteTime = new Date(event.date).getTime();
         // Check for alerts within correlation window before this note
-        return allEvents.some(e => {
+        return allEvents.some((e) => {
             if (e.type !== 'alert')
                 return false;
             const alertTime = new Date(e.date).getTime();
@@ -10837,7 +11222,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             // Clear input on success
             noteInput.clear();
             // Allow time for recorder to write to DB
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             // Fire refresh event
             this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
@@ -10883,7 +11268,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
     render() {
         // Sort events descending
         const sortedEvents = [...(this.events || [])]
-            .filter(e => e.date)
+            .filter((e) => e.date)
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         // Group by day using shared utility
         const groupedByDay = new Map();
@@ -10895,7 +11280,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             }
             groupedByDay.get(dayKey).push(event);
         }
-        const latestStageEvent = sortedEvents.find(e => e.type === 'stage_change' || e.type === 'milestone');
+        const latestStageEvent = sortedEvents.find((e) => e.type === 'stage_change' || e.type === 'milestone');
         const currentStage = latestStageEvent?.to || latestStageEvent?.label;
         const stageColor = this._getStageColor(currentStage);
         return x `
@@ -10903,65 +11288,81 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         <confirm-delete-dialog
           .open=${this._showDeleteConfirmation}
           @confirm=${this._confirmDeleteEvent}
-          @cancel=${() => this._showDeleteConfirmation = false}
+          @cancel=${() => (this._showDeleteConfirmation = false)}
         ></confirm-delete-dialog>
-        
+
         ${this._renderHoverOverlay()}
-        
+
         <!-- Quick Note Section -->
-        <quick-note-input
-          @submit=${this._handleNoteSubmit}
-        ></quick-note-input>
+        <quick-note-input @submit=${this._handleNoteSubmit}></quick-note-input>
 
-        ${sortedEvents.length === 0 ? x `
-          <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
-            No entries for this plant yet.
-          </div>
-        ` : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
-            const alerts = dayEvents.filter(e => e.type === 'alert');
-            const others = dayEvents.filter(e => e.type !== 'alert');
-            return x `
-              <div class="day-group">
-                <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
-                
-                ${alerts.length > 2 ? x `
-                  <div class="day-summary glass-surface">
-                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"><path d="${mdiAlertCircle}" /></svg>
-                    <span>${alerts.length} system alerts recorded. Environment may require attention.</span>
-                  </div>
-                ` : alerts.map(event => this._renderEvent(event, sortedEvents))}
-
-                ${others.map(event => this._renderEvent(event, sortedEvents))}
+        ${sortedEvents.length === 0
+            ? x `
+              <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
+                No entries for this plant yet.
               </div>
-            `;
-        })}
+            `
+            : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
+                const alerts = dayEvents.filter((e) => e.type === 'alert');
+                const others = dayEvents.filter((e) => e.type !== 'alert');
+                return x `
+                <div class="day-group">
+                  <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
+
+                  ${alerts.length > 2
+                    ? x `
+                        <div class="day-summary glass-surface">
+                          <svg
+                            viewBox="0 0 24 24"
+                            style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"
+                          >
+                            <path d="${mdiAlertCircle}" />
+                          </svg>
+                          <span
+                            >${alerts.length} system alerts recorded. Environment may require
+                            attention.</span
+                          >
+                        </div>
+                      `
+                    : alerts.map((event) => this._renderEvent(event, sortedEvents))}
+                  ${others.map((event) => this._renderEvent(event, sortedEvents))}
+                </div>
+              `;
+            })}
       </div>
     `;
     }
     _renderEvent(event, allEvents) {
         const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
         return x `
-      <div class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} glass-surface">
+      <div
+        class="event type-${event.type} ${event.type === 'action' && event.action
+            ? 'action-' + event.action
+            : ''} glass-surface"
+      >
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
             <path d="${this._getIcon(event)}" />
           </svg>
         </div>
-        ${event.event_id ? x `
-          <button class="delete-btn" @click=${(e) => this._deleteEvent(e, event.event_id)}>
-            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
-              <path d="${mdiDelete}" />
-            </svg>
-          </button>
-        ` : E}
+        ${event.event_id
+            ? x `
+              <button
+                class="delete-btn"
+                @click=${(e) => this._deleteEvent(e, event.event_id)}
+              >
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
+                  <path d="${mdiDelete}" />
+                </svg>
+              </button>
+            `
+            : E}
         <div class="date">
           ${formatTime(new Date(event.date))}
           ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
         </div>
-        ${this._renderEventContent(event)}
-        ${this._renderMetadata(event.metadata)}
-        ${this._renderImages(event.images)}
-        ${this._renderTags(event.tags)}
+        ${this._renderEventContent(event)} ${this._renderMetadata(event.metadata)}
+        ${this._renderImages(event.images)} ${this._renderTags(event.tags)}
       </div>
     `;
     }
@@ -10969,38 +11370,48 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         switch (event.type) {
             case 'stage_change':
                 return x `
-            <div class="content">Stage Changed</div>
-            <div class="details">Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
+          <div class="content">Stage Changed</div>
+          <div class="details">
+            Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong>
+          </div>
         `;
             case 'milestone':
                 return x `
-            <div class="content">${event.label} Started</div>
-            <div class="details">Agricultural milestone reached.</div>
+          <div class="content">${event.label} Started</div>
+          <div class="details">Agricultural milestone reached.</div>
         `;
-            case 'action':
-                const label = event.action === 'ipm' ? 'IPM' :
-                    event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            case 'action': {
+                const label = event.action === 'ipm'
+                    ? 'IPM'
+                    : event.action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
                 return x `
-            <div class="content">${label}</div>
-            ${event.details ? x `<div class="details">${event.details}</div>` : E}
+          <div class="content">${label}</div>
+          ${event.details ? x `<div class="details">${event.details}</div>` : E}
         `;
+            }
             case 'alert':
                 return x `
-            <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
-            <div class="details">Severity: ${event.severity}</div>
+          <div class="content" style="color: var(--error-color)">
+            Critical Alert: ${event.message}
+          </div>
+          <div class="details">Severity: ${event.severity}</div>
         `;
-            case 'environmental_report':
+            case 'environmental_report': {
                 const isDay = event.sensor_type !== 'night_report';
                 return x `
-            <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
-            <div class="details">
-              ${event.reasons?.map((r) => x `<span style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${r}</span>`)}
-            </div>
+          <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+          <div class="details">
+            ${event.reasons?.map((r) => x `<span
+                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
+                  >${r}</span
+                >`)}
+          </div>
         `;
+            }
             case 'note':
                 return x `
-            <div class="content">Note</div>
-            <div class="details">${event.text}</div>
+          <div class="content">Note</div>
+          <div class="details">${event.text}</div>
         `;
         }
     }
@@ -11017,7 +11428,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         ];
         return x `
       <div class="metadata-chips">
-        ${items.map(item => {
+        ${items.map((item) => {
             const val = metadata[item.key];
             if (val === undefined || val === null)
                 return E;
@@ -11037,17 +11448,17 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             return E;
         return x `
       <div class="image-grid">
-        ${images.map(img => {
+        ${images.map((img) => {
             // If it's a relative path, prefix with /api/growspace_manager/v1/images/
             const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
             return x `
-        <img 
-          src=${src} 
-          @click=${() => this._openImage(src)}
-          @mouseenter=${() => this._hoveredImage = src}
-          @mouseleave=${() => this._hoveredImage = null}
-        />
-      `;
+            <img
+              src=${src}
+              @click=${() => this._openImage(src)}
+              @mouseenter=${() => (this._hoveredImage = src)}
+              @mouseleave=${() => (this._hoveredImage = null)}
+            />
+          `;
         })}
       </div>
     `;
@@ -11057,12 +11468,14 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             return E;
         return x `
       <div class="tags">
-        ${tags.map(tag => x `
-          <div class="tag">
-            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;"><path d="${mdiTag}" /></svg>
-            ${tag}
-          </div>
-        `)}
+        ${tags.map((tag) => x `
+            <div class="tag">
+              <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
+                <path d="${mdiTag}" />
+              </svg>
+              ${tag}
+            </div>
+          `)}
       </div>
     `;
     }
@@ -11180,8 +11593,13 @@ PlantTimeline.styles = [
         height: 12px;
         fill: currentColor;
       }
-      .chip.sensor { border-color: rgba(var(--rgb-primary-color), 0.2); }
-      .chip.action-stat { background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color); }
+      .chip.sensor {
+        border-color: rgba(var(--rgb-primary-color), 0.2);
+      }
+      .chip.action-stat {
+        background: rgba(var(--rgb-primary-color), 0.1);
+        color: var(--primary-color);
+      }
 
       /* Image Grid */
       .image-grid {
@@ -11224,37 +11642,73 @@ PlantTimeline.styles = [
       /* Milestone Banner */
       .event.type-milestone {
         border-left: 4px solid var(--success-color);
-        background: linear-gradient(90deg, rgba(var(--rgb-success-color), 0.15) 0%, transparent 100%);
+        background: linear-gradient(
+          90deg,
+          rgba(var(--rgb-success-color), 0.15) 0%,
+          transparent 100%
+        );
       }
       .event.type-milestone .content {
         font-size: 1.05rem;
         letter-spacing: 0.5px;
         color: var(--success-color);
       }
-      
+
       /* Type specific styling */
-      .type-alert .icon-wrapper { border-color: var(--error-color, #f44336); }
-      .type-alert .icon-wrapper svg { fill: var(--error-color, #f44336); }
-      .type-action .icon-wrapper { border-color: var(--primary-color, #03a9f4); }
-      .type-action .icon-wrapper svg { fill: var(--primary-color, #03a9f4); }
-      .type-stage_change .icon-wrapper { border-color: var(--success-color, #4caf50); }
-      .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
-      .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
-      .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
-      .type-environmental_report .icon-wrapper { border-color: #ff9800; }
-      .type-environmental_report .icon-wrapper svg { fill: #ff9800; }
+      .type-alert .icon-wrapper {
+        border-color: var(--error-color, #f44336);
+      }
+      .type-alert .icon-wrapper svg {
+        fill: var(--error-color, #f44336);
+      }
+      .type-action .icon-wrapper {
+        border-color: var(--primary-color, #03a9f4);
+      }
+      .type-action .icon-wrapper svg {
+        fill: var(--primary-color, #03a9f4);
+      }
+      .type-stage_change .icon-wrapper {
+        border-color: var(--success-color, #4caf50);
+      }
+      .type-stage_change .icon-wrapper svg {
+        fill: var(--success-color, #4caf50);
+      }
+      .type-note .icon-wrapper {
+        border-color: var(--warning-color, #ff9800);
+      }
+      .type-note .icon-wrapper svg {
+        fill: var(--warning-color, #ff9800);
+      }
+      .type-environmental_report .icon-wrapper {
+        border-color: #ff9800;
+      }
+      .type-environmental_report .icon-wrapper svg {
+        fill: #ff9800;
+      }
 
       /* Action specific styling */
-      .action-ipm .icon-wrapper { border-color: #9c27b0; }
-      .action-ipm .icon-wrapper svg { fill: #9c27b0; }
-      .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
-      .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
+      .action-ipm .icon-wrapper {
+        border-color: #9c27b0;
+      }
+      .action-ipm .icon-wrapper svg {
+        fill: #9c27b0;
+      }
+      .action-training .icon-wrapper {
+        border-color: var(--gm-warning-color, #ff9800);
+      }
+      .action-training .icon-wrapper svg {
+        fill: var(--gm-warning-color, #ff9800);
+      }
       .action-water .icon-wrapper,
       .action-watering .icon-wrapper,
-      .action-irrigation .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-irrigation .icon-wrapper {
+        border-color: var(--gm-info-color, #2196f3);
+      }
       .action-water .icon-wrapper svg,
       .action-watering .icon-wrapper svg,
-      .action-irrigation .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
+      .action-irrigation .icon-wrapper svg {
+        fill: var(--gm-info-color, #2196f3);
+      }
 
       /* Day grouping */
       .day-header {
@@ -11308,7 +11762,7 @@ PlantTimeline.styles = [
         background: rgba(0, 0, 0, 0.9);
         border-radius: 8px;
         padding: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         max-width: 90vw;
         max-height: 90vh;
         display: flex;
@@ -11321,7 +11775,7 @@ PlantTimeline.styles = [
         border-radius: 4px;
         object-fit: contain;
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
@@ -11513,7 +11967,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             this.plant = this.dialog.plant;
             this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
             this.cloneTargetId = '';
-            if (this.dialog.activeTab && (this.dialog.activeTab === 'dashboard' || this.dialog.activeTab === 'actions' || this.dialog.activeTab === 'timeline')) {
+            if (this.dialog.activeTab &&
+                (this.dialog.activeTab === 'dashboard' ||
+                    this.dialog.activeTab === 'actions' ||
+                    this.dialog.activeTab === 'timeline')) {
                 this._activeTab = this.dialog.activeTab;
             }
             // Fetch logbook when dialog is set
@@ -11538,7 +11995,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             // Identify optimistic events (no event_id, recent timestamp) to preserve
             // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
             const now = new Date().getTime();
-            const optimisticEvents = this._logbookEvents.filter(e => {
+            const optimisticEvents = this._logbookEvents.filter((e) => {
                 const evt = e;
                 if (evt.event_id)
                     return false; // Already from DB
@@ -11547,7 +12004,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                 if (!ts)
                     return false;
                 const time = new Date(ts).getTime();
-                return (now - time) < 60000;
+                return now - time < 60000;
             });
             // Merge: Put optimistic events first, then fetched events
             this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
@@ -11583,7 +12040,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             return;
         this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
     }
-    _delete(plantId) {
+    _delete(_plantId) {
         this._showDeleteConfirmation = true;
     }
     _confirmDelete() {
@@ -11630,10 +12087,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             detail: {
                 mode: 'plant',
                 plantIds: [plantId],
-                growspaceId
+                growspaceId,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _openTraining() {
@@ -11645,10 +12102,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             detail: {
                 isOpen: true,
                 plantIds: [plantId],
-                growspaceId
+                growspaceId,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _openIPM() {
@@ -11659,10 +12116,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('open-ipm', {
             detail: {
                 growspaceId,
-                plantIds: [plantId]
+                plantIds: [plantId],
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _openClone() {
@@ -11672,10 +12129,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('open-clone', {
             detail: {
                 sourcePlant: this.plant,
-                defaultGrowspaceId: growspaceId
+                defaultGrowspaceId: growspaceId,
             },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _openStrainEditor() {
@@ -11686,7 +12143,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('open-strain-editor', {
             detail: { strain, phenotype },
             bubbles: true,
-            composed: true
+            composed: true,
         }));
     }
     _renderStatItem(label, value, unit = '') {
@@ -11853,26 +12310,26 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
 
           <!-- TABS -->
           <div class="tabs-container">
-            <button 
-                class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}" 
-                @click=${() => this._activeTab = 'dashboard'}
+            <button
+              class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'dashboard')}
             >
-                <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-                Overview
+              <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
+              Overview
             </button>
-            <button 
-                class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}" 
-                @click=${() => this._activeTab = 'actions'}
+            <button
+              class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'actions')}
             >
-                <svg viewBox="0 0 24 24"><path d="${mdiFlash}"></path></svg>
-                Actions
+              <svg viewBox="0 0 24 24"><path d="${mdiFlash}"></path></svg>
+              Actions
             </button>
-            <button 
-                class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}" 
-                @click=${() => this._activeTab = 'timeline'}
+            <button
+              class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'timeline')}
             >
-                <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
-                Timeline
+              <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
+              Timeline
             </button>
           </div>
 
@@ -11885,83 +12342,131 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
           </div>
 
           <!-- ACTIONS -->
-          <div class="dialog-actions" style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;">
-             <div class="standard-actions" style="display:flex; gap:12px;">
-                 <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                     <path d="${mdiDelete}"></path>
-                   </svg>
-                   Delete
-                 </button>
-             </div>
+          <div
+            class="dialog-actions"
+            style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;"
+          >
+            <div class="standard-actions" style="display:flex; gap:12px;">
+              <button class="md3-button danger" @click=${() => this._delete(plantId)}>
+                <svg
+                  style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiDelete}"></path>
+                </svg>
+                Delete
+              </button>
+            </div>
 
-             <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
-                 <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-                 ${this._activeTab === 'dashboard' ? x `
-                   ${(this.plant.state || '').toLowerCase() === 'mother' ? x `
-                      <div class="take-clone-container" style="display:flex; align-items:center; gap:8px;">
-                         <md3-number-input
-                          id="clone-count-input"
-                          .value=${1}
-                          .min=${1}
-                          .max=${10}
-                          style="width: 80px;"
-                        ></md3-number-input>
-                        <button class="md3-button primary"
-                          @click=${(e) => {
-            const container = e.currentTarget.closest('.take-clone-container');
-            const input = container?.querySelector('#clone-count-input');
-            const val = input ? parseInt(input.value, 10) : 1;
-            const numClones = isNaN(val) ? 1 : val;
-            this._takeClone(this.plant, numClones);
-        }}
-                        >
-                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-                          Take Clone
-                        </button>
-                      </div>
-                   ` : E}
-                   ${(this.plant.state || '').toLowerCase() === 'flower' ? x `
-                     <button class="md3-button primary" @click=${() => this._harvest(this.plant)}>
-                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiFlower}"></path></svg>
-                       Harvest
-                     </button>
-                   ` : E}
-      
-                   ${(this.plant.state || '').toLowerCase() === 'dry' ? x `
-                     <button class="md3-button primary" @click=${() => this._finishDrying(this.plant)}>
-                       <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                       Finish Drying
-                     </button>
-                   ` : E}
-      
-                   ${(this.plant.state || '').toLowerCase() === 'clone' ? x `
-                      <div style="display:flex; align-items:center; gap:8px;">
-                         <md3-select
-                           label="Target Growspace"
-                           .value=${this.cloneTargetId}
-                           .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                           style="width: 200px;"
-                           @change=${(e) => this.cloneTargetId = e.detail}
-                         ></md3-select>
-                        <button class="md3-button primary"
-                          @click=${() => this._moveClone(this.plant)}
-                          style="margin-top: 24px;"
-                        >
-                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiArrowRight}"></path></svg>
-                          Move
-                        </button>
-                      </div>
-                   ` : E}
-                 ` : E}
+            <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
+              <!-- DYNAMIC ACTIONS BASED ON STAGE -->
+              ${this._activeTab === 'dashboard'
+            ? x `
+                    ${(this.plant.state || '').toLowerCase() === 'mother'
+                ? x `
+                          <div
+                            class="take-clone-container"
+                            style="display:flex; align-items:center; gap:8px;"
+                          >
+                            <md3-number-input
+                              id="clone-count-input"
+                              .value=${1}
+                              .min=${1}
+                              .max=${10}
+                              style="width: 80px;"
+                            ></md3-number-input>
+                            <button
+                              class="md3-button primary"
+                              @click=${(e) => {
+                    const container = e.currentTarget.closest('.take-clone-container');
+                    const input = container?.querySelector('#clone-count-input');
+                    const val = input ? parseInt(input.value, 10) : 1;
+                    const numClones = isNaN(val) ? 1 : val;
+                    this._takeClone(this.plant, numClones);
+                }}
+                            >
+                              <svg
+                                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="${mdiContentCopy}"></path>
+                              </svg>
+                              Take Clone
+                            </button>
+                          </div>
+                        `
+                : E}
+                    ${(this.plant.state || '').toLowerCase() === 'flower'
+                ? x `
+                          <button
+                            class="md3-button primary"
+                            @click=${() => this._harvest(this.plant)}
+                          >
+                            <svg
+                              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="${mdiFlower}"></path>
+                            </svg>
+                            Harvest
+                          </button>
+                        `
+                : E}
+                    ${(this.plant.state || '').toLowerCase() === 'dry'
+                ? x `
+                          <button
+                            class="md3-button primary"
+                            @click=${() => this._finishDrying(this.plant)}
+                          >
+                            <svg
+                              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="${mdiCannabis}"></path>
+                            </svg>
+                            Finish Drying
+                          </button>
+                        `
+                : E}
+                    ${(this.plant.state || '').toLowerCase() === 'clone'
+                ? x `
+                          <div style="display:flex; align-items:center; gap:8px;">
+                            <md3-select
+                              label="Target Growspace"
+                              .value=${this.cloneTargetId}
+                              .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+                              style="width: 200px;"
+                              @change=${(e) => (this.cloneTargetId = e.detail)}
+                            ></md3-select>
+                            <button
+                              class="md3-button primary"
+                              @click=${() => this._moveClone(this.plant)}
+                              style="margin-top: 24px;"
+                            >
+                              <svg
+                                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="${mdiArrowRight}"></path>
+                              </svg>
+                              Move
+                            </button>
+                          </div>
+                        `
+                : E}
+                  `
+            : E}
 
-                 <button class="md3-button tonal" @click=${() => this._update()}>
-                   <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                     <path d="${mdiCheck}"></path>
-                   </svg>
-                   Save Changes
-                 </button>
-             </div>
+              <button class="md3-button tonal" @click=${() => this._update()}>
+                <svg
+                  style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiCheck}"></path>
+                </svg>
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       </ha-dialog>
@@ -11969,116 +12474,176 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     }
     _renderDashboard(attributes) {
         return x `
-            <!-- IDENTITY & LOCATION CARD -->
-            <div class="detail-card">
-              <h3>Identity & Location</h3>
-              ${this.isEditing
+      <!-- IDENTITY & LOCATION CARD -->
+      <div class="detail-card">
+        <h3>Identity & Location</h3>
+        ${this.isEditing
             ? x `
-                    <md3-text-input
-                      label="Strain Name"
-                      .value=${attributes.strain || ''}
-                      @change=${(e) => this._attributeChange('strain', e.detail)}
-                    ></md3-text-input>
-                    <md3-text-input
-                      label="Phenotype"
-                      .value=${attributes.phenotype || ''}
-                      @change=${(e) => this._attributeChange('phenotype', e.detail)}
-                    ></md3-text-input>
+              <md3-text-input
+                label="Strain Name"
+                .value=${attributes.strain || ''}
+                @change=${(e) => this._attributeChange('strain', e.detail)}
+              ></md3-text-input>
+              <md3-text-input
+                label="Phenotype"
+                .value=${attributes.phenotype || ''}
+                @change=${(e) => this._attributeChange('phenotype', e.detail)}
+              ></md3-text-input>
 
-                    <div style="display:flex; gap:16px;">
-                      <md3-number-input
-                        label="Row"
-                        .value=${attributes.row ?? ''}
-                        @change=${(e) => this._attributeChange('row', e.detail)}
-                      ></md3-number-input>
-                      <md3-number-input
-                        label="Column"
-                        .value=${attributes.col ?? ''}
-                        @change=${(e) => this._attributeChange('col', e.detail)}
-                      ></md3-number-input>
-                    </div>
-                  `
-            : x `
-                    <div class="stat-grid">
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.strain}</span>
-                        <span class="stat-label">Strain</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
-                        <span class="stat-label">Phenotype</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
-                        <span class="stat-label">Row</span>
-                      </div>
-                      <div class="stat-item">
-                        <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
-                        <span class="stat-label">Col</span>
-                      </div>
-                    </div>
-                  `}
-            </div>
-            <!-- STATS CARD -->
-            ${this._renderPlantStats(this.plant)}
-
-            <!-- TIMELINE CARD (RENAMED TO LIFECYCLE DATES) -->
-            <div class="detail-card">
-              <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-              >
-                <h3 style="margin: 0;">Lifecycle Dates</h3>
-                <button
-                  class="md3-button text"
-                  style="min-width: auto; padding: 4px;"
-                  @click=${this._toggleShowAllDates}
-                  aria-label="Toggle Dates"
-                  title="Toggle Dates"
-                >
-                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiPencil}"></path>
-                  </svg>
-                </button>
+              <div style="display:flex; gap:16px;">
+                <md3-number-input
+                  label="Row"
+                  .value=${attributes.row ?? ''}
+                  @change=${(e) => this._attributeChange('row', e.detail)}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Column"
+                  .value=${attributes.col ?? ''}
+                  @change=${(e) => this._attributeChange('col', e.detail)}
+                ></md3-number-input>
               </div>
+            `
+            : x `
+              <div class="stat-grid">
+                <div class="stat-item">
+                  <span class="stat-value">${this.plant.attributes?.strain}</span>
+                  <span class="stat-label">Strain</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
+                  <span class="stat-label">Phenotype</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
+                  <span class="stat-label">Row</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
+                  <span class="stat-label">Col</span>
+                </div>
+              </div>
+            `}
+      </div>
+      <!-- STATS CARD -->
+      ${this._renderPlantStats(this.plant)}
 
-              ${this.showAllDates
+      <!-- TIMELINE CARD (RENAMED TO LIFECYCLE DATES) -->
+      <div class="detail-card">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+        >
+          <h3 style="margin: 0;">Lifecycle Dates</h3>
+          <button
+            class="md3-button text"
+            style="min-width: auto; padding: 4px;"
+            @click=${this._toggleShowAllDates}
+            aria-label="Toggle Dates"
+            title="Toggle Dates"
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiPencil}"></path>
+            </svg>
+          </button>
+        </div>
+
+        ${this.showAllDates
             ? x `
-                    <md3-date-input
-                      label="Seedling Start"
-                      .value=${attributes.seedling_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('seedling_start', e.detail)}
-                    ></md3-date-input>
+              <md3-date-input
+                label="Seedling Start"
+                .value=${attributes.seedling_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('seedling_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Mother Start"
+                .value=${attributes.mother_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('mother_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Clone Start"
+                .value=${attributes.clone_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('clone_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Vegetative Start"
+                .value=${attributes.veg_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('veg_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Flower Start"
+                .value=${attributes.flower_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('flower_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Dry Start"
+                .value=${attributes.dry_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('dry_start', e.detail)}
+              ></md3-date-input>
+              <md3-date-input
+                label="Cure Start"
+                .value=${attributes.cure_start ?? ''}
+                ?time=${true}
+                @change=${(e) => this._attributeChange('cure_start', e.detail)}
+              ></md3-date-input>
+            `
+            : x `
+              ${attributes.stage === PlantStage.MOTHER
+                ? x `
                     <md3-date-input
                       label="Mother Start"
                       .value=${attributes.mother_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('mother_start', e.detail)}
                     ></md3-date-input>
+                  `
+                : E}
+              ${attributes.stage === PlantStage.CLONE
+                ? x `
                     <md3-date-input
                       label="Clone Start"
                       .value=${attributes.clone_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('clone_start', e.detail)}
                     ></md3-date-input>
+                  `
+                : E}
+              ${attributes.stage === PlantStage.VEG || attributes.stage === PlantStage.FLOWER
+                ? x `
                     <md3-date-input
                       label="Vegetative Start"
                       .value=${attributes.veg_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('veg_start', e.detail)}
                     ></md3-date-input>
+                  `
+                : E}
+              ${attributes.stage === PlantStage.FLOWER
+                ? x `
                     <md3-date-input
                       label="Flower Start"
                       .value=${attributes.flower_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('flower_start', e.detail)}
                     ></md3-date-input>
+                  `
+                : E}
+              ${attributes.stage === PlantStage.DRY || attributes.stage === PlantStage.CURE
+                ? x `
                     <md3-date-input
                       label="Dry Start"
                       .value=${attributes.dry_start ?? ''}
                       ?time=${true}
                       @change=${(e) => this._attributeChange('dry_start', e.detail)}
                     ></md3-date-input>
+                  `
+                : E}
+              ${attributes.stage === PlantStage.CURE
+                ? x `
                     <md3-date-input
                       label="Cure Start"
                       .value=${attributes.cure_start ?? ''}
@@ -12086,71 +12651,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                       @change=${(e) => this._attributeChange('cure_start', e.detail)}
                     ></md3-date-input>
                   `
-            : x `
-                    ${attributes.stage === PlantStage.MOTHER
-                ? x `
-                          <md3-date-input
-                            label="Mother Start"
-                            .value=${attributes.mother_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('mother_start', e.detail)}
-                          ></md3-date-input>
-                        `
                 : E}
-                    ${attributes.stage === PlantStage.CLONE
-                ? x `
-                          <md3-date-input
-                            label="Clone Start"
-                            .value=${attributes.clone_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('clone_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${attributes.stage === PlantStage.VEG ||
-                attributes.stage === PlantStage.FLOWER
-                ? x `
-                          <md3-date-input
-                            label="Vegetative Start"
-                            .value=${attributes.veg_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('veg_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${attributes.stage === PlantStage.FLOWER
-                ? x `
-                          <md3-date-input
-                            label="Flower Start"
-                            .value=${attributes.flower_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('flower_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${attributes.stage === PlantStage.DRY ||
-                attributes.stage === PlantStage.CURE
-                ? x `
-                          <md3-date-input
-                            label="Dry Start"
-                            .value=${attributes.dry_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('dry_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                    ${attributes.stage === PlantStage.CURE
-                ? x `
-                          <md3-date-input
-                            label="Cure Start"
-                            .value=${attributes.cure_start ?? ''}
-                            ?time=${true}
-                            @change=${(e) => this._attributeChange('cure_start', e.detail)}
-                          ></md3-date-input>
-                        `
-                : E}
-                  `}
-            </div>
+            `}
+      </div>
     `;
     }
     _renderActions() {
@@ -12193,34 +12696,42 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             { key: 'flower_start', label: 'Flowering' },
             { key: 'dry_start', label: 'Drying' },
             { key: 'cure_start', label: 'Curing' },
-            { key: 'harvest_date', label: 'Harvested' }
+            { key: 'harvest_date', label: 'Harvested' },
         ];
-        milestoneFields.forEach(field => {
+        milestoneFields.forEach((field) => {
             const date = this.plant?.attributes?.[field.key];
             if (date) {
                 milestones.push({
                     type: 'milestone',
                     date: String(date),
-                    label: field.label
+                    label: field.label,
                 });
             }
         });
         // 2. Add Logbook Events (Watering, Training)
         const normalize = (s) => s?.toLowerCase().trim() || '';
         const plantId = this.plant?.attributes?.plant_id || this.plant.entity_id?.split('.')[1] || '';
-        const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+        const trainingTechniques = [
+            'topping',
+            'fim',
+            'lst',
+            'super_cropping',
+            'scrog',
+            'defoliating',
+            'lollipopping',
+        ];
         const logbookEvents = this._logbookEvents
-            .filter(e => {
+            .filter((e) => {
             const cat = normalize(e.category);
             const type = normalize(e.sensor_type);
-            const reasons = (e.reasons || []);
+            const reasons = e.reasons || [];
             // 1. Check if it's a watering/irrigation event
             const isWatering = cat === 'irrigation' ||
                 (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
                 ['irrigation', 'drain', 'water'].includes(type) ||
                 type.includes('water');
             // 2. Check if it's a training event
-            const isTraining = cat === 'training' || trainingTechniques.some(t => type.includes(t));
+            const isTraining = cat === 'training' || trainingTechniques.some((t) => type.includes(t));
             // 3. Check if it's an IPM event
             const isIPM = cat === 'ipm' || type.startsWith('ipm_');
             // 4. Check if it's a note event
@@ -12235,11 +12746,11 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             }
             // For others, check growspace-wide or reasons
             // Include if it's an automated irrigation event (growspace-wide)
-            if (cat === 'irrigation' && !reasons.some(r => r.startsWith('plant_id:'))) {
+            if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
                 return true;
             }
             // Backend format: "plant_id:uuid-here"
-            const mentionsThisPlant = reasons.some(r => {
+            const mentionsThisPlant = reasons.some((r) => {
                 const rLower = r.toLowerCase();
                 if (rLower.startsWith('plant_id:')) {
                     const eventPlantId = rLower.replace('plant_id:', '').trim();
@@ -12249,7 +12760,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             });
             return mentionsThisPlant;
         })
-            .map(e => {
+            .map((e) => {
             const cat = normalize(e.category);
             if (cat === 'note') {
                 return {
@@ -12259,32 +12770,38 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     images: e.images,
                     tags: e.tags,
                     metadata: e.metadata,
-                    event_id: e.event_id
+                    event_id: e.event_id,
                 };
             }
             return {
                 type: 'action',
                 date: e.start_time,
-                action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : (e.category || e.sensor_type),
+                action: e.category === 'watering' || e.category === 'irrigation'
+                    ? 'water'
+                    : e.category || e.sensor_type,
                 // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-                details: (e.reasons || []).filter(r => {
+                details: (e.reasons || [])
+                    .filter((r) => {
                     const rLower = r.toLowerCase();
-                    return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
-                }).join(', '),
-                event_id: e.event_id
+                    return (!rLower.startsWith('plant_id:') &&
+                        !rLower.startsWith('plants:') &&
+                        !rLower.startsWith('plant:'));
+                })
+                    .join(', '),
+                event_id: e.event_id,
             };
         });
         // Combine all
         const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
         return x `
-        <div style="grid-column: 1 / -1;">
-            <plant-timeline 
-              .hass=${this.hass} 
-              .plant_id=${plantId}
-              .events=${allEvents}
-              @growspace-refresh=${() => this._fetchLogbook()}
-            ></plant-timeline>
-        </div>
+      <div style="grid-column: 1 / -1;">
+        <plant-timeline
+          .hass=${this.hass}
+          .plant_id=${plantId}
+          .events=${allEvents}
+          @growspace-refresh=${() => this._fetchLogbook()}
+        ></plant-timeline>
+      </div>
     `;
     }
 };
@@ -12546,7 +13063,7 @@ PlantOverviewDialog.styles = [
         margin: 0;
         visibility: hidden;
       }
-      
+
       .scroll-arrow svg {
         width: 18px;
         height: 18px;
@@ -12555,7 +13072,7 @@ PlantOverviewDialog.styles = [
 
       @media (max-width: 600px) {
         .event-actions {
-            justify-content: flex-start;
+          justify-content: flex-start;
         }
       }
     `,
@@ -12658,10 +13175,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 detail: {
                     strain: this._editorState,
                     source: this.source,
-                    returnPayload: this.returnPayload
+                    returnPayload: this.returnPayload,
                 },
                 bubbles: true,
-                composed: true
+                composed: true,
             }));
         }
         else {
@@ -12754,13 +13271,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     renderBrowseView() {
         const query = (this._searchQuery || '').toLowerCase();
-        const terms = query.split(/\s+/).filter(t => t.length > 0);
-        const filteredStrains = this.strains.filter((s) => {
+        const terms = query.split(/\s+/).filter((t) => t.length > 0);
+        const filteredStrains = this.strains
+            .filter((s) => {
             if (terms.length === 0)
                 return true;
             const searchText = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
-            return terms.every(term => searchText.includes(term));
-        }).sort((a, b) => a.strain.localeCompare(b.strain));
+            return terms.every((term) => searchText.includes(term));
+        })
+            .sort((a, b) => a.strain.localeCompare(b.strain));
         // Pagination Logic
         const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
         if (this._currentPage > totalPages && totalPages > 0) {
@@ -12831,7 +13350,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
 
         ${filteredStrains.length === 0
             ? x `
-              <div class="empty-state" style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+              <div
+                class="empty-state"
+                style="text-align:center; padding: 40px; color: var(--secondary-text-color);"
+              >
                 <svg
                   style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
                   viewBox="0 0 24 24"
@@ -13884,7 +14406,7 @@ StrainLibraryDialog.styles = [
       }
       .sd-label {
         display: block;
-        color: var(--primary-text-color,--secondary-text-color);
+        color: var(--primary-text-color, --secondary-text-color);
         font-size: 0.85rem;
         margin-bottom: 8px;
         font-weight: 500;
@@ -14705,19 +15227,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <input
             class="search-input-inner"
             list="${listId}"
-            placeholder=${values.length === 0 ? "Add Entity..." : ""}
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
             @change=${(e) => {
             const input = e.target;
             const val = input.value;
             if (val && !values.includes(val)) {
                 changeHandler([...values, val]);
             }
-            input.value = "";
+            input.value = '';
         }}
           />
         </div>
         <datalist id="${listId}">
-          ${entities.map(eid => x `<option value="${eid}"></option>`)}
+          ${entities.map((eid) => x `<option value="${eid}"></option>`)}
         </datalist>
       </div>
     `;
@@ -16147,16 +16669,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return x `
       <div class="schedule-section">
         <div class="section-header">
-           <h3>Pump Configuration</h3>
+          <h3>Pump Configuration</h3>
         </div>
         <div class="section-content">
-             ${this._renderEntitySelect('Irrigation Pump', this._irrigationPumpEntity, ['switch', 'input_boolean'], (e) => (this._irrigationPumpEntity = e.target.value))}
-             ${this._renderEntitySelect('Drain Pump (Optional)', this._drainPumpEntity, ['switch', 'input_boolean'], (e) => (this._drainPumpEntity = e.target.value))}
+          ${this._renderEntitySelect('Irrigation Pump', this._irrigationPumpEntity, ['switch', 'input_boolean'], (e) => (this._irrigationPumpEntity = e.target.value))}
+          ${this._renderEntitySelect('Drain Pump (Optional)', this._drainPumpEntity, ['switch', 'input_boolean'], (e) => (this._drainPumpEntity = e.target.value))}
         </div>
       </div>
     `;
     }
-    _renderSteeringTab(color) {
+    _renderSteeringTab(_color) {
         return x `
       <div class="detail-card">
         <h3 style="margin-top: 0;">Crop Steering Configuration</h3>
@@ -16246,9 +16768,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 ?.querySelector('.' + type + '-time-bar');
             if (container) {
                 const rect = container.getBoundingClientRect();
-                type === 'irrigation'
-                    ? this._startAddingIrrigationTime(rect.width / 2, rect.width)
-                    : this._startAddingDrainTime(rect.width / 2, rect.width);
+                if (type === 'irrigation') {
+                    this._startAddingIrrigationTime(rect.width / 2, rect.width);
+                }
+                else {
+                    this._startAddingDrainTime(rect.width / 2, rect.width);
+                }
             }
         }}
             class="md3-button primary"
@@ -16266,9 +16791,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           @click=${(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
             const x = e.clientX - rect.left;
-            type === 'irrigation'
-                ? this._startAddingIrrigationTime(x, rect.width)
-                : this._startAddingDrainTime(x, rect.width);
+            if (type === 'irrigation') {
+                this._startAddingIrrigationTime(x, rect.width);
+            }
+            else {
+                this._startAddingDrainTime(x, rect.width);
+            }
         }}
           style="border: 2px solid ${color}40;"
         >
@@ -16291,9 +16819,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 @click=${(e) => {
                 e.stopPropagation();
                 if (confirm(`Remove ${type} time ${t.time}?`)) {
-                    type === 'irrigation'
-                        ? this._removeIrrigationTime(t.time)
-                        : this._removeDrainTime(t.time);
+                    if (type === 'irrigation') {
+                        this._removeIrrigationTime(t.time);
+                    }
+                    else {
+                        this._removeDrainTime(t.time);
+                    }
                 }
             }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
@@ -16306,7 +16837,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             `;
         })}
         </div>
-
 
         ${addingTime
             ? x `
@@ -16370,9 +16900,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                type === 'irrigation'
-                    ? this._addIrrigationTime(addingTime.time, addingTime.duration)
-                    : this._addDrainTime(addingTime.time, addingTime.duration);
+                if (type === 'irrigation') {
+                    this._addIrrigationTime(addingTime.time, addingTime.duration);
+                }
+                else {
+                    this._addDrainTime(addingTime.time, addingTime.duration);
+                }
             }}
                       style="background: ${color};"
                     >
@@ -16493,7 +17026,7 @@ IrrigationDialog.styles = [
         transition: all 0.2s;
       }
       .tab-item.active {
-        border-bottom-color: var(--stage-color, #2196F3) !important;
+        border-bottom-color: var(--stage-color, #2196f3) !important;
         opacity: 1 !important;
       }
       .tab-item:hover {
@@ -17673,17 +18206,6 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             this._isLoading = false;
         }
     }
-    _formatDuration(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}m ${secs}s`;
-    }
-    _formatProb(val) {
-        if (val === undefined || val === null || isNaN(val)) {
-            return '--%';
-        }
-        return `${Math.round(Number(val) * 100)}%`;
-    }
     _formatTime(isoString) {
         return formatDateTime(new Date(isoString));
     }
@@ -17731,47 +18253,55 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         // Filter logic using class method for normalization
         let filteredEvents = allEvents;
         if (this._activeFilter === 'watering') {
-            filteredEvents = allEvents.filter(e => {
+            filteredEvents = allEvents.filter((e) => {
                 const cat = this._normalize(e.category);
                 const type = this._normalize(e.sensor_type);
-                return cat === 'irrigation' ||
+                return (cat === 'irrigation' ||
                     (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
                     ['irrigation', 'drain', 'water'].includes(type) ||
-                    type.includes('water');
+                    type.includes('water'));
             });
         }
         else if (this._activeFilter === 'training') {
-            const techniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
-            filteredEvents = allEvents.filter(e => {
+            const techniques = [
+                'topping',
+                'fim',
+                'lst',
+                'super_cropping',
+                'scrog',
+                'defoliating',
+                'lollipopping',
+            ];
+            filteredEvents = allEvents.filter((e) => {
                 const cat = this._normalize(e.category);
                 const type = this._normalize(e.sensor_type);
-                return cat === 'training' || techniques.some(t => type.includes(t));
+                return cat === 'training' || techniques.some((t) => type.includes(t));
             });
         }
         else if (this._activeFilter === 'alerts') {
-            filteredEvents = allEvents.filter(e => {
+            filteredEvents = allEvents.filter((e) => {
                 const cat = this._normalize(e.category);
                 return cat === 'alert' || (e.severity !== undefined && e.severity >= 0.75);
             });
         }
         else if (this._activeFilter === 'environment') {
-            filteredEvents = allEvents.filter(e => {
+            filteredEvents = allEvents.filter((e) => {
                 const type = this._normalize(e.sensor_type);
                 const cat = this._normalize(e.category);
-                return ['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report';
+                return (['temperature', 'humidity', 'vpd', 'co2'].includes(type) || cat === 'environmental_report');
             });
         }
         else if (this._activeFilter === 'notes') {
-            filteredEvents = allEvents.filter(e => this._normalize(e.category) === 'note');
+            filteredEvents = allEvents.filter((e) => this._normalize(e.category) === 'note');
         }
         // Schwartzian transform for efficient sorting
         const sortedEvents = filteredEvents
-            .map(e => ({
+            .map((e) => ({
             event: e,
-            time: getEventTimestamp(e)
+            time: getEventTimestamp(e),
         }))
             .sort((a, b) => b.time - a.time)
-            .map(item => item.event);
+            .map((item) => item.event);
         const filters = [
             { id: 'all', label: 'All' },
             { id: 'notes', label: 'Notes' },
@@ -17795,7 +18325,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
       <div class="log-container" ${n$2(this._containerRef)}>
         ${sortedEvents.length > 0
             ? x `
-            ${virtualize({
+              ${virtualize({
                 items: sortedEvents,
                 scroller: true,
                 renderItem: (event) => {
@@ -17813,58 +18343,84 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                     const index = (this._events || []).indexOf(event);
                     const eventColor = this._getEventColor(event.category, event.sensor_type);
                     return x `
-                    <div class="event-card ${this._highlightedTimestamp && Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000 ? 'highlighted' : ''}" data-event-index="${index}">
+                    <div
+                      class="event-card ${this._highlightedTimestamp &&
+                        Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000
+                        ? 'highlighted'
+                        : ''}"
+                      data-event-index="${index}"
+                    >
                       <div class="event-header">
                         <div>
                           <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
                         ${event.duration_sec > 0
-                        ? x `<div class="event-duration">${this._formatDuration(event.duration_sec)}</div>`
+                        ? x `<div class="event-duration">
+                              ${formatDuration(event.duration_sec)}
+                            </div>`
                         : E}
                       </div>
-                      
+
                       <div class="event-details">
                         <div class="event-reasons">
-                          ${isNote ? x `
-                            <div class="note-text" style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;">
-                              ${event.notes}
-                            </div>
-                            ${event.tags?.length > 0 ? x `
-                              <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
-                                ${event.tags.map((tag) => x `
-                                  <span class="reason-badge" style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);">#${tag}</span>
-                                `)}
-                              </div>
-                            ` : E}
-                            ${event.images?.length > 0 ? x `
-                              <div style="font-size: 0.8rem; opacity: 0.6; font-style: italic;">
-                                ${event.images.length} Image${event.images.length > 1 ? 's' : ''} attached
-                              </div>
-                            ` : E}
-                          ` : (event.reasons && event.reasons.length > 0
-                        ? event.reasons
-                            .filter((r) => !r.trim().toLowerCase().startsWith('plant_id:'))
-                            .map((reason) => x `<span class="reason-badge">${reason}</span>`)
-                        : E)}
+                          ${isNote
+                        ? x `
+                                <div
+                                  class="note-text"
+                                  style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;"
+                                >
+                                  ${event.notes}
+                                </div>
+                                ${event.tags?.length > 0
+                            ? x `
+                                      <div
+                                        style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;"
+                                      >
+                                        ${event.tags.map((tag) => x `
+                                            <span
+                                              class="reason-badge"
+                                              style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);"
+                                              >#${tag}</span
+                                            >
+                                          `)}
+                                      </div>
+                                    `
+                            : E}
+                                ${event.images?.length > 0
+                            ? x `
+                                      <div
+                                        style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
+                                      >
+                                        ${event.images.length}
+                                        Image${event.images.length > 1 ? 's' : ''} attached
+                                      </div>
+                                    `
+                            : E}
+                              `
+                        : event.reasons && event.reasons.length > 0
+                            ? event.reasons
+                                .filter((r) => !r.trim().toLowerCase().startsWith('plant_id:'))
+                                .map((reason) => x `<span class="reason-badge">${reason}</span>`)
+                            : E}
                         </div>
-                        
+
                         ${!isNote && event.severity > 0.5 && event.category !== 'training'
                         ? x `
-                              <div 
+                              <div
                                 class="event-probability"
                                 style="color: ${this._getSeverityColor(event.severity, event.sensor_type)}"
                               >
-                                ${this._formatProb(event.severity)}
+                                ${formatProbability(event.severity)}
                               </div>
                             `
                         : E}
                       </div>
                     </div>
                   `;
-                }
+                },
             })}
-          `
+            `
             : x `
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
@@ -17915,8 +18471,13 @@ GrowspaceLogbook.styles = [
         animation: highlight-pulse 1.5s ease;
       }
       @keyframes highlight-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.02); }
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.02);
+        }
       }
       .event-header {
         display: flex;
@@ -18115,11 +18676,13 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         if (this._isLoading)
             return x `<div class="empty-state">Loading timeline...</div>`;
         if (this._hasError)
-            return x `<div class="empty-state" style="color: var(--error-color)">${this._errorMessage}</div>`;
+            return x `<div class="empty-state" style="color: var(--error-color)">
+        ${this._errorMessage}
+      </div>`;
         if (this._events.length === 0)
             return x `<div class="empty-state">No events to display</div>`;
         // Process times using new utility
-        const timestamps = this._events.map(e => getEventTimestamp(e));
+        const timestamps = this._events.map((e) => getEventTimestamp(e));
         const minTime = Math.min(...timestamps);
         const maxTime = Math.max(...timestamps);
         // Add buffer (1 day)
@@ -18132,44 +18695,56 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         return x `
       <error-boundary .fallbackMessage=${'Failed to render timeline'}>
         <div class="controls">
-          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.max(1, this._zoomLevel - 0.5)}>-</button>
-          <button class="zoom-btn" @click=${() => this._zoomLevel = Math.min(5, this._zoomLevel + 0.5)}>+</button>
+          <button
+            class="zoom-btn"
+            @click=${() => (this._zoomLevel = Math.max(1, this._zoomLevel - 0.5))}
+          >
+            -
+          </button>
+          <button
+            class="zoom-btn"
+            @click=${() => (this._zoomLevel = Math.min(5, this._zoomLevel + 0.5))}
+          >
+            +
+          </button>
         </div>
 
         <div class="timeline-container">
           <div class="timeline-track" style="width: ${width}%">
-            ${this._events.map(event => {
+            ${this._events.map((event) => {
             const left = this._getPosition(event, start, totalDuration);
             const icon = this._getIcon(event);
             const className = this._getClass(event);
             return x `
-                <div 
-                  class="event-marker ${className}" 
+                <div
+                  class="event-marker ${className}"
                   style="left: ${left}%"
-                  @mouseenter=${() => this._hoveredEvent = event}
-                  @mouseleave=${() => this._hoveredEvent = null}
+                  @mouseenter=${() => (this._hoveredEvent = event)}
+                  @mouseleave=${() => (this._hoveredEvent = null)}
                 >
                   <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                  
-                  ${this._hoveredEvent === event ? x `
-                    <div class="tooltip visible" style="left: ${left}%">
-                      <div class="tooltip-header">
-                        ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
-                      </div>
-                      <div class="tooltip-time">
-                        ${formatDateTime(new Date(getEventTimestamp(event)))}
-                      </div>
-                      <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                    </div>
-                  ` : E}
+
+                  ${this._hoveredEvent === event
+                ? x `
+                        <div class="tooltip visible" style="left: ${left}%">
+                          <div class="tooltip-header">
+                            ${event.category === 'note' ? 'Note' : event.sensor_type || 'Event'}
+                          </div>
+                          <div class="tooltip-time">
+                            ${formatDateTime(new Date(getEventTimestamp(event)))}
+                          </div>
+                          <div>${event.notes || event.reasons?.join(', ') || ''}</div>
+                        </div>
+                      `
+                : E}
                 </div>
               `;
         })}
 
             <div class="date-axis">
               <!-- Generate ticks every 20% -->
-              ${[0, 20, 40, 60, 80, 100].map(pct => {
-            const time = start + (totalDuration * (pct / 100));
+              ${[0, 20, 40, 60, 80, 100].map((pct) => {
+            const time = start + totalDuration * (pct / 100);
             return x `
                   <div class="date-tick" style="left: ${pct}%">
                     ${formatShortDate(new Date(time))}
@@ -18238,7 +18813,7 @@ GrowspaceTimeline.styles = [
       .event-marker:hover {
         transform: translate(-50%, -50%) scale(1.2);
         z-index: 10;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       }
 
       .event-marker svg {
@@ -18248,22 +18823,38 @@ GrowspaceTimeline.styles = [
       }
 
       /* Event Types */
-      .marker-alert { border-color: var(--error-color); }
-      .marker-alert svg { fill: var(--error-color); }
-      
-      .marker-water { border-color: var(--info-color, #2196f3); }
-      .marker-water svg { fill: var(--info-color, #2196f3); }
-      
-      .marker-note { border-color: var(--warning-color); }
-      .marker-note svg { fill: var(--warning-color); }
-      
-      .marker-stage { 
-        width: 40px; 
-        height: 40px; 
-        border-color: var(--success-color);
-        background: var(--success-color); 
+      .marker-alert {
+        border-color: var(--error-color);
       }
-      .marker-stage svg { fill: white; width: 24px; height: 24px; }
+      .marker-alert svg {
+        fill: var(--error-color);
+      }
+
+      .marker-water {
+        border-color: var(--info-color, #2196f3);
+      }
+      .marker-water svg {
+        fill: var(--info-color, #2196f3);
+      }
+
+      .marker-note {
+        border-color: var(--warning-color);
+      }
+      .marker-note svg {
+        fill: var(--warning-color);
+      }
+
+      .marker-stage {
+        width: 40px;
+        height: 40px;
+        border-color: var(--success-color);
+        background: var(--success-color);
+      }
+      .marker-stage svg {
+        fill: white;
+        width: 24px;
+        height: 24px;
+      }
 
       .date-axis {
         position: absolute;
@@ -18301,7 +18892,7 @@ GrowspaceTimeline.styles = [
         border: 1px solid var(--divider-color);
         padding: 12px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         z-index: 20;
         min-width: 200px;
         pointer-events: none;
@@ -18347,7 +18938,7 @@ GrowspaceTimeline.styles = [
         justify-content: center;
         font-weight: bold;
       }
-      
+
       .zoom-btn:hover {
         background: rgba(255, 255, 255, 0.2);
       }
@@ -18359,7 +18950,7 @@ GrowspaceTimeline.styles = [
         height: 100%;
         color: var(--secondary-text-color);
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
@@ -18462,8 +19053,8 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
         if (!ctx)
             return;
         // Resolution
-        const width = canvas.width = 400;
-        const height = canvas.height = 300;
+        const width = (canvas.width = 400);
+        const height = (canvas.height = 300);
         // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
         const minTemp = 15;
         const maxTemp = 35;
@@ -18471,8 +19062,12 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
         const maxRH = 90;
         // Clear
         ctx.clearRect(0, 0, width, height);
+        // Grid size for pixels
+        // const stepX = width / (maxTemp - minTemp);
+        // const stepY = height / (maxRH - minRH);
         // Draw Heatmap pixels
-        for (let x = 0; x < width; x += 4) { // Optimization: 4px blocks
+        for (let x = 0; x < width; x += 4) {
+            // Optimization: 4px blocks
             for (let y = 0; y < height; y += 4) {
                 // Map pixel to Temp/RH
                 // x=0 -> minTemp, x=width -> maxTemp
@@ -18488,8 +19083,10 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
         }
         // Draw Current Point if data exists
         if (this.temperature && this.humidity) {
-            if (this.temperature >= minTemp && this.temperature <= maxTemp &&
-                this.humidity >= minRH && this.humidity <= maxRH) {
+            if (this.temperature >= minTemp &&
+                this.temperature <= maxTemp &&
+                this.humidity >= minRH &&
+                this.humidity <= maxRH) {
                 const x = ((this.temperature - minTemp) / (maxTemp - minTemp)) * width;
                 const y = ((maxRH - this.humidity) / (maxRH - minRH)) * height;
                 // Draw dot
@@ -18507,10 +19104,22 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
         return x `
       <canvas id="vpdCanvas"></canvas>
       <div class="legend">
-        <div class="legend-item"><div class="legend-color" style="background: #2196f3"></div>Wet</div>
-        <div class="legend-item"><div class="legend-color" style="background: #ff9800"></div>Fair</div>
-        <div class="legend-item"><div class="legend-color" style="background: #4caf50"></div>Optimal</div>
-        <div class="legend-item"><div class="legend-color" style="background: #f44336"></div>Dry</div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #2196f3"></div>
+          Wet
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ff9800"></div>
+          Fair
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #4caf50"></div>
+          Optimal
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #f44336"></div>
+          Dry
+        </div>
       </div>
     `;
     }
@@ -18540,9 +19149,12 @@ VPDHeatmap.styles = [
         background: white;
         border: 2px solid black;
         border-radius: 50%;
-        transform: translate(-50%, 50%); /* Adjust for bottom-left origin coordinate system mapping needed */
+        transform: translate(
+          -50%,
+          50%
+        ); /* Adjust for bottom-left origin coordinate system mapping needed */
         pointer-events: none;
-        box-shadow: 0 0 4px rgba(0,0,0,0.5);
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
       }
 
       .legend {
@@ -18565,7 +19177,7 @@ VPDHeatmap.styles = [
         height: 10px;
         border-radius: 2px;
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
@@ -18614,23 +19226,23 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         <div class="content-wrapper">
           <!-- Tab Switcher -->
           <div class="tab-bar">
-            <button 
+            <button
               class="tab ${this._activeTab === 'list' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'list'}
+              @click=${() => (this._activeTab = 'list')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiFormatListBulleted}"></path></svg>
               <span>List View</span>
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'timeline' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'timeline'}
+              @click=${() => (this._activeTab = 'timeline')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>Timeline</span>
             </button>
-            <button 
+            <button
               class="tab ${this._activeTab === 'vpd' ? 'active' : ''}"
-              @click=${() => this._activeTab = 'vpd'}
+              @click=${() => (this._activeTab = 'vpd')}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>VPD</span>
@@ -18640,35 +19252,40 @@ let LogbookDialog = class LogbookDialog extends i$3 {
           <!-- Content -->
           ${this._activeTab === 'list'
             ? x `
-              <growspace-logbook
-                .hass=${this.hass}
-                .growspaceId=${this.growspaceId}
-              ></growspace-logbook>
-            `
+                <growspace-logbook
+                  .hass=${this.hass}
+                  .growspaceId=${this.growspaceId}
+                ></growspace-logbook>
+              `
             : this._activeTab === 'timeline'
                 ? x `
-              <growspace-timeline
-                .hass=${this.hass}
-                .growspaceId=${this.growspaceId}
-              ></growspace-timeline>
-            `
+                  <growspace-timeline
+                    .hass=${this.hass}
+                    .growspaceId=${this.growspaceId}
+                  ></growspace-timeline>
+                `
                 : x `
-            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center;">
-              <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
-              <vpd-heatmap
-                .hass=${this.hass}
-                .temperature=${24} 
-                .humidity=${60}
-                .stage=${'vegetative'}
-              ></vpd-heatmap>
-              <p style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;">
-                Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current stage.<br>
-                Targeting 0.8 - 1.2 kPa.
-              </p>
-            </div>
-          `}
+                  <div
+                    style="padding: 20px; display: flex; flex-direction: column; align-items: center;"
+                  >
+                    <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
+                    <vpd-heatmap
+                      .hass=${this.hass}
+                      .temperature=${24}
+                      .humidity=${60}
+                      .stage=${'vegetative'}
+                    ></vpd-heatmap>
+                    <p
+                      style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;"
+                    >
+                      Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current
+                      stage.<br />
+                      Targeting 0.8 - 1.2 kPa.
+                    </p>
+                  </div>
+                `}
         </div>
-  </ha-dialog>
+      </ha-dialog>
     `;
     }
 };
@@ -18793,12 +19410,16 @@ let GrowspaceChip = class GrowspaceChip extends i$3 {
       <div class="stat-chip ${statusClass}" title="${this.tooltip}">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
-        </div>${this.label ? x `${this.label}: ` : ''}${this.multiValues && this.multiValues.length > 0
+        </div>
+        ${this.label ? x `${this.label}: ` : ''}${this.multiValues && this.multiValues.length > 0
             ? x `<div style="display: flex; align-items: center; gap: 8px;">
-                ${this.multiValues.map((val, idx) => x `${idx > 0 ? x `<div style="width: 1px; height: 12px; background: rgba(255,255,255,0.2);"></div>` : ''}<span>${val}</span>`)}
-              </div>`
+              ${this.multiValues.map((val, idx) => x `${idx > 0
+                ? x `<div
+                          style="width: 1px; height: 12px; background: rgba(255,255,255,0.2);"
+                        ></div>`
+                : ''}<span>${val}</span>`)}
+            </div>`
             : this.value}
-
         ${this.linked
             ? x `
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
@@ -18817,110 +19438,114 @@ let GrowspaceChip = class GrowspaceChip extends i$3 {
 GrowspaceChip.styles = [
     sharedStyles,
     i$6 `
-    :host {
-      display: inline-flex;
-      vertical-align: middle;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .stat-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--glass-bg);
-      border: var(--glass-border);
-      border-radius: 12px;
-      padding: 8px 16px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      backdrop-filter: var(--glass-blur);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      user-select: none;
-      flex-shrink: 0;
-      white-space: nowrap;
-      touch-action: auto;
-    }
-
-    /* Status Colors */
-    @keyframes pulse-red {
-      0% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+      :host {
+        display: inline-flex;
+        vertical-align: middle;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
       }
-      70% {
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+
+      .stat-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: 12px;
+        padding: 8px 16px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+        backdrop-filter: var(--glass-blur);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        user-select: none;
+        flex-shrink: 0;
+        white-space: nowrap;
+        touch-action: auto;
       }
-      100% {
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+
+      /* Status Colors */
+      @keyframes pulse-red {
+        0% {
+          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+        }
       }
-    }
 
-    .stat-chip.status-optimal {
-      color: #2e7d32 !important;
-      background: rgba(46, 125, 50, 0.1) !important;
-    }
+      .stat-chip.status-optimal {
+        color: #2e7d32 !important;
+        background: rgba(46, 125, 50, 0.1) !important;
+      }
 
-    .stat-chip.status-warning {
-      color: #ffa726 !important;
-      border-color: rgba(255, 167, 38, 0.5) !important;
-      background: rgba(255, 167, 38, 0.1) !important;
-    }
+      .stat-chip.status-warning {
+        color: #ffa726 !important;
+        border-color: rgba(255, 167, 38, 0.5) !important;
+        background: rgba(255, 167, 38, 0.1) !important;
+      }
 
-    .stat-chip.status-danger {
-      color: #ef5350 !important;
-      border-color: rgba(239, 83, 80, 0.5) !important;
-      background: rgba(239, 83, 80, 0.1) !important;
-      animation: pulse-red 2s infinite;
-    }
+      .stat-chip.status-danger {
+        color: #ef5350 !important;
+        border-color: rgba(239, 83, 80, 0.5) !important;
+        background: rgba(239, 83, 80, 0.1) !important;
+        animation: pulse-red 2s infinite;
+      }
 
-    .stat-chip:hover {
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
-      transform: translateY(-1px);
-    }
+      .stat-chip:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
+        transform: translateY(-1px);
+      }
 
-    :host([active]) .stat-chip {
-      background: color-mix(in srgb, var(--primary-color, #03a9f4) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
-      border-color: var(--primary-color, #03a9f4);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: var(--primary-text-color, #fff);
-    }
+      :host([active]) .stat-chip {
+        background: color-mix(
+          in srgb,
+          var(--primary-color, #03a9f4) 15%,
+          var(--glass-bg, rgba(255, 255, 255, 0.05))
+        );
+        border-color: var(--primary-color, #03a9f4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        color: var(--primary-text-color, #fff);
+      }
 
-    .icon {
-      width: 18px;
-      height: 18px;
-      display: flex;
-    }
+      .icon {
+        width: 18px;
+        height: 18px;
+        display: flex;
+      }
 
-    .icon svg {
-      width: 100%;
-      height: 100%;
-      fill: currentColor;
-      opacity: 0.8;
-      pointer-events: none;
-    }
+      .icon svg {
+        width: 100%;
+        height: 100%;
+        fill: currentColor;
+        opacity: 0.8;
+        pointer-events: none;
+      }
 
-    .link-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 16px;
-      height: 16px;
-      margin-left: -8px;
-      margin-right: -8px;
-      opacity: 0.8;
-      cursor: pointer;
-    }
+      .link-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        margin-right: -8px;
+        opacity: 0.8;
+        cursor: pointer;
+      }
 
-    .link-icon svg {
-      width: 100%;
-      height: 100%;
-      fill: var(--primary-color, #03a9f4);
-    }
-  `
+      .link-icon svg {
+        width: 100%;
+        height: 100%;
+        fill: var(--primary-color, #03a9f4);
+      }
+    `,
 ];
 __decorate([
     n$5({ type: String })
@@ -18960,8 +19585,9 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
             return x ``;
         }
         // eslint-disable-next-line camelcase
-        const { current_ml, initial_ml, name } = this.stock;
-        const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
+        // eslint-disable-next-line camelcase
+        const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
+        const ratio = initialMl > 0 ? currentMl / initialMl : 0;
         let status = 'optimal';
         if (ratio <= 0.2) {
             status = 'danger';
@@ -18970,11 +19596,8 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
             status = 'warning';
         }
         const percentage = Math.round(ratio * 100);
-        const value = this.compact
-            ? `${percentage}%`
-            : `${Math.round(current_ml)}ml (${percentage}%)`;
-        this.compact ? '' : name;
-        // If compact, maybe show name as tooltip or just rely on parent context? 
+        const value = this.compact ? `${percentage}%` : `${Math.round(currentMl)}ml (${percentage}%)`;
+        // If compact, maybe show name as tooltip or just rely on parent context?
         // Usually chip has label. Let's use name as label always, but maybe truncate?
         return x `
       <growspace-chip
@@ -18982,7 +19605,7 @@ let NutrientStockChip = class NutrientStockChip extends i$3 {
         .label=${this.compact ? undefined : name}
         .value=${value}
         .status=${status}
-        .tooltip=${`Capacity: ${initial_ml}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
+        .tooltip=${`Capacity: ${initialMl}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
       ></growspace-chip>
     `;
     }
@@ -19048,7 +19671,9 @@ let WateringDialog = class WateringDialog extends i$3 {
         // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
     }
     _handlePresetChange(e) {
-        const presetId = e.detail !== undefined ? e.detail : e?.target?.value || '';
+        const presetId = e.detail !== undefined
+            ? e.detail
+            : e?.target?.value || '';
         this._selectedPresetId = presetId;
         if (!presetId) {
             this._nutrients = [];
@@ -19057,9 +19682,9 @@ let WateringDialog = class WateringDialog extends i$3 {
         const presets = this._presetsController.value;
         if (presets && presets[presetId]) {
             const preset = presets[presetId];
-            this._nutrients = preset.nutrients.map(n => ({
+            this._nutrients = preset.nutrients.map((n) => ({
                 name: n.name,
-                concentration: n.dose_ml_l
+                concentration: n.dose_ml_l,
             }));
         }
     }
@@ -19109,7 +19734,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         if (!this.store)
             return [];
         const presetsRecord = this._presetsController?.value || {};
-        return Object.values(presetsRecord).map(p => {
+        return Object.values(presetsRecord).map((p) => {
             let recommended = false;
             if (p.stage && p.stage === currentStage) {
                 if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
@@ -19118,7 +19743,7 @@ let WateringDialog = class WateringDialog extends i$3 {
             }
             return {
                 label: `${p.name}${recommended ? ' ⭐(Recommended)' : ''}`,
-                value: p.id
+                value: p.id,
             };
         });
     }
@@ -19137,20 +19762,25 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Logic for recommendations
         let currentStage;
         let daysInStage = 0;
-        if (this.store && this.store.data && this.dialogState?.mode === 'plant' && this.dialogState.plantIds?.length) {
+        if (this.store &&
+            this.store.data &&
+            this.dialogState?.mode === 'plant' &&
+            this.dialogState.plantIds?.length) {
             const selectedDeviceId = this.store.data.$selectedDevice.get();
-            const selectedDevice = this.store.data.$devices.get().find(d => d.deviceId === selectedDeviceId);
+            const selectedDevice = this.store.data.$devices
+                .get()
+                .find((d) => d.deviceId === selectedDeviceId);
             if (selectedDevice) {
                 // Check if all selected plants are in the same stage
-                const selectedPlants = selectedDevice.plants.filter(p => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
+                const selectedPlants = selectedDevice.plants.filter((p) => this.dialogState.plantIds.includes(p.attributes.plant_id || p.entity_id.replace('sensor.', '')));
                 if (selectedPlants.length > 0) {
                     // Use first plant as baseline
                     const firstStage = selectedPlants[0].attributes.stage;
-                    const isHomogeneous = selectedPlants.every(p => p.attributes.stage === firstStage);
+                    const isHomogeneous = selectedPlants.every((p) => p.attributes.stage === firstStage);
                     if (isHomogeneous) {
                         currentStage = firstStage;
                         // Use minimum days in stage to be safe
-                        daysInStage = Math.min(...selectedPlants.map(p => p.attributes.days_in_stage || 0));
+                        daysInStage = Math.min(...selectedPlants.map((p) => p.attributes.days_in_stage || 0));
                     }
                 }
             }
@@ -19159,12 +19789,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Logic for recommendations to sort or star
         // For now simple listing as per IPM dialog style
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Record Watering'}
-      >
+      <ha-dialog open @closed=${this._close} hideActions .heading=${'Record Watering'}>
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -19182,96 +19807,122 @@ let WateringDialog = class WateringDialog extends i$3 {
           <div class="dialog-content-grid">
             <!-- Settings Section -->
             <div class="form-section">
-                <h3>Watering Settings</h3>
-                <md3-number-input
-                    label="Volume (Liters)"
-                    .value=${this._volume}
-                    .min=${0.1}
-                    .step=${0.1}
-                    @change=${(e) => { this._volume = parseFloat(e.detail) || 0; }}
-                    style="margin-bottom: 12px;"
-                ></md3-number-input>
+              <h3>Watering Settings</h3>
+              <md3-number-input
+                label="Volume (Liters)"
+                .value=${this._volume}
+                .min=${0.1}
+                .step=${0.1}
+                @change=${(e) => {
+            this._volume = parseFloat(e.detail) || 0;
+        }}
+                style="margin-bottom: 12px;"
+              ></md3-number-input>
 
-                <md3-select
-                    label="Nutrient Preset"
-                    .value=${this._selectedPresetId || ''}
-                    .options=${[{ label: 'Manual / No Preset', value: '' }, ...presetList.map(p => ({ label: p.label, value: p.value }))]}
-                    @change=${(e) => this._handlePresetChange(e)}
-                ></md3-select>
+              <md3-select
+                label="Nutrient Preset"
+                .value=${this._selectedPresetId || ''}
+                .options=${[
+            { label: 'Manual / No Preset', value: '' },
+            ...presetList.map((p) => ({ label: p.label, value: p.value })),
+        ]}
+                @change=${(e) => this._handlePresetChange(e)}
+              ></md3-select>
 
-                <div class="apply-summary">
-                    Targeting: <span class="apply-target">${modeText}</span>
-                </div>
+              <div class="apply-summary">
+                Targeting: <span class="apply-target">${modeText}</span>
+              </div>
             </div>
 
             <!-- Nutrients Section -->
             <div class="form-section">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="margin: 0;">Nutrients</h3>
-                    <button class="md3-button text" @click=${() => this._addNutrient()} style="--mdc-button-horizontal-padding: 8px;">
-                        <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                        Add
-                    </button>
-                </div>
-                
-                ${this._nutrients.length === 0 ? x `
-                    <div style="text-align: center; opacity: 0.6; padding: 20px;">
-                        <ha-svg-icon .path=${mdiInformation} style="margin-bottom: 8px;"></ha-svg-icon>
-                        <div>No nutrients added</div>
-                    </div>
-                ` : E}
+              <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+              >
+                <h3 style="margin: 0;">Nutrients</h3>
+                <button
+                  class="md3-button text"
+                  @click=${() => this._addNutrient()}
+                  style="--mdc-button-horizontal-padding: 8px;"
+                >
+                  <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+                  Add
+                </button>
+              </div>
 
-                ${this._nutrients.map((nutrient, index) => x `
-                    <div class="product-row">
-                      <md3-text-input
-                        label="Nutrient Name"
-                        .value=${nutrient.name}
-                        .suggestions=${this._getNutrientSuggestions()}
-                        @change=${(e) => {
+              ${this._nutrients.length === 0
+            ? x `
+                    <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                      <ha-svg-icon
+                        .path=${mdiInformation}
+                        style="margin-bottom: 8px;"
+                      ></ha-svg-icon>
+                      <div>No nutrients added</div>
+                    </div>
+                  `
+            : E}
+              ${this._nutrients.map((nutrient, index) => x `
+                  <div class="product-row">
+                    <md3-text-input
+                      label="Nutrient Name"
+                      .value=${nutrient.name}
+                      .suggestions=${this._getNutrientSuggestions()}
+                      @change=${(e) => {
             const val = e.target.value || e.detail;
             this._updateNutrient(index, 'name', val);
         }}
-                        placeholder="e.g. CalMag"
-                      ></md3-text-input>
-                      <md3-number-input
-                        label="ml/L"
-                        .value=${nutrient.concentration}
-                        .min=${0}
-                        .step=${0.1}
-                        @change=${(e) => {
+                      placeholder="e.g. CalMag"
+                    ></md3-text-input>
+                    <md3-number-input
+                      label="ml/L"
+                      .value=${nutrient.concentration}
+                      .min=${0}
+                      .step=${0.1}
+                      @change=${(e) => {
             this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
         }}
-                      ></md3-number-input>
-                      <button class="md3-button icon" @click=${() => this._removeNutrient(index)} style="color: var(--error-color);">
-                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                      </button>
-                    </div>
+                    ></md3-number-input>
+                    <button
+                      class="md3-button icon"
+                      @click=${() => this._removeNutrient(index)}
+                      style="color: var(--error-color);"
+                    >
+                      <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                    </button>
+                  </div>
                 `)}
             </div>
 
             <!-- Calculation Preview -->
-            ${this._nutrients.length > 0 ? x `
-            <div class="form-section">
-                <h3>Summary</h3>
-                <div class="calculation-preview">
-                    ${this._nutrients.filter((n) => n.name && n.concentration > 0).map((nutrient) => x `
-                          <div class="calculation-row">
-                            <span class="calculation-label">${nutrient.name}</span>
-                            <span class="calculation-value">
-                              ${this._volume}L × ${nutrient.concentration} ml/L =
-                              <strong>${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml</strong>
-                            </span>
-                          </div>
-                    `)}
-                    <div class="calculation-row">
-                      <span class="calculation-label">Total Nutrients</span>
-                      <span class="calculation-value">
-                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
-                      </span>
+            ${this._nutrients.length > 0
+            ? x `
+                  <div class="form-section">
+                    <h3>Summary</h3>
+                    <div class="calculation-preview">
+                      ${this._nutrients
+                .filter((n) => n.name && n.concentration > 0)
+                .map((nutrient) => x `
+                            <div class="calculation-row">
+                              <span class="calculation-label">${nutrient.name}</span>
+                              <span class="calculation-value">
+                                ${this._volume}L × ${nutrient.concentration} ml/L =
+                                <strong
+                                  >${this._calculateTotalMl(nutrient.concentration).toFixed(1)}
+                                  ml</strong
+                                >
+                              </span>
+                            </div>
+                          `)}
+                      <div class="calculation-row">
+                        <span class="calculation-label">Total Nutrients</span>
+                        <span class="calculation-value">
+                          <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
+                        </span>
+                      </div>
                     </div>
-                </div>
-            </div>
-            ` : E}
+                  </div>
+                `
+            : E}
           </div>
 
           <div class="button-group">
@@ -19299,9 +19950,9 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Add nutrients from presets
         const presets = this._presetsController.value;
         if (presets) {
-            Object.values(presets).forEach(preset => {
+            Object.values(presets).forEach((preset) => {
                 if (preset.nutrients) {
-                    preset.nutrients.forEach(n => {
+                    preset.nutrients.forEach((n) => {
                         if (n.name)
                             nutrients.add(n.name);
                     });
@@ -19311,7 +19962,7 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Add nutrients from inventory
         const inventory = this._inventoryController.value;
         if (inventory && inventory.stocks) {
-            Object.values(inventory.stocks).forEach(stock => {
+            Object.values(inventory.stocks).forEach((stock) => {
                 if (stock.name)
                     nutrients.add(stock.name);
             });
@@ -19338,28 +19989,28 @@ WateringDialog.styles = [
         flex: 1;
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .apply-summary {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
         border-radius: 8px;
         margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .apply-target {
         font-weight: 500;
         color: var(--primary-color, #4caf50);
       }
-      
+
       /* Specific Watering Dialog customizations */
       .calculation-preview {
         background: rgba(255, 255, 255, 0.05);
@@ -19424,9 +20075,9 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         this._submitting = false;
     }
     get _techniques() {
-        return Object.values(TrainingTechnique).map(t => ({
+        return Object.values(TrainingTechnique).map((t) => ({
             value: t,
-            label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+            label: t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
         }));
     }
     _handleClose() {
@@ -19473,75 +20124,72 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         const subtitle = count > 0
             ? `Recording training for ${count} plant${count !== 1 ? 's' : ''}`
             : 'Record training activity';
-        const targetText = count > 0
-            ? `${count} Selected Plant${count !== 1 ? 's' : ''}`
-            : 'Growspace';
+        const targetText = count > 0 ? `${count} Selected Plant${count !== 1 ? 's' : ''}` : 'Growspace';
         return x `
-            <ha-dialog
-                .open=${this.open}
-                @closed=${this._handleClose}
-                hideActions
-                .heading=${title}
+      <ha-dialog .open=${this.open} @closed=${this._handleClose} hideActions .heading=${title}>
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiDumbbell}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">${subtitle}</div>
+            </div>
+            <button class="md3-button text" @click=${this._handleClose}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid">
+            <div class="form-section">
+              <h3>Training Details</h3>
+              <md3-select
+                .label=${'Technique'}
+                .options=${this._techniques}
+                .value=${this._technique}
+                @change=${(e) => (this._technique = e.detail)}
+                style="margin-bottom: 12px;"
+              ></md3-select>
+
+              <div class="apply-summary">
+                Targeting: <span class="apply-target">${targetText}</span>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notes</h3>
+              <ha-textarea
+                .label=${'Notes (Optional)'}
+                .value=${this._notes}
+                @input=${(e) => (this._notes = e.target.value)}
+                autogrow
+                style="width: 100%;"
+              ></ha-textarea>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button
+              class="md3-button tonal"
+              @click=${this._handleClose}
+              ?disabled=${this._submitting}
             >
-                <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-                    <div class="dialog-header">
-                        <div class="dialog-icon">
-                            <ha-svg-icon .path=${mdiDumbbell}></ha-svg-icon>
-                        </div>
-                        <div class="dialog-title-group">
-                            <h2 class="dialog-title">${title}</h2>
-                            <div class="dialog-subtitle">${subtitle}</div>
-                        </div>
-                        <button class="md3-button text" @click=${this._handleClose}>
-                            <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                        </button>
-                    </div>
-
-                    <div class="dialog-content-grid">
-                        <div class="form-section">
-                            <h3>Training Details</h3>
-                            <md3-select
-                                .label=${'Technique'}
-                                .options=${this._techniques}
-                                .value=${this._technique}
-                                @change=${(e) => this._technique = e.detail}
-                                style="margin-bottom: 12px;"
-                            ></md3-select>
-
-                            <div class="apply-summary">
-                                Targeting: <span class="apply-target">${targetText}</span>
-                            </div>
-                        </div>
-
-                        <div class="form-section">
-                            <h3>Notes</h3>
-                            <ha-textarea
-                                .label=${'Notes (Optional)'}
-                                .value=${this._notes}
-                                @input=${(e) => this._notes = e.target.value}
-                                autogrow
-                                style="width: 100%;"
-                            ></ha-textarea>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="md3-button tonal" @click=${this._handleClose} ?disabled=${this._submitting}>
-                            Cancel
-                        </button>
-                        <button 
-                            class="md3-button primary" 
-                            style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-                            @click=${() => this._save()}
-                            ?disabled=${!this._technique || this._submitting}
-                        >
-                            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-                            ${this._submitting ? 'Logging...' : 'Log Training'}
-                        </button>
-                    </div>
-                </div>
-            </ha-dialog>
-        `;
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
+              @click=${() => this._save()}
+              ?disabled=${!this._technique || this._submitting}
+            >
+              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+              ${this._submitting ? 'Logging...' : 'Log Training'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
     }
 };
 TrainingDialog.styles = [
@@ -19552,28 +20200,28 @@ TrainingDialog.styles = [
         --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .apply-summary {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
         border-radius: 8px;
         margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .apply-target {
         font-weight: 500;
         color: var(--primary-color, #4caf50);
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -19620,16 +20268,15 @@ let CloneDialog = class CloneDialog extends i$3 {
             return;
         this._submitting = true;
         try {
-            const plantId = this.sourcePlant.attributes?.plant_id ||
-                this.sourcePlant.entity_id.replace('sensor.', '');
+            const plantId = this.sourcePlant.attributes?.plant_id || this.sourcePlant.entity_id.replace('sensor.', '');
             this.dispatchEvent(new CustomEvent('take-clone-submit', {
                 detail: {
                     motherPlantId: plantId,
                     numClones: Number(this._numClones) || 1,
-                    targetGrowspaceId: this._targetGrowspace || this.defaultGrowspace
+                    targetGrowspaceId: this._targetGrowspace || this.defaultGrowspace,
                 },
                 bubbles: true,
-                composed: true
+                composed: true,
             }));
             this._handleClose();
         }
@@ -19648,78 +20295,76 @@ let CloneDialog = class CloneDialog extends i$3 {
         const subtitle = `Creating clones from ${strain}`;
         const growspaceEntries = Object.entries(this.growspaceOptions || {});
         return x `
-            <ha-dialog
-                .open=${this.open}
-                @closed=${this._handleClose}
-                hideActions
-                .heading=${title}
-                .escapeKeyAction=${'close'}
-            >
-                <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-                    <div class="dialog-header">
-                        <div class="dialog-icon">
-                            <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
-                        </div>
-                        <div class="dialog-title-group">
-                            <h2 class="dialog-title">${title}</h2>
-                            <div class="dialog-subtitle">${subtitle}</div>
-                        </div>
-                        <button class="md3-button text" @click=${this._handleClose}>
-                            <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                        </button>
-                    </div>
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._handleClose}
+        hideActions
+        .heading=${title}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">${subtitle}</div>
+            </div>
+            <button class="md3-button text" @click=${this._handleClose}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
 
-                    <div class="dialog-content-grid">
-                        <div class="detail-card">
-                            <h3>Source Plant</h3>
-                            <div class="source-info">
-                                <div class="source-info-row">
-                                    <span class="source-info-label">Strain</span>
-                                    <span class="source-info-value">${strain}</span>
-                                </div>
-                                <div class="source-info-row">
-                                    <span class="source-info-label">Phenotype</span>
-                                    <span class="source-info-value">${phenotype}</span>
-                                </div>
-                            </div>
-
-                            <div class="form-section">
-                                <h3>Clone Settings</h3>
-                                <md3-number-input
-                                    label="Number of Clones"
-                                    .value=${this._numClones}
-                                    .min=${1}
-                                    .max=${20}
-                                    @change=${(e) => this._numClones = Number(e.detail) || 1}
-                                ></md3-number-input>
-                            </div>
-
-                            <div class="form-section">
-                                <h3>Target Growspace</h3>
-                                <md3-select
-                                    label="Destination"
-                                    .value=${this._targetGrowspace || this.defaultGrowspace}
-                                    .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
-                                    @change=${(e) => this._targetGrowspace = e.detail}
-                                ></md3-select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="md3-button text" @click=${this._handleClose}>Cancel</button>
-                        <button 
-                            class="md3-button primary" 
-                            @click=${this._save}
-                            ?disabled=${this._submitting}
-                        >
-                            <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
-                            ${this._submitting ? 'Creating...' : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
-                        </button>
-                    </div>
+          <div class="dialog-content-grid">
+            <div class="detail-card">
+              <h3>Source Plant</h3>
+              <div class="source-info">
+                <div class="source-info-row">
+                  <span class="source-info-label">Strain</span>
+                  <span class="source-info-value">${strain}</span>
                 </div>
-            </ha-dialog>
-        `;
+                <div class="source-info-row">
+                  <span class="source-info-label">Phenotype</span>
+                  <span class="source-info-value">${phenotype}</span>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <h3>Clone Settings</h3>
+                <md3-number-input
+                  label="Number of Clones"
+                  .value=${this._numClones}
+                  .min=${1}
+                  .max=${20}
+                  @change=${(e) => (this._numClones = Number(e.detail) || 1)}
+                ></md3-number-input>
+              </div>
+
+              <div class="form-section">
+                <h3>Target Growspace</h3>
+                <md3-select
+                  label="Destination"
+                  .value=${this._targetGrowspace || this.defaultGrowspace}
+                  .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
+                  @change=${(e) => (this._targetGrowspace = e.detail)}
+                ></md3-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button text" @click=${this._handleClose}>Cancel</button>
+            <button class="md3-button primary" @click=${this._save} ?disabled=${this._submitting}>
+              <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
+              ${this._submitting
+            ? 'Creating...'
+            : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
     }
 };
 CloneDialog.styles = [
@@ -19730,22 +20375,22 @@ CloneDialog.styles = [
         --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .source-info {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
         border-radius: 8px;
         margin-bottom: 24px;
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .source-info-row {
         display: flex;
@@ -19762,7 +20407,7 @@ CloneDialog.styles = [
         font-weight: 500;
         color: var(--primary-color, #4caf50);
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -19819,13 +20464,13 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             name: '',
             nutrients: [{ name: '', dose_ml_l: 0 }],
             stage: '',
-            min_days_in_stage: 0
+            min_days_in_stage: 0,
         };
         this._view = 'EDIT';
         this._error = null;
     }
     _editPreset(preset) {
-        this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map(n => ({ ...n }))] };
+        this._editingPreset = { ...preset, nutrients: [...preset.nutrients.map((n) => ({ ...n }))] };
         this._view = 'EDIT';
         this._error = null;
     }
@@ -19871,7 +20516,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             this._error = 'Preset name is required';
             return;
         }
-        const nutrients = (this._editingPreset.nutrients || []).filter(n => {
+        const nutrients = (this._editingPreset.nutrients || []).filter((n) => {
             const dose = parseFloat(String(n.dose_ml_l ?? '0'));
             return n.name && !isNaN(dose) && dose > 0;
         });
@@ -19885,7 +20530,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
                 name: this._editingPreset.name,
                 nutrients,
                 stage: this._editingPreset.stage || undefined,
-                min_days_in_stage: this._editingPreset.min_days_in_stage || undefined
+                min_days_in_stage: this._editingPreset.min_days_in_stage || undefined,
             });
             await this.store.fetchNutrientPresets(true);
             this._view = 'LIST';
@@ -19899,57 +20544,69 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         if (!this.open && !this.embedded)
             return x ``;
         const content = x `
-        <div class="glass-dialog-container" style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}">
-          ${!this.embedded ? x `
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${this._view === 'LIST' ? 'Nutrient Presets' : (this._editingPreset?.id ? 'Edit Preset' : 'New Preset')}</h2>
-              <div class="dialog-subtitle">Manage your nutrient recipes</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-          ` : E}
-
-          <div class="dialog-content-grid" style="display: block; ${this.embedded ? 'padding: 0;' : ''}">
-            ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
-            
-            ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
-          </div>
-
-          <div class="button-group">
-            ${this._view === 'LIST'
+      <div
+        class="glass-dialog-container"
+        style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
+      >
+        ${!this.embedded
             ? x `
-                  ${!this.embedded ? x `<button class="md3-button tonal" @click=${this._close}>Close</button>` : E}
-                  <button class="md3-button primary" @click=${this._startNew}>
-                    <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-                    Add Preset
-                  </button>
-                `
-            : x `
-                  <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
-                  <button class="md3-button primary" @click=${this._savePreset}>
-                    <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
-                    Save Preset
-                  </button>
-                `}
-          </div>
+              <div class="dialog-header">
+                <div class="dialog-icon">
+                  <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
+                </div>
+                <div class="dialog-title-group">
+                  <h2 class="dialog-title">
+                    ${this._view === 'LIST'
+                ? 'Nutrient Presets'
+                : this._editingPreset?.id
+                    ? 'Edit Preset'
+                    : 'New Preset'}
+                  </h2>
+                  <div class="dialog-subtitle">Manage your nutrient recipes</div>
+                </div>
+                <button class="md3-button text" @click=${this._close}>
+                  <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                </button>
+              </div>
+            `
+            : E}
+
+        <div
+          class="dialog-content-grid"
+          style="display: block; ${this.embedded ? 'padding: 0;' : ''}"
+        >
+          ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
+          ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
         </div>
+
+        <div class="button-group">
+          ${this._view === 'LIST'
+            ? x `
+                ${!this.embedded
+                ? x `<button class="md3-button tonal" @click=${this._close}>Close</button>`
+                : E}
+                <button class="md3-button primary" @click=${this._startNew}>
+                  <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+                  Add Preset
+                </button>
+              `
+            : x `
+                <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>
+                  Cancel
+                </button>
+                <button class="md3-button primary" @click=${this._savePreset}>
+                  <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+                  Save Preset
+                </button>
+              `}
+        </div>
+      </div>
     `;
         if (this.embedded) {
             return content;
         }
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Nutrient Presets'}
-      >
+      <ha-dialog open @closed=${this._close} hideActions .heading=${'Nutrient Presets'}>
         ${content}
       </ha-dialog>
     `;
@@ -19960,34 +20617,50 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         if (presetEntries.length === 0) {
             return x `
         <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiInformation}
+            style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"
+          ></ha-svg-icon>
           <p>No nutrient presets defined yet.</p>
-          <p style="font-size: 0.9rem;">Presets allow you to quickly apply recurring nutrient recipes while watering.</p>
+          <p style="font-size: 0.9rem;">
+            Presets allow you to quickly apply recurring nutrient recipes while watering.
+          </p>
         </div>
       `;
         }
         return x `
       <div class="presets-list">
-        ${presetEntries.map(preset => x `
-          <div class="preset-item">
-            <div class="preset-info">
-              <div class="preset-name">${preset.name}</div>
-              <div class="preset-details">
-                ${(preset.nutrients || []).length} nutrients 
-                ${preset.stage ? x `• <span style="text-transform: capitalize;">${preset.stage}</span>` : ''}
-                ${preset.min_days_in_stage ? x `• Day ${preset.min_days_in_stage}+` : ''}
+        ${presetEntries.map((preset) => x `
+            <div class="preset-item">
+              <div class="preset-info">
+                <div class="preset-name">${preset.name}</div>
+                <div class="preset-details">
+                  ${(preset.nutrients || []).length} nutrients
+                  ${preset.stage
+            ? x `• <span style="text-transform: capitalize;">${preset.stage}</span>`
+            : ''}
+                  ${preset.min_days_in_stage ? x `• Day ${preset.min_days_in_stage}+` : ''}
+                </div>
+              </div>
+              <div class="preset-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._editPreset(preset)}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._deletePreset(preset.id)}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
               </div>
             </div>
-            <div class="preset-actions">
-              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
-                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-              </button>
-              <button class="md3-button icon" @click=${() => this._deletePreset(preset.id)} title="Delete" style="color: var(--error-color);">
-                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-              </button>
-            </div>
-          </div>
-        `)}
+          `)}
       </div>
     `;
     }
@@ -19997,71 +20670,93 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         return x `
       <div class="preset-form">
         <div class="form-section">
-           <h3>General Info</h3>
-           <md3-text-input
-              label="Preset Name"
-              .value=${this._editingPreset.name || ''}
-              @change=${(e) => { this._editingPreset = { ...this._editingPreset, name: e.detail }; }}
-              placeholder="e.g. Veg Week 1"
-           ></md3-text-input>
+          <h3>General Info</h3>
+          <md3-text-input
+            label="Preset Name"
+            .value=${this._editingPreset.name || ''}
+            @change=${(e) => {
+            this._editingPreset = { ...this._editingPreset, name: e.detail };
+        }}
+            placeholder="e.g. Veg Week 1"
+          ></md3-text-input>
         </div>
 
         <div class="form-section">
-            <h3>Recommend for Stage</h3>
-            <div class="stage-grid">
-                <div class="md3-input-group">
-                    <label class="md3-label">Growth Stage</label>
-                    <select 
-                        class="md3-input"
-                        .value=${this._editingPreset.stage || ''}
-                        @change=${(e) => { this._editingPreset = { ...this._editingPreset, stage: e.target.value }; }}
-                    >
-                        <option value="">Any Stage</option>
-                        <option value="seedling">Seedling</option>
-                        <option value="veg">Veg</option>
-                        <option value="flower">Flower</option>
-                        <option value="dry">Dry</option>
-                        <option value="cure">Cure</option>
-                    </select>
-                </div>
+          <h3>Recommend for Stage</h3>
+          <div class="stage-grid">
+            <div class="md3-input-group">
+              <label class="md3-label">Growth Stage</label>
+              <select
+                class="md3-input"
+                .value=${this._editingPreset.stage || ''}
+                @change=${(e) => {
+            this._editingPreset = {
+                ...this._editingPreset,
+                stage: e.target.value,
+            };
+        }}
+              >
+                <option value="">Any Stage</option>
+                <option value="seedling">Seedling</option>
+                <option value="veg">Veg</option>
+                <option value="flower">Flower</option>
+                <option value="dry">Dry</option>
+                <option value="cure">Cure</option>
+              </select>
+            </div>
+            <md3-number-input
+              label="Min Days in Stage"
+              .value=${this._editingPreset.min_days_in_stage || 0}
+              @change=${(e) => {
+            this._editingPreset = {
+                ...this._editingPreset,
+                min_days_in_stage: parseInt(e.detail),
+            };
+        }}
+              min="0"
+            ></md3-number-input>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+          >
+            <h3 style="margin: 0;">Nutrient Items</h3>
+            <button
+              class="md3-button text"
+              @click=${this._addNutrient}
+              style="--mdc-button-horizontal-padding: 8px;"
+            >
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add
+            </button>
+          </div>
+
+          ${this._editingPreset.nutrients?.map((n, i) => x `
+              <div class="nutrient-row">
+                <md3-text-input
+                  label="Nutrient Name"
+                  .value=${n.name}
+                  .suggestions=${this._getNutrientSuggestions()}
+                  @change=${(e) => this._updateNutrient(i, { name: e.detail })}
+                  placeholder="e.g. CalMag"
+                ></md3-text-input>
                 <md3-number-input
-                    label="Min Days in Stage"
-                    .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e) => { this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }; }}
-                    min="0"
+                  label="ml/L"
+                  .value=${n.dose_ml_l}
+                  @change=${(e) => this._updateNutrient(i, { dose_ml_l: parseFloat(e.detail) })}
+                  min="0"
+                  step="0.1"
                 ></md3-number-input>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0;">Nutrient Items</h3>
-                <button class="md3-button text" @click=${this._addNutrient} style="--mdc-button-horizontal-padding: 8px;">
-                    <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                    Add
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._removeNutrient(i)}
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
                 </button>
-            </div>
-            
-            ${this._editingPreset.nutrients?.map((n, i) => x `
-                <div class="nutrient-row">
-                    <md3-text-input
-                        label="Nutrient Name"
-                        .value=${n.name}
-                        .suggestions=${this._getNutrientSuggestions()}
-                        @change=${(e) => this._updateNutrient(i, { name: e.detail })}
-                        placeholder="e.g. CalMag"
-                    ></md3-text-input>
-                    <md3-number-input
-                        label="ml/L"
-                        .value=${n.dose_ml_l}
-                        @change=${(e) => this._updateNutrient(i, { dose_ml_l: parseFloat(e.detail) })}
-                        min="0"
-                        step="0.1"
-                    ></md3-number-input>
-                    <button class="md3-button icon" @click=${() => this._removeNutrient(i)} style="color: var(--error-color);">
-                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                    </button>
-                </div>
+              </div>
             `)}
         </div>
       </div>
@@ -20072,9 +20767,9 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         // Add nutrients from presets
         const presets = this._presetsController.value;
         if (presets) {
-            Object.values(presets).forEach(preset => {
+            Object.values(presets).forEach((preset) => {
                 if (preset.nutrients) {
-                    preset.nutrients.forEach(n => {
+                    preset.nutrients.forEach((n) => {
                         if (n.name)
                             nutrients.add(n.name);
                     });
@@ -20084,7 +20779,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         // Add nutrients from inventory
         const inventory = this._inventoryController.value;
         if (inventory && inventory.stocks) {
-            Object.values(inventory.stocks).forEach(stock => {
+            Object.values(inventory.stocks).forEach((stock) => {
                 if (stock.name)
                     nutrients.add(stock.name);
             });
@@ -20145,22 +20840,22 @@ NutrientPresetsEditor.styles = [
         font-size: 0.9rem;
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .stage-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -20231,7 +20926,8 @@ let IPMDialog = class IPMDialog extends i$3 {
         const hasPlants = this.plantIds && this.plantIds.length > 0;
         const hasGrowspace = !!this.growspaceId;
         if (!hasPlants && !hasGrowspace) {
-            this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
+            this._error =
+                'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
             console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
             return;
         }
@@ -20240,7 +20936,7 @@ let IPMDialog = class IPMDialog extends i$3 {
                 preset_id: this._selectedPresetId,
                 growspace_id: !hasPlants ? this.growspaceId : undefined,
                 plant_ids: hasPlants ? this.plantIds : undefined,
-                notes: this._notes
+                notes: this._notes,
             });
             this.dispatchEvent(new CustomEvent('data-changed'));
             this._close();
@@ -20257,7 +20953,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             type: 'foliar',
             items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
             stage: undefined,
-            min_days_in_stage: 0
+            min_days_in_stage: 0,
         };
         this._view = 'EDIT';
         this._error = null;
@@ -20281,7 +20977,10 @@ let IPMDialog = class IPMDialog extends i$3 {
     _addProduct() {
         if (!this._editingPreset)
             return;
-        const items = [...(this._editingPreset.items || []), { name: '', dose_amount: 0, dose_unit: 'ml/L' }];
+        const items = [
+            ...(this._editingPreset.items || []),
+            { name: '', dose_amount: 0, dose_unit: 'ml/L' },
+        ];
         this._editingPreset = { ...this._editingPreset, items };
     }
     _removeProduct(index) {
@@ -20303,7 +21002,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             this._error = 'Preset name is required';
             return;
         }
-        const items = (this._editingPreset.items || []).filter(i => i.name);
+        const items = (this._editingPreset.items || []).filter((i) => i.name);
         try {
             await this.store.dataService.saveIPMPreset({
                 preset_id: this._editingPreset.id,
@@ -20311,7 +21010,7 @@ let IPMDialog = class IPMDialog extends i$3 {
                 type: this._editingPreset.type || 'foliar',
                 items: items,
                 stage: this._editingPreset.stage || undefined,
-                min_days_in_stage: this._editingPreset.min_days_in_stage || 0
+                min_days_in_stage: this._editingPreset.min_days_in_stage || 0,
             });
             await this.store.fetchIPMPresets(true);
             this._view = 'LIST';
@@ -20334,12 +21033,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             subtitle = 'Define treatment details';
         }
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${title}
-      >
+      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
@@ -20356,15 +21050,14 @@ let IPMDialog = class IPMDialog extends i$3 {
 
           <div class="dialog-content-grid">
             ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
-            
-            ${this._view === 'APPLY' ? this._renderApply() :
-            this._view === 'LIST' ? this._renderList() :
-                this._renderEdit()}
+            ${this._view === 'APPLY'
+            ? this._renderApply()
+            : this._view === 'LIST'
+                ? this._renderList()
+                : this._renderEdit()}
           </div>
 
-          <div class="button-group">
-            ${this._renderFooterButtons()}
-          </div>
+          <div class="button-group">${this._renderFooterButtons()}</div>
         </div>
       </ha-dialog>
     `;
@@ -20372,8 +21065,14 @@ let IPMDialog = class IPMDialog extends i$3 {
     _renderFooterButtons() {
         if (this._view === 'APPLY') {
             return x `
-        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Manage Presets</button>
-        <button class="md3-button primary" ?disabled=${!this._selectedPresetId} @click=${this._apply}>
+        <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>
+          Manage Presets
+        </button>
+        <button
+          class="md3-button primary"
+          ?disabled=${!this._selectedPresetId}
+          @click=${this._apply}
+        >
           <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
           Apply Treatment
         </button>
@@ -20381,7 +21080,9 @@ let IPMDialog = class IPMDialog extends i$3 {
         }
         else if (this._view === 'LIST') {
             return x `
-        <button class="md3-button tonal" @click=${() => this._view = 'APPLY'}>Back to Apply</button>
+        <button class="md3-button tonal" @click=${() => (this._view = 'APPLY')}>
+          Back to Apply
+        </button>
         <button class="md3-button primary" @click=${this._startNew}>
           <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
           Add Preset
@@ -20390,7 +21091,7 @@ let IPMDialog = class IPMDialog extends i$3 {
         }
         else {
             return x `
-        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
+        <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>Cancel</button>
         <button class="md3-button primary" @click=${this._savePreset}>
           <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
           Save Preset
@@ -20401,7 +21102,7 @@ let IPMDialog = class IPMDialog extends i$3 {
     _renderApply() {
         const presets = this._presetsController.value;
         const presetList = Object.values(presets || {});
-        const targetText = (this.plantIds && this.plantIds.length > 0)
+        const targetText = this.plantIds && this.plantIds.length > 0
             ? `${this.plantIds.length} Plants`
             : `Entire Growspace`;
         return x `
@@ -20410,13 +21111,11 @@ let IPMDialog = class IPMDialog extends i$3 {
         <md3-select
           label="Select Preset"
           .value=${this._selectedPresetId || ''}
-          .options=${presetList.map(p => ({ label: `${p.name} (${p.type})`, value: p.id }))}
-          @change=${(e) => this._selectedPresetId = e.detail}
+          .options=${presetList.map((preset) => ({ label: `${preset.name} (${preset.type})`, value: preset.id }))}
+          @change=${(e) => (this._selectedPresetId = e.detail)}
         ></md3-select>
-        
-        <div class="apply-summary">
-          Targeting: <span class="apply-target">${targetText}</span>
-        </div>
+
+        <div class="apply-summary">Targeting: <span class="apply-target">${targetText}</span></div>
       </div>
 
       <div class="form-section">
@@ -20424,7 +21123,7 @@ let IPMDialog = class IPMDialog extends i$3 {
         <ha-textarea
           label="Treatment Notes (Optional)"
           .value=${this._notes}
-          @input=${(e) => this._notes = e.target.value}
+          @input=${(e) => (this._notes = e.target.value)}
           rows="3"
           style="width: 100%;"
         ></ha-textarea>
@@ -20437,33 +21136,47 @@ let IPMDialog = class IPMDialog extends i$3 {
         if (presetEntries.length === 0) {
             return x `
         <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiInformation}
+            style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"
+          ></ha-svg-icon>
           <p>No IPM presets defined yet.</p>
-          <p style="font-size: 0.9rem;">Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").</p>
+          <p style="font-size: 0.9rem;">
+            Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").
+          </p>
         </div>
       `;
         }
         return x `
       <div class="presets-list">
-        ${presetEntries.map(preset => x `
-          <div class="preset-item">
-            <div class="preset-info">
-              <div class="preset-name">${preset.name}</div>
-              <div class="preset-details">
-                ${preset.type} • ${preset.items.length} products
-                ${preset.stage ? ` • ${preset.stage}` : ''}
+        ${presetEntries.map((preset) => x `
+            <div class="preset-item">
+              <div class="preset-info">
+                <div class="preset-name">${preset.name}</div>
+                <div class="preset-details">
+                  ${preset.type} • ${preset.items.length} products
+                  ${preset.stage ? ` • ${preset.stage}` : ''}
+                </div>
+              </div>
+              <div class="preset-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._editPreset(preset)}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._deletePreset(preset.id)}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
               </div>
             </div>
-            <div class="preset-actions">
-              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
-                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-              </button>
-              <button class="md3-button icon" @click=${() => this._deletePreset(preset.id)} title="Delete" style="color: var(--error-color);">
-                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-              </button>
-            </div>
-          </div>
-        `)}
+          `)}
       </div>
     `;
     }
@@ -20473,89 +21186,114 @@ let IPMDialog = class IPMDialog extends i$3 {
         return x `
       <div class="preset-form">
         <div class="form-section">
-           <h3>General Info</h3>
-           <md3-text-input
-              label="Preset Name"
-              .value=${this._editingPreset.name || ''}
-              @change=${(e) => { this._editingPreset = { ...this._editingPreset, name: e.detail }; }}
-              placeholder="e.g. Neem Oil Spray"
-           ></md3-text-input>
-           
-           <div style="margin-top: 12px;">
-             <label class="md3-label">Type</label>
-             <select 
-                 class="md3-input"
-                 .value=${this._editingPreset.type || 'foliar'}
-                 @change=${(e) => this._editingPreset = { ...this._editingPreset, type: e.target.value }}
-             >
-                 <option value="foliar">Foliar Spray</option>
-                 <option value="drench">Root Drench</option>
-                 <option value="beneficials">Beneficials</option>
-             </select>
-           </div>
+          <h3>General Info</h3>
+          <md3-text-input
+            label="Preset Name"
+            .value=${this._editingPreset.name || ''}
+            @change=${(e) => {
+            this._editingPreset = { ...this._editingPreset, name: e.detail };
+        }}
+            placeholder="e.g. Neem Oil Spray"
+          ></md3-text-input>
+
+          <div style="margin-top: 12px;">
+            <label class="md3-label">Type</label>
+            <select
+              class="md3-input"
+              .value=${this._editingPreset.type || 'foliar'}
+              @change=${(e) => (this._editingPreset = {
+            ...this._editingPreset,
+            type: e.target.value,
+        })}
+            >
+              <option value="foliar">Foliar Spray</option>
+              <option value="drench">Root Drench</option>
+              <option value="beneficials">Beneficials</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-section">
-            <h3>Usage</h3>
-            <div class="row-col-grid">
-                <div class="md3-input-group">
-                    <label class="md3-label">Recommended Stage</label>
-                    <select 
-                        class="md3-input"
-                        .value=${this._editingPreset.stage || ''}
-                        @change=${(e) => { this._editingPreset = { ...this._editingPreset, stage: e.target.value || undefined }; }}
-                    >
-                        <option value="">Any Stage</option>
-                        <option value="seedling">Seedling</option>
-                        <option value="veg">Veg</option>
-                        <option value="flower">Flower</option>
-                        <option value="dry">Dry</option>
-                        <option value="cure">Cure</option>
-                    </select>
-                </div>
+          <h3>Usage</h3>
+          <div class="row-col-grid">
+            <div class="md3-input-group">
+              <label class="md3-label">Recommended Stage</label>
+              <select
+                class="md3-input"
+                .value=${this._editingPreset.stage || ''}
+                @change=${(e) => {
+            this._editingPreset = {
+                ...this._editingPreset,
+                stage: e.target.value || undefined,
+            };
+        }}
+              >
+                <option value="">Any Stage</option>
+                <option value="seedling">Seedling</option>
+                <option value="veg">Veg</option>
+                <option value="flower">Flower</option>
+                <option value="dry">Dry</option>
+                <option value="cure">Cure</option>
+              </select>
+            </div>
+            <md3-number-input
+              label="Min Days"
+              .value=${this._editingPreset.min_days_in_stage || 0}
+              @change=${(e) => {
+            this._editingPreset = {
+                ...this._editingPreset,
+                min_days_in_stage: parseInt(e.detail),
+            };
+        }}
+              min="0"
+            ></md3-number-input>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+          >
+            <h3 style="margin: 0;">Products / Ingredients</h3>
+            <button
+              class="md3-button text"
+              @click=${this._addProduct}
+              style="--mdc-button-horizontal-padding: 8px;"
+            >
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add
+            </button>
+          </div>
+
+          ${(this._editingPreset.items || []).map((item, _index) => x `
+              <div class="product-row">
+                <md3-text-input
+                  label="Product"
+                  .value=${item.name}
+                  @change=${(e) => this._updateProduct(_index, { name: e.detail })}
+                  placeholder="e.g. Neem Oil"
+                ></md3-text-input>
                 <md3-number-input
-                    label="Min Days"
-                    .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e) => { this._editingPreset = { ...this._editingPreset, min_days_in_stage: parseInt(e.detail) }; }}
-                    min="0"
+                  label="Dose"
+                  .value=${item.dose_amount}
+                  @change=${(e) => this._updateProduct(_index, { dose_amount: parseFloat(e.detail) })}
+                  min="0"
+                  step="0.1"
                 ></md3-number-input>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0;">Products / Ingredients</h3>
-                <button class="md3-button text" @click=${this._addProduct} style="--mdc-button-horizontal-padding: 8px;">
-                    <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                    Add
+                <md3-text-input
+                  label="Unit"
+                  .value=${item.dose_unit}
+                  @change=${(e) => this._updateProduct(_index, { dose_unit: e.detail })}
+                  style="flex: 1;"
+                ></md3-text-input>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._removeProduct(_index)}
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
                 </button>
-            </div>
-            
-            ${(this._editingPreset.items || []).map((item, i) => x `
-                <div class="product-row">
-                    <md3-text-input
-                        label="Product"
-                        .value=${item.name}
-                        @change=${(e) => this._updateProduct(i, { name: e.detail })}
-                        placeholder="e.g. Neem Oil"
-                    ></md3-text-input>
-                    <md3-number-input
-                        label="Dose"
-                        .value=${item.dose_amount}
-                        @change=${(e) => this._updateProduct(i, { dose_amount: parseFloat(e.detail) })}
-                        min="0"
-                        step="0.1"
-                    ></md3-number-input>
-                    <md3-text-input
-                        label="Unit"
-                        .value=${item.dose_unit}
-                        @change=${(e) => this._updateProduct(i, { dose_unit: e.detail })}
-                        style="flex: 1;"
-                    ></md3-text-input>
-                    <button class="md3-button icon" @click=${() => this._removeProduct(i)} style="color: var(--error-color);">
-                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                    </button>
-                </div>
+              </div>
             `)}
         </div>
       </div>
@@ -20615,28 +21353,28 @@ IPMDialog.styles = [
         font-size: 0.9rem;
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .apply-summary {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
         border-radius: 8px;
         margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .apply-target {
         font-weight: 500;
         color: var(--primary-color, #4caf50);
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -20773,38 +21511,43 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
         if (!this.open && !this.embedded)
             return E;
         const content = x `
-          <div class="glass-dialog-container" style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}">
-            ${!this.embedded ? x `
-            <div class="dialog-header">
-              <div class="dialog-icon">
-                <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiBottleTonicPlus}"></path>
-                </svg>
+      <div
+        class="glass-dialog-container"
+        style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
+      >
+        ${!this.embedded
+            ? x `
+              <div class="dialog-header">
+                <div class="dialog-icon">
+                  <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiBottleTonicPlus}"></path>
+                  </svg>
+                </div>
+                <div class="dialog-title-group">
+                  <h2 class="dialog-title">Nutrient Inventory</h2>
+                  <div class="dialog-subtitle">Manage stock levels</div>
+                </div>
+                <button class="md3-button text" @click=${this._close}>
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiClose}"></path>
+                  </svg>
+                </button>
               </div>
-              <div class="dialog-title-group">
-                <h2 class="dialog-title">Nutrient Inventory</h2>
-                <div class="dialog-subtitle">Manage stock levels</div>
-              </div>
-              <button class="md3-button text" @click=${this._close}>
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiClose}"></path>
-                </svg>
-              </button>
-            </div>
-            ` : E}
+            `
+            : E}
 
-            <div class="dialog-body" style="${this.embedded ? 'padding: 0;' : ''}">
-              ${this._isLoading
+        <div class="dialog-body" style="${this.embedded ? 'padding: 0;' : ''}">
+          ${this._isLoading
             ? x `<p>Loading...</p>`
             : this._error
                 ? x `<div class="error-banner">
-                      <svg viewBox="0 0 24 24"><path d="${mdiAlertCircle}"></path></svg>
-                      ${this._error}
-                    </div>`
+                  <svg viewBox="0 0 24 24"><path d="${mdiAlertCircle}"></path></svg>
+                  ${this._error}
+                </div>`
                 : this._renderContent()}
-            </div>
-          </div>
-        `;
+        </div>
+      </div>
+    `;
         if (this.embedded) {
             return content;
         }
@@ -20826,7 +21569,10 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
       ${!this._isAdding
             ? x `
             <button class="md3-button tonal add-button" @click=${this._startAdd}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24">
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiPlus}"></path>
               </svg>
               Add Nutrient
@@ -20837,7 +21583,7 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
       <div class="inventory-list">
         ${stocks.length === 0 && !this._isAdding
             ? x `<p style="text-align:center; opacity:0.6">No nutrient stock items tracked.</p>`
-            : stocks.map(stock => this._renderStockItem(stock))}
+            : stocks.map((stock) => this._renderStockItem(stock))}
       </div>
     `;
     }
@@ -20856,18 +21602,21 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
         <div class="stock-info">
           <div class="stock-name">${stock.name}</div>
           <div class="stock-meta">
-            ${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml (${percent.toFixed(0)}%)
+            ${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml
+            (${percent.toFixed(0)}%)
           </div>
           <div class="progress-bar">
             <div class="progress-fill ${statusClass}" style="width: ${percent}%"></div>
           </div>
         </div>
-        
+
         <div class="stock-actions">
-          <button class="md3-button text" @click=${() => this._startEdit(stock)}>
-            Edit
-          </button>
-          <button class="md3-button text" style="color: #F44336" @click=${() => this._delete(stock.nutrient_id)}>
+          <button class="md3-button text" @click=${() => this._startEdit(stock)}>Edit</button>
+          <button
+            class="md3-button text"
+            style="color: #F44336"
+            @click=${() => this._delete(stock.nutrient_id)}
+          >
             <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiDelete}"></path>
             </svg>
@@ -20881,31 +21630,34 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
       <div class="stock-item" style="border-color: var(--primary-color);">
         <div class="edit-form">
           <h3 style="margin:0 0 12px 0;">${this._isAdding ? 'Add Nutrient' : 'Edit Nutrient'}</h3>
-          
+
           <md3-text-input
             label="Name"
             .value=${this._editName}
-            @change=${(e) => this._editName = e.detail}
+            @change=${(e) => (this._editName = e.detail)}
           ></md3-text-input>
 
           <div class="form-row">
             <md3-number-input
               label="Current (ml)"
               .value=${this._editCurrent}
-              @change=${(e) => this._editCurrent = parseFloat(e.detail)}
+              @change=${(e) => (this._editCurrent = parseFloat(e.detail))}
             ></md3-number-input>
 
             <md3-number-input
               label="Total Capacity (ml)"
               .value=${this._editInitial}
-              @change=${(e) => this._editInitial = parseFloat(e.detail)}
+              @change=${(e) => (this._editInitial = parseFloat(e.detail))}
             ></md3-number-input>
           </div>
 
           <div class="form-row" style="justify-content: flex-end; margin-top: 8px;">
             <button class="md3-button text" @click=${this._cancelEdit}>Cancel</button>
             <button class="md3-button primary" @click=${this._save}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px" viewBox="0 0 24 24">
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiCheck}"></path>
               </svg>
               Save
@@ -20922,7 +21674,7 @@ NutrientInventoryDialog.styles = [
       :host {
         --mdc-dialog-min-width: clamp(400px, 600px, 90vw);
       }
-      
+
       .inventory-list {
         display: flex;
         flex-direction: column;
@@ -20975,7 +21727,7 @@ NutrientInventoryDialog.styles = [
         flex-direction: column;
         gap: 12px;
       }
-      
+
       .form-row {
         display: flex;
         gap: 12px;
@@ -20997,18 +21749,18 @@ NutrientInventoryDialog.styles = [
 
       .progress-fill {
         height: 100%;
-        background: var(--primary-color, #4CAF50);
+        background: var(--primary-color, #4caf50);
         transition: width 0.3s ease;
       }
-      
+
       .progress-fill.warning {
-        background: #FF9800;
+        background: #ff9800;
       }
-      
+
       .progress-fill.danger {
-        background: #F44336;
+        background: #f44336;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -21089,15 +21841,19 @@ let NutrientDialog = class NutrientDialog extends i$3 {
           </div>
 
           <div class="tab-bar">
-            <div class="tab ${this._activeTab === 'inventory' ? 'active' : ''}" 
-                 @click=${() => this._setTab('inventory')}>
+            <div
+              class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
+              @click=${() => this._setTab('inventory')}
+            >
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClipboardList}"></path>
               </svg>
               Inventory
             </div>
-            <div class="tab ${this._activeTab === 'presets' ? 'active' : ''}" 
-                 @click=${() => this._setTab('presets')}>
+            <div
+              class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
+              @click=${() => this._setTab('presets')}
+            >
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiFormatListBulleted}"></path>
               </svg>
@@ -21107,8 +21863,16 @@ let NutrientDialog = class NutrientDialog extends i$3 {
 
           <div class="content-area">
             ${this._activeTab === 'inventory'
-            ? x `<nutrient-inventory-dialog .open=${true} .embedded=${true} .store=${this.store}></nutrient-inventory-dialog>`
-            : x `<nutrient-presets-editor .open=${true} .embedded=${true} .store=${this.store}></nutrient-presets-editor>`}
+            ? x `<nutrient-inventory-dialog
+                  .open=${true}
+                  .embedded=${true}
+                  .store=${this.store}
+                ></nutrient-inventory-dialog>`
+            : x `<nutrient-presets-editor
+                  .open=${true}
+                  .embedded=${true}
+                  .store=${this.store}
+                ></nutrient-presets-editor>`}
           </div>
         </div>
       </ha-dialog>
@@ -21121,13 +21885,13 @@ NutrientDialog.styles = [
       :host {
         --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
       }
-      
+
       .dialog-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 16px;
         margin-bottom: 0 !important;
       }
-      
+
       .tab-bar {
         display: flex;
         gap: 24px;
@@ -21135,7 +21899,7 @@ NutrientDialog.styles = [
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         margin-bottom: 24px;
       }
-      
+
       .tab {
         padding: 16px 0;
         color: var(--secondary-text-color);
@@ -21147,15 +21911,15 @@ NutrientDialog.styles = [
         align-items: center;
         gap: 8px;
       }
-      
+
       .tab:hover {
         color: var(--primary-text-color);
       }
-      
+
       .tab.active {
-        color: var(--primary-color, #4CAF50);
+        color: var(--primary-color, #4caf50);
       }
-      
+
       .tab.active::after {
         content: '';
         position: absolute;
@@ -21163,7 +21927,7 @@ NutrientDialog.styles = [
         left: 0;
         width: 100%;
         height: 2px;
-        background: var(--primary-color, #4CAF50);
+        background: var(--primary-color, #4caf50);
         border-radius: 2px 2px 0 0;
       }
 
@@ -21185,7 +21949,7 @@ NutrientDialog.styles = [
         background: rgba(255, 255, 255, 0.2);
         border-radius: 4px;
       }
-    `
+    `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
@@ -21235,12 +21999,11 @@ let DialogHost = class DialogHost extends i$3 {
         });
         // Resolve context-specific device data (from payload or global selection)
         const payloadGrowspaceId = active.payload?.growspaceId;
-        const effectiveDeviceData = (payloadGrowspaceId
-            ? devices.find(d => d.deviceId === payloadGrowspaceId)
-            : null) || selectedDeviceData;
+        const effectiveDeviceData = (payloadGrowspaceId ? devices.find((d) => d.deviceId === payloadGrowspaceId) : null) ||
+            selectedDeviceData;
         return x `
-            <error-boundary .fallbackMessage=${'Dialog error occurred'}>
-                ${(() => {
+      <error-boundary .fallbackMessage=${'Dialog error occurred'}>
+        ${(() => {
             switch (active.type) {
                 case 'ADD_PLANT':
                     return this._renderAddPlantDialog(active, strainLibrary, effectiveDeviceData);
@@ -21278,12 +22041,12 @@ let DialogHost = class DialogHost extends i$3 {
                     return x ``;
             }
         })()}
-            </error-boundary>
-        `;
+      </error-boundary>
+    `;
     }
     async _handleDataChanged() {
         // Add a small delay to ensure backend has persisted changes
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await this.store.refreshData();
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
@@ -21296,32 +22059,32 @@ let DialogHost = class DialogHost extends i$3 {
         const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
         const targetGrowspaceId = selectedDeviceData?.deviceId || '';
         return x `
-        <add-plant-dialog
-            .open=${true}
-            .strainLibrary=${strainLibrary}
-            .row=${dialogState?.row}
-            .col=${dialogState?.col}
-            .strain=${dialogState?.strain || ''}
-            .phenotype=${dialogState?.phenotype || ''}
-            .veg_start=${dialogState?.veg_start || ''}
-            .flower_start=${dialogState?.flower_start || ''}
-            .seedling_start=${dialogState?.seedling_start || ''}
-            .mother_start=${dialogState?.mother_start || ''}
-            .clone_start=${dialogState?.clone_start || ''}
-            .dry_start=${dialogState?.dry_start || ''}
-            .cure_start=${dialogState?.cure_start || ''}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            .clonePlants=${clonePlants}
-            .seedlingPlants=${seedlingPlants}
-            .targetGrowspaceId=${targetGrowspaceId}
-            @close=${() => {
+      <add-plant-dialog
+        .open=${true}
+        .strainLibrary=${strainLibrary}
+        .row=${dialogState?.row}
+        .col=${dialogState?.col}
+        .strain=${dialogState?.strain || ''}
+        .phenotype=${dialogState?.phenotype || ''}
+        .veg_start=${dialogState?.veg_start || ''}
+        .flower_start=${dialogState?.flower_start || ''}
+        .seedling_start=${dialogState?.seedling_start || ''}
+        .mother_start=${dialogState?.mother_start || ''}
+        .clone_start=${dialogState?.clone_start || ''}
+        .dry_start=${dialogState?.dry_start || ''}
+        .cure_start=${dialogState?.cure_start || ''}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        .clonePlants=${clonePlants}
+        .seedlingPlants=${seedlingPlants}
+        .targetGrowspaceId=${targetGrowspaceId}
+        @close=${() => {
             if (this._activeDialogController.value.type === 'ADD_PLANT') {
                 this.store.ui.closeDialog();
             }
         }}
-            @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
-            @transplant-plant-submit=${(e) => this._handleTransplant(e.detail)}
-            @create-new-strain=${(e) => {
+        @add-plant-submit=${(e) => this.store.confirmAddPlant(e.detail)}
+        @transplant-plant-submit=${(e) => this._handleTransplant(e.detail)}
+        @create-new-strain=${(e) => {
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
                 payload: {
@@ -21336,22 +22099,22 @@ let DialogHost = class DialogHost extends i$3 {
                         flowering_days_max: 70,
                         sex: 'Feminized',
                         sativa_percentage: 50,
-                        indica_percentage: 50
-                    }
-                }
+                        indica_percentage: 50,
+                    },
+                },
             });
         }}
-        ></add-plant-dialog>
-        `;
+      ></add-plant-dialog>
+    `;
     }
     /** Get all plants with a specific stage from all devices, including growspace name */
     _getPlantsByStage(devices, stage) {
         return devices
-            .flatMap(d => (d.plants || []).map(p => ({
+            .flatMap((d) => (d.plants || []).map((p) => ({
             ...p,
-            _growspaceName: d.name
+            _growspaceName: d.name,
         })))
-            .filter(p => p.attributes.stage === stage);
+            .filter((p) => p.attributes.stage === stage);
     }
     /** Handle transplant from clone/seedling to new location */
     async _handleTransplant(detail) {
@@ -21362,12 +22125,12 @@ let DialogHost = class DialogHost extends i$3 {
                 row: detail.new_row,
                 col: detail.new_col,
                 growspace_id: detail.target_growspace_id,
-                veg_start: detail.veg_start
+                veg_start: detail.veg_start,
             });
             this.store.ui.showToast('Plant transplanted successfully', 'success');
             this.store.ui.closeDialog();
             // Refresh data after a small delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
             await this.store.refreshData();
         }
         catch (e) {
@@ -21379,30 +22142,30 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'ADD_PLANTS')
             return x ``;
         return x `
-        <add-plants-dialog
-            .open=${true}
-            .strainLibrary=${strainLibrary}
-            .growspaceName=${selectedDeviceData?.name || ''}
-            .growspaceDevice=${selectedDeviceData}
-            .strain=${active.payload?.strain || ''}
-            .phenotype=${active.payload?.phenotype || ''}
-            .amount=${active.payload?.amount || 1}
-            .start_number=${active.payload?.start_number || 1}
-            .veg_start=${active.payload?.veg_start || ''}
-            .flower_start=${active.payload?.flower_start || ''}
-            .seedling_start=${active.payload?.seedling_start || ''}
-            .mother_start=${active.payload?.mother_start || ''}
-            .clone_start=${active.payload?.clone_start || ''}
-            .dry_start=${active.payload?.dry_start || ''}
-            .cure_start=${active.payload?.cure_start || ''}
-            @close=${() => {
+      <add-plants-dialog
+        .open=${true}
+        .strainLibrary=${strainLibrary}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        .growspaceDevice=${selectedDeviceData}
+        .strain=${active.payload?.strain || ''}
+        .phenotype=${active.payload?.phenotype || ''}
+        .amount=${active.payload?.amount || 1}
+        .start_number=${active.payload?.start_number || 1}
+        .veg_start=${active.payload?.veg_start || ''}
+        .flower_start=${active.payload?.flower_start || ''}
+        .seedling_start=${active.payload?.seedling_start || ''}
+        .mother_start=${active.payload?.mother_start || ''}
+        .clone_start=${active.payload?.clone_start || ''}
+        .dry_start=${active.payload?.dry_start || ''}
+        .cure_start=${active.payload?.cure_start || ''}
+        @close=${() => {
             if (this._activeDialogController.value.type === 'ADD_PLANTS') {
                 this.store.ui.closeDialog();
             }
         }}
-            @show-toast=${(e) => this.store.showToast(e.detail.message, e.detail.type)}
-            @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
-            @create-new-strain=${(e) => {
+        @show-toast=${(e) => this.store.showToast(e.detail.message, e.detail.type)}
+        @add-plants-submit=${(e) => this.store.confirmAddPlants(e.detail)}
+        @create-new-strain=${(e) => {
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
                 payload: {
@@ -21417,71 +22180,69 @@ let DialogHost = class DialogHost extends i$3 {
                         flowering_days_max: 70,
                         sex: 'Feminized',
                         sativa_percentage: 50,
-                        indica_percentage: 50
-                    }
-                }
+                        indica_percentage: 50,
+                    },
+                },
             });
         }}
-        ></add-plants-dialog>
-        `;
+      ></add-plants-dialog>
+    `;
     }
-    _renderPlantOverviewDialog(active, growspaceOptions, selectedDeviceData) {
+    _renderPlantOverviewDialog(active, growspaceOptions, _selectedDeviceData) {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
         return x `
-        <plant-overview-dialog
-            .open=${true}
-            .plant=${dialogState.plant}
-            .editedAttributes=${dialogState.editedAttributes}
-            .activeTab=${dialogState.activeTab}
-            .selectedPlantIds=${dialogState.selectedPlantIds}
-            .growspaceOptions=${growspaceOptions}
-            @close=${() => {
+      <plant-overview-dialog
+        .open=${true}
+        .plant=${dialogState.plant}
+        .editedAttributes=${dialogState.editedAttributes}
+        .activeTab=${dialogState.activeTab}
+        .selectedPlantIds=${dialogState.selectedPlantIds}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => {
             if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
                 this.store.ui.closeDialog();
             }
         }}
-            @update-plant=${(e) => this.store.updatePlantFromDialog({
+        @update-plant=${(e) => this.store.updatePlantFromDialog({
             plant: dialogState.plant,
             editedAttributes: e.detail, // Event detail is the attributes object
-            selectedPlantIds: dialogState.selectedPlantIds
+            selectedPlantIds: dialogState.selectedPlantIds,
         })}
-            @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
-            @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
-            @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-            @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
-            @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-            @open-watering=${(e) => this.store.ui.setActiveDialog({
+        @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
+        @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
+        @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+        @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+        @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        @open-watering=${(e) => this.store.ui.setActiveDialog({
             type: 'WATERING',
-            payload: e.detail
+            payload: e.detail,
         })}
-            @open-training=${(e) => this.store.ui.setActiveDialog({
+        @open-training=${(e) => this.store.ui.setActiveDialog({
             type: 'TRAINING',
-            payload: e.detail
+            payload: e.detail,
         })}
-            @open-ipm=${(e) => this.store.ui.setActiveDialog({
+        @open-ipm=${(e) => this.store.ui.setActiveDialog({
             type: 'IPM',
-            payload: e.detail
+            payload: e.detail,
         })}
-            @open-clone=${(e) => this.store.ui.setActiveDialog({
+        @open-clone=${(e) => this.store.ui.setActiveDialog({
             type: 'TAKE_CLONE',
-            payload: e.detail
+            payload: e.detail,
         })}
-            @open-strain-editor=${(e) => {
+        @open-strain-editor=${(e) => {
             const { strain, phenotype } = e.detail;
             const strainLibrary = this.store.data.$strainLibrary.get();
             // Normalize empty strings, null, and undefined to compare properly
             const normalizedPhenotype = phenotype || '';
-            let strainEntry = strainLibrary.find(s => {
+            let strainEntry = strainLibrary.find((s) => {
                 const entryPhenotype = s.phenotype || '';
                 return s.strain === strain && entryPhenotype === normalizedPhenotype;
             });
             // If no match found, create a new entry for the user to complete
             if (!strainEntry && strain) {
-                const key = normalizedPhenotype
-                    ? `${strain}_${normalizedPhenotype}`
-                    : strain;
+                const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
                 strainEntry = {
                     strain,
                     phenotype: normalizedPhenotype,
@@ -21500,30 +22261,30 @@ let DialogHost = class DialogHost extends i$3 {
             }
             this.store.ui.setActiveDialog({
                 type: 'STRAIN_LIBRARY',
-                payload: { editingStrain: strainEntry }
+                payload: { editingStrain: strainEntry },
             });
         }}
-        ></plant-overview-dialog>
-        `;
+      ></plant-overview-dialog>
+    `;
     }
-    _renderStrainLibraryDialog(active, strainLibrary, selectedDeviceData) {
+    _renderStrainLibraryDialog(active, strainLibrary, _selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
             return x ``;
         const payload = active.payload;
         return x `
-        <strain-library-dialog
-            .open=${true}
-            .strains=${strainLibrary}
-            .editingStrain=${payload?.editingStrain}
-            .source=${payload?.source}
-            .returnPayload=${payload?.returnPayload}
-            @close=${() => {
+      <strain-library-dialog
+        .open=${true}
+        .strains=${strainLibrary}
+        .editingStrain=${payload?.editingStrain}
+        .source=${payload?.source}
+        .returnPayload=${payload?.returnPayload}
+        @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
                 this.store.ui.closeDialog();
             }
         }}
-            @strain-created-at-source=${(e) => {
+        @strain-created-at-source=${(e) => {
             const { strain, source, returnPayload } = e.detail;
             if (source === 'add-plant') {
                 this.store.ui.setActiveDialog({
@@ -21531,8 +22292,8 @@ let DialogHost = class DialogHost extends i$3 {
                     payload: {
                         ...returnPayload,
                         strain: strain.strain,
-                        phenotype: strain.phenotype
-                    }
+                        phenotype: strain.phenotype,
+                    },
                 });
             }
             else if (source === 'add-plants') {
@@ -21541,18 +22302,18 @@ let DialogHost = class DialogHost extends i$3 {
                     payload: {
                         ...returnPayload,
                         strain: strain.strain,
-                        phenotype: strain.phenotype
-                    }
+                        phenotype: strain.phenotype,
+                    },
                 });
             }
         }}
-            @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
-            @delete-strain=${(e) => this.store.actions.strain.remove(e.detail.key)}
-            @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
-            @export-library=${() => this.store.handleExportLibrary()}
-            @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
-        ></strain-library-dialog>
-        `;
+        @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
+        @delete-strain=${(e) => this.store.actions.strain.remove(e.detail.key)}
+        @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
+        @export-library=${() => this.store.handleExportLibrary()}
+        @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
+      ></strain-library-dialog>
+    `;
     }
     async _performImport(file, replace) {
         if (!file)
@@ -21565,24 +22326,24 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.showToast(`Import failed: ${err.message}`, 'error');
         }
     }
-    _renderConfigDialog(active, growspaceOptions, selectedDeviceData) {
+    _renderConfigDialog(active, growspaceOptions, _selectedDeviceData) {
         if (active.type !== 'CONFIG')
             return x ``;
         const dialogState = active.payload;
         return x `
-        <config-dialog
-            .open=${true}
-            .hass=${this.hass}
-            .devices=${this._devicesController.value}
-            .currentTab=${dialogState.currentTab}
-            .environmentData=${dialogState.environmentData}
-            .growspaceOptions=${growspaceOptions}
-            @close=${() => this.store.ui.closeDialog()}
-            @add-growspace-submit=${(e) => this.store.actions.growspace.add(e.detail)}
-            @edit-growspace-submit=${(e) => this.store.actions.growspace.update(e.detail)}
-            @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
-        ></config-dialog>
-        `;
+      <config-dialog
+        .open=${true}
+        .hass=${this.hass}
+        .devices=${this._devicesController.value}
+        .currentTab=${dialogState.currentTab}
+        .environmentData=${dialogState.environmentData}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this.store.ui.closeDialog()}
+        @add-growspace-submit=${(e) => this.store.actions.growspace.add(e.detail)}
+        @edit-growspace-submit=${(e) => this.store.actions.growspace.update(e.detail)}
+        @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+      ></config-dialog>
+    `;
     }
     async _handleEnvironmentConfig(detail) {
         const { selectedGrowspaceId, temperatureSensor, humiditySensor, vpdSensor, co2Sensor, circulationFanEntity, stressThreshold, moldThreshold, lightSensor, exhaustEntity, humidifierEntity, dehumidifierEntity, dehumidifierThresholds, soilMoistureSensor, dehumidifierControlEnabled, } = detail;
@@ -21593,18 +22354,18 @@ let DialogHost = class DialogHost extends i$3 {
         try {
             await this.store.dataService.configureEnvironment({
                 growspaceId: selectedGrowspaceId,
-                temperatureSensor: temperatureSensor,
-                humiditySensor: humiditySensor,
+                temperatureSensor,
+                humiditySensor,
                 vpdSensor: vpdSensor || undefined,
                 co2Sensor: co2Sensor || undefined,
                 circulationFanEntity: circulationFanEntity || undefined,
-                stressThreshold: stressThreshold,
-                moldThreshold: moldThreshold,
+                stressThreshold,
+                moldThreshold,
                 lightSensor: lightSensor || undefined,
                 exhaustEntity: exhaustEntity || undefined,
                 humidifierEntity: humidifierEntity || undefined,
                 dehumidifierEntity: dehumidifierEntity || undefined,
-                dehumidifierThresholds: dehumidifierThresholds,
+                dehumidifierThresholds,
                 soilMoistureSensor: soilMoistureSensor || undefined,
                 controlDehumidifier: dehumidifierControlEnabled,
                 // Multi-device fields
@@ -21645,48 +22406,52 @@ let DialogHost = class DialogHost extends i$3 {
             }
             const manager = this.hass.states['sensor.growspace_manager'];
             if (manager && manager.attributes) {
-                personality = manager.attributes.personality || (manager.attributes.ai_settings && manager.attributes.ai_settings.personality);
+                personality =
+                    manager.attributes.personality ||
+                        (manager.attributes.ai_settings && manager.attributes.ai_settings.personality);
             }
         }
         return x `
-        <grow-master-dialog
-            .open=${true}
-            .isStressed=${isStressed}
-            .personality=${personality}
-            .isLoading=${dialogState.isLoading}
-            .response=${dialogState.response}
-            @close=${() => this.store.ui.closeDialog()}
-            @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
-            @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
-        ></grow-master-dialog>
+      <grow-master-dialog
+        .open=${true}
+        .isStressed=${isStressed}
+        .personality=${personality}
+        .isLoading=${dialogState.isLoading}
+        .response=${dialogState.response}
+        @close=${() => this.store.ui.closeDialog()}
+        @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
+        @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
+      ></grow-master-dialog>
     `;
     }
-    _renderStrainRecommendationDialog(active, selectedDeviceData) {
+    _renderStrainRecommendationDialog(active, _selectedDeviceData) {
         if (active.type !== 'STRAIN_RECOMMENDATION')
             return x ``;
         const dialogState = active.payload;
         return x `
-    <strain-recommendation-dialog
+      <strain-recommendation-dialog
         .open=${true}
-            .isLoading = ${dialogState.isLoading}
-            .response = ${dialogState.response}
-@close=${() => this.store.ui.closeDialog()}
-@get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
-        > </strain-recommendation-dialog>
+        .isLoading=${dialogState.isLoading}
+        .response=${dialogState.response}
+        @close=${() => this.store.ui.closeDialog()}
+        @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
+      >
+      </strain-recommendation-dialog>
     `;
     }
     _renderIrrigationDialog(active, selectedDeviceData) {
         if (active.type !== 'IRRIGATION')
             return x ``;
         return x `
-    <irrigation-dialog
+      <irrigation-dialog
         .open=${true}
-            .device = ${selectedDeviceData}
-            .growspaceName = ${selectedDeviceData?.name || ''}
-@close=${() => this.store.ui.closeDialog()}
-@closed=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this._handleDataChanged()}
-        > </irrigation-dialog>
+        .device=${selectedDeviceData}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this.store.ui.closeDialog()}
+        @closed=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this._handleDataChanged()}
+      >
+      </irrigation-dialog>
     `;
     }
     _renderLogbookDialog(active, selectedDeviceData) {
@@ -21694,11 +22459,11 @@ let DialogHost = class DialogHost extends i$3 {
             return x ``;
         const dialogState = active.payload;
         return x `
-    <logbook-dialog
+      <logbook-dialog
         .open=${true}
         .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
         @close=${() => this.store.ui.closeDialog()}
-    ></logbook-dialog>
+      ></logbook-dialog>
     `;
     }
     _renderWateringDialog(active, selectedDeviceData) {
@@ -21706,39 +22471,41 @@ let DialogHost = class DialogHost extends i$3 {
             return x ``;
         const dialogState = active.payload;
         return x `
-    <watering-dialog
+      <watering-dialog
         .open=${true}
-            .dialogState = ${dialogState}
-            .growspaceName = ${selectedDeviceData?.name || ''}
-@close=${() => this.store.ui.closeDialog()}
-@data-changed=${() => this._handleDataChanged()}
-        > </watering-dialog>
+        .dialogState=${dialogState}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this._handleDataChanged()}
+      >
+      </watering-dialog>
     `;
     }
     _renderNutrientPresetsDialog(active, selectedDeviceData) {
         if (active.type !== 'NUTRIENT_PRESETS')
             return x ``;
         return x `
-    <nutrient-presets-editor
+      <nutrient-presets-editor
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
         .growspaceId=${selectedDeviceData?.deviceId}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
-    ></nutrient-presets-editor>
+      ></nutrient-presets-editor>
     `;
     }
-    _renderTrainingDialog(active, selectedDeviceData) {
+    _renderTrainingDialog(active, _selectedDeviceData) {
         if (active.type !== 'TRAINING')
             return x ``;
         return x `
-    <training-dialog
+      <training-dialog
         .open=${true}
-            .store = ${this.store}
-            @close=${() => this.store.ui.closeDialog()}
-            @data-changed=${() => this._handleDataChanged()}
-        > </training-dialog>
+        .store=${this.store}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this._handleDataChanged()}
+      >
+      </training-dialog>
     `;
     }
     _renderIPMDialog(active, selectedDeviceData) {
@@ -21746,7 +22513,7 @@ let DialogHost = class DialogHost extends i$3 {
             return x ``;
         const dialogState = active.payload;
         return x `
-    <ipm-dialog
+      <ipm-dialog
         .open=${true}
         .store=${this.store}
         .hass=${this.hass}
@@ -21754,50 +22521,50 @@ let DialogHost = class DialogHost extends i$3 {
         .plantIds=${dialogState.plantIds || []}
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
-    ></ipm-dialog>
+      ></ipm-dialog>
     `;
     }
-    _renderNutrientInventoryDialog(active, selectedDeviceData) {
+    _renderNutrientInventoryDialog(active, _selectedDeviceData) {
         if (active.type !== 'NUTRIENT_INVENTORY')
             return x ``;
         return x `
-            <nutrient-inventory-dialog
-                .open=${true}
-                @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this._handleDataChanged()}
-            ></nutrient-inventory-dialog>
-        `;
+      <nutrient-inventory-dialog
+        .open=${true}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this._handleDataChanged()}
+      ></nutrient-inventory-dialog>
+    `;
     }
-    _renderCloneDialog(active, growspaceOptions, selectedDeviceData) {
+    _renderCloneDialog(active, growspaceOptions, _selectedDeviceData) {
         if (active.type !== 'TAKE_CLONE')
             return x ``;
         const dialogState = active.payload;
         return x `
-            <clone-dialog
-                .open=${true}
-                .store=${this.store}
-                .sourcePlant=${dialogState.sourcePlant}
-                .growspaceOptions=${growspaceOptions}
-                .defaultGrowspace=${dialogState.defaultGrowspaceId}
-                @take-clone-submit=${async (e) => {
+      <clone-dialog
+        .open=${true}
+        .store=${this.store}
+        .sourcePlant=${dialogState.sourcePlant}
+        .growspaceOptions=${growspaceOptions}
+        .defaultGrowspace=${dialogState.defaultGrowspaceId}
+        @take-clone-submit=${async (e) => {
             const { numClones, targetGrowspaceId } = e.detail;
             await this.store.actions.plant.takeClone(dialogState.sourcePlant, numClones, targetGrowspaceId);
             await this._handleDataChanged();
             this.store.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
         }}
-            ></clone-dialog>
-        `;
+      ></clone-dialog>
+    `;
     }
-    _renderNutrientDialog(active, selectedDeviceData) {
+    _renderNutrientDialog(active, _selectedDeviceData) {
         if (active.type !== 'NUTRIENTS')
             return x ``;
         return x `
-            <nutrient-dialog
-                .open=${true}
-                @close=${() => this.store.ui.closeDialog()}
-                @data-changed=${() => this._handleDataChanged()}
-            ></nutrient-dialog>
-        `;
+      <nutrient-dialog
+        .open=${true}
+        @close=${() => this.store.ui.closeDialog()}
+        @data-changed=${() => this._handleDataChanged()}
+      ></nutrient-dialog>
+    `;
     }
 };
 __decorate([
@@ -21904,46 +22671,88 @@ let EditModeBanner = class EditModeBanner extends i$3 {
           </svg>
           <span>${this.selectedCount} plant(s) selected</span>
         </div>
-        
+
         <div class="banner-actions-wrapper">
-          <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
+          <div
+            class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}"
+            @click=${() => this._scrollActions('left')}
+          >
             <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
           </div>
 
           <div class="banner-actions" ${n$2(this._actionsContainerRef)}>
-            <button class="icon-button" @click=${() => this._dispatch('select-all')} title="Select All">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('select-all')}
+              title="Select All"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('clear-selection')} title="Clear Selection">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('clear-selection')}
+              title="Clear Selection"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button" @click=${() => this._dispatch('water-selected')} title="Water Selected">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('water-selected')}
+              title="Water Selected"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('training-selected')} title="Log Training">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('training-selected')}
+              title="Log Training"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('ipm-selected')} title="Log IPM">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('ipm-selected')}
+              title="Log IPM"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button" @click=${() => this._dispatch('transplant-mode')} title="Transplant Mode">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('transplant-mode')}
+              title="Transplant Mode"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('batch-add-plants')} title="Batch Add Plants">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('batch-add-plants')}
+              title="Batch Add Plants"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button delete" @click=${() => this._dispatch('delete-selected')} title="Delete Selected">
+            <button
+              class="icon-button delete"
+              @click=${() => this._dispatch('delete-selected')}
+              title="Delete Selected"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('exit-edit-mode')} title="Exit Edit Mode">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('exit-edit-mode')}
+              title="Exit Edit Mode"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
 
-          <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
+          <div
+            class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}"
+            @click=${() => this._scrollActions('right')}
+          >
             <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
           </div>
         </div>
@@ -22106,7 +22915,7 @@ EditModeBanner.styles = [
           justify-content: center;
         }
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ type: Number })
@@ -22139,23 +22948,23 @@ function calculateGrowthDeviation(plant, strain) {
     }
     const currentDays = plant.attributes.flower_days || 0;
     const targetDays = strain.phenotype_target_days || strain.flowering_days || 63; // Default to 9 weeks if unknown
-    // Simple heuristic: 
+    // Simple heuristic:
     // This is tricky because "days in stage" is just time passed, not quality/speed.
-    // However, if we assume "growth deviation" implies "estimated maturation vs actual time", 
+    // However, if we assume "growth deviation" implies "estimated maturation vs actual time",
     // without visual analysis, we can't truly know speed.
-    // 
+    //
     // ALTERNATIVE INTERPRETATION based on "Genetic Drift & Phenotype Analytics":
     // Perhaps we want to know how far along we are vs the "ideal".
     // Or, if we have "height" or "yield" data, we could compare that.
     //
-    // For this initial implementation based on available data (days), 
+    // For this initial implementation based on available data (days),
     // we will return the % progress towards target harvest date.
     // This isn't "deviation" per se, but "progress".
-    // 
+    //
     // IF the user meant "Genetic Drift", this usually implies keeping a mother plant for too long.
     // But the task says "calculateGrowthDeviation".
     //
-    // Let's implement a "Progress Ratio" for now, and if we add sensor data (like height sensors), 
+    // Let's implement a "Progress Ratio" for now, and if we add sensor data (like height sensors),
     // we can compare "height at day X" vs "strain avg height at day X".
     if (targetDays <= 0)
         return 0;
@@ -22295,14 +23104,14 @@ class DragDropController {
             composed: true,
         }));
     }
-    handleDragOver(e) {
-        e.preventDefault();
+    handleDragOver(_e) {
+        _e.preventDefault();
     }
     // --- Internal Helpers ---
     _getCardElement() {
         return this.host.shadowRoot?.querySelector('.plant-card-rich');
     }
-    _startMobileDrag(e) {
+    _startMobileDrag(_e) {
         this._isDraggingMobile = true;
         const card = this._getCardElement();
         if (card) {
@@ -22372,7 +23181,8 @@ const plantStatsStyles = i$6 `
     color: var(--primary-text-color, #fff);
   }
 
-  .current-stage {}
+  .current-stage {
+  }
 `;
 
 let GrowspacePlantStats = class GrowspacePlantStats extends i$3 {
@@ -22385,7 +23195,9 @@ let GrowspacePlantStats = class GrowspacePlantStats extends i$3 {
       ${this.stages.map((d) => {
             return x `
           <div class=${e({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
-            <svg style=${o({ color: d.color })} viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+            <svg style=${o({ color: d.color })} viewBox="0 0 24 24">
+              <path d="${d.icon}"></path>
+            </svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
@@ -22653,13 +23465,13 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         if (!this.plant || !this.store)
             return false;
         const growspaceId = this.plant.attributes.growspace_id;
-        const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
+        const device = this.store.data.$devices.get().find((d) => d.deviceId === growspaceId);
         if (!device)
             return false;
         const nutrientPresets = this.store.data.$nutrientPresets.get();
         const currentStage = this.plant.attributes.stage;
         const daysInStage = this.plant.attributes.days_in_stage || 0;
-        return Object.values(nutrientPresets).some(p => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
+        return Object.values(nutrientPresets).some((p) => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
     }
     // Placeholder for watering status, assuming it will be implemented elsewhere
     get _isRecentlyWatered() {
@@ -22734,7 +23546,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         @click=${this._handleClick}
         @keydown=${this._handleKeyDown}
       >
-      ${imageUrl
+        ${imageUrl
             ? x `
               <img
                 class="plant-card-bg"
@@ -22752,7 +23564,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         ${this.isEditMode
             ? x `
               <div
-                class=${e({ 'plant-card-checkbox': true, 'selected': this.selected })}
+                class=${e({ 'plant-card-checkbox': true, selected: this.selected })}
                 role="checkbox"
                 aria-checked=${this.selected ? 'true' : 'false'}
                 tabindex="0"
@@ -22769,7 +23581,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
                   style=${o({
                 width: '24px',
                 height: '24px',
-                fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)'
+                fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)',
             })}
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
@@ -22777,56 +23589,91 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
               </div>
             `
             : E}
-    <div class="status-icons" >
-      ${this.plant.attributes.last_training_technique ? x `
-              <div class="status-icon training" role="img" aria-label="Last trained with: ${this.plant.attributes.last_training_technique}" title="Last trained with: ${this.plant.attributes.last_training_technique}">
-                <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
-              </div>
-            ` : E}
-
-            ${this.plant.attributes.last_ipm ? x `
-              <div class="status-icon ipm" role="img" aria-label="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}" title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}">
-                <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
-              </div>
-            ` : E}
-
-            ${this._isRecentlyWatered ? x `
-              <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
-                <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
-              </div>
-            ` : E}
-
-            ${this.plant.attributes.problem ? x `
-              <div class="status-icon problem" role="img" aria-label="Problem detected: ${this.plant.attributes.problem}" title="Problem detected: ${this.plant.attributes.problem}">
-                <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-              </div>
-            ` : E}
-
-            ${this.growthDeviation !== 0 ? x `
+        <div class="status-icons">
+          ${this.plant.attributes.last_training_technique
+            ? x `
                 <div
-                    class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
-                    role="img"
-                    aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
-                    title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
-                    style="background: ${this.growthDeviation > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'};"
+                  class="status-icon training"
+                  role="img"
+                  aria-label="Last trained with: ${this.plant.attributes.last_training_technique}"
+                  title="Last trained with: ${this.plant.attributes.last_training_technique}"
                 >
-                    <ha-svg-icon .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown} style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"></ha-svg-icon>
+                  <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
                 </div>
-            ` : E}
-    </div>
-      <div class="plant-card-content">
-        <div class="pc-info">
-          <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+              `
+            : E}
+          ${this.plant.attributes.last_ipm
+            ? x `
+                <div
+                  class="status-icon ipm"
+                  role="img"
+                  aria-label="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}"
+                  title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}"
+                >
+                  <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
+                </div>
+              `
+            : E}
+          ${this._isRecentlyWatered
+            ? x `
+                <div
+                  class="status-icon watering"
+                  role="img"
+                  aria-label="Recently watered"
+                  title="Recently watered"
+                >
+                  <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
+                </div>
+              `
+            : E}
+          ${this.plant.attributes.problem
+            ? x `
+                <div
+                  class="status-icon problem"
+                  role="img"
+                  aria-label="Problem detected: ${this.plant.attributes.problem}"
+                  title="Problem detected: ${this.plant.attributes.problem}"
+                >
+                  <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                </div>
+              `
+            : E}
+          ${this.growthDeviation !== 0
+            ? x `
+                <div
+                  class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
+                  role="img"
+                  aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+                  title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+                  style="background: ${this.growthDeviation > 0
+                ? 'rgba(76, 175, 80, 0.2)'
+                : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0
+                ? '#4caf50'
+                : '#f44336'};"
+                >
+                  <ha-svg-icon
+                    .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown}
+                    style="color: ${this.growthDeviation > 0 ? '#4caf50' : '#f44336'}"
+                  ></ha-svg-icon>
+                </div>
+              `
+            : E}
+        </div>
+        <div class="plant-card-content">
+          <div class="pc-info">
+            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div style="display: flex; align-items: center; gap: 8px;">
-               <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
-               ${this._hasRecommendedPreset ? x `
-                 <ha-svg-icon
-                    .path=${mdiStar}
-                    style="--mdc-icon-size: 14px; color: var(--primary-color);" 
-                    title="Nutrient Preset Recommended"
-                 ></ha-svg-icon>
-               ` : E}
+              <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+              ${this._hasRecommendedPreset
+            ? x `
+                    <ha-svg-icon
+                      .path=${mdiStar}
+                      style="--mdc-icon-size: 14px; color: var(--primary-color);"
+                      title="Nutrient Preset Recommended"
+                    ></ha-svg-icon>
+                  `
+            : E}
             </div>
           </div>
 
@@ -22836,10 +23683,7 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     `;
     }
 };
-GrowspacePlantCard.styles = [
-    sharedStyles,
-    plantCardStyles
-];
+GrowspacePlantCard.styles = [sharedStyles, plantCardStyles];
 __decorate([
     n$5({ attribute: false })
 ], GrowspacePlantCard.prototype, "plant", void 0);
@@ -31024,7 +31868,7 @@ class MetricsUtils {
             dominant = {
                 icon,
                 daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
-                weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`
+                weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
             };
         }
         // Fetch Environmental Data
@@ -31053,7 +31897,9 @@ class MetricsUtils {
         if (vpd === undefined || vpd === null) {
             if (envAttrs.vpdSensor) {
                 const vpdState = hass.states[envAttrs.vpdSensor];
-                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
+                if (vpdState &&
+                    vpdState.state !== EntityState.UNKNOWN &&
+                    vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
                         vpd = val;
@@ -31074,14 +31920,20 @@ class MetricsUtils {
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 let vpdState = hass.states[calculatedId];
                 // 2. Try UUID-based ID (Old Legacy)
-                if (!vpdState || vpdState.state === EntityState.UNKNOWN || vpdState.state === EntityState.UNAVAILABLE) {
+                if (!vpdState ||
+                    vpdState.state === EntityState.UNKNOWN ||
+                    vpdState.state === EntityState.UNAVAILABLE) {
                     const oldId = `sensor.${device.deviceId}_calculated_vpd`;
                     const oldState = hass.states[oldId];
-                    if (oldState && oldState.state !== EntityState.UNKNOWN && oldState.state !== EntityState.UNAVAILABLE) {
+                    if (oldState &&
+                        oldState.state !== EntityState.UNKNOWN &&
+                        oldState.state !== EntityState.UNAVAILABLE) {
                         vpdState = oldState;
                     }
                 }
-                if (vpdState && vpdState.state !== EntityState.UNKNOWN && vpdState.state !== EntityState.UNAVAILABLE) {
+                if (vpdState &&
+                    vpdState.state !== EntityState.UNKNOWN &&
+                    vpdState.state !== EntityState.UNAVAILABLE) {
                     const val = parseFloat(vpdState.state);
                     if (!isNaN(val))
                         vpd = val;
@@ -31094,7 +31946,8 @@ class MetricsUtils {
         const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
         const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
         if ((!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
-            vpd !== undefined && vpd !== null &&
+            vpd !== undefined &&
+            vpd !== null &&
             vpdTargetMin !== undefined &&
             vpdTargetMax !== undefined &&
             vpdDangerMin !== undefined &&
@@ -31137,9 +31990,21 @@ class MetricsUtils {
             if (value === undefined && (!multiValues || multiValues.length === 0))
                 return null;
             const { linked, groupIndex } = this._isMetricLinked(key, linkedGraphGroups);
-            const hasCompositeActive = Array.from(activeEnvGraphs).some(k => k.startsWith(`${key}:`));
+            const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
             const active = activeEnvGraphs.has(key) || hasCompositeActive;
-            return { key, icon, value: value || '', multiValues, entityIds, label, status, tooltip, active, linked, groupIndex };
+            return {
+                key,
+                icon,
+                value: value || '',
+                multiValues,
+                entityIds,
+                label,
+                status,
+                tooltip,
+                active,
+                linked,
+                groupIndex,
+            };
         };
         let optimalLabel = 'Optimal Conditions';
         if (envEntity && envEntity.state !== EntityState.ON) {
@@ -31173,7 +32038,7 @@ class MetricsUtils {
             const ids = new Set();
             // Optional: Filter by active graphs if needed in future
             if (multi && multi.length > 0) {
-                multi.forEach(id => ids.add(id));
+                multi.forEach((id) => ids.add(id));
             }
             else if (single) {
                 ids.add(single);
@@ -31187,7 +32052,10 @@ class MetricsUtils {
             const entityIds = Array.from(ids);
             ids.forEach((id) => {
                 const s = hass.states[id];
-                if (s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN) {
+                if (s &&
+                    s.state &&
+                    s.state !== EntityState.UNAVAILABLE &&
+                    s.state !== EntityState.UNKNOWN) {
                     states.push(s.state);
                 }
                 else {
@@ -31218,151 +32086,157 @@ class MetricsUtils {
 }
 
 const headerStyles = i$6 `
-    :host {
-      display: block;
-    }
+  :host {
+    display: block;
+  }
 
-    .gs-stats-container {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      margin-bottom: 24px;
-    }
+  .gs-stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
 
-    /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
-    .select-wrapper {
-        position: relative;
-        display: inline-flex; /* Use inline-flex for tight wrapping */
-        align-items: center;
-        max-width: 100%;
-        vertical-align: middle;
-    }
+  /* ABSOLUTE OVERLAY TRICK for Auto-Width Select */
+  .select-wrapper {
+    position: relative;
+    display: inline-flex; /* Use inline-flex for tight wrapping */
+    align-items: center;
+    max-width: 100%;
+    vertical-align: middle;
+  }
 
-    /* The visible text element that drives width */
-    .select-sizer {
-        font-family: 'Roboto', sans-serif;
-        font-size: 3.5rem;
-        font-weight: 300;
-        margin: 0;
-        line-height: 1.1;
-        text-transform: capitalize;
-        background: linear-gradient(135deg, var(--primary-text-color, #ffffff) 0%, var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        white-space: pre;
-        pointer-events: none; /* Let clicks pass through to select */
-        visibility: visible; /* Ensure it is seen */
-    }
+  /* The visible text element that drives width */
+  .select-sizer {
+    font-family: 'Roboto', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 300;
+    margin: 0;
+    line-height: 1.1;
+    text-transform: capitalize;
+    background: linear-gradient(
+      135deg,
+      var(--primary-text-color, #ffffff) 0%,
+      var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    white-space: pre;
+    pointer-events: none; /* Let clicks pass through to select */
+    visibility: visible; /* Ensure it is seen */
+  }
 
-    /* The functional select element, invisible but clickable */
-    .growspace-select-header {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0; /* Invisible */
-        cursor: pointer;
-        appearance: none;
-        font-size: 2.5rem; /* Match size for approximate sizing if fallback */
-        margin: 0;
-        padding: 0;
-    }
+  /* The functional select element, invisible but clickable */
+  .growspace-select-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0; /* Invisible */
+    cursor: pointer;
+    appearance: none;
+    font-size: 2.5rem; /* Match size for approximate sizing if fallback */
+    margin: 0;
+    padding: 0;
+  }
 
-    .growspace-select-header option {
-        color: initial; /* Reset color for dropdown options */
-        background-color: initial;
-    }
+  .growspace-select-header option {
+    color: initial; /* Reset color for dropdown options */
+    background-color: initial;
+  }
 
-    /* --- Header Top Section --- */
-    .gs-header-top {
-      display: grid;
-      grid-template-columns: minmax(280px, 25%) minmax(0, 1fr);
-      grid-template-rows: auto auto;
-      align-items: center;
-      gap: 4px 16px;
-    }
+  /* --- Header Top Section --- */
+  .gs-header-top {
+    display: grid;
+    grid-template-columns: minmax(280px, 25%) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 4px 16px;
+  }
 
+  .header-title-area {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  /* New component slots */
+  growspace-header-actions {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .header-stage-area-wrapper {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    position: relative;
+    /* height for scroll container consistency */
+  }
+
+  /* --- Secondary Strip (Scrollable) --- */
+  .secondary-strip-container {
+    position: relative;
+    border-radius: 16px;
+    grid-column: 2;
+    min-width: 0;
+    width: 100%;
+    height: 60px; /* specific height for generic scroll container usage */
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .secondary-strip {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    padding: 0 4px;
+  }
+
+  .secondary-strip > growspace-chip:first-child {
+    margin-left: auto;
+  }
+
+  /* --- Mobile & Responsive --- */
+  @media (max-width: 600px) {
+    .gs-title {
+      font-size: 2rem;
+    }
     .header-title-area {
-        grid-column: 1;
-        grid-row: 1;
-        display: flex;
-        align-items: center;
+      max-width: 70%;
     }
 
-    /* New component slots */
     growspace-header-actions {
-        grid-column: 2;
-        grid-row: 1;
-    }
-    
-    .header-stage-area-wrapper {
-        grid-column: 1;
-        grid-row: 2;
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        position: relative;
-        /* height for scroll container consistency */
+      grid-column: 1;
+      grid-row: 3;
+      justify-content: flex-start;
+      justify-self: auto;
     }
 
-    /* --- Secondary Strip (Scrollable) --- */
+    .gs-header-top {
+      grid-template-columns: minmax(0, 1fr);
+      position: relative; /* For absolute actions */
+      gap: 8px;
+    }
+
+    /* Wrap secondary strip when link mode active - managed via props now or css? */
+    /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
+    /* Or we just allow scrolling on mobile always */
+
     .secondary-strip-container {
-        position: relative;
-        border-radius: 16px;
-        grid-column: 2;
-        min-width: 0;
-        width: 100%;
-        height: 60px; /* specific height for generic scroll container usage */
-        overflow: hidden; 
-        box-sizing: border-box;
+      grid-row: 4;
+      grid-column: 1;
     }
-
-    .secondary-strip {
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-        width: 100%;
-        height: 100%;
-        padding: 0 4px; 
-    }
-    
-    .secondary-strip > growspace-chip:first-child {
-        margin-left: auto;
-    }
-
-    /* --- Mobile & Responsive --- */
-    @media (max-width: 600px) {
-        .gs-title { font-size: 2rem; }
-        .header-title-area {
-          max-width: 70%;
-        }
-        
-        growspace-header-actions {
-            grid-column: 1;
-            grid-row: 3;
-            justify-content: flex-start;
-            justify-self: auto;
-        }
-
-        .gs-header-top {
-            grid-template-columns: minmax(0, 1fr);
-            position: relative; /* For absolute actions */
-            gap: 8px;
-        }
-
-        /* Wrap secondary strip when link mode active - managed via props now or css? */
-        /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
-        /* Or we just allow scrolling on mobile always */
-
-        .secondary-strip-container {
-            grid-row: 4;
-            grid-column: 1;
-        }
-    }
+  }
 `;
 
 let ScrollContainer = class ScrollContainer extends i$3 {
@@ -31398,88 +32272,93 @@ let ScrollContainer = class ScrollContainer extends i$3 {
     }
     render() {
         return x `
-            <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this.scrollContentLeft()}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
-            </div>
-            
-            <div 
-                class="scroll-content ${this.containerClass}" 
-                @scroll=${() => this.checkScroll()}
-            >
-                <slot></slot>
-            </div>
+      <div
+        class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}"
+        @click=${() => this.scrollContentLeft()}
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
+      </div>
 
-            <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this.scrollContentRight()}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
-            </div>
-        `;
+      <div class="scroll-content ${this.containerClass}" @scroll=${() => this.checkScroll()}>
+        <slot></slot>
+      </div>
+
+      <div
+        class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}"
+        @click=${() => this.scrollContentRight()}
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
+      </div>
+    `;
     }
 };
 ScrollContainer.styles = i$6 `
-        :host {
-            display: flex;
-            align-items: center;
-            position: relative;
-            min-width: 0;
-            width: 100%;
-            height: 100%;
-        }
+    :host {
+      display: flex;
+      align-items: center;
+      position: relative;
+      min-width: 0;
+      width: 100%;
+      height: 100%;
+    }
 
-        .scroll-content {
-            display: flex;
-            align-items: center;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            min-width: 0;
-            flex: 1;
-            scroll-behavior: smooth;
-            height: 100%;
-        }
+    .scroll-content {
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      min-width: 0;
+      flex: 1;
+      scroll-behavior: smooth;
+      height: 100%;
+    }
 
-        .scroll-content::-webkit-scrollbar {
-            display: none;
-        }
+    .scroll-content::-webkit-scrollbar {
+      display: none;
+    }
 
-        .scroll-arrow {
-            min-width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--secondary-text-color, rgba(255,255,255,0.7));
-            cursor: pointer;
-            border-radius: 50%;
-            transition: background 0.2s, opacity 0.2s;
-            flex-shrink: 0;
-            z-index: 2;
-        }
+    .scroll-arrow {
+      min-width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      cursor: pointer;
+      border-radius: 50%;
+      transition:
+        background 0.2s,
+        opacity 0.2s;
+      flex-shrink: 0;
+      z-index: 2;
+    }
 
-        .scroll-arrow:hover {
-            background: rgba(255,255,255,0.1);
-            color: var(--primary-text-color, #fff);
-        }
+    .scroll-arrow:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary-text-color, #fff);
+    }
 
-        .scroll-arrow.hidden {
-            opacity: 0;
-            pointer-events: none;
-            width: 0;
-            padding: 0;
-            min-width: 0;
-            overflow: hidden;
-        }
+    .scroll-arrow.hidden {
+      opacity: 0;
+      pointer-events: none;
+      width: 0;
+      padding: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
 
-        .scroll-arrow svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-        }
+    .scroll-arrow svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
 
-        /* Allow slotted content to fill height */
-        ::slotted(*) {
-            height: 100%;
-        }
-    `;
+    /* Allow slotted content to fill height */
+    ::slotted(*) {
+      height: 100%;
+    }
+  `;
 __decorate([
     n$5({ type: Number })
 ], ScrollContainer.prototype, "scrollAmount", void 0);
@@ -31529,14 +32408,18 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             try {
                 menu.hidePopover();
             }
-            catch { /* ignore */ }
+            catch {
+                /* ignore */
+            }
         }
         switch (action) {
             case 'add_plant':
                 this.store.openAddPlantDialog();
                 break;
             case 'config': {
-                const device = this.store.data.$devices.get().find(d => d.deviceId === this._selectedDeviceController.value);
+                const device = this.store.data.$devices
+                    .get()
+                    .find((d) => d.deviceId === this._selectedDeviceController.value);
                 if (device)
                     this.store.openConfigDialog(device);
                 break;
@@ -31567,15 +32450,17 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
                 this.store.openWateringDialog({
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
                     growspaceId: this._selectedDeviceController.value || undefined,
-                    mode: selectedPlants.size > 0 ? 'plant' : 'growspace'
+                    mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
                 });
                 break;
             }
             case 'ipm': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openIPMDialog({
-                    growspaceId: this._selectedDeviceController.value || this.store.data.$devices.get()[0]?.deviceId || '', // Fallback
-                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined
+                    growspaceId: this._selectedDeviceController.value ||
+                        this.store.data.$devices.get()[0]?.deviceId ||
+                        '', // Fallback
+                    plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
                 });
                 break;
             }
@@ -31625,232 +32510,300 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
     }
     render() {
         return x `
-            <div class="gs-device-chips-container">
-                <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
-                    <div class="chips-wrapper">
-                        ${this.deviceChips.map(chip => x `
-                            <growspace-chip
-                                .icon=${chip.icon}
-                                .label=${chip.label}
-                                .value=${chip.value}
-                                .multiValues=${chip.multiValues}
-                                .status=${chip.status}
-                                .active=${chip.active}
-                                .linked=${chip.linked}
-                                .tooltip=${chip.tooltip}
-                                draggable="${this._chipDraggable}"
-                                @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                                @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                                @dragover=${this._handleDragOver}
-                                @click=${() => this._toggleEnvGraph(chip.key)}
-                                @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
-                            ></growspace-chip>
-                        `)}
-                    </div>
-                </scroll-container>
-            </div>
+      <div class="gs-device-chips-container">
+        <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
+          <div class="chips-wrapper">
+            ${this.deviceChips.map((chip) => x `
+                <growspace-chip
+                  .icon=${chip.icon}
+                  .label=${chip.label}
+                  .value=${chip.value}
+                  .multiValues=${chip.multiValues}
+                  .status=${chip.status}
+                  .active=${chip.active}
+                  .linked=${chip.linked}
+                  .tooltip=${chip.tooltip}
+                  draggable="${this._chipDraggable}"
+                  @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                  @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                  @dragover=${this._handleDragOver}
+                  @click=${() => this._toggleEnvGraph(chip.key)}
+                  @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+                ></growspace-chip>
+              `)}
+          </div>
+        </scroll-container>
+      </div>
 
-            ${this.isMobile ? x `
-                <div 
-                    class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
-                    @click=${() => this.dispatchEvent(new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true }))} 
-                    title="Toggle Link Mode"
-                >
-                    <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-                </div>
-            ` : ''}
-
-            <div class="menu-container">
-                <button 
-                  class="icon-button" 
-                  id="menu-trigger"
-                  popovertarget="header-menu"
-                  title="Open Menu"
-                >
-                    <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
-                </button>
-                ${this._renderMenu()}
+      ${this.isMobile
+            ? x `
+            <div
+              class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
+              @click=${() => this.dispatchEvent(new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true }))}
+              title="Toggle Link Mode"
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
             </div>
-        `;
+          `
+            : ''}
+
+      <div class="menu-container">
+        <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
+          <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
+        </button>
+        ${this._renderMenu()}
+      </div>
+    `;
     }
     _renderMenu() {
         return x `
-          <div id="header-menu" popover="auto" class="menu-dropdown">
-            <div class="menu-header">Configuration</div>
-            <div class="menu-item" @click=${() => this._triggerAction('config')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                <span class="menu-item-label">Settings</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-                 <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-                 <span class="menu-item-label">Edit Mode</span>
-                 <div class=${e({ 'menu-toggle-switch': true, active: this._isEditModeController?.value || false })}></div>
-            </div>
-    
-            <div class="menu-divider"></div>
-    
-            <div class="menu-header">Plant Care</div>
-            <div class="menu-item" @click=${() => this._triggerAction('water')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
-                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Water Selected' : 'Water Growspace'}</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-                <span class="menu-item-label">Irrigation</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('training')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-                <span class="menu-item-label">${(this._selectedPlantsController?.value?.size || 0) > 0 ? 'Train Selected' : 'Log Training'}</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-                <span class="menu-item-label">Nutrients</span>
-            </div>
-    
-            <div class="menu-divider"></div>
-    
-            <div class="menu-header">Tools</div>
-            <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-                <span class="menu-item-label">Add Plant</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('strains')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-                <span class="menu-item-label">Strains</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
-                <span class="menu-item-label">Logbook</span>
-            </div>
-            <div class="menu-item" @click=${() => this._triggerAction('ai')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
-                <span class="menu-item-label">Ask AI</span>
-            </div>
-          </div>
-        `;
+      <div id="header-menu" popover="auto" class="menu-dropdown">
+        <div class="menu-header">Configuration</div>
+        <div class="menu-item" @click=${() => this._triggerAction('config')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+          <span class="menu-item-label">Settings</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+          <span class="menu-item-label">Edit Mode</span>
+          <div
+            class=${e({
+            'menu-toggle-switch': true,
+            active: this._isEditModeController?.value || false,
+        })}
+          ></div>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-header">Plant Care</div>
+        <div class="menu-item" @click=${() => this._triggerAction('water')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
+          <span class="menu-item-label"
+            >${(this._selectedPlantsController?.value?.size || 0) > 0
+            ? 'Water Selected'
+            : 'Water Growspace'}</span
+          >
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+          <span class="menu-item-label">Irrigation</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
+          <span class="menu-item-label"
+            >${(this._selectedPlantsController?.value?.size || 0) > 0
+            ? 'Apply IPM to Selected'
+            : 'Log / Manage IPM'}</span
+          >
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('training')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+          <span class="menu-item-label"
+            >${(this._selectedPlantsController?.value?.size || 0) > 0
+            ? 'Train Selected'
+            : 'Log Training'}</span
+          >
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+          <span class="menu-item-label">Nutrients</span>
+        </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-header">Tools</div>
+        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+          <span class="menu-item-label">Add Plant</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('strains')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+          <span class="menu-item-label">Strains</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
+          <span class="menu-item-label">Logbook</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ai')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
+          <span class="menu-item-label">Ask AI</span>
+        </div>
+      </div>
+    `;
     }
 };
 GrowspaceHeaderActions.styles = i$6 `
-        :host {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            min-width: 0;
-            gap: 12px;
-        }
+    :host {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 0;
+      gap: 12px;
+    }
 
-        .gs-device-chips-container {
-             display: flex;
-             align-items: center;
-             overflow: hidden;
-             min-width: 0;
-             max-width: 100%;
-             flex: 1;
-             height: 48px; /* Fixed height for scroll container */
-        }
-        
-        /* Styles copied/adapted from GrowspaceHeader */
-        .icon-button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary-text-color, #fff);
-            cursor: pointer;
-            transition: all 0.2s;
-            anchor-name: --menu-trigger;
-            flex-shrink: 0; 
-        }
-        .icon-button:hover { background: var(--secondary-background-color, rgba(255, 255, 255, 0.2)); }
-        .icon-button svg { width: 22px; height: 22px; fill: currentColor; }
-        
-        .icon-button.mobile-link.active {
-            background: var(--primary-color, #2196f3);
-            border-color: var(--primary-color, #2196f3);
-        }
+    .gs-device-chips-container {
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
+      flex: 1;
+      height: 48px; /* Fixed height for scroll container */
+    }
 
-        .menu-dropdown {
-            position: fixed;
-            inset: auto;
-            position-anchor: --menu-trigger;
-            top: anchor(bottom);
-            right: anchor(right);
-            position-try-fallbacks: flip-block;
-            margin-top: 8px;
-            background: var(--card-background-color, #2a2a2a);
-            border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-            border-radius: 12px;
-            font-size: 0.9rem;
-            min-width: 180px;
-            padding: 0;
-            overflow: hidden;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
+    /* Styles copied/adapted from GrowspaceHeader */
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-text-color, #fff);
+      cursor: pointer;
+      transition: all 0.2s;
+      anchor-name: --menu-trigger;
+      flex-shrink: 0;
+    }
+    .icon-button:hover {
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+    }
+    .icon-button svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
 
-        .menu-dropdown:popover-open {
-            display: block;
-            animation: slide-in 0.2s ease-out;
-        }
+    .icon-button.mobile-link.active {
+      background: var(--primary-color, #2196f3);
+      border-color: var(--primary-color, #2196f3);
+    }
 
-        @keyframes slide-in {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .menu-dropdown {
+      position: fixed;
+      inset: auto;
+      position-anchor: --menu-trigger;
+      top: anchor(bottom);
+      right: anchor(right);
+      position-try-fallbacks: flip-block;
+      margin-top: 8px;
+      background: var(--card-background-color, #2a2a2a);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 12px;
+      font-size: 0.9rem;
+      min-width: 180px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
 
-        .menu-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--primary-text-color, #ddd); }
-        .menu-item:hover { background: var(--secondary-background-color, rgba(255,255,255,0.1)); color: var(--primary-text-color, #fff); }
-        .menu-item svg { width: 20px; height: 20px; fill: currentColor; }
-        .menu-item-label { flex: 1; }
-        .menu-header { padding: 8px 16px 4px; font-size: 0.75rem; font-weight: 700; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 1px; }
-        .menu-divider { height: 1px; background: var(--divider-color, rgba(255,255,255,0.1)); margin: 4px 0; }
-        
-         .menu-toggle-switch {
-              width: 40px;
-              height: 20px;
-              background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
-              border-radius: 10px;
-              position: relative;
-              transition: background 0.2s;
-              flex-shrink: 0;
-         }
-        .menu-toggle-switch::after {
-              content: '';
-              position: absolute;
-              width: 16px;
-              height: 16px;
-              background: white;
-              border-radius: 50%;
-              top: 2px;
-              left: 2px;
-              transition: transform 0.2s;
-        }
-        .menu-toggle-switch.active { background: var(--primary-color, #03a9f4); }
-        .menu-toggle-switch.active::after { transform: translateX(20px); }
+    .menu-dropdown:popover-open {
+      display: block;
+      animation: slide-in 0.2s ease-out;
+    }
 
-        @media (max-width: 600px) {
-             .menu-dropdown:popover-open {
-                inset: auto 0 0 0;
-                width: 100%;
-                position-anchor: none;
-                border-radius: 20px 20px 0 0;
-                margin: 0;
-                animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
-             }
-             @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        }
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        /* Chips wrapper in scroll container */
-        .chips-wrapper { display: flex; gap: 8px; padding: 0 4px; }
-    `;
+    .menu-item {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      color: var(--primary-text-color, #ddd);
+    }
+    .menu-item:hover {
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      color: var(--primary-text-color, #fff);
+    }
+    .menu-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+    .menu-item-label {
+      flex: 1;
+    }
+    .menu-header {
+      padding: 8px 16px 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .menu-divider {
+      height: 1px;
+      background: var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin: 4px 0;
+    }
+
+    .menu-toggle-switch {
+      width: 40px;
+      height: 20px;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+      border-radius: 10px;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .menu-toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s;
+    }
+    .menu-toggle-switch.active {
+      background: var(--primary-color, #03a9f4);
+    }
+    .menu-toggle-switch.active::after {
+      transform: translateX(20px);
+    }
+
+    @media (max-width: 600px) {
+      .menu-dropdown:popover-open {
+        inset: auto 0 0 0;
+        width: 100%;
+        position-anchor: none;
+        border-radius: 20px 20px 0 0;
+        margin: 0;
+        animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+      }
+      @keyframes slide-up {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+    }
+
+    /* Chips wrapper in scroll container */
+    .chips-wrapper {
+      display: flex;
+      gap: 8px;
+      padding: 0 4px;
+    }
+  `;
 __decorate([
     c$2({ context: storeContext, subscribe: true })
 ], GrowspaceHeaderActions.prototype, "store", void 0);
@@ -31905,8 +32858,8 @@ let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
     }
     render() {
         return x `
-            ${c(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
-        `;
+      ${c(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
+    `;
     }
     _renderHeroCard(chip) {
         const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
@@ -31946,180 +32899,225 @@ let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
         }
         const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
         return x `
-            <div 
-                class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active ? 'active' : ''} ${chip.linked ? 'linked' : ''}"
-                draggable="${!this.isMobile || this.mobileLink}"
-                @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                @dragover=${(e) => this._handleDragOver(e)}
-                @click=${() => this._toggleEnvGraph(chip.key)}
-                title="${chip.tooltip || ''}"
-            >
-
-                ${useVpdSegments ? x `
-                  <svg class="hero-sparkline" viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" preserveAspectRatio="none" style="overflow: visible;">
-                    <rect x="0" y="0" width="${sparklineWidth}" height="${sparklineHeight}" fill="transparent" />
-                    ${vpdSegments.map(seg => b `
+      <div
+        class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active
+            ? 'active'
+            : ''} ${chip.linked ? 'linked' : ''}"
+        draggable="${!this.isMobile || this.mobileLink}"
+        @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+        @drop=${(e) => this._handleChipDrop(e, chip.key)}
+        @dragover=${(e) => this._handleDragOver(e)}
+        @click=${() => this._toggleEnvGraph(chip.key)}
+        title="${chip.tooltip || ''}"
+      >
+        ${useVpdSegments
+            ? x `
+              <svg
+                class="hero-sparkline"
+                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                preserveAspectRatio="none"
+                style="overflow: visible;"
+              >
+                <rect
+                  x="0"
+                  y="0"
+                  width="${sparklineWidth}"
+                  height="${sparklineHeight}"
+                  fill="transparent"
+                />
+                ${vpdSegments.map((seg) => b `
                       <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
                     `)}
-                  </svg>
-                ` : sparklinePath ? x `
-                  <svg class="hero-sparkline" viewBox="0 0 ${sparklineWidth} ${sparklineHeight}" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="sparkline-grad-${chip.key}" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
-                        <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path d="${sparklinePath} V ${sparklineHeight} H 0 Z" fill="url(#sparkline-grad-${chip.key})" />
-                    <path d="${sparklinePath}" fill="none" stroke="${sparklineColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                ` : ''}
-    
-                <div class="hero-value-group">
-                    ${chip.multiValues && chip.multiValues.length > 0
+              </svg>
+            `
+            : sparklinePath
+                ? x `
+                <svg
+                  class="hero-sparkline"
+                  viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient
+                      id="sparkline-grad-${chip.key}"
+                      x1="0%"
+                      y1="0%"
+                      x2="0%"
+                      y2="100%"
+                    >
+                      <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
+                      <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="${sparklinePath} V ${sparklineHeight} H 0 Z"
+                    fill="url(#sparkline-grad-${chip.key})"
+                  />
+                  <path
+                    d="${sparklinePath}"
+                    fill="none"
+                    stroke="${sparklineColor}"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              `
+                : ''}
+
+        <div class="hero-value-group">
+          ${chip.multiValues && chip.multiValues.length > 0
             ? x `
-                        <div class="hero-multi-values">
-                            ${chip.multiValues.map((v, i) => x `
-                                ${i > 0 ? x `<div class="hero-multi-divider"></div>` : ''}
-                                <span>${v}</span>
-                            `)}
-                        </div>
-                        `
-            : x `
-                        <span class="hero-value">${val}</span>
-                        <span class="hero-unit">${unit}</span>
-                    `}
+                <div class="hero-multi-values">
+                  ${chip.multiValues.map((v, i) => x `
+                      ${i > 0 ? x `<div class="hero-multi-divider"></div>` : ''}
+                      <span>${v}</span>
+                    `)}
                 </div>
-            </div>
-        `;
+              `
+            : x `
+                <span class="hero-value">${val}</span>
+                <span class="hero-unit">${unit}</span>
+              `}
+        </div>
+      </div>
+    `;
     }
 };
 GrowspaceHeaderHero.styles = [
     sharedStyles,
     i$6 `
+      :host {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        width: 100%;
+        min-height: 50px;
+      }
+
+      .hero-card {
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        backdrop-filter: var(--glass-blur);
+        box-shadow:
+          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+
+        border-radius: 24px;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        cursor: grab;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        overflow: hidden;
+        min-height: 110px;
+      }
+
+      .hero-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+      }
+
+      .hero-card:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
+        box-shadow:
+          0 8px 32px -4px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        transform: translateY(-2px);
+      }
+
+      .hero-card.linked {
+        border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+      }
+
+      .hero-value-group {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-value {
+        font-size: 2rem;
+        font-weight: 400;
+        color: var(--primary-text-color, #fff);
+        line-height: 1;
+      }
+
+      .hero-unit {
+        font-size: 1rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-weight: 500;
+      }
+
+      .hero-card.active {
+        background: color-mix(
+          in srgb,
+          var(--primary-color, #2196f3) 15%,
+          var(--glass-bg, rgba(255, 255, 255, 0.05))
+        );
+        border-color: var(--primary-color, #2196f3);
+        box-shadow:
+          0 8px 32px -4px rgba(0, 0, 0, 0.3),
+          0 0 0 1px var(--primary-color, #2196f3) inset;
+      }
+
+      .hero-card.active .hero-value,
+      .hero-card.active .hero-label,
+      .hero-card.active .hero-unit,
+      .hero-card.active .hero-icon {
+        color: var(--primary-text-color, #fff) !important;
+        fill: var(--primary-text-color, #fff) !important;
+      }
+
+      .hero-sparkline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 50%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.7;
+      }
+
+      .hero-sparkline path {
+        transition:
+          d 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke 0.3s ease,
+          fill 0.3s ease;
+      }
+
+      @media (max-width: 600px) {
         :host {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 16px;
-            width: 100%;
-            min-height: 50px;
+          gap: 12px;
         }
-
-        .hero-card {
-            background: var(--glass-bg, rgba(255, 255, 255, 0.05));
-            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-            backdrop-filter: var(--glass-blur);
-            box-shadow:
-                0 4px 24px -1px rgba(0, 0, 0, 0.2),
-                0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-            
-            border-radius: 24px;
-            padding: 20px 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            position: relative;
-            cursor: grab;
-            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-            overflow: hidden;
-            min-height: 110px;
-        }
-
-        .hero-card:active {
-            cursor: grabbing;
-            transform: scale(0.98);
-        }
-        
-        .hero-card:hover {
-            background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-            border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
-            box-shadow: 
-                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
-                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-            transform: translateY(-2px);
-        }
-
-        .hero-card.linked {
-            border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-            background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-        }
-
-        .hero-value-group {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            position: relative;
-            z-index: 1;
-        }
-
         .hero-value {
-            font-size: 2rem;
-            font-weight: 400;
-            color: var(--primary-text-color, #fff);
-            line-height: 1;
+          font-size: 1.75rem;
         }
+      }
 
-        .hero-unit {
-            font-size: 1rem;
-            color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-            font-weight: 500;
-        }
-        
-        .hero-card.active {
-            background: color-mix(in srgb, var(--primary-color, #2196f3) 15%, var(--glass-bg, rgba(255, 255, 255, 0.05)));
-            border-color: var(--primary-color, #2196f3);
-            box-shadow: 
-                0 8px 32px -4px rgba(0, 0, 0, 0.3),
-                0 0 0 1px var(--primary-color, #2196f3) inset;
-        }
-        
-        .hero-card.active .hero-value,
-        .hero-card.active .hero-label, 
-        .hero-card.active .hero-unit,
-        .hero-card.active .hero-icon {
-            color: var(--primary-text-color, #fff) !important;
-            fill: var(--primary-text-color, #fff) !important;
-        }
+      .hero-multi-values {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.5rem;
+        color: var(--primary-text-color);
+      }
 
-        .hero-sparkline {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 50%;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.7;
-        }
-
-        .hero-sparkline path {
-            transition: d 0.5s cubic-bezier(0.4, 0.0, 0.2, 1), stroke 0.3s ease, fill 0.3s ease;
-        }
-        
-        @media (max-width: 600px) {
-            :host {
-                gap: 12px;
-            }
-            .hero-value { font-size: 1.75rem; }
-        }
-
-        .hero-multi-values {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 1.5rem;
-            color: var(--primary-text-color);
-        }
-
-        .hero-multi-divider {
-            width: 1px;
-            height: 24px;
-            background: var(--divider-color, rgba(255,255,255,0.1));
-        }
-    `
+      .hero-multi-divider {
+        width: 1px;
+        height: 24px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+    `,
 ];
 __decorate([
     c$2({ context: storeContext, subscribe: true }),
@@ -32149,58 +33147,62 @@ let GrowspaceHeaderStages = class GrowspaceHeaderStages extends i$3 {
         if (!this.dominant)
             return x ``;
         return x `
-            <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
-                <div class="stages-wrapper">
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${this.dominant.icon}"></path></svg>
-                        ${this.dominant.daysLabel}
-                    </div>
-                    <div class="gs-stage-pill">
-                        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="${this.dominant.icon}"></path></svg>
-                        ${this.dominant.weeksLabel}
-                    </div>
-                </div>
-            </scroll-container>
-        `;
+      <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
+        <div class="stages-wrapper">
+          <div class="gs-stage-pill">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
+              <path d="${this.dominant.icon}"></path>
+            </svg>
+            ${this.dominant.daysLabel}
+          </div>
+          <div class="gs-stage-pill">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
+              <path d="${this.dominant.icon}"></path>
+            </svg>
+            ${this.dominant.weeksLabel}
+          </div>
+        </div>
+      </scroll-container>
+    `;
     }
 };
 GrowspaceHeaderStages.styles = i$6 `
-        :host {
-            display: block;
-            min-width: 0;
-            width: 100%;
-            height: 100%;
-        }
+    :host {
+      display: block;
+      min-width: 0;
+      width: 100%;
+      height: 100%;
+    }
 
-        .gs-stage-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-            border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-            width: fit-content;
-            backdrop-filter: blur(8px);
-            white-space: nowrap;
-            margin-right: 8px; /* Spacing between pills */
-        }
+    .gs-stage-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+      width: fit-content;
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+      margin-right: 8px; /* Spacing between pills */
+    }
 
-        /* Ensure pills don't shrink */
-        .gs-stage-pill {
-            flex-shrink: 0;
-        }
+    /* Ensure pills don't shrink */
+    .gs-stage-pill {
+      flex-shrink: 0;
+    }
 
-        .stages-wrapper {
-             /* Needed for flex layout inside scroll container */
-             display: flex;
-             align-items: center;
-             height: 100%;
-        }
-    `;
+    .stages-wrapper {
+      /* Needed for flex layout inside scroll container */
+      display: flex;
+      align-items: center;
+      height: 100%;
+    }
+  `;
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeaderStages.prototype, "dominant", void 0);
@@ -32240,60 +33242,59 @@ let GrowspaceHeaderSecondary = class GrowspaceHeaderSecondary extends i$3 {
     }
     render() {
         return x `
-            <scroll-container .scrollAmount=${150}>
-                <div class="secondary-strip">
-                    ${this.chips.map(chip => x `
-                        <growspace-chip
-                            .icon=${chip.icon}
-                            .label=${chip.label}
-                            .value=${chip.value}
-                            .status=${chip.status}
-                            .active=${chip.active}
-                            .linked=${chip.linked}
-                            .tooltip=${chip.tooltip}
-                            draggable="${this._chipDraggable}"
-                            @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                            @dragover=${(e) => e.preventDefault()}
-                            @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                            @click=${() => this._toggleEnvGraph(chip.key)}
-                            @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
-                        ></growspace-chip>
-                    `)}
-
-                    ${this.inventory?.stocks
-            ? Object.values(this.inventory.stocks).map(stock => x `
-                            <nutrient-stock-chip
-                                .stock=${stock}
-                                .compact=${this.compact}
-                                @click=${() => this._openNutrientsDialog()}
-                                style="cursor: pointer;"
-                            ></nutrient-stock-chip>
-                        `)
+      <scroll-container .scrollAmount=${150}>
+        <div class="secondary-strip">
+          ${this.chips.map((chip) => x `
+              <growspace-chip
+                .icon=${chip.icon}
+                .label=${chip.label}
+                .value=${chip.value}
+                .status=${chip.status}
+                .active=${chip.active}
+                .linked=${chip.linked}
+                .tooltip=${chip.tooltip}
+                draggable="${this._chipDraggable}"
+                @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                @dragover=${(e) => e.preventDefault()}
+                @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                @click=${() => this._toggleEnvGraph(chip.key)}
+                @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+              ></growspace-chip>
+            `)}
+          ${this.inventory?.stocks
+            ? Object.values(this.inventory.stocks).map((stock) => x `
+                  <nutrient-stock-chip
+                    .stock=${stock}
+                    .compact=${this.compact}
+                    @click=${() => this._openNutrientsDialog()}
+                    style="cursor: pointer;"
+                  ></nutrient-stock-chip>
+                `)
             : ''}
-                </div>
-            </scroll-container>
-        `;
+        </div>
+      </scroll-container>
+    `;
     }
 };
 GrowspaceHeaderSecondary.styles = i$6 `
-        :host {
-            display: block;
-            min-width: 0;
-            width: 100%;
-            height: 60px; /* consistent height */
-        }
+    :host {
+      display: block;
+      min-width: 0;
+      width: 100%;
+      height: 60px; /* consistent height */
+    }
 
-        .secondary-strip {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 4px;
-        }
+    .secondary-strip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 4px;
+    }
 
-        .secondary-strip > growspace-chip:first-child {
-            margin-left: auto;
-        }
-    `;
+    .secondary-strip > growspace-chip:first-child {
+      margin-left: auto;
+    }
+  `;
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeaderSecondary.prototype, "chips", void 0);
@@ -32413,7 +33414,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const args = [
             this.device?.deviceId,
             this.activeEnvGraphs,
-            this._linkedGraphGroupsController?.value
+            this._linkedGraphGroupsController?.value,
         ];
         const changed = !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
         if (changed) {
@@ -32473,27 +33474,24 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         }, { heroChips: [], secondaryChips: [] });
         return x `
       <div class="gs-stats-container">
-        
         <!-- TOP HEADER GRID -->
         <div class="gs-header-top">
-          
           <!-- Row 1 Left: Title/Select -->
           <div class="header-title-area">
-             ${!this.config?.default_growspace
-            ? x `
-                    <div class="select-wrapper">
-                        <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
-                        <select 
-                            class="growspace-select-header" 
-                            .value=${deviceId}
-                            @change=${this._handleDeviceChange}
-                        >
-                            ${devices.map(d => x `<option value="${d.deviceId}">${d.name}</option>`)}
-                        </select>
-                    </div>`
+            ${!this.config?.default_growspace
+            ? x ` <div class="select-wrapper">
+                  <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                  <select
+                    class="growspace-select-header"
+                    .value=${deviceId}
+                    @change=${this._handleDeviceChange}
+                  >
+                    ${devices.map((d) => x `<option value="${d.deviceId}">${d.name}</option>`)}
+                  </select>
+                </div>`
             : x `<h1 class="gs-title">${this.device.name}</h1>`}
           </div>
-          
+
           <!-- Row 1 Right: Actions & Device Chips -->
           <growspace-header-actions
             class="header-actions"
@@ -32508,37 +33506,35 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
 
           <!-- Row 2 Left: Stages -->
           <div class="header-stage-area-wrapper">
-            <growspace-header-stages
-                .dominant=${this._dominant}
-            ></growspace-header-stages>
+            <growspace-header-stages .dominant=${this._dominant}></growspace-header-stages>
           </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">
-             <growspace-header-secondary
-                .chips=${secondaryChips}
-                .inventory=${this._nutrientInventoryController?.value || null}
-                .compact=${this.compact}
-                .isMobile=${this._resizeController.isMobile}
-                .mobileLink=${this._mobileLink}
-                @open-nutrients=${() => this.store.openNutrientsDialog()}
-                @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
-                @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
-                @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
-                @unlink-graphs=${(e) => this._unlinkGraphs(e.detail.groupIndex)}
-             ></growspace-header-secondary>
+            <growspace-header-secondary
+              .chips=${secondaryChips}
+              .inventory=${this._nutrientInventoryController?.value || null}
+              .compact=${this.compact}
+              .isMobile=${this._resizeController.isMobile}
+              .mobileLink=${this._mobileLink}
+              @open-nutrients=${() => this.store.openNutrientsDialog()}
+              @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
+              @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+              @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+              @unlink-graphs=${(e) => this._unlinkGraphs(e.detail.groupIndex)}
+            ></growspace-header-secondary>
           </div>
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
         <growspace-header-hero
-            .chips=${heroChips}
-            .device=${this.device}
-            .isMobile=${this._resizeController.isMobile}
-            .mobileLink=${this._mobileLink}
-            @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
-            @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
-            @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+          .chips=${heroChips}
+          .device=${this.device}
+          .isMobile=${this._resizeController.isMobile}
+          .mobileLink=${this._mobileLink}
+          @toggle-graph=${(e) => this._toggleEnvGraph(e.detail.metric)}
+          @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+          @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero>
       </div>
     `;
@@ -32616,92 +33612,101 @@ let GrowspaceToast = class GrowspaceToast extends i$3 {
         const notification = this._notificationController.value;
         const isVisible = !!notification;
         return x `
-            <div class=${e({
+      <div
+        class=${e({
             'toast-notification': true,
-            'visible': isVisible,
-            [notification?.type || 'info']: true
-        })}>
-                <span class="toast-message">${notification?.message || ''}</span>
-                ${notification?.action ? x `
-                    <button class="toast-action" @click=${() => {
-            notification.action?.callback();
-            this.store.ui.clearToast();
-        }}>
-                        ${notification.action.label}
-                    </button>
-                ` : ''}
-            </div>
-        `;
+            visible: isVisible,
+            [notification?.type || 'info']: true,
+        })}
+      >
+        <span class="toast-message">${notification?.message || ''}</span>
+        ${notification?.action
+            ? x `
+              <button
+                class="toast-action"
+                @click=${() => {
+                notification.action?.callback();
+                this.store.ui.clearToast();
+            }}
+              >
+                ${notification.action.label}
+              </button>
+            `
+            : ''}
+      </div>
+    `;
     }
 };
 GrowspaceToast.styles = i$6 `
-        :host {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            pointer-events: none;
-        }
+    :host {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      pointer-events: none;
+    }
 
-        .toast-notification {
-            background: var(--ha-card-background, var(--card-background-color, white));
-            color: var(--primary-text-color);
-            padding: 8px 16px 8px 24px;
-            border-radius: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: auto;
-            border: 1px solid var(--divider-color, #eee);
-        }
+    .toast-notification {
+      background: var(--ha-card-background, var(--card-background-color, white));
+      color: var(--primary-text-color);
+      padding: 8px 16px 8px 24px;
+      border-radius: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition:
+        opacity 0.3s ease,
+        transform 0.3s ease;
+      pointer-events: auto;
+      border: 1px solid var(--divider-color, #eee);
+    }
 
-        .toast-notification.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    .toast-notification.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-        .toast-notification.success {
-            border-left: 4px solid var(--success-color, #4caf50);
-        }
+    .toast-notification.success {
+      border-left: 4px solid var(--success-color, #4caf50);
+    }
 
-        .toast-notification.error {
-            border-left: 4px solid var(--error-color, #f44336);
-        }
-        
-        .toast-notification.info {
-             border-left: 4px solid var(--primary-color, #03a9f4);
-        }
+    .toast-notification.error {
+      border-left: 4px solid var(--error-color, #f44336);
+    }
 
-        .toast-message {
-            flex: 1;
-        }
+    .toast-notification.info {
+      border-left: 4px solid var(--primary-color, #03a9f4);
+    }
 
-        .toast-action {
-            background: none;
-            border: none;
-            color: var(--primary-color);
-            font-weight: 600;
-            text-transform: uppercase;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 4px;
-            transition: background 0.2s ease;
-            font-size: 12px;
-            letter-spacing: 0.5px;
-        }
+    .toast-message {
+      flex: 1;
+    }
 
-        .toast-action:hover {
-            background: rgba(var(--rgb-primary-color), 0.1);
-        }
-    `;
+    .toast-action {
+      background: none;
+      border: none;
+      color: var(--primary-color);
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .toast-action:hover {
+      background: rgba(var(--rgb-primary-color), 0.1);
+    }
+  `;
 __decorate([
     c$2({ context: storeContext })
 ], GrowspaceToast.prototype, "store", void 0);
@@ -32872,8 +33877,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                                 plant_id: data.plant_id,
                                 source_growspace_id: data.source_growspace_id,
                                 target_row: targetRow,
-                                target_col: targetCol
-                            }
+                                target_col: targetCol,
+                            },
                         }));
                         return;
                     }
@@ -32933,7 +33938,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         const growspaceId = plant.attributes.growspace_id;
         if (!growspaceId)
             return OVERLAY_COLORS.TRANSPARENT;
-        const device = this.store.data.$devices.get().find(d => d.deviceId === growspaceId);
+        const device = this.store.data.$devices.get().find((d) => d.deviceId === growspaceId);
         if (!device)
             return OVERLAY_COLORS.TRANSPARENT;
         switch (mode) {
@@ -32978,7 +33983,9 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         const isLoading = this._isLoadingController?.value;
         return x `
       <div
-        class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView ? 'force-list-view' : ''}"
+        class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView
+            ? 'force-list-view'
+            : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
@@ -33026,17 +34033,15 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         @click=${() => this.store.openAddPlantDialog(row - 1, col - 1)}
         @drop=${(e) => this._handleDrop(e, row, col, null)}
       >
-          <div class="plant-header">
-            <svg
-              style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiPlus}"></path>
-            </svg>
-          </div>
-          <div style="font-weight: 500; opacity: 0.8;">
-            Add Plant
-          </div>
+        <div class="plant-header">
+          <svg
+            style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiPlus}"></path>
+          </svg>
+        </div>
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
       </div>
     `;
     }
@@ -33051,197 +34056,112 @@ GrowspaceGrid.styles = [
     variables,
     sharedStyles,
     i$6 `
-    :host {
-      display: block;
-      container-type: inline-size;
-      container-name: growspace-grid;
-      /* Overlay colors for theming */
-      --overlay-ok-color: rgba(76, 175, 80, 0.15);
-      --overlay-warning-color: rgba(255, 152, 0, 0.15);
-      --overlay-danger-color: rgba(244, 67, 54, 0.15);
-      --overlay-alert-color: rgba(244, 67, 54, 0.2);
-    }
-
-    .grid {
-      display: grid;
-      gap: var(--spacing-md);
-      /* Position relative needed for coordinate calculation */
-      position: relative;
-      contain: layout;
-    }
-
-    .grid.compact {
-      gap: var(--spacing-sm);
-    }
-
-    /* Empty Plant Card Styles */
-    .plant-card-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      aspect-ratio: 1;
-      border: var(--glass-border);
-      border-radius: var(--border-radius-lg, 16px);
-      color: var(--secondary-text-color);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: var(--glass-bg);
-    }
-
-    /* Skeleton Loading */
-    .skeleton-card {
-      height: 100%;
-      aspect-ratio: 1;
-      border-radius: var(--border-radius-lg, 16px);
-      background: var(--glass-bg);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        opacity: 0.6;
+      :host {
+        display: block;
+        container-type: inline-size;
+        container-name: growspace-grid;
+        /* Overlay colors for theming */
+        --overlay-ok-color: rgba(76, 175, 80, 0.15);
+        --overlay-warning-color: rgba(255, 152, 0, 0.15);
+        --overlay-danger-color: rgba(244, 67, 54, 0.15);
+        --overlay-alert-color: rgba(244, 67, 54, 0.2);
       }
-      50% {
-        opacity: 0.3;
-      }
-      100% {
-        opacity: 0.6;
-      }
-    }
 
-    .plant-card-empty:hover {
-      border-color: var(--primary-color);
-      color: var(--primary-color);
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-2px);
-    }
-    
-    .grid-item-wrapper {
-      position: relative;
-      height: 100%;
-      width: 100%;
-      contain: layout;
-    }
-
-    .grid-overlay {
-      position: absolute;
-      inset: 0;
-      border-radius: var(--border-radius-lg, 16px);
-      pointer-events: none;
-      z-index: 2;
-      transition: background-color 0.3s ease;
-    }
-
-    .plant-card-rich,
-    .plant-card-empty {
-      min-width: 0;
-    }
-
-    .plant-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 8px;
-    }
-
-    /* Force List View for Wide Grids on Desktop */
-    .grid.force-list-view {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-sm);
-      /* Remove grid template */
-      grid-template-columns: 1fr !important;
-      grid-template-rows: auto !important;
-    }
-
-    .grid.force-list-view .plant-card-rich {
-      min-height: auto;
-      aspect-ratio: unset;
-      flex-direction: row;
-      align-items: center;
-      padding: 12px;
-      gap: 12px;
-    }
-
-    .grid.force-list-view .plant-card-bg {
-      position: relative;
-      width: 64px;
-      height: 64px;
-      border-radius: 8px;
-      flex-shrink: 0;
-      background-color: rgba(0, 0, 0, 0.2);
-    }
-
-    .grid.force-list-view .plant-card-overlay {
-      display: none;
-    }
-
-    .grid.force-list-view .plant-card-content {
-      flex-direction: row;
-      padding: 0;
-      align-items: center;
-      width: 100%;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .grid.force-list-view .pc-info {
-      margin-top: 0;
-      align-items: flex-start;
-      text-align: left;
-      flex: 1;
-      gap: 2px;
-    }
-
-    .grid.force-list-view .pc-strain-name {
-      font-size: 1rem;
-    }
-
-    .grid.force-list-view .pc-pheno {
-      font-size: 0.85rem;
-    }
-
-    .grid.force-list-view .pc-stage {
-      margin-top: 2px;
-      font-size: 0.85rem;
-    }
-
-    .grid.force-list-view .pc-stats {
-      width: auto;
-      padding: 0;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .grid.force-list-view .pc-stat-item svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    .grid.force-list-view .plant-card-empty {
-      min-height: 80px;
-      aspect-ratio: unset;
-      flex-direction: row;
-      justify-content: flex-start;
-      padding: 0 24px;
-      gap: 16px;
-    }
-
-    @media (max-width: 600px) {
       .grid {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: var(--spacing-sm);
-        grid-template-columns: unset !important;
-        grid-template-rows: unset !important;
+        display: grid;
+        gap: var(--spacing-md);
+        /* Position relative needed for coordinate calculation */
+        position: relative;
+        contain: layout;
       }
 
-      /* Mobile List View for Rich Cards */
-      .plant-card-rich {
+      .grid.compact {
+        gap: var(--spacing-sm);
+      }
+
+      /* Empty Plant Card Styles */
+      .plant-card-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        aspect-ratio: 1;
+        border: var(--glass-border);
+        border-radius: var(--border-radius-lg, 16px);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--glass-bg);
+      }
+
+      /* Skeleton Loading */
+      .skeleton-card {
+        height: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--border-radius-lg, 16px);
+        background: var(--glass-bg);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 0.3;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .plant-card-empty:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .grid-item-wrapper {
+        position: relative;
+        height: 100%;
         width: 100%;
-        box-sizing: border-box;
+        contain: layout;
+      }
+
+      .grid-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--border-radius-lg, 16px);
+        pointer-events: none;
+        z-index: 2;
+        transition: background-color 0.3s ease;
+      }
+
+      .plant-card-rich,
+      .plant-card-empty {
+        min-width: 0;
+      }
+
+      .plant-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+
+      /* Force List View for Wide Grids on Desktop */
+      .grid.force-list-view {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        /* Remove grid template */
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+      }
+
+      .grid.force-list-view .plant-card-rich {
         min-height: auto;
         aspect-ratio: unset;
         flex-direction: row;
@@ -33250,83 +34170,62 @@ GrowspaceGrid.styles = [
         gap: 12px;
       }
 
-      .plant-card-bg {
-        /* Turn background into a thumbnail on mobile */
-        position: relative !important;
-        width: 64px !important;
-        height: 64px !important;
+      .grid.force-list-view .plant-card-bg {
+        position: relative;
+        width: 64px;
+        height: 64px;
         border-radius: 8px;
         flex-shrink: 0;
         background-color: rgba(0, 0, 0, 0.2);
-        object-fit: cover !important;
       }
 
-      .plant-card-overlay {
+      .grid.force-list-view .plant-card-overlay {
         display: none;
       }
 
-      .plant-card-content {
-        position: static;
-        z-index: auto;
-        display: flex;
-        flex: 1;
-        min-width: 0;
-        width: 100%;
+      .grid.force-list-view .plant-card-content {
         flex-direction: row;
         padding: 0;
         align-items: center;
+        width: 100%;
         justify-content: space-between;
-        gap: 12px;
+        gap: 8px;
       }
 
-      .pc-info {
-        display: flex;
-        flex-direction: column;
+      .grid.force-list-view .pc-info {
         margin-top: 0;
         align-items: flex-start;
         text-align: left;
         flex: 1;
         gap: 2px;
-        min-width: 0;
       }
 
-      .pc-strain-name {
-        font-size: 0.9rem;
-        color: var(--primary-text-color, #fff) !important;
-        font-weight: 700;
+      .grid.force-list-view .pc-strain-name {
+        font-size: 1rem;
       }
 
-      .pc-pheno {
-        font-size: 0.8rem;
-        color: rgba(255, 255, 255, 0.7) !important;
+      .grid.force-list-view .pc-pheno {
+        font-size: 0.85rem;
       }
 
-      .pc-stage {
+      .grid.force-list-view .pc-stage {
         margin-top: 2px;
-        font-size: 0.8rem;
-        color: var(--stage-color, #fff) !important;
-        font-weight: 600;
+        font-size: 0.85rem;
       }
 
-      .pc-stats {
+      .grid.force-list-view .pc-stats {
         width: auto;
         padding: 0;
         gap: 12px;
         flex-shrink: 0;
       }
 
-      .pc-stat-item svg {
+      .grid.force-list-view .pc-stat-item svg {
         width: 20px;
         height: 20px;
       }
 
-      /* Hide non-current stages on mobile */
-      .pc-stat-item:not(.current-stage) {
-        display: none;
-      }
-
-      /* Empty Slot in List View */
-      .plant-card-empty {
+      .grid.force-list-view .plant-card-empty {
         min-height: 80px;
         aspect-ratio: unset;
         flex-direction: row;
@@ -33334,56 +34233,167 @@ GrowspaceGrid.styles = [
         padding: 0 24px;
         gap: 16px;
       }
-    }
 
-    @container growspace-grid (max-width: 400px) {
-      .grid {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: var(--spacing-sm);
+      @media (max-width: 600px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+          grid-template-columns: unset !important;
+          grid-template-rows: unset !important;
+        }
+
+        /* Mobile List View for Rich Cards */
+        .plant-card-rich {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: auto;
+          aspect-ratio: unset;
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-bg {
+          /* Turn background into a thumbnail on mobile */
+          position: relative !important;
+          width: 64px !important;
+          height: 64px !important;
+          border-radius: 8px;
+          flex-shrink: 0;
+          background-color: rgba(0, 0, 0, 0.2);
+          object-fit: cover !important;
+        }
+
+        .plant-card-overlay {
+          display: none;
+        }
+
+        .plant-card-content {
+          position: static;
+          z-index: auto;
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          width: 100%;
+          flex-direction: row;
+          padding: 0;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .pc-info {
+          display: flex;
+          flex-direction: column;
+          margin-top: 0;
+          align-items: flex-start;
+          text-align: left;
+          flex: 1;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .pc-strain-name {
+          font-size: 0.9rem;
+          color: var(--primary-text-color, #fff) !important;
+          font-weight: 700;
+        }
+
+        .pc-pheno {
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        .pc-stage {
+          margin-top: 2px;
+          font-size: 0.8rem;
+          color: var(--stage-color, #fff) !important;
+          font-weight: 600;
+        }
+
+        .pc-stats {
+          width: auto;
+          padding: 0;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .pc-stat-item svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+          display: none;
+        }
+
+        /* Empty Slot in List View */
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+          justify-content: flex-start;
+          padding: 0 24px;
+          gap: 16px;
+        }
       }
 
-      .plant-card-rich {
-        flex-direction: row;
+      @container growspace-grid (max-width: 400px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+        }
+
+        .plant-card-rich {
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+        }
+      }
+
+      /* Ghost Plant Styling */
+      .ghost-plant {
+        position: absolute;
+        inset: 0;
+        border: 2px dashed var(--primary-color, #4caf50);
+        border-radius: var(--border-radius-lg, 16px);
+        background: rgba(76, 175, 80, 0.1);
+        display: flex;
         align-items: center;
-        padding: 12px;
-        gap: 12px;
+        justify-content: center;
+        opacity: 0.6;
+        pointer-events: none;
+        animation: ghost-pulse 2s ease-in-out infinite;
       }
 
-      .plant-card-empty {
-        min-height: 80px;
-        aspect-ratio: unset;
-        flex-direction: row;
+      @keyframes ghost-pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.7;
+        }
       }
-    }
 
-    /* Ghost Plant Styling */
-    .ghost-plant {
-      position: absolute;
-      inset: 0;
-      border: 2px dashed var(--primary-color, #4caf50);
-      border-radius: var(--border-radius-lg, 16px);
-      background: rgba(76, 175, 80, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0.6;
-      pointer-events: none;
-      animation: ghost-pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes ghost-pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.7; }
-    }
-
-    .ghost-plant-icon {
-      width: 48px;
-      height: 48px;
-      opacity: 0.7;
-      fill: var(--primary-color, #4caf50);
-    }
-  `
+      .ghost-plant-icon {
+        width: 48px;
+        height: 48px;
+        opacity: 0.7;
+        fill: var(--primary-color, #4caf50);
+      }
+    `,
 ];
 __decorate([
     c$2({ context: storeContext })
@@ -34320,7 +35330,6 @@ const growspaceCardStyles = i$6 `
     --mdc-dialog-max-width: 90vw;
   }
 
-
   /* MD3 Dialog Layout */
   .dialog-header {
     display: flex;
@@ -34380,7 +35389,6 @@ const growspaceCardStyles = i$6 `
     letter-spacing: 0.5px;
   }
 
-
   /* View Modes */
   .view-mode-container {
     position: relative;
@@ -34424,7 +35432,7 @@ const growspaceCardStyles = i$6 `
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px; /* Match collapse handle */
-    margin-top: 8px;     /* Match collapse handle spacing */
+    margin-top: 8px; /* Match collapse handle spacing */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
     /* Button Reset */
@@ -34478,23 +35486,18 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
     render() {
         return x `
       <div class="compact-controls">
-            <button
-            class="compact-exit-fab"
-            @click=${() => this._dispatchModeChange('standard')}
-            title="Exit Compact Mode"
-            >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiFullscreenExit}"></path>
-            </svg>
-            </button>
+        <button
+          class="compact-exit-fab"
+          @click=${() => this._dispatchModeChange('standard')}
+          title="Exit Compact Mode"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiFullscreenExit}"></path>
+          </svg>
+        </button>
       </div>
       <div class="view-mode-container compact">
-        <growspace-grid
-          .plants=${this.grid}
-          .rows=${this.rows}
-          .cols=${this.cols}
-        ></growspace-grid>
-
+        <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
       </div>
     `;
     }
@@ -34549,7 +35552,7 @@ GrowspaceViewCompact.styles = [
         height: 22px;
         fill: currentColor;
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
@@ -34615,10 +35618,6 @@ GrowspaceViewHeader = __decorate([
 
 // Global imports removed
 let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._itemsToRender = [];
-    }
     connectedCallback() {
         super.connectedCallback();
         if (this.store) {
@@ -34645,17 +35644,17 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             this.store.history.loadHistoryOnDemand();
         }
     }
-    willUpdate(changedProperties) {
+    updated(_changedProperties) {
         // Trigger lazy load if history is not loaded and not currently loading
-        if (this.store?.history && !this._historyLoadedController.value && !this._historyLoadingController.value) {
+        if (this.store?.history &&
+            !this._historyLoadedController.value &&
+            !this._historyLoadingController.value) {
             this.store.history.loadHistoryOnDemand();
         }
-        // Recompute items whenever update is requested (controller notifies)
-        this._computeItemsToRender();
     }
-    _computeItemsToRender() {
+    get _itemsToRender() {
         if (!this.store?.history || !this._activeEnvGraphsController)
-            return;
+            return [];
         const getSortIndex = (metric) => {
             const index = METRIC_SORT_ORDER.indexOf(metric);
             return index !== -1 ? index : 999;
@@ -34690,10 +35689,12 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             }
         });
         items.sort((a, b) => a.sortIndex - b.sortIndex);
-        this._itemsToRender = items;
+        return items;
     }
     render() {
-        if (!this.store?.history || !this._activeEnvGraphsController || this._activeEnvGraphsController.value.size === 0)
+        if (!this.store?.history ||
+            !this._activeEnvGraphsController ||
+            this._activeEnvGraphsController.value.size === 0)
             return x ``;
         if (!this.device)
             return x ``;
@@ -34702,8 +35703,13 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             return x `
         <div class="graphs-container">
           ${this.renderTimeRangeSelector(this.store.history.getRange())}
-          <div style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);">
-            <div class="loading-spinner" style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <div
+            style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);"
+          >
+            <div
+              class="loading-spinner"
+              style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"
+            ></div>
             <span style="margin-left: 12px;">Loading history data...</span>
           </div>
         </div>
@@ -34757,13 +35763,13 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
             <growspace-env-chart
               .hass=${this.hass}
               .device=${this.device}
-              .sensorHistory=${sensorHistory} 
-              .metricKey=${baseMetric}        
+              .sensorHistory=${sensorHistory}
+              .metricKey=${baseMetric}
               .metrics=${[baseMetric]}
               .metricConfig=${METRIC_CONFIG}
               .range=${range}
-              .chartTitle=${chartTitle}       
-              .customSensorId=${customSensorId} 
+              .chartTitle=${chartTitle}
+              .customSensorId=${customSensorId}
               @toggle-graph=${(e) => {
                     e.stopPropagation();
                     this.store.toggleEnvGraph(metricKey);
@@ -34772,7 +35778,9 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
           `;
             }
         });
-        return x ` <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div> `;
+        return x `
+      <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div>
+    `;
     }
     renderTimeRangeSelector(currentRange) {
         const ranges = ['1h', '6h', '24h', '7d'];
@@ -34827,7 +35835,9 @@ GrowspaceAnalytics.styles = [
         gap: 12px;
       }
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
     `,
 ];
@@ -34840,9 +35850,6 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceAnalytics.prototype, "device", void 0);
-__decorate([
-    r$2()
-], GrowspaceAnalytics.prototype, "_itemsToRender", void 0);
 GrowspaceAnalytics = __decorate([
     t$2('growspace-analytics')
 ], GrowspaceAnalytics);
@@ -34864,7 +35871,7 @@ let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
             source_growspace_id: plant.attributes.growspace_id,
             strain: plant.attributes.strain,
             phenotype: plant.attributes.phenotype,
-            stage: plant.attributes.stage
+            stage: plant.attributes.stage,
         }));
         // Set visual feedback
         const target = e.currentTarget;
@@ -34885,7 +35892,7 @@ let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
           <div class="source-grid">
             ${this.clonePlants.length === 0
             ? x `<div class="empty-state">No clones available</div>`
-            : this.clonePlants.map(p => this._renderDraggablePlant(p, 'clone'))}
+            : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
           </div>
         </div>
 
@@ -34897,13 +35904,13 @@ let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
           <div class="source-grid">
             ${this.seedlingPlants.length === 0
             ? x `<div class="empty-state">No seedlings available</div>`
-            : this.seedlingPlants.map(p => this._renderDraggablePlant(p, 'seedling'))}
+            : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
           </div>
         </div>
       </div>
     `;
     }
-    _renderDraggablePlant(plant, stage) {
+    _renderDraggablePlant(plant, _stage) {
         return x `
       <growspace-plant-card
         class="source-plant-card"
@@ -34998,7 +36005,7 @@ TransplantSourcePanel.styles = [
           grid-template-columns: 1fr;
         }
       }
-    `
+    `,
 ];
 __decorate([
     n$5({ type: Array })
@@ -35032,11 +36039,11 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
     _getPlantsByStage(stage) {
         const devices = this._devicesController?.value || [];
         return devices
-            .flatMap(d => (d.plants || []).map(p => ({
+            .flatMap((d) => (d.plants || []).map((p) => ({
             ...p,
-            _growspaceName: d.name
+            _growspaceName: d.name,
         })))
-            .filter(p => p.attributes.stage === stage);
+            .filter((p) => p.attributes.stage === stage);
     }
     async _handleTransplantDrop(e) {
         const detail = e.detail;
@@ -35050,11 +36057,11 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
                 growspace_id: targetGrowspaceId,
                 row: detail.target_row,
                 col: detail.target_col,
-                veg_start: today
+                veg_start: today,
             });
             this.store.ui.showToast('Plant transplanted successfully', 'success');
             // Refresh data after a small delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
             await this.store.refreshData();
         }
         catch (error) {
@@ -35088,7 +36095,6 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
             ></growspace-edit-mode-banner>
           `
             : ''}
-
       ${this._isTransplantModeController?.value
             ? x `
             <transplant-source-panel
@@ -35107,7 +36113,11 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
 
       ${this.config?.initial_view_mode === 'header'
             ? x `
-            <button class="collapse-handle" @click=${this._dispatchToggle} aria-label="Toggle view expansion">
+            <button
+              class="collapse-handle"
+              @click=${this._dispatchToggle}
+              aria-label="Toggle view expansion"
+            >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiChevronUp}"></path>
               </svg>
@@ -35199,10 +36209,10 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
             return x `
         <error-boundary heading="Detailed View Error">
           <growspace-view-compact
-              .grid=${this.grid}
-              .rows=${this.rows}
-              .cols=${this.device.plantsPerRow}
-              .isLoading=${this.isLoading}
+            .grid=${this.grid}
+            .rows=${this.rows}
+            .cols=${this.device.plantsPerRow}
+            .isLoading=${this.isLoading}
           ></growspace-view-compact>
         </error-boundary>
       `;
@@ -35211,8 +36221,8 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
             return x `
         <error-boundary heading="Header View Error">
           <growspace-view-header
-              .device=${this.device}
-              .growspaceOptions=${this.growspaceOptions}
+            .device=${this.device}
+            .growspaceOptions=${this.growspaceOptions}
           ></growspace-view-header>
         </error-boundary>
       `;
@@ -35231,7 +36241,11 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
           .selectedCount=${this.selectedCount}
           .config=${this.config}
           .isLoading=${this.isLoading}
-          @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', { detail: e.detail, bubbles: true, composed: true }))}
+          @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', {
+            detail: e.detail,
+            bubbles: true,
+            composed: true,
+        }))}
         ></growspace-view-standard>
       </error-boundary>
     `;
@@ -35642,7 +36656,7 @@ class GrowspaceDataStore {
                 return;
             let gridChanged = false;
             const newGrid = { ...newCache[gsId].grid };
-            Object.keys(newGrid).forEach(key => {
+            Object.keys(newGrid).forEach((key) => {
                 const plant = newGrid[key];
                 if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
                     newGrid[key] = null;
@@ -35659,14 +36673,13 @@ class GrowspaceDataStore {
         }
         else {
             // Optimization: Look up growspace ID from map instead of scanning everything
-            this.$plantToDeviceMap.get().get(plantId);
             const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
             if (probableGrowspaceId && newCache[probableGrowspaceId]) {
                 removeFn(probableGrowspaceId);
             }
             else {
                 // Fallback if map fails or inconsistent
-                Object.keys(newCache).forEach(gsId => removeFn(gsId));
+                Object.keys(newCache).forEach((gsId) => removeFn(gsId));
             }
         }
         if (changed) {
@@ -35677,7 +36690,7 @@ class GrowspaceDataStore {
         const currentCache = this.$wsDataCache.get();
         const newCache = { ...currentCache };
         let changed = false;
-        Object.keys(newCache).forEach(gsId => {
+        Object.keys(newCache).forEach((gsId) => {
             const grid = newCache[gsId].grid;
             if (!grid)
                 return;
@@ -35689,8 +36702,8 @@ class GrowspaceDataStore {
                         ...newCache[gsId],
                         grid: {
                             ...newCache[gsId].grid,
-                            [key]: updatedPlant
-                        }
+                            [key]: updatedPlant,
+                        },
                     };
                     changed = true;
                 }
@@ -35719,15 +36732,24 @@ class GrowspaceUIStore {
         this.$error = atom(null);
         this.$defaultApplied = atom(false);
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
+        this.$language = atom('en');
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
-        this.$cardViewState = computed([this.$viewMode, this.$isLoading, this.$isEditMode, this.$isCompactView, this.$activeDialog, this.$notification, this.$focusedPlantIndex], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+        this.$cardViewState = computed([
+            this.$viewMode,
+            this.$isLoading,
+            this.$isEditMode,
+            this.$isCompactView,
+            this.$activeDialog,
+            this.$notification,
+            this.$focusedPlantIndex,
+        ], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
             viewMode,
             isLoading,
             isEditMode,
             isCompact,
             activeDialog,
             notification,
-            focusedPlantIndex
+            focusedPlantIndex,
         }));
     }
     // Actions
@@ -35771,7 +36793,7 @@ class GrowspaceUIStore {
     }
     deselectPlants(plantIds) {
         const current = new Set(this.$selectedPlants.get());
-        plantIds.forEach(id => current.delete(id));
+        plantIds.forEach((id) => current.delete(id));
         this.$selectedPlants.set(current);
     }
     setFocusedPlantIndex(index) {
@@ -35797,6 +36819,9 @@ class GrowspaceUIStore {
     }
     exitTransplantMode() {
         this.$isTransplantMode.set(false);
+    }
+    setLanguage(lang) {
+        this.$language.set(lang);
     }
 }
 
@@ -35895,7 +36920,7 @@ class GrowspaceHistoryStore {
     }
     linkGraphs(metric1, metric2) {
         const groups = this.$linkedGraphGroups.get();
-        const existingGroupIndex = groups.findIndex(group => group.includes(metric1) || group.includes(metric2));
+        const existingGroupIndex = groups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
         const newGroups = [...groups];
         if (existingGroupIndex >= 0) {
             const group = new Set(newGroups[existingGroupIndex]);
@@ -35923,8 +36948,8 @@ class GrowspaceHistoryStore {
     unlinkGraphMetric(metric) {
         const groups = this.$linkedGraphGroups.get();
         const newGroups = groups
-            .map(group => group.filter(m => m !== metric))
-            .filter(group => group.length > 1);
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
         this.$linkedGraphGroups.set(newGroups);
     }
     clearAllLinks() {
@@ -35998,23 +37023,33 @@ class GrowspaceHistoryStore {
         if (!deviceId)
             return;
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.deviceId === deviceId);
+        const device = devices.find((d) => d.deviceId === deviceId);
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
         const metricsToFetch = [
-            'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
-            'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
-            'circulation_fan', 'irrigation', 'drain'
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
         ];
         const entityMap = {};
         const entitiesToFetch = new Set();
         // 1. Identify Overview Entity
         if (device.overviewEntityId) {
             entitiesToFetch.add(device.overviewEntityId);
-            // Map main overview entity to 'main' for timestamp tracking if needed, 
-            // but usually main data is split into metrics. 
-            // The controller logic mapped overview_entity_id to 'main' in some places, 
+            // Map main overview entity to 'main' for timestamp tracking if needed,
+            // but usually main data is split into metrics.
+            // The controller logic mapped overview_entity_id to 'main' in some places,
             // let's follow that pattern if consistent.
         }
         // 2. Identify Metric Entities
@@ -36027,7 +37062,7 @@ class GrowspaceHistoryStore {
         }
         // 3. Identify Composite Keys (Multi-Device Graphs)
         const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach(key => {
+        activeGraphs.forEach((key) => {
             if (key.includes(':')) {
                 const [metric, entityId] = key.split(':');
                 if (metric && entityId) {
@@ -36058,7 +37093,7 @@ class GrowspaceHistoryStore {
         if (!deviceId)
             return;
         const devices = this.dataStore.$devices.get();
-        const device = devices.find(d => d.deviceId === deviceId);
+        const device = devices.find((d) => d.deviceId === deviceId);
         if (!device)
             return;
         const currentTimestamps = this.$lastTimestamps.get();
@@ -36069,9 +37104,19 @@ class GrowspaceHistoryStore {
         }
         const now = new Date();
         const metricsToFetch = [
-            'optimal', 'temperature', 'humidity', 'vpd', 'co2', 'light',
-            'soil_moisture', 'exhaust', 'humidifier', 'dehumidifier',
-            'circulation_fan', 'irrigation', 'drain'
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
         ];
         const entityMap = {};
         const entitiesToFetch = new Set();
@@ -36087,7 +37132,7 @@ class GrowspaceHistoryStore {
         }
         // Composite Keys Delta
         const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach(key => {
+        activeGraphs.forEach((key) => {
             if (key.includes(':')) {
                 const [metric, entityId] = key.split(':');
                 const lastTimestamp = currentTimestamps[key];
@@ -36101,8 +37146,8 @@ class GrowspaceHistoryStore {
             return;
         try {
             const oldestTimestamp = Math.min(...Object.values(currentTimestamps)
-                .filter(t => t)
-                .map(t => new Date(t).getTime()));
+                .filter((t) => t)
+                .map((t) => new Date(t).getTime()));
             const start = new Date(oldestTimestamp);
             const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval
             true);
@@ -36128,7 +37173,7 @@ class GrowspaceHistoryStore {
         }
         const lastExisting = existing[existing.length - 1];
         const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
-        const newData = deltaData.filter(point => {
+        const newData = deltaData.filter((point) => {
             const pointTime = new Date(point.last_updated || point.last_changed).getTime();
             return pointTime > lastTimestamp;
         });
@@ -36175,7 +37220,7 @@ class GrowspaceHistoryStore {
                 version: 1,
                 timestamp: Date.now(),
                 history: this.$historyCache.get(),
-                timestamps: this.$lastTimestamps.get()
+                timestamps: this.$lastTimestamps.get(),
             };
             localStorage.setItem(key, JSON.stringify(data));
         }
@@ -36205,21 +37250,24 @@ class GrowspaceHistoryStore {
             return null;
         if (mapping.source === 'irrigation') {
             // Handle both camelCase and snake_case for irrigationConfig
-            const config = (device.irrigationConfig || device.irrigation_config);
+            const config = (device.irrigationConfig ||
+                device.irrigation_config);
             if (!config)
                 return null;
             // Try explicit mapping primary key first
             let entityId = config[mapping.primary];
             // If not found, try snake_case version of the key if it looks camelCase
             if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
                 entityId = config[snakeKey];
             }
             if (typeof entityId === 'string')
                 return entityId;
         }
         // Default: environment_attributes (handle camelCase and snake_case)
-        const envAttrs = (device.environmentAttributes || device.environment_attributes || {});
+        const envAttrs = (device.environmentAttributes ||
+            device.environment_attributes ||
+            {});
         let entityId = envAttrs[mapping.primary];
         // Try fallback if primary not found
         if (!entityId && mapping.fallback) {
@@ -36227,7 +37275,7 @@ class GrowspaceHistoryStore {
         }
         // Try snake_case mapping if not found
         if (!entityId && /[A-Z]/.test(mapping.primary)) {
-            const snakeKey = mapping.primary.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
             entityId = envAttrs[snakeKey];
         }
         // Special fallback for VPD calculated sensor
@@ -36236,8 +37284,8 @@ class GrowspaceHistoryStore {
                 .toString()
                 .toLowerCase()
                 .replace(/\s+/g, '_')
-                .replace(/[^\w\-]+/g, '')
-                .replace(/\-\-+/g, '_')
+                .replace(/[^\w-]+/g, '')
+                .replace(/--+/g, '_')
                 .replace(/^-+/, '')
                 .replace(/-+$/, '');
             const calcName = `${device.name} Calculated VPD`;
@@ -36266,11 +37314,16 @@ class GrowspaceHistoryStore {
     }
     _getIntervalForRange(range) {
         switch (range) {
-            case '7d': return 240;
-            case '24h': return 30;
-            case '6h': return 15;
-            case '1h': return 5;
-            default: return 15;
+            case '7d':
+                return 240;
+            case '24h':
+                return 30;
+            case '6h':
+                return 15;
+            case '1h':
+                return 5;
+            default:
+                return 15;
         }
     }
 }
@@ -36380,7 +37433,7 @@ async function fetchNutrientPresets(ctx, force = false) {
             ctx.data.setNutrientPresets(result);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
-                data: result
+                data: result,
             }));
         }
     }
@@ -36416,7 +37469,7 @@ async function fetchIPMPresets(ctx, force = false) {
             ctx.data.setIPMPresets(result);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
-                data: result
+                data: result,
             }));
         }
     }
@@ -36449,7 +37502,7 @@ async function fetchNutrientInventory(ctx, force = false) {
             ctx.data.setNutrientInventory(result);
             localStorage.setItem(CACHE_KEY, JSON.stringify({
                 timestamp: Date.now(),
-                data: result
+                data: result,
             }));
         }
     }
@@ -36524,7 +37577,7 @@ async function updatePlantFromDialog(ctx, dialogState) {
  * Internal helper for API deletion with optimistic updates
  */
 async function _deletePlantsApi(ctx, plantIds) {
-    plantIds.forEach(id => ctx.data.addOptimisticDeletedPlantId(id));
+    plantIds.forEach((id) => ctx.data.addOptimisticDeletedPlantId(id));
     try {
         await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
         return true;
@@ -36532,7 +37585,7 @@ async function _deletePlantsApi(ctx, plantIds) {
     catch (e) {
         console.error('Failed to delete plant:', e);
         ctx.showToast(`Failed to delete: ${e.message}`, 'error');
-        plantIds.forEach(id => ctx.data.removeOptimisticDeletedPlantId(id));
+        plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
         return false;
     }
 }
@@ -36543,9 +37596,9 @@ async function handleDeletePlant(ctx, plantId) {
     const ids = Array.isArray(plantId) ? plantId : [plantId];
     const plantsToRestore = [];
     const devices = ctx.data.$devices.get();
-    ids.forEach(id => {
+    ids.forEach((id) => {
         for (const device of devices) {
-            const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+            const plant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
             if (plant) {
                 plantsToRestore.push({
                     growspace_id: plant.attributes.growspace_id || device.deviceId,
@@ -36569,7 +37622,9 @@ async function handleDeletePlant(ctx, plantId) {
     if (success) {
         ctx.undoRedoManager.pushAction({
             type: ids.length > 1 ? 'batch-delete' : 'delete',
-            description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+            description: ids.length > 1
+                ? `Deleted ${ids.length} plants`
+                : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
             reverse: async () => {
                 for (const p of plantsToRestore) {
                     await ctx.dataService.addPlant(p);
@@ -36578,7 +37633,7 @@ async function handleDeletePlant(ctx, plantId) {
             },
             redo: async () => {
                 await handleDeletePlant(ctx, ids);
-            }
+            },
         });
         // UI Updates
         // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
@@ -36623,7 +37678,7 @@ async function movePlantToNextStage(ctx, plant) {
         await ctx.dataService.harvestPlant(plantId, targetGrowspace);
         ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
@@ -36654,7 +37709,7 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
     try {
         await _movePlantApi(ctx, plant, targetGrowspace);
         // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
         // Push Undo
@@ -36666,7 +37721,7 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
             },
             redo: async () => {
                 await movePlantToGrowspace(ctx, plant, targetGrowspace);
-            }
+            },
         });
         return true;
     }
@@ -36723,7 +37778,11 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
     const originalCol = sourcePlant.attributes.col;
     const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
     const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
-    console.log('handlePlantDrop:', { sourceId, targetId, growspaceId: sourcePlant.attributes.growspace_id });
+    console.log('handlePlantDrop:', {
+        sourceId,
+        targetId,
+        growspaceId: sourcePlant.attributes.growspace_id,
+    });
     if (sourceId === targetId)
         return false;
     const growspaceId = sourcePlant.attributes.growspace_id;
@@ -36764,7 +37823,7 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
         ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
         // 2. Update Devices Atom (for immediate UI Reactivity)
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
+        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             const device = { ...newDevices[deviceIdx] };
@@ -36778,7 +37837,15 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
     try {
         if (targetPlant && growspaceId) {
             // Use OptimisticManager
-            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', { sourceId, targetId: targetId, growspaceId, originalRow, originalCol, targetRow, targetCol }, () => performOptimisticGridUpdate(false), // Apply
+            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', {
+                sourceId,
+                targetId: targetId,
+                growspaceId,
+                originalRow,
+                originalCol,
+                targetRow,
+                targetCol,
+            }, () => performOptimisticGridUpdate(false), // Apply
             () => performOptimisticGridUpdate(true) // Revert
             );
             // Perform actual API call
@@ -36788,7 +37855,7 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
                 description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
                 redo: async () => {
                     await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                }
+                },
             });
             return true;
         }
@@ -36804,7 +37871,7 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
                 },
                 redo: async () => {
                     await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                }
+                },
             });
             await ctx.refreshData();
             return true;
@@ -36830,7 +37897,7 @@ async function confirmAddPlant(ctx, detail) {
             try {
                 await ctx.dataService.addStrain({
                     strain: detail.strain,
-                    phenotype: detail.phenotype
+                    phenotype: detail.phenotype,
                 });
                 await fetchStrainLibrary(ctx, true);
                 ctx.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
@@ -36876,7 +37943,7 @@ async function confirmAddPlants(ctx, detail) {
     }
     const devices = ctx.data.$devices.get();
     const beforeIds = new Set();
-    devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
+    devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
     try {
         if (detail.addToLibrary) {
             try {
@@ -36894,7 +37961,7 @@ async function confirmAddPlants(ctx, detail) {
                         : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
                     promises.push(ctx.dataService.addStrain({
                         strain: detail.strain,
-                        phenotype: phenoName
+                        phenotype: phenoName,
                     }));
                 }
                 await Promise.all(promises);
@@ -36907,15 +37974,15 @@ async function confirmAddPlants(ctx, detail) {
             }
         }
         // Exclude addToLibrary from payload sent to backend
-        const { addToLibrary, ...apiPayload } = detail;
+        const { addToLibrary: _, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             growspace_id: selectedDevice,
-            ...apiPayload
+            ...apiPayload,
         });
         await ctx.refreshData();
         const afterDevices = ctx.data.$devices.get();
         const addedIds = [];
-        afterDevices.forEach(d => d.plants?.forEach(p => {
+        afterDevices.forEach((d) => d.plants?.forEach((p) => {
             const id = p.attributes.plant_id || '';
             if (id && !beforeIds.has(id)) {
                 addedIds.push(id);
@@ -36926,7 +37993,7 @@ async function confirmAddPlants(ctx, detail) {
                 type: 'batch-delete',
                 description: `Added ${addedIds.length} plants`,
                 reverse: async () => {
-                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete. 
+                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete.
                     // handleDeletePlant pushes undo action. We probably don't want nested undo actions here.
                     // So we use _deletePlantsApi.
                     await _deletePlantsApi(ctx, addedIds);
@@ -36934,7 +38001,7 @@ async function confirmAddPlants(ctx, detail) {
                 },
                 redo: async () => {
                     await confirmAddPlants(ctx, detail);
-                }
+                },
             });
         }
         ctx.showToast('Batch plants added successfully', 'success');
@@ -37049,8 +38116,8 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
         await ctx.dataService.addGrowspace({
             name,
             rows,
-            plantsPerRow: plantsPerRow,
-            notificationService: notificationService,
+            plantsPerRow,
+            notificationService,
         });
         ctx.showToast('Growspace added successfully!', 'success');
         await ctx.refreshData();
@@ -37069,22 +38136,22 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
     try {
         // Optimistic update for immediate UI feedback
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
+        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             // Shallow clone device, update dimensions
             newDevices[deviceIdx] = {
                 ...newDevices[deviceIdx],
                 rows,
-                plantsPerRow: plantsPerRow
+                plantsPerRow,
             };
             ctx.data.$devices.set(newDevices);
         }
         await ctx.dataService.updateGrowspace({
-            growspaceId: growspaceId,
+            growspaceId,
             name,
             rows,
-            plantsPerRow: plantsPerRow,
+            plantsPerRow,
         });
         ctx.showToast('Growspace updated successfully', 'success');
         await ctx.refreshData();
@@ -37130,24 +38197,24 @@ class ActionDispatcher {
                 row: r,
                 col: c,
                 strain: s,
-                phenotype: p
+                phenotype: p,
             }),
-            addBatch: (detail) => confirmAddPlants(this.ctx, detail)
+            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
         };
         this.growspace = {
             add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
             update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
-            remove: (id) => removeGrowspace(this.ctx, id)
+            remove: (id) => removeGrowspace(this.ctx, id),
         };
         this.strain = {
             add: (data) => addStrain(this.ctx, data),
-            remove: (key) => removeStrain(this.ctx, key)
+            remove: (key) => removeStrain(this.ctx, key),
         };
         this.history = {
             undo: () => this.store.undo(),
             redo: () => this.store.redo(),
             canUndo: () => this.store.canUndo,
-            canRedo: () => this.store.canRedo
+            canRedo: () => this.store.canRedo,
         };
     }
     get ctx() {
@@ -37250,8 +38317,8 @@ function openBatchWateringDialog(ctx, growspaceId) {
         payload: {
             mode: 'plant',
             plantIds: selectedIds,
-            growspaceId: targetGrowspaceId
-        }
+            growspaceId: targetGrowspaceId,
+        },
     });
 }
 function openBatchTrainingDialog(ctx, growspaceId) {
@@ -37267,8 +38334,8 @@ function openBatchTrainingDialog(ctx, growspaceId) {
         payload: {
             isOpen: true,
             plantIds: selectedIds,
-            growspaceId: targetGrowspaceId
-        }
+            growspaceId: targetGrowspaceId,
+        },
     });
 }
 function openAddPlantDialog(ctx, row, col) {
@@ -37285,13 +38352,13 @@ function openAddPlantDialog(ctx, row, col) {
         return;
     }
     const devices = ctx.data.$devices.get();
-    const device = devices.find(d => d.deviceId === selectedDeviceId);
+    const device = devices.find((d) => d.deviceId === selectedDeviceId);
     let targetRow = 0;
     let targetCol = 0;
     if (device) {
         const occupied = new Set();
         const deleted = ctx.data.$optimisticDeletedPlantIds.get();
-        device.plants.forEach(p => {
+        device.plants.forEach((p) => {
             const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
             if (deleted.has(pId))
                 return;
@@ -37318,20 +38385,20 @@ function openAddPlantDialog(ctx, row, col) {
     fetchStrainLibrary(ctx);
     ctx.ui.setActiveDialog({
         type: 'ADD_PLANT',
-        payload: { row: targetRow, col: targetCol }
+        payload: { row: targetRow, col: targetCol },
     });
 }
 function openStrainRecommendationDialog(ctx) {
     ctx.ui.setActiveDialog({
         type: 'STRAIN_RECOMMENDATION',
-        payload: { isLoading: false, response: null }
+        payload: { isLoading: false, response: null },
     });
 }
 function openNutrientPresetsDialog(ctx) {
     fetchNutrientPresets(ctx);
     ctx.ui.setActiveDialog({
         type: 'NUTRIENT_PRESETS',
-        payload: {}
+        payload: {},
     });
 }
 function openIPMDialog(ctx, context) {
@@ -37342,8 +38409,8 @@ function openIPMDialog(ctx, context) {
         type: 'IPM',
         payload: {
             growspaceId,
-            plantIds: context?.plantIds
-        }
+            plantIds: context?.plantIds,
+        },
     });
 }
 function openLogbookDialog(ctx) {
@@ -37351,7 +38418,7 @@ function openLogbookDialog(ctx) {
     if (growspaceId) {
         ctx.ui.setActiveDialog({
             type: 'LOGBOOK',
-            payload: { growspaceId }
+            payload: { growspaceId },
         });
     }
 }
@@ -37415,8 +38482,8 @@ function openConfigDialog(ctx, device) {
                 soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
                 dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
                 dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
-            }
-        }
+            },
+        },
     });
 }
 function openStrainLibraryDialog(ctx) {
@@ -37432,8 +38499,8 @@ function openGrowMasterDialog(ctx, growspaceId) {
             growspaceId,
             isLoading: false,
             response: '',
-            mode: 'single'
-        }
+            mode: 'single',
+        },
     });
 }
 function openWateringDialog(ctx, options) {
@@ -37442,8 +38509,8 @@ function openWateringDialog(ctx, options) {
         payload: {
             plantIds: options.plantIds,
             growspaceId: options.growspaceId,
-            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace')
-        }
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+        },
     });
 }
 function openTrainingDialog(ctx, plantIds, growspaceId) {
@@ -37452,8 +38519,8 @@ function openTrainingDialog(ctx, plantIds, growspaceId) {
         payload: {
             isOpen: true,
             plantIds,
-            growspaceId
-        }
+            growspaceId,
+        },
     });
 }
 function openNutrientsDialog(ctx) {
@@ -37465,7 +38532,7 @@ async function analyzeGrowspace(ctx, query, all) {
     if (currentDialog.type === 'GROW_MASTER') {
         ctx.ui.setActiveDialog({
             ...currentDialog,
-            payload: { ...currentDialog.payload, isLoading: true }
+            payload: { ...currentDialog.payload, isLoading: true },
         });
     }
     try {
@@ -37476,7 +38543,7 @@ async function analyzeGrowspace(ctx, query, all) {
         else {
             const selectedDevice = ctx.data.$selectedDevice.get();
             if (!selectedDevice)
-                throw new Error("No device selected");
+                throw new Error('No device selected');
             response = await ctx.dataService.askGrowAdvice(selectedDevice, query);
         }
         const extractText = (res) => {
@@ -37497,7 +38564,7 @@ async function analyzeGrowspace(ctx, query, all) {
         if (d.type === 'GROW_MASTER') {
             ctx.ui.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...d.payload, isLoading: false, response: text }
+                payload: { ...d.payload, isLoading: false, response: text },
             });
         }
     }
@@ -37506,7 +38573,7 @@ async function analyzeGrowspace(ctx, query, all) {
         if (d.type === 'GROW_MASTER') {
             ctx.ui.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...d.payload, isLoading: false, response: "Error: " + e.message }
+                payload: { ...d.payload, isLoading: false, response: 'Error: ' + e.message },
             });
         }
     }
@@ -37536,14 +38603,9 @@ async function getStrainRecommendation(ctx, userQuery) {
     // I will keep it as returning the promise for now, so the component creates the loading state itself?
     // Or I can accept a `setLoading` callback.
     // To make it simple and consistent:
-    try {
-        const response = await ctx.dataService.getStrainRecommendation(userQuery);
-        const text = response.response || response;
-        return typeof text === 'string' ? text : JSON.stringify(text);
-    }
-    catch (e) {
-        throw e;
-    }
+    const response = await ctx.dataService.getStrainRecommendation(userQuery);
+    const text = response.response || response;
+    return typeof text === 'string' ? text : JSON.stringify(text);
 }
 
 /**
@@ -37595,7 +38657,6 @@ function handleKeyboardNavigation(ctx, key) {
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                focusedPlant.attributes.plant_id; // Check if this is the correct ID access
                 // logic in plant-actions implies we pass IDs.
                 // In plantActions.handleDeletePlant, it expects string or string[].
                 // But in original keyboard-actions it passed entity_id. Let's check plant type.
@@ -37669,7 +38730,9 @@ class SyncService {
                 const newState = hass.states[entityId];
                 const oldState = this._lastHassRef.states[entityId];
                 // Fast reference check + check for missing/new states
-                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
+                if (newState !== oldState ||
+                    (newState === undefined && oldState !== undefined) ||
+                    (newState !== undefined && oldState === undefined)) {
                     hasChanged = true;
                     break;
                 }
@@ -37723,9 +38786,9 @@ class SyncService {
         }
         // Populate watched entities for next update cycle
         this._watchedEntities.clear();
-        devices.forEach(d => {
+        devices.forEach((d) => {
             // Plants
-            (d.plants || []).forEach(p => {
+            (d.plants || []).forEach((p) => {
                 const eid = p.entity_id;
                 if (eid)
                     this._watchedEntities.add(eid);
@@ -37737,7 +38800,7 @@ class SyncService {
                 this._watchedEntities.add(d.irrigationConfig.drainPumpEntity);
             // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
             if (d.environmentAttributes) {
-                Object.values(d.environmentAttributes).forEach(val => {
+                Object.values(d.environmentAttributes).forEach((val) => {
                     if (typeof val === 'string' && val.includes('.')) {
                         this._watchedEntities.add(val);
                     }
@@ -37749,8 +38812,7 @@ class SyncService {
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
             const config = this.dataStore.$config.get();
             // Default to true if not defined
-            // @ts-ignore
-            config?.auto_select_growspace ?? true;
+            const autoSelect = config?.auto_select_growspace ?? true;
             if (this.uiStore.$defaultApplied.get())
                 return;
             const defaultDevice = devices.find((d) => d.deviceId === config.default_growspace || d.name === config.default_growspace);
@@ -37759,8 +38821,11 @@ class SyncService {
                 this.uiStore.setDefaultApplied(true);
                 return;
             }
-            // Fallback to first device
-            this.dataStore.setSelectedDevice(devices[0].deviceId);
+            // Fallback to first device only if autoSelect is enabled
+            if (autoSelect) {
+                this.dataStore.setSelectedDevice(devices[0].deviceId);
+            }
+            this.uiStore.setDefaultApplied(true);
         }
     }
     _areDeviceArraysEqual(a, b) {
@@ -37775,7 +38840,7 @@ class SyncService {
         try {
             return JSON.stringify(a) === JSON.stringify(b);
         }
-        catch (e) {
+        catch (_) {
             return false;
         }
     }
@@ -37797,7 +38862,7 @@ class UndoRedoManager {
         // Show toast with Undo button
         this.showToast(action.description, 'success', {
             label: 'Undo',
-            callback: () => this.undo()
+            callback: () => this.undo(),
         });
     }
     get canUndo() {
@@ -37847,7 +38912,7 @@ class OptimisticManager {
      * Returns the action ID to be used for confirmation or rollback.
      */
     async applyOptimisticUpdate(type, payload, applyFn, revertFn) {
-        const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        const id = typeof crypto !== 'undefined' && crypto.randomUUID
             ? crypto.randomUUID()
             : Math.random().toString(36).substring(2) + Date.now().toString(36);
         // 1. Store the action for potential rollback
@@ -37856,14 +38921,14 @@ class OptimisticManager {
             type,
             payload,
             revert: revertFn,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         });
         // 2. Execute the optimistic change immediately
         try {
             await applyFn(payload);
         }
         catch (e) {
-            console.error("Failed to apply optimistic update", e); // Assuming _LOGGER is console.error
+            console.error('Failed to apply optimistic update', e); // Assuming _LOGGER is console.error
             this.rollbackUpdate(id);
             throw e; // Rethrow so caller knows it failed
         }
@@ -37887,7 +38952,7 @@ class OptimisticManager {
                     // Note: Revert logic usually re-applies the old state to API
                     await action.revert();
                 },
-                redo: historyOptions.redo
+                redo: historyOptions.redo,
             });
         }
         this._pendingActions.delete(actionId);
@@ -37995,6 +39060,9 @@ class GrowspaceStore {
     updateHass(hass) {
         this.hass = hass;
         this.syncService.updateHass(hass);
+        if (hass.language && hass.language !== this.ui.$language.get()) {
+            this.ui.setLanguage(hass.language);
+        }
     }
     async refreshData() {
         await this.syncService.refreshGrowspaceData();
@@ -38014,7 +39082,7 @@ class GrowspaceStore {
             }
         });
         if (toRemove.size > 0) {
-            toRemove.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
+            toRemove.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
         }
     }
     // --- Actions Delegation ---
@@ -38184,7 +39252,7 @@ class GrowspaceStore {
             const res = await getStrainRecommendation(this.context, userQuery);
             this._updateStrainRecommendationDialog({
                 isLoading: false,
-                response: typeof res === 'string' ? res : JSON.stringify(res)
+                response: typeof res === 'string' ? res : JSON.stringify(res),
             });
             return res;
         }
@@ -38192,7 +39260,7 @@ class GrowspaceStore {
             console.error('Error getting strain recommendation:', e);
             this._updateStrainRecommendationDialog({
                 isLoading: false,
-                response: "Error: " + e.message
+                response: 'Error: ' + e.message,
             });
             throw e;
         }
@@ -38202,7 +39270,7 @@ class GrowspaceStore {
         if (currentDialog.type === 'STRAIN_RECOMMENDATION') {
             this.ui.setActiveDialog({
                 ...currentDialog,
-                payload: { ...currentDialog.payload, ...payload }
+                payload: { ...currentDialog.payload, ...payload },
             });
         }
     }
@@ -38266,13 +39334,13 @@ class GrowspaceStore {
         if (entityIds.length === 0)
             return;
         if (action === 'remove') {
-            entityIds.forEach(id => this.data.addOptimisticDeletedPlantId(id));
+            entityIds.forEach((id) => this.data.addOptimisticDeletedPlantId(id));
         }
         try {
             await this.dataService.callService('growspace_manager', 'batch_action', {
                 entity_ids: entityIds,
                 action,
-                data: data || {}
+                data: data || {},
             });
             this.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
             this.ui.clearPlantSelection();
@@ -38283,7 +39351,7 @@ class GrowspaceStore {
             console.error(`Batch ${action} failed:`, err);
             this.showToast(`Batch ${action} failed: ${err.message || 'Unknown error'}`, 'error');
             if (action === 'remove') {
-                entityIds.forEach(id => this.data.removeOptimisticDeletedPlantId(id));
+                entityIds.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
             }
         }
     }
@@ -38324,7 +39392,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 this.hass.callService('system_log', 'write', {
                     message: `Growspace Manager Card Error: ${error.message}. Info: ${JSON.stringify(errorInfo)}`,
                     level: 'error',
-                    logger: 'lovelace_growspace_manager_card'
+                    logger: 'lovelace_growspace_manager_card',
                 });
             }
         };
@@ -38468,31 +39536,32 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         const { effectiveRows, grid } = this._gridLayoutController.value;
         const isWide = selectedDeviceData.plantsPerRow > 7;
         return x `
-      <error-boundary 
-          .fallbackMessage=${'Failed to load Growspace Manager'}
-          .onError=${this._handleError}
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace Manager'}
+        .onError=${this._handleError}
       >
         <ha-card class=${isWide ? 'wide-growspace' : ''}>
           <div class="sr-only-announcer" aria-live="polite"></div>
-          <div 
-              class="unified-growspace-card glass-surface glass-panel" 
-              role="region"
-              aria-label="Growspace: ${selectedDeviceData.name}"
-              tabindex="0" 
-              @keydown=${this._handleKeyboardNav}
-              @view-mode-changed=${this._handleViewModeChanged}
-              @growspace-changed=${this._handleGrowspaceChanged}
-              @toggle-expansion=${this._handleToggleExpansion}
-              @select-all=${this._handleSelectAll}
-              @clear-selection=${this._handleClearSelection}
-              @water-selected=${this._handleWaterSelected}
-              @training-selected=${this._handleTrainingSelected}
-              @ipm-selected=${this._handleIPMSelected}
-              @batch-add-plants=${this._handleBatchAddPlants}
-              @delete-selected=${this._handleDeleteSelected}
-              @transplant-mode=${this._handleTransplantMode}
-              @exit-edit-mode=${this._handleExitEditMode}
-          >            <growspace-view-switcher
+          <div
+            class="unified-growspace-card glass-surface glass-panel"
+            role="region"
+            aria-label="Growspace: ${selectedDeviceData.name}"
+            tabindex="0"
+            @keydown=${this._handleKeyboardNav}
+            @view-mode-changed=${this._handleViewModeChanged}
+            @growspace-changed=${this._handleGrowspaceChanged}
+            @toggle-expansion=${this._handleToggleExpansion}
+            @select-all=${this._handleSelectAll}
+            @clear-selection=${this._handleClearSelection}
+            @water-selected=${this._handleWaterSelected}
+            @training-selected=${this._handleTrainingSelected}
+            @ipm-selected=${this._handleIPMSelected}
+            @batch-add-plants=${this._handleBatchAddPlants}
+            @delete-selected=${this._handleDeleteSelected}
+            @transplant-mode=${this._handleTransplantMode}
+            @exit-edit-mode=${this._handleExitEditMode}
+          >
+            <growspace-view-switcher
               .viewMode=${this._cardViewController.value.viewMode}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
@@ -38505,8 +39574,6 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
               .isLoading=${this._cardViewController.value.isLoading}
               .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
             ></growspace-view-switcher>
-            
-
           </div>
         </ha-card>
 

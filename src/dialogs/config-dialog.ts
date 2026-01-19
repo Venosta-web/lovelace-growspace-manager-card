@@ -17,7 +17,7 @@ import {
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
-import { HassEntity } from 'home-assistant-js-websocket';
+
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
@@ -667,19 +667,19 @@ export class ConfigDialog extends LitElement {
           <input
             class="search-input-inner"
             list="${listId}"
-            placeholder=${values.length === 0 ? "Add Entity..." : ""}
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
             @change=${(e: Event) => {
         const input = e.target as HTMLInputElement;
         const val = input.value;
         if (val && !values.includes(val)) {
           changeHandler([...values, val]);
         }
-        input.value = "";
+        input.value = '';
       }}
           />
         </div>
         <datalist id="${listId}">
-          ${entities.map(eid => html`<option value="${eid}"></option>`)}
+          ${entities.map((eid) => html`<option value="${eid}"></option>`)}
         </datalist>
       </div>
     `;

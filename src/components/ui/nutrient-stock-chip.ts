@@ -21,8 +21,9 @@ export class NutrientStockChip extends LitElement {
     }
 
     // eslint-disable-next-line camelcase
-    const { current_ml, initial_ml, name } = this.stock;
-    const ratio = initial_ml > 0 ? current_ml / initial_ml : 0;
+    // eslint-disable-next-line camelcase
+    const { current_ml: currentMl, initial_ml: initialMl, name } = this.stock;
+    const ratio = initialMl > 0 ? currentMl / initialMl : 0;
 
     let status: 'optimal' | 'warning' | 'danger' = 'optimal';
     if (ratio <= 0.2) {
@@ -32,12 +33,8 @@ export class NutrientStockChip extends LitElement {
     }
 
     const percentage = Math.round(ratio * 100);
-    const value = this.compact
-      ? `${percentage}%`
-      : `${Math.round(current_ml)}ml (${percentage}%)`;
-
-    const label = this.compact ? '' : name;
-    // If compact, maybe show name as tooltip or just rely on parent context? 
+    const value = this.compact ? `${percentage}%` : `${Math.round(currentMl)}ml (${percentage}%)`;
+    // If compact, maybe show name as tooltip or just rely on parent context?
     // Usually chip has label. Let's use name as label always, but maybe truncate?
 
     return html`
@@ -46,7 +43,7 @@ export class NutrientStockChip extends LitElement {
         .label=${this.compact ? undefined : name}
         .value=${value}
         .status=${status}
-        .tooltip=${`Capacity: ${initial_ml}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
+        .tooltip=${`Capacity: ${initialMl}ml\nLast Updated: ${new Date(this.stock.last_updated).toLocaleDateString()}`}
       ></growspace-chip>
     `;
   }

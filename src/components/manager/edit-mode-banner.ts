@@ -12,7 +12,7 @@ import {
   mdiChevronLeft,
   mdiChevronRight,
   mdiDelete,
-  mdiSwapHorizontal
+  mdiSwapHorizontal,
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -181,7 +181,7 @@ export class EditModeBanner extends LitElement {
           justify-content: center;
         }
       }
-    `
+    `,
   ];
 
   firstUpdated() {
@@ -218,46 +218,88 @@ export class EditModeBanner extends LitElement {
           </svg>
           <span>${this.selectedCount} plant(s) selected</span>
         </div>
-        
+
         <div class="banner-actions-wrapper">
-          <div class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}" @click=${() => this._scrollActions('left')}>
+          <div
+            class="scroll-arrow ${!this._canScrollLeft ? 'hidden' : ''}"
+            @click=${() => this._scrollActions('left')}
+          >
             <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
           </div>
 
           <div class="banner-actions" ${ref(this._actionsContainerRef)}>
-            <button class="icon-button" @click=${() => this._dispatch('select-all')} title="Select All">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('select-all')}
+              title="Select All"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSelectAll}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('clear-selection')} title="Clear Selection">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('clear-selection')}
+              title="Clear Selection"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSelectionOff}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button" @click=${() => this._dispatch('water-selected')} title="Water Selected">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('water-selected')}
+              title="Water Selected"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('training-selected')} title="Log Training">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('training-selected')}
+              title="Log Training"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('ipm-selected')} title="Log IPM">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('ipm-selected')}
+              title="Log IPM"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button" @click=${() => this._dispatch('transplant-mode')} title="Transplant Mode">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('transplant-mode')}
+              title="Transplant Mode"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('batch-add-plants')} title="Batch Add Plants">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('batch-add-plants')}
+              title="Batch Add Plants"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-            <button class="icon-button delete" @click=${() => this._dispatch('delete-selected')} title="Delete Selected">
+            <button
+              class="icon-button delete"
+              @click=${() => this._dispatch('delete-selected')}
+              title="Delete Selected"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
             </button>
-            <button class="icon-button" @click=${() => this._dispatch('exit-edit-mode')} title="Exit Edit Mode">
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('exit-edit-mode')}
+              title="Exit Edit Mode"
+            >
               <svg viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
             </button>
           </div>
 
-          <div class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}" @click=${() => this._scrollActions('right')}>
+          <div
+            class="scroll-arrow ${!this._canScrollRight ? 'hidden' : ''}"
+            @click=${() => this._scrollActions('right')}
+          >
             <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
           </div>
         </div>

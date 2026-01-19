@@ -29,5 +29,6 @@ export const plantStatsStyles = css`
     color: var(--primary-text-color, #fff);
   }
 
-  .current-stage {}
+  .current-stage {
+  }
 `;

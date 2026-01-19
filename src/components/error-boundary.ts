@@ -4,7 +4,7 @@ import { mdiAlertCircle, mdiRefresh, mdiRestart } from '@mdi/js';
 
 /**
  * ErrorBoundary - Catches and handles errors in child components
- * 
+ *
  * Usage:
  * ```html
  * <error-boundary
@@ -33,99 +33,99 @@ export class ErrorBoundary extends LitElement {
   private readonly ERROR_RESET_INTERVAL = 5000; // 5 seconds
 
   static styles = css`
-        :host {
-            display: block;
-        }
+    :host {
+      display: block;
+    }
 
-        .error-container {
-            padding: 24px;
-            background: var(--error-color, #f44336);
-            color: white;
-            border-radius: 8px;
-            margin: 16px;
-        }
+    .error-container {
+      padding: 24px;
+      background: var(--error-color, #f44336);
+      color: white;
+      border-radius: 8px;
+      margin: 16px;
+    }
 
-        .error-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
+    .error-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
 
-        .error-icon {
-            --mdc-icon-size: 32px;
-        }
+    .error-icon {
+      --mdc-icon-size: 32px;
+    }
 
-        .error-title {
-            font-size: 1.2rem;
-            font-weight: 500;
-            margin: 0;
-        }
+    .error-title {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin: 0;
+    }
 
-        .error-message {
-            margin: 0 0 16px 0;
-            opacity: 0.9;
-            line-height: 1.5;
-        }
+    .error-message {
+      margin: 0 0 16px 0;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
 
-        .error-details {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
+    .error-details {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
-        .error-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-        .error-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background 0.2s;
-        }
+    .error-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+    }
 
-        .error-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
+    .error-button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
 
-        .error-button ha-svg-icon {
-            --mdc-icon-size: 18px;
-        }
+    .error-button ha-svg-icon {
+      --mdc-icon-size: 18px;
+    }
 
-        .too-many-errors {
-            background: var(--error-color, #d32f2f);
-            padding: 16px;
-            border-radius: 8px;
-            margin: 16px;
-            color: white;
-        }
+    .too-many-errors {
+      background: var(--error-color, #d32f2f);
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px;
+      color: white;
+    }
 
-        .too-many-errors p {
-            margin: 0 0 12px 0;
-        }
+    .too-many-errors p {
+      margin: 0 0 12px 0;
+    }
 
-        details summary {
-            cursor: pointer;
-            margin-bottom: 8px;
-            user-select: none;
-        }
-    `;
+    details summary {
+      cursor: pointer;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+  `;
 
   connectedCallback() {
     super.connectedCallback();
@@ -244,26 +244,25 @@ export class ErrorBoundary extends LitElement {
   }
 
   protected get _isDev(): boolean {
-    return window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1';
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   }
 
   protected render(): TemplateResult {
     // Check for too many errors (potential infinite loop)
     if (this._errorCount >= this.MAX_ERROR_COUNT) {
       return html`
-                <div class="too-many-errors">
-                    <p><strong>Too many errors detected</strong></p>
-                    <p>
-                        This component has encountered ${this._errorCount} errors in a short time.
-                        This may indicate a critical issue.
-                    </p>
-                    <button class="error-button" @click=${this._handleReset}>
-                        <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
-                        Force Reset
-                    </button>
-                </div>
-            `;
+        <div class="too-many-errors">
+          <p><strong>Too many errors detected</strong></p>
+          <p>
+            This component has encountered ${this._errorCount} errors in a short time. This may
+            indicate a critical issue.
+          </p>
+          <button class="error-button" @click=${this._handleReset}>
+            <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+            Force Reset
+          </button>
+        </div>
+      `;
     }
 
     // Show error fallback if error exists
@@ -271,43 +270,39 @@ export class ErrorBoundary extends LitElement {
       const isDev = this._isDev;
 
       return html`
-                <div class="error-container">
-                    <div class="error-header">
-                        <ha-svg-icon class="error-icon" .path=${mdiAlertCircle}></ha-svg-icon>
-                        <h3 class="error-title">${this.fallbackMessage}</h3>
-                    </div>
+        <div class="error-container">
+          <div class="error-header">
+            <ha-svg-icon class="error-icon" .path=${mdiAlertCircle}></ha-svg-icon>
+            <h3 class="error-title">${this.fallbackMessage}</h3>
+          </div>
 
-                    <p class="error-message">
-                        ${this._error.message || 'An unexpected error occurred'}
-                    </p>
+          <p class="error-message">${this._error.message || 'An unexpected error occurred'}</p>
 
-                    ${isDev && this._error.stack
-          ? html`
-                            <details ?open=${this.showDetails}>
-                                <summary>
-                                    ${this.showDetails ? 'Hide' : 'Show'} technical details
-                                </summary>
-                                <div class="error-details">${this._error.stack}</div>
-                            </details>
-                          `
-          : nothing}
+          ${isDev && this._error.stack
+            ? html`
+                <details ?open=${this.showDetails}>
+                  <summary>${this.showDetails ? 'Hide' : 'Show'} technical details</summary>
+                  <div class="error-details">${this._error.stack}</div>
+                </details>
+              `
+            : nothing}
 
-                    <div class="error-actions">
-                        <button class="error-button" @click=${this._handleRetry}>
-                            <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
-                            Retry
-                        </button>
-                        ${this.onReset
-          ? html`
-                                <button class="error-button" @click=${this._handleReset}>
-                                    <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
-                                    Reset
-                                </button>
-                              `
-          : nothing}
-                    </div>
-                </div>
-            `;
+          <div class="error-actions">
+            <button class="error-button" @click=${this._handleRetry}>
+              <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+              Retry
+            </button>
+            ${this.onReset
+              ? html`
+                  <button class="error-button" @click=${this._handleReset}>
+                    <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
+                    Reset
+                  </button>
+                `
+              : nothing}
+          </div>
+        </div>
+      `;
     }
 
     // No error - render children

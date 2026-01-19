@@ -8,18 +8,22 @@ import { GrowspaceGridStore } from './grid-store';
 import { OptimisticManager } from './optimistic-manager';
 
 export interface ActionContext {
-    dataService: DataService;
-    data: GrowspaceDataStore;
-    ui: GrowspaceUIStore;
-    history: GrowspaceHistoryStore;
-    grid: GrowspaceGridStore;
-    undoRedoManager: UndoRedoManager;
-    optimisticManager: OptimisticManager;
-    syncService: SyncService;
-    hass: any;
+  dataService: DataService;
+  data: GrowspaceDataStore;
+  ui: GrowspaceUIStore;
+  history: GrowspaceHistoryStore;
+  grid: GrowspaceGridStore;
+  undoRedoManager: UndoRedoManager;
+  optimisticManager: OptimisticManager;
+  syncService: SyncService;
+  hass: any;
 
-    // Helpers
-    showToast: (message: string, type: 'info' | 'error' | 'success', action?: { label: string; callback: () => void }) => void;
-    closeDialog: () => void;
-    refreshData: () => Promise<void>;
+  // Helpers
+  showToast: (
+    message: string,
+    type: 'info' | 'error' | 'success',
+    action?: { label: string; callback: () => void }
+  ) => void;
+  closeDialog: () => void;
+  refreshData: () => Promise<void>;
 }

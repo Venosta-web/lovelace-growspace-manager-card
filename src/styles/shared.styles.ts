@@ -45,6 +45,4 @@ export const sharedStyles = css`
     border-radius: var(--border-radius-md, 12px);
     padding: var(--spacing-md, 16px);
   }
-
-
 `;

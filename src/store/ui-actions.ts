@@ -19,10 +19,10 @@ export function toggleHeaderExpansion(ctx: ActionContext) {
     }
 }
 
-export function handleKeyboardNavigation(ctx: ActionContext, key: string) {
+export function handleKeyboardNavigation(_ctx: ActionContext, _key: string) {
     // Currently delegates to keyboard-actions, maybe we merge or keep delegating
     // But since we are unifying, we might just call the logic here or keep it simple.
-    // For now, let's just use the existing keyboardActions logic if possible, 
+    // For now, let's just use the existing keyboardActions logic if possible,
     // but the existing one needs context logic.
     // Let's defer this specific one or just keep it in store since it's simple delegation.
 }
@@ -76,7 +76,11 @@ export function handlePlantClick(ctx: ActionContext, plant: PlantEntity) {
     }
 }
 
-export function openPlantOverviewDialog(ctx: ActionContext, plant: PlantEntity, selectedIds?: string[]) {
+export function openPlantOverviewDialog(
+    ctx: ActionContext,
+    plant: PlantEntity,
+    selectedIds?: string[]
+) {
     ctx.ui.setActiveDialog({
         type: 'PLANT_OVERVIEW',
         payload: {
@@ -102,8 +106,8 @@ export function openBatchWateringDialog(ctx: ActionContext, growspaceId?: string
         payload: {
             mode: 'plant',
             plantIds: selectedIds,
-            growspaceId: targetGrowspaceId
-        }
+            growspaceId: targetGrowspaceId,
+        },
     });
 }
 
@@ -121,8 +125,8 @@ export function openBatchTrainingDialog(ctx: ActionContext, growspaceId?: string
         payload: {
             isOpen: true,
             plantIds: selectedIds,
-            growspaceId: targetGrowspaceId
-        }
+            growspaceId: targetGrowspaceId,
+        },
     });
 }
 
@@ -142,7 +146,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     }
 
     const devices = ctx.data.$devices.get();
-    const device = devices.find(d => d.deviceId === selectedDeviceId);
+    const device = devices.find((d) => d.deviceId === selectedDeviceId);
 
     let targetRow = 0;
     let targetCol = 0;
@@ -151,7 +155,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
         const occupied = new Set<string>();
         const deleted = ctx.data.$optimisticDeletedPlantIds.get();
 
-        device.plants.forEach(p => {
+        device.plants.forEach((p) => {
             const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
             if (deleted.has(pId)) return;
 
@@ -180,14 +184,14 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     libraryActions.fetchStrainLibrary(ctx);
     ctx.ui.setActiveDialog({
         type: 'ADD_PLANT',
-        payload: { row: targetRow, col: targetCol }
+        payload: { row: targetRow, col: targetCol },
     });
 }
 
 export function openStrainRecommendationDialog(ctx: ActionContext) {
     ctx.ui.setActiveDialog({
         type: 'STRAIN_RECOMMENDATION',
-        payload: { isLoading: false, response: null }
+        payload: { isLoading: false, response: null },
     });
 }
 
@@ -195,21 +199,25 @@ export function openNutrientPresetsDialog(ctx: ActionContext) {
     libraryActions.fetchNutrientPresets(ctx);
     ctx.ui.setActiveDialog({
         type: 'NUTRIENT_PRESETS',
-        payload: {}
+        payload: {},
     });
 }
 
-export function openIPMDialog(ctx: ActionContext, context?: { growspaceId?: string; plantIds?: string[] }) {
+export function openIPMDialog(
+    ctx: ActionContext,
+    context?: { growspaceId?: string; plantIds?: string[] }
+) {
     libraryActions.fetchIPMPresets(ctx);
-    const growspaceId = context?.growspaceId ||
+    const growspaceId =
+        context?.growspaceId ||
         (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
 
     ctx.ui.setActiveDialog({
         type: 'IPM',
         payload: {
             growspaceId,
-            plantIds: context?.plantIds
-        }
+            plantIds: context?.plantIds,
+        },
     });
 }
 
@@ -218,7 +226,7 @@ export function openLogbookDialog(ctx: ActionContext) {
     if (growspaceId) {
         ctx.ui.setActiveDialog({
             type: 'LOGBOOK',
-            payload: { growspaceId }
+            payload: { growspaceId },
         });
     }
 }
@@ -284,10 +292,11 @@ export function openConfigDialog(ctx: ActionContext, device?: import('../types')
                 dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
                 dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
                 soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
-                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                dehumidifierControlEnabled:
+                    device?.environmentAttributes?.dehumidifierControlEnabled || false,
                 dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
-            } as any
-        }
+            } as any,
+        },
     });
 }
 
@@ -306,8 +315,8 @@ export function openGrowMasterDialog(ctx: ActionContext, growspaceId: string) {
             growspaceId,
             isLoading: false,
             response: '',
-            mode: 'single'
-        }
+            mode: 'single',
+        },
     });
 }
 
@@ -320,8 +329,8 @@ export function openWateringDialog(
         payload: {
             plantIds: options.plantIds,
             growspaceId: options.growspaceId,
-            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace')
-        }
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+        },
     });
 }
 
@@ -331,8 +340,8 @@ export function openTrainingDialog(ctx: ActionContext, plantIds: string[], grows
         payload: {
             isOpen: true,
             plantIds,
-            growspaceId
-        }
+            growspaceId,
+        },
     });
 }
 

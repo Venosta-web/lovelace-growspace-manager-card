@@ -919,7 +919,6 @@ export const growspaceCardStyles = css`
     --mdc-dialog-max-width: 90vw;
   }
 
-
   /* MD3 Dialog Layout */
   .dialog-header {
     display: flex;
@@ -979,7 +978,6 @@ export const growspaceCardStyles = css`
     letter-spacing: 0.5px;
   }
 
-
   /* View Modes */
   .view-mode-container {
     position: relative;
@@ -1023,7 +1021,7 @@ export const growspaceCardStyles = css`
     cursor: pointer;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 12px; /* Match collapse handle */
-    margin-top: 8px;     /* Match collapse handle spacing */
+    margin-top: 8px; /* Match collapse handle spacing */
     transition: all 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.05);
     /* Button Reset */

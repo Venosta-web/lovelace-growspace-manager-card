@@ -226,12 +226,7 @@ describe('GrowspaceLogbook', () => {
     });
 
     describe('Private Helpers Coverage', () => {
-        it('should format probability correctly', () => {
-            expect((element as any)._formatProb(undefined)).toBe('--%');
-            expect((element as any)._formatProb(null)).toBe('--%');
-            expect((element as any)._formatProb(NaN)).toBe('--%');
-            expect((element as any)._formatProb(0.56)).toBe('56%');
-        });
+
 
         it('should format time safely', () => {
             const valid = new Date().toISOString();
@@ -347,11 +342,7 @@ describe('GrowspaceLogbook', () => {
         expect((element as any)._isLoading).toBe(false);
     });
 
-    it('should format duration correctly', () => {
-        expect((element as any)._formatDuration(65)).toBe('1m 5s');
-        expect((element as any)._formatDuration(3600)).toBe('60m 0s');
-        expect((element as any)._formatDuration(0)).toBe('0m 0s');
-    });
+
 
     it('should use warning color for HIGH severity (>= 0.7)', async () => {
         // Re-adding the original 'should render reasons correctly' test content
@@ -405,7 +396,7 @@ describe('GrowspaceLogbook', () => {
         expect(eventCard?.textContent).toContain('This is a test note');
         expect(eventCard?.textContent).toContain('#pest');
         expect(eventCard?.textContent).toContain('#remedy');
-        expect(eventCard?.textContent).toContain('1 Image attached');
+        expect(eventCard?.textContent).toMatch(/1\s+Image\s+attached/);
     });
 
     it('should filter note events correctly', async () => {
@@ -480,7 +471,7 @@ describe('GrowspaceLogbook', () => {
             await element.updateComplete;
 
             let cardText = element.shadowRoot?.querySelector('.event-card')?.textContent;
-            expect(cardText).toContain('1 Image attached');
+            expect(cardText).toMatch(/1\s+Image\s+attached/);
             expect(cardText).not.toContain('Images attached');
 
             // 2 Images
@@ -489,7 +480,7 @@ describe('GrowspaceLogbook', () => {
             await element.updateComplete;
 
             cardText = element.shadowRoot?.querySelector('.event-card')?.textContent;
-            expect(cardText).toContain('2 Images attached');
+            expect(cardText).toMatch(/2\s+Images\s+attached/);
         });
     });
 

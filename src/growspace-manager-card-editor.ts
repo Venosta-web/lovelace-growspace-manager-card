@@ -106,7 +106,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
           <select
             .value=${this._config.initial_view_mode || 'standard'}
             @change=${(e: Event) =>
-        this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
+              this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
           >
             <option value="standard">Standard</option>
             <option value="compact">Compact (Grid Only)</option>
@@ -119,12 +119,12 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
           <select
             .value=${this._config.default_growspace ?? ''}
             @change=${(e: Event) =>
-        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
+              this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
           >
             <option value="">Select a growspace</option>
             ${this._growspaceOptions.map(
-          (gs) => html`<option value="${gs.id}">${gs.name}</option>`
-        )}
+              (gs) => html`<option value="${gs.id}">${gs.name}</option>`
+            )}
           </select>
         </div>
       </div>

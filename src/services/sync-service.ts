@@ -45,7 +45,11 @@ export class SyncService {
                 const oldState = this._lastHassRef.states[entityId];
 
                 // Fast reference check + check for missing/new states
-                if (newState !== oldState || (newState === undefined && oldState !== undefined) || (newState !== undefined && oldState === undefined)) {
+                if (
+                    newState !== oldState ||
+                    (newState === undefined && oldState !== undefined) ||
+                    (newState !== undefined && oldState === undefined)
+                ) {
                     hasChanged = true;
                     break;
                 }
@@ -103,18 +107,20 @@ export class SyncService {
 
         // Populate watched entities for next update cycle
         this._watchedEntities.clear();
-        devices.forEach(d => {
+        devices.forEach((d) => {
             // Plants
-            (d.plants || []).forEach(p => {
+            (d.plants || []).forEach((p) => {
                 const eid = p.entity_id;
                 if (eid) this._watchedEntities.add(eid);
             });
             // Irrigation Config
-            if (d.irrigationConfig?.irrigationPumpEntity) this._watchedEntities.add(d.irrigationConfig.irrigationPumpEntity);
-            if (d.irrigationConfig?.drainPumpEntity) this._watchedEntities.add(d.irrigationConfig.drainPumpEntity);
+            if (d.irrigationConfig?.irrigationPumpEntity)
+                this._watchedEntities.add(d.irrigationConfig.irrigationPumpEntity);
+            if (d.irrigationConfig?.drainPumpEntity)
+                this._watchedEntities.add(d.irrigationConfig.drainPumpEntity);
             // Environment Sensors (e.g. temperature_sensor: 'sensor.x')
             if (d.environmentAttributes) {
-                Object.values(d.environmentAttributes).forEach(val => {
+                Object.values(d.environmentAttributes).forEach((val) => {
                     if (typeof val === 'string' && val.includes('.')) {
                         this._watchedEntities.add(val);
                     }
@@ -127,7 +133,6 @@ export class SyncService {
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
             const config = this.dataStore.$config.get();
             // Default to true if not defined
-            // @ts-ignore
             const autoSelect = config?.auto_select_growspace ?? true;
 
             if (this.uiStore.$defaultApplied.get()) return;
@@ -141,8 +146,11 @@ export class SyncService {
                 return;
             }
 
-            // Fallback to first device
-            this.dataStore.setSelectedDevice(devices[0].deviceId);
+            // Fallback to first device only if autoSelect is enabled
+            if (autoSelect) {
+                this.dataStore.setSelectedDevice(devices[0].deviceId);
+            }
+            this.uiStore.setDefaultApplied(true);
         }
     }
 
@@ -154,7 +162,7 @@ export class SyncService {
 
         try {
             return JSON.stringify(a) === JSON.stringify(b);
-        } catch (e) {
+        } catch (_) {
             return false;
         }
     }

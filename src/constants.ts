@@ -62,14 +62,40 @@ export interface MetricConfigItem {
 }
 
 export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
-  [MetricKey.TEMPERATURE]: { color: '#ff5252', title: 'Temperature', unit: '°C', icon: mdiThermometer },
+  [MetricKey.TEMPERATURE]: {
+    color: '#ff5252',
+    title: 'Temperature',
+    unit: '°C',
+    icon: mdiThermometer,
+  },
   [MetricKey.HUMIDITY]: { color: '#2196f3', title: 'Humidity', unit: '%', icon: mdiWaterPercent },
   [MetricKey.VPD]: { color: '#9c27b0', title: 'VPD', unit: 'kPa', icon: mdiCloudOutline },
-  [MetricKey.CALCULATED_VPD]: { color: '#ab47bc', title: 'Calc. VPD', unit: 'kPa', icon: mdiCalculator },
+  [MetricKey.CALCULATED_VPD]: {
+    color: '#ab47bc',
+    title: 'Calc. VPD',
+    unit: 'kPa',
+    icon: mdiCalculator,
+  },
   [MetricKey.CO2]: { color: '#e91e63', title: 'CO2', unit: 'ppm', icon: mdiWeatherCloudy },
-  [MetricKey.AIR_EXCHANGE]: { color: '#8d6e63', title: 'Air Exchange', unit: 'm³/h', icon: mdiAirFilter },
-  [MetricKey.SOIL_MOISTURE]: { color: '#03a9f4', title: 'Soil Moisture', unit: '%', icon: mdiWaterPercent },
-  [MetricKey.LIGHT]: { color: '#ffc107', title: 'Light', unit: 'state', icon: mdiLightbulbOn, type: ChartType.STEP },
+  [MetricKey.AIR_EXCHANGE]: {
+    color: '#8d6e63',
+    title: 'Air Exchange',
+    unit: 'm³/h',
+    icon: mdiAirFilter,
+  },
+  [MetricKey.SOIL_MOISTURE]: {
+    color: '#03a9f4',
+    title: 'Soil Moisture',
+    unit: '%',
+    icon: mdiWaterPercent,
+  },
+  [MetricKey.LIGHT]: {
+    color: '#ffc107',
+    title: 'Light',
+    unit: 'state',
+    icon: mdiLightbulbOn,
+    type: ChartType.STEP,
+  },
   [MetricKey.IRRIGATION]: {
     color: '#03a9f4',
     title: 'Irrigation',
@@ -77,7 +103,13 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     icon: mdiWater,
     type: ChartType.STEP,
   },
-  [MetricKey.DRAIN]: { color: '#ff9800', title: 'Drain', unit: 'state', icon: mdiWater, type: ChartType.STEP },
+  [MetricKey.DRAIN]: {
+    color: '#ff9800',
+    title: 'Drain',
+    unit: 'state',
+    icon: mdiWater,
+    type: ChartType.STEP,
+  },
   [MetricKey.EXHAUST]: { color: '#795548', title: 'Exhaust', unit: '', icon: mdiFan },
   [MetricKey.CIRCULATION_FAN]: {
     color: '#243491',
@@ -85,7 +117,12 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     unit: '',
     icon: mdiFan,
   },
-  [MetricKey.HUMIDIFIER]: { color: '#00bcd4', title: 'Humidifier', unit: '', icon: mdiAirHumidifier },
+  [MetricKey.HUMIDIFIER]: {
+    color: '#00bcd4',
+    title: 'Humidifier',
+    unit: '',
+    icon: mdiAirHumidifier,
+  },
   [MetricKey.DEHUMIDIFIER]: {
     color: '#009688',
     title: 'Dehumidifier',
@@ -206,17 +243,17 @@ export const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_
 export const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 
 export const EVENTS = {
-  GROWSPACE_UPDATED: "growspace_manager_updated",
-  GROWSPACE_ADDED: "growspace_manager_growspace_added",
-  GROWSPACE_REMOVED: "growspace_manager_growspace_removed",
-  PLANT_ADDED: "growspace_manager_plant_added",
-  PLANT_UPDATED: "growspace_manager_plant_updated",
-  PLANT_REMOVED: "growspace_manager_plant_removed",
-  PLANT_MOVED: "growspace_manager_plant_moved",
-  PLANT_SWITCHED: "growspace_manager_plant_switched",
-  PLANT_TRANSITIONED: "growspace_manager_plant_transitioned",
-  PLANT_HARVESTED: "growspace_manager_plant_harvested",
-  CLONES_TAKEN: "growspace_manager_clones_taken"
+  GROWSPACE_UPDATED: 'growspace_manager_updated',
+  GROWSPACE_ADDED: 'growspace_manager_growspace_added',
+  GROWSPACE_REMOVED: 'growspace_manager_growspace_removed',
+  PLANT_ADDED: 'growspace_manager_plant_added',
+  PLANT_UPDATED: 'growspace_manager_plant_updated',
+  PLANT_REMOVED: 'growspace_manager_plant_removed',
+  PLANT_MOVED: 'growspace_manager_plant_moved',
+  PLANT_SWITCHED: 'growspace_manager_plant_switched',
+  PLANT_TRANSITIONED: 'growspace_manager_plant_transitioned',
+  PLANT_HARVESTED: 'growspace_manager_plant_harvested',
+  CLONES_TAKEN: 'growspace_manager_clones_taken',
 };
 
 export const SERVICES = {
@@ -300,9 +337,4 @@ export const BINARY_ON_STATES = [
   EntityState.ACTIVE,
 ];
 
-export const BINARY_OFF_STATES = [
-  EntityState.OFF,
-  EntityState.FALSE,
-  '0',
-  EntityState.IDLE,
-];
+export const BINARY_OFF_STATES = [EntityState.OFF, EntityState.FALSE, '0', EntityState.IDLE];

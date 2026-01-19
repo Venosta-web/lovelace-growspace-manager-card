@@ -33,28 +33,28 @@ export class Md3NumberInput extends LitElement {
       <div class="md3-input-group">
         <label class="md3-label">${this.label}</label>
         <div style="display: flex; align-items: center;">
-             <input
-               type="number"
-               class="md3-input"
-               .min=${this.min}
-               .max=${this.max}
-               .value=${this.value}
-               .placeholder=${this.placeholder}
-               @input=${this._handleInput}
-               style="${this.unit ? 'padding-bottom: 16px;' : ''}"
-             />
-             ${this.unit
-        ? html`<span 
-                    style="
+          <input
+            type="number"
+            class="md3-input"
+            .min=${this.min}
+            .max=${this.max}
+            .value=${this.value}
+            .placeholder=${this.placeholder}
+            @input=${this._handleInput}
+            style="${this.unit ? 'padding-bottom: 16px;' : ''}"
+          />
+          ${this.unit
+            ? html`<span
+                style="
                       position: absolute;
                       right: 12px;
                       pointer-events: none;
                       color: var(--secondary-text-color, rgba(255,255,255,0.5));
                       font-size: 0.9em;
                     "
-                  >${this.unit}</span>`
-        : nothing
-      }
+                >${this.unit}</span
+              >`
+            : nothing}
         </div>
       </div>
     `;

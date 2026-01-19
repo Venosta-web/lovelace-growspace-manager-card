@@ -4,17 +4,29 @@ const languages: any = {
     en,
 };
 
-// Basic flattening/lookup logic
-// For this MVP, we just use English or allow for future language injection
-export function localize(string: string, search = '', replace = ''): string {
-    const lang = 'en'; // Hardcoded for now until we hook up hass.language to context
+// Basic lookup logic
+export const localize = (
+    string: string,
+    search = '',
+    replace = '',
+    language: string = 'en'
+): string => {
+    if (!string || typeof string !== 'string') {
+        return string;
+    }
+    const [section, key] = string.split('.');
 
-    let translated: any;
+    let translated: string;
+    const lang = language.replace(/_/, '-');
 
     try {
-        translated = string.split('.').reduce((o, i) => o[i], languages[lang]);
-    } catch (e) {
-        translated = string;
+        translated = languages[lang][section][key];
+    } catch (_) {
+        try {
+            translated = languages.en[section][key];
+        } catch (_) {
+            translated = string;
+        }
     }
 
     if (translated === undefined) {
@@ -25,4 +37,4 @@ export function localize(string: string, search = '', replace = ''): string {
         translated = translated.replace(search, replace);
     }
     return translated;
-}
+};

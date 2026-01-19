@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { mdiFullscreenExit } from '@mdi/js';
 import { PlantEntity } from '../../types';
 import '../growspace-grid';
@@ -58,7 +58,7 @@ export class GrowspaceViewCompact extends LitElement {
         height: 22px;
         fill: currentColor;
       }
-    `
+    `,
   ];
 
   public focusPlant(index: number) {
@@ -71,23 +71,18 @@ export class GrowspaceViewCompact extends LitElement {
   protected render(): TemplateResult {
     return html`
       <div class="compact-controls">
-            <button
-            class="compact-exit-fab"
-            @click=${() => this._dispatchModeChange('standard')}
-            title="Exit Compact Mode"
-            >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiFullscreenExit}"></path>
-            </svg>
-            </button>
+        <button
+          class="compact-exit-fab"
+          @click=${() => this._dispatchModeChange('standard')}
+          title="Exit Compact Mode"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiFullscreenExit}"></path>
+          </svg>
+        </button>
       </div>
       <div class="view-mode-container compact">
-        <growspace-grid
-          .plants=${this.grid}
-          .rows=${this.rows}
-          .cols=${this.cols}
-        ></growspace-grid>
-
+        <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
       </div>
     `;
   }

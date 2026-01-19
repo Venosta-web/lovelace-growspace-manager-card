@@ -1,19 +1,9 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import {
-  GrowspaceDevice,
-  StrainEntry,
   CropMeta,
   IrrigationStrategy,
   GrowspaceAPIResponse,
-  HistorySensorState,
-  GrowAdviceResponse,
 } from './types';
-import {
-  GrowspaceAPICollection,
-  NutrientPresetsResponse,
-  IPMPresetsResponse,
-  NutrientInventoryResponse,
-} from './schemas/api-schema';
 
 // Import all API services
 import { GrowspaceAPI } from './services/api/growspace-api';
@@ -26,7 +16,7 @@ import { AIAPI } from './services/api/ai-api';
 
 /**
  * DataService - Thin facade coordinating domain-specific API services.
- * 
+ *
  * This service delegates all operations to focused domain services:
  * - GrowspaceAPI: Growspace data, CRUD, caching
  * - StrainAPI: Strain library management
@@ -83,8 +73,7 @@ export class DataService {
   // Growspace API Delegations
   // ========================================
 
-  fetchGrowspaceData = (growspaceId?: string) =>
-    this._growspaceAPI.fetchGrowspaceData(growspaceId);
+  fetchGrowspaceData = (growspaceId?: string) => this._growspaceAPI.fetchGrowspaceData(growspaceId);
 
   getGrowspaceDevices = (wsDataMap?: Record<string, GrowspaceAPIResponse>) =>
     this._growspaceAPI.getGrowspaceDevices(wsDataMap);
@@ -181,12 +170,8 @@ export class DataService {
 
   fetchNutrientInventory = () => this._nutrientAPI.fetchNutrientInventory();
 
-  updateNutrientStock = (
-    nutrientId: string,
-    name: string,
-    currentMl: number,
-    initialMl: number
-  ) => this._nutrientAPI.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+  updateNutrientStock = (nutrientId: string, name: string, currentMl: number, initialMl: number) =>
+    this._nutrientAPI.updateNutrientStock(nutrientId, name, currentMl, initialMl);
 
   removeNutrientStock = (nutrientId: string) => this._nutrientAPI.removeNutrientStock(nutrientId);
 
@@ -283,8 +268,7 @@ export class DataService {
 
   removePlant = (plantId: string) => this._plantAPI.removePlant(plantId);
 
-  harvestPlant = (plantId: string, target?: string) =>
-    this._plantAPI.harvestPlant(plantId, target);
+  harvestPlant = (plantId: string, target?: string) => this._plantAPI.harvestPlant(plantId, target);
 
   takeClone = (params: {
     mother_plant_id: string;

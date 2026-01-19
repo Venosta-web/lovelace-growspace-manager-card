@@ -93,40 +93,48 @@ export class AddPlantsDialog extends LitElement {
   }
 
   private _openStrainCreator() {
-    this.dispatchEvent(new CustomEvent('create-new-strain', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        source: 'add-plants',
-        returnPayload: {
-          strain: this.strain,
-          phenotype: this.phenotype,
-          amount: this.amount,
-          start_number: this.start_number,
-          seedling_start: this.seedling_start,
-          veg_start: this.veg_start,
-          flower_start: this.flower_start,
-          mother_start: this.mother_start,
-          clone_start: this.clone_start,
-          dry_start: this.dry_start,
-          cure_start: this.cure_start,
-        }
-      }
-    }));
+    this.dispatchEvent(
+      new CustomEvent('create-new-strain', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          source: 'add-plants',
+          returnPayload: {
+            strain: this.strain,
+            phenotype: this.phenotype,
+            amount: this.amount,
+            start_number: this.start_number,
+            seedling_start: this.seedling_start,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+          },
+        },
+      })
+    );
   }
 
   private _confirm() {
     if (this.growspaceDevice) {
-      const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
+      const totalSlots =
+        (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
       const occupied = this.growspaceDevice.plants?.length || 0;
       const free = Math.max(0, totalSlots - occupied);
 
       if (this.amount > free) {
-        this.dispatchEvent(new CustomEvent('show-toast', {
-          bubbles: true,
-          composed: true,
-          detail: { message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`, type: 'error' }
-        }));
+        this.dispatchEvent(
+          new CustomEvent('show-toast', {
+            bubbles: true,
+            composed: true,
+            detail: {
+              message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`,
+              type: 'error',
+            },
+          })
+        );
         return;
       }
     }
@@ -197,16 +205,19 @@ export class AddPlantsDialog extends LitElement {
                 <path d="${mdiInformationOutline}"></path>
               </svg>
               <div>
-                Batch adding will automatically find available positions in the growspace. 
-                Plants will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>.
-                For example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and OG Kush #3.
+                Batch adding will automatically find available positions in the growspace. Plants
+                will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>. For
+                example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and
+                OG Kush #3.
               </div>
             </div>
 
             <!-- IDENTITY CARD -->
             <div class="detail-card">
               <h3>Batch Configuration</h3>
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
+              <div
+                style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;"
+              >
                 <md3-select
                   style="width: 100%;"
                   label="Strain *"
@@ -225,22 +236,27 @@ export class AddPlantsDialog extends LitElement {
                   </svg>
                 </button>
               </div>
-              
+
               <md3-text-input
                 label="Phenotype (Optional)"
                 .value=${this.phenotype}
                 @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
               ></md3-text-input>
 
-              <div class="toggle-container" style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;">
-                  <span style="font-size: 0.95rem; color: var(--secondary-text-color);">Add to Strain Library</span>
-                  <md3-switch
-                      .checked=${this.addToLibrary}
-                      @change=${(e: any) => this.addToLibrary = e.target.checked}
-                      ?disabled=${!this.strain}
-                  ></md3-switch>
+              <div
+                class="toggle-container"
+                style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+              >
+                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                  >Add to Strain Library</span
+                >
+                <md3-switch
+                  .checked=${this.addToLibrary}
+                  @change=${(e: any) => (this.addToLibrary = e.target.checked)}
+                  ?disabled=${!this.strain}
+                ></md3-switch>
               </div>
-              
+
               <div class="row-col-grid">
                 <md3-number-input
                   label="Amount"

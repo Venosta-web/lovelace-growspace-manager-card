@@ -1,5 +1,10 @@
 import { LovelaceCardConfig } from 'custom-card-helpers';
-import { MetricKey, ViewMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceType as GrowspaceTypeEnum } from './constants';
+import {
+  MetricKey,
+  ViewMode,
+  GridOverlayMode as GridOverlayModeEnum,
+  GrowspaceType as GrowspaceTypeEnum,
+} from './constants';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { mdiSprout, mdiFlower, mdiHairDryer, mdiCannabis } from '@mdi/js';
 
@@ -11,6 +16,7 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   theme?: 'dark' | 'default' | 'green';
   growspaces?: string[];
   initial_view_mode?: ViewMode;
+  auto_select_growspace?: boolean;
 }
 
 export type GrowspaceViewMode = ViewMode;
@@ -45,8 +51,13 @@ export type GrowspaceType = GrowspaceTypeEnum;
 
 // --- Configuration Constants ---
 
-export const STAGE_CONFIG: Record<PlantStage, { icon: string; title: string; colorVar?: string }> = {
-  [PlantStage.SEEDLING]: { icon: mdiSprout, title: 'Seedling', colorVar: '--state-seedling-color' },
+export const STAGE_CONFIG: Record<PlantStage, { icon: string; title: string; colorVar?: string }> =
+{
+  [PlantStage.SEEDLING]: {
+    icon: mdiSprout,
+    title: 'Seedling',
+    colorVar: '--state-seedling-color',
+  },
   [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
   [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
   [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
@@ -282,7 +293,8 @@ export interface RawPlantData {
 }
 
 // The exact structure returned by GrowspaceSerializer.serialize_growspace
-export interface GrowspaceAPIResponse extends SerializedBiologicalMetrics, SerializedEnvironmentAttributes, SerializedStats {
+export interface GrowspaceAPIResponse
+  extends SerializedBiologicalMetrics, SerializedEnvironmentAttributes, SerializedStats {
   growspace_id: string;
   name: string;
   type: GrowspaceType;
@@ -349,7 +361,6 @@ export enum TrainingTechnique {
   LOLLIPOPPING = 'lollipopping',
 }
 
-
 export interface GrowspaceOverviewEntity extends HassEntity {
   attributes: {
     growspace_id: string;
@@ -397,7 +408,6 @@ export function createGrowspaceDevice(
     ...params,
   } as GrowspaceDevice;
 }
-
 
 // --- Data Structures ---
 
@@ -651,7 +661,6 @@ export interface GrowspaceEvent {
   images?: string[];
   tags?: string[];
 }
-
 
 export type IPMType = 'foliar' | 'drench' | 'beneficials';
 

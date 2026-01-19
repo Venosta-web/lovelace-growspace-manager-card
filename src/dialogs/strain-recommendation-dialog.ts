@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiBrain, mdiClose, mdiLoading } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';

@@ -1,5 +1,12 @@
 import { atom, onMount, WritableAtom } from 'nanostores';
-import { GrowspaceDevice, StrainEntry, GrowspaceManagerCardConfig, GrowspaceAPIResponse, NutrientPreset, IPMPreset } from '../types';
+import {
+    GrowspaceDevice,
+    StrainEntry,
+    GrowspaceManagerCardConfig,
+    GrowspaceAPIResponse,
+    NutrientPreset,
+    IPMPreset,
+} from '../types';
 
 export class GrowspaceDataStore {
     // Domain Data Atoms
@@ -166,7 +173,7 @@ export class GrowspaceDataStore {
             let gridChanged = false;
             const newGrid = { ...newCache[gsId].grid };
 
-            Object.keys(newGrid).forEach(key => {
+            Object.keys(newGrid).forEach((key) => {
                 const plant = newGrid[key];
                 if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
                     newGrid[key] = null;
@@ -184,14 +191,14 @@ export class GrowspaceDataStore {
             removeFn(growspaceId);
         } else {
             // Optimization: Look up growspace ID from map instead of scanning everything
-            const deviceId = this.$plantToDeviceMap.get().get(plantId);
+
 
             const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
             if (probableGrowspaceId && newCache[probableGrowspaceId]) {
                 removeFn(probableGrowspaceId);
             } else {
                 // Fallback if map fails or inconsistent
-                Object.keys(newCache).forEach(gsId => removeFn(gsId));
+                Object.keys(newCache).forEach((gsId) => removeFn(gsId));
             }
         }
 
@@ -205,7 +212,7 @@ export class GrowspaceDataStore {
         const newCache = { ...currentCache };
         let changed = false;
 
-        Object.keys(newCache).forEach(gsId => {
+        Object.keys(newCache).forEach((gsId) => {
             const grid = newCache[gsId].grid;
             if (!grid) return;
 
@@ -217,8 +224,8 @@ export class GrowspaceDataStore {
                         ...newCache[gsId],
                         grid: {
                             ...newCache[gsId].grid,
-                            [key]: updatedPlant
-                        }
+                            [key]: updatedPlant,
+                        },
                     };
                     changed = true;
                 }

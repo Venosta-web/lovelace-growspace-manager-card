@@ -1,5 +1,5 @@
-import { GraphDataPoint, HistorySensorState, MetricType } from './types';
-import { MetricKey, EntityState, BINARY_ON_STATES, BINARY_OFF_STATES } from './constants';
+import { GraphDataPoint, HistorySensorState } from './types';
+import { MetricKey, EntityState, BINARY_ON_STATES } from './constants';
 
 export class GraphDataTransformer {
   /**

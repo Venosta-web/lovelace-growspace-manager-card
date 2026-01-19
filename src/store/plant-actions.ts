@@ -34,8 +34,7 @@ export async function updatePlantFromDialog(
     const { plant, editedAttributes, selectedPlantIds } = dialogState;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
-    const targetIds =
-        selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+    const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
     const isBulkEdit = targetIds.length > 1;
 
     const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
@@ -63,11 +62,8 @@ export async function updatePlantFromDialog(
 /**
  * Internal helper for API deletion with optimistic updates
  */
-async function _deletePlantsApi(
-    ctx: ActionContext,
-    plantIds: string[]
-): Promise<boolean> {
-    plantIds.forEach(id => ctx.data.addOptimisticDeletedPlantId(id));
+async function _deletePlantsApi(ctx: ActionContext, plantIds: string[]): Promise<boolean> {
+    plantIds.forEach((id) => ctx.data.addOptimisticDeletedPlantId(id));
 
     try {
         await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
@@ -75,7 +71,7 @@ async function _deletePlantsApi(
     } catch (e: any) {
         console.error('Failed to delete plant:', e);
         ctx.showToast(`Failed to delete: ${e.message}`, 'error');
-        plantIds.forEach(id => ctx.data.removeOptimisticDeletedPlantId(id));
+        plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
         return false;
     }
 }
@@ -88,9 +84,11 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
 
     const plantsToRestore: any[] = [];
     const devices = ctx.data.$devices.get();
-    ids.forEach(id => {
+    ids.forEach((id) => {
         for (const device of devices) {
-            const plant = device.plants?.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+            const plant = device.plants?.find(
+                (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id
+            );
             if (plant) {
                 plantsToRestore.push({
                     growspace_id: plant.attributes.growspace_id || device.deviceId,
@@ -116,7 +114,10 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
     if (success) {
         ctx.undoRedoManager.pushAction({
             type: ids.length > 1 ? 'batch-delete' : 'delete',
-            description: ids.length > 1 ? `Deleted ${ids.length} plants` : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+            description:
+                ids.length > 1
+                    ? `Deleted ${ids.length} plants`
+                    : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
             reverse: async () => {
                 for (const p of plantsToRestore) {
                     await ctx.dataService.addPlant(p);
@@ -125,7 +126,7 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
             },
             redo: async () => {
                 await handleDeletePlant(ctx, ids);
-            }
+            },
         });
 
         // UI Updates
@@ -137,7 +138,6 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
         // We'll trust the original code's intent or use remove.
         ctx.ui.deselectPlants(ids);
 
-
         if (ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
             ctx.closeDialog();
         }
@@ -145,7 +145,6 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
         ctx.refreshData(); // updateGrid equivalent
     }
 }
-
 
 /**
  * Move plant to next stage (flower→dry, dry→cure, mother→clone).
@@ -182,7 +181,7 @@ export async function movePlantToNextStage(
         await ctx.dataService.harvestPlant(plantId, targetGrowspace);
         ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
@@ -220,7 +219,7 @@ export async function movePlantToGrowspace(
         await _movePlantApi(ctx, plant, targetGrowspace);
 
         // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
 
@@ -233,7 +232,7 @@ export async function movePlantToGrowspace(
             },
             redo: async () => {
                 await movePlantToGrowspace(ctx, plant, targetGrowspace);
-            }
+            },
         });
 
         return true;
@@ -253,8 +252,7 @@ export async function takeClone(
     numClones?: number,
     targetGrowspaceId?: string
 ): Promise<boolean> {
-    const plantId =
-        motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
 
     try {
         await ctx.dataService.takeClone({
@@ -262,7 +260,10 @@ export async function takeClone(
             num_clones: numClones,
             target_growspace_id: targetGrowspaceId,
         });
-        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
+        console.log(
+            `Clone taken from ${motherPlant.attributes?.strain || 'plant'}`,
+            targetGrowspaceId ? `to ${targetGrowspaceId}` : ''
+        );
         return true;
     } catch (error: any) {
         console.error(`Failed to take clone: ${error.message}`);
@@ -307,10 +308,16 @@ export async function handlePlantDrop(
 
     const originalRow = sourcePlant.attributes.row;
     const originalCol = sourcePlant.attributes.col;
-    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
-    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+    const sourceId =
+        sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+    const targetId =
+        targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
 
-    console.log('handlePlantDrop:', { sourceId, targetId, growspaceId: sourcePlant.attributes.growspace_id });
+    console.log('handlePlantDrop:', {
+        sourceId,
+        targetId,
+        growspaceId: sourcePlant.attributes.growspace_id,
+    });
 
     if (sourceId === targetId) return false;
 
@@ -358,7 +365,7 @@ export async function handlePlantDrop(
 
         // 2. Update Devices Atom (for immediate UI Reactivity)
         const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex(d => d.deviceId === growspaceId);
+        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
             const device = { ...newDevices[deviceIdx] };
@@ -377,9 +384,17 @@ export async function handlePlantDrop(
             // Use OptimisticManager
             const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
                 'swap',
-                { sourceId, targetId: targetId!, growspaceId, originalRow, originalCol, targetRow, targetCol },
+                {
+                    sourceId,
+                    targetId: targetId!,
+                    growspaceId,
+                    originalRow,
+                    originalCol,
+                    targetRow,
+                    targetCol,
+                },
                 () => performOptimisticGridUpdate(false), // Apply
-                () => performOptimisticGridUpdate(true)  // Revert
+                () => performOptimisticGridUpdate(true) // Revert
             );
 
             // Perform actual API call
@@ -390,7 +405,7 @@ export async function handlePlantDrop(
                 description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
                 redo: async () => {
                     await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                }
+                },
             });
 
             return true;
@@ -407,7 +422,7 @@ export async function handlePlantDrop(
                 },
                 redo: async () => {
                     await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                }
+                },
             });
 
             await ctx.refreshData();
@@ -462,7 +477,7 @@ export async function confirmAddPlant(
             try {
                 await ctx.dataService.addStrain({
                     strain: detail.strain,
-                    phenotype: detail.phenotype
+                    phenotype: detail.phenotype,
                 });
                 await libraryActions.fetchStrainLibrary(ctx, true);
                 ctx.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
@@ -500,10 +515,7 @@ export async function confirmAddPlant(
 /**
  * Batch add plants with Undo/Redo
  */
-export async function confirmAddPlants(
-    ctx: ActionContext,
-    detail: any
-): Promise<void> {
+export async function confirmAddPlants(ctx: ActionContext, detail: any): Promise<void> {
     const selectedDevice = ctx.data.$selectedDevice.get();
     if (!selectedDevice) {
         ctx.showToast('No growspace selected', 'error');
@@ -512,7 +524,7 @@ export async function confirmAddPlants(
 
     const devices = ctx.data.$devices.get();
     const beforeIds = new Set<string>();
-    devices.forEach(d => d.plants?.forEach(p => beforeIds.add(p.attributes.plant_id || '')));
+    devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
 
     try {
         if (detail.addToLibrary) {
@@ -531,10 +543,12 @@ export async function confirmAddPlants(
                         ? `${detail.phenotype} #${currentNumber}`
                         : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
 
-                    promises.push(ctx.dataService.addStrain({
-                        strain: detail.strain,
-                        phenotype: phenoName
-                    }));
+                    promises.push(
+                        ctx.dataService.addStrain({
+                            strain: detail.strain,
+                            phenotype: phenoName,
+                        })
+                    );
                 }
 
                 await Promise.all(promises);
@@ -547,29 +561,31 @@ export async function confirmAddPlants(
         }
 
         // Exclude addToLibrary from payload sent to backend
-        const { addToLibrary, ...apiPayload } = detail;
+        const { addToLibrary: _, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             growspace_id: selectedDevice,
-            ...apiPayload
+            ...apiPayload,
         });
 
         await ctx.refreshData();
 
         const afterDevices = ctx.data.$devices.get();
         const addedIds: string[] = [];
-        afterDevices.forEach(d => d.plants?.forEach(p => {
-            const id = p.attributes.plant_id || '';
-            if (id && !beforeIds.has(id)) {
-                addedIds.push(id);
-            }
-        }));
+        afterDevices.forEach((d) =>
+            d.plants?.forEach((p) => {
+                const id = p.attributes.plant_id || '';
+                if (id && !beforeIds.has(id)) {
+                    addedIds.push(id);
+                }
+            })
+        );
 
         if (addedIds.length > 0) {
             ctx.undoRedoManager.pushAction({
                 type: 'batch-delete',
                 description: `Added ${addedIds.length} plants`,
                 reverse: async () => {
-                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete. 
+                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete.
                     // handleDeletePlant pushes undo action. We probably don't want nested undo actions here.
                     // So we use _deletePlantsApi.
                     await _deletePlantsApi(ctx, addedIds);
@@ -577,7 +593,7 @@ export async function confirmAddPlants(
                 },
                 redo: async () => {
                     await confirmAddPlants(ctx, detail);
-                }
+                },
             });
         }
 

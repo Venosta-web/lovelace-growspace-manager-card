@@ -247,8 +247,6 @@ export const uiStyles = css`
     color: var(--error-color, #f44336);
   }
 
-
-
   /* --- Toast Notification --- */
   .toast-notification {
     position: absolute;

@@ -1,19 +1,11 @@
-import {
-  LitElement,
-  html,
-  CSSResultGroup,
-  TemplateResult,
-  PropertyValues,
-} from 'lit';
+import { LitElement, html, CSSResultGroup, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
 import { hassContext, configContext, strainLibraryContext, storeContext } from './context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
-
-
-import { GrowspaceManagerCardConfig, PlantEntity, GrowspaceDevice, StrainEntry } from './types';
+import { GrowspaceManagerCardConfig, GrowspaceDevice, StrainEntry } from './types';
 import { ViewMode } from './constants';
 
 import { SubscriptionController } from './controllers/subscription-controller';
@@ -35,14 +27,14 @@ import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/growspace-store';
 import { StoreController } from '@nanostores/lit';
 
-
-
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
   store = new GrowspaceStore();
 
-  protected _subscriptionController = new SubscriptionController(this, this.store.data, () => this.store.updateHass(this.hass));
+  protected _subscriptionController = new SubscriptionController(this, this.store.data, () =>
+    this.store.updateHass(this.hass)
+  );
 
   // UI Store Controllers
   // Consolidated UI Controller
@@ -57,7 +49,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   // Grid derived atoms
   protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
   protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
-  protected _growspaceOptionsController = new StoreController(this, this.store.grid.$growspaceOptions);
+  protected _growspaceOptionsController = new StoreController(
+    this,
+    this.store.grid.$growspaceOptions
+  );
 
   /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
@@ -165,8 +160,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.handleKeyboardNavigation(e.key);
   }
 
-
-
   private _downloadFile(url: string) {
     const a = document.createElement('a');
     a.style.display = 'none';
@@ -258,31 +251,32 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     const isWide = selectedDeviceData.plantsPerRow > 7;
 
     return html`
-      <error-boundary 
-          .fallbackMessage=${'Failed to load Growspace Manager'}
-          .onError=${this._handleError}
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace Manager'}
+        .onError=${this._handleError}
       >
         <ha-card class=${isWide ? 'wide-growspace' : ''}>
           <div class="sr-only-announcer" aria-live="polite"></div>
-          <div 
-              class="unified-growspace-card glass-surface glass-panel" 
-              role="region"
-              aria-label="Growspace: ${selectedDeviceData.name}"
-              tabindex="0" 
-              @keydown=${this._handleKeyboardNav}
-              @view-mode-changed=${this._handleViewModeChanged}
-              @growspace-changed=${this._handleGrowspaceChanged}
-              @toggle-expansion=${this._handleToggleExpansion}
-              @select-all=${this._handleSelectAll}
-              @clear-selection=${this._handleClearSelection}
-              @water-selected=${this._handleWaterSelected}
-              @training-selected=${this._handleTrainingSelected}
-              @ipm-selected=${this._handleIPMSelected}
-              @batch-add-plants=${this._handleBatchAddPlants}
-              @delete-selected=${this._handleDeleteSelected}
-              @transplant-mode=${this._handleTransplantMode}
-              @exit-edit-mode=${this._handleExitEditMode}
-          >            <growspace-view-switcher
+          <div
+            class="unified-growspace-card glass-surface glass-panel"
+            role="region"
+            aria-label="Growspace: ${selectedDeviceData.name}"
+            tabindex="0"
+            @keydown=${this._handleKeyboardNav}
+            @view-mode-changed=${this._handleViewModeChanged}
+            @growspace-changed=${this._handleGrowspaceChanged}
+            @toggle-expansion=${this._handleToggleExpansion}
+            @select-all=${this._handleSelectAll}
+            @clear-selection=${this._handleClearSelection}
+            @water-selected=${this._handleWaterSelected}
+            @training-selected=${this._handleTrainingSelected}
+            @ipm-selected=${this._handleIPMSelected}
+            @batch-add-plants=${this._handleBatchAddPlants}
+            @delete-selected=${this._handleDeleteSelected}
+            @transplant-mode=${this._handleTransplantMode}
+            @exit-edit-mode=${this._handleExitEditMode}
+          >
+            <growspace-view-switcher
               .viewMode=${this._cardViewController.value.viewMode}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
@@ -295,8 +289,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
               .isLoading=${this._cardViewController.value.isLoading}
               .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
             ></growspace-view-switcher>
-            
-
           </div>
         </ha-card>
 
@@ -321,10 +313,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this.hass.callService('system_log', 'write', {
         message: `Growspace Manager Card Error: ${error.message}. Info: ${JSON.stringify(errorInfo)}`,
         level: 'error',
-        logger: 'lovelace_growspace_manager_card'
+        logger: 'lovelace_growspace_manager_card',
       });
     }
-  }
+  };
 }
-
-

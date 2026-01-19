@@ -1,6 +1,5 @@
 import {
   GrowspaceDevice,
-  GrowspaceType,
   PlantEntity,
   createGrowspaceDevice,
   PlantStage,
@@ -20,14 +19,14 @@ export class GrowspaceAdapter {
   ): GrowspaceDevice | null {
     if (!wsData && !overview) return null;
 
-    const growspace_id = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
-    const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspace_id}`;
+    const growspaceId = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+    const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
     const overviewEntityId = wsData?.overview_entity_id || overview?.entity_id || '';
 
     // 1. Loading State
     if (!wsData) {
       return createGrowspaceDevice({
-        deviceId: growspace_id,
+        deviceId: growspaceId,
         overviewEntityId: overview!.entity_id,
         name,
         lastUpdated: 'Loading...',
@@ -94,7 +93,7 @@ export class GrowspaceAdapter {
               ...slot, // Spread raw plant data
               row: Number(slot.row),
               col: Number(slot.col),
-              growspace_id,
+              growspace_id: growspaceId,
               friendly_name: `${slot.strain} ${slot.phenotype}`,
               stage: (slot.stage as PlantStage) || 'unknown',
             },
@@ -118,20 +117,23 @@ export class GrowspaceAdapter {
       vegDayHours: irrigationConfigRaw.veg_day_hours,
     };
 
-    const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy ? {
-      enabled: wsData.irrigation_strategy.enabled,
-      lightsOnTime: wsData.irrigation_strategy.lights_on_time,
-      p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
-      p2StopBeforeLightsOffMinutes: wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
-      targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
-      maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
-      shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
-      shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
-    } : undefined;
+    const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy
+      ? {
+        enabled: wsData.irrigation_strategy.enabled,
+        lightsOnTime: wsData.irrigation_strategy.lights_on_time,
+        p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
+        p2StopBeforeLightsOffMinutes:
+          wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
+        targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
+        maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
+        shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
+        shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+      }
+      : undefined;
 
     // 5. Construct Device
     return createGrowspaceDevice({
-      deviceId: growspace_id,
+      deviceId: growspaceId,
       overviewEntityId,
       name,
       type: wsData.type || 'normal',

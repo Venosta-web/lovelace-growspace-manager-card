@@ -10,15 +10,15 @@ import { variables } from '../../styles/variables';
 
 @customElement('growspace-view-header')
 export class GrowspaceViewHeader extends LitElement {
-    @property({ attribute: false }) device: GrowspaceDevice | undefined;
-    @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
+  @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
 
-    static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+  static styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 
-    protected render(): TemplateResult {
-        if (!this.device) return html``;
+  protected render(): TemplateResult {
+    if (!this.device) return html``;
 
-        return html`
+    return html`
       <div class="view-mode-container header">
         <growspace-header
           .device=${this.device}
@@ -32,22 +32,20 @@ export class GrowspaceViewHeader extends LitElement {
         </button>
       </div>
     `;
-    }
+  }
 
-    private _redispatch(e: CustomEvent, type: string) {
-        e.stopPropagation();
-        this.dispatchEvent(
-            new CustomEvent(type, {
-                detail: e.detail || (e.target as HTMLSelectElement).value, // Fallback if it was a raw change event
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+  private _redispatch(e: CustomEvent, type: string) {
+    e.stopPropagation();
+    this.dispatchEvent(
+      new CustomEvent(type, {
+        detail: e.detail || (e.target as HTMLSelectElement).value, // Fallback if it was a raw change event
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    private _dispatchToggle() {
-        this.dispatchEvent(
-            new CustomEvent('toggle-expansion', { bubbles: true, composed: true })
-        );
-    }
+  private _dispatchToggle() {
+    this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
+  }
 }

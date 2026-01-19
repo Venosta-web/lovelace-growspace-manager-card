@@ -33,7 +33,10 @@ vi.mock('../../../src/controllers/growspace-logbook-controller', () => ({
 
 // Mock timeline service
 vi.mock('../../../src/services/timeline-service', () => ({
-    getTimelineService: vi.fn(),
+    getTimelineService: vi.fn().mockReturnValue({
+        fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+        fetchEventLog: vi.fn().mockResolvedValue([])
+    }),
 }));
 
 // Mock ha-dialog

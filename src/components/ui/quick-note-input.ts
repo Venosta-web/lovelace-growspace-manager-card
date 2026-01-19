@@ -8,15 +8,15 @@ import { mdiCameraPlus, mdiSend, mdiClose } from '@mdi/js';
  */
 @customElement('quick-note-input')
 export class QuickNoteInput extends LitElement {
-    @property({ type: String }) placeholder = 'Add a cultivation note...';
-    @property({ type: Boolean }) allowImages = true;
-    @property({ type: Boolean }) disabled = false;
+  @property({ type: String }) placeholder = 'Add a cultivation note...';
+  @property({ type: Boolean }) allowImages = true;
+  @property({ type: Boolean }) disabled = false;
 
-    @state() private _text = '';
-    @state() private _images: string[] = [];
-    @state() private _isSaving = false;
+  @state() private _text = '';
+  @state() private _images: string[] = [];
+  @state() private _isSaving = false;
 
-    static styles = css`
+  static styles = css`
     :host {
       display: block;
       margin-bottom: 24px;
@@ -156,119 +156,119 @@ export class QuickNoteInput extends LitElement {
     }
   `;
 
-    /**
-     * Resize and compress an image file
-     */
-    private async _resizeImage(file: File): Promise<string> {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Could not get canvas context'));
-                        return;
-                    }
+  /**
+   * Resize and compress an image file
+   */
+  private async _resizeImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Could not get canvas context'));
+            return;
+          }
 
-                    // Max dimensions
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
-                    let width = img.width;
-                    let height = img.height;
+          // Max dimensions
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          let width = img.width;
+          let height = img.height;
 
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    } else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // Compress to JPEG 0.8
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
-                };
-                img.onerror = (e) => reject(e);
-                img.src = e.target?.result as string;
-            };
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
-    }
-
-    private async _handleFileSelect(e: Event) {
-        const input = e.target as HTMLInputElement;
-        if (!input.files) return;
-
-        const files = Array.from(input.files);
-        for (const file of files) {
-            try {
-                const resized = await this._resizeImage(file);
-                this._images = [...this._images, resized];
-            } catch (err) {
-                console.error('Error processing image:', err);
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
             }
-        }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
 
-        // Clear input to allow re-selecting same file
-        input.value = '';
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG 0.8
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(dataUrl);
+        };
+        img.onerror = (e) => reject(e);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  private async _handleFileSelect(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (!input.files) return;
+
+    const files = Array.from(input.files);
+    for (const file of files) {
+      try {
+        const resized = await this._resizeImage(file);
+        this._images = [...this._images, resized];
+      } catch (err) {
+        console.error('Error processing image:', err);
+      }
     }
 
-    private _removeImage(index: number) {
-        this._images = this._images.filter((_, i) => i !== index);
-    }
+    // Clear input to allow re-selecting same file
+    input.value = '';
+  }
 
-    private async _submit() {
-        if (!this._text.trim() && !this._images.length) return;
+  private _removeImage(index: number) {
+    this._images = this._images.filter((_, i) => i !== index);
+  }
 
-        this._isSaving = true;
+  private async _submit() {
+    if (!this._text.trim() && !this._images.length) return;
 
-        // Dispatch event with note data
-        this.dispatchEvent(
-            new CustomEvent('submit', {
-                detail: {
-                    text: this._text.trim(),
-                    images: this._images,
-                },
-                bubbles: true,
-                composed: true,
-            })
-        );
+    this._isSaving = true;
 
-        // Note: The parent component should handle the actual submission
-        // and call clear() method on success
-    }
+    // Dispatch event with note data
+    this.dispatchEvent(
+      new CustomEvent('submit', {
+        detail: {
+          text: this._text.trim(),
+          images: this._images,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
 
-    /**
-     * Public method to clear the input after successful submission
-     */
-    public clear() {
-        this._text = '';
-        this._images = [];
-        this._isSaving = false;
-    }
+    // Note: The parent component should handle the actual submission
+    // and call clear() method on success
+  }
 
-    /**
-     * Public method to set saving state (called by parent during submission)
-     */
-    public setSaving(saving: boolean) {
-        this._isSaving = saving;
-    }
+  /**
+   * Public method to clear the input after successful submission
+   */
+  public clear() {
+    this._text = '';
+    this._images = [];
+    this._isSaving = false;
+  }
 
-    render() {
-        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
+  /**
+   * Public method to set saving state (called by parent during submission)
+   */
+  public setSaving(saving: boolean) {
+    this._isSaving = saving;
+  }
 
-        return html`
+  render() {
+    const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
+
+    return html`
       <div class="container">
         <div class="input-wrapper">
           <textarea
@@ -281,10 +281,10 @@ export class QuickNoteInput extends LitElement {
         </div>
 
         ${this._images.length > 0
-                ? html`
+          ? html`
               <div class="image-previews">
                 ${this._images.map(
-                    (img, i) => html`
+                  (img, i) => html`
                     <div class="preview-item">
                       <img src=${img} alt="Preview ${i + 1}" />
                       <button
@@ -302,12 +302,12 @@ export class QuickNoteInput extends LitElement {
                 )}
               </div>
             `
-                : nothing}
+          : nothing}
 
         <div class="actions">
           <div class="action-buttons">
             ${this.allowImages
-                ? html`
+              ? html`
                   <input
                     type="file"
                     id="fileInput"
@@ -316,8 +316,7 @@ export class QuickNoteInput extends LitElement {
                     accept="image/*"
                   />
                   <button
-                    @click=${() =>
-                        this.shadowRoot?.getElementById('fileInput')?.click()}
+                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
                     ?disabled=${this.disabled || this._isSaving}
                     aria-label="Add image"
                     title="Add image"
@@ -327,7 +326,7 @@ export class QuickNoteInput extends LitElement {
                     </svg>
                   </button>
                 `
-                : nothing}
+              : nothing}
           </div>
           <button
             class="submit-btn"
@@ -343,11 +342,11 @@ export class QuickNoteInput extends LitElement {
         </div>
       </div>
     `;
-    }
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'quick-note-input': QuickNoteInput;
-    }
+  interface HTMLElementTagNameMap {
+    'quick-note-input': QuickNoteInput;
+  }
 }

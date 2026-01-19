@@ -165,12 +165,7 @@ describe('Coverage Top-off', () => {
 
 
 
-        it('_formatProb should handle undefined', () => {
-            expect((element as any)._formatProb(undefined)).toBe('--%');
-            expect((element as any)._formatProb(null)).toBe('--%');
-            expect((element as any)._formatProb(NaN)).toBe('--%');
-            expect((element as any)._formatProb(0.5)).toBe('50%');
-        });
+
 
         it('scrollToTimestamp should scroll to element if found', async () => {
             const mockEl = { scrollIntoView: vi.fn() };

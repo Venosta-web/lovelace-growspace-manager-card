@@ -9,11 +9,11 @@ import { mdiAlertCircle, mdiRefresh } from '@mdi/js';
  */
 @customElement('growspace-error-boundary')
 export class GrowspaceErrorBoundary extends LitElement {
-    @state() private _hasError = false;
-    @state() private _error: Error | null = null;
-    @state() private _errorInfo: string = '';
+  @state() private _hasError = false;
+  @state() private _error: Error | null = null;
+  @state() private _errorInfo: string = '';
 
-    static styles = css`
+  static styles = css`
     :host {
       display: contents;
     }
@@ -91,53 +91,53 @@ export class GrowspaceErrorBoundary extends LitElement {
     }
   `;
 
-    connectedCallback() {
-        super.connectedCallback();
-        // Listen for error events from child components
-        this.addEventListener('error', this._handleError as EventListener);
-    }
+  connectedCallback() {
+    super.connectedCallback();
+    // Listen for error events from child components
+    this.addEventListener('error', this._handleError as EventListener);
+  }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.removeEventListener('error', this._handleError as EventListener);
-    }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener('error', this._handleError as EventListener);
+  }
 
-    private _handleError = (event: ErrorEvent) => {
-        event.stopPropagation();
-        this._hasError = true;
-        this._error = event.error || new Error(event.message || 'Unknown error');
-        this._errorInfo = event.message || 'An unexpected error occurred';
-        console.error('[GrowspaceErrorBoundary] Caught error:', this._error);
-    };
+  private _handleError = (event: ErrorEvent) => {
+    event.stopPropagation();
+    this._hasError = true;
+    this._error = event.error || new Error(event.message || 'Unknown error');
+    this._errorInfo = event.message || 'An unexpected error occurred';
+    console.error('[GrowspaceErrorBoundary] Caught error:', this._error);
+  };
 
-    /**
-     * Call this method to programmatically trigger an error state.
-     * Useful for catching async errors in child components.
-     */
-    public setError(error: Error, info?: string) {
-        this._hasError = true;
-        this._error = error;
-        this._errorInfo = info || error.message;
-        console.error('[GrowspaceErrorBoundary] Error set:', error);
-    }
+  /**
+   * Call this method to programmatically trigger an error state.
+   * Useful for catching async errors in child components.
+   */
+  public setError(error: Error, info?: string) {
+    this._hasError = true;
+    this._error = error;
+    this._errorInfo = info || error.message;
+    console.error('[GrowspaceErrorBoundary] Error set:', error);
+  }
 
-    /**
-     * Clear the error state and attempt to re-render children.
-     */
-    public clearError() {
-        this._hasError = false;
-        this._error = null;
-        this._errorInfo = '';
-    }
+  /**
+   * Clear the error state and attempt to re-render children.
+   */
+  public clearError() {
+    this._hasError = false;
+    this._error = null;
+    this._errorInfo = '';
+  }
 
-    private _handleRetry() {
-        this.clearError();
-        this.requestUpdate();
-    }
+  private _handleRetry() {
+    this.clearError();
+    this.requestUpdate();
+  }
 
-    render() {
-        if (this._hasError) {
-            return html`
+  render() {
+    if (this._hasError) {
+      return html`
         <div class="error-container">
           <svg class="error-icon" viewBox="0 0 24 24">
             <path d="${mdiAlertCircle}"></path>
@@ -146,9 +146,9 @@ export class GrowspaceErrorBoundary extends LitElement {
           <div class="error-message">
             A component encountered an error. This has been logged for debugging.
           </div>
-          ${this._error?.message ? html`
-            <div class="error-details">${this._error.message}</div>
-          ` : ''}
+          ${this._error?.message
+            ? html` <div class="error-details">${this._error.message}</div> `
+            : ''}
           <button class="retry-button" @click=${this._handleRetry}>
             <svg viewBox="0 0 24 24">
               <path d="${mdiRefresh}"></path>
@@ -157,14 +157,14 @@ export class GrowspaceErrorBoundary extends LitElement {
           </button>
         </div>
       `;
-        }
-
-        return html`<slot></slot>`;
     }
+
+    return html`<slot></slot>`;
+  }
 }
 
 declare global {
-    interface HTMLElementTagNameMap {
-        'growspace-error-boundary': GrowspaceErrorBoundary;
-    }
+  interface HTMLElementTagNameMap {
+    'growspace-error-boundary': GrowspaceErrorBoundary;
+  }
 }

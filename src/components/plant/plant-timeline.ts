@@ -8,10 +8,26 @@ import { sharedStyles } from '../../styles/shared.styles';
 import '../ui/quick-note-input';
 import '../ui/confirm-delete-dialog';
 import {
-  mdiWater, mdiSprout, mdiAlertCircle, mdiNoteText, mdiLeaf, mdiBug,
-  mdiThermometer, mdiWaterPercent, mdiGauge, mdiFlaskOutline, mdiFlash,
-  mdiCupWater, mdiTag, mdiDelete, mdiDumbbell,
-  mdiFlower, mdiHairDryer, mdiCannabis, mdiWeatherSunny, mdiWeatherNight
+  mdiWater,
+  mdiSprout,
+  mdiAlertCircle,
+  mdiNoteText,
+  mdiLeaf,
+  mdiBug,
+  mdiThermometer,
+  mdiWaterPercent,
+  mdiGauge,
+  mdiFlaskOutline,
+  mdiFlash,
+  mdiCupWater,
+  mdiTag,
+  mdiDelete,
+  mdiDumbbell,
+  mdiFlower,
+  mdiHairDryer,
+  mdiCannabis,
+  mdiWeatherSunny,
+  mdiWeatherNight,
 } from '@mdi/js';
 
 // Correlation window constant
@@ -137,8 +153,13 @@ export class PlantTimeline extends LitElement {
         height: 12px;
         fill: currentColor;
       }
-      .chip.sensor { border-color: rgba(var(--rgb-primary-color), 0.2); }
-      .chip.action-stat { background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color); }
+      .chip.sensor {
+        border-color: rgba(var(--rgb-primary-color), 0.2);
+      }
+      .chip.action-stat {
+        background: rgba(var(--rgb-primary-color), 0.1);
+        color: var(--primary-color);
+      }
 
       /* Image Grid */
       .image-grid {
@@ -181,37 +202,73 @@ export class PlantTimeline extends LitElement {
       /* Milestone Banner */
       .event.type-milestone {
         border-left: 4px solid var(--success-color);
-        background: linear-gradient(90deg, rgba(var(--rgb-success-color), 0.15) 0%, transparent 100%);
+        background: linear-gradient(
+          90deg,
+          rgba(var(--rgb-success-color), 0.15) 0%,
+          transparent 100%
+        );
       }
       .event.type-milestone .content {
         font-size: 1.05rem;
         letter-spacing: 0.5px;
         color: var(--success-color);
       }
-      
+
       /* Type specific styling */
-      .type-alert .icon-wrapper { border-color: var(--error-color, #f44336); }
-      .type-alert .icon-wrapper svg { fill: var(--error-color, #f44336); }
-      .type-action .icon-wrapper { border-color: var(--primary-color, #03a9f4); }
-      .type-action .icon-wrapper svg { fill: var(--primary-color, #03a9f4); }
-      .type-stage_change .icon-wrapper { border-color: var(--success-color, #4caf50); }
-      .type-stage_change .icon-wrapper svg { fill: var(--success-color, #4caf50); }
-      .type-note .icon-wrapper { border-color: var(--warning-color, #ff9800); }
-      .type-note .icon-wrapper svg { fill: var(--warning-color, #ff9800); }
-      .type-environmental_report .icon-wrapper { border-color: #ff9800; }
-      .type-environmental_report .icon-wrapper svg { fill: #ff9800; }
+      .type-alert .icon-wrapper {
+        border-color: var(--error-color, #f44336);
+      }
+      .type-alert .icon-wrapper svg {
+        fill: var(--error-color, #f44336);
+      }
+      .type-action .icon-wrapper {
+        border-color: var(--primary-color, #03a9f4);
+      }
+      .type-action .icon-wrapper svg {
+        fill: var(--primary-color, #03a9f4);
+      }
+      .type-stage_change .icon-wrapper {
+        border-color: var(--success-color, #4caf50);
+      }
+      .type-stage_change .icon-wrapper svg {
+        fill: var(--success-color, #4caf50);
+      }
+      .type-note .icon-wrapper {
+        border-color: var(--warning-color, #ff9800);
+      }
+      .type-note .icon-wrapper svg {
+        fill: var(--warning-color, #ff9800);
+      }
+      .type-environmental_report .icon-wrapper {
+        border-color: #ff9800;
+      }
+      .type-environmental_report .icon-wrapper svg {
+        fill: #ff9800;
+      }
 
       /* Action specific styling */
-      .action-ipm .icon-wrapper { border-color: #9c27b0; }
-      .action-ipm .icon-wrapper svg { fill: #9c27b0; }
-      .action-training .icon-wrapper { border-color: var(--gm-warning-color, #ff9800); }
-      .action-training .icon-wrapper svg { fill: var(--gm-warning-color, #ff9800); }
+      .action-ipm .icon-wrapper {
+        border-color: #9c27b0;
+      }
+      .action-ipm .icon-wrapper svg {
+        fill: #9c27b0;
+      }
+      .action-training .icon-wrapper {
+        border-color: var(--gm-warning-color, #ff9800);
+      }
+      .action-training .icon-wrapper svg {
+        fill: var(--gm-warning-color, #ff9800);
+      }
       .action-water .icon-wrapper,
       .action-watering .icon-wrapper,
-      .action-irrigation .icon-wrapper { border-color: var(--gm-info-color, #2196f3); }
+      .action-irrigation .icon-wrapper {
+        border-color: var(--gm-info-color, #2196f3);
+      }
       .action-water .icon-wrapper svg,
       .action-watering .icon-wrapper svg,
-      .action-irrigation .icon-wrapper svg { fill: var(--gm-info-color, #2196f3); }
+      .action-irrigation .icon-wrapper svg {
+        fill: var(--gm-info-color, #2196f3);
+      }
 
       /* Day grouping */
       .day-header {
@@ -265,7 +322,7 @@ export class PlantTimeline extends LitElement {
         background: rgba(0, 0, 0, 0.9);
         border-radius: 8px;
         padding: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         max-width: 90vw;
         max-height: 90vh;
         display: flex;
@@ -278,7 +335,7 @@ export class PlantTimeline extends LitElement {
         border-radius: 4px;
         object-fit: contain;
       }
-    `
+    `,
   ];
 
   private _getIcon(event: PlantTimelineEvent) {
@@ -291,8 +348,10 @@ export class PlantTimeline extends LitElement {
         if (to === 'cure') return mdiCannabis;
         return mdiSprout;
       }
-      case 'alert': return mdiAlertCircle;
-      case 'note': return mdiNoteText;
+      case 'alert':
+        return mdiAlertCircle;
+      case 'note':
+        return mdiNoteText;
       case 'milestone': {
         const label = (event as any).label?.toLowerCase() || '';
         if (label.includes('flower')) return mdiFlower;
@@ -300,28 +359,38 @@ export class PlantTimeline extends LitElement {
         if (label.includes('cure')) return mdiCannabis;
         return mdiSprout;
       }
-      case 'action':
+      case 'action': {
         const action = (event as any).action;
         if (action === 'water' || action === 'watering') return mdiWater;
         if (action === 'ipm') return mdiBug;
         if (action === 'training') return mdiDumbbell;
         return mdiLeaf;
+      }
       case 'environmental_report':
         return (event as any).sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
-      default: return mdiLeaf;
+      default:
+        return mdiLeaf;
     }
   }
 
   private _getStageColor(stage?: string): string {
     switch (stage?.toLowerCase()) {
-      case 'flower': return '#e91e63';
-      case 'veg': return '#4caf50';
-      case 'seedling': return '#8bc34a';
-      case 'clone': return '#66bb6a';
-      case 'mother': return '#2e7d32';
-      case 'dry': return '#ff9800';
-      case 'cure': return '#795548';
-      default: return 'var(--divider-color)';
+      case 'flower':
+        return '#e91e63';
+      case 'veg':
+        return '#4caf50';
+      case 'seedling':
+        return '#8bc34a';
+      case 'clone':
+        return '#66bb6a';
+      case 'mother':
+        return '#2e7d32';
+      case 'dry':
+        return '#ff9800';
+      case 'cure':
+        return '#795548';
+      default:
+        return 'var(--divider-color)';
     }
   }
 
@@ -329,7 +398,7 @@ export class PlantTimeline extends LitElement {
     if (event.type !== 'note') return false;
     const noteTime = new Date(event.date).getTime();
     // Check for alerts within correlation window before this note
-    return allEvents.some(e => {
+    return allEvents.some((e) => {
       if (e.type !== 'alert') return false;
       const alertTime = new Date(e.date).getTime();
       const diff = noteTime - alertTime;
@@ -356,7 +425,7 @@ export class PlantTimeline extends LitElement {
       noteInput.clear();
 
       // Allow time for recorder to write to DB
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Fire refresh event
       this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
@@ -404,7 +473,7 @@ export class PlantTimeline extends LitElement {
   render() {
     // Sort events descending
     const sortedEvents = [...(this.events || [])]
-      .filter(e => e.date)
+      .filter((e) => e.date)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     // Group by day using shared utility
@@ -418,7 +487,9 @@ export class PlantTimeline extends LitElement {
       groupedByDay.get(dayKey)!.push(event);
     }
 
-    const latestStageEvent = sortedEvents.find(e => e.type === 'stage_change' || e.type === 'milestone');
+    const latestStageEvent = sortedEvents.find(
+      (e) => e.type === 'stage_change' || e.type === 'milestone'
+    );
     const currentStage = (latestStageEvent as any)?.to || (latestStageEvent as any)?.label;
     const stageColor = this._getStageColor(currentStage);
 
@@ -427,39 +498,48 @@ export class PlantTimeline extends LitElement {
         <confirm-delete-dialog
           .open=${this._showDeleteConfirmation}
           @confirm=${this._confirmDeleteEvent}
-          @cancel=${() => this._showDeleteConfirmation = false}
+          @cancel=${() => (this._showDeleteConfirmation = false)}
         ></confirm-delete-dialog>
-        
+
         ${this._renderHoverOverlay()}
-        
+
         <!-- Quick Note Section -->
-        <quick-note-input
-          @submit=${this._handleNoteSubmit}
-        ></quick-note-input>
+        <quick-note-input @submit=${this._handleNoteSubmit}></quick-note-input>
 
-        ${sortedEvents.length === 0 ? html`
-          <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
-            No entries for this plant yet.
-          </div>
-        ` : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
-      const alerts = dayEvents.filter(e => e.type === 'alert');
-      const others = dayEvents.filter(e => e.type !== 'alert');
-
-      return html`
-              <div class="day-group">
-                <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
-                
-                ${alerts.length > 2 ? html`
-                  <div class="day-summary glass-surface">
-                    <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"><path d="${mdiAlertCircle}" /></svg>
-                    <span>${alerts.length} system alerts recorded. Environment may require attention.</span>
-                  </div>
-                ` : alerts.map(event => this._renderEvent(event, sortedEvents))}
-
-                ${others.map(event => this._renderEvent(event, sortedEvents))}
+        ${sortedEvents.length === 0
+        ? html`
+              <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
+                No entries for this plant yet.
               </div>
-            `;
-    })}
+            `
+        : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
+          const alerts = dayEvents.filter((e) => e.type === 'alert');
+          const others = dayEvents.filter((e) => e.type !== 'alert');
+
+          return html`
+                <div class="day-group">
+                  <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
+
+                  ${alerts.length > 2
+              ? html`
+                        <div class="day-summary glass-surface">
+                          <svg
+                            viewBox="0 0 24 24"
+                            style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"
+                          >
+                            <path d="${mdiAlertCircle}" />
+                          </svg>
+                          <span
+                            >${alerts.length} system alerts recorded. Environment may require
+                            attention.</span
+                          >
+                        </div>
+                      `
+              : alerts.map((event) => this._renderEvent(event, sortedEvents))}
+                  ${others.map((event) => this._renderEvent(event, sortedEvents))}
+                </div>
+              `;
+        })}
       </div>
     `;
   }
@@ -468,27 +548,34 @@ export class PlantTimeline extends LitElement {
     const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
 
     return html`
-      <div class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} glass-surface">
+      <div
+        class="event type-${event.type} ${event.type === 'action' && event.action
+        ? 'action-' + event.action
+        : ''} glass-surface"
+      >
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
             <path d="${this._getIcon(event)}" />
           </svg>
         </div>
-        ${event.event_id ? html`
-          <button class="delete-btn" @click=${(e: Event) => this._deleteEvent(e, event.event_id!)}>
-            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
-              <path d="${mdiDelete}" />
-            </svg>
-          </button>
-        ` : nothing}
+        ${event.event_id
+        ? html`
+              <button
+                class="delete-btn"
+                @click=${(e: Event) => this._deleteEvent(e, event.event_id!)}
+              >
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
+                  <path d="${mdiDelete}" />
+                </svg>
+              </button>
+            `
+        : nothing}
         <div class="date">
           ${formatTime(new Date(event.date))}
           ${isCorrelated ? html`<span class="correlated-badge">System Correlated</span>` : nothing}
         </div>
-        ${this._renderEventContent(event)}
-        ${this._renderMetadata(event.metadata)}
-        ${this._renderImages(event.images)}
-        ${this._renderTags(event.tags)}
+        ${this._renderEventContent(event)} ${this._renderMetadata(event.metadata)}
+        ${this._renderImages(event.images)} ${this._renderTags(event.tags)}
       </div>
     `;
   }
@@ -497,38 +584,52 @@ export class PlantTimeline extends LitElement {
     switch (event.type) {
       case 'stage_change':
         return html`
-            <div class="content">Stage Changed</div>
-            <div class="details">Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong></div>
+          <div class="content">Stage Changed</div>
+          <div class="details">
+            Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong>
+          </div>
         `;
       case 'milestone':
         return html`
-            <div class="content">${event.label} Started</div>
-            <div class="details">Agricultural milestone reached.</div>
+          <div class="content">${event.label} Started</div>
+          <div class="details">Agricultural milestone reached.</div>
         `;
-      case 'action':
-        const label = event.action === 'ipm' ? 'IPM' :
-          event.action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      case 'action': {
+        const label =
+          event.action === 'ipm'
+            ? 'IPM'
+            : event.action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
         return html`
-            <div class="content">${label}</div>
-            ${event.details ? html`<div class="details">${event.details}</div>` : nothing}
+          <div class="content">${label}</div>
+          ${event.details ? html`<div class="details">${event.details}</div>` : nothing}
         `;
+      }
       case 'alert':
         return html`
-            <div class="content" style="color: var(--error-color)">Critical Alert: ${event.message}</div>
-            <div class="details">Severity: ${event.severity}</div>
+          <div class="content" style="color: var(--error-color)">
+            Critical Alert: ${event.message}
+          </div>
+          <div class="details">Severity: ${event.severity}</div>
         `;
-      case 'environmental_report':
+      case 'environmental_report': {
         const isDay = (event as any).sensor_type !== 'night_report';
         return html`
-            <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
-            <div class="details">
-              ${(event as any).reasons?.map((r: string) => html`<span style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">${r}</span>`)}
-            </div>
+          <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+          <div class="details">
+            ${(event as any).reasons?.map(
+          (r: string) =>
+            html`<span
+                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
+                  >${r}</span
+                >`
+        )}
+          </div>
         `;
+      }
       case 'note':
         return html`
-            <div class="content">Note</div>
-            <div class="details">${event.text}</div>
+          <div class="content">Note</div>
+          <div class="details">${event.text}</div>
         `;
     }
   }
@@ -547,7 +648,7 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div class="metadata-chips">
-        ${items.map(item => {
+        ${items.map((item) => {
       const val = (metadata as any)[item.key];
       if (val === undefined || val === null) return nothing;
       const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
@@ -567,17 +668,17 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div class="image-grid">
-        ${images.map(img => {
+        ${images.map((img) => {
       // If it's a relative path, prefix with /api/growspace_manager/v1/images/
       const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
       return html`
-        <img 
-          src=${src} 
-          @click=${() => this._openImage(src)}
-          @mouseenter=${() => this._hoveredImage = src}
-          @mouseleave=${() => this._hoveredImage = null}
-        />
-      `;
+            <img
+              src=${src}
+              @click=${() => this._openImage(src)}
+              @mouseenter=${() => (this._hoveredImage = src)}
+              @mouseleave=${() => (this._hoveredImage = null)}
+            />
+          `;
     })}
       </div>
     `;
@@ -587,12 +688,16 @@ export class PlantTimeline extends LitElement {
     if (!tags || tags.length === 0) return nothing;
     return html`
       <div class="tags">
-        ${tags.map(tag => html`
-          <div class="tag">
-            <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;"><path d="${mdiTag}" /></svg>
-            ${tag}
-          </div>
-        `)}
+        ${tags.map(
+      (tag) => html`
+            <div class="tag">
+              <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
+                <path d="${mdiTag}" />
+              </svg>
+              ${tag}
+            </div>
+          `
+    )}
       </div>
     `;
   }

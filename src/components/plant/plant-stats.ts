@@ -7,20 +7,22 @@ import { plantStatsStyles } from '../../styles/plant-stats.styles';
 
 @customElement('growspace-plant-stats')
 export class GrowspacePlantStats extends LitElement {
-    @property({ attribute: false }) stages: StageDisplay[] = [];
+  @property({ attribute: false }) stages: StageDisplay[] = [];
 
-    static styles = [plantStatsStyles];
+  static styles = [plantStatsStyles];
 
-    render(): TemplateResult {
-        return html`
+  render(): TemplateResult {
+    return html`
       ${this.stages.map((d) => {
-            return html`
+        return html`
           <div class=${classMap({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
-            <svg style=${styleMap({ color: d.color })} viewBox="0 0 24 24"><path d="${d.icon}"></path></svg>
+            <svg style=${styleMap({ color: d.color })} viewBox="0 0 24 24">
+              <path d="${d.icon}"></path>
+            </svg>
             <div class="pc-stat-text">${d.days}d</div>
           </div>
         `;
-        })}
+      })}
     `;
-    }
+  }
 }

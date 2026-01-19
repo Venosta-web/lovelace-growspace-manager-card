@@ -1,4 +1,3 @@
-
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -11,14 +10,14 @@ import {
   mdiContentSave,
   mdiInformation,
   mdiCheck,
-  mdiFlask
 } from '@mdi/js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../../context';
-import { DataService } from '../../data-service';
-import { GrowspaceDevice, IPMPreset, IPMItem } from '../../types';
+import {
+  IPMPreset,
+  IPMItem,
+} from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
-import { sharedStyles } from '../../styles/shared.styles';
 import { GrowspaceStore } from '../../store/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import '../../components/ui'; // Ensure MD3 components are registered
@@ -106,28 +105,28 @@ export class IPMDialog extends LitElement {
         font-size: 0.9rem;
       }
       .form-section {
-          margin-bottom: 24px;
+        margin-bottom: 24px;
       }
       .form-section h3 {
-          margin-top: 0;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          letter-spacing: 1px;
-          margin-bottom: 12px;
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
       }
       .apply-summary {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
         padding: 16px;
         border-radius: 8px;
         margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       }
       .apply-target {
         font-weight: 500;
         color: var(--primary-color, #4caf50);
       }
-    `
+    `,
   ];
 
   updated(changedProps: Map<string, any>) {
@@ -155,7 +154,8 @@ export class IPMDialog extends LitElement {
     const hasGrowspace = !!this.growspaceId;
 
     if (!hasPlants && !hasGrowspace) {
-      this._error = 'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
+      this._error =
+        'Cannot apply IPM: no growspace or plants selected. Please close and try again.';
       console.error('[IPMDialog] Neither growspaceId nor plantIds provided');
       return;
     }
@@ -165,7 +165,7 @@ export class IPMDialog extends LitElement {
         preset_id: this._selectedPresetId,
         growspace_id: !hasPlants ? this.growspaceId : undefined,
         plant_ids: hasPlants ? this.plantIds : undefined,
-        notes: this._notes
+        notes: this._notes,
       });
       this.dispatchEvent(new CustomEvent('data-changed'));
       this._close();
@@ -183,7 +183,7 @@ export class IPMDialog extends LitElement {
       type: 'foliar',
       items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
       stage: undefined,
-      min_days_in_stage: 0
+      min_days_in_stage: 0,
     };
     this._view = 'EDIT';
     this._error = null;
@@ -207,7 +207,10 @@ export class IPMDialog extends LitElement {
 
   private _addProduct() {
     if (!this._editingPreset) return;
-    const items = [...(this._editingPreset.items || []), { name: '', dose_amount: 0, dose_unit: 'ml/L' }];
+    const items = [
+      ...(this._editingPreset.items || []),
+      { name: '', dose_amount: 0, dose_unit: 'ml/L' },
+    ];
     this._editingPreset = { ...this._editingPreset, items };
   }
 
@@ -231,7 +234,7 @@ export class IPMDialog extends LitElement {
       return;
     }
 
-    const items = (this._editingPreset.items || []).filter(i => i.name);
+    const items = (this._editingPreset.items || []).filter((i) => i.name);
 
     try {
       await this.store.dataService.saveIPMPreset({
@@ -240,7 +243,7 @@ export class IPMDialog extends LitElement {
         type: this._editingPreset.type || 'foliar',
         items: items as IPMItem[],
         stage: this._editingPreset.stage || undefined,
-        min_days_in_stage: this._editingPreset.min_days_in_stage || 0
+        min_days_in_stage: this._editingPreset.min_days_in_stage || 0,
       });
       await this.store.fetchIPMPresets(true);
       this._view = 'LIST';
@@ -263,12 +266,7 @@ export class IPMDialog extends LitElement {
     }
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${title}
-      >
+      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
@@ -285,15 +283,14 @@ export class IPMDialog extends LitElement {
 
           <div class="dialog-content-grid">
             ${this._error ? html`<div class="error-bar">${this._error}</div>` : nothing}
-            
-            ${this._view === 'APPLY' ? this._renderApply() :
-        this._view === 'LIST' ? this._renderList() :
-          this._renderEdit()}
+            ${this._view === 'APPLY'
+        ? this._renderApply()
+        : this._view === 'LIST'
+          ? this._renderList()
+          : this._renderEdit()}
           </div>
 
-          <div class="button-group">
-            ${this._renderFooterButtons()}
-          </div>
+          <div class="button-group">${this._renderFooterButtons()}</div>
         </div>
       </ha-dialog>
     `;
@@ -302,15 +299,23 @@ export class IPMDialog extends LitElement {
   private _renderFooterButtons() {
     if (this._view === 'APPLY') {
       return html`
-        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Manage Presets</button>
-        <button class="md3-button primary" ?disabled=${!this._selectedPresetId} @click=${this._apply}>
+        <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>
+          Manage Presets
+        </button>
+        <button
+          class="md3-button primary"
+          ?disabled=${!this._selectedPresetId}
+          @click=${this._apply}
+        >
           <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
           Apply Treatment
         </button>
       `;
     } else if (this._view === 'LIST') {
       return html`
-        <button class="md3-button tonal" @click=${() => this._view = 'APPLY'}>Back to Apply</button>
+        <button class="md3-button tonal" @click=${() => (this._view = 'APPLY')}>
+          Back to Apply
+        </button>
         <button class="md3-button primary" @click=${this._startNew}>
           <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
           Add Preset
@@ -318,7 +323,7 @@ export class IPMDialog extends LitElement {
       `;
     } else {
       return html`
-        <button class="md3-button tonal" @click=${() => this._view = 'LIST'}>Cancel</button>
+        <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>Cancel</button>
         <button class="md3-button primary" @click=${this._savePreset}>
           <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
           Save Preset
@@ -330,9 +335,10 @@ export class IPMDialog extends LitElement {
   private _renderApply() {
     const presets = this._presetsController.value;
     const presetList = Object.values(presets || {});
-    const targetText = (this.plantIds && this.plantIds.length > 0)
-      ? `${this.plantIds.length} Plants`
-      : `Entire Growspace`;
+    const targetText =
+      this.plantIds && this.plantIds.length > 0
+        ? `${this.plantIds.length} Plants`
+        : `Entire Growspace`;
 
     return html`
       <div class="form-section">
@@ -340,13 +346,11 @@ export class IPMDialog extends LitElement {
         <md3-select
           label="Select Preset"
           .value=${this._selectedPresetId || ''}
-          .options=${presetList.map(p => ({ label: `${p.name} (${p.type})`, value: p.id }))}
-          @change=${(e: CustomEvent) => this._selectedPresetId = e.detail}
+          .options=${presetList.map((preset: IPMPreset) => ({ label: `${preset.name} (${preset.type})`, value: preset.id }))}
+          @change=${(e: CustomEvent) => (this._selectedPresetId = e.detail)}
         ></md3-select>
-        
-        <div class="apply-summary">
-          Targeting: <span class="apply-target">${targetText}</span>
-        </div>
+
+        <div class="apply-summary">Targeting: <span class="apply-target">${targetText}</span></div>
       </div>
 
       <div class="form-section">
@@ -354,7 +358,7 @@ export class IPMDialog extends LitElement {
         <ha-textarea
           label="Treatment Notes (Optional)"
           .value=${this._notes}
-          @input=${(e: any) => this._notes = e.target.value}
+          @input=${(e: any) => (this._notes = e.target.value)}
           rows="3"
           style="width: 100%;"
         ></ha-textarea>
@@ -368,34 +372,50 @@ export class IPMDialog extends LitElement {
     if (presetEntries.length === 0) {
       return html`
         <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiInformation}
+            style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"
+          ></ha-svg-icon>
           <p>No IPM presets defined yet.</p>
-          <p style="font-size: 0.9rem;">Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").</p>
+          <p style="font-size: 0.9rem;">
+            Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").
+          </p>
         </div>
       `;
     }
 
     return html`
       <div class="presets-list">
-        ${presetEntries.map(preset => html`
-          <div class="preset-item">
-            <div class="preset-info">
-              <div class="preset-name">${preset.name}</div>
-              <div class="preset-details">
-                ${preset.type} • ${preset.items.length} products
-                ${preset.stage ? ` • ${preset.stage}` : ''}
+        ${presetEntries.map(
+      (preset: IPMPreset) => html`
+            <div class="preset-item">
+              <div class="preset-info">
+                <div class="preset-name">${preset.name}</div>
+                <div class="preset-details">
+                  ${preset.type} • ${preset.items.length} products
+                  ${preset.stage ? ` • ${preset.stage}` : ''}
+                </div>
+              </div>
+              <div class="preset-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._editPreset(preset)}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._deletePreset(preset.id)}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
               </div>
             </div>
-            <div class="preset-actions">
-              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
-                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-              </button>
-              <button class="md3-button icon" @click=${() => this._deletePreset(preset.id)} title="Delete" style="color: var(--error-color);">
-                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-              </button>
-            </div>
-          </div>
-        `)}
+          `
+    )}
       </div>
     `;
   }
@@ -406,90 +426,119 @@ export class IPMDialog extends LitElement {
     return html`
       <div class="preset-form">
         <div class="form-section">
-           <h3>General Info</h3>
-           <md3-text-input
-              label="Preset Name"
-              .value=${this._editingPreset.name || ''}
-              @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, name: e.detail }; }}
-              placeholder="e.g. Neem Oil Spray"
-           ></md3-text-input>
-           
-           <div style="margin-top: 12px;">
-             <label class="md3-label">Type</label>
-             <select 
-                 class="md3-input"
-                 .value=${this._editingPreset.type || 'foliar'}
-                 @change=${(e: Event) => this._editingPreset = { ...this._editingPreset!, type: (e.target as HTMLSelectElement).value as any }}
-             >
-                 <option value="foliar">Foliar Spray</option>
-                 <option value="drench">Root Drench</option>
-                 <option value="beneficials">Beneficials</option>
-             </select>
-           </div>
+          <h3>General Info</h3>
+          <md3-text-input
+            label="Preset Name"
+            .value=${this._editingPreset.name || ''}
+            @change=${(e: CustomEvent) => {
+        this._editingPreset = { ...this._editingPreset!, name: e.detail };
+      }}
+            placeholder="e.g. Neem Oil Spray"
+          ></md3-text-input>
+
+          <div style="margin-top: 12px;">
+            <label class="md3-label">Type</label>
+            <select
+              class="md3-input"
+              .value=${this._editingPreset.type || 'foliar'}
+              @change=${(e: Event) =>
+      (this._editingPreset = {
+        ...this._editingPreset!,
+        type: (e.target as HTMLSelectElement).value as any,
+      })}
+            >
+              <option value="foliar">Foliar Spray</option>
+              <option value="drench">Root Drench</option>
+              <option value="beneficials">Beneficials</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-section">
-            <h3>Usage</h3>
-            <div class="row-col-grid">
-                <div class="md3-input-group">
-                    <label class="md3-label">Recommended Stage</label>
-                    <select 
-                        class="md3-input"
-                        .value=${this._editingPreset.stage || ''}
-                        @change=${(e: Event) => { this._editingPreset = { ...this._editingPreset!, stage: (e.target as HTMLSelectElement).value || undefined }; }}
-                    >
-                        <option value="">Any Stage</option>
-                        <option value="seedling">Seedling</option>
-                        <option value="veg">Veg</option>
-                        <option value="flower">Flower</option>
-                        <option value="dry">Dry</option>
-                        <option value="cure">Cure</option>
-                    </select>
-                </div>
+          <h3>Usage</h3>
+          <div class="row-col-grid">
+            <div class="md3-input-group">
+              <label class="md3-label">Recommended Stage</label>
+              <select
+                class="md3-input"
+                .value=${this._editingPreset.stage || ''}
+                @change=${(e: Event) => {
+        this._editingPreset = {
+          ...this._editingPreset!,
+          stage: (e.target as HTMLSelectElement).value || undefined,
+        };
+      }}
+              >
+                <option value="">Any Stage</option>
+                <option value="seedling">Seedling</option>
+                <option value="veg">Veg</option>
+                <option value="flower">Flower</option>
+                <option value="dry">Dry</option>
+                <option value="cure">Cure</option>
+              </select>
+            </div>
+            <md3-number-input
+              label="Min Days"
+              .value=${this._editingPreset.min_days_in_stage || 0}
+              @change=${(e: CustomEvent) => {
+        this._editingPreset = {
+          ...this._editingPreset!,
+          min_days_in_stage: parseInt(e.detail),
+        };
+      }}
+              min="0"
+            ></md3-number-input>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+          >
+            <h3 style="margin: 0;">Products / Ingredients</h3>
+            <button
+              class="md3-button text"
+              @click=${this._addProduct}
+              style="--mdc-button-horizontal-padding: 8px;"
+            >
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add
+            </button>
+          </div>
+
+          ${(this._editingPreset.items || []).map(
+        (item: IPMItem, _index: number) => html`
+              <div class="product-row">
+                <md3-text-input
+                  label="Product"
+                  .value=${item.name}
+                  @change=${(e: CustomEvent) => this._updateProduct(_index, { name: e.detail })}
+                  placeholder="e.g. Neem Oil"
+                ></md3-text-input>
                 <md3-number-input
-                    label="Min Days"
-                    .value=${this._editingPreset.min_days_in_stage || 0}
-                    @change=${(e: CustomEvent) => { this._editingPreset = { ...this._editingPreset!, min_days_in_stage: parseInt(e.detail) }; }}
-                    min="0"
+                  label="Dose"
+                  .value=${item.dose_amount}
+                  @change=${(e: CustomEvent) =>
+            this._updateProduct(_index, { dose_amount: parseFloat(e.detail) })}
+                  min="0"
+                  step="0.1"
                 ></md3-number-input>
-            </div>
-        </div>
-
-        <div class="form-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0;">Products / Ingredients</h3>
-                <button class="md3-button text" @click=${this._addProduct} style="--mdc-button-horizontal-padding: 8px;">
-                    <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                    Add
+                <md3-text-input
+                  label="Unit"
+                  .value=${item.dose_unit}
+                  @change=${(e: CustomEvent) => this._updateProduct(_index, { dose_unit: e.detail })}
+                  style="flex: 1;"
+                ></md3-text-input>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._removeProduct(_index)}
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
                 </button>
-            </div>
-            
-            ${(this._editingPreset.items || []).map((item, i) => html`
-                <div class="product-row">
-                    <md3-text-input
-                        label="Product"
-                        .value=${item.name}
-                        @change=${(e: CustomEvent) => this._updateProduct(i, { name: e.detail })}
-                        placeholder="e.g. Neem Oil"
-                    ></md3-text-input>
-                    <md3-number-input
-                        label="Dose"
-                        .value=${item.dose_amount}
-                        @change=${(e: CustomEvent) => this._updateProduct(i, { dose_amount: parseFloat(e.detail) })}
-                        min="0"
-                        step="0.1"
-                    ></md3-number-input>
-                    <md3-text-input
-                        label="Unit"
-                        .value=${item.dose_unit}
-                        @change=${(e: CustomEvent) => this._updateProduct(i, { dose_unit: e.detail })}
-                        style="flex: 1;"
-                    ></md3-text-input>
-                    <button class="md3-button icon" @click=${() => this._removeProduct(i)} style="color: var(--error-color);">
-                        <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                    </button>
-                </div>
-            `)}
+              </div>
+            `
+      )}
         </div>
       </div>
     `;

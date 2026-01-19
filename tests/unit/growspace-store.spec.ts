@@ -236,7 +236,7 @@ describe('GrowspaceStore', () => {
             store.initializeSelectedDevice({ default_growspace: 'invalid', type: 'wrong' });
 
             expect(dataStore.setSelectedDevice).toHaveBeenCalledWith('d1');
-            expect(uiStore.setDefaultApplied).not.toHaveBeenCalled();
+            expect(uiStore.setDefaultApplied).toHaveBeenCalledWith(true);
         });
 
         it('should show loading spinner if no devices during refresh', async () => {

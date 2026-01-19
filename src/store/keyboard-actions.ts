@@ -29,10 +29,7 @@ function getVisiblePlants(ctx: ActionContext): PlantEntity[] {
  * Handle keyboard navigation for the growspace grid.
  * Supports arrow key navigation, enter/space for selection, and delete/backspace for removal.
  */
-export function handleKeyboardNavigation(
-    ctx: ActionContext,
-    key: string
-): void {
+export function handleKeyboardNavigation(ctx: ActionContext, key: string): void {
     // Escape exits edit mode
     if (ctx.ui.$isEditMode.get() && key === 'Escape') {
         uiActions.exitEditMode(ctx);
@@ -64,7 +61,7 @@ export function handleKeyboardNavigation(
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
                 const focusedPlant = plants[currentIndex];
-                const plantId = focusedPlant.attributes.plant_id; // Check if this is the correct ID access
+
                 // logic in plant-actions implies we pass IDs.
                 // In plantActions.handleDeletePlant, it expects string or string[].
                 // But in original keyboard-actions it passed entity_id. Let's check plant type.

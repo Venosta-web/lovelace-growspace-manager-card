@@ -174,7 +174,7 @@ export class GrowMasterDialog extends LitElement {
 
             <!-- Response Area -->
             ${this.isLoading
-        ? html`
+              ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -182,14 +182,14 @@ export class GrowMasterDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-        : nothing}
+              : nothing}
             ${!this.isLoading && this.response
-        ? html`
+              ? html`
                   <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
                   </div>
                 `
-        : nothing}
+              : nothing}
           </div>
         </div>
       </ha-dialog>
