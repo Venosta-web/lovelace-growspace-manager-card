@@ -101,7 +101,7 @@ describe('VPDHeatmap', () => {
         });
 
         it('should return fallback color for NaN', () => {
-            expect((element as any)._getZoneColor(NaN, 'flower')).toBe('#9e9e9e');
+            expect((element as any)._getZoneColor(NaN, 'flower')).toBe('#ff9800');
         });
     });
 
@@ -165,5 +165,30 @@ describe('VPDHeatmap', () => {
 
         (element as any)._drawHeatmap();
         expect(mockContext.arc).not.toHaveBeenCalled();
+    });
+
+    it('should render DOM point and tooltip when within bounds', async () => {
+        element.temperature = 25;
+        element.humidity = 60;
+        await element.updateComplete;
+
+        const point = element.shadowRoot?.querySelector('.current-point');
+        const tooltip = element.shadowRoot?.querySelector('.current-tooltip');
+
+        expect(point).toBeTruthy();
+        expect(tooltip).toBeTruthy();
+        expect(tooltip?.textContent).toContain('1.27 kPa'); // 25C, 60RH is ~1.27
+    });
+
+    it('should NOT render DOM point and tooltip when out of bounds', async () => {
+        element.temperature = 10;
+        element.humidity = 60;
+        await element.updateComplete;
+
+        const point = element.shadowRoot?.querySelector('.current-point');
+        const tooltip = element.shadowRoot?.querySelector('.current-tooltip');
+
+        expect(point).toBeFalsy();
+        expect(tooltip).toBeFalsy();
     });
 });

@@ -119,16 +119,16 @@ export class GrowspaceAdapter {
 
     const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy
       ? {
-        enabled: wsData.irrigation_strategy.enabled,
-        lightsOnTime: wsData.irrigation_strategy.lights_on_time,
-        p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
-        p2StopBeforeLightsOffMinutes:
-          wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
-        targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
-        maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
-        shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
-        shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
-      }
+          enabled: wsData.irrigation_strategy.enabled,
+          lightsOnTime: wsData.irrigation_strategy.lights_on_time,
+          p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
+          p2StopBeforeLightsOffMinutes:
+            wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
+          targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
+          maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
+          shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
+          shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+        }
       : undefined;
 
     // 5. Construct Device

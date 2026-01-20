@@ -27,6 +27,7 @@ export class GrowspaceTimeline extends LitElement {
   @state() private _hasError = false;
   @state() private _errorMessage = '';
   @state() private _hoveredEvent: GrowspaceEvent | null = null;
+  @state() private _tooltipPos: { x: number; y: number } | null = null;
   @state() private _zoomLevel = 1; // 1 = normal, 2 = zoomed in
 
   static styles = [
@@ -156,19 +157,21 @@ export class GrowspaceTimeline extends LitElement {
       }
 
       .tooltip {
-        position: absolute;
-        bottom: 70px; /* Above the track */
-        transform: translateX(-50%);
+        position: fixed; /* Fixed to escape container clipping */
         background: var(--ha-card-background, #1c1c1c);
         border: 1px solid var(--divider-color);
         padding: 12px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        z-index: 20;
+        z-index: 1000;
         min-width: 200px;
+        max-width: 300px;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s;
+        transition: opacity 0.1s;
+        /* Center horizontally and position above */
+        transform: translate(-50%, -100%); 
+        margin-top: -12px; /* Small gap above cursor/marker */
       }
 
       .tooltip.visible {
@@ -281,6 +284,21 @@ export class GrowspaceTimeline extends LitElement {
     return position;
   }
 
+  private _showTooltip(event: GrowspaceEvent, e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    this._hoveredEvent = event;
+    this._tooltipPos = {
+      x: rect.left + rect.width / 2,
+      y: rect.top
+    };
+  }
+
+  private _hideTooltip() {
+    this._hoveredEvent = null;
+    this._tooltipPos = null;
+  }
+
   render() {
     if (this._isLoading) return html`<div class="empty-state">Loading timeline...</div>`;
     if (this._hasError)
@@ -288,6 +306,8 @@ export class GrowspaceTimeline extends LitElement {
         ${this._errorMessage}
       </div>`;
     if (this._events.length === 0) return html`<div class="empty-state">No events to display</div>`;
+
+
 
     // Process times using new utility
     const timestamps = this._events.map((e) => getEventTimestamp(e));
@@ -314,60 +334,121 @@ export class GrowspaceTimeline extends LitElement {
           </button>
           <button
             class="zoom-btn"
-            @click=${() => (this._zoomLevel = Math.min(5, this._zoomLevel + 0.5))}
+            @click=${() => (this._zoomLevel = Math.min(50, this._zoomLevel + 0.5))}
           >
             +
           </button>
         </div>
 
-        <div class="timeline-container">
+        <div class="timeline-container" @scroll=${this._hideTooltip}>
           <div class="timeline-track" style="width: ${width}%">
             ${this._events.map((event) => {
       const left = this._getPosition(event, start, totalDuration);
       const icon = this._getIcon(event);
       const className = this._getClass(event);
+      const eventTime = getEventTimestamp(event);
 
       return html`
                 <div
                   class="event-marker ${className}"
                   style="left: ${left}%"
-                  @mouseenter=${() => (this._hoveredEvent = event)}
-                  @mouseleave=${() => (this._hoveredEvent = null)}
+                  @click=${(e: Event) => {
+          e.stopPropagation();
+          this._zoomToEvent(event, start, totalDuration);
+        }}
+                  @mouseenter=${(e: MouseEvent) => this._showTooltip(event, e)}
+                  @mouseleave=${this._hideTooltip}
                 >
                   <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-
-                  ${this._hoveredEvent === event
-          ? html`
-                        <div class="tooltip visible" style="left: ${left}%">
-                          <div class="tooltip-header">
-                            ${event.category === 'note' ? 'Note' : event.sensor_type || 'Event'}
-                          </div>
-                          <div class="tooltip-time">
-                            ${formatDateTime(new Date(getEventTimestamp(event)))}
-                          </div>
-                          <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                        </div>
-                      `
-          : nothing}
                 </div>
               `;
     })}
 
             <div class="date-axis">
-              <!-- Generate ticks every 20% -->
-              ${[0, 20, 40, 60, 80, 100].map((pct) => {
-      const time = start + totalDuration * (pct / 100);
-      return html`
-                  <div class="date-tick" style="left: ${pct}%">
-                    ${formatShortDate(new Date(time))}
-                  </div>
-                `;
-    })}
+              <!-- Generate ticks dynamically based on zoom -->
+              ${this._renderTicks(start, totalDuration)}
             </div>
           </div>
         </div>
+
+        ${this._hoveredEvent && this._tooltipPos
+        ? html`
+              <div 
+                class="tooltip visible" 
+                style="top: ${this._tooltipPos.y}px; left: ${this._tooltipPos.x}px"
+              >
+                <div class="tooltip-header">
+                  ${this._hoveredEvent.category === 'note' ? 'Note' : this._hoveredEvent.sensor_type || 'Event'}
+                </div>
+                <div class="tooltip-time">
+                  ${formatDateTime(new Date(getEventTimestamp(this._hoveredEvent)))}
+                </div>
+                <div class="tooltip-body">
+                  ${this._hoveredEvent.notes
+            ? html`<div>${this._hoveredEvent.notes}</div>`
+            : nothing}
+                  ${this._hoveredEvent.reasons && this._hoveredEvent.reasons.length > 0
+            ? html`<div>${this._hoveredEvent.reasons.join(', ')}</div>`
+            : nothing}
+                  ${!this._hoveredEvent.notes && (!this._hoveredEvent.reasons || this._hoveredEvent.reasons.length === 0)
+            ? html`<div style="font-style:italic; opacity:0.7">No details</div>`
+            : nothing}
+                </div>
+              </div>
+            `
+        : nothing}
       </error-boundary>
     `;
+  }
+
+  private _renderTicks(start: number, totalDuration: number) {
+    const tickCount = Math.max(5, Math.floor(this._zoomLevel * 5));
+    const ticks = [];
+    for (let i = 0; i <= tickCount; i++) {
+      ticks.push((i / tickCount) * 100);
+    }
+
+    return ticks.map((pct) => {
+      const time = start + totalDuration * (pct / 100);
+      return html`
+            <div class="date-tick" style="left: ${pct}%">
+            ${formatShortDate(new Date(time))}
+            </div>
+        `;
+    });
+  }
+
+  private async _zoomToEvent(event: GrowspaceEvent, start: number, totalDuration: number) {
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+    // Calculate required zoom to make 24h fill the screen (approx)
+    // Formula: totalDuration / ONE_DAY_MS = number of "days" in total
+    // We want 1 "screen width" to be 1 day.
+    // Scale = totalDays / 1
+    const requiredZoom = Math.max(1, totalDuration / ONE_DAY_MS);
+
+    this._zoomLevel = requiredZoom;
+    await this.updateComplete;
+
+    const container = this.shadowRoot?.querySelector('.timeline-container') as HTMLElement;
+    if (!container) return;
+
+    // Calculate position
+    const eventTime = getEventTimestamp(event);
+    const leftPct = (eventTime - start) / totalDuration; // 0 to 1
+
+    const trackWidth = container.scrollWidth;
+    const containerWidth = container.clientWidth;
+
+    // Target scroll position: center the event
+    // pixel position of event = trackWidth * leftPct
+    // center it: subtract half container width
+    const scrollDest = (trackWidth * leftPct) - (containerWidth / 2);
+
+    container.scrollTo({
+      left: Math.max(0, scrollDest),
+      behavior: 'smooth'
+    });
   }
 }
 

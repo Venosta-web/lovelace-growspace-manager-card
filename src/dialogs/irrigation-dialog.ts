@@ -411,16 +411,16 @@ export class IrrigationDialog extends LitElement {
 
           <div class="dialog-body">
             ${this._activeTab === 'schedules'
-        ? this._renderSchedulesTab(dialogColor)
-        : this._activeTab === 'steering'
-          ? this._renderSteeringTab(dialogColor)
-          : this._renderConfigSection()}
+              ? this._renderSchedulesTab(dialogColor)
+              : this._activeTab === 'steering'
+                ? this._renderSteeringTab(dialogColor)
+                : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Close</button>
             ${this._activeTab === 'steering'
-        ? html`
+              ? html`
                   <button
                     class="md3-button primary"
                     style="background: ${dialogColor};"
@@ -429,9 +429,9 @@ export class IrrigationDialog extends LitElement {
                     Save Strategy
                   </button>
                 `
-        : ''}
+              : ''}
             ${this._activeTab === 'config'
-        ? html`
+              ? html`
                   <button
                     class="md3-button primary"
                     style="background: ${dialogColor};"
@@ -440,7 +440,7 @@ export class IrrigationDialog extends LitElement {
                     Save Configuration
                   </button>
                 `
-        : ''}
+              : ''}
           </div>
         </div>
       </ha-dialog>
@@ -450,19 +450,19 @@ export class IrrigationDialog extends LitElement {
   private _renderSchedulesTab(color: string) {
     return html`
       ${this._renderScheduleSection(
-      'Irrigation Schedule',
-      this._irrigationTimes,
-      this._irrigationDuration,
-      'irrigation',
-      color
-    )}
+        'Irrigation Schedule',
+        this._irrigationTimes,
+        this._irrigationDuration,
+        'irrigation',
+        color
+      )}
       ${this._renderScheduleSection(
-      'Drain Schedule',
-      this._drainTimes,
-      this._drainDuration,
-      'drain',
-      '#FF9800'
-    )}
+        'Drain Schedule',
+        this._drainTimes,
+        this._drainDuration,
+        'drain',
+        '#FF9800'
+      )}
     `;
   }
 
@@ -493,11 +493,11 @@ export class IrrigationDialog extends LitElement {
         <select class="md3-input" .value=${value} @change=${changeHandler}>
           <option value="">None</option>
           ${entities.map(
-      (e) =>
-        html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
+            (e) =>
+              html`<option value="${e.entity_id}" ?selected=${e.entity_id === value}>
                 ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
               </option>`
-    )}
+          )}
         </select>
       </div>
     `;
@@ -511,17 +511,17 @@ export class IrrigationDialog extends LitElement {
         </div>
         <div class="section-content">
           ${this._renderEntitySelect(
-      'Irrigation Pump',
-      this._irrigationPumpEntity,
-      ['switch', 'input_boolean'],
-      (e) => (this._irrigationPumpEntity = (e.target as HTMLSelectElement).value)
-    )}
+            'Irrigation Pump',
+            this._irrigationPumpEntity,
+            ['switch', 'input_boolean'],
+            (e) => (this._irrigationPumpEntity = (e.target as HTMLSelectElement).value)
+          )}
           ${this._renderEntitySelect(
-      'Drain Pump (Optional)',
-      this._drainPumpEntity,
-      ['switch', 'input_boolean'],
-      (e) => (this._drainPumpEntity = (e.target as HTMLSelectElement).value)
-    )}
+            'Drain Pump (Optional)',
+            this._drainPumpEntity,
+            ['switch', 'input_boolean'],
+            (e) => (this._drainPumpEntity = (e.target as HTMLSelectElement).value)
+          )}
         </div>
       </div>
     `;
@@ -556,14 +556,14 @@ export class IrrigationDialog extends LitElement {
             label="Target VWC (%)"
             .value=${this._strategy.targetVwcPercent}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+              this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Dryback (%)"
             .value=${this._strategy.maintenanceDrybackPercent}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+              this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Timing</h4>
@@ -573,24 +573,24 @@ export class IrrigationDialog extends LitElement {
             type="time"
             .value=${this._strategy.lightsOnTime}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField(
-          'lightsOnTime',
-          (e.target as HTMLInputElement).value || e.detail
-        )}
+              this._updateStrategyField(
+                'lightsOnTime',
+                (e.target as HTMLInputElement).value || e.detail
+              )}
           ></md3-text-input>
 
           <md3-number-input
             label="P0 Duration (min)"
             .value=${this._strategy.p0DurationMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
+              this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="P2 Stop Buffer (min)"
             .value=${this._strategy.p2StopBeforeLightsOffMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
+              this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column: span 2; margin: 4px 0; margin-top: 12px;">Dosing</h4>
@@ -599,14 +599,14 @@ export class IrrigationDialog extends LitElement {
             label="Shot Duration (sec)"
             .value=${this._strategy.shotDurationSeconds}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
+              this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
           ></md3-number-input>
 
           <md3-number-input
             label="Shot Interval (min)"
             .value=${this._strategy.shotIntervalMinutes}
             @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
+              this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
           ></md3-number-input>
         </div>
       </div>
@@ -630,18 +630,18 @@ export class IrrigationDialog extends LitElement {
           <h3 style="margin: 0;">${title}</h3>
           <button
             @click=${(e: Event) => {
-        const container = (e.target as HTMLElement)
-          .closest('.detail-card')
-          ?.querySelector('.' + type + '-time-bar') as HTMLElement;
-        if (container) {
-          const rect = container.getBoundingClientRect();
-          if (type === 'irrigation') {
-            this._startAddingIrrigationTime(rect.width / 2, rect.width);
-          } else {
-            this._startAddingDrainTime(rect.width / 2, rect.width);
-          }
-        }
-      }}
+              const container = (e.target as HTMLElement)
+                .closest('.detail-card')
+                ?.querySelector('.' + type + '-time-bar') as HTMLElement;
+              if (container) {
+                const rect = container.getBoundingClientRect();
+                if (type === 'irrigation') {
+                  this._startAddingIrrigationTime(rect.width / 2, rect.width);
+                } else {
+                  this._startAddingDrainTime(rect.width / 2, rect.width);
+                }
+              }
+            }}
             class="md3-button primary"
             style="background: ${color};"
           >
@@ -655,44 +655,44 @@ export class IrrigationDialog extends LitElement {
         <div
           class="${type}-time-bar time-bar-container"
           @click=${(e: MouseEvent) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        if (type === 'irrigation') {
-          this._startAddingIrrigationTime(x, rect.width);
-        } else {
-          this._startAddingDrainTime(x, rect.width);
-        }
-      }}
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            if (type === 'irrigation') {
+              this._startAddingIrrigationTime(x, rect.width);
+            } else {
+              this._startAddingDrainTime(x, rect.width);
+            }
+          }}
           style="border: 2px solid ${color}40;"
         >
           ${Array.from({ length: 25 }, (_, i) => i).map(
-        (hour) => html`
+            (hour) => html`
               <div
                 class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
                 style="left: ${(hour / 24) * 100}%;"
               >
                 ${hour % 3 === 0
-            ? html` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
-            : ''}
+                  ? html` <span class="time-label">${hour.toString().padStart(2, '0')}:00</span> `
+                  : ''}
               </div>
             `
-      )}
+          )}
           ${times.map((t: IrrigationTime) => {
-        const [hours, minutes] = t.time.split(':').map(Number);
-        const position = ((hours + minutes / 60) / 24) * 100;
-        return html`
+            const [hours, minutes] = t.time.split(':').map(Number);
+            const position = ((hours + minutes / 60) / 24) * 100;
+            return html`
               <div
                 class="chart-marker"
                 @click=${(e: Event) => {
-            e.stopPropagation();
-            if (confirm(`Remove ${type} time ${t.time}?`)) {
-              if (type === 'irrigation') {
-                this._removeIrrigationTime(t.time);
-              } else {
-                this._removeDrainTime(t.time);
-              }
-            }
-          }}
+                  e.stopPropagation();
+                  if (confirm(`Remove ${type} time ${t.time}?`)) {
+                    if (type === 'irrigation') {
+                      this._removeIrrigationTime(t.time);
+                    } else {
+                      this._removeDrainTime(t.time);
+                    }
+                  }
+                }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
                 title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
               >
@@ -701,17 +701,17 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
             `;
-      })}
+          })}
         </div>
 
         ${addingTime
-        ? html`
+          ? html`
               <div
                 class="overlay-backdrop"
                 @click=${() =>
-            type === 'irrigation'
-              ? (this._addingIrrigationTime = undefined)
-              : (this._addingDrainTime = undefined)}
+                  type === 'irrigation'
+                    ? (this._addingIrrigationTime = undefined)
+                    : (this._addingDrainTime = undefined)}
               >
                 <div
                   class="detail-card"
@@ -725,15 +725,15 @@ export class IrrigationDialog extends LitElement {
                     type="time"
                     .value=${addingTime.time}
                     @change=${(e: CustomEvent) => {
-            const val = (e.target as HTMLInputElement).value || e.detail; // md3-text-input uses detail
-            if (type === 'irrigation' && this._addingIrrigationTime)
-              this._addingIrrigationTime = {
-                ...this._addingIrrigationTime,
-                time: val,
-              };
-            if (type === 'drain' && this._addingDrainTime)
-              this._addingDrainTime = { ...this._addingDrainTime, time: val };
-          }}
+                      const val = (e.target as HTMLInputElement).value || e.detail; // md3-text-input uses detail
+                      if (type === 'irrigation' && this._addingIrrigationTime)
+                        this._addingIrrigationTime = {
+                          ...this._addingIrrigationTime,
+                          time: val,
+                        };
+                      if (type === 'drain' && this._addingDrainTime)
+                        this._addingDrainTime = { ...this._addingDrainTime, time: val };
+                    }}
                   ></md3-text-input>
 
                   <md3-number-input
@@ -741,39 +741,39 @@ export class IrrigationDialog extends LitElement {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e: CustomEvent) => {
-            console.log('DEBUG: Duration Change', e.detail);
-            const val = parseInt(e.detail);
-            if (!isNaN(val)) {
-              if (type === 'irrigation' && this._addingIrrigationTime)
-                this._addingIrrigationTime = {
-                  ...this._addingIrrigationTime,
-                  duration: val,
-                };
-              if (type === 'drain' && this._addingDrainTime)
-                this._addingDrainTime = { ...this._addingDrainTime, duration: val };
-            }
-          }}
+                      console.log('DEBUG: Duration Change', e.detail);
+                      const val = parseInt(e.detail);
+                      if (!isNaN(val)) {
+                        if (type === 'irrigation' && this._addingIrrigationTime)
+                          this._addingIrrigationTime = {
+                            ...this._addingIrrigationTime,
+                            duration: val,
+                          };
+                        if (type === 'drain' && this._addingDrainTime)
+                          this._addingDrainTime = { ...this._addingDrainTime, duration: val };
+                      }
+                    }}
                   ></md3-number-input>
 
                   <div class="button-group">
                     <button
                       class="md3-button tonal"
                       @click=${() =>
-            type === 'irrigation'
-              ? (this._addingIrrigationTime = undefined)
-              : (this._addingDrainTime = undefined)}
+                        type === 'irrigation'
+                          ? (this._addingIrrigationTime = undefined)
+                          : (this._addingDrainTime = undefined)}
                     >
                       Cancel
                     </button>
                     <button
                       class="md3-button primary"
                       @click=${() => {
-            if (type === 'irrigation') {
-              this._addIrrigationTime(addingTime.time, addingTime.duration);
-            } else {
-              this._addDrainTime(addingTime.time, addingTime.duration);
-            }
-          }}
+                        if (type === 'irrigation') {
+                          this._addIrrigationTime(addingTime.time, addingTime.duration);
+                        } else {
+                          this._addDrainTime(addingTime.time, addingTime.duration);
+                        }
+                      }}
                       style="background: ${color};"
                     >
                       Add Schedule
@@ -782,7 +782,7 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
             `
-        : ''}
+          : ''}
       </div>
     `;
   }

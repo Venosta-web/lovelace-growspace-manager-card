@@ -1,9 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import {
-  CropMeta,
-  IrrigationStrategy,
-  GrowspaceAPIResponse,
-} from './types';
+import { CropMeta, IrrigationStrategy, GrowspaceAPIResponse } from './types';
 
 // Import all API services
 import { GrowspaceAPI } from './services/api/growspace-api';
@@ -263,7 +259,7 @@ export class DataService {
     cure_start?: string;
   }) => this._plantAPI.addPlants(params);
 
-  updatePlant = (params: { plant_id: string;[key: string]: unknown }) =>
+  updatePlant = (params: { plant_id: string; [key: string]: unknown }) =>
     this._plantAPI.updatePlant(params);
 
   removePlant = (plantId: string) => this._plantAPI.removePlant(plantId);

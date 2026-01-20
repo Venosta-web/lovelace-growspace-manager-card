@@ -6,6 +6,7 @@ import { getTimelineService } from '../../services/timeline-service';
 import { formatRelativeDay, formatTime, getDateKey } from '../../utils/date-utils';
 import { sharedStyles } from '../../styles/shared.styles';
 import '../ui/quick-note-input';
+import '../ui/vpd-heatmap';
 import '../ui/confirm-delete-dialog';
 import {
   mdiWater,
@@ -239,11 +240,17 @@ export class PlantTimeline extends LitElement {
       .type-note .icon-wrapper svg {
         fill: var(--warning-color, #ff9800);
       }
-      .type-environmental_report .icon-wrapper {
-        border-color: #ff9800;
+      .type-environmental_report.is-night .icon-wrapper {
+        border-color: #3f51b5;
       }
-      .type-environmental_report .icon-wrapper svg {
-        fill: #ff9800;
+      .type-environmental_report.is-night .icon-wrapper svg {
+        fill: #3f51b5;
+      }
+      .type-environmental_report.is-day .icon-wrapper {
+        border-color: #ffc107;
+      }
+      .type-environmental_report.is-day .icon-wrapper svg {
+        fill: #ffc107;
       }
 
       /* Action specific styling */
@@ -549,9 +556,13 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div
-        class="event type-${event.type} ${event.type === 'action' && event.action
-        ? 'action-' + event.action
-        : ''} glass-surface"
+        class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''
+      } ${event.type === 'environmental_report'
+        ? (event as any).sensor_type === 'night_report'
+          ? 'is-night'
+          : 'is-day'
+        : ''
+      } glass-surface"
       >
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
@@ -614,7 +625,9 @@ export class PlantTimeline extends LitElement {
       case 'environmental_report': {
         const isDay = (event as any).sensor_type !== 'night_report';
         return html`
-          <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
+            ${isDay ? 'Day' : 'Night'} Environmental Report
+          </div>
           <div class="details">
             ${(event as any).reasons?.map(
           (r: string) =>
@@ -624,6 +637,41 @@ export class PlantTimeline extends LitElement {
                 >`
         )}
           </div>
+          ${(() => {
+            // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
+            let temperature = event.metadata?.temperature;
+            let humidity = event.metadata?.humidity;
+
+            // Fallback parsing if metadata is missing but reasons exist
+            if ((temperature === undefined || humidity === undefined) && (event as any).reasons) {
+              const reasons = (event as any).reasons as string[];
+
+              if (temperature === undefined) {
+                const tempMatch = reasons.find(r => r.includes('Temperature'))?.match(/Temperature:\s*([\d.]+)/);
+                if (tempMatch) temperature = parseFloat(tempMatch[1]);
+              }
+
+              if (humidity === undefined) {
+                const humMatch = reasons.find(r => r.includes('Humidity'))?.match(/Humidity:\s*([\d.]+)/);
+                if (humMatch) humidity = parseFloat(humMatch[1]);
+              }
+            }
+
+            return temperature !== undefined && humidity !== undefined
+              ? html`
+                  <div
+                  style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                  >
+                    <vpd-heatmap
+                      .temperature=${temperature}
+                      .humidity=${humidity}
+                      .stage=${this._getCurrentStage()}
+                      .hass=${this.hass}
+                    ></vpd-heatmap>
+                  </div>
+                `
+              : nothing;
+          })()}
         `;
       }
       case 'note':
@@ -635,6 +683,7 @@ export class PlantTimeline extends LitElement {
   }
 
   private _renderMetadata(metadata?: TimelineEventMetadata) {
+    if (metadata) console.log('_renderMetadata called with:', metadata);
     if (!metadata || Object.keys(metadata).length === 0) return nothing;
 
     const items = [
@@ -647,8 +696,8 @@ export class PlantTimeline extends LitElement {
     ];
 
     return html`
-      <div class="metadata-chips">
-        ${items.map((item) => {
+              <div class="metadata-chips" >
+                ${items.map((item) => {
       const val = (metadata as any)[item.key];
       if (val === undefined || val === null) return nothing;
       const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
@@ -659,16 +708,16 @@ export class PlantTimeline extends LitElement {
             </div>
           `;
     })}
-      </div>
-    `;
+        </div>
+          `;
   }
 
   private _renderImages(images?: string[]) {
     if (!images || images.length === 0) return nothing;
 
     return html`
-      <div class="image-grid">
-        ${images.map((img) => {
+          <div class="image-grid" >
+            ${images.map((img) => {
       // If it's a relative path, prefix with /api/growspace_manager/v1/images/
       const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
       return html`
@@ -680,15 +729,15 @@ export class PlantTimeline extends LitElement {
             />
           `;
     })}
-      </div>
-    `;
+        </div>
+          `;
   }
 
   private _renderTags(tags?: string[]) {
     if (!tags || tags.length === 0) return nothing;
     return html`
-      <div class="tags">
-        ${tags.map(
+          <div class="tags" >
+            ${tags.map(
       (tag) => html`
             <div class="tag">
               <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
@@ -698,12 +747,38 @@ export class PlantTimeline extends LitElement {
             </div>
           `
     )}
-      </div>
-    `;
+        </div>
+          `;
   }
 
   private _openImage(src: string) {
     window.open(src, '_blank');
+  }
+
+  private _getCurrentStage(): 'seedling' | 'vegetative' | 'flower' | 'late_flower' {
+    // Basic mapping from plant events/state to heatmap stage
+    // Default to vegetative if unsure
+    const sortedEvents = this.events || [];
+    const latestStageEvent = sortedEvents
+      .filter((e) => e.type === 'stage_change' || e.type === 'milestone')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+    // If no events, try to infer from passed stage if available (though not passed as prop here directly except via events)
+    // The parent passes events, but not the plant entity directly.
+    // However, we can look at the latest stage event.
+
+    if (!latestStageEvent) return 'vegetative';
+
+    const stage =
+      (latestStageEvent as any).to?.toLowerCase() || (latestStageEvent as any).label?.toLowerCase();
+
+    if (stage === 'seedling' || stage === 'clone') return 'seedling';
+    if (stage === 'veg' || stage === 'vegetative' || stage === 'mother') return 'vegetative';
+    if (stage === 'flower') return 'flower';
+    if (stage === 'late_flower' || stage === 'ripen' || stage === 'flush') return 'late_flower';
+    if (stage === 'dry' || stage === 'cure') return 'late_flower'; // Heatmap less relevant here but keep valid
+
+    return 'vegetative';
   }
 }
 

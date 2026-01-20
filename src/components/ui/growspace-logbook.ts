@@ -369,7 +369,7 @@ export class GrowspaceLogbook extends LitElement {
     return html`
       <div class="filter-bar">
         ${filters.map(
-      (filter) => html`
+          (filter) => html`
             <div
               class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
               @click=${() => this._setActiveFilter(filter.id)}
@@ -377,37 +377,37 @@ export class GrowspaceLogbook extends LitElement {
               ${filter.label}
             </div>
           `
-    )}
+        )}
       </div>
 
       <div class="log-container" ${ref(this._containerRef)}>
         ${sortedEvents.length > 0
-        ? html`
+          ? html`
               ${virtualize({
-          items: sortedEvents,
-          scroller: true,
-          renderItem: (event: GrowspaceEvent) => {
-            if (!event) return html``;
-            const cat = this._normalize(event.category);
-            const isNote = cat === 'note';
+                items: sortedEvents,
+                scroller: true,
+                renderItem: (event: GrowspaceEvent) => {
+                  if (!event) return html``;
+                  const cat = this._normalize(event.category);
+                  const isNote = cat === 'note';
 
-            // Format type and hide Plant ID
-            let rawType = event.sensor_type || cat || 'Event';
-            // Remove common plant ID prefixes like "plant_uuid_" or "plant uuid "
-            rawType = rawType.replace(/plant[\s_]+[a-z0-9-]+[\s_]+/i, '');
-            // Clean up underscores
-            const type = isNote ? 'Plant Note' : rawType.replace(/_/g, ' ');
+                  // Format type and hide Plant ID
+                  let rawType = event.sensor_type || cat || 'Event';
+                  // Remove common plant ID prefixes like "plant_uuid_" or "plant uuid "
+                  rawType = rawType.replace(/plant[\s_]+[a-z0-9-]+[\s_]+/i, '');
+                  // Clean up underscores
+                  const type = isNote ? 'Plant Note' : rawType.replace(/_/g, ' ');
 
-            const startTime = (event as any).timestamp || event.start_time;
-            const index = (this._events || []).indexOf(event);
-            const eventColor = this._getEventColor(event.category, event.sensor_type);
+                  const startTime = (event as any).timestamp || event.start_time;
+                  const index = (this._events || []).indexOf(event);
+                  const eventColor = this._getEventColor(event.category, event.sensor_type);
 
-            return html`
+                  return html`
                     <div
                       class="event-card ${this._highlightedTimestamp &&
-                Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000
-                ? 'highlighted'
-                : ''}"
+                      Math.abs(new Date(startTime).getTime() - this._highlightedTimestamp) < 1000
+                        ? 'highlighted'
+                        : ''}"
                       data-event-index="${index}"
                     >
                       <div class="event-header">
@@ -416,16 +416,16 @@ export class GrowspaceLogbook extends LitElement {
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
                         ${event.duration_sec > 0
-                ? html`<div class="event-duration">
+                          ? html`<div class="event-duration">
                               ${formatDuration(event.duration_sec)}
                             </div>`
-                : nothing}
+                          : nothing}
                       </div>
 
                       <div class="event-details">
                         <div class="event-reasons">
                           ${isNote
-                ? html`
+                            ? html`
                                 <div
                                   class="note-text"
                                   style="font-size: 0.95rem; opacity: 1; margin-bottom: 8px;"
@@ -433,24 +433,24 @@ export class GrowspaceLogbook extends LitElement {
                                   ${(event as any).notes}
                                 </div>
                                 ${(event as any).tags?.length > 0
-                    ? html`
+                                  ? html`
                                       <div
                                         style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;"
                                       >
                                         ${(event as any).tags.map(
-                      (tag: string) => html`
+                                          (tag: string) => html`
                                             <span
                                               class="reason-badge"
                                               style="background: rgba(var(--rgb-primary-color), 0.1); color: var(--primary-color);"
                                               >#${tag}</span
                                             >
                                           `
-                    )}
+                                        )}
                                       </div>
                                     `
-                    : nothing}
+                                  : nothing}
                                 ${(event as any).images?.length > 0
-                    ? html`
+                                  ? html`
                                       <div
                                         style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
                                       >
@@ -458,40 +458,40 @@ export class GrowspaceLogbook extends LitElement {
                                         Image${(event as any).images.length > 1 ? 's' : ''} attached
                                       </div>
                                     `
-                    : nothing}
+                                  : nothing}
                               `
-                : event.reasons && event.reasons.length > 0
-                  ? event.reasons
-                    .filter(
-                      (r: string) => !r.trim().toLowerCase().startsWith('plant_id:')
-                    )
-                    .map(
-                      (reason: string) =>
-                        html`<span class="reason-badge">${reason}</span>`
-                    )
-                  : nothing}
+                            : event.reasons && event.reasons.length > 0
+                              ? event.reasons
+                                  .filter(
+                                    (r: string) => !r.trim().toLowerCase().startsWith('plant_id:')
+                                  )
+                                  .map(
+                                    (reason: string) =>
+                                      html`<span class="reason-badge">${reason}</span>`
+                                  )
+                              : nothing}
                         </div>
 
                         ${!isNote && event.severity > 0.5 && event.category !== 'training'
-                ? html`
+                          ? html`
                               <div
                                 class="event-probability"
                                 style="color: ${this._getSeverityColor(
-                  event.severity,
-                  event.sensor_type
-                )}"
+                                  event.severity,
+                                  event.sensor_type
+                                )}"
                               >
                                 ${formatProbability(event.severity)}
                               </div>
                             `
-                : nothing}
+                          : nothing}
                       </div>
                     </div>
                   `;
-          },
-        })}
+                },
+              })}
             `
-        : html`
+          : html`
               <div class="empty-state">
                 No events found for "${filters.find((f) => f.id === this._activeFilter)?.label}".
               </div>

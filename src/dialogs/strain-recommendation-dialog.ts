@@ -147,7 +147,7 @@ export class StrainRecommendationDialog extends LitElement {
             </div>
 
             ${this.isLoading
-        ? html`
+              ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -155,10 +155,10 @@ export class StrainRecommendationDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-        : nothing}
+              : nothing}
             ${!this.isLoading && this.response
-        ? html` <div class="gm-response-box">${this.response}</div> `
-        : nothing}
+              ? html` <div class="gm-response-box">${this.response}</div> `
+              : nothing}
           </div>
         </div>
       </ha-dialog>

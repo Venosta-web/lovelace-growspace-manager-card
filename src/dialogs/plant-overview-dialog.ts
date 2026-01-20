@@ -1217,7 +1217,10 @@ export class PlantOverviewDialog extends LitElement {
         // 4. Check if it's a note event
         const isNote = cat === 'note';
 
-        if (!isWatering && !isTraining && !isIPM && !isNote) return false;
+        // 5. Check if it's an environmental report
+        const isEnvReport = cat === 'environmental_report';
+
+        if (!isWatering && !isTraining && !isIPM && !isNote && !isEnvReport) return false;
 
         // 5. Filter by plant_id
 
@@ -1232,6 +1235,9 @@ export class PlantOverviewDialog extends LitElement {
         if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
           return true;
         }
+
+        // Include environmental reports (always growspace-wide)
+        if (isEnvReport) return true;
 
         // Backend format: "plant_id:uuid-here"
         const mentionsThisPlant = reasons.some((r) => {
@@ -1255,6 +1261,17 @@ export class PlantOverviewDialog extends LitElement {
             text: (e as any).notes || '',
             images: (e as any).images,
             tags: (e as any).tags,
+            metadata: (e as any).metadata,
+            event_id: (e as any).event_id,
+          } as PlantTimelineEvent;
+        }
+
+        if (cat === 'environmental_report') {
+          return {
+            type: 'environmental_report',
+            date: e.start_time,
+            sensor_type: e.sensor_type,
+            reasons: e.reasons,
             metadata: (e as any).metadata,
             event_id: (e as any).event_id,
           } as PlantTimelineEvent;

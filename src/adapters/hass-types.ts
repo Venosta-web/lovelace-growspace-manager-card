@@ -7,10 +7,7 @@
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
-import {
-  GrowspaceOverviewEntity,
-  PlantEntity,
-} from '../types';
+import { GrowspaceOverviewEntity, PlantEntity } from '../types';
 
 /**
  * Type-safe HASS wrapper with Growspace-specific entity access

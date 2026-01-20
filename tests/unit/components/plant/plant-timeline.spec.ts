@@ -668,6 +668,54 @@ describe('PlantTimeline', () => {
             // Default falls through to day icon logic if not night, or mdiWeatherSunny
             expect(defaultIcon).toBeDefined();
         });
+
+        it('should render vpd-heatmap in environmental report when metadata is present', async () => {
+            const event: PlantTimelineEvent = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: [],
+                metadata: {
+                    temperature: 25,
+                    humidity: 60
+                }
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeTruthy();
+            expect((heatmap as any).temperature).toBe(25);
+            expect((heatmap as any).humidity).toBe(60);
+            // Default stage is vegetative if no other events
+            expect((heatmap as any).stage).toBe('vegetative');
+        });
+
+        it('should apply correct day/night classes to environmental reports', async () => {
+            const dayEvent: PlantTimelineEvent = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: []
+            } as any;
+
+            const nightEvent: PlantTimelineEvent = {
+                date: '2023-01-01T00:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'night_report',
+                reasons: []
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[dayEvent, nightEvent]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const dayEl = el.shadowRoot?.querySelector('.type-environmental_report.is-day');
+            const nightEl = el.shadowRoot?.querySelector('.type-environmental_report.is-night');
+
+            expect(dayEl).toBeTruthy();
+            expect(nightEl).toBeTruthy();
+        });
     });
 
     describe('Quick Note Submission', () => {

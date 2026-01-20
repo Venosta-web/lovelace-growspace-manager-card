@@ -36,12 +36,27 @@ export class VPDHeatmap extends LitElement {
         background: white;
         border: 2px solid black;
         border-radius: 50%;
-        transform: translate(
-          -50%,
-          50%
-        ); /* Adjust for bottom-left origin coordinate system mapping needed */
         pointer-events: none;
         box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+        z-index: 5;
+        transform: translate(-50%, -50%);
+      }
+
+      .current-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+        transform: translate(8px, -50%); /* Offset to the right of the dot */
+        border: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .legend {
@@ -72,7 +87,7 @@ export class VPDHeatmap extends LitElement {
   }
 
   protected updated(changedProps: Map<string, any>) {
-    if (changedProps.has('stage')) {
+    if (changedProps.has('stage') || changedProps.has('temperature') || changedProps.has('humidity')) {
       this._drawHeatmap();
     }
   }
@@ -120,14 +135,11 @@ export class VPDHeatmap extends LitElement {
     }
 
     if (vpd >= optMin && vpd <= optMax) return '#4caf50'; // Optimal (Green)
-    if (vpd < min) return '#2196f3'; // Too Low (Blue/Wet)
-    if (vpd > max) return '#f44336'; // Too High (Red/Dry)
+    if (vpd < min) return '#2196f3'; // Wet (Too Low - Blue)
+    if (vpd > max) return '#f44336'; // Dry (Too High - Red)
 
     // Transitions
-    if (vpd < optMin) return '#ff9800'; // Low-Warning (Orange)
-    if (vpd > optMax) return '#ff9800'; // High-Warning (Orange)
-
-    return '#9e9e9e';
+    return '#ff9800'; // Warning (Orange)
   }
 
   private _drawHeatmap() {
@@ -150,19 +162,10 @@ export class VPDHeatmap extends LitElement {
     // Clear
     ctx.clearRect(0, 0, width, height);
 
-    // Grid size for pixels
-    // const stepX = width / (maxTemp - minTemp);
-    // const stepY = height / (maxRH - minRH);
-
     // Draw Heatmap pixels
     for (let x = 0; x < width; x += 4) {
-      // Optimization: 4px blocks
       for (let y = 0; y < height; y += 4) {
-        // Map pixel to Temp/RH
-        // x=0 -> minTemp, x=width -> maxTemp
         const temp = minTemp + (x / width) * (maxTemp - minTemp);
-        // y=0 -> maxRH, y=height -> minRH (Canvas Y is inverted relative to standard cartesian chart usually)
-        // Let's make Y=height be minRH (bottom), Y=0 be maxRH (top)
         const rh = maxRH - (y / height) * (maxRH - minRH);
 
         const vpd = this._getVPD(temp, rh);
@@ -184,7 +187,7 @@ export class VPDHeatmap extends LitElement {
         const x = ((this.temperature - minTemp) / (maxTemp - minTemp)) * width;
         const y = ((maxRH - this.humidity) / (maxRH - minRH)) * height;
 
-        // Draw dot
+        // Draw dot in canvas for crispness but we also use DOM overlay for tooltip
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, 2 * Math.PI);
         ctx.fillStyle = 'white';
@@ -197,8 +200,42 @@ export class VPDHeatmap extends LitElement {
   }
 
   render() {
+    const minTemp = 15;
+    const maxTemp = 35;
+    const minRH = 30;
+    const maxRH = 90;
+
+    let dotX = -100;
+    let dotY = -100;
+    let currentVpd = 0;
+    let hasPoint = false;
+
+    if (this.temperature && this.humidity) {
+      hasPoint =
+        this.temperature >= minTemp &&
+        this.temperature <= maxTemp &&
+        this.humidity >= minRH &&
+        this.humidity <= maxRH;
+
+      if (hasPoint) {
+        dotX = ((this.temperature - minTemp) / (maxTemp - minTemp)) * 100;
+        dotY = ((maxRH - this.humidity) / (maxRH - minRH)) * 100;
+        currentVpd = parseFloat(this._getVPD(this.temperature, this.humidity).toFixed(2));
+      }
+    }
+
     return html`
-      <canvas id="vpdCanvas"></canvas>
+      <div style="position: relative;">
+        <canvas id="vpdCanvas"></canvas>
+        ${hasPoint
+        ? html`
+              <div class="current-point" style="left: ${dotX}%; top: ${dotY}%"></div>
+              <div class="current-tooltip" style="left: ${dotX}%; top: ${dotY}%">
+                ${currentVpd} kPa
+              </div>
+            `
+        : ''}
+      </div>
       <div class="legend">
         <div class="legend-item">
           <div class="legend-color" style="background: #2196f3"></div>

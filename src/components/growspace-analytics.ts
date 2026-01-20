@@ -1,14 +1,10 @@
 import { LitElement, html, css, PropertyValues, TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, state as _state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice } from '../types';
 
-import {
-  METRIC_CONFIG,
-  METRIC_SORT_ORDER,
-  MetricKey,
-} from '../constants';
+import { METRIC_CONFIG, METRIC_SORT_ORDER, MetricKey } from '../constants';
 import '../growspace-env-chart';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { sharedStyles } from '../styles/shared.styles';
@@ -48,7 +44,6 @@ export class GrowspaceAnalytics extends LitElement {
       }
     `,
   ];
-
 
   private _historyCacheController!: StoreController<
     Record<string, import('../types').HistorySensorState[]>
@@ -255,9 +250,9 @@ export class GrowspaceAnalytics extends LitElement {
               .chartTitle=${chartTitle}
               .customSensorId=${customSensorId}
               @toggle-graph=${(e: CustomEvent) => {
-              e.stopPropagation();
-              this.store.toggleEnvGraph(metricKey);
-            }}
+                e.stopPropagation();
+                this.store.toggleEnvGraph(metricKey);
+              }}
             ></growspace-env-chart>
           `;
         }
@@ -275,7 +270,7 @@ export class GrowspaceAnalytics extends LitElement {
     return html`
       <div class="time-range-selector">
         ${ranges.map(
-      (r) => html`
+          (r) => html`
             <button
               class="range-btn ${currentRange === r ? 'active' : ''}"
               @click=${() => this._setGraphRange(r)}
@@ -283,7 +278,7 @@ export class GrowspaceAnalytics extends LitElement {
               ${r}
             </button>
           `
-    )}
+        )}
       </div>
     `;
   }

@@ -10969,6 +10969,254 @@ QuickNoteInput = __decorate([
     t$2('quick-note-input')
 ], QuickNoteInput);
 
+let VPDHeatmap = class VPDHeatmap extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.stage = 'vegetative';
+    }
+    firstUpdated() {
+        this._drawHeatmap();
+    }
+    updated(changedProps) {
+        if (changedProps.has('stage') || changedProps.has('temperature') || changedProps.has('humidity')) {
+            this._drawHeatmap();
+        }
+    }
+    _getVPD(tempC, rh) {
+        const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
+        const vpd = svp * (1 - rh / 100);
+        return vpd;
+    }
+    _getZoneColor(vpd, stage) {
+        // VPD ranges in kPa
+        let min, max, optMin, optMax;
+        switch (stage) {
+            case 'seedling':
+                optMin = 0.4;
+                optMax = 0.8;
+                min = 0.2;
+                max = 1.0;
+                break;
+            case 'vegetative': // Early/Late veg
+                optMin = 0.8;
+                optMax = 1.1; // 0.8-1.1 kPa
+                min = 0.4;
+                max = 1.4;
+                break;
+            case 'flower': // Early flower
+                optMin = 1.0;
+                optMax = 1.35; // 1.0-1.35 kPa estimate
+                min = 0.6;
+                max = 1.6;
+                break;
+            case 'late_flower':
+                optMin = 1.2;
+                optMax = 1.55; // 1.2-1.55 kPa
+                min = 0.8;
+                max = 1.8;
+                break;
+            default:
+                optMin = 0.8;
+                optMax = 1.2;
+                min = 0.5;
+                max = 1.5;
+        }
+        if (vpd >= optMin && vpd <= optMax)
+            return '#4caf50'; // Optimal (Green)
+        if (vpd < min)
+            return '#2196f3'; // Wet (Too Low - Blue)
+        if (vpd > max)
+            return '#f44336'; // Dry (Too High - Red)
+        // Transitions
+        return '#ff9800'; // Warning (Orange)
+    }
+    _drawHeatmap() {
+        const canvas = this.shadowRoot?.getElementById('vpdCanvas');
+        if (!canvas)
+            return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx)
+            return;
+        // Resolution
+        const width = (canvas.width = 400);
+        const height = (canvas.height = 300);
+        // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
+        const minTemp = 15;
+        const maxTemp = 35;
+        const minRH = 30;
+        const maxRH = 90;
+        // Clear
+        ctx.clearRect(0, 0, width, height);
+        // Draw Heatmap pixels
+        for (let x = 0; x < width; x += 4) {
+            for (let y = 0; y < height; y += 4) {
+                const temp = minTemp + (x / width) * (maxTemp - minTemp);
+                const rh = maxRH - (y / height) * (maxRH - minRH);
+                const vpd = this._getVPD(temp, rh);
+                const color = this._getZoneColor(vpd, this.stage);
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 4, 4);
+            }
+        }
+        // Draw Current Point if data exists
+        if (this.temperature && this.humidity) {
+            if (this.temperature >= minTemp &&
+                this.temperature <= maxTemp &&
+                this.humidity >= minRH &&
+                this.humidity <= maxRH) {
+                const x = ((this.temperature - minTemp) / (maxTemp - minTemp)) * width;
+                const y = ((maxRH - this.humidity) / (maxRH - minRH)) * height;
+                // Draw dot in canvas for crispness but we also use DOM overlay for tooltip
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+    }
+    render() {
+        const minTemp = 15;
+        const maxTemp = 35;
+        const minRH = 30;
+        const maxRH = 90;
+        let dotX = -100;
+        let dotY = -100;
+        let currentVpd = 0;
+        let hasPoint = false;
+        if (this.temperature && this.humidity) {
+            hasPoint =
+                this.temperature >= minTemp &&
+                    this.temperature <= maxTemp &&
+                    this.humidity >= minRH &&
+                    this.humidity <= maxRH;
+            if (hasPoint) {
+                dotX = ((this.temperature - minTemp) / (maxTemp - minTemp)) * 100;
+                dotY = ((maxRH - this.humidity) / (maxRH - minRH)) * 100;
+                currentVpd = parseFloat(this._getVPD(this.temperature, this.humidity).toFixed(2));
+            }
+        }
+        return x `
+      <div style="position: relative;">
+        <canvas id="vpdCanvas"></canvas>
+        ${hasPoint
+            ? x `
+              <div class="current-point" style="left: ${dotX}%; top: ${dotY}%"></div>
+              <div class="current-tooltip" style="left: ${dotX}%; top: ${dotY}%">
+                ${currentVpd} kPa
+              </div>
+            `
+            : ''}
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-color" style="background: #2196f3"></div>
+          Wet
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #ff9800"></div>
+          Fair
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #4caf50"></div>
+          Optimal
+        </div>
+        <div class="legend-item">
+          <div class="legend-color" style="background: #f44336"></div>
+          Dry
+        </div>
+      </div>
+    `;
+    }
+};
+VPDHeatmap.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        background: var(--card-background-color, #202020);
+      }
+
+      .current-point {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border: 2px solid black;
+        border-radius: 50%;
+        pointer-events: none;
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+        z-index: 5;
+        transform: translate(-50%, -50%);
+      }
+
+      .current-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(4px);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        z-index: 10;
+        transform: translate(8px, -50%); /* Offset to the right of the dot */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .legend {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .legend-color {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], VPDHeatmap.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Number })
+], VPDHeatmap.prototype, "temperature", void 0);
+__decorate([
+    n$5({ type: Number })
+], VPDHeatmap.prototype, "humidity", void 0);
+__decorate([
+    n$5({ type: String })
+], VPDHeatmap.prototype, "stage", void 0);
+VPDHeatmap = __decorate([
+    t$2('vpd-heatmap')
+], VPDHeatmap);
+
 /**
  * Reusable confirmation dialog for delete operations
  * Used by plant-timeline and potentially other components
@@ -11336,8 +11584,10 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
         return x `
       <div
-        class="event type-${event.type} ${event.type === 'action' && event.action
-            ? 'action-' + event.action
+        class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} ${event.type === 'environmental_report'
+            ? event.sensor_type === 'night_report'
+                ? 'is-night'
+                : 'is-day'
             : ''} glass-surface"
       >
         <div class="icon-wrapper">
@@ -11399,13 +11649,48 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             case 'environmental_report': {
                 const isDay = event.sensor_type !== 'night_report';
                 return x `
-          <div class="content">${isDay ? 'Day' : 'Night'} Environmental Report</div>
+          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
+            ${isDay ? 'Day' : 'Night'} Environmental Report
+          </div>
           <div class="details">
             ${event.reasons?.map((r) => x `<span
                   style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
                   >${r}</span
                 >`)}
           </div>
+          ${(() => {
+                    // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
+                    let temperature = event.metadata?.temperature;
+                    let humidity = event.metadata?.humidity;
+                    // Fallback parsing if metadata is missing but reasons exist
+                    if ((temperature === undefined || humidity === undefined) && event.reasons) {
+                        const reasons = event.reasons;
+                        if (temperature === undefined) {
+                            const tempMatch = reasons.find(r => r.includes('Temperature'))?.match(/Temperature:\s*([\d.]+)/);
+                            if (tempMatch)
+                                temperature = parseFloat(tempMatch[1]);
+                        }
+                        if (humidity === undefined) {
+                            const humMatch = reasons.find(r => r.includes('Humidity'))?.match(/Humidity:\s*([\d.]+)/);
+                            if (humMatch)
+                                humidity = parseFloat(humMatch[1]);
+                        }
+                    }
+                    return temperature !== undefined && humidity !== undefined
+                        ? x `
+                  <div
+                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                  >
+                    <vpd-heatmap
+                      .temperature=${temperature}
+                      .humidity=${humidity}
+                      .stage=${this._getCurrentStage()}
+                      .hass=${this.hass}
+                    ></vpd-heatmap>
+                  </div>
+                `
+                        : E;
+                })()}
         `;
             }
             case 'note':
@@ -11416,6 +11701,8 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         }
     }
     _renderMetadata(metadata) {
+        if (metadata)
+            console.log('_renderMetadata called with:', metadata);
         if (!metadata || Object.keys(metadata).length === 0)
             return E;
         const items = [
@@ -11427,8 +11714,8 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
         ];
         return x `
-      <div class="metadata-chips">
-        ${items.map((item) => {
+              <div class="metadata-chips" >
+                ${items.map((item) => {
             const val = metadata[item.key];
             if (val === undefined || val === null)
                 return E;
@@ -11440,15 +11727,15 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             </div>
           `;
         })}
-      </div>
-    `;
+        </div>
+          `;
     }
     _renderImages(images) {
         if (!images || images.length === 0)
             return E;
         return x `
-      <div class="image-grid">
-        ${images.map((img) => {
+          <div class="image-grid" >
+            ${images.map((img) => {
             // If it's a relative path, prefix with /api/growspace_manager/v1/images/
             const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
             return x `
@@ -11460,15 +11747,15 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             />
           `;
         })}
-      </div>
-    `;
+        </div>
+          `;
     }
     _renderTags(tags) {
         if (!tags || tags.length === 0)
             return E;
         return x `
-      <div class="tags">
-        ${tags.map((tag) => x `
+          <div class="tags" >
+            ${tags.map((tag) => x `
             <div class="tag">
               <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
                 <path d="${mdiTag}" />
@@ -11476,11 +11763,36 @@ let PlantTimeline = class PlantTimeline extends i$3 {
               ${tag}
             </div>
           `)}
-      </div>
-    `;
+        </div>
+          `;
     }
     _openImage(src) {
         window.open(src, '_blank');
+    }
+    _getCurrentStage() {
+        // Basic mapping from plant events/state to heatmap stage
+        // Default to vegetative if unsure
+        const sortedEvents = this.events || [];
+        const latestStageEvent = sortedEvents
+            .filter((e) => e.type === 'stage_change' || e.type === 'milestone')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        // If no events, try to infer from passed stage if available (though not passed as prop here directly except via events)
+        // The parent passes events, but not the plant entity directly.
+        // However, we can look at the latest stage event.
+        if (!latestStageEvent)
+            return 'vegetative';
+        const stage = latestStageEvent.to?.toLowerCase() || latestStageEvent.label?.toLowerCase();
+        if (stage === 'seedling' || stage === 'clone')
+            return 'seedling';
+        if (stage === 'veg' || stage === 'vegetative' || stage === 'mother')
+            return 'vegetative';
+        if (stage === 'flower')
+            return 'flower';
+        if (stage === 'late_flower' || stage === 'ripen' || stage === 'flush')
+            return 'late_flower';
+        if (stage === 'dry' || stage === 'cure')
+            return 'late_flower'; // Heatmap less relevant here but keep valid
+        return 'vegetative';
     }
 };
 PlantTimeline.styles = [
@@ -11679,11 +11991,17 @@ PlantTimeline.styles = [
       .type-note .icon-wrapper svg {
         fill: var(--warning-color, #ff9800);
       }
-      .type-environmental_report .icon-wrapper {
-        border-color: #ff9800;
+      .type-environmental_report.is-night .icon-wrapper {
+        border-color: #3f51b5;
       }
-      .type-environmental_report .icon-wrapper svg {
-        fill: #ff9800;
+      .type-environmental_report.is-night .icon-wrapper svg {
+        fill: #3f51b5;
+      }
+      .type-environmental_report.is-day .icon-wrapper {
+        border-color: #ffc107;
+      }
+      .type-environmental_report.is-day .icon-wrapper svg {
+        fill: #ffc107;
       }
 
       /* Action specific styling */
@@ -12736,7 +13054,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             const isIPM = cat === 'ipm' || type.startsWith('ipm_');
             // 4. Check if it's a note event
             const isNote = cat === 'note';
-            if (!isWatering && !isTraining && !isIPM && !isNote)
+            // 5. Check if it's an environmental report
+            const isEnvReport = cat === 'environmental_report';
+            if (!isWatering && !isTraining && !isIPM && !isNote && !isEnvReport)
                 return false;
             // 5. Filter by plant_id
             // For notes, check the direct plant_id field
@@ -12749,6 +13069,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
                 return true;
             }
+            // Include environmental reports (always growspace-wide)
+            if (isEnvReport)
+                return true;
             // Backend format: "plant_id:uuid-here"
             const mentionsThisPlant = reasons.some((r) => {
                 const rLower = r.toLowerCase();
@@ -12769,6 +13092,16 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                     text: e.notes || '',
                     images: e.images,
                     tags: e.tags,
+                    metadata: e.metadata,
+                    event_id: e.event_id,
+                };
+            }
+            if (cat === 'environmental_report') {
+                return {
+                    type: 'environmental_report',
+                    date: e.start_time,
+                    sensor_type: e.sensor_type,
+                    reasons: e.reasons,
                     metadata: e.metadata,
                     event_id: e.event_id,
                 };
@@ -18608,6 +18941,7 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         this._hasError = false;
         this._errorMessage = '';
         this._hoveredEvent = null;
+        this._tooltipPos = null;
         this._zoomLevel = 1; // 1 = normal, 2 = zoomed in
     }
     willUpdate(changedProps) {
@@ -18672,6 +19006,19 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
         const position = ((time - minTime) / totalDuration) * 100;
         return position;
     }
+    _showTooltip(event, e) {
+        const target = e.target;
+        const rect = target.getBoundingClientRect();
+        this._hoveredEvent = event;
+        this._tooltipPos = {
+            x: rect.left + rect.width / 2,
+            y: rect.top
+        };
+    }
+    _hideTooltip() {
+        this._hoveredEvent = null;
+        this._tooltipPos = null;
+    }
     render() {
         if (this._isLoading)
             return x `<div class="empty-state">Loading timeline...</div>`;
@@ -18703,59 +19050,111 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
           </button>
           <button
             class="zoom-btn"
-            @click=${() => (this._zoomLevel = Math.min(5, this._zoomLevel + 0.5))}
+            @click=${() => (this._zoomLevel = Math.min(50, this._zoomLevel + 0.5))}
           >
             +
           </button>
         </div>
 
-        <div class="timeline-container">
+        <div class="timeline-container" @scroll=${this._hideTooltip}>
           <div class="timeline-track" style="width: ${width}%">
             ${this._events.map((event) => {
             const left = this._getPosition(event, start, totalDuration);
             const icon = this._getIcon(event);
             const className = this._getClass(event);
+            getEventTimestamp(event);
             return x `
                 <div
                   class="event-marker ${className}"
                   style="left: ${left}%"
-                  @mouseenter=${() => (this._hoveredEvent = event)}
-                  @mouseleave=${() => (this._hoveredEvent = null)}
+                  @click=${(e) => {
+                e.stopPropagation();
+                this._zoomToEvent(event, start, totalDuration);
+            }}
+                  @mouseenter=${(e) => this._showTooltip(event, e)}
+                  @mouseleave=${this._hideTooltip}
                 >
                   <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-
-                  ${this._hoveredEvent === event
-                ? x `
-                        <div class="tooltip visible" style="left: ${left}%">
-                          <div class="tooltip-header">
-                            ${event.category === 'note' ? 'Note' : event.sensor_type || 'Event'}
-                          </div>
-                          <div class="tooltip-time">
-                            ${formatDateTime(new Date(getEventTimestamp(event)))}
-                          </div>
-                          <div>${event.notes || event.reasons?.join(', ') || ''}</div>
-                        </div>
-                      `
-                : E}
                 </div>
               `;
         })}
 
             <div class="date-axis">
-              <!-- Generate ticks every 20% -->
-              ${[0, 20, 40, 60, 80, 100].map((pct) => {
-            const time = start + totalDuration * (pct / 100);
-            return x `
-                  <div class="date-tick" style="left: ${pct}%">
-                    ${formatShortDate(new Date(time))}
-                  </div>
-                `;
-        })}
+              <!-- Generate ticks dynamically based on zoom -->
+              ${this._renderTicks(start, totalDuration)}
             </div>
           </div>
         </div>
+
+        ${this._hoveredEvent && this._tooltipPos
+            ? x `
+              <div 
+                class="tooltip visible" 
+                style="top: ${this._tooltipPos.y}px; left: ${this._tooltipPos.x}px"
+              >
+                <div class="tooltip-header">
+                  ${this._hoveredEvent.category === 'note' ? 'Note' : this._hoveredEvent.sensor_type || 'Event'}
+                </div>
+                <div class="tooltip-time">
+                  ${formatDateTime(new Date(getEventTimestamp(this._hoveredEvent)))}
+                </div>
+                <div class="tooltip-body">
+                  ${this._hoveredEvent.notes
+                ? x `<div>${this._hoveredEvent.notes}</div>`
+                : E}
+                  ${this._hoveredEvent.reasons && this._hoveredEvent.reasons.length > 0
+                ? x `<div>${this._hoveredEvent.reasons.join(', ')}</div>`
+                : E}
+                  ${!this._hoveredEvent.notes && (!this._hoveredEvent.reasons || this._hoveredEvent.reasons.length === 0)
+                ? x `<div style="font-style:italic; opacity:0.7">No details</div>`
+                : E}
+                </div>
+              </div>
+            `
+            : E}
       </error-boundary>
     `;
+    }
+    _renderTicks(start, totalDuration) {
+        const tickCount = Math.max(5, Math.floor(this._zoomLevel * 5));
+        const ticks = [];
+        for (let i = 0; i <= tickCount; i++) {
+            ticks.push((i / tickCount) * 100);
+        }
+        return ticks.map((pct) => {
+            const time = start + totalDuration * (pct / 100);
+            return x `
+            <div class="date-tick" style="left: ${pct}%">
+            ${formatShortDate(new Date(time))}
+            </div>
+        `;
+        });
+    }
+    async _zoomToEvent(event, start, totalDuration) {
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        // Calculate required zoom to make 24h fill the screen (approx)
+        // Formula: totalDuration / ONE_DAY_MS = number of "days" in total
+        // We want 1 "screen width" to be 1 day.
+        // Scale = totalDays / 1
+        const requiredZoom = Math.max(1, totalDuration / ONE_DAY_MS);
+        this._zoomLevel = requiredZoom;
+        await this.updateComplete;
+        const container = this.shadowRoot?.querySelector('.timeline-container');
+        if (!container)
+            return;
+        // Calculate position
+        const eventTime = getEventTimestamp(event);
+        const leftPct = (eventTime - start) / totalDuration; // 0 to 1
+        const trackWidth = container.scrollWidth;
+        const containerWidth = container.clientWidth;
+        // Target scroll position: center the event
+        // pixel position of event = trackWidth * leftPct
+        // center it: subtract half container width
+        const scrollDest = (trackWidth * leftPct) - (containerWidth / 2);
+        container.scrollTo({
+            left: Math.max(0, scrollDest),
+            behavior: 'smooth'
+        });
     }
 };
 GrowspaceTimeline.styles = [
@@ -18885,19 +19284,21 @@ GrowspaceTimeline.styles = [
       }
 
       .tooltip {
-        position: absolute;
-        bottom: 70px; /* Above the track */
-        transform: translateX(-50%);
+        position: fixed; /* Fixed to escape container clipping */
         background: var(--ha-card-background, #1c1c1c);
         border: 1px solid var(--divider-color);
         padding: 12px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        z-index: 20;
+        z-index: 1000;
         min-width: 200px;
+        max-width: 300px;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s;
+        transition: opacity 0.1s;
+        /* Center horizontally and position above */
+        transform: translate(-50%, -100%); 
+        margin-top: -12px; /* Small gap above cursor/marker */
       }
 
       .tooltip.visible {
@@ -18975,225 +19376,13 @@ __decorate([
 ], GrowspaceTimeline.prototype, "_hoveredEvent", void 0);
 __decorate([
     r$2()
+], GrowspaceTimeline.prototype, "_tooltipPos", void 0);
+__decorate([
+    r$2()
 ], GrowspaceTimeline.prototype, "_zoomLevel", void 0);
 GrowspaceTimeline = __decorate([
     t$2('growspace-timeline')
 ], GrowspaceTimeline);
-
-let VPDHeatmap = class VPDHeatmap extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.stage = 'vegetative';
-    }
-    firstUpdated() {
-        this._drawHeatmap();
-    }
-    updated(changedProps) {
-        if (changedProps.has('stage')) {
-            this._drawHeatmap();
-        }
-    }
-    _getVPD(tempC, rh) {
-        const svp = 0.61078 * Math.exp((17.27 * tempC) / (tempC + 237.3));
-        const vpd = svp * (1 - rh / 100);
-        return vpd;
-    }
-    _getZoneColor(vpd, stage) {
-        // VPD ranges in kPa
-        let min, max, optMin, optMax;
-        switch (stage) {
-            case 'seedling':
-                optMin = 0.4;
-                optMax = 0.8;
-                min = 0.2;
-                max = 1.0;
-                break;
-            case 'vegetative': // Early/Late veg
-                optMin = 0.8;
-                optMax = 1.1; // 0.8-1.1 kPa
-                min = 0.4;
-                max = 1.4;
-                break;
-            case 'flower': // Early flower
-                optMin = 1.0;
-                optMax = 1.35; // 1.0-1.35 kPa estimate
-                min = 0.6;
-                max = 1.6;
-                break;
-            case 'late_flower':
-                optMin = 1.2;
-                optMax = 1.55; // 1.2-1.55 kPa
-                min = 0.8;
-                max = 1.8;
-                break;
-            default:
-                optMin = 0.8;
-                optMax = 1.2;
-                min = 0.5;
-                max = 1.5;
-        }
-        if (vpd >= optMin && vpd <= optMax)
-            return '#4caf50'; // Optimal (Green)
-        if (vpd < min)
-            return '#2196f3'; // Too Low (Blue/Wet)
-        if (vpd > max)
-            return '#f44336'; // Too High (Red/Dry)
-        // Transitions
-        if (vpd < optMin)
-            return '#ff9800'; // Low-Warning (Orange)
-        if (vpd > optMax)
-            return '#ff9800'; // High-Warning (Orange)
-        return '#9e9e9e';
-    }
-    _drawHeatmap() {
-        const canvas = this.shadowRoot?.getElementById('vpdCanvas');
-        if (!canvas)
-            return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx)
-            return;
-        // Resolution
-        const width = (canvas.width = 400);
-        const height = (canvas.height = 300);
-        // Axes: Temp (X) 15C to 35C, RH (Y) 30% to 90%
-        const minTemp = 15;
-        const maxTemp = 35;
-        const minRH = 30;
-        const maxRH = 90;
-        // Clear
-        ctx.clearRect(0, 0, width, height);
-        // Grid size for pixels
-        // const stepX = width / (maxTemp - minTemp);
-        // const stepY = height / (maxRH - minRH);
-        // Draw Heatmap pixels
-        for (let x = 0; x < width; x += 4) {
-            // Optimization: 4px blocks
-            for (let y = 0; y < height; y += 4) {
-                // Map pixel to Temp/RH
-                // x=0 -> minTemp, x=width -> maxTemp
-                const temp = minTemp + (x / width) * (maxTemp - minTemp);
-                // y=0 -> maxRH, y=height -> minRH (Canvas Y is inverted relative to standard cartesian chart usually)
-                // Let's make Y=height be minRH (bottom), Y=0 be maxRH (top)
-                const rh = maxRH - (y / height) * (maxRH - minRH);
-                const vpd = this._getVPD(temp, rh);
-                const color = this._getZoneColor(vpd, this.stage);
-                ctx.fillStyle = color;
-                ctx.fillRect(x, y, 4, 4);
-            }
-        }
-        // Draw Current Point if data exists
-        if (this.temperature && this.humidity) {
-            if (this.temperature >= minTemp &&
-                this.temperature <= maxTemp &&
-                this.humidity >= minRH &&
-                this.humidity <= maxRH) {
-                const x = ((this.temperature - minTemp) / (maxTemp - minTemp)) * width;
-                const y = ((maxRH - this.humidity) / (maxRH - minRH)) * height;
-                // Draw dot
-                ctx.beginPath();
-                ctx.arc(x, y, 6, 0, 2 * Math.PI);
-                ctx.fillStyle = 'white';
-                ctx.fill();
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        }
-    }
-    render() {
-        return x `
-      <canvas id="vpdCanvas"></canvas>
-      <div class="legend">
-        <div class="legend-item">
-          <div class="legend-color" style="background: #2196f3"></div>
-          Wet
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #ff9800"></div>
-          Fair
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #4caf50"></div>
-          Optimal
-        </div>
-        <div class="legend-item">
-          <div class="legend-color" style="background: #f44336"></div>
-          Dry
-        </div>
-      </div>
-    `;
-    }
-};
-VPDHeatmap.styles = [
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-        position: relative;
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-      }
-
-      canvas {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        background: var(--card-background-color, #202020);
-      }
-
-      .current-point {
-        position: absolute;
-        width: 12px;
-        height: 12px;
-        background: white;
-        border: 2px solid black;
-        border-radius: 50%;
-        transform: translate(
-          -50%,
-          50%
-        ); /* Adjust for bottom-left origin coordinate system mapping needed */
-        pointer-events: none;
-        box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-      }
-
-      .legend {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-top: 8px;
-        font-size: 0.8rem;
-        color: var(--secondary-text-color);
-      }
-
-      .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .legend-color {
-        width: 10px;
-        height: 10px;
-        border-radius: 2px;
-      }
-    `,
-];
-__decorate([
-    n$5({ attribute: false })
-], VPDHeatmap.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Number })
-], VPDHeatmap.prototype, "temperature", void 0);
-__decorate([
-    n$5({ type: Number })
-], VPDHeatmap.prototype, "humidity", void 0);
-__decorate([
-    n$5({ type: String })
-], VPDHeatmap.prototype, "stage", void 0);
-VPDHeatmap = __decorate([
-    t$2('vpd-heatmap')
-], VPDHeatmap);
 
 let LogbookDialog = class LogbookDialog extends i$3 {
     constructor() {
@@ -21111,7 +21300,10 @@ let IPMDialog = class IPMDialog extends i$3 {
         <md3-select
           label="Select Preset"
           .value=${this._selectedPresetId || ''}
-          .options=${presetList.map((preset) => ({ label: `${preset.name} (${preset.type})`, value: preset.id }))}
+          .options=${presetList.map((preset) => ({
+            label: `${preset.name} (${preset.type})`,
+            value: preset.id,
+        }))}
           @change=${(e) => (this._selectedPresetId = e.detail)}
         ></md3-select>
 

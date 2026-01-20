@@ -135,8 +135,8 @@ export class TransplantSourcePanel extends LitElement {
           </div>
           <div class="source-grid">
             ${this.clonePlants.length === 0
-        ? html`<div class="empty-state">No clones available</div>`
-        : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
+              ? html`<div class="empty-state">No clones available</div>`
+              : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
           </div>
         </div>
 
@@ -147,8 +147,8 @@ export class TransplantSourcePanel extends LitElement {
           </div>
           <div class="source-grid">
             ${this.seedlingPlants.length === 0
-        ? html`<div class="empty-state">No seedlings available</div>`
-        : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
+              ? html`<div class="empty-state">No seedlings available</div>`
+              : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
           </div>
         </div>
       </div>
@@ -156,8 +156,6 @@ export class TransplantSourcePanel extends LitElement {
   }
 
   private _renderDraggablePlant(plant: PlantEntity, _stage: 'clone' | 'seedling') {
-
-
     return html`
       <growspace-plant-card
         class="source-plant-card"

@@ -213,7 +213,7 @@ export class NutrientPresetsEditor extends LitElement {
         style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
       >
         ${!this.embedded
-        ? html`
+          ? html`
               <div class="dialog-header">
                 <div class="dialog-icon">
                   <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
@@ -221,10 +221,10 @@ export class NutrientPresetsEditor extends LitElement {
                 <div class="dialog-title-group">
                   <h2 class="dialog-title">
                     ${this._view === 'LIST'
-            ? 'Nutrient Presets'
-            : this._editingPreset?.id
-              ? 'Edit Preset'
-              : 'New Preset'}
+                      ? 'Nutrient Presets'
+                      : this._editingPreset?.id
+                        ? 'Edit Preset'
+                        : 'New Preset'}
                   </h2>
                   <div class="dialog-subtitle">Manage your nutrient recipes</div>
                 </div>
@@ -233,7 +233,7 @@ export class NutrientPresetsEditor extends LitElement {
                 </button>
               </div>
             `
-        : nothing}
+          : nothing}
 
         <div
           class="dialog-content-grid"
@@ -245,16 +245,16 @@ export class NutrientPresetsEditor extends LitElement {
 
         <div class="button-group">
           ${this._view === 'LIST'
-        ? html`
+            ? html`
                 ${!this.embedded
-            ? html`<button class="md3-button tonal" @click=${this._close}>Close</button>`
-            : nothing}
+                  ? html`<button class="md3-button tonal" @click=${this._close}>Close</button>`
+                  : nothing}
                 <button class="md3-button primary" @click=${this._startNew}>
                   <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
                   Add Preset
                 </button>
               `
-        : html`
+            : html`
                 <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>
                   Cancel
                 </button>
@@ -299,15 +299,15 @@ export class NutrientPresetsEditor extends LitElement {
     return html`
       <div class="presets-list">
         ${presetEntries.map(
-      (preset) => html`
+          (preset) => html`
             <div class="preset-item">
               <div class="preset-info">
                 <div class="preset-name">${preset.name}</div>
                 <div class="preset-details">
                   ${(preset.nutrients || []).length} nutrients
                   ${preset.stage
-          ? html`• <span style="text-transform: capitalize;">${preset.stage}</span>`
-          : ''}
+                    ? html`• <span style="text-transform: capitalize;">${preset.stage}</span>`
+                    : ''}
                   ${preset.min_days_in_stage ? html`• Day ${preset.min_days_in_stage}+` : ''}
                 </div>
               </div>
@@ -330,7 +330,7 @@ export class NutrientPresetsEditor extends LitElement {
               </div>
             </div>
           `
-    )}
+        )}
       </div>
     `;
   }
@@ -346,8 +346,8 @@ export class NutrientPresetsEditor extends LitElement {
             label="Preset Name"
             .value=${this._editingPreset.name || ''}
             @change=${(e: CustomEvent) => {
-        this._editingPreset = { ...this._editingPreset!, name: e.detail };
-      }}
+              this._editingPreset = { ...this._editingPreset!, name: e.detail };
+            }}
             placeholder="e.g. Veg Week 1"
           ></md3-text-input>
         </div>
@@ -361,11 +361,11 @@ export class NutrientPresetsEditor extends LitElement {
                 class="md3-input"
                 .value=${this._editingPreset.stage || ''}
                 @change=${(e: Event) => {
-        this._editingPreset = {
-          ...this._editingPreset!,
-          stage: (e.target as HTMLSelectElement).value,
-        };
-      }}
+                  this._editingPreset = {
+                    ...this._editingPreset!,
+                    stage: (e.target as HTMLSelectElement).value,
+                  };
+                }}
               >
                 <option value="">Any Stage</option>
                 <option value="seedling">Seedling</option>
@@ -379,11 +379,11 @@ export class NutrientPresetsEditor extends LitElement {
               label="Min Days in Stage"
               .value=${this._editingPreset.min_days_in_stage || 0}
               @change=${(e: CustomEvent) => {
-        this._editingPreset = {
-          ...this._editingPreset!,
-          min_days_in_stage: parseInt(e.detail),
-        };
-      }}
+                this._editingPreset = {
+                  ...this._editingPreset!,
+                  min_days_in_stage: parseInt(e.detail),
+                };
+              }}
               min="0"
             ></md3-number-input>
           </div>
@@ -405,7 +405,7 @@ export class NutrientPresetsEditor extends LitElement {
           </div>
 
           ${this._editingPreset.nutrients?.map(
-        (n, i) => html`
+            (n, i) => html`
               <div class="nutrient-row">
                 <md3-text-input
                   label="Nutrient Name"
@@ -418,7 +418,7 @@ export class NutrientPresetsEditor extends LitElement {
                   label="ml/L"
                   .value=${n.dose_ml_l}
                   @change=${(e: CustomEvent) =>
-            this._updateNutrient(i, { dose_ml_l: parseFloat(e.detail) })}
+                    this._updateNutrient(i, { dose_ml_l: parseFloat(e.detail) })}
                   min="0"
                   step="0.1"
                 ></md3-number-input>
@@ -431,7 +431,7 @@ export class NutrientPresetsEditor extends LitElement {
                 </button>
               </div>
             `
-      )}
+          )}
         </div>
       </div>
     `;

@@ -86,43 +86,43 @@ export class DialogHost extends LitElement {
     return html`
       <error-boundary .fallbackMessage=${'Dialog error occurred'}>
         ${(() => {
-        switch (active.type) {
-          case 'ADD_PLANT':
-            return this._renderAddPlantDialog(active, strainLibrary, effectiveDeviceData);
-          case 'ADD_PLANTS':
-            return this._renderAddPlantsDialog(active, strainLibrary, effectiveDeviceData);
-          case 'PLANT_OVERVIEW':
-            return this._renderPlantOverviewDialog(active, growspaceOptions, effectiveDeviceData);
-          case 'STRAIN_LIBRARY':
-            return this._renderStrainLibraryDialog(active, strainLibrary, effectiveDeviceData);
-          case 'CONFIG':
-            return this._renderConfigDialog(active, growspaceOptions, effectiveDeviceData);
-          case 'GROW_MASTER':
-            return this._renderGrowMasterDialog(active, effectiveDeviceData);
-          case 'STRAIN_RECOMMENDATION':
-            return this._renderStrainRecommendationDialog(active, effectiveDeviceData);
-          case 'IRRIGATION':
-            return this._renderIrrigationDialog(active, effectiveDeviceData);
-          case 'LOGBOOK':
-            return this._renderLogbookDialog(active, effectiveDeviceData);
-          case 'WATERING':
-            return this._renderWateringDialog(active, effectiveDeviceData);
-          case 'NUTRIENT_PRESETS':
-            return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
-          case 'TRAINING':
-            return this._renderTrainingDialog(active, effectiveDeviceData);
-          case 'TAKE_CLONE':
-            return this._renderCloneDialog(active, growspaceOptions, effectiveDeviceData);
-          case 'IPM':
-            return this._renderIPMDialog(active, effectiveDeviceData);
-          case 'NUTRIENT_INVENTORY':
-            return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
-          case 'NUTRIENTS':
-            return this._renderNutrientDialog(active, effectiveDeviceData);
-          default:
-            return html``;
-        }
-      })()}
+          switch (active.type) {
+            case 'ADD_PLANT':
+              return this._renderAddPlantDialog(active, strainLibrary, effectiveDeviceData);
+            case 'ADD_PLANTS':
+              return this._renderAddPlantsDialog(active, strainLibrary, effectiveDeviceData);
+            case 'PLANT_OVERVIEW':
+              return this._renderPlantOverviewDialog(active, growspaceOptions, effectiveDeviceData);
+            case 'STRAIN_LIBRARY':
+              return this._renderStrainLibraryDialog(active, strainLibrary, effectiveDeviceData);
+            case 'CONFIG':
+              return this._renderConfigDialog(active, growspaceOptions, effectiveDeviceData);
+            case 'GROW_MASTER':
+              return this._renderGrowMasterDialog(active, effectiveDeviceData);
+            case 'STRAIN_RECOMMENDATION':
+              return this._renderStrainRecommendationDialog(active, effectiveDeviceData);
+            case 'IRRIGATION':
+              return this._renderIrrigationDialog(active, effectiveDeviceData);
+            case 'LOGBOOK':
+              return this._renderLogbookDialog(active, effectiveDeviceData);
+            case 'WATERING':
+              return this._renderWateringDialog(active, effectiveDeviceData);
+            case 'NUTRIENT_PRESETS':
+              return this._renderNutrientPresetsDialog(active, effectiveDeviceData);
+            case 'TRAINING':
+              return this._renderTrainingDialog(active, effectiveDeviceData);
+            case 'TAKE_CLONE':
+              return this._renderCloneDialog(active, growspaceOptions, effectiveDeviceData);
+            case 'IPM':
+              return this._renderIPMDialog(active, effectiveDeviceData);
+            case 'NUTRIENT_INVENTORY':
+              return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
+            case 'NUTRIENTS':
+              return this._renderNutrientDialog(active, effectiveDeviceData);
+            default:
+              return html``;
+          }
+        })()}
       </error-boundary>
     `;
   }
@@ -167,32 +167,32 @@ export class DialogHost extends LitElement {
         .seedlingPlants=${seedlingPlants}
         .targetGrowspaceId=${targetGrowspaceId}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'ADD_PLANT') {
-          this.store.ui.closeDialog();
-        }
-      }}
+          if (this._activeDialogController.value.type === 'ADD_PLANT') {
+            this.store.ui.closeDialog();
+          }
+        }}
         @add-plant-submit=${(e: CustomEvent) => this.store.confirmAddPlant(e.detail)}
         @transplant-plant-submit=${(e: CustomEvent) => this._handleTransplant(e.detail)}
         @create-new-strain=${(e: CustomEvent) => {
-        this.store.ui.setActiveDialog({
-          type: 'STRAIN_LIBRARY',
-          payload: {
-            source: e.detail.source,
-            returnPayload: e.detail.returnPayload,
-            editingStrain: {
-              strain: e.detail.returnPayload?.strain || '',
-              phenotype: e.detail.returnPayload?.phenotype || '',
-              key: '',
-              type: 'Hybrid',
-              flowering_days_min: 60,
-              flowering_days_max: 70,
-              sex: 'Feminized',
-              sativa_percentage: 50,
-              indica_percentage: 50,
+          this.store.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: {
+              source: e.detail.source,
+              returnPayload: e.detail.returnPayload,
+              editingStrain: {
+                strain: e.detail.returnPayload?.strain || '',
+                phenotype: e.detail.returnPayload?.phenotype || '',
+                key: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                sex: 'Feminized',
+                sativa_percentage: 50,
+                indica_percentage: 50,
+              },
             },
-          },
-        });
-      }}
+          });
+        }}
       ></add-plant-dialog>
     `;
   }
@@ -267,32 +267,32 @@ export class DialogHost extends LitElement {
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'ADD_PLANTS') {
-          this.store.ui.closeDialog();
-        }
-      }}
+          if (this._activeDialogController.value.type === 'ADD_PLANTS') {
+            this.store.ui.closeDialog();
+          }
+        }}
         @show-toast=${(e: CustomEvent) => this.store.showToast(e.detail.message, e.detail.type)}
         @add-plants-submit=${(e: CustomEvent) => this.store.confirmAddPlants(e.detail)}
         @create-new-strain=${(e: CustomEvent) => {
-        this.store.ui.setActiveDialog({
-          type: 'STRAIN_LIBRARY',
-          payload: {
-            source: e.detail.source,
-            returnPayload: e.detail.returnPayload,
-            editingStrain: {
-              strain: e.detail.returnPayload?.strain || '',
-              phenotype: e.detail.returnPayload?.phenotype || '',
-              key: '',
-              type: 'Hybrid',
-              flowering_days_min: 60,
-              flowering_days_max: 70,
-              sex: 'Feminized',
-              sativa_percentage: 50,
-              indica_percentage: 50,
+          this.store.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: {
+              source: e.detail.source,
+              returnPayload: e.detail.returnPayload,
+              editingStrain: {
+                strain: e.detail.returnPayload?.strain || '',
+                phenotype: e.detail.returnPayload?.phenotype || '',
+                key: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                sex: 'Feminized',
+                sativa_percentage: 50,
+                indica_percentage: 50,
+              },
             },
-          },
-        });
-      }}
+          });
+        }}
       ></add-plants-dialog>
     `;
   }
@@ -313,79 +313,79 @@ export class DialogHost extends LitElement {
         .selectedPlantIds=${dialogState.selectedPlantIds}
         .growspaceOptions=${growspaceOptions}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
-          this.store.ui.closeDialog();
-        }
-      }}
+          if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+            this.store.ui.closeDialog();
+          }
+        }}
         @update-plant=${(e: CustomEvent) =>
-        this.store.updatePlantFromDialog({
-          plant: dialogState.plant,
-          editedAttributes: e.detail, // Event detail is the attributes object
-          selectedPlantIds: dialogState.selectedPlantIds,
-        })}
+          this.store.updatePlantFromDialog({
+            plant: dialogState.plant,
+            editedAttributes: e.detail, // Event detail is the attributes object
+            selectedPlantIds: dialogState.selectedPlantIds,
+          })}
         @delete-plant=${(e: CustomEvent) => this.store.actions.plant.delete(e.detail.plantId)}
         @harvest-plant=${(e: CustomEvent) => this.store.actions.plant.nextStage(e.detail.plant)}
         @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
         @take-clone=${(e: CustomEvent) =>
-        this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+          this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
         @move-clone=${(e: CustomEvent) =>
-        this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+          this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
         @open-watering=${(e: CustomEvent) =>
-        this.store.ui.setActiveDialog({
-          type: 'WATERING',
-          payload: e.detail,
-        })}
+          this.store.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: e.detail,
+          })}
         @open-training=${(e: CustomEvent) =>
-        this.store.ui.setActiveDialog({
-          type: 'TRAINING',
-          payload: e.detail,
-        })}
+          this.store.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: e.detail,
+          })}
         @open-ipm=${(e: CustomEvent) =>
-        this.store.ui.setActiveDialog({
-          type: 'IPM',
-          payload: e.detail,
-        })}
+          this.store.ui.setActiveDialog({
+            type: 'IPM',
+            payload: e.detail,
+          })}
         @open-clone=${(e: CustomEvent) =>
-        this.store.ui.setActiveDialog({
-          type: 'TAKE_CLONE',
-          payload: e.detail,
-        })}
+          this.store.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: e.detail,
+          })}
         @open-strain-editor=${(e: CustomEvent) => {
-        const { strain, phenotype } = e.detail;
-        const strainLibrary = this.store.data.$strainLibrary.get();
+          const { strain, phenotype } = e.detail;
+          const strainLibrary = this.store.data.$strainLibrary.get();
 
-        // Normalize empty strings, null, and undefined to compare properly
-        const normalizedPhenotype = phenotype || '';
-        let strainEntry = strainLibrary.find((s) => {
-          const entryPhenotype = s.phenotype || '';
-          return s.strain === strain && entryPhenotype === normalizedPhenotype;
-        });
+          // Normalize empty strings, null, and undefined to compare properly
+          const normalizedPhenotype = phenotype || '';
+          let strainEntry = strainLibrary.find((s) => {
+            const entryPhenotype = s.phenotype || '';
+            return s.strain === strain && entryPhenotype === normalizedPhenotype;
+          });
 
-        // If no match found, create a new entry for the user to complete
-        if (!strainEntry && strain) {
-          const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
-          strainEntry = {
-            strain,
-            phenotype: normalizedPhenotype,
-            key,
-            breeder: '',
-            type: 'Hybrid',
-            flowering_days_min: 60,
-            flowering_days_max: 70,
-            lineage: '',
-            sex: 'Feminized',
-            description: '',
-            image: '',
-            sativa_percentage: 50,
-            indica_percentage: 50,
-          };
-        }
+          // If no match found, create a new entry for the user to complete
+          if (!strainEntry && strain) {
+            const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
+            strainEntry = {
+              strain,
+              phenotype: normalizedPhenotype,
+              key,
+              breeder: '',
+              type: 'Hybrid',
+              flowering_days_min: 60,
+              flowering_days_max: 70,
+              lineage: '',
+              sex: 'Feminized',
+              description: '',
+              image: '',
+              sativa_percentage: 50,
+              indica_percentage: 50,
+            };
+          }
 
-        this.store.ui.setActiveDialog({
-          type: 'STRAIN_LIBRARY',
-          payload: { editingStrain: strainEntry },
-        });
-      }}
+          this.store.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: { editingStrain: strainEntry },
+          });
+        }}
       ></plant-overview-dialog>
     `;
   }
@@ -405,33 +405,33 @@ export class DialogHost extends LitElement {
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
         @close=${() => {
-        // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
-        if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
-          this.store.ui.closeDialog();
-        }
-      }}
+          // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
+          if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
+            this.store.ui.closeDialog();
+          }
+        }}
         @strain-created-at-source=${(e: CustomEvent) => {
-        const { strain, source, returnPayload } = e.detail;
-        if (source === 'add-plant') {
-          this.store.ui.setActiveDialog({
-            type: 'ADD_PLANT',
-            payload: {
-              ...returnPayload,
-              strain: strain.strain,
-              phenotype: strain.phenotype,
-            },
-          });
-        } else if (source === 'add-plants') {
-          this.store.ui.setActiveDialog({
-            type: 'ADD_PLANTS',
-            payload: {
-              ...returnPayload,
-              strain: strain.strain,
-              phenotype: strain.phenotype,
-            },
-          });
-        }
-      }}
+          const { strain, source, returnPayload } = e.detail;
+          if (source === 'add-plant') {
+            this.store.ui.setActiveDialog({
+              type: 'ADD_PLANT',
+              payload: {
+                ...returnPayload,
+                strain: strain.strain,
+                phenotype: strain.phenotype,
+              },
+            });
+          } else if (source === 'add-plants') {
+            this.store.ui.setActiveDialog({
+              type: 'ADD_PLANTS',
+              payload: {
+                ...returnPayload,
+                strain: strain.strain,
+                phenotype: strain.phenotype,
+              },
+            });
+          }
+        }}
         @save-strain=${(e: CustomEvent) => this.store.actions.strain.add(e.detail)}
         @delete-strain=${(e: CustomEvent) => this.store.actions.strain.remove(e.detail.key)}
         @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
@@ -575,7 +575,7 @@ export class DialogHost extends LitElement {
         @close=${() => this.store.ui.closeDialog()}
         @analyze-growspace=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, false)}
         @analyze-all-growspaces=${(e: CustomEvent) =>
-        this.store.analyzeGrowspace(e.detail.query, true)}
+          this.store.analyzeGrowspace(e.detail.query, true)}
       ></grow-master-dialog>
     `;
   }
@@ -593,7 +593,7 @@ export class DialogHost extends LitElement {
         .response=${dialogState.response}
         @close=${() => this.store.ui.closeDialog()}
         @get-recommendation=${(e: CustomEvent) =>
-        this.store.getStrainRecommendation(e.detail.query)}
+          this.store.getStrainRecommendation(e.detail.query)}
       >
       </strain-recommendation-dialog>
     `;
@@ -731,18 +731,18 @@ export class DialogHost extends LitElement {
         .growspaceOptions=${growspaceOptions}
         .defaultGrowspace=${dialogState.defaultGrowspaceId}
         @take-clone-submit=${async (e: CustomEvent) => {
-        const { numClones, targetGrowspaceId } = e.detail;
-        await this.store.actions.plant.takeClone(
-          dialogState.sourcePlant,
-          numClones,
-          targetGrowspaceId
-        );
-        await this._handleDataChanged();
-        this.store.showToast(
-          `Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`,
-          'success'
-        );
-      }}
+          const { numClones, targetGrowspaceId } = e.detail;
+          await this.store.actions.plant.takeClone(
+            dialogState.sourcePlant,
+            numClones,
+            targetGrowspaceId
+          );
+          await this._handleDataChanged();
+          this.store.showToast(
+            `Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`,
+            'success'
+          );
+        }}
       ></clone-dialog>
     `;
   }

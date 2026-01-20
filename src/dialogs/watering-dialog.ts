@@ -321,8 +321,8 @@ export class WateringDialog extends LitElement {
                 .min=${0.1}
                 .step=${0.1}
                 @change=${(e: CustomEvent) => {
-        this._volume = parseFloat(e.detail) || 0;
-      }}
+                  this._volume = parseFloat(e.detail) || 0;
+                }}
                 style="margin-bottom: 12px;"
               ></md3-number-input>
 
@@ -330,9 +330,9 @@ export class WateringDialog extends LitElement {
                 label="Nutrient Preset"
                 .value=${this._selectedPresetId || ''}
                 .options=${[
-        { label: 'Manual / No Preset', value: '' },
-        ...presetList.map((p) => ({ label: p.label, value: p.value })),
-      ]}
+                  { label: 'Manual / No Preset', value: '' },
+                  ...presetList.map((p) => ({ label: p.label, value: p.value })),
+                ]}
                 @change=${(e: CustomEvent) => this._handlePresetChange(e)}
               ></md3-select>
 
@@ -358,7 +358,7 @@ export class WateringDialog extends LitElement {
               </div>
 
               ${this._nutrients.length === 0
-        ? html`
+                ? html`
                     <div style="text-align: center; opacity: 0.6; padding: 20px;">
                       <ha-svg-icon
                         .path=${mdiInformation}
@@ -367,18 +367,18 @@ export class WateringDialog extends LitElement {
                       <div>No nutrients added</div>
                     </div>
                   `
-        : nothing}
+                : nothing}
               ${this._nutrients.map(
-          (nutrient, index) => html`
+                (nutrient, index) => html`
                   <div class="product-row">
                     <md3-text-input
                       label="Nutrient Name"
                       .value=${nutrient.name}
                       .suggestions=${this._getNutrientSuggestions()}
                       @change=${(e: CustomEvent) => {
-              const val = (e.target as HTMLInputElement).value || e.detail;
-              this._updateNutrient(index, 'name', val);
-            }}
+                        const val = (e.target as HTMLInputElement).value || e.detail;
+                        this._updateNutrient(index, 'name', val);
+                      }}
                       placeholder="e.g. CalMag"
                     ></md3-text-input>
                     <md3-number-input
@@ -387,8 +387,8 @@ export class WateringDialog extends LitElement {
                       .min=${0}
                       .step=${0.1}
                       @change=${(e: CustomEvent) => {
-              this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
-            }}
+                        this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0);
+                      }}
                     ></md3-number-input>
                     <button
                       class="md3-button icon"
@@ -399,19 +399,19 @@ export class WateringDialog extends LitElement {
                     </button>
                   </div>
                 `
-        )}
+              )}
             </div>
 
             <!-- Calculation Preview -->
             ${this._nutrients.length > 0
-        ? html`
+              ? html`
                   <div class="form-section">
                     <h3>Summary</h3>
                     <div class="calculation-preview">
                       ${this._nutrients
-            .filter((n) => n.name && n.concentration > 0)
-            .map(
-              (nutrient) => html`
+                        .filter((n) => n.name && n.concentration > 0)
+                        .map(
+                          (nutrient) => html`
                             <div class="calculation-row">
                               <span class="calculation-label">${nutrient.name}</span>
                               <span class="calculation-value">
@@ -423,7 +423,7 @@ export class WateringDialog extends LitElement {
                               </span>
                             </div>
                           `
-            )}
+                        )}
                       <div class="calculation-row">
                         <span class="calculation-label">Total Nutrients</span>
                         <span class="calculation-value">
@@ -433,7 +433,7 @@ export class WateringDialog extends LitElement {
                     </div>
                   </div>
                 `
-        : nothing}
+              : nothing}
           </div>
 
           <div class="button-group">

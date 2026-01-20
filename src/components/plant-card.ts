@@ -182,7 +182,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
         @keydown=${this._handleKeyDown}
       >
         ${imageUrl
-        ? html`
+          ? html`
               <img
                 class="plant-card-bg"
                 src="${imageUrl}"
@@ -195,9 +195,9 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
               />
               <div class="plant-card-overlay"></div>
             `
-        : nothing}
+          : nothing}
         ${this.isEditMode
-        ? html`
+          ? html`
               <div
                 class=${classMap({ 'plant-card-checkbox': true, selected: this.selected })}
                 role="checkbox"
@@ -206,27 +206,27 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                 aria-label="Select ${strainName}"
                 @click=${this._toggleSelection}
                 @keydown=${(e: KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              this._toggleSelection(e);
-            }
-          }}
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    this._toggleSelection(e);
+                  }
+                }}
               >
                 <svg
                   viewBox="0 0 24 24"
                   style=${styleMap({
-            width: '24px',
-            height: '24px',
-            fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)',
-          })}
+                    width: '24px',
+                    height: '24px',
+                    fill: this.selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)',
+                  })}
                 >
                   <path d="${this.selected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
                 </svg>
               </div>
             `
-        : nothing}
+          : nothing}
         <div class="status-icons">
           ${this.plant.attributes.last_training_technique
-        ? html`
+            ? html`
                 <div
                   class="status-icon training"
                   role="img"
@@ -236,9 +236,9 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                   <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
                 </div>
               `
-        : nothing}
+            : nothing}
           ${this.plant.attributes.last_ipm
-        ? html`
+            ? html`
                 <div
                   class="status-icon ipm"
                   role="img"
@@ -248,9 +248,9 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                   <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
                 </div>
               `
-        : nothing}
+            : nothing}
           ${this._isRecentlyWatered
-        ? html`
+            ? html`
                 <div
                   class="status-icon watering"
                   role="img"
@@ -260,9 +260,9 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                   <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
                 </div>
               `
-        : nothing}
+            : nothing}
           ${this.plant.attributes.problem
-        ? html`
+            ? html`
                 <div
                   class="status-icon problem"
                   role="img"
@@ -272,19 +272,19 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                   <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
                 </div>
               `
-        : nothing}
+            : nothing}
           ${this.growthDeviation !== 0
-        ? html`
+            ? html`
                 <div
                   class="status-icon deviation ${this.growthDeviation > 0 ? 'ahead' : 'behind'}"
                   role="img"
                   aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                   title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
                   style="background: ${this.growthDeviation > 0
-            ? 'rgba(76, 175, 80, 0.2)'
-            : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0
-              ? '#4caf50'
-              : '#f44336'};"
+                    ? 'rgba(76, 175, 80, 0.2)'
+                    : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${this.growthDeviation > 0
+                    ? '#4caf50'
+                    : '#f44336'};"
                 >
                   <ha-svg-icon
                     .path=${this.growthDeviation > 0 ? mdiTrendingUp : mdiTrendingDown}
@@ -292,7 +292,7 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                   ></ha-svg-icon>
                 </div>
               `
-        : nothing}
+            : nothing}
         </div>
         <div class="plant-card-content">
           <div class="pc-info">
@@ -301,14 +301,14 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
             <div style="display: flex; align-items: center; gap: 8px;">
               <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
               ${this._hasRecommendedPreset
-        ? html`
+                ? html`
                     <ha-svg-icon
                       .path=${mdiStar}
                       style="--mdc-icon-size: 14px; color: var(--primary-color);"
                       title="Nutrient Preset Recommended"
                     ></ha-svg-icon>
                   `
-        : nothing}
+                : nothing}
             </div>
           </div>
 

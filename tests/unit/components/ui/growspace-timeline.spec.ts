@@ -164,18 +164,47 @@ describe('GrowspaceTimeline', () => {
         await element.updateComplete;
 
         const track = element.shadowRoot!.querySelector('.timeline-track') as HTMLElement;
-        // const initialWidth = track.style.width; // Should be 100%
 
         const zoomInBtn = element.shadowRoot!.querySelectorAll('.zoom-btn')[1] as HTMLElement; // + button
         zoomInBtn.click();
         await element.updateComplete;
 
-        expect(track.style.width).to.equal('150%'); // 1.5x zoom
+        // Implementation adds 0.5 to zoom level 1 -> 1.5
+        expect(track.style.width).to.equal('150%');
 
         const zoomOutBtn = element.shadowRoot!.querySelectorAll('.zoom-btn')[0] as HTMLElement; // - button
         zoomOutBtn.click();
         await element.updateComplete;
-        expect(track.style.width).to.equal('100%'); // Back to 1x
+        expect(track.style.width).to.equal('100%');
+    });
+
+    it('should zoom to ~24h window when clicking an event', async () => {
+        element = await createTimeline();
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await element.updateComplete;
+
+        const container = element.shadowRoot!.querySelector('.timeline-container') as HTMLElement;
+        const scrollToSpy = vi.spyOn(container, 'scrollTo');
+
+        const markers = element.shadowRoot!.querySelectorAll('.event-marker');
+        const marker = markers[0] as HTMLElement; // Should correspond to an event
+
+        marker.click();
+        await element.updateComplete;
+
+        // Check if zoom level increased significantly (more than 100%)
+        // The mock events span ~24h (oldest is 24h ago). 
+        // With 1 day buffer on each side, total duration is ~3 days.
+        // 24h window ~ 3 days / 1 day = 3x zoom.
+        // If zoom level > 1.5 it worked.
+
+        // Let's check internal state or width
+        const track = element.shadowRoot!.querySelector('.timeline-track') as HTMLElement;
+        const widthVal = parseFloat(track.style.width.replace('%', ''));
+        expect(widthVal).to.be.greaterThan(100);
+
+        // Check compatibility with scrollTo
+        expect(scrollToSpy).toHaveBeenCalled();
     });
 
     it('should show tooltip on hover', async () => {
@@ -278,21 +307,29 @@ describe('GrowspaceTimeline', () => {
         await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
 
-        // Find the alert marker (Oldest, 24h ago, so last index)
-        const markers = element.shadowRoot!.querySelectorAll('.event-marker');
-        // 8 events total
-        const alertMarker = markers[7] as HTMLElement;
+        // Find the alert marker by class for robustness
+        const marker = element.shadowRoot!.querySelector('.marker-alert') as HTMLElement;
 
-        alertMarker.dispatchEvent(new MouseEvent('mouseenter'));
+        // Mock getBoundingClientRect
+        marker.getBoundingClientRect = () => ({
+            top: 100,
+            left: 100,
+            width: 32,
+            height: 32,
+            bottom: 132,
+            right: 132,
+        } as DOMRect);
+
+        marker.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
         await element.updateComplete;
 
+        // Tooltip is now at the root level
         const tooltip = element.shadowRoot!.querySelector('.tooltip.visible');
         expect(tooltip).to.exist;
+
         // tooltip template: 
         // ${event.category === 'note' ? 'Note' : (event.sensor_type || 'Event')}
         // ${...reasons?.join(', ')...}
-        console.log('Tooltip content:', tooltip?.textContent);
-        // expect(tooltip!.textContent).to.include('temperature'); // sensor_type might be case sensitive or hidden
         expect(tooltip!.textContent).to.include('High Temp'); // reasons
     });
 

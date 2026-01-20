@@ -137,24 +137,24 @@ export class GrowspaceChip extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${this.icon}"></path></svg>
         </div>
         ${this.label ? html`${this.label}: ` : ''}${this.multiValues && this.multiValues.length > 0
-        ? html`<div style="display: flex; align-items: center; gap: 8px;">
+          ? html`<div style="display: flex; align-items: center; gap: 8px;">
               ${this.multiValues.map(
-          (val, idx) =>
-            html`${idx > 0
-              ? html`<div
+                (val, idx) =>
+                  html`${idx > 0
+                      ? html`<div
                           style="width: 1px; height: 12px; background: rgba(255,255,255,0.2);"
                         ></div>`
-              : ''}<span>${val}</span>`
-        )}
+                      : ''}<span>${val}</span>`
+              )}
             </div>`
-        : this.value}
+          : this.value}
         ${this.linked
-        ? html`
+          ? html`
               <div class="link-icon" @click=${this._handleLinkClick} title="Unlink Graph">
                 <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
               </div>
             `
-        : ''}
+          : ''}
       </div>
     `;
   }
