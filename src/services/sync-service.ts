@@ -1,7 +1,7 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from '../data-service';
-import { GrowspaceDataStore } from '../store/data-store';
-import { GrowspaceUIStore } from '../store/ui-store';
+import { GrowspaceDataStore } from '../store/core/data-store';
+import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { GrowspaceAPIResponse, GrowspaceDevice } from '../types';
 
 /**
@@ -17,7 +17,7 @@ export class SyncService {
     private dataService: DataService,
     private dataStore: GrowspaceDataStore,
     private uiStore: GrowspaceUIStore
-  ) {}
+  ) { }
 
   /**
    * Updates the Home Assistant reference and triggers data refresh if necessary.
@@ -80,7 +80,7 @@ export class SyncService {
 
     try {
       const data = await this.dataService.fetchGrowspaceData();
-      this.dataStore.setWsDataCache((data as Record<string, GrowspaceAPIResponse>) || {});
+      this.dataStore.setWsDataCache((data as unknown as Record<string, GrowspaceAPIResponse>) || {});
       this.updateDevicesState();
     } catch (e) {
       console.error('Failed to fetch growspace data', e);

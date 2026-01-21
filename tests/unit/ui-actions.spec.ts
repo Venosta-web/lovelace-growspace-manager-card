@@ -7,8 +7,8 @@ import {
     openWateringDialog,
     openTrainingDialog,
     openNutrientsDialog,
-} from '../../src/store/ui-actions';
-import { ActionContext } from '../../src/store/action-context';
+} from '../../src/store/ui/ui-actions';
+import { ActionContext } from '../../src/store/core/action-context';
 import { ConfigTab } from '../../src/constants';
 
 describe('ui-actions', () => {

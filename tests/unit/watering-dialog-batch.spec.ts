@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
 import { nothing } from 'lit';
-import { GrowspaceStore } from '../../src/store/growspace-store';
+import { GrowspaceStore } from '../../src/store/core/growspace-store';
 import { DataService } from '../../src/data-service';
 
 // Mock dependencies

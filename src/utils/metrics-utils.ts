@@ -15,7 +15,7 @@ import {
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes } from '../types';
+import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes, EnvironmentAttributes } from '../types';
 import { MetricKey, EntityState, StatusLevel } from '../constants';
 import { PlantUtils } from './plant-utils';
 
@@ -113,7 +113,10 @@ export class MetricsUtils {
     const overviewEntity = device.overviewEntityId
       ? hass.states[device.overviewEntityId]
       : undefined;
-    const envAttrs = device.environmentAttributes || overviewEntity?.attributes || ({} as any);
+    const envAttrs: EnvironmentAttributes =
+      device.environmentAttributes ||
+      (overviewEntity?.attributes as unknown as EnvironmentAttributes) ||
+      {};
 
     const temp = this._getAttributeValue(envEntity, 'temperature');
     const hum = this._getAttributeValue(envEntity, 'humidity');
@@ -222,7 +225,7 @@ export class MetricsUtils {
           return dt;
         })
         .sort((a, b) => a.toMillis() - b.toMillis())[0];
-      return upcoming ? upcoming.toFormat('HH:mm') : undefined;
+      return upcoming.toFormat('HH:mm');
     };
 
     const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
@@ -317,14 +320,14 @@ export class MetricsUtils {
       createChipData(MetricKey.DRAIN, mdiWater, nextDrain, undefined, undefined, 'Next'),
       envEntity
         ? createChipData(
-            MetricKey.OPTIMAL,
-            envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
-            optimalLabel,
-            undefined,
-            undefined,
-            undefined,
-            envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
-          )
+          MetricKey.OPTIMAL,
+          envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
+          optimalLabel,
+          undefined,
+          undefined,
+          undefined,
+          envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
+        )
         : null,
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 

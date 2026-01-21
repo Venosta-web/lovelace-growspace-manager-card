@@ -52,19 +52,19 @@ export type GrowspaceType = GrowspaceTypeEnum;
 // --- Configuration Constants ---
 
 export const STAGE_CONFIG: Record<PlantStage, { icon: string; title: string; colorVar?: string }> =
-  {
-    [PlantStage.SEEDLING]: {
-      icon: mdiSprout,
-      title: 'Seedling',
-      colorVar: '--state-seedling-color',
-    },
-    [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
-    [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
-    [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
-    [PlantStage.FLOWER]: { icon: mdiFlower, title: 'Flower', colorVar: '--state-flower-color' },
-    [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
-    [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
-  };
+{
+  [PlantStage.SEEDLING]: {
+    icon: mdiSprout,
+    title: 'Seedling',
+    colorVar: '--state-seedling-color',
+  },
+  [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
+  [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
+  [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
+  [PlantStage.FLOWER]: { icon: mdiFlower, title: 'Flower', colorVar: '--state-flower-color' },
+  [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
+  [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
+};
 
 export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
 
@@ -474,6 +474,7 @@ export interface AddPlantDialogState {
   clone_start?: string;
   dry_start?: string;
   cure_start?: string;
+  addToLibrary?: boolean;
 }
 
 export interface AddPlantsDialogState {
@@ -488,6 +489,7 @@ export interface AddPlantsDialogState {
   clone_start?: string;
   dry_start?: string;
   cure_start?: string;
+  addToLibrary?: boolean;
 }
 // Batch add doesn't specific a row/col, it finds available ones
 
@@ -660,6 +662,9 @@ export interface GrowspaceEvent {
   timestamp?: string; // ISO date string - preferred over start_time
   images?: string[];
   tags?: string[];
+  plant_id?: string;
+  metadata?: Record<string, unknown>;
+  event_id?: string | number;
 }
 
 export type IPMType = 'foliar' | 'drench' | 'beneficials';

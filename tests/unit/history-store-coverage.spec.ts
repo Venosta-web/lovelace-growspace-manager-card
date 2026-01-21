@@ -1,8 +1,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { GrowspaceHistoryStore } from '../../src/store/history-store';
+import { GrowspaceHistoryStore } from '../../src/store/history/history-store';
 import { DataService } from '../../src/data-service';
-import { GrowspaceDataStore } from '../../src/store/data-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceDevice } from '../../src/types';
 
 describe('GrowspaceHistoryStore Coverage', () => {

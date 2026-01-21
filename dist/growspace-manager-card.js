@@ -4803,7 +4803,7 @@ var ZodFirstPartyTypeKind;
 const stringType = ZodString.create;
 const numberType = ZodNumber.create;
 const booleanType = ZodBoolean.create;
-const anyType = ZodAny.create;
+const unknownType = ZodUnknown.create;
 ZodNever.create;
 const arrayType = ZodArray.create;
 const objectType = ZodObject.create;
@@ -4821,7 +4821,7 @@ const PlantSlotSchema = objectType({
     plant_id: stringType().optional().default(''),
     stage: stringType().optional().default('unknown'),
     strain: stringType().optional().default(''),
-    phenotype: unionType([stringType(), anyType()]).optional().default(''),
+    phenotype: unionType([stringType(), unknownType()]).optional().default(''),
     row: numberType().optional().default(0),
     col: numberType().optional().default(0),
     position: stringType().optional().default(''),
@@ -4844,8 +4844,22 @@ const PlantSlotSchema = objectType({
     dry_start: stringType().nullable().optional().default(null),
     cure_start: stringType().nullable().optional().default(null),
 })
-    .catchall(anyType())
+    .catchall(unknownType())
     .nullable();
+const IrrigationScheduleItemSchema = objectType({
+    time: stringType(),
+    duration: numberType().optional(),
+});
+const IrrigationStrategySchema = objectType({
+    enabled: booleanType(),
+    lights_on_time: stringType(),
+    p0_duration_minutes: numberType(),
+    p2_stop_before_lights_off_minutes: numberType(),
+    target_vwc_percent: numberType(),
+    maintenance_dryback_percent: numberType(),
+    shot_duration_seconds: numberType(),
+    shot_interval_minutes: numberType(),
+});
 const GrowspaceAPIResponseSchema = objectType({
     // Root Identity
     growspace_id: stringType(),
@@ -4867,14 +4881,18 @@ const GrowspaceAPIResponseSchema = objectType({
         drain_pump_entity: stringType().nullable().optional(),
         irrigation_duration: numberType().nullable().optional(),
         drain_duration: numberType().nullable().optional(),
-        irrigation_times: arrayType(anyType()).optional(),
-        drain_times: arrayType(anyType()).optional(),
+        irrigation_times: arrayType(unionType([stringType().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+            .optional()
+            .default([]),
+        drain_times: arrayType(unionType([stringType().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+            .optional()
+            .default([]),
         veg_day_hours: numberType().optional(),
     })
         .passthrough()
         .optional()
         .default({}),
-    irrigation_strategy: anyType().nullable().default(null),
+    irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
     // Flattened Environment Config (Root Level)
     temperature_sensor: stringType().optional(),
     humidity_sensor: stringType().optional(),
@@ -4925,7 +4943,7 @@ const StrainPhenotypeSchema = objectType({
     flower_days_min: numberType().optional(),
     flower_days_max: numberType().optional(),
 })
-    .catchall(anyType());
+    .catchall(unknownType());
 const StrainDataSchema = objectType({
     meta: objectType({
         breeder: stringType().optional(),
@@ -4994,7 +5012,7 @@ const HistoryPointSchema = objectType({
     s: unionType([stringType(), numberType()]).transform(String),
     lu: unionType([stringType(), numberType()])
         .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
-    a: recordType(anyType()).optional().default({}), // Attributes
+    a: recordType(unknownType()).optional().default({}), // Attributes
 })
     .passthrough();
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
@@ -11679,7 +11697,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
                     return temperature !== undefined && humidity !== undefined
                         ? x `
                   <div
-                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                  style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
                   >
                     <vpd-heatmap
                       .temperature=${temperature}
@@ -12260,7 +12278,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         }
     }
     _handleGrowspaceEvent(event) {
-        const data = event.data;
+        const data = (event.data || event);
         const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
         const growspaceId = this.plant?.attributes?.growspace_id;
         // Check if relevant to this plant (direct match)
@@ -19062,7 +19080,6 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
             const left = this._getPosition(event, start, totalDuration);
             const icon = this._getIcon(event);
             const className = this._getClass(event);
-            getEventTimestamp(event);
             return x `
                 <div
                   class="event-marker ${className}"
@@ -19912,8 +19929,9 @@ let WateringDialog = class WateringDialog extends i$3 {
             this._close();
         }
         catch (e) {
+            const error = e instanceof Error ? e.message : undefined;
             console.error('Failed to record watering:', e);
-            this.store?.showToast(`Error: ${e.message}`, 'error');
+            this.store?.showToast(`Error: ${error || 'Unknown error'}`, 'error');
         }
         finally {
             this._isSubmitting = false;
@@ -21131,8 +21149,9 @@ let IPMDialog = class IPMDialog extends i$3 {
             this._close();
         }
         catch (e) {
+            const error = e instanceof Error ? e.message : undefined;
             console.error('Failed to apply IPM', e);
-            this._error = e.message || 'Failed to apply treatment';
+            this._error = error || 'Failed to apply treatment';
         }
     }
     // --- EDIT VIEW LOGIC ---
@@ -21160,7 +21179,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             await this.store.fetchIPMPresets(true);
         }
         catch (err) {
-            this._error = err.message;
+            this._error = err instanceof Error ? err.message : 'Unknown error';
         }
     }
     _addProduct() {
@@ -21205,7 +21224,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             this._view = 'LIST';
         }
         catch (err) {
-            this._error = err.message;
+            this._error = err instanceof Error ? err.message : 'Unknown error';
         }
     }
     render() {
@@ -21636,7 +21655,8 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
             }
         }
         catch (e) {
-            this._error = e.message || 'Failed to load inventory';
+            const error = e instanceof Error ? e.message : undefined;
+            this._error = error || 'Failed to load inventory';
         }
         finally {
             this._isLoading = false;
@@ -21676,7 +21696,8 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
             this._cancelEdit();
         }
         catch (e) {
-            alert(`Error saving: ${e.message}`);
+            const error = e instanceof Error ? e.message : 'Unknown error';
+            alert(`Error saving: ${error}`);
         }
     }
     async _delete(id) {
@@ -21690,7 +21711,8 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
             this._notifyDataChanged();
         }
         catch (e) {
-            alert(`Error deleting: ${e.message}`);
+            const error = e instanceof Error ? e.message : 'Unknown error';
+            alert(`Error deleting: ${error}`);
         }
     }
     _notifyDataChanged() {
@@ -32081,7 +32103,9 @@ class MetricsUtils {
         const overviewEntity = device.overviewEntityId
             ? hass.states[device.overviewEntityId]
             : undefined;
-        const envAttrs = device.environmentAttributes || overviewEntity?.attributes || {};
+        const envAttrs = device.environmentAttributes ||
+            overviewEntity?.attributes ||
+            {};
         const temp = this._getAttributeValue(envEntity, 'temperature');
         const hum = this._getAttributeValue(envEntity, 'humidity');
         let vpd = this._getAttributeValue(envEntity, 'vpd');
@@ -37168,8 +37192,9 @@ class GrowspaceHistoryStore {
             console.log('[HistoryStore] History loaded successfully');
         }
         catch (error) {
+            const e = error instanceof Error ? error.message : undefined;
             console.error('[HistoryStore] Failed to load history', error);
-            this.$historyError.set(error.message || 'Failed to load history');
+            this.$historyError.set(e || 'Failed to load history');
         }
         finally {
             this.setHistoryLoading(false);
@@ -37709,7 +37734,8 @@ async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) 
         ctx.showToast(`Updated stock: ${name}`, 'success');
     }
     catch (e) {
-        ctx.showToast(`Failed to update stock: ${e.message}`, 'error');
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update stock: ${error}`, 'error');
     }
 }
 async function removeNutrientStock(ctx, nutrientId) {
@@ -37719,7 +37745,8 @@ async function removeNutrientStock(ctx, nutrientId) {
         ctx.showToast('Removed nutrient stock', 'success');
     }
     catch (e) {
-        ctx.showToast(`Failed to remove stock: ${e.message}`, 'error');
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
     }
 }
 
@@ -37735,8 +37762,9 @@ async function updatePlant(ctx, plantId, updates) {
         ctx.showToast('Plant updated', 'success');
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to update plant:', e);
-        ctx.showToast(`Failed to update plant: ${e.message}`, 'error');
+        ctx.showToast(`Failed to update plant: ${error}`, 'error');
     }
 }
 /**
@@ -37775,8 +37803,9 @@ async function _deletePlantsApi(ctx, plantIds) {
         return true;
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to delete plant:', e);
-        ctx.showToast(`Failed to delete: ${e.message}`, 'error');
+        ctx.showToast(`Failed to delete: ${error}`, 'error');
         plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
         return false;
     }
@@ -37918,8 +37947,9 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
         return true;
     }
     catch (err) {
+        const error = err instanceof Error ? err.message : 'Unknown error';
         console.error('Error moving plant:', err);
-        ctx.showToast(`Failed to move plant: ${err.message}`, 'error');
+        ctx.showToast(`Failed to move plant: ${error}`, 'error');
         return false;
     }
 }
@@ -37938,7 +37968,8 @@ async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
         return true;
     }
     catch (error) {
-        console.error(`Failed to take clone: ${error.message}`);
+        const e = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`Failed to take clone: ${e}`);
         return false;
     }
 }
@@ -38119,8 +38150,9 @@ async function confirmAddPlant(ctx, detail) {
         return true;
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to add plant:', e);
-        ctx.showToast(`Failed to add plant: ${e.message}`, 'error');
+        ctx.showToast(`Failed to add plant: ${error}`, 'error');
         return false;
     }
 }
@@ -38151,10 +38183,12 @@ async function confirmAddPlants(ctx, detail) {
                     const phenoName = detail.phenotype
                         ? `${detail.phenotype} #${currentNumber}`
                         : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
-                    promises.push(ctx.dataService.addStrain({
-                        strain: detail.strain,
-                        phenotype: phenoName,
-                    }));
+                    if (detail.strain) {
+                        promises.push(ctx.dataService.addStrain({
+                            strain: detail.strain,
+                            phenotype: phenoName,
+                        }));
+                    }
                 }
                 await Promise.all(promises);
                 await fetchStrainLibrary(ctx, true);
@@ -38200,7 +38234,8 @@ async function confirmAddPlants(ctx, detail) {
         ctx.closeDialog();
     }
     catch (err) {
-        ctx.showToast(`Error: ${err.message}`, 'error');
+        const error = err instanceof Error ? err.message : 'Unknown error';
+        ctx.showToast(`Error: ${error}`, 'error');
     }
 }
 /**
@@ -38215,8 +38250,9 @@ async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
         }
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to water plant:', e);
-        ctx.showToast(`Failed to water plant: ${e.message}`, 'error');
+        ctx.showToast(`Failed to water plant: ${error}`, 'error');
         throw e;
     }
 }
@@ -38232,8 +38268,9 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
         }
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to water growspace:', e);
-        ctx.showToast(`Failed to water growspace: ${e.message}`, 'error');
+        ctx.showToast(`Failed to water growspace: ${error}`, 'error');
         throw e;
     }
 }
@@ -38317,7 +38354,8 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
         return true;
     }
     catch (e) {
-        ctx.showToast(`Error: ${e.message}`, 'error');
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Error: ${error}`, 'error');
         return false;
     }
 }
@@ -38351,8 +38389,9 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
         return true;
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('[StrainActions] Update failed:', e);
-        ctx.showToast(`Failed to update growspace: ${e.message}`, 'error');
+        ctx.showToast(`Failed to update growspace: ${error}`, 'error');
         return false;
     }
 }
@@ -38368,8 +38407,9 @@ async function removeGrowspace(ctx, growspaceId) {
         return true;
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('[StrainActions] Removal failed:', e);
-        ctx.showToast(`Failed to remove growspace: ${e.message}`, 'error');
+        ctx.showToast(`Failed to remove growspace: ${error}`, 'error');
         return false;
     }
 }
@@ -38671,9 +38711,9 @@ function openConfigDialog(ctx, device) {
                 humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
                 dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
                 dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
                 soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
                 dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
-                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
             },
         },
     });
@@ -38761,11 +38801,12 @@ async function analyzeGrowspace(ctx, query, all) {
         }
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         const d = ctx.ui.$activeDialog.get();
         if (d.type === 'GROW_MASTER') {
             ctx.ui.setActiveDialog({
                 type: 'GROW_MASTER',
-                payload: { ...d.payload, isLoading: false, response: 'Error: ' + e.message },
+                payload: { ...d.payload, isLoading: false, response: 'Error: ' + error },
             });
         }
     }
@@ -38796,7 +38837,9 @@ async function getStrainRecommendation(ctx, userQuery) {
     // Or I can accept a `setLoading` callback.
     // To make it simple and consistent:
     const response = await ctx.dataService.getStrainRecommendation(userQuery);
-    const text = response.response || response;
+    const text = typeof response === 'object' && response !== null && 'response' in response
+        ? response.response
+        : response;
     return typeof text === 'string' ? text : JSON.stringify(text);
 }
 
@@ -38881,8 +38924,9 @@ async function applyIPM(ctx, detail) {
         ctx.showToast('IPM treatment applied successfully', 'success');
     }
     catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to apply IPM:', e);
-        ctx.showToast(`Failed to apply IPM: ${e.message}`, 'error');
+        ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
         throw e;
     }
 }
@@ -39398,6 +39442,8 @@ class GrowspaceStore {
         await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plantsPerRow);
     }
     async confirmAddPlant(detail) {
+        if (!detail.strain)
+            return;
         await confirmAddPlant(this.context, detail);
         await this.refreshData();
     }
@@ -39449,10 +39495,11 @@ class GrowspaceStore {
             return res;
         }
         catch (e) {
+            const error = e instanceof Error ? e.message : 'Unknown error';
             console.error('Error getting strain recommendation:', e);
             this._updateStrainRecommendationDialog({
                 isLoading: false,
-                response: 'Error: ' + e.message,
+                response: 'Error: ' + error,
             });
             throw e;
         }
@@ -39518,8 +39565,9 @@ class GrowspaceStore {
             this.fetchStrainLibrary(true);
         }
         catch (e) {
+            const error = e instanceof Error ? e.message : 'Unknown error';
             console.error('Import failed', e);
-            this.showToast('Import failed: ' + e.message, 'error');
+            this.showToast('Import failed: ' + error, 'error');
         }
     }
     async batchAction(action, entityIds, data) {
@@ -39540,8 +39588,9 @@ class GrowspaceStore {
             await this.refreshData();
         }
         catch (err) {
+            const error = err instanceof Error ? err.message : 'Unknown error';
             console.error(`Batch ${action} failed:`, err);
-            this.showToast(`Batch ${action} failed: ${err.message || 'Unknown error'}`, 'error');
+            this.showToast(`Batch ${action} failed: ${error}`, 'error');
             if (action === 'remove') {
                 entityIds.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
             }

@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { consume } from '@lit/context';
 import { storeContext, hassContext } from '../../context';
-import type { GrowspaceStore } from '../../store/growspace-store';
+import type { GrowspaceStore } from '../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HeaderChip } from '../../utils/metrics-utils';

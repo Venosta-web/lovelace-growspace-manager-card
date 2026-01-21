@@ -8,7 +8,7 @@ import { StoreController } from '@nanostores/lit';
 import { PlantEntity } from '../types';
 import { GridOverlayMode, StatusLevel } from '../constants';
 import { storeContext } from '../context';
-import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 // Global imports removed
 import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';

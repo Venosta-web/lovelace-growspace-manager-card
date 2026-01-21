@@ -5,7 +5,7 @@ import { StoreController } from '@nanostores/lit';
 import { mdiChevronUp } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../types';
 import { storeContext } from '../../context';
-import type { GrowspaceStore } from '../../store/growspace-store';
+import type { GrowspaceStore } from '../../store/core/growspace-store';
 import '../growspace-header';
 import '../growspace-analytics';
 import '../growspace-grid';

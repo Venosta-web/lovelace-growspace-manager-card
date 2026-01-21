@@ -669,7 +669,7 @@ export class StrainLibraryDialog extends LitElement {
     this._pendingDeleteKey = null;
   }
 
-  private _handleEditorChange(field: string, value: any) {
+  private _handleEditorChange(field: string, value: string | number | CropMeta | undefined) {
     this._editorState = { ...this._editorState, [field]: value };
   }
 
@@ -820,9 +820,9 @@ export class StrainLibraryDialog extends LitElement {
               placeholder="Search Strains by Name, Breeder..."
               .value=${this._searchQuery}
               @change=${(e: CustomEvent) => {
-                this._searchQuery = e.detail;
-                this._currentPage = 1;
-              }}
+        this._searchQuery = e.detail;
+        this._currentPage = 1;
+      }}
             ></md3-text-input>
           </div>
         </div>
@@ -832,7 +832,7 @@ export class StrainLibraryDialog extends LitElement {
         </div>
 
         ${filteredStrains.length === 0
-          ? html`
+        ? html`
               <div
                 class="empty-state"
                 style="text-align:center; padding: 40px; color: var(--secondary-text-color);"
@@ -846,9 +846,9 @@ export class StrainLibraryDialog extends LitElement {
                 <p>No strains found matching "${query}"</p>
               </div>
             `
-          : nothing}
+        : nothing}
         ${totalPages > 1
-          ? html`
+        ? html`
               <div class="pagination-container">
                 <button
                   class="pagination-btn"
@@ -871,7 +871,7 @@ export class StrainLibraryDialog extends LitElement {
                 </button>
               </div>
             `
-          : nothing}
+        : nothing}
       </div>
 
       <!-- Mobile Menu Dropdown -->
@@ -882,27 +882,27 @@ export class StrainLibraryDialog extends LitElement {
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                  this.dispatchEvent(new CustomEvent('get-recommendation'));
-                  this._mobileMenuOpen = false;
-                }}
+            this.dispatchEvent(new CustomEvent('get-recommendation'));
+            this._mobileMenuOpen = false;
+          }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                  this._importDialogOpen = true;
-                  this._mobileMenuOpen = false;
-                }}
+            this._importDialogOpen = true;
+            this._mobileMenuOpen = false;
+          }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
               </div>
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                  this.dispatchEvent(new CustomEvent('export-library'));
-                  this._mobileMenuOpen = false;
-                }}
+            this.dispatchEvent(new CustomEvent('export-library'));
+            this._mobileMenuOpen = false;
+          }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
               </div>
@@ -965,13 +965,13 @@ export class StrainLibraryDialog extends LitElement {
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
           ${strain.image
-            ? html`<img
+        ? html`<img
                 src="${strain.image}"
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${this.getImgStyle(strain.image_crop_meta)}"
               />`
-            : html`<svg
+        : html`<svg
                 style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
                 viewBox="0 0 24 24"
               >
@@ -981,9 +981,9 @@ export class StrainLibraryDialog extends LitElement {
             <button
               class="sc-action-btn"
               @click=${(e: Event) => {
-                e.stopPropagation();
-                this._handleDelete(strain.key);
-              }}
+        e.stopPropagation();
+        this._handleDelete(strain.key);
+      }}
             >
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiDelete}"></path>
@@ -1003,11 +1003,11 @@ export class StrainLibraryDialog extends LitElement {
           </div>
           <div class="sc-meta">
             ${strain.flowering_days_min
-              ? html`<span
+        ? html`<span
                   >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
                   Days</span
                 >`
-              : nothing}
+        : nothing}
             ${strain.breeder ? html`<span>Breeder: ${strain.breeder}</span>` : nothing}
           </div>
         </div>
@@ -1077,35 +1077,35 @@ export class StrainLibraryDialog extends LitElement {
             <div
               class="photo-upload-area"
               @click=${(e: Event) => {
-                const target = e.target as HTMLElement;
-                if (
-                  !target.closest('.crop-btn') &&
-                  !target.closest('.select-library-btn') &&
-                  !target.closest('.md3-button')
-                ) {
-                  (e.currentTarget as HTMLElement).querySelector('input')?.click();
-                }
-              }}
+        const target = e.target as HTMLElement;
+        if (
+          !target.closest('.crop-btn') &&
+          !target.closest('.select-library-btn') &&
+          !target.closest('.md3-button')
+        ) {
+          (e.currentTarget as HTMLElement).querySelector('input')?.click();
+        }
+      }}
               @dragover=${(e: DragEvent) => {
-                e.preventDefault();
-                e.dataTransfer!.dropEffect = 'copy';
-              }}
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'copy';
+      }}
               @drop=${(e: DragEvent) => {
-                e.preventDefault();
-                const file = e.dataTransfer?.files[0];
-                if (file) {
-                  PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-                }
-              }}
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (file) {
+          PlantUtils.compressImage(file)
+            .then((base64) => this._handleEditorChange('image', base64))
+            .catch((err) => console.error('Error compressing image:', err));
+        }
+      }}
             >
               <button
                 class="select-library-btn"
                 @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._toggleImageSelector(true);
-                }}
+        e.stopPropagation();
+        this._toggleImageSelector(true);
+      }}
               >
                 <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiViewDashboard}"></path>
@@ -1114,15 +1114,15 @@ export class StrainLibraryDialog extends LitElement {
               </button>
 
               ${s.image
-                ? html`
+        ? html`
                     ${s.image_crop_meta
-                      ? html`<div
+            ? html`<div
                           style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(
-                            s.image,
-                            s.image_crop_meta
-                          )}; background-repeat: no-repeat;"
+              s.image,
+              s.image_crop_meta
+            )}; background-repeat: no-repeat;"
                         ></div>`
-                      : html`<img
+            : html`<img
                           src="${s.image}"
                           style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
                         />`}
@@ -1132,9 +1132,9 @@ export class StrainLibraryDialog extends LitElement {
                         class="crop-btn"
                         style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
                         @click=${(e: Event) => {
-                          e.stopPropagation();
-                          this._toggleCropMode(true);
-                        }}
+            e.stopPropagation();
+            this._toggleCropMode(true);
+          }}
                         title="Crop Image"
                       >
                         <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -1150,7 +1150,7 @@ export class StrainLibraryDialog extends LitElement {
                       </div>
                     </div>
                   `
-                : html`
+        : html`
                     <div style="display: flex; gap: 16px; align-items: center;">
                       <div
                         style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
@@ -1158,10 +1158,10 @@ export class StrainLibraryDialog extends LitElement {
                         <button
                           class="md3-button tonal"
                           @click=${(e: Event) =>
-                            (
-                              (e.currentTarget as HTMLElement)
-                                .nextElementSibling as HTMLInputElement
-                            ).click()}
+            (
+              (e.currentTarget as HTMLElement)
+                .nextElementSibling as HTMLInputElement
+            ).click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -1186,10 +1186,10 @@ export class StrainLibraryDialog extends LitElement {
                         <button
                           class="md3-button tonal"
                           @click=${(e: Event) =>
-                            (
-                              (e.currentTarget as HTMLElement)
-                                .nextElementSibling as HTMLInputElement
-                            ).click()}
+            (
+              (e.currentTarget as HTMLElement)
+                .nextElementSibling as HTMLInputElement
+            ).click()}
                         >
                           <svg
                             style="width:24px;height:24px;fill:currentColor;"
@@ -1220,7 +1220,7 @@ export class StrainLibraryDialog extends LitElement {
                 class="sd-input"
                 list="strain-suggestions"
                 .value=${s.strain || ''}
-                @input=${(e: any) => this._handleEditorChange('strain', e.target.value)}
+                @input=${(e: InputEvent) => this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -1231,7 +1231,7 @@ export class StrainLibraryDialog extends LitElement {
                 class="sd-input"
                 placeholder="e.g. #1 (Optional)"
                 .value=${s.phenotype || ''}
-                @input=${(e: any) => this._handleEditorChange('phenotype', e.target.value)}
+                @input=${(e: InputEvent) => this._handleEditorChange('phenotype', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -1242,7 +1242,7 @@ export class StrainLibraryDialog extends LitElement {
                 class="sd-input"
                 list="breeder-suggestions"
                 .value=${s.breeder || ''}
-                @input=${(e: any) => this._handleEditorChange('breeder', e.target.value)}
+                @input=${(e: InputEvent) => this._handleEditorChange('breeder', (e.target as HTMLInputElement).value)}
               />
             </div>
           </div>
@@ -1253,13 +1253,13 @@ export class StrainLibraryDialog extends LitElement {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-                  let icon = mdiLeaf;
-                  if (t === 'Indica') icon = mdiWeatherNight;
-                  if (t === 'Sativa') icon = mdiWeatherSunny;
-                  if (t === 'Hybrid') icon = mdiTuneVariant;
+              let icon = mdiLeaf;
+              if (t === 'Indica') icon = mdiWeatherNight;
+              if (t === 'Sativa') icon = mdiWeatherSunny;
+              if (t === 'Hybrid') icon = mdiTuneVariant;
 
-                  const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-                  return html`
+              const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+              return html`
                     <div
                       class="type-option ${isActive ? 'active' : ''}"
                       @click=${() => this._handleEditorChange('type', t)}
@@ -1270,12 +1270,12 @@ export class StrainLibraryDialog extends LitElement {
                       >
                     </div>
                   `;
-                })}
+            })}
               </div>
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid'
-              ? html`
+        ? html`
                   <div style="margin-bottom: 20px;">
                     <label class="sd-label">Hybrid Composition (%)</label>
                     <div
@@ -1294,13 +1294,13 @@ export class StrainLibraryDialog extends LitElement {
                             min="0"
                             max="100"
                             .value=${s.indica_percentage || 0}
-                            @input=${(e: any) => {
-                              let val = Math.floor(parseFloat(e.target.value)) || 0;
-                              if (val < 0) val = 0;
-                              if (val > 100) val = 100;
-                              this._handleEditorChange('indica_percentage', val);
-                              this._handleEditorChange('sativa_percentage', 100 - val);
-                            }}
+                            @input=${(e: InputEvent) => {
+            let val = Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
+            if (val < 0) val = 0;
+            if (val > 100) val = 100;
+            this._handleEditorChange('indica_percentage', val);
+            this._handleEditorChange('sativa_percentage', 100 - val);
+          }}
                           />
                           <span>%</span>
                         </div>
@@ -1315,13 +1315,13 @@ export class StrainLibraryDialog extends LitElement {
                             min="0"
                             max="100"
                             .value=${s.sativa_percentage || 0}
-                            @input=${(e: any) => {
-                              let val = Math.floor(parseFloat(e.target.value)) || 0;
-                              if (val < 0) val = 0;
-                              if (val > 100) val = 100;
-                              this._handleEditorChange('sativa_percentage', val);
-                              this._handleEditorChange('indica_percentage', 100 - val);
-                            }}
+                            @input=${(e: InputEvent) => {
+            let val = Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
+            if (val < 0) val = 0;
+            if (val > 100) val = 100;
+            this._handleEditorChange('sativa_percentage', val);
+            this._handleEditorChange('indica_percentage', 100 - val);
+          }}
                           />
                           <span>%</span>
                         </div>
@@ -1330,14 +1330,14 @@ export class StrainLibraryDialog extends LitElement {
                       <div
                         class="hg-bar-track"
                         @click=${(e: MouseEvent) => {
-                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                          const x = e.clientX - rect.left;
-                          let percent = Math.round((x / rect.width) * 100);
-                          if (percent < 0) percent = 0;
-                          if (percent > 100) percent = 100;
-                          this._handleEditorChange('indica_percentage', percent);
-                          this._handleEditorChange('sativa_percentage', 100 - percent);
-                        }}
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            let percent = Math.round((x / rect.width) * 100);
+            if (percent < 0) percent = 0;
+            if (percent > 100) percent = 100;
+            this._handleEditorChange('indica_percentage', percent);
+            this._handleEditorChange('sativa_percentage', 100 - percent);
+          }}
                       >
                         <div
                           class="hg-bar-indica"
@@ -1351,7 +1351,7 @@ export class StrainLibraryDialog extends LitElement {
                     </div>
                   </div>
                 `
-              : nothing}
+        : nothing}
 
             <div class="sd-form-group">
               <label class="sd-label">Flowering Time (Days)</label>
@@ -1361,16 +1361,16 @@ export class StrainLibraryDialog extends LitElement {
                   class="sd-input"
                   placeholder="Min"
                   .value=${s.flowering_days_min || ''}
-                  @input=${(e: any) =>
-                    this._handleEditorChange('flowering_days_min', e.target.value)}
+                  @input=${(e: InputEvent) =>
+        this._handleEditorChange('flowering_days_min', (e.target as HTMLInputElement).value)}
                 />
                 <input
                   type="number"
                   class="sd-input"
                   placeholder="Max"
                   .value=${s.flowering_days_max || ''}
-                  @input=${(e: any) =>
-                    this._handleEditorChange('flowering_days_max', e.target.value)}
+                  @input=${(e: InputEvent) =>
+        this._handleEditorChange('flowering_days_max', (e.target as HTMLInputElement).value)}
                 />
               </div>
             </div>
@@ -1381,7 +1381,7 @@ export class StrainLibraryDialog extends LitElement {
                 type="text"
                 class="sd-input"
                 .value=${s.lineage || ''}
-                @input=${(e: any) => this._handleEditorChange('lineage', e.target.value)}
+                @input=${(e: InputEvent) => this._handleEditorChange('lineage', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -1389,7 +1389,7 @@ export class StrainLibraryDialog extends LitElement {
               <label class="sd-label">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map(
-                  (sex) => html`
+          (sex) => html`
                     <label
                       style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
                     >
@@ -1403,7 +1403,7 @@ export class StrainLibraryDialog extends LitElement {
                       ${sex}
                     </label>
                   `
-                )}
+        )}
               </div>
             </div>
 
@@ -1412,7 +1412,7 @@ export class StrainLibraryDialog extends LitElement {
               <textarea
                 class="sd-textarea"
                 .value=${s.description || ''}
-                @input=${(e: any) => this._handleEditorChange('description', e.target.value)}
+                @input=${(e: InputEvent) => this._handleEditorChange('description', (e.target as HTMLTextAreaElement).value)}
               ></textarea>
             </div>
           </div>
@@ -1421,7 +1421,7 @@ export class StrainLibraryDialog extends LitElement {
 
       <div class="sd-footer" style="justify-content: space-between;">
         ${s.key
-          ? html`
+        ? html`
               <button
                 class="md3-button text"
                 style="color: var(--error-color, #f44336);"
@@ -1433,7 +1433,7 @@ export class StrainLibraryDialog extends LitElement {
                 Delete
               </button>
             `
-          : html`<div></div>`}
+        : html`<div></div>`}
 
         <div style="display:flex; gap:12px;">
           <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
@@ -1515,10 +1515,10 @@ export class StrainLibraryDialog extends LitElement {
             step="0.1"
             .value=${meta.scale.toString()}
             @input=${(e: Event) =>
-              this._handleEditorChange('image_crop_meta', {
-                ...meta,
-                scale: parseFloat((e.target as HTMLInputElement).value),
-              })}
+        this._handleEditorChange('image_crop_meta', {
+          ...meta,
+          scale: parseFloat((e.target as HTMLInputElement).value),
+        })}
           />
 
           <div style="display:flex; gap:12px; margin-top:12px;">
@@ -1574,7 +1574,7 @@ export class StrainLibraryDialog extends LitElement {
               style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
             >
               ${[...imageMap.entries()].map(
-                ([img, infoList]) => html`
+      ([img, infoList]) => html`
                   <div
                     style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
                     @click=${() => this._handleSelectLibraryImage(img)}
@@ -1584,29 +1584,29 @@ export class StrainLibraryDialog extends LitElement {
                       style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
                     >
                       ${infoList.map(
-                        (info, index) => html`
+        (info, index) => html`
                           <div
                             style="${index < infoList.length - 1
-                              ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-                              : ''}"
+            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+            : ''}"
                           >
                             <div style="font-weight: 700;">Strain: ${info.strain}</div>
                             <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
                           </div>
                         `
-                      )}
+      )}
                     </div>
                   </div>
                 `
-              )}
+    )}
             </div>
             ${imageMap.size === 0
-              ? html`<p
+        ? html`<p
                   style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
                 >
                   No images found in library.
                 </p>`
-              : nothing}
+        : nothing}
           </div>
         </div>
       </div>

@@ -70,11 +70,11 @@ export class GrowspaceAPI extends BaseAPI {
             `[GrowspaceAPI] API Validation Failed for ${growspaceId}: `,
             parsed.error.format()
           );
-          const data = result as GrowspaceAPIResponse;
+          const data = (result as unknown) as GrowspaceAPIResponse;
           this._cache.set(cacheKey, { data, timestamp: Date.now() });
           return data;
         }
-        const data = parsed.data as unknown as GrowspaceAPIResponse;
+        const data = (parsed.data as unknown) as GrowspaceAPIResponse;
         this._cache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       } else {
@@ -99,11 +99,11 @@ export class GrowspaceAPI extends BaseAPI {
             }
           }
 
-          const data = result as GrowspaceAPICollection;
+          const data = (result as unknown) as GrowspaceAPICollection;
           this._cache.set(cacheKey, { data, timestamp: Date.now() });
           return data;
         }
-        const data = parsed.data as unknown as GrowspaceAPICollection;
+        const data = (parsed.data as unknown) as GrowspaceAPICollection;
         this._cache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       }

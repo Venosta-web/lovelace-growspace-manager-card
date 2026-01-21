@@ -274,17 +274,17 @@ export class QuickNoteInput extends LitElement {
           <textarea
             placeholder="${this.placeholder}"
             .value=${this._text}
-            @input=${(e: any) => (this._text = e.target.value)}
+            @input=${(e: InputEvent) => (this._text = (e.target as HTMLTextAreaElement).value)}
             rows="2"
             ?disabled=${this.disabled || this._isSaving}
           ></textarea>
         </div>
 
         ${this._images.length > 0
-          ? html`
+        ? html`
               <div class="image-previews">
                 ${this._images.map(
-                  (img, i) => html`
+          (img, i) => html`
                     <div class="preview-item">
                       <img src=${img} alt="Preview ${i + 1}" />
                       <button
@@ -299,15 +299,15 @@ export class QuickNoteInput extends LitElement {
                       </button>
                     </div>
                   `
-                )}
+        )}
               </div>
             `
-          : nothing}
+        : nothing}
 
         <div class="actions">
           <div class="action-buttons">
             ${this.allowImages
-              ? html`
+        ? html`
                   <input
                     type="file"
                     id="fileInput"
@@ -326,7 +326,7 @@ export class QuickNoteInput extends LitElement {
                     </svg>
                   </button>
                 `
-              : nothing}
+        : nothing}
           </div>
           <button
             class="submit-btn"

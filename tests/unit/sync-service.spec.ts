@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SyncService } from '../../src/services/sync-service';
 import { DataService } from '../../src/data-service';
-import { GrowspaceDataStore } from '../../src/store/data-store';
-import { GrowspaceUIStore } from '../../src/store/ui-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
+import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('SyncService Coverage', () => {

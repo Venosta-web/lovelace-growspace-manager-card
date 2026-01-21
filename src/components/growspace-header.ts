@@ -9,7 +9,7 @@ import { hassContext, configContext, storeContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../types';
 import { MetricsUtils, HeaderChip, DominantStageInfo } from '../utils/metrics-utils';
 import { ResizeController } from '../controllers/resize-controller';
-import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 
 import { headerStyles } from '../styles/header.styles';
 import './growspace-header/header-actions';

@@ -239,12 +239,12 @@ export class AddPlantDialog extends LitElement {
     // Filter phenotypes based on selected strain
     const relevantPhenotypes = this.strain
       ? [
-          ...new Set(
-            this.strainLibrary
-              .filter((s) => s.strain === this.strain && s.phenotype)
-              .map((s) => s.phenotype)
-          ),
-        ].sort()
+        ...new Set(
+          this.strainLibrary
+            .filter((s) => s.strain === this.strain && s.phenotype)
+            .map((s) => s.phenotype)
+        ),
+      ].sort()
       : [];
 
     const dialogTitle =
@@ -298,9 +298,9 @@ export class AddPlantDialog extends LitElement {
             <button
               class="tab ${this._activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-                this._activeTab = 'add';
-                this._selectedTransplantPlant = null;
-              }}
+        this._activeTab = 'add';
+        this._selectedTransplantPlant = null;
+      }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Add Plant
@@ -308,9 +308,9 @@ export class AddPlantDialog extends LitElement {
             <button
               class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-                this._activeTab = 'clone';
-                this._selectedTransplantPlant = null;
-              }}
+        this._activeTab = 'clone';
+        this._selectedTransplantPlant = null;
+      }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
               Clone
@@ -318,9 +318,9 @@ export class AddPlantDialog extends LitElement {
             <button
               class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-                this._activeTab = 'seedling';
-                this._selectedTransplantPlant = null;
-              }}
+        this._activeTab = 'seedling';
+        this._selectedTransplantPlant = null;
+      }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Seedling
@@ -329,8 +329,8 @@ export class AddPlantDialog extends LitElement {
 
           <div class="overview-grid">
             ${this._activeTab === 'add'
-              ? this._renderAddPlantForm(uniqueStrains, relevantPhenotypes)
-              : this._renderTransplantForm(this._activeTab)}
+        ? this._renderAddPlantForm(uniqueStrains, relevantPhenotypes)
+        : this._renderTransplantForm(this._activeTab)}
           </div>
 
           <!-- ACTION BUTTONS -->
@@ -493,23 +493,23 @@ export class AddPlantDialog extends LitElement {
       <div class="detail-card">
         <h3>Select ${stageLabel} to Transplant</h3>
         ${plants.length === 0
-          ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
+        ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
               No ${stageLabel.toLowerCase()}s available for transplant
             </p>`
-          : html`
+        : html`
               <md3-select
                 label="Select Plant"
                 .value=${selectedPlant?.attributes.plant_id || ''}
                 .options=${options}
                 @change=${(e: CustomEvent) => {
-                  const plantId = e.detail;
-                  this._selectedTransplantPlant =
-                    plants.find((p) => p.attributes.plant_id === plantId) || null;
-                }}
+            const plantId = e.detail;
+            this._selectedTransplantPlant =
+              plants.find((p) => p.attributes.plant_id === plantId) || null;
+          }}
               ></md3-select>
             `}
         ${selectedPlant
-          ? html`
+        ? html`
               <div class="plant-info-grid">
                 <span class="info-label">Strain:</span>
                 <span class="info-value">${selectedPlant.attributes.strain}</span>
@@ -528,12 +528,12 @@ export class AddPlantDialog extends LitElement {
                 <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
                 <span class="info-value"
                   >${selectedPlant.attributes[
-                    stage === 'clone' ? 'clone_start' : 'seedling_start'
-                  ] || 'N/A'}</span
+          stage === 'clone' ? 'clone_start' : 'seedling_start'
+          ] || 'N/A'}</span
                 >
               </div>
             `
-          : nothing}
+        : nothing}
       </div>
 
       <!-- NEW LOCATION CARD -->

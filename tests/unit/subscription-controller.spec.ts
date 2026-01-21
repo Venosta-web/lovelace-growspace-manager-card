@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SubscriptionController } from '../../src/controllers/subscription-controller';
 import { ReactiveControllerHost } from 'lit';
-import { GrowspaceDataStore } from '../../src/store/data-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { HomeAssistant } from 'custom-card-helpers';
 
 // Mock data-store class
-vi.mock('../../src/store/data-store', () => {
+vi.mock('../../src/store/core/data-store', () => {
     return {
         GrowspaceDataStore: class {
             $selectedDevice = { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() };

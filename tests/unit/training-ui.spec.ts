@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GrowspaceStore } from '../../src/store/growspace-store';
+import { GrowspaceStore } from '../../src/store/core/growspace-store';
 import { TrainingTechnique } from '../../src/types';
 
 // Mock DataService

@@ -34,7 +34,7 @@ const atomMocks = vi.hoisted(() => ({
     $cardViewState: null as any,
 }));
 
-vi.mock('../../src/store/growspace-store', () => ({
+vi.mock('../../src/store/core/growspace-store', () => ({
     GrowspaceStore: class {
         host: any;
         dataService = {};

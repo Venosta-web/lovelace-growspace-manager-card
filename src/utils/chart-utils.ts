@@ -285,7 +285,6 @@ export class ChartUtils {
     });
 
     const segments: Array<{ path: string; color: string }> = [];
-    if (points.length === 0) return segments;
 
     let currentSegmentX: number[] = [points[0].x];
     let currentSegmentY: number[] = [points[0].y];

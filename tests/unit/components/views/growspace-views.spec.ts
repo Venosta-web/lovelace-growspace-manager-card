@@ -3,10 +3,10 @@ import { GrowspaceViewCompact } from '../../../../src/components/views/growspace
 import { GrowspaceViewHeader } from '../../../../src/components/views/growspace-view-header';
 import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
 import { GrowspaceDevice } from '../../../../src/types';
-import * as uiStore from '../../../../src/store/ui-store';
+import * as uiStore from '../../../../src/store/ui/ui-store';
 
 // Mock ui-store
-vi.mock('../../../../src/store/ui-store', () => ({
+vi.mock('../../../../src/store/ui/ui-store', () => ({
     $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
     $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
     $selectedPlants: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn() },

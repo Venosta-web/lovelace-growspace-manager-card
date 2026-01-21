@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GrowspaceUIStore } from '../../src/store/ui-store';
+import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { ViewMode, GridOverlayMode } from '../../src/constants';
 
 describe('UI Store', () => {

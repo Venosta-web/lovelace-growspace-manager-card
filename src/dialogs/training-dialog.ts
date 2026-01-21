@@ -7,7 +7,7 @@ import { mdiClose, mdiCheck, mdiDumbbell } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui'; // Ensure MD3 components are registered
 import { TrainingTechnique } from '../types';
-import { GrowspaceStore } from '../store/growspace-store';
+import { GrowspaceStore } from '../store/core/growspace-store';
 
 @customElement('training-dialog')
 export class TrainingDialog extends LitElement {

@@ -11,7 +11,7 @@ import { sharedStyles } from '../styles/shared.styles';
 
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 // Global imports removed
 

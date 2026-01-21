@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -15,7 +15,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../../context';
 import { IPMPreset, IPMItem } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
-import { GrowspaceStore } from '../../store/growspace-store';
+import { GrowspaceStore } from '../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import '../../components/ui'; // Ensure MD3 components are registered
 
@@ -126,7 +126,7 @@ export class IPMDialog extends LitElement {
     `,
   ];
 
-  updated(changedProps: Map<string, any>) {
+  updated(changedProps: PropertyValues) {
     if (changedProps.has('open') && this.open) {
       if (!this._editingPreset) {
         this._view = 'APPLY';
@@ -166,9 +166,10 @@ export class IPMDialog extends LitElement {
       });
       this.dispatchEvent(new CustomEvent('data-changed'));
       this._close();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : undefined;
       console.error('Failed to apply IPM', e);
-      this._error = e.message || 'Failed to apply treatment';
+      this._error = error || 'Failed to apply treatment';
     }
   }
 
@@ -197,8 +198,8 @@ export class IPMDialog extends LitElement {
     try {
       await this.store.dataService.removeIPMPreset(presetId);
       await this.store.fetchIPMPresets(true);
-    } catch (err: any) {
-      this._error = err.message;
+    } catch (err: unknown) {
+      this._error = err instanceof Error ? err.message : 'Unknown error';
     }
   }
 
@@ -244,8 +245,8 @@ export class IPMDialog extends LitElement {
       });
       await this.store.fetchIPMPresets(true);
       this._view = 'LIST';
-    } catch (err: any) {
-      this._error = err.message;
+    } catch (err: unknown) {
+      this._error = err instanceof Error ? err.message : 'Unknown error';
     }
   }
 
@@ -281,10 +282,10 @@ export class IPMDialog extends LitElement {
           <div class="dialog-content-grid">
             ${this._error ? html`<div class="error-bar">${this._error}</div>` : nothing}
             ${this._view === 'APPLY'
-              ? this._renderApply()
-              : this._view === 'LIST'
-                ? this._renderList()
-                : this._renderEdit()}
+        ? this._renderApply()
+        : this._view === 'LIST'
+          ? this._renderList()
+          : this._renderEdit()}
           </div>
 
           <div class="button-group">${this._renderFooterButtons()}</div>
@@ -344,9 +345,9 @@ export class IPMDialog extends LitElement {
           label="Select Preset"
           .value=${this._selectedPresetId || ''}
           .options=${presetList.map((preset: IPMPreset) => ({
-            label: `${preset.name} (${preset.type})`,
-            value: preset.id,
-          }))}
+      label: `${preset.name} (${preset.type})`,
+      value: preset.id,
+    }))}
           @change=${(e: CustomEvent) => (this._selectedPresetId = e.detail)}
         ></md3-select>
 
@@ -358,7 +359,7 @@ export class IPMDialog extends LitElement {
         <ha-textarea
           label="Treatment Notes (Optional)"
           .value=${this._notes}
-          @input=${(e: any) => (this._notes = e.target.value)}
+          @input=${(e: InputEvent) => (this._notes = (e.target as HTMLTextAreaElement).value)}
           rows="3"
           style="width: 100%;"
         ></ha-textarea>
@@ -387,7 +388,7 @@ export class IPMDialog extends LitElement {
     return html`
       <div class="presets-list">
         ${presetEntries.map(
-          (preset: IPMPreset) => html`
+      (preset: IPMPreset) => html`
             <div class="preset-item">
               <div class="preset-info">
                 <div class="preset-name">${preset.name}</div>
@@ -415,7 +416,7 @@ export class IPMDialog extends LitElement {
               </div>
             </div>
           `
-        )}
+    )}
       </div>
     `;
   }
@@ -431,8 +432,8 @@ export class IPMDialog extends LitElement {
             label="Preset Name"
             .value=${this._editingPreset.name || ''}
             @change=${(e: CustomEvent) => {
-              this._editingPreset = { ...this._editingPreset!, name: e.detail };
-            }}
+        this._editingPreset = { ...this._editingPreset!, name: e.detail };
+      }}
             placeholder="e.g. Neem Oil Spray"
           ></md3-text-input>
 
@@ -442,10 +443,10 @@ export class IPMDialog extends LitElement {
               class="md3-input"
               .value=${this._editingPreset.type || 'foliar'}
               @change=${(e: Event) =>
-                (this._editingPreset = {
-                  ...this._editingPreset!,
-                  type: (e.target as HTMLSelectElement).value as any,
-                })}
+      (this._editingPreset = {
+        ...this._editingPreset!,
+        type: (e.target as HTMLSelectElement).value as any,
+      })}
             >
               <option value="foliar">Foliar Spray</option>
               <option value="drench">Root Drench</option>
@@ -463,11 +464,11 @@ export class IPMDialog extends LitElement {
                 class="md3-input"
                 .value=${this._editingPreset.stage || ''}
                 @change=${(e: Event) => {
-                  this._editingPreset = {
-                    ...this._editingPreset!,
-                    stage: (e.target as HTMLSelectElement).value || undefined,
-                  };
-                }}
+        this._editingPreset = {
+          ...this._editingPreset!,
+          stage: (e.target as HTMLSelectElement).value || undefined,
+        };
+      }}
               >
                 <option value="">Any Stage</option>
                 <option value="seedling">Seedling</option>
@@ -481,11 +482,11 @@ export class IPMDialog extends LitElement {
               label="Min Days"
               .value=${this._editingPreset.min_days_in_stage || 0}
               @change=${(e: CustomEvent) => {
-                this._editingPreset = {
-                  ...this._editingPreset!,
-                  min_days_in_stage: parseInt(e.detail),
-                };
-              }}
+        this._editingPreset = {
+          ...this._editingPreset!,
+          min_days_in_stage: parseInt(e.detail),
+        };
+      }}
               min="0"
             ></md3-number-input>
           </div>
@@ -507,7 +508,7 @@ export class IPMDialog extends LitElement {
           </div>
 
           ${(this._editingPreset.items || []).map(
-            (item: IPMItem, _index: number) => html`
+        (item: IPMItem, _index: number) => html`
               <div class="product-row">
                 <md3-text-input
                   label="Product"
@@ -519,7 +520,7 @@ export class IPMDialog extends LitElement {
                   label="Dose"
                   .value=${item.dose_amount}
                   @change=${(e: CustomEvent) =>
-                    this._updateProduct(_index, { dose_amount: parseFloat(e.detail) })}
+            this._updateProduct(_index, { dose_amount: parseFloat(e.detail) })}
                   min="0"
                   step="0.1"
                 ></md3-number-input>
@@ -527,7 +528,7 @@ export class IPMDialog extends LitElement {
                   label="Unit"
                   .value=${item.dose_unit}
                   @change=${(e: CustomEvent) =>
-                    this._updateProduct(_index, { dose_unit: e.detail })}
+            this._updateProduct(_index, { dose_unit: e.detail })}
                   style="flex: 1;"
                 ></md3-text-input>
                 <button
@@ -539,7 +540,7 @@ export class IPMDialog extends LitElement {
                 </button>
               </div>
             `
-          )}
+      )}
         </div>
       </div>
     `;

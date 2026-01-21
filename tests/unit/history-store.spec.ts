@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { GrowspaceHistoryStore } from '../../src/store/history-store';
-import { GrowspaceDataStore } from '../../src/store/data-store';
+import { GrowspaceHistoryStore } from '../../src/store/history/history-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { DataService } from '../../src/data-service';
 import { HistorySensorState, HistoryTimeRange } from '../../src/types';
 

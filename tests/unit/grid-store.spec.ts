@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GrowspaceGridStore } from '../../src/store/grid-store';
-import { GrowspaceDataStore } from '../../src/store/data-store';
+import { GrowspaceGridStore } from '../../src/store/grid/grid-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceDevice, PlantEntity, createGrowspaceDevice } from '../../src/types';
 
 describe('grid-store', () => {

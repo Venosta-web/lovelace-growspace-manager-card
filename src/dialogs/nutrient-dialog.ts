@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { mdiBottleTonicPlus, mdiClose, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
-import { GrowspaceStore } from '../store/growspace-store';
+import { GrowspaceStore } from '../store/core/growspace-store';
 import './nutrient-inventory-dialog';
 import '../components/manager/nutrient-presets-editor';
 

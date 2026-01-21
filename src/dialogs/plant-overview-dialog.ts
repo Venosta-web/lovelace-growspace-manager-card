@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 
 import {
@@ -26,6 +26,7 @@ import {
   PlantStage,
   GrowspaceEvent,
   PlantTimelineEvent,
+  PlantAttributeValue,
 } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -86,14 +87,14 @@ export class PlantOverviewDialog extends LitElement {
     // Subscribe if not already subscribed
     if (!this._unsubEvents) {
       this._unsubEvents = this.hass.connection.subscribeEvents(
-        (event) => this._handleGrowspaceEvent(event),
+        (event) => this._handleGrowspaceEvent(event as Record<string, unknown>),
         'growspace_manager_log_entry'
       );
     }
   }
 
-  private _handleGrowspaceEvent(event: any) {
-    const data = event.data;
+  private _handleGrowspaceEvent(event: Record<string, unknown>) {
+    const data = (event.data || event) as GrowspaceEvent;
     const plantId =
       this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
     const growspaceId = this.plant?.attributes?.growspace_id;
@@ -109,11 +110,11 @@ export class PlantOverviewDialog extends LitElement {
       // Prepend to list for instant update
       // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
       // but _renderTimeline mapping logic handles both.
-      this._logbookEvents = [data as any, ...this._logbookEvents];
+      this._logbookEvents = [data, ...this._logbookEvents];
     }
   }
 
-  willUpdate(changedProps: Map<string, any>) {
+  willUpdate(changedProps: PropertyValues) {
     // Retry subscription if hass becomes available later
     if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
       this._subscribeToEvents();
@@ -516,7 +517,7 @@ export class PlantOverviewDialog extends LitElement {
     this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
   }
 
-  private _attributeChange(key: string, value: any) {
+  private _attributeChange(key: string, value: PlantAttributeValue) {
     this.editedAttributes = { ...this.editedAttributes, [key]: value };
     this.requestUpdate();
   }
@@ -608,7 +609,7 @@ export class PlantOverviewDialog extends LitElement {
     );
   }
 
-  private _renderStatItem(label: string, value: any, unit: string = '') {
+  private _renderStatItem(label: string, value: string | number | undefined, unit: string = '') {
     if (value === undefined || value === null || value === '') return nothing;
     return html`
       <div class="stat-item">
@@ -844,7 +845,7 @@ export class PlantOverviewDialog extends LitElement {
                 const container = (e.currentTarget as HTMLElement).closest(
                   '.take-clone-container'
                 );
-                const input = container?.querySelector('#clone-count-input') as any;
+                const input = container?.querySelector('#clone-count-input') as HTMLInputElement;
                 const val = input ? parseInt(input.value, 10) : 1;
                 const numClones = isNaN(val) ? 1 : val;
                 this._takeClone(this.plant!, numClones);
@@ -1171,7 +1172,7 @@ export class PlantOverviewDialog extends LitElement {
     ];
 
     milestoneFields.forEach((field) => {
-      const date = (this.plant?.attributes as any)?.[field.key];
+      const date = (this.plant?.attributes as Record<string, unknown>)?.[field.key];
       if (date) {
         milestones.push({
           type: 'milestone',
@@ -1184,7 +1185,7 @@ export class PlantOverviewDialog extends LitElement {
     // 2. Add Logbook Events (Watering, Training)
     const normalize = (s?: string) => s?.toLowerCase().trim() || '';
     const plantId =
-      (this.plant?.attributes as any)?.plant_id || this.plant.entity_id?.split('.')[1] || '';
+      (this.plant?.attributes as Record<string, unknown>)?.plant_id as string || this.plant.entity_id?.split('.')[1] || '';
     const trainingTechniques = [
       'topping',
       'fim',
@@ -1226,7 +1227,7 @@ export class PlantOverviewDialog extends LitElement {
 
         // For notes, check the direct plant_id field
         if (isNote) {
-          const eventPlantId = (e as any).plant_id;
+          const eventPlantId = e.plant_id;
           return eventPlantId && eventPlantId === plantId;
         }
 

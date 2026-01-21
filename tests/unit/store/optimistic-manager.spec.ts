@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { OptimisticManager } from '../../../src/store/optimistic-manager';
-import { GrowspaceDataStore } from '../../../src/store/data-store';
+import { OptimisticManager } from '../../../src/store/system/optimistic-manager';
+import { GrowspaceDataStore } from '../../../src/store/core/data-store';
 import { UndoRedoManager } from '../../../src/services/undo-redo-manager';
 
 describe('OptimisticManager', () => {

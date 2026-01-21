@@ -1,14 +1,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GrowspaceStore } from '../../src/store/growspace-store';
-import * as _uiStore from '../../src/store/ui-store';
-import * as _dataStore from '../../src/store/data-store';
+import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import * as _uiStore from '../../src/store/ui/ui-store';
+import * as _dataStore from '../../src/store/core/data-store';
 
 const uiStore = _uiStore as any;
 const dataStore = _dataStore as any;
 
 // Mock ui-store
-vi.mock('../../src/store/ui-store', () => {
+vi.mock('../../src/store/ui/ui-store', () => {
     const atoms = {
         $activeDialog: { get: vi.fn(() => ({ type: 'NONE' })), set: vi.fn(), subscribe: vi.fn() },
         $focusedPlantIndex: { get: vi.fn(() => -1), set: vi.fn(), subscribe: vi.fn() },
@@ -48,7 +48,7 @@ vi.mock('../../src/store/ui-store', () => {
 });
 
 // Mock data-store
-vi.mock('../../src/store/data-store', () => {
+vi.mock('../../src/store/core/data-store', () => {
     const atoms = {
         $devices: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
         $selectedDevice: { get: vi.fn(() => null), set: vi.fn(), subscribe: vi.fn() },
@@ -163,7 +163,7 @@ vi.mock('../../src/data-service', () => {
     };
 });
 
-vi.mock('../../src/store/optimistic-manager', () => {
+vi.mock('../../src/store/system/optimistic-manager', () => {
     return {
         OptimisticManager: class {
             private _undoRedoManager: any;

@@ -1,7 +1,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { analyzeGrowspace, getStrainRecommendation } from '../../src/store/ai-actions';
-import { ActionContext } from '../../src/store/action-context';
+import { analyzeGrowspace, getStrainRecommendation } from '../../src/store/system/ai-actions';
+import { ActionContext } from '../../src/store/core/action-context';
 
 describe('ai-actions', () => {
     let ctx: ActionContext;

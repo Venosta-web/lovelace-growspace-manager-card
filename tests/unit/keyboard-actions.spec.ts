@@ -1,23 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as keyboardActions from '../../src/store/keyboard-actions';
-import { GrowspaceUIStore } from '../../src/store/ui-store';
-import { GrowspaceDataStore } from '../../src/store/data-store';
-import { GrowspaceStore } from '../../src/store/growspace-store';
+import * as keyboardActions from '../../src/store/system/keyboard-actions';
+import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
+import { GrowspaceStore } from '../../src/store/core/growspace-store';
 import { PlantEntity } from '../../src/types';
-import { ActionContext } from '../../src/store/action-context';
+import { ActionContext } from '../../src/store/core/action-context';
 
 // Mock the action modules
-vi.mock('../../src/store/ui-actions', () => ({
+vi.mock('../../src/store/ui/ui-actions', () => ({
     exitEditMode: vi.fn(),
     handlePlantClick: vi.fn(),
 }));
 
-vi.mock('../../src/store/plant-actions', () => ({
+vi.mock('../../src/store/plant/plant-actions', () => ({
     handleDeletePlant: vi.fn(),
 }));
 
 // Mock the stores (ensure they are instantiated correctly)
-vi.mock('../../src/store/ui-store', () => {
+vi.mock('../../src/store/ui/ui-store', () => {
     const mocks = {
         $isEditMode: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
         $focusedPlantIndex: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
@@ -32,7 +32,7 @@ vi.mock('../../src/store/ui-store', () => {
     };
 });
 
-vi.mock('../../src/store/data-store', () => {
+vi.mock('../../src/store/core/data-store', () => {
     const mocks = {
         $selectedDevice: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
         $devices: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
@@ -103,7 +103,7 @@ describe('keyboard-actions', () => {
 
     describe('handleKeyboardNavigation', () => {
         it('should exit edit mode on Escape when in edit mode', async () => {
-            const { exitEditMode } = await import('../../src/store/ui-actions');
+            const { exitEditMode } = await import('../../src/store/ui/ui-actions');
             vi.mocked(store.ui.$isEditMode.get).mockReturnValue(true);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Escape');
@@ -153,7 +153,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should trigger plant click on Enter', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui-actions');
+            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(0);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Enter');
@@ -162,7 +162,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should trigger plant click on Space', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui-actions');
+            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(1);
 
             keyboardActions.handleKeyboardNavigation(mockContext, ' ');
@@ -171,7 +171,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should delete focused plant on Delete', async () => {
-            const { handleDeletePlant } = await import('../../src/store/plant-actions');
+            const { handleDeletePlant } = await import('../../src/store/plant/plant-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(0);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Delete');
@@ -180,7 +180,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should delete focused plant on Backspace', async () => {
-            const { handleDeletePlant } = await import('../../src/store/plant-actions');
+            const { handleDeletePlant } = await import('../../src/store/plant/plant-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(1);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Backspace');
@@ -189,7 +189,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should delete selected plants when no focused plant on Delete', async () => {
-            const { handleDeletePlant } = await import('../../src/store/plant-actions');
+            const { handleDeletePlant } = await import('../../src/store/plant/plant-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1); // No focus
             vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set(['p1', 'p2']));
 
@@ -237,7 +237,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should not trigger plant click on Enter when index is out of bounds', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui-actions');
+            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1); // Invalid index
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Enter');
@@ -246,7 +246,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should not trigger plant click on Space when index exceeds plants length', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui-actions');
+            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(99); // Out of bounds
 
             keyboardActions.handleKeyboardNavigation(mockContext, ' ');

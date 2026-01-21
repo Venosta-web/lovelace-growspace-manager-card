@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GrowspaceDataStore } from '../../src/store/data-store';
+import { GrowspaceDataStore } from '../../src/store/core/data-store';
 
 describe('DataStore', () => {
     let store: GrowspaceDataStore;

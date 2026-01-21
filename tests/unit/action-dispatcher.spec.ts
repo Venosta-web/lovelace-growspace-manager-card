@@ -1,13 +1,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ActionDispatcher } from '../../src/store/action-dispatcher';
-import * as plantActions from '../../src/store/plant-actions';
-import * as strainActions from '../../src/store/strain-actions';
+import { ActionDispatcher } from '../../src/store/core/action-dispatcher';
+import * as plantActions from '../../src/store/plant/plant-actions';
+import * as strainActions from '../../src/store/plant/strain-actions';
 import { PlantEntity } from '../../src/types';
 
 // Mock dependencies
-vi.mock('../../src/store/plant-actions');
-vi.mock('../../src/store/strain-actions');
+vi.mock('../../src/store/plant/plant-actions');
+vi.mock('../../src/store/plant/strain-actions');
 
 describe('ActionDispatcher', () => {
     let mockStore: any;

@@ -6,7 +6,7 @@ const PlantSlotSchema = z
     plant_id: z.string().optional().default(''),
     stage: z.string().optional().default('unknown'),
     strain: z.string().optional().default(''),
-    phenotype: z.union([z.string(), z.any()]).optional().default(''),
+    phenotype: z.union([z.string(), z.unknown()]).optional().default(''),
     row: z.number().optional().default(0),
     col: z.number().optional().default(0),
     position: z.string().optional().default(''),
@@ -32,8 +32,24 @@ const PlantSlotSchema = z
     dry_start: z.string().nullable().optional().default(null),
     cure_start: z.string().nullable().optional().default(null),
   })
-  .catchall(z.any())
+  .catchall(z.unknown())
   .nullable();
+
+const IrrigationScheduleItemSchema = z.object({
+  time: z.string(),
+  duration: z.number().optional(),
+});
+
+const IrrigationStrategySchema = z.object({
+  enabled: z.boolean(),
+  lights_on_time: z.string(),
+  p0_duration_minutes: z.number(),
+  p2_stop_before_lights_off_minutes: z.number(),
+  target_vwc_percent: z.number(),
+  maintenance_dryback_percent: z.number(),
+  shot_duration_seconds: z.number(),
+  shot_interval_minutes: z.number(),
+});
 
 export const GrowspaceAPIResponseSchema = z
   .object({
@@ -61,14 +77,20 @@ export const GrowspaceAPIResponseSchema = z
         drain_pump_entity: z.string().nullable().optional(),
         irrigation_duration: z.number().nullable().optional(),
         drain_duration: z.number().nullable().optional(),
-        irrigation_times: z.array(z.any()).optional(),
-        drain_times: z.array(z.any()).optional(),
+        irrigation_times: z
+          .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+          .optional()
+          .default([]),
+        drain_times: z
+          .array(z.union([z.string().transform((t) => ({ time: t })), IrrigationScheduleItemSchema]))
+          .optional()
+          .default([]),
         veg_day_hours: z.number().optional(),
       })
       .passthrough()
       .optional()
       .default({}),
-    irrigation_strategy: z.any().nullable().default(null),
+    irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
 
     // Flattened Environment Config (Root Level)
     temperature_sensor: z.string().optional(),
@@ -117,7 +139,7 @@ export const GrowspaceAPIResponseSchema = z
   })
   .passthrough(); // Allow extra fields at root
 
-export type GrowspaceAPIResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
+export type GrowspaceAPISchemaResponse = z.infer<typeof GrowspaceAPIResponseSchema>;
 
 export const GrowspaceAPICollectionSchema = z.record(z.string(), GrowspaceAPIResponseSchema);
 export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema>;
@@ -130,7 +152,7 @@ export const StrainPhenotypeSchema = z
     flower_days_min: z.number().optional(),
     flower_days_max: z.number().optional(),
   })
-  .catchall(z.any());
+  .catchall(z.unknown());
 
 export const StrainDataSchema = z
   .object({
@@ -233,7 +255,7 @@ export const HistoryPointSchema = z
     lu: z
       .union([z.string(), z.number()])
       .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
-    a: z.record(z.any()).optional().default({}), // Attributes
+    a: z.record(z.unknown()).optional().default({}), // Attributes
   })
   .passthrough();
 
@@ -254,7 +276,9 @@ export interface ValidationResult<T> {
  * Validates a single growspace API response.
  * Returns parsed data on success, or logs errors and returns null on failure.
  */
-export function validateGrowspaceResponse(data: unknown): ValidationResult<GrowspaceAPIResponse> {
+export function validateGrowspaceResponse(
+  data: unknown
+): ValidationResult<GrowspaceAPISchemaResponse> {
   const result = GrowspaceAPIResponseSchema.safeParse(data);
   if (result.success) {
     return { success: true, data: result.data };

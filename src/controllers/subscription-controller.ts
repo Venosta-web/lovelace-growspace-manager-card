@@ -1,6 +1,6 @@
 import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDataStore } from '../store/data-store';
+import { GrowspaceDataStore } from '../store/core/data-store';
 
 export class SubscriptionController implements ReactiveController {
   private host: ReactiveControllerHost;

@@ -2,7 +2,7 @@ import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { storeContext } from '../context';
-import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 // Global imports removed
 import { classMap } from 'lit/directives/class-map.js';

@@ -24,7 +24,7 @@ import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
-import { GrowspaceStore } from './store/growspace-store';
+import { GrowspaceStore } from './store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-manager-card')
@@ -304,7 +304,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     ></growspace-dialog-host>`;
   }
 
-  private _handleError = (error: Error, errorInfo: any) => {
+  private _handleError = (error: Error, errorInfo: unknown) => {
     // Always log to console
     console.error('Growspace Manager Card caught error:', error, errorInfo);
 

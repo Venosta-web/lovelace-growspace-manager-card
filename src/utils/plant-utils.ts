@@ -254,10 +254,10 @@ export class PlantUtils {
    * @returns Object ready for API call
    */
   static mapDialogToApiPayload(
-    editedAttributes: Record<string, any>,
+    editedAttributes: Record<string, unknown>,
     isBulkEdit: boolean
-  ): Record<string, any> {
-    const payload: Record<string, any> = {};
+  ): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
 
     const fieldsToProcess = isBulkEdit
       ? [...this.DATE_FIELDS]
@@ -494,7 +494,7 @@ export class PlantUtils {
 
     // Image logic
     let imageUrl: string | undefined;
-    let imageCropMeta: any | undefined;
+    let imageCropMeta: CropMeta | undefined;
     const library = strainLibrary || [];
 
     if (strainName !== 'Unknown Strain') {

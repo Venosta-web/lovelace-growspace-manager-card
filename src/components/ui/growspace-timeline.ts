@@ -346,7 +346,6 @@ export class GrowspaceTimeline extends LitElement {
       const left = this._getPosition(event, start, totalDuration);
       const icon = this._getIcon(event);
       const className = this._getClass(event);
-      const eventTime = getEventTimestamp(event);
 
       return html`
                 <div

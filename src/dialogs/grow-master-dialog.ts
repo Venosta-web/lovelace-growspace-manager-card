@@ -147,7 +147,7 @@ export class GrowMasterDialog extends LitElement {
                 class="sd-textarea"
                 placeholder="Ask about this growspace..."
                 .value=${this.userQuery}
-                @input=${(e: any) => (this.userQuery = e.target.value)}
+                @input=${(e: InputEvent) => (this.userQuery = (e.target as HTMLTextAreaElement).value)}
                 style="min-height: 80px;"
               ></textarea>
             </div>
@@ -174,7 +174,7 @@ export class GrowMasterDialog extends LitElement {
 
             <!-- Response Area -->
             ${this.isLoading
-              ? html`
+        ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -182,14 +182,14 @@ export class GrowMasterDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-              : nothing}
+        : nothing}
             ${!this.isLoading && this.response
-              ? html`
+        ? html`
                   <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
                   </div>
                 `
-              : nothing}
+        : nothing}
           </div>
         </div>
       </ha-dialog>

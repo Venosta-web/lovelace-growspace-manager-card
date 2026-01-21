@@ -21,7 +21,7 @@ import { PlantEntity, StrainEntry, PlantDisplayData } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { DragDropController, DragDropHost } from '../controllers/drag-drop-controller';
 // Global imports removed
-import type { GrowspaceStore } from '../store/growspace-store';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 import './plant/plant-stats';
 import { plantCardStyles } from '../styles/plant-card.styles';
 import { sharedStyles } from '../styles/shared.styles';

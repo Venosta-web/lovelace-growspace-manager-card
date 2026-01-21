@@ -149,8 +149,9 @@ export class NutrientInventoryDialog extends LitElement {
       if (result) {
         this._inventory = result;
       }
-    } catch (e: any) {
-      this._error = e.message || 'Failed to load inventory';
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : undefined;
+      this._error = error || 'Failed to load inventory';
     } finally {
       this._isLoading = false;
     }
@@ -199,8 +200,9 @@ export class NutrientInventoryDialog extends LitElement {
       await this._fetchInventory(); // Refresh list
       this._notifyDataChanged();
       this._cancelEdit();
-    } catch (e: any) {
-      alert(`Error saving: ${e.message}`);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : 'Unknown error';
+      alert(`Error saving: ${error}`);
     }
   }
 
@@ -212,8 +214,9 @@ export class NutrientInventoryDialog extends LitElement {
       await this._dataService.removeNutrientStock(id);
       await this._fetchInventory();
       this._notifyDataChanged();
-    } catch (e: any) {
-      alert(`Error deleting: ${e.message}`);
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e.message : 'Unknown error';
+      alert(`Error deleting: ${error}`);
     }
   }
 
@@ -234,7 +237,7 @@ export class NutrientInventoryDialog extends LitElement {
         style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
       >
         ${!this.embedded
-          ? html`
+        ? html`
               <div class="dialog-header">
                 <div class="dialog-icon">
                   <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
@@ -252,17 +255,17 @@ export class NutrientInventoryDialog extends LitElement {
                 </button>
               </div>
             `
-          : nothing}
+        : nothing}
 
         <div class="dialog-body" style="${this.embedded ? 'padding: 0;' : ''}">
           ${this._isLoading
-            ? html`<p>Loading...</p>`
-            : this._error
-              ? html`<div class="error-banner">
+        ? html`<p>Loading...</p>`
+        : this._error
+          ? html`<div class="error-banner">
                   <svg viewBox="0 0 24 24"><path d="${mdiAlertCircle}"></path></svg>
                   ${this._error}
                 </div>`
-              : this._renderContent()}
+          : this._renderContent()}
         </div>
       </div>
     `;
@@ -304,8 +307,8 @@ export class NutrientInventoryDialog extends LitElement {
 
       <div class="inventory-list">
         ${stocks.length === 0 && !this._isAdding
-          ? html`<p style="text-align:center; opacity:0.6">No nutrient stock items tracked.</p>`
-          : stocks.map((stock) => this._renderStockItem(stock))}
+        ? html`<p style="text-align:center; opacity:0.6">No nutrient stock items tracked.</p>`
+        : stocks.map((stock) => this._renderStockItem(stock))}
       </div>
     `;
   }

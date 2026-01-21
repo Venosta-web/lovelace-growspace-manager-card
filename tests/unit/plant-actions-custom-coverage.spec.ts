@@ -1,14 +1,14 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ActionContext } from '../../src/store/action-context';
+import { ActionContext } from '../../src/store/core/action-context';
 import {
     movePlantToNextStage,
     handlePlantDrop
-} from '../../src/store/plant-actions';
+} from '../../src/store/plant/plant-actions';
 import { PlantEntity } from '../../src/types';
 
 // Mock library actions
-vi.mock('../../src/store/library-actions', () => ({
+vi.mock('../../src/store/plant/library-actions', () => ({
     fetchNutrientInventory: vi.fn(),
     fetchIPMPresets: vi.fn(),
     fetchStrainLibrary: vi.fn().mockResolvedValue(undefined)

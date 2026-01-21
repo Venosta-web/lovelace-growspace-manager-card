@@ -1040,5 +1040,108 @@ describe('MetricsUtils', () => {
 
             vi.useRealTimers();
         });
+
+        it('should handle value being empty string in createChipData', () => {
+            const spy = vi.spyOn(MetricsUtils as any, '_getAttributeValue');
+            // Mock value as "" specifically for a chip that doesn't add units in its display value if we want "" exactly,
+            // but VPD and others add " kPa" etc.
+            // Let's test what happens when getAttributeValue returns "" for VPD.
+            spy.mockImplementation((ent, key) => {
+                if (key === 'vpd') return "";
+                return undefined;
+            });
+
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const vpd = res.mainChips.find(c => c.key === 'vpd');
+
+            expect(vpd).toBeDefined();
+            expect(vpd!.value).toBe(" kPa"); // value was "", so it becomes " kPa"
+
+            spy.mockRestore();
+        });
+
+        it('should return null in createChipData if value is undefined and multiValues is empty', () => {
+            // A device with NO environment attributes should result in no device chips
+            const emptyDevice = {
+                ...mockDevice,
+                environmentAttributes: {} // Everything missing
+            } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, emptyDevice, new Set(), []);
+
+            // Exhaust, Humidifier, etc should be missing
+            expect(res.deviceChips.find(c => c.key === 'exhaust')).toBeUndefined();
+            expect(res.deviceChips.find(c => c.key === 'humidifier')).toBeUndefined();
+        });
+
+        it('should handle getAttributeValue edge cases', () => {
+            // Missing ent
+            expect((MetricsUtils as any)._getAttributeValue(undefined, 'foo')).toBeUndefined();
+            // Missing attributes
+            expect((MetricsUtils as any)._getAttributeValue({ state: 'on' }, 'foo')).toBeUndefined();
+            // Observation not an object
+            expect((MetricsUtils as any)._getAttributeValue({ attributes: { observations: "not-obj" } }, 'foo')).toBeUndefined();
+        });
+
+        it('should cover remaining branches in createChipData', () => {
+            // Case: value is undefined but multiValues is present
+            const dev = {
+                ...mockDevice,
+                environmentAttributes: {
+                    exhaustFanEntities: ['fan.f1']
+                }
+            } as any;
+            const hass = { states: { 'fan.f1': { state: 'on' } } } as any;
+
+            // Force getAggregateState to return undefined value but valid multiValues
+            // Actually getAggregateState returns state[0] as value if ids.size === 1.
+            // So I need a way to make state[0] undefined.
+            const hassMissing = { states: { 'fan.f1': { state: undefined } } } as any;
+
+            const res = MetricsUtils.computeHeaderMetrics(hassMissing, dev, new Set(), []);
+            const exhaust = res.deviceChips.find(c => c.key === 'exhaust');
+            expect(exhaust).toBeDefined();
+            expect(exhaust!.value).toBe("-"); // line 366: states.push('-')
+        });
+
+        it('should cover NaN branch in legacy UUID VPD fallback', () => {
+            const dev = { ...mockDevice, deviceId: 'test-uuid', name: 'Grow' };
+            const hass = {
+                states: {
+                    'sensor.test-uuid_calculated_vpd': { state: 'not-a-number' }
+                }
+            } as any;
+            const res = MetricsUtils.computeHeaderMetrics(hass, dev, new Set(), []);
+            expect(res.mainChips.find(c => c.key === 'vpd')).toBeUndefined();
+        });
+
+        it('should cover undefined value but truthy multiValues in light chip', () => {
+            const dev = {
+                ...mockDevice,
+                environmentAttributes: {
+                    lightSensors: ['light.1', 'light.2'] // Multiple but no single lightSensor
+                }
+            };
+            const hass = {
+                states: {
+                    ...mockHass.states,
+                    'light.1': { state: 'on' },
+                    'light.2': { state: 'off' },
+                    'binary_sensor.test_room_optimal_conditions': {
+                        state: 'on',
+                        attributes: {
+                            // hasLightSensor depends on is_lights_on being present
+                        }
+                    }
+                }
+            } as any;
+
+            // is_lights_on missing -> hasLightSensor is false -> value is undefined
+            const res = MetricsUtils.computeHeaderMetrics(hass, dev, new Set(), []);
+            const lightChip = res.deviceChips.find(c => c.key === 'light');
+            expect(lightChip).toBeDefined();
+            expect(lightChip!.value).toBe(""); // value was undefined, became ""
+            expect(lightChip!.multiValues).toEqual(['on', 'off']);
+        });
     });
 });

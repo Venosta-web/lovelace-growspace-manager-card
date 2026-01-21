@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import "../../../../src/components/plant/plant-timeline";
 import { PlantTimeline } from '../../../../src/components/plant/plant-timeline';
@@ -839,6 +839,152 @@ describe('PlantTimeline', () => {
 
             setSavingSpy.mockRestore();
             clearSpy.mockRestore();
+        });
+    });
+
+    describe('Branch Coverage - _getCurrentStage', () => {
+        let el: any;
+
+        beforeEach(() => {
+            el = document.createElement('plant-timeline');
+        });
+
+        it('should choose the latest stage/milestone event', () => {
+            el.events = [
+                { date: '2023-01-01', type: 'stage_change', to: 'seedling' },
+                { date: '2023-01-03', type: 'stage_change', to: 'flower' },
+                { date: '2023-01-02', type: 'stage_change', to: 'veg' }
+            ];
+            expect(el._getCurrentStage()).toBe('flower');
+        });
+
+        it('should handle milestone with label fallback', () => {
+            el.events = [
+                { date: '2023-01-01', type: 'milestone', label: 'Late_Flower' }
+            ];
+            expect(el._getCurrentStage()).toBe('late_flower');
+        });
+
+        it('should map various stage strings correctly', () => {
+            const mappings = [
+                { stage: 'clone', expected: 'seedling' },
+                { stage: 'veg', expected: 'vegetative' },
+                { stage: 'mother', expected: 'vegetative' },
+                { stage: 'ripen', expected: 'late_flower' },
+                { stage: 'flush', expected: 'late_flower' },
+                { stage: 'dry', expected: 'late_flower' },
+                { stage: 'cure', expected: 'late_flower' },
+                { stage: 'unknown-stage', expected: 'vegetative' }
+            ];
+
+            mappings.forEach(({ stage, expected }) => {
+                el.events = [{ date: '2023-01-01', type: 'stage_change', to: stage }];
+                expect(el._getCurrentStage(), `Failed for ${stage}`).toBe(expected);
+            });
+        });
+
+        it('should return vegetative if no stage events found', () => {
+            el.events = [{ date: '2023-01-01', type: 'note', text: 'just a note' }];
+            expect(el._getCurrentStage()).toBe('vegetative');
+        });
+
+        it('should handle undefined events', () => {
+            el.events = undefined;
+            expect(el._getCurrentStage()).toBe('vegetative');
+        });
+    });
+
+    describe('Environmental Report Fallback Parsing', () => {
+        it('should parse temperature and humidity from reasons if metadata is missing', async () => {
+            const event: any = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: ['Temperature: 22.5', 'Humidity: 45.0'],
+                metadata: undefined
+            };
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeTruthy();
+            expect((heatmap as any).temperature).toBe(22.5);
+            expect((heatmap as any).humidity).toBe(45);
+        });
+
+        it('should handle missing matches in reasons fallback', async () => {
+            const event: any = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: ['High heat', 'Low water'],
+                metadata: undefined
+            };
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeNull();
+        });
+
+        it('should handle partial metadata and partial reasons', async () => {
+            const event: any = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: ['Humidity: 45.0'],
+                metadata: { temperature: 22.5 }
+            };
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeTruthy();
+            expect((heatmap as any).temperature).toBe(22.5);
+            expect((heatmap as any).humidity).toBe(45);
+        });
+
+        it('should handle humidity in metadata and temperature in reasons', async () => {
+            const event: any = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: ['Temperature: 22.5'],
+                metadata: { humidity: 45.0 }
+            };
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeTruthy();
+            expect((heatmap as any).temperature).toBe(22.5);
+            expect((heatmap as any).humidity).toBe(45);
+        });
+    });
+
+    describe('Misc Edge Cases', () => {
+        it('should skip events without dates', async () => {
+            const event: any = { type: 'note', text: 'no date' };
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+            expect(el.shadowRoot?.textContent).toContain('No entries for this plant yet.');
+        });
+
+        it('should handle missing noteInput in _handleNoteSubmit', async () => {
+            const el: any = await fixture(html`<plant-timeline></plant-timeline>`);
+            // Mock shadowRoot.querySelector to return null for the next call
+            const originalQuerySelector = el.shadowRoot.querySelector;
+            el.shadowRoot.querySelector = vi.fn().mockReturnValue(null);
+
+            await el._handleNoteSubmit(new CustomEvent('submit', { detail: { text: 'test' } }));
+
+            // Should return early and not crash
+            expect(el.shadowRoot.querySelector).toHaveBeenCalledWith('quick-note-input');
+            el.shadowRoot.querySelector = originalQuerySelector;
         });
     });
 });

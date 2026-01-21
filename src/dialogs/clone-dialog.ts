@@ -7,7 +7,7 @@ import { mdiClose, mdiCheck, mdiContentCopy } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui'; // Ensure MD3 components are registered
 import { PlantEntity } from '../types';
-import { GrowspaceStore } from '../store/growspace-store';
+import { GrowspaceStore } from '../store/core/growspace-store';
 
 @customElement('clone-dialog')
 export class CloneDialog extends LitElement {

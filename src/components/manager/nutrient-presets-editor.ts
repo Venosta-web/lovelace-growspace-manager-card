@@ -13,7 +13,7 @@ import { consume } from '@lit/context';
 import { HomeAssistant } from 'custom-card-helpers';
 import { hassContext, storeContext } from '../../context';
 import { dialogStyles } from '../../styles/dialog.styles';
-import { GrowspaceStore } from '../../store/growspace-store';
+import { GrowspaceStore } from '../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import { NutrientPreset, NutrientItem } from '../../types';
 

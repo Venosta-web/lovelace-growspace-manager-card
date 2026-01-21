@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
 import type { WateringDialogState, NutrientEntry, GrowspaceDevice, NutrientPreset } from '../../src/types';
-import type { GrowspaceStore } from '../../src/store/growspace-store';
+import type { GrowspaceStore } from '../../src/store/core/growspace-store';
 
 // Mock dependencies
 vi.mock('../../src/components/ui/md3-text-input', () => ({

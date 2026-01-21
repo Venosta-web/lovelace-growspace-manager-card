@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { applyIPM } from '../../src/store/ipm-actions';
-import { ActionContext } from '../../src/store/action-context';
-import * as libraryActions from '../../src/store/library-actions';
+import { applyIPM } from '../../src/store/plant/ipm-actions';
+import { ActionContext } from '../../src/store/core/action-context';
+import * as libraryActions from '../../src/store/plant/library-actions';
 
 // Mock library actions
-vi.mock('../../src/store/library-actions', () => ({
+vi.mock('../../src/store/plant/library-actions', () => ({
     fetchNutrientInventory: vi.fn(),
     fetchIPMPresets: vi.fn()
 }));
@@ -62,6 +62,16 @@ describe('ipm-actions', () => {
 
             // Inventory refresh should NOT be called on error
             expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+        });
+
+        it('should handle non-Error exceptions when applying IPM', async () => {
+            mockDataService.applyIPM.mockRejectedValue('String error');
+
+            // Should re-throw the caught value
+            await expect(applyIPM(ctx, ipmDetails)).rejects.toBe('String error');
+
+            // Check error toast - should use 'Unknown error' as fallback for non-Error instances
+            expect(ctx.showToast).toHaveBeenCalledWith('Failed to apply IPM: Unknown error', 'error');
         });
     });
 });

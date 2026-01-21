@@ -2,7 +2,7 @@ import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
-import { GrowspaceStore } from '../../store/growspace-store';
+import { GrowspaceStore } from '../../store/core/growspace-store';
 // Global store imports removed
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../ui-state';

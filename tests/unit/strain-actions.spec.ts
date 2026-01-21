@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ActionContext } from '../../src/store/action-context';
+import { ActionContext } from '../../src/store/core/action-context';
 import {
     addStrain,
     removeStrain,
     addGrowspace,
     updateGrowspace,
     removeGrowspace,
-} from '../../src/store/strain-actions';
+} from '../../src/store/plant/strain-actions';
 import { StrainEntry } from '../../src/types';
 
 describe('strain-actions', () => {
@@ -265,6 +265,43 @@ describe('strain-actions', () => {
                 expect(ctx.closeDialog).toHaveBeenCalled();
             });
 
+            it('should return false on removeGrowspace error', async () => {
+                mockDataService.removeGrowspace.mockRejectedValue(new Error('Removal failed'));
+
+                const result = await removeGrowspace(ctx, 'gs123');
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Removal failed', 'error');
+            });
+        });
+
+        describe('Edge Cases (Non-Error catches)', () => {
+            it('should handle unknown error in addGrowspace', async () => {
+                mockDataService.addGrowspace.mockRejectedValue('String error');
+
+                const result = await addGrowspace(ctx, 'Test Room');
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Error: Unknown error', 'error');
+            });
+
+            it('should handle unknown error in updateGrowspace', async () => {
+                mockDataService.updateGrowspace.mockRejectedValue('String error');
+
+                const result = await updateGrowspace(ctx, 'gs123', 'Name', 4, 4);
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Failed to update growspace: Unknown error', 'error');
+            });
+
+            it('should handle unknown error in removeGrowspace', async () => {
+                mockDataService.removeGrowspace.mockRejectedValue('String error');
+
+                const result = await removeGrowspace(ctx, 'gs123');
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Unknown error', 'error');
+            });
         });
     });
 });
