@@ -215,7 +215,7 @@ export class GrowspaceAPI extends BaseAPI {
     console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
     try {
       // Map camelCase to snake_case for API
-      const payload: Record<string, any> = {
+      const payload: Record<string, unknown> = {
         growspace_id: data.growspaceId,
         temperature_sensor: data.temperatureSensor,
         humidity_sensor: data.humiditySensor,

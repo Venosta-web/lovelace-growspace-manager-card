@@ -6864,8 +6864,6 @@ class ChartUtils {
             return { x, y, status };
         });
         const segments = [];
-        if (points.length === 0)
-            return segments;
         let currentSegmentX = [points[0].x];
         let currentSegmentY = [points[0].y];
         let currentStatus = points[0].status;
@@ -15268,7 +15266,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 name: this.addName,
                 rows: this.addRows,
                 plantsPerRow: this.addPlantsPerRow,
-                notification_service: this.addNotificationService,
+                notificationService: this.addNotificationService,
             },
             bubbles: true,
             composed: true,
@@ -15307,11 +15305,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             return;
         this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
             detail: {
-                growspace_id: this.editSelectedId,
+                growspaceId: this.editSelectedId,
                 name: this.editName,
                 rows: this.editRows,
                 plantsPerRow: this.editPlantsPerRow,
-                notification_service: this.editNotificationService,
+                notificationService: this.editNotificationService,
             },
             bubbles: true,
             composed: true,
@@ -32197,7 +32195,7 @@ class MetricsUtils {
                 return dt;
             })
                 .sort((a, b) => a.toMillis() - b.toMillis())[0];
-            return upcoming ? upcoming.toFormat('HH:mm') : undefined;
+            return upcoming.toFormat('HH:mm');
         };
         const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
         const nextDrain = getNextEvent(device.irrigationConfig?.drainTimes);

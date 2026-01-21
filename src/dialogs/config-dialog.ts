@@ -326,7 +326,7 @@ export class ConfigDialog extends LitElement {
           name: this.addName,
           rows: this.addRows,
           plantsPerRow: this.addPlantsPerRow,
-          notification_service: this.addNotificationService,
+          notificationService: this.addNotificationService,
         },
         bubbles: true,
         composed: true,
@@ -372,11 +372,11 @@ export class ConfigDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent('edit-growspace-submit', {
         detail: {
-          growspace_id: this.editSelectedId,
+          growspaceId: this.editSelectedId,
           name: this.editName,
           rows: this.editRows,
           plantsPerRow: this.editPlantsPerRow,
-          notification_service: this.editNotificationService,
+          notificationService: this.editNotificationService,
         },
         bubbles: true,
         composed: true,
@@ -502,8 +502,8 @@ export class ConfigDialog extends LitElement {
           <div class="config-content">
             ${this.currentTab === ConfigTab.ADD_GROWSPACE ? this.renderAddGrowspaceTab() : nothing}
             ${this.currentTab === ConfigTab.EDIT_GROWSPACE
-              ? this.renderEditGrowspaceTab()
-              : nothing}
+        ? this.renderEditGrowspaceTab()
+        : nothing}
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
           </div>
@@ -512,21 +512,21 @@ export class ConfigDialog extends LitElement {
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
             ${this.currentTab === ConfigTab.ADD_GROWSPACE
-              ? html`
+        ? html`
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
                 `
-              : nothing}
+        : nothing}
             ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
-              ? html`
+        ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
                   </button>
                 `
-              : nothing}
+        : nothing}
             ${this.currentTab === ConfigTab.EDIT_GROWSPACE && !this._showDeleteConfirm
-              ? html`
+        ? html`
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
@@ -548,7 +548,7 @@ export class ConfigDialog extends LitElement {
                     Save Changes
                   </button>
                 `
-              : nothing}
+        : nothing}
           </div>
         </div>
       </ha-dialog>
@@ -586,18 +586,18 @@ export class ConfigDialog extends LitElement {
               class="md3-input"
               .value=${this.addNotificationService}
               @change=${(e: Event) =>
-                (this.addNotificationService = (e.target as HTMLSelectElement).value)}
+        (this.addNotificationService = (e.target as HTMLSelectElement).value)}
             >
               <option value="">None</option>
               ${this._getMobileAppNotifyServices().map(
-                (service) =>
-                  html`<option
+          (service) =>
+            html`<option
                     value="${service.value}"
                     ?selected=${this.addNotificationService === service.value}
                   >
                     ${service.label}
                   </option>`
-              )}
+        )}
             </select>
           </div>
           <md3-text-input
@@ -653,7 +653,7 @@ export class ConfigDialog extends LitElement {
         <label class="md3-label-multi">${label}</label>
         <div class="multi-select-box">
           ${values.map(
-            (val) => html`
+      (val) => html`
               <div class="chip">
                 ${val}
                 <span
@@ -663,19 +663,19 @@ export class ConfigDialog extends LitElement {
                 >
               </div>
             `
-          )}
+    )}
           <input
             class="search-input-inner"
             list="${listId}"
             placeholder=${values.length === 0 ? 'Add Entity...' : ''}
             @change=${(e: Event) => {
-              const input = e.target as HTMLInputElement;
-              const val = input.value;
-              if (val && !values.includes(val)) {
-                changeHandler([...values, val]);
-              }
-              input.value = '';
-            }}
+        const input = e.target as HTMLInputElement;
+        const val = input.value;
+        if (val && !values.includes(val)) {
+          changeHandler([...values, val]);
+        }
+        input.value = '';
+      }}
           />
         </div>
         <datalist id="${listId}">
@@ -705,9 +705,9 @@ export class ConfigDialog extends LitElement {
             list="${listId}"
             .value=${value}
             @change=${(e: Event) => {
-              const val = (e.target as HTMLInputElement).value;
-              changeHandler(new CustomEvent('change', { detail: { value: val } }));
-            }}
+        const val = (e.target as HTMLInputElement).value;
+        changeHandler(new CustomEvent('change', { detail: { value: val } }));
+      }}
             placeholder="Search entity..."
           />
           <datalist id="${listId}">
@@ -751,17 +751,17 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-                ([id, name]) =>
-                  html`<option value="${id}" ?selected=${id === this.editSelectedId}>
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.editSelectedId}>
                     ${name}
                   </option>`
-              )}
+    )}
             </select>
           </div>
         </div>
 
         ${this.editSelectedId
-          ? html`
+        ? html`
               <div class="detail-card">
                 <h3>Edit Details</h3>
                 <md3-text-input
@@ -787,23 +787,23 @@ export class ConfigDialog extends LitElement {
                     class="md3-input"
                     .value=${this.editNotificationService}
                     @change=${(e: Event) =>
-                      (this.editNotificationService = (e.target as HTMLSelectElement).value)}
+            (this.editNotificationService = (e.target as HTMLSelectElement).value)}
                   >
                     <option value="">None</option>
                     ${this._getMobileAppNotifyServices().map(
-                      (service) =>
-                        html`<option
+              (service) =>
+                html`<option
                           value="${service.value}"
                           ?selected=${this.editNotificationService === service.value}
                         >
                           ${service.label}
                         </option>`
-                    )}
+            )}
                   </select>
                 </div>
               </div>
             `
-          : html`
+        : html`
               <div style="text-align:center; padding: 20px; color: var(--secondary-text-color);">
                 Please select a growspace to edit.
               </div>
@@ -827,11 +827,11 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-                ([id, name]) =>
-                  html`<option value="${id}" ?selected=${id === this.envSelectedId}>
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`
-              )}
+    )}
             </select>
           </div>
         </div>
@@ -852,52 +852,52 @@ export class ConfigDialog extends LitElement {
 
           <div class="row-col-grid">
             ${this._renderEntitySelect(
-              'Temperature Sensor',
-              this.envTemperatureSensor,
-              ['sensor', 'input_number'],
-              'temperature',
-              (e: CustomEvent) => (this.envTemperatureSensor = e.detail.value)
-            )}
+      'Temperature Sensor',
+      this.envTemperatureSensor,
+      ['sensor', 'input_number'],
+      'temperature',
+      (e: CustomEvent) => (this.envTemperatureSensor = e.detail.value)
+    )}
             ${this._renderEntitySelect(
-              'Humidity Sensor',
-              this.envHumiditySensor,
-              ['sensor', 'input_number'],
-              'humidity',
-              (e: CustomEvent) => (this.envHumiditySensor = e.detail.value)
-            )}
+      'Humidity Sensor',
+      this.envHumiditySensor,
+      ['sensor', 'input_number'],
+      'humidity',
+      (e: CustomEvent) => (this.envHumiditySensor = e.detail.value)
+    )}
           </div>
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect(
-              'VPD Sensor (Optional)',
-              this.envVpdSensor,
-              ['sensor', 'input_number'],
-              'pressure',
-              (e: CustomEvent) => (this.envVpdSensor = e.detail.value)
-            )}
+      'VPD Sensor (Optional)',
+      this.envVpdSensor,
+      ['sensor', 'input_number'],
+      'pressure',
+      (e: CustomEvent) => (this.envVpdSensor = e.detail.value)
+    )}
             ${this._renderEntitySelect(
-              'Soil Moisture Sensor',
-              this.envSoilMoistureSensor,
-              ['sensor', 'input_number'],
-              'moisture',
-              (e: CustomEvent) => (this.envSoilMoistureSensor = e.detail.value)
-            )}
+      'Soil Moisture Sensor',
+      this.envSoilMoistureSensor,
+      ['sensor', 'input_number'],
+      'moisture',
+      (e: CustomEvent) => (this.envSoilMoistureSensor = e.detail.value)
+    )}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderEntitySelect(
-              'CO2 Sensor',
-              this.envCo2Sensor,
-              ['sensor', 'input_number'],
-              'carbon_dioxide',
-              (e: CustomEvent) => (this.envCo2Sensor = e.detail.value)
-            )}
+      'CO2 Sensor',
+      this.envCo2Sensor,
+      ['sensor', 'input_number'],
+      'carbon_dioxide',
+      (e: CustomEvent) => (this.envCo2Sensor = e.detail.value)
+    )}
             ${this._renderMultiEntitySelect(
-              'Light Source / Sensor',
-              this.envLightSensors,
-              ['switch', 'light', 'input_boolean', 'sensor'],
-              null,
-              (values: string[]) => (this.envLightSensors = values)
-            )}
+      'Light Source / Sensor',
+      this.envLightSensors,
+      ['switch', 'light', 'input_boolean', 'sensor'],
+      null,
+      (values: string[]) => (this.envLightSensors = values)
+    )}
           </div>
         </div>
 
@@ -917,36 +917,36 @@ export class ConfigDialog extends LitElement {
 
           <div class="row-col-grid">
             ${this._renderMultiEntitySelect(
-              'Exhaust Fan / Switch',
-              this.envExhaustFanEntities,
-              ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
-              null,
-              (values: string[]) => (this.envExhaustFanEntities = values)
-            )}
+      'Exhaust Fan / Switch',
+      this.envExhaustFanEntities,
+      ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+      null,
+      (values: string[]) => (this.envExhaustFanEntities = values)
+    )}
             ${this._renderMultiEntitySelect(
-              'Circulation Fan / Switch',
-              this.envCirculationFanEntities,
-              ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
-              null,
-              (values: string[]) => (this.envCirculationFanEntities = values)
-            )}
+      'Circulation Fan / Switch',
+      this.envCirculationFanEntities,
+      ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
+      null,
+      (values: string[]) => (this.envCirculationFanEntities = values)
+    )}
           </div>
 
           <div class="row-col-grid" style="margin-top:16px;">
             ${this._renderMultiEntitySelect(
-              'Humidifier',
-              this.envHumidifierEntities,
-              ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
-              null,
-              (values: string[]) => (this.envHumidifierEntities = values)
-            )}
+      'Humidifier',
+      this.envHumidifierEntities,
+      ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+      null,
+      (values: string[]) => (this.envHumidifierEntities = values)
+    )}
             ${this._renderMultiEntitySelect(
-              'Dehumidifier',
-              this.envDehumidifierEntities,
-              ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
-              null,
-              (values: string[]) => (this.envDehumidifierEntities = values)
-            )}
+      'Dehumidifier',
+      this.envDehumidifierEntities,
+      ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
+      null,
+      (values: string[]) => (this.envDehumidifierEntities = values)
+    )}
           </div>
 
           <div
@@ -958,7 +958,7 @@ export class ConfigDialog extends LitElement {
               type="checkbox"
               .checked=${this.envDehumidifierControlEnabled}
               @change=${(e: Event) =>
-                (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
+        (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
               style="width:20px; height:20px;"
             />
           </div>
@@ -1106,11 +1106,11 @@ export class ConfigDialog extends LitElement {
             >
               <option value="">Select...</option>
               ${Object.entries(this.growspaceOptions).map(
-                ([id, name]) =>
-                  html`<option value="${id}" ?selected=${id === this.envSelectedId}>
+      ([id, name]) =>
+        html`<option value="${id}" ?selected=${id === this.envSelectedId}>
                     ${name}
                   </option>`
-              )}
+    )}
             </select>
           </div>
         </div>
@@ -1124,7 +1124,7 @@ export class ConfigDialog extends LitElement {
             style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;"
           >
             ${stages.map(
-              (stage) => html`
+      (stage) => html`
                 <div
                   class="config-tab ${this._activeDehumidifierStage === stage.id ? 'active' : ''}"
                   @click=${() => (this._activeDehumidifierStage = stage.id)}
@@ -1133,7 +1133,7 @@ export class ConfigDialog extends LitElement {
                   ${stage.label}
                 </div>
               `
-            )}
+    )}
           </div>
 
           <div style="padding-top: 24px;">
@@ -1172,7 +1172,7 @@ export class ConfigDialog extends LitElement {
                   label="On"
                   .value=${this._getThresholdValue(activeStage.id, 'day', 'on')}
                   @change=${(e: CustomEvent) =>
-                    this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
+        this._updateThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
                   step="0.01"
                   .unit=${'kPa'}
                 >
@@ -1181,7 +1181,7 @@ export class ConfigDialog extends LitElement {
                   label="Off"
                   .value=${this._getThresholdValue(activeStage.id, 'day', 'off')}
                   @change=${(e: CustomEvent) =>
-                    this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
+        this._updateThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
                   step="0.01"
                   .unit=${'kPa'}
                 >
@@ -1205,7 +1205,7 @@ export class ConfigDialog extends LitElement {
                   label="On"
                   .value=${this._getThresholdValue(activeStage.id, 'night', 'on')}
                   @change=${(e: CustomEvent) =>
-                    this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
+        this._updateThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
                   step="0.01"
                   .unit=${'kPa'}
                 >
@@ -1214,7 +1214,7 @@ export class ConfigDialog extends LitElement {
                   label="Off"
                   .value=${this._getThresholdValue(activeStage.id, 'night', 'off')}
                   @change=${(e: CustomEvent) =>
-                    this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
+        this._updateThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
                   step="0.01"
                   .unit=${'kPa'}
                 >
