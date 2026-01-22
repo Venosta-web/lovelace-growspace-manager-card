@@ -147,10 +147,226 @@ export class IrrigationDialog extends LitElement {
         opacity: 1 !important;
         background: rgba(255, 255, 255, 0.05);
       }
+
+      /* Tank Visualization Styles */
+      .tank-card {
+        background: #1e1e1e;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .tank-card.warning {
+        border: 1px solid rgba(244, 67, 54, 0.5);
+        box-shadow: 0 0 20px rgba(244, 67, 54, 0.2), inset 0 0 20px rgba(244, 67, 54, 0.1);
+      }
+
+      .tank-header {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 24px;
+        z-index: 2;
+      }
+
+      .tank-header h4 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      /* Tank Body Structure */
+      .tank-container {
+        position: relative;
+        width: 140px;
+        height: 180px;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+      }
+
+      .tank-cap {
+        position: absolute;
+        top: -12px;
+        width: 50px;
+        height: 12px;
+        background: linear-gradient(to right, #2c3e50, #4a6fa5, #2c3e50);
+        border-radius: 4px 4px 0 0;
+        z-index: 1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+      
+      .tank-card.warning .tank-cap {
+        background: linear-gradient(to right, #3e2723, #a54a4a, #3e2723);
+      }
+
+      .tank-cap-detail {
+        position: absolute;
+        top: -4px;
+        width: 30px;
+        height: 4px;
+        left: 10px;
+        background: inherit;
+        border-radius: 2px 2px 0 0;
+        opacity: 0.8;
+      }
+
+      .tank-body {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #34495e, #2c3e50);
+        border-radius: 16px;
+        box-shadow: inset 2px 2px 5px rgba(255,255,255,0.1), inset -2px -2px 5px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.4);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+
+      .tank-card.warning .tank-body {
+        background: linear-gradient(135deg, #4e342e, #3e2723);
+      }
+
+      /* Ribs */
+      .tank-rib {
+        position: absolute;
+        left: -4px;
+        width: 148px; 
+        height: 12px;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
+        border-radius: 6px;
+        z-index: 2;
+      }
+
+      .rib-top { top: 20px; }
+      .rib-bottom { bottom: 20px; }
+
+      /* Side Handles/Ribs */
+      .side-rib {
+        position: absolute;
+        width: 8px;
+        height: 80%;
+        background: rgba(0,0,0,0.2);
+        z-index: 2;
+        border-radius: 2px;
+      }
+      .side-left { left: 4px; }
+      .side-right { right: 4px; }
+
+      /* Glass Window */
+      .tank-window {
+        width: 80%;
+        height: 70%;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        z-index: 1;
+      }
+
+      .liquid {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: var(--level, 0%);
+        background: linear-gradient(to bottom, #2196f3, #1976d2);
+        transition: height 1s ease-out;
+        opacity: 0.9;
+      }
+
+      .tank-card.warning .liquid {
+        background: linear-gradient(to bottom, #f44336, #d32f2f);
+      }
+
+      .liquid-surface {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        transform: scaleX(1.5);
+        filter: blur(2px);
+      }
+
+      .wave {
+        position: absolute;
+        top: -12px;
+        left: 0;
+        width: 200%;
+        height: 20px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,60 C300,100 900,20 1200,60 V120 H0 Z' fill='white' fill-opacity='0.2'/%3E%3C/svg%3E");
+        background-repeat: repeat-x;
+        background-size: 50% 100%;
+        animation: wave-motion 4s linear infinite;
+        z-index: 2;
+      }
+
+      @keyframes wave-motion {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+
+      /* Reflection overlay */
+      .window-reflection {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 40%;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+        pointer-events: none;
+        z-index: 5;
+      }
+
+      /* Percentage Text */
+      .percentage-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .warning-icon {
+        font-size: 1rem;
+        color: #ffeb3b;
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .tank-footer {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 8px;
+      }
     `,
   ];
 
-  @state() private _activeTab: 'schedules' | 'steering' | 'config' = 'schedules';
+  @state() private _activeTab: 'schedules' | 'steering' | 'config' | 'tanks' = 'schedules';
   @state() private _strategy: Partial<IrrigationStrategy> = {};
 
   protected willUpdate(changedProps: PropertyValues): void {
@@ -408,6 +624,12 @@ export class IrrigationDialog extends LitElement {
             >
               Configuration
             </div>
+            <div
+              class="tab-item ${this._activeTab === 'tanks' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'tanks')}
+            >
+              Tanks
+            </div>
           </div>
 
           <div class="dialog-body">
@@ -415,7 +637,9 @@ export class IrrigationDialog extends LitElement {
         ? this._renderSchedulesTab(dialogColor)
         : this._activeTab === 'steering'
           ? this._renderSteeringTab(dialogColor)
-          : this._renderConfigSection()}
+          : this._activeTab === 'tanks'
+            ? this._renderTanksTab()
+            : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
@@ -784,6 +1008,70 @@ export class IrrigationDialog extends LitElement {
               </div>
             `
         : ''}
+      </div>
+    `;
+  }
+
+  private _renderTanksTab() {
+    const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
+
+    if (tanks.length === 0) {
+      return html`
+        <div class="detail-card" style="text-align: center; padding: 40px;">
+          <p style="opacity: 0.7;">No irrigation tanks configured for this growspace.</p>
+          <p style="font-size: 0.9rem; opacity: 0.5;">
+            Configure tank sensors in the Environment Settings to monitor tank levels.
+          </p>
+        </div>
+      `;
+    }
+
+    return html`
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        ${tanks.map(tank => this._renderTankCard(tank))}
+      </div>
+    `;
+  }
+
+  private _renderTankCard(tank: any) {
+    const fillLevel = tank.fillLevel ?? 0;
+    const isWarning = tank.isWarning;
+
+    return html`
+      <div class="tank-card ${isWarning ? 'warning' : ''}">
+        <div class="tank-header">
+          <h4>${tank.name}</h4>
+        </div>
+        
+        <div class="tank-container">
+          <div class="tank-cap"></div>
+          <div class="tank-cap-detail"></div>
+          
+          <div class="tank-rib rib-top"></div>
+          <div class="tank-rib rib-bottom"></div>
+          
+          <div class="tank-body">
+            <div class="side-rib side-left"></div>
+            <div class="side-rib side-right"></div>
+            
+            <div class="tank-window">
+              <div class="window-reflection"></div>
+              <div class="liquid" style="--level: ${fillLevel}%">
+                <div class="wave"></div>
+                <div class="liquid-surface"></div>
+              </div>
+              
+              <div class="percentage-text">
+                ${fillLevel !== null ? `${fillLevel.toFixed(0)}%` : 'N/A'}
+                ${isWarning ? html`<span class="warning-icon">⚠️</span>` : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tank-footer">
+          Warning Level: ${tank.warningLevel}%
+        </div>
       </div>
     `;
   }

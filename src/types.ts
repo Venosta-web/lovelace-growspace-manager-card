@@ -165,6 +165,17 @@ export interface SerializedEnvironmentAttributes {
   // Legacy / Alias Support
   exhaust_sensor?: string;
   humidifier_sensor?: string;
+
+  // Irrigation tanks
+  irrigation_tanks?: SerializedIrrigationTank[];
+}
+
+export interface SerializedIrrigationTank {
+  sensor_entity: string;
+  name: string;
+  warning_level: number;
+  fill_level: number | null;
+  is_warning: boolean;
 }
 
 export interface SerializedStats {
@@ -214,6 +225,15 @@ export interface EnvironmentAttributes {
   soilMoistureValue?: string;
   exhaustSensor?: string;
   humidifierSensor?: string;
+  irrigationTanks?: IrrigationTank[];
+}
+
+export interface IrrigationTank {
+  sensorEntity: string;
+  name: string;
+  warningLevel: number;
+  fillLevel: number | null;
+  isWarning: boolean;
 }
 
 export interface GrowspaceStats {

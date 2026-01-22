@@ -269,6 +269,30 @@ template:
             0.0
           {% endif %}
 
+      # --- IRRIGATION TANK SENSORS ---
+
+      # Main Irrigation Tank - 75% (above warning level)
+      - name: 'Irrigation Tank 1'
+        unique_id: irrigation_tank_1
+        unit_of_measurement: '%'
+        icon: mdi:water-percent
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 75 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 8 * 3.14159)) | round(0) | int }}
+
+      # Backup Irrigation Tank - 25% (at/below warning level)
+      - name: 'Irrigation Tank 2'
+        unique_id: irrigation_tank_2
+        unit_of_measurement: '%'
+        icon: mdi:water-percent-alert
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 25 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 8 * 3.14159)) | round(0) | int }}
+
 input_boolean:
   test_irrigation_state:
     name: 'Test Irrigation State'
