@@ -16,6 +16,7 @@ export class IrrigationDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   public hass!: HomeAssistant;
 
+  @property({ type: Object }) public returnPayload?: unknown;
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public device: GrowspaceDevice | undefined;
 
@@ -543,7 +544,7 @@ export class IrrigationDialog extends LitElement {
             <span>Enable VWC Steering</span>
             <md3-switch
               .checked=${this._strategy.enabled}
-              @change=${(e: any) => this._updateStrategyField('enabled', e.target.checked)}
+              @change=${(e: Event) => this._updateStrategyField('enabled', (e.target as HTMLInputElement).checked)}
             ></md3-switch>
           </div>
 

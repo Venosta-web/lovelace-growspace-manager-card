@@ -39,7 +39,7 @@ export class GrowspaceViewSwitcher extends LitElement {
     );
 
     if (activeView && 'focusPlant' in activeView) {
-      (activeView as any).focusPlant(index);
+      (activeView as { focusPlant: (index: number) => void }).focusPlant(index);
     }
   }
 
@@ -85,13 +85,13 @@ export class GrowspaceViewSwitcher extends LitElement {
           .config=${this.config}
           .isLoading=${this.isLoading}
           @batch-add-plants=${(e: CustomEvent) =>
-            this.dispatchEvent(
-              new CustomEvent('batch-add-plants', {
-                detail: e.detail,
-                bubbles: true,
-                composed: true,
-              })
-            )}
+        this.dispatchEvent(
+          new CustomEvent('batch-add-plants', {
+            detail: e.detail,
+            bubbles: true,
+            composed: true,
+          })
+        )}
         ></growspace-view-standard>
       </error-boundary>
     `;

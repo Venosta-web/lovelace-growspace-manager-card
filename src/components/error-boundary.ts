@@ -21,11 +21,11 @@ export class ErrorBoundary extends LitElement {
   @property({ type: String }) fallbackMessage = 'An error occurred';
   @property({ attribute: false }) onRetry?: () => void;
   @property({ attribute: false }) onReset?: () => void;
-  @property({ attribute: false }) onError?: (error: Error, errorInfo: any) => void;
+  @property({ attribute: false }) onError?: (error: Error, errorInfo: unknown) => void;
   @property({ type: Boolean }) showDetails = false;
 
   @state() private _error: Error | null = null;
-  @state() private _errorInfo: any = null;
+  @state() private _errorInfo: unknown = null;
   @state() private _errorCount = 0;
   @state() private _lastErrorTime = 0;
 
@@ -156,7 +156,7 @@ export class ErrorBoundary extends LitElement {
     }
   };
 
-  private _catchError(error: Error, errorInfo?: any) {
+  private _catchError(error: Error, errorInfo?: unknown) {
     const now = Date.now();
 
     // Increment error count
@@ -199,8 +199,8 @@ export class ErrorBoundary extends LitElement {
     if (this.onRetry) {
       try {
         this.onRetry();
-      } catch (error: any) {
-        this._catchError(error, { context: 'retry' });
+      } catch (error: unknown) {
+        this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'retry' });
       }
     } else {
       this.requestUpdate();
@@ -217,8 +217,8 @@ export class ErrorBoundary extends LitElement {
     if (this.onReset) {
       try {
         this.onReset();
-      } catch (error: any) {
-        this._catchError(error, { context: 'reset' });
+      } catch (error: unknown) {
+        this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'reset' });
       }
     } else {
       this.requestUpdate();
@@ -231,7 +231,7 @@ export class ErrorBoundary extends LitElement {
    * Public method to manually trigger error state
    * Useful for testing or programmatic error handling
    */
-  public setError(error: Error, errorInfo?: any) {
+  public setError(error: Error, errorInfo?: unknown) {
     this._catchError(error, errorInfo);
   }
 
@@ -279,13 +279,13 @@ export class ErrorBoundary extends LitElement {
           <p class="error-message">${this._error.message || 'An unexpected error occurred'}</p>
 
           ${isDev && this._error.stack
-            ? html`
+          ? html`
                 <details ?open=${this.showDetails}>
                   <summary>${this.showDetails ? 'Hide' : 'Show'} technical details</summary>
                   <div class="error-details">${this._error.stack}</div>
                 </details>
               `
-            : nothing}
+          : nothing}
 
           <div class="error-actions">
             <button class="error-button" @click=${this._handleRetry}>
@@ -293,13 +293,13 @@ export class ErrorBoundary extends LitElement {
               Retry
             </button>
             ${this.onReset
-              ? html`
+          ? html`
                   <button class="error-button" @click=${this._handleReset}>
                     <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
                     Reset
                   </button>
                 `
-              : nothing}
+          : nothing}
           </div>
         </div>
       `;

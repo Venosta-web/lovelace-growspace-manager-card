@@ -64,7 +64,7 @@ export class GrowspaceViewCompact extends LitElement {
   public focusPlant(index: number) {
     const grid = this.shadowRoot?.querySelector('growspace-grid');
     if (grid) {
-      (grid as any).focusPlant(index);
+      (grid as unknown as { focusPlant: (index: number) => void }).focusPlant(index);
     }
   }
 

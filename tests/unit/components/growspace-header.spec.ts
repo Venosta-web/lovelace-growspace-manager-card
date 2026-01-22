@@ -99,6 +99,7 @@ describe('GrowspaceHeader', () => {
                 $historyLoading: atom(false),
                 $activeEnvGraphs,
                 $linkedGraphGroups,
+                loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
                 linkGraphs: vi.fn(),
                 unlinkGraphGroup: vi.fn(),
             },

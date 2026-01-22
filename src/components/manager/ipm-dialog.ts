@@ -13,7 +13,7 @@ import {
 } from '@mdi/js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../../context';
-import { IPMPreset, IPMItem } from '../../types';
+import { IPMPreset, IPMItem, IPMType } from '../../types';
 import { dialogStyles } from '../../styles/dialog.styles';
 import { GrowspaceStore } from '../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -445,7 +445,7 @@ export class IPMDialog extends LitElement {
               @change=${(e: Event) =>
       (this._editingPreset = {
         ...this._editingPreset!,
-        type: (e.target as HTMLSelectElement).value as any,
+        type: (e.target as HTMLSelectElement).value as IPMType,
       })}
             >
               <option value="foliar">Foliar Spray</option>

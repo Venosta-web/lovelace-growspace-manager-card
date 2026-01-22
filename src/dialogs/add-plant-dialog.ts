@@ -440,7 +440,7 @@ export class AddPlantDialog extends LitElement {
           >
           <md3-switch
             .checked=${this.addToLibrary}
-            @change=${(e: any) => (this.addToLibrary = e.target.checked)}
+            @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
             ?disabled=${!this.strain}
           ></md3-switch>
         </div>
@@ -475,7 +475,7 @@ export class AddPlantDialog extends LitElement {
     const options = plants.map((p) => {
       const strain = p.attributes.strain || 'Unknown';
       const pheno = p.attributes.phenotype || '-';
-      const growspace = (p as any)._growspaceName || 'Unknown';
+      const growspace = (p as PlantEntity & { _growspaceName?: string })._growspaceName || 'Unknown';
       const col = p.attributes.col;
       const row = p.attributes.row;
       const days = p.attributes[daysField] || 0;

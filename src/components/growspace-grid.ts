@@ -492,7 +492,7 @@ export class GrowspaceGrid extends LitElement {
       targetRow = parseInt(dropTarget.getAttribute('data-row') ?? '1', 10);
       targetCol = parseInt(dropTarget.getAttribute('data-col') ?? '1', 10);
     } else if (dropTarget.tagName.toLowerCase() === 'growspace-plant-card') {
-      const card = dropTarget as any;
+      const card = dropTarget as HTMLElement & { plant: PlantEntity; row: number; col: number };
       targetRow = card.row;
       targetCol = card.col;
       targetPlant = card.plant;
@@ -557,21 +557,21 @@ export class GrowspaceGrid extends LitElement {
     return html`
       <div
         class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView
-          ? 'force-list-view'
-          : ''}"
+        ? 'force-list-view'
+        : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
         ${ref(this._gridRef)}
       >
         ${isLoading
-          ? this.renderSkeletonGrid()
-          : repeat(
-              flatGrid,
-              (plant, index) =>
-                plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
-              (plant, index) => this._renderGridCell(plant, index)
-            )}
+        ? this.renderSkeletonGrid()
+        : repeat(
+          flatGrid,
+          (plant, index) =>
+            plant ? plant.attributes?.plant_id || plant.entity_id : `empty-${index}`,
+          (plant, index) => this._renderGridCell(plant, index)
+        )}
       </div>
     `;
   }
@@ -596,12 +596,12 @@ export class GrowspaceGrid extends LitElement {
           @plant-click=${() => this._handlePlantClick(plant)}
           @plant-drag-start=${() => this._handleDragStart(plant)}
           @plant-drop=${(e: CustomEvent) =>
-            this._handleDrop(e.detail.originalEvent, row, col, plant)}
+        this._handleDrop(e.detail.originalEvent, row, col, plant)}
           @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
         ></growspace-plant-card>
         ${overlayMode !== GridOverlayMode.NONE
-          ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
-          : nothing}
+        ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
+        : nothing}
       </div>
     `;
   }

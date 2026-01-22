@@ -160,7 +160,7 @@ export class PlantOverviewDialog extends LitElement {
       // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
       const now = new Date().getTime();
       const optimisticEvents = this._logbookEvents.filter((e) => {
-        const evt = e as any;
+        const evt = e as GrowspaceEvent & { event_id?: string; timestamp?: string };
         if (evt.event_id) return false; // Already from DB
 
         // Check if recent (< 60 seconds)
@@ -1258,12 +1258,12 @@ export class PlantOverviewDialog extends LitElement {
         if (cat === 'note') {
           return {
             type: 'note',
-            date: (e as any).timestamp || e.start_time,
-            text: (e as any).notes || '',
-            images: (e as any).images,
-            tags: (e as any).tags,
-            metadata: (e as any).metadata,
-            event_id: (e as any).event_id,
+            date: (e as GrowspaceEvent & { timestamp?: string }).timestamp || e.start_time,
+            text: (e as GrowspaceEvent & { notes?: string }).notes || '',
+            images: (e as GrowspaceEvent & { images?: string[] }).images,
+            tags: (e as GrowspaceEvent & { tags?: string[] }).tags,
+            metadata: (e as GrowspaceEvent & { metadata?: Record<string, unknown> }).metadata,
+            event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
           } as PlantTimelineEvent;
         }
 
@@ -1273,8 +1273,8 @@ export class PlantOverviewDialog extends LitElement {
             date: e.start_time,
             sensor_type: e.sensor_type,
             reasons: e.reasons,
-            metadata: (e as any).metadata,
-            event_id: (e as any).event_id,
+            metadata: (e as GrowspaceEvent & { metadata?: Record<string, unknown> }).metadata,
+            event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
           } as PlantTimelineEvent;
         }
 
@@ -1296,7 +1296,7 @@ export class PlantOverviewDialog extends LitElement {
               );
             })
             .join(', '),
-          event_id: (e as any).event_id,
+          event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
         } as PlantTimelineEvent;
       });
 

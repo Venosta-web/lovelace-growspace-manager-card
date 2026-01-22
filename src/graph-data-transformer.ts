@@ -33,7 +33,7 @@ export class GraphDataTransformer {
     const start = new Date(startTime);
     const referenceDays = [now, start];
 
-    times.forEach((t: any) => {
+    times.forEach((t: { time: string; duration?: number }) => {
       const [h, m] = t.time.split(':').map(Number);
       const duration = (t.duration || 60) * 1000;
       const durationSeconds = duration / 1000;
@@ -81,24 +81,27 @@ export class GraphDataTransformer {
 
   static synthesizeLiveDataPoint(
     metricKey: string,
-    overviewEntity: any,
+    overviewEntity: unknown,
     now: Date,
     lastDataPoint?: GraphDataPoint
   ): GraphDataPoint | null {
+    // Type guard: check if entity has attributes property
+    const entity = overviewEntity as { attributes?: Record<string, unknown> } | null | undefined;
+
     if (metricKey === MetricKey.DEHUMIDIFIER) {
-      if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-        const state = overviewEntity.attributes.dehumidifier_state;
-        const val = BINARY_ON_STATES.includes(state) ? 1 : 0;
+      const dehumState = entity?.attributes?.dehumidifier_state;
+      if (dehumState) {
+        const val = BINARY_ON_STATES.includes(dehumState as string) ? 1 : 0;
         return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
       }
     } else if (metricKey === MetricKey.EXHAUST || metricKey === MetricKey.HUMIDIFIER) {
       const val =
         metricKey === MetricKey.EXHAUST
-          ? overviewEntity?.attributes?.exhaust_value
-          : overviewEntity?.attributes?.humidifier_value;
-      if (val !== undefined) {
-        let numVal = parseFloat(val);
-        let meta: any;
+          ? entity?.attributes?.exhaust_value
+          : entity?.attributes?.humidifier_value;
+      if (val !== undefined && val !== null) {
+        let numVal = parseFloat(String(val));
+        let meta: Record<string, string> | undefined;
         if (isNaN(numVal)) {
           const lowerVal = String(val).toLowerCase();
           if (lowerVal === EntityState.ON || lowerVal === EntityState.ACTIVE) {

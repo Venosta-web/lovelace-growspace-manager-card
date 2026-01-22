@@ -118,9 +118,10 @@ export async function updateGrowspace(
 
     if (deviceIdx >= 0) {
       const newDevices = [...devices];
-      // Shallow clone device, update dimensions
+      // Shallow clone device, update dimensions and name
       newDevices[deviceIdx] = {
         ...newDevices[deviceIdx],
+        name,
         rows,
         plantsPerRow,
       };
@@ -133,8 +134,12 @@ export async function updateGrowspace(
       rows,
       plantsPerRow,
     });
-    ctx.showToast('Growspace updated successfully', 'success');
+
+    // Wait for the backend update and data refresh to complete
     await ctx.refreshData();
+
+    // Only show success and close after data is refreshed
+    ctx.showToast('Growspace updated successfully', 'success');
     ctx.closeDialog();
     return true;
   } catch (e: unknown) {

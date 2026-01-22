@@ -122,7 +122,8 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
           : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
       reverse: async () => {
         for (const p of plantsToRestore) {
-          await ctx.dataService.addPlant(p as any);
+          // plantsToRestore contains required fields from the original plant - assert to API type
+          await ctx.dataService.addPlant(p as Parameters<typeof ctx.dataService.addPlant>[0]);
         }
         await ctx.refreshData();
       },
@@ -568,12 +569,13 @@ export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDial
     }
 
     // Exclude addToLibrary from payload sent to backend
-    const { addToLibrary: _, ...apiPayload } = detail as any;
+    const { addToLibrary: _, ...apiPayload } = detail;
 
+    // detail is guaranteed to have strain and amount as required fields from caller
     await ctx.dataService.addPlants({
-      growspace_id: selectedDevice,
       ...apiPayload,
-    } as any);
+      growspace_id: selectedDevice,
+    } as Parameters<typeof ctx.dataService.addPlants>[0]);
 
     await ctx.refreshData();
 

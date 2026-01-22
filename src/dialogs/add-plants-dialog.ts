@@ -252,7 +252,7 @@ export class AddPlantsDialog extends LitElement {
                 >
                 <md3-switch
                   .checked=${this.addToLibrary}
-                  @change=${(e: any) => (this.addToLibrary = e.target.checked)}
+                  @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>

@@ -110,6 +110,12 @@ describe('UI Store', () => {
             expect(store.$selectedPlants.get().size).toBe(0);
         });
 
+        it('should exit transplant mode when exiting edit mode', () => {
+            store.$isTransplantMode.set(true);
+            store.setEditMode(false);
+            expect(store.$isTransplantMode.get()).toBe(false);
+        });
+
         it('should NOT clear selection when entering edit mode', () => {
             store.$selectedPlants.set(new Set(['plant1']));
 

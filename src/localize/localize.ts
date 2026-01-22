@@ -1,6 +1,19 @@
 import { en } from './languages/en';
 
-const languages: any = {
+// Define types for localization structure
+interface LocaleStrings {
+  [key: string]: string;
+}
+
+interface LocaleSection {
+  [section: string]: LocaleStrings;
+}
+
+interface Languages {
+  [locale: string]: LocaleSection;
+}
+
+const languages: Languages = {
   en,
 };
 

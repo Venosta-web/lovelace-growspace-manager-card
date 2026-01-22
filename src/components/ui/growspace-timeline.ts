@@ -240,10 +240,11 @@ export class GrowspaceTimeline extends LitElement {
     const service = getTimelineService(this.hass);
     try {
       this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Fetch failed';
       console.error('Error fetching growspace events:', e);
       this._hasError = true;
-      this._errorMessage = e.message || 'Fetch failed';
+      this._errorMessage = errorMessage;
       this._events = [];
     } finally {
       this._isLoading = false;

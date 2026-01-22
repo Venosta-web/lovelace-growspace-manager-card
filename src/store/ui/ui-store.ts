@@ -111,9 +111,10 @@ export class GrowspaceUIStore {
 
   public setEditMode(isEdit: boolean) {
     this.$isEditMode.set(isEdit);
-    // Clear selection when exiting edit mode
+    // Clear selection and exit transplant mode when exiting edit mode
     if (!isEdit) {
       this.$selectedPlants.set(new Set());
+      this.exitTransplantMode();
     }
   }
 

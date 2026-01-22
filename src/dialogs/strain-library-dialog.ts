@@ -35,7 +35,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
   @property({ type: String }) source?: string;
-  @property({ type: Object }) returnPayload?: any;
+  @property({ type: Object }) returnPayload?: unknown;
 
   @state() private _view: 'browse' | 'editor' = 'browse';
   @state() private _searchQuery = '';

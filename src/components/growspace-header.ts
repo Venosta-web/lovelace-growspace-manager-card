@@ -34,7 +34,7 @@ export class GrowspaceHeader extends LitElement {
   @property({ type: Boolean }) public compact = false;
   @property({ type: Boolean }) public isEditMode = false;
   @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
-  @property({ attribute: false }) public historyData: any[] | null = null;
+  @property({ attribute: false }) public historyData: unknown[] | null = null;
 
   // Reactivity Controllers
   private _viewModeController!: StoreController<string>;
@@ -53,7 +53,7 @@ export class GrowspaceHeader extends LitElement {
   private _nutrientInventoryController!: StoreController<NutrientInventory | null>;
   private _overlayModeController!: StoreController<GridOverlayMode>;
 
-  private _resizeController = new ResizeController(this, () => {});
+  private _resizeController = new ResizeController(this, () => { });
 
   // Cached metrics to avoid re-computation on every render
   private _mainChips: HeaderChip[] = [];
@@ -116,15 +116,17 @@ export class GrowspaceHeader extends LitElement {
         this.store.history.$linkedGraphGroups
       );
       this._nutrientInventoryController = new StoreController(
-        this,
-        this.store.data.$nutrientInventory
+        this, this.store.data.$nutrientInventory
       );
       this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
+
+      // Load history data when header is mounted (important for header-only view mode)
+      this.store.history.loadHistoryOnDemand();
     }
   }
 
   // Memoization helper to prevent re-calc if inputs haven't changed
-  private _lastUpdateArgs: any[] = [];
+  private _lastUpdateArgs: unknown[] = [];
 
   private _shouldUpdateMetrics(): boolean {
     const args = [
@@ -141,7 +143,7 @@ export class GrowspaceHeader extends LitElement {
   }
 
   // Perform metrics calculation before update to ensure data is ready for render
-  willUpdate(changedProps: any) {
+  willUpdate(changedProps: Map<PropertyKey, unknown>) {
     // Only update metrics if relevant data changed
     if (changedProps.has('device') || this._shouldUpdateMetrics()) {
       this._updateMetrics();
@@ -209,7 +211,7 @@ export class GrowspaceHeader extends LitElement {
           <!-- Row 1 Left: Title/Select -->
           <div class="header-title-area">
             ${!this.config?.default_growspace
-              ? html` <div class="select-wrapper">
+        ? html` <div class="select-wrapper">
                   <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
                   <select
                     class="growspace-select-header"
@@ -219,7 +221,7 @@ export class GrowspaceHeader extends LitElement {
                     ${devices.map((d) => html`<option value="${d.deviceId}">${d.name}</option>`)}
                   </select>
                 </div>`
-              : html`<h1 class="gs-title">${this.device.name}</h1>`}
+        : html`<h1 class="gs-title">${this.device.name}</h1>`}
           </div>
 
           <!-- Row 1 Right: Actions & Device Chips -->
@@ -250,7 +252,7 @@ export class GrowspaceHeader extends LitElement {
               @open-nutrients=${() => this.store.openNutrientsDialog()}
               @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
               @chip-drag-start=${(e: CustomEvent) =>
-                this._handleChipDragStart(null, e.detail.metric)}
+        this._handleChipDragStart(null, e.detail.metric)}
               @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
               @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
             ></growspace-header-secondary>

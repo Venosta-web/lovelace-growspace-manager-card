@@ -275,7 +275,7 @@ export class ConfigDialog extends LitElement {
     currentTab: ConfigTab = ConfigTab.ENVIRONMENT,
     environmentData?: EnvironmentConfigData
   ) {
-    this.currentTab = currentTab as any;
+    this.currentTab = currentTab;
     if (environmentData) {
       this.envSelectedId = environmentData.selectedGrowspaceId;
       this.envTemperatureSensor = environmentData.temperatureSensor;

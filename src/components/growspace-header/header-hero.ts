@@ -8,15 +8,17 @@ import { GrowspaceDevice } from '../../types';
 import { HeaderChip } from '../../utils/metrics-utils';
 import { StoreController } from '@nanostores/lit';
 import { sharedStyles } from '../../styles/shared.styles';
+import type { GrowspaceStore } from '../../store/core/growspace-store';
+import type { HomeAssistant } from 'custom-card-helpers';
 
 @customElement('growspace-header-hero')
 export class GrowspaceHeaderHero extends LitElement {
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
-  public store!: any;
+  public store!: GrowspaceStore;
 
   @consume({ context: hassContext, subscribe: true })
-  public hass!: any;
+  public hass!: HomeAssistant;
 
   @property({ attribute: false }) public device!: GrowspaceDevice;
   @property({ attribute: false }) public chips: HeaderChip[] = [];
@@ -199,10 +201,10 @@ export class GrowspaceHeaderHero extends LitElement {
   render() {
     return html`
       ${repeat(
-        this.chips,
-        (chip) => chip.key,
-        (chip) => this._renderHeroCard(chip)
-      )}
+      this.chips,
+      (chip) => chip.key,
+      (chip) => this._renderHeroCard(chip)
+    )}
     `;
   }
 
@@ -214,7 +216,7 @@ export class GrowspaceHeaderHero extends LitElement {
     const sparklineWidth = 140;
     const sparklineHeight = 80;
 
-    const timeRange = (this.store?.history as any)?.getRange() || '24h';
+    const timeRange = this.store?.history?.getRange?.() || '24h';
     const isVpd = chip.key === 'vpd';
     let vpdSegments: Array<{ path: string; color: string }> = [];
 
@@ -268,8 +270,8 @@ export class GrowspaceHeaderHero extends LitElement {
     return html`
       <div
         class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active
-          ? 'active'
-          : ''} ${chip.linked ? 'linked' : ''}"
+        ? 'active'
+        : ''} ${chip.linked ? 'linked' : ''}"
         draggable="${!this.isMobile || this.mobileLink}"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -278,7 +280,7 @@ export class GrowspaceHeaderHero extends LitElement {
         title="${chip.tooltip || ''}"
       >
         ${useVpdSegments
-          ? html`
+        ? html`
               <svg
                 class="hero-sparkline"
                 viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
@@ -293,14 +295,14 @@ export class GrowspaceHeaderHero extends LitElement {
                   fill="transparent"
                 />
                 ${vpdSegments.map(
-                  (seg) => svg`
+          (seg) => svg`
                       <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
                     `
-                )}
+        )}
               </svg>
             `
-          : sparklinePath
-            ? html`
+        : sparklinePath
+          ? html`
                 <svg
                   class="hero-sparkline"
                   viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
@@ -332,21 +334,21 @@ export class GrowspaceHeaderHero extends LitElement {
                   />
                 </svg>
               `
-            : ''}
+          : ''}
 
         <div class="hero-value-group">
           ${chip.multiValues && chip.multiValues.length > 0
-            ? html`
+        ? html`
                 <div class="hero-multi-values">
                   ${chip.multiValues.map(
-                    (v, i) => html`
+          (v, i) => html`
                       ${i > 0 ? html`<div class="hero-multi-divider"></div>` : ''}
                       <span>${v}</span>
                     `
-                  )}
+        )}
                 </div>
               `
-            : html`
+        : html`
                 <span class="hero-value">${val}</span>
                 <span class="hero-unit">${unit}</span>
               `}

@@ -10,7 +10,7 @@ export class HassSubscriptionController implements ReactiveController {
     host.addController(this);
   }
 
-  hostConnected() {}
+  hostConnected() { }
 
   hostDisconnected() {
     this.unsubscribeAll();
@@ -21,7 +21,7 @@ export class HassSubscriptionController implements ReactiveController {
    */
   async subscribeEvents(
     hass: HomeAssistant,
-    callback: (event: any) => void,
+    callback: (event: unknown) => void,
     eventType: string
   ): Promise<void> {
     if (!hass || !hass.connection) return;

@@ -91,6 +91,7 @@ export class GrowspaceEnvChart extends LitElement {
   }
 
   private _resizeObserver: ResizeObserver | undefined;
+  private _chartObserver: ResizeObserver | undefined;
 
   firstUpdated() {
     // Chips container is always present in combined view, or we need to handle it safely
@@ -126,18 +127,18 @@ export class GrowspaceEnvChart extends LitElement {
     // Chart Container
     const chartContainer = this._chartContainerRef.value;
     // We store the chart observer on the instance to track it
-    if (chartContainer && !(this as any)._chartObserver) {
+    if (chartContainer && !this._chartObserver) {
       const chartObserver = new ResizeObserver(() => {
         this._invalidateRectCache();
       });
       chartObserver.observe(chartContainer);
-      (this as any)._chartObserver = chartObserver;
+      this._chartObserver = chartObserver;
 
       window.addEventListener('scroll', this._invalidateRectCacheBound, { passive: true });
       window.addEventListener('resize', this._invalidateRectCacheBound, { passive: true });
-    } else if (!chartContainer && (this as any)._chartObserver) {
-      (this as any)._chartObserver.disconnect();
-      (this as any)._chartObserver = undefined;
+    } else if (!chartContainer && this._chartObserver) {
+      this._chartObserver.disconnect();
+      this._chartObserver = undefined;
       window.removeEventListener('scroll', this._invalidateRectCacheBound);
       window.removeEventListener('resize', this._invalidateRectCacheBound);
     }
@@ -146,7 +147,7 @@ export class GrowspaceEnvChart extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._resizeObserver) this._resizeObserver.disconnect();
-    if ((this as any)._chartObserver) (this as any)._chartObserver.disconnect();
+    if (this._chartObserver) this._chartObserver.disconnect();
     if (this._scrollCheckTimeout) clearTimeout(this._scrollCheckTimeout);
     if (this._tooltipRafId) cancelAnimationFrame(this._tooltipRafId);
 
@@ -340,7 +341,7 @@ export class GrowspaceEnvChart extends LitElement {
         const avg = sum / dataPoints.length;
 
         const isStep =
-          (config as any).type === ChartType.STEP ||
+          (config as { type?: ChartType }).type === ChartType.STEP ||
           key === MetricKey.OPTIMAL ||
           key === MetricKey.DEHUMIDIFIER ||
           key === MetricKey.LIGHT ||
@@ -495,8 +496,8 @@ export class GrowspaceEnvChart extends LitElement {
       <error-boundary .fallbackMessage=${'Failed to render environment chart'}>
         <div class="gs-env-graph-card">
           ${this.isCombined
-            ? this._renderCombinedHeader(series)
-            : this._renderSingleHeader(series[0])}
+        ? this._renderCombinedHeader(series)
+        : this._renderSingleHeader(series[0])}
 
           <div
             class="gs-env-chart-container"
@@ -507,33 +508,32 @@ export class GrowspaceEnvChart extends LitElement {
           >
             ${this._renderTooltip()}
             ${!this.isCombined
-              ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
-              : ''}
+        ? this._renderYAxisHTML(series[0].min, series[0].max, series[0].unit)
+        : ''}
             ${this._renderXAxisHTML(this.range)}
 
             <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" class="chart-svg">
               ${this._renderGrid(width, height)}
               ${series.map((s) => {
-                // Handle VPD segments separately (they have their own path validation)
-                if (s.vpdSegments?.length) {
-                  return svg`${s.vpdSegments.map((seg) => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
-                }
+          // Handle VPD segments separately (they have their own path validation)
+          if (s.vpdSegments?.length) {
+            return svg`${s.vpdSegments.map((seg) => svg`<path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`)}`;
+          }
 
-                // Skip rendering regular paths if no valid path data
-                if (!s.path || s.path.trim() === '' || s.points.length === 0) {
-                  return svg``;
-                }
+          // Skip rendering regular paths if no valid path data
+          if (!s.path || s.path.trim() === '' || s.points.length === 0) {
+            return svg``;
+          }
 
-                return svg`
+          return svg`
                   ${s.fillType === 'gradient' ? svg`<defs>${this._renderGradient(s.id, s.color)}</defs>` : ''}
-                  ${
-                    s.fillType === 'gradient'
-                      ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
-                      : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
-                  }
+                  ${s.fillType === 'gradient'
+              ? svg`<path d="${s.path} V ${height} H 0 Z" fill="url(#grad-${s.id})" />`
+              : svg`<path d="${s.path} V ${height} H ${((s.points[0].time - startTime.getTime()) / durationMillis) * width} Z" fill="${s.color}" fill-opacity="0.1" stroke="none" />`
+            }
                   <path d="${s.path}" fill="none" stroke="${s.color}" stroke-width="2" vector-effect="non-scaling-stroke" />
                 `;
-              })}
+        })}
             </svg>
           </div>
         </div>
@@ -703,16 +703,16 @@ export class GrowspaceEnvChart extends LitElement {
       <div class="gs-env-graph-header">
         <div style="display: flex; align-items: center; flex: 1; min-width: 0; gap: 4px;">
           ${this._canScrollLeft
-            ? html`<div
+        ? html`<div
                 class="scroll-nav left"
                 @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._scrollChips(ScrollDirection.LEFT);
-                }}
+            e.stopPropagation();
+            this._scrollChips(ScrollDirection.LEFT);
+          }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronLeft}"></path></svg>
               </div>`
-            : ''}
+        : ''}
 
           <div
             class="chips-scroll-container"
@@ -720,29 +720,29 @@ export class GrowspaceEnvChart extends LitElement {
             @click=${(e: Event) => e.stopPropagation()}
           >
             ${seriesList.map(
-              (s) => html`
+          (s) => html`
                 <div
                   class=${classMap({
-                    'gs-legend-item': true,
-                    'mask-left': this._canScrollLeft,
-                    'mask-right': this._canScrollRight,
-                  })}
+            'gs-legend-item': true,
+            'mask-left': this._canScrollLeft,
+            'mask-right': this._canScrollRight,
+          })}
                   @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this.dispatchEvent(
-                      new CustomEvent('unlink-graph', {
-                        detail: s.id,
-                        bubbles: true,
-                        composed: true,
-                      })
-                    );
-                  }}
+              e.stopPropagation();
+              this.dispatchEvent(
+                new CustomEvent('unlink-graph', {
+                  detail: s.id,
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+            }}
                 >
                   <span
                     style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${s.color}; margin-right:6px; flex-shrink:0;"
                   ></span>
                   ${s.icon
-                    ? html`<div
+              ? html`<div
                         style="width:16px; height:16px; color:${s.color}; margin-right:4px; display:inline-flex;"
                       >
                         <svg
@@ -752,32 +752,32 @@ export class GrowspaceEnvChart extends LitElement {
                           <path d="${s.icon}"></path>
                         </svg>
                       </div>`
-                    : ''}
+              : ''}
                   <span style="color:${s.color}; font-weight:500;">${s.title}</span>
                 </div>
               `
-            )}
+        )}
           </div>
 
           ${this._canScrollRight
-            ? html`<div
+        ? html`<div
                 class="scroll-nav right"
                 @click=${(e: Event) => {
-                  e.stopPropagation();
-                  this._scrollChips(ScrollDirection.RIGHT);
-                }}
+            e.stopPropagation();
+            this._scrollChips(ScrollDirection.RIGHT);
+          }}
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiChevronRight}"></path></svg>
               </div>`
-            : ''}
+        : ''}
         </div>
         <div style="display:flex; gap: 8px; margin-left: 8px; flex-shrink: 0;">
           <ha-icon-button
             .path=${mdiLink}
             @click=${() =>
-              this.dispatchEvent(
-                new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
-              )}
+        this.dispatchEvent(
+          new CustomEvent('unlink-graphs', { detail: -1, bubbles: true, composed: true })
+        )}
             title="Unlink Graphs"
           ></ha-icon-button>
         </div>
@@ -796,7 +796,7 @@ export class GrowspaceEnvChart extends LitElement {
           ${time}
         </div>
         ${items.map(
-          (i) => html`
+      (i) => html`
             <div
               style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:2px;"
             >
@@ -804,18 +804,18 @@ export class GrowspaceEnvChart extends LitElement {
               <span style="font-family:monospace; font-weight:bold;">${i.value}</span>
             </div>
           `
-        )}
+    )}
       </div>
       <div
         class="gs-cursor-line"
         style=${styleMap({
-          left: `${x}px`,
-          height: '100%',
-          top: '0',
-          position: 'absolute',
-          borderLeft: '1px dashed rgba(255,255,255,0.3)',
-          pointerEvents: 'none',
-        })}
+      left: `${x}px`,
+      height: '100%',
+      top: '0',
+      position: 'absolute',
+      borderLeft: '1px dashed rgba(255,255,255,0.3)',
+      pointerEvents: 'none',
+    })}
       ></div>
     `;
   }

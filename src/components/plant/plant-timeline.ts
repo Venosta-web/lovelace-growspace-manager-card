@@ -349,7 +349,7 @@ export class PlantTimeline extends LitElement {
     const { type } = event;
     switch (type) {
       case 'stage_change': {
-        const to = (event as any).to?.toLowerCase();
+        const to = event.to?.toLowerCase();
         if (to === 'flower') return mdiFlower;
         if (to === 'dry') return mdiHairDryer;
         if (to === 'cure') return mdiCannabis;
@@ -360,21 +360,21 @@ export class PlantTimeline extends LitElement {
       case 'note':
         return mdiNoteText;
       case 'milestone': {
-        const label = (event as any).label?.toLowerCase() || '';
+        const label = event.label?.toLowerCase() || '';
         if (label.includes('flower')) return mdiFlower;
         if (label.includes('dry')) return mdiHairDryer;
         if (label.includes('cure')) return mdiCannabis;
         return mdiSprout;
       }
       case 'action': {
-        const action = (event as any).action;
+        const action = event.action;
         if (action === 'water' || action === 'watering') return mdiWater;
         if (action === 'ipm') return mdiBug;
         if (action === 'training') return mdiDumbbell;
         return mdiLeaf;
       }
       case 'environmental_report':
-        return (event as any).sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
+        return event.sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
       default:
         return mdiLeaf;
     }
@@ -497,7 +497,9 @@ export class PlantTimeline extends LitElement {
     const latestStageEvent = sortedEvents.find(
       (e) => e.type === 'stage_change' || e.type === 'milestone'
     );
-    const currentStage = (latestStageEvent as any)?.to || (latestStageEvent as any)?.label;
+    const currentStage = latestStageEvent
+      ? latestStageEvent.type === 'stage_change' ? latestStageEvent.to : latestStageEvent.label
+      : undefined;
     const stageColor = this._getStageColor(currentStage);
 
     return html`
@@ -558,7 +560,7 @@ export class PlantTimeline extends LitElement {
       <div
         class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''
       } ${event.type === 'environmental_report'
-        ? (event as any).sensor_type === 'night_report'
+        ? event.sensor_type === 'night_report'
           ? 'is-night'
           : 'is-day'
         : ''
@@ -623,13 +625,13 @@ export class PlantTimeline extends LitElement {
           <div class="details">Severity: ${event.severity}</div>
         `;
       case 'environmental_report': {
-        const isDay = (event as any).sensor_type !== 'night_report';
+        const isDay = event.sensor_type !== 'night_report';
         return html`
           <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
             ${isDay ? 'Day' : 'Night'} Environmental Report
           </div>
           <div class="details">
-            ${(event as any).reasons?.map(
+            ${event.reasons?.map(
           (r: string) =>
             html`<span
                   style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
@@ -643,8 +645,8 @@ export class PlantTimeline extends LitElement {
             let humidity = event.metadata?.humidity;
 
             // Fallback parsing if metadata is missing but reasons exist
-            if ((temperature === undefined || humidity === undefined) && (event as any).reasons) {
-              const reasons = (event as any).reasons as string[];
+            if ((temperature === undefined || humidity === undefined) && event.reasons) {
+              const reasons = event.reasons;
 
               if (temperature === undefined) {
                 const tempMatch = reasons.find(r => r.includes('Temperature'))?.match(/Temperature:\s*([\d.]+)/);
@@ -698,7 +700,7 @@ export class PlantTimeline extends LitElement {
     return html`
               <div class="metadata-chips" >
                 ${items.map((item) => {
-      const val = (metadata as any)[item.key];
+      const val = metadata[item.key as keyof TimelineEventMetadata];
       if (val === undefined || val === null) return nothing;
       const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
       return html`
@@ -769,8 +771,11 @@ export class PlantTimeline extends LitElement {
 
     if (!latestStageEvent) return 'vegetative';
 
-    const stage =
-      (latestStageEvent as any).to?.toLowerCase() || (latestStageEvent as any).label?.toLowerCase();
+    const stage = latestStageEvent.type === 'stage_change'
+      ? latestStageEvent.to?.toLowerCase()
+      : latestStageEvent.type === 'milestone'
+        ? latestStageEvent.label?.toLowerCase()
+        : undefined;
 
     if (stage === 'seedling' || stage === 'clone') return 'seedling';
     if (stage === 'veg' || stage === 'vegetative' || stage === 'mother') return 'vegetative';

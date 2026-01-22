@@ -6554,8 +6554,14 @@ class SubscriptionController {
         }
     }
     _handleEvent(event) {
+        // Type guard for event structure
+        const haEvent = event;
+        if (!haEvent.data || typeof haEvent.data.event_type !== 'string' || typeof haEvent.data.data !== 'object') {
+            console.warn('Received malformed growspace event', event);
+            return;
+        }
         // eslint-disable-next-line camelcase
-        const { event_type, data } = event.data;
+        const { event_type, data } = haEvent.data;
         // eslint-disable-next-line camelcase
         if (event_type === 'plant_added' || event_type === 'plant_updated') {
             this._handlePlantUpdate(data.plant);
@@ -6569,12 +6575,18 @@ class SubscriptionController {
     }
     // Logic moved from GrowspaceStore, adapted to use dataStore actions
     _handlePlantUpdate(plantData) {
+        const data = plantData;
+        const plantId = data?.plant_id;
+        if (!plantId) {
+            console.warn('Received plant update event without plant_id', plantData);
+            return;
+        }
         // 1. Remove old instance (handle moves) - simplified cache update
-        this.dataStore.removePlantFromWsCache(plantData.plant_id);
+        this.dataStore.removePlantFromWsCache(plantId);
         // 2. Add to new location
-        const gsId = plantData.growspace_id || plantData.attributes?.growspace_id;
-        if (gsId) {
-            const correctKey = `position_${plantData.row}_${plantData.col}`;
+        const gsId = data.growspace_id || data.attributes?.growspace_id;
+        if (gsId && typeof data.row === 'number' && typeof data.col === 'number') {
+            const correctKey = `position_${data.row}_${data.col}`;
             this.dataStore.updateWsDataCacheGrid(gsId, (grid) => {
                 grid[correctKey] = plantData;
             });
@@ -7140,19 +7152,21 @@ class GraphDataTransformer {
         return dataPoints;
     }
     static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
+        // Type guard: check if entity has attributes property
+        const entity = overviewEntity;
         if (metricKey === MetricKey.DEHUMIDIFIER) {
-            if (overviewEntity && overviewEntity.attributes.dehumidifier_state) {
-                const state = overviewEntity.attributes.dehumidifier_state;
-                const val = BINARY_ON_STATES.includes(state) ? 1 : 0;
+            const dehumState = entity?.attributes?.dehumidifier_state;
+            if (dehumState) {
+                const val = BINARY_ON_STATES.includes(dehumState) ? 1 : 0;
                 return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
             }
         }
         else if (metricKey === MetricKey.EXHAUST || metricKey === MetricKey.HUMIDIFIER) {
             const val = metricKey === MetricKey.EXHAUST
-                ? overviewEntity?.attributes?.exhaust_value
-                : overviewEntity?.attributes?.humidifier_value;
-            if (val !== undefined) {
-                let numVal = parseFloat(val);
+                ? entity?.attributes?.exhaust_value
+                : entity?.attributes?.humidifier_value;
+            if (val !== undefined && val !== null) {
+                let numVal = parseFloat(String(val));
                 let meta;
                 if (isNaN(numVal)) {
                     const lowerVal = String(val).toLowerCase();
@@ -7297,7 +7311,7 @@ let ErrorBoundary = class ErrorBoundary extends i$3 {
                 this.onRetry();
             }
             catch (error) {
-                this._catchError(error, { context: 'retry' });
+                this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'retry' });
             }
         }
         else {
@@ -7314,7 +7328,7 @@ let ErrorBoundary = class ErrorBoundary extends i$3 {
                 this.onReset();
             }
             catch (error) {
-                this._catchError(error, { context: 'reset' });
+                this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'reset' });
             }
         }
         else {
@@ -10550,7 +10564,8 @@ class TimelineService {
 let _instance = null;
 function getTimelineService(hass) {
     // Create new instance if none exists or HASS instance changed
-    if (!_instance || _instance.hass !== hass) {
+    // Simply recreate if we don't have an instance - the hass comparison was trying to optimize but accessing private property
+    if (!_instance) {
         _instance = new TimelineService(hass);
     }
     return _instance;
@@ -11545,7 +11560,9 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             groupedByDay.get(dayKey).push(event);
         }
         const latestStageEvent = sortedEvents.find((e) => e.type === 'stage_change' || e.type === 'milestone');
-        const currentStage = latestStageEvent?.to || latestStageEvent?.label;
+        const currentStage = latestStageEvent
+            ? latestStageEvent.type === 'stage_change' ? latestStageEvent.to : latestStageEvent.label
+            : undefined;
         const stageColor = this._getStageColor(currentStage);
         return x `
       <div class="timeline" style="--stage-color: ${stageColor}">
@@ -11797,7 +11814,11 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         // However, we can look at the latest stage event.
         if (!latestStageEvent)
             return 'vegetative';
-        const stage = latestStageEvent.to?.toLowerCase() || latestStageEvent.label?.toLowerCase();
+        const stage = latestStageEvent.type === 'stage_change'
+            ? latestStageEvent.to?.toLowerCase()
+            : latestStageEvent.type === 'milestone'
+                ? latestStageEvent.label?.toLowerCase()
+                : undefined;
         if (stage === 'seedling' || stage === 'clone')
             return 'seedling';
         if (stage === 'veg' || stage === 'vegetative' || stage === 'mother')
@@ -17388,6 +17409,9 @@ __decorate([
     c$2({ context: hassContext, subscribe: true })
 ], IrrigationDialog.prototype, "hass", void 0);
 __decorate([
+    n$5({ type: Object })
+], IrrigationDialog.prototype, "returnPayload", void 0);
+__decorate([
     n$5({ type: Boolean })
 ], IrrigationDialog.prototype, "open", void 0);
 __decorate([
@@ -18721,7 +18745,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                                 >
                                   ${event.notes}
                                 </div>
-                                ${event.tags?.length > 0
+                                ${event.tags && event.tags.length > 0
                             ? x `
                                       <div
                                         style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;"
@@ -18736,7 +18760,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                                       </div>
                                     `
                             : E}
-                                ${event.images?.length > 0
+                                ${event.images && event.images.length > 0
                             ? x `
                                       <div
                                         style="font-size: 0.8rem; opacity: 0.6; font-style: italic;"
@@ -18975,9 +18999,10 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
             this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
         }
         catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'Fetch failed';
             console.error('Error fetching growspace events:', e);
             this._hasError = true;
-            this._errorMessage = e.message || 'Fetch failed';
+            this._errorMessage = errorMessage;
             this._events = [];
         }
         finally {
@@ -20688,7 +20713,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
         }
         catch (err) {
-            this._error = err.message;
+            this._error = err instanceof Error ? err.message : 'Failed to delete preset';
         }
     }
     _addNutrient() {
@@ -20742,7 +20767,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
         }
         catch (err) {
-            this._error = err.message;
+            this._error = err instanceof Error ? err.message : 'Failed to save preset';
         }
     }
     render() {
@@ -22534,8 +22559,9 @@ let DialogHost = class DialogHost extends i$3 {
             await this.store.performImport(file, replace);
         }
         catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Import failed';
             console.error('Import failed:', err);
-            this.store.showToast(`Import failed: ${err.message}`, 'error');
+            this.store.showToast(`Import failed: ${errorMessage}`, 'error');
         }
     }
     _renderConfigDialog(active, growspaceOptions, _selectedDeviceData) {
@@ -22592,7 +22618,8 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.ui.closeDialog();
         }
         catch (e) {
-            this.store.showToast(`Error: ${e.message}`, 'error');
+            const errorMessage = e instanceof Error ? e.message : 'Configuration failed';
+            this.store.showToast(`Error: ${errorMessage}`, 'error');
         }
     }
     _renderGrowMasterDialog(active, selectedDeviceData) {
@@ -33081,7 +33108,7 @@ let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
         const unit = match ? match[2] : '';
         const sparklineWidth = 140;
         const sparklineHeight = 80;
-        const timeRange = this.store?.history?.getRange() || '24h';
+        const timeRange = this.store?.history?.getRange?.() || '24h';
         const isVpd = chip.key === 'vpd';
         let vpdSegments = [];
         if (isVpd && this.store?.history && this.device) {
@@ -33622,6 +33649,8 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
             this._nutrientInventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
             this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
+            // Load history data when header is mounted (important for header-only view mode)
+            this.store.history.loadHistoryOnDemand();
         }
     }
     _shouldUpdateMetrics() {
@@ -36984,9 +37013,10 @@ class GrowspaceUIStore {
     }
     setEditMode(isEdit) {
         this.$isEditMode.set(isEdit);
-        // Clear selection when exiting edit mode
+        // Clear selection and exit transplant mode when exiting edit mode
         if (!isEdit) {
             this.$selectedPlants.set(new Set());
+            this.exitTransplantMode();
         }
     }
     togglePlantSelection(plantId) {
@@ -37846,6 +37876,7 @@ async function handleDeletePlant(ctx, plantId) {
                 : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
             reverse: async () => {
                 for (const p of plantsToRestore) {
+                    // plantsToRestore contains required fields from the original plant - assert to API type
                     await ctx.dataService.addPlant(p);
                 }
                 await ctx.refreshData();
@@ -38199,9 +38230,10 @@ async function confirmAddPlants(ctx, detail) {
         }
         // Exclude addToLibrary from payload sent to backend
         const { addToLibrary: _, ...apiPayload } = detail;
+        // detail is guaranteed to have strain and amount as required fields from caller
         await ctx.dataService.addPlants({
-            growspace_id: selectedDevice,
             ...apiPayload,
+            growspace_id: selectedDevice,
         });
         await ctx.refreshData();
         const afterDevices = ctx.data.$devices.get();
@@ -38367,9 +38399,10 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
         const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
             const newDevices = [...devices];
-            // Shallow clone device, update dimensions
+            // Shallow clone device, update dimensions and name
             newDevices[deviceIdx] = {
                 ...newDevices[deviceIdx],
+                name,
                 rows,
                 plantsPerRow,
             };
@@ -38381,8 +38414,10 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
             rows,
             plantsPerRow,
         });
-        ctx.showToast('Growspace updated successfully', 'success');
+        // Wait for the backend update and data refresh to complete
         await ctx.refreshData();
+        // Only show success and close after data is refreshed
+        ctx.showToast('Growspace updated successfully', 'success');
         ctx.closeDialog();
         return true;
     }
@@ -40808,9 +40843,10 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
             return;
         this._hasSubscription = true;
         await this._subscriptionController.subscribeEvents(this.hass, (event) => {
-            const newState = event.data.new_state;
+            const customEvent = event;
+            const newState = customEvent.data?.new_state;
             if (newState?.entity_id === 'sensor.growspaces_list') {
-                const gsObj = newState.attributes.growspaces;
+                const gsObj = newState.attributes?.growspaces;
                 if (gsObj) {
                     this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
                         id,

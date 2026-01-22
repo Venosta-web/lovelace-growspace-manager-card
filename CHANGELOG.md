@@ -30,10 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ESLint unused variable warnings
 - Empty interface type definitions
 - Regex escape character warnings
+- **Test failures in `growspace-header.spec.ts`** - Added missing `loadHistoryOnDemand` mock to history store (28/28 tests now passing)
 
 ### Changed
 - Migrated to Nanostore state management
 - Improved type safety across codebase
+- **Enhanced type safety in `plant-timeline.ts`** - Replaced 14 `any` type assertions with proper discriminated union type narrowing for `PlantTimelineEvent`
 - Enhanced error handling in API calls
 
 ## [Unreleased]
@@ -42,3 +44,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-language support
 - Dark mode refinements
 - Additional chart types for analytics
+- Complete type safety improvements across all components
