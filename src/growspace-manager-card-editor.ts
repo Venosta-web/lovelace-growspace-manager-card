@@ -128,6 +128,26 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
         )}
           </select>
         </div>
+
+        <div class="form-group">
+          <label>Keyboard Rotation (3D View)</label>
+          <ha-form-switch
+            .checked=${this._config.keyboard_rotate_enabled || false}
+            @change=${(e: any) => this._valueChanged('keyboard_rotate_enabled', e.target.checked)}
+          ></ha-form-switch>
+        </div>
+
+        <div class="form-group">
+          <label>Rotation Speed (${(this._config.keyboard_rotate_speed || 1.0).toFixed(1)}x)</label>
+          <input
+            type="range"
+            min="0.1"
+            max="5.0"
+            step="0.1"
+            .value=${this._config.keyboard_rotate_speed || 1.0}
+            @change=${(e: any) => this._valueChanged('keyboard_rotate_speed', parseFloat(e.target.value))}
+          />
+        </div>
       </div>
     `;
   }

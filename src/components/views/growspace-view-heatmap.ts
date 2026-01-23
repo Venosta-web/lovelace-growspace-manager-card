@@ -10,12 +10,12 @@ import '../heatmap-3d';
  */
 @customElement('growspace-view-heatmap')
 export class GrowspaceViewHeatmap extends LitElement {
-    @property({ attribute: false }) device?: GrowspaceDevice;
-    @property({ attribute: false }) hass?: any;
-    @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
-    @property({ type: Boolean }) editMode3DCords = false;
+  @property({ attribute: false }) device?: GrowspaceDevice;
+  @property({ attribute: false }) hass?: any;
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
+  @property({ type: Boolean }) editMode3DCords = false;
 
-    static styles = css`
+  static styles = css`
     :host {
       display: flex;
       flex-direction: column;
@@ -33,25 +33,25 @@ export class GrowspaceViewHeatmap extends LitElement {
     }
   `;
 
-    private _handleEditModeChange(e: CustomEvent) {
-        this.editMode3DCords = e.detail.enabled;
-    }
+  private _handleEditModeChange(e: CustomEvent) {
+    this.editMode3DCords = e.detail.enabled;
+  }
 
-    private _handleSensorPositionChanged(e: CustomEvent) {
-        // Bubble the event up for parent components to handle persistence
-        this.dispatchEvent(
-            new CustomEvent('sensor-position-changed', {
-                detail: e.detail,
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+  private _handleSensorPositionChanged(e: CustomEvent) {
+    // Bubble the event up for parent components to handle persistence
+    this.dispatchEvent(
+      new CustomEvent('sensor-position-changed', {
+        detail: e.detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    render() {
-        if (!this.device) return html``;
+  render() {
+    if (!this.device) return html``;
 
-        return html`
+    return html`
       <growspace-header
         .device=${this.device}
         .growspaceOptions=${this.growspaceOptions}
@@ -61,9 +61,11 @@ export class GrowspaceViewHeatmap extends LitElement {
         .device=${this.device}
         .hass=${this.hass}
         .editMode3DCords=${this.editMode3DCords}
+        .keyboardRotateEnabled=${this.growspaceOptions?.keyboard_rotate_enabled ?? false}
+        .keyboardRotateSpeed=${this.growspaceOptions?.keyboard_rotate_speed ?? 1.0}
         @edit-mode-changed=${this._handleEditModeChange}
         @sensor-position-changed=${this._handleSensorPositionChanged}
       ></heatmap-3d>
     `;
-    }
+  }
 }

@@ -26,6 +26,9 @@ export class Heatmap3D extends LitElement {
     @state() private showPlants: boolean = true;
     @state() private showLights: boolean = true;
     @state() private showFans: boolean = true;
+    @state() private showHeatmap: boolean = true;
+    @property({ type: Boolean }) keyboardRotateEnabled = false;
+    @property({ type: Number }) keyboardRotateSpeed = 1.0;
 
     @consume({ context: strainLibraryContext, subscribe: true })
     strainLibrary: StrainEntry[] = [];
@@ -50,13 +53,16 @@ export class Heatmap3D extends LitElement {
     private lastProcessedData?: string;
     private sensorMeshes: Map<string, THREE.Object3D> = new Map();
     private ledMaterial?: THREE.MeshStandardMaterial;
+    private aluminumMaterial?: THREE.MeshStandardMaterial;
     private isDragging = false;
     private _mouse = new THREE.Vector2();
     private _raycaster = new THREE.Raycaster();
     private _lastRaycastTime = 0;
     private _animatingMaterials: THREE.ShaderMaterial[] = [];
     private _fanHeads: THREE.Object3D[] = [];
+    private _exhaustFans: THREE.Object3D[] = [];
     private _plantHitBoxes: THREE.Object3D[] = [];
+    private _keysPressed: Set<string> = new Set();
 
     static styles = css`
     :host {
@@ -463,6 +469,8 @@ export class Heatmap3D extends LitElement {
         super.disconnectedCallback();
         this.cleanup();
         this.resizeObserver?.disconnect();
+        window.removeEventListener('keydown', this._handleKeyDown);
+        window.removeEventListener('keyup', this._handleKeyUp);
     }
 
     protected firstUpdated() {
@@ -470,6 +478,8 @@ export class Heatmap3D extends LitElement {
         if (this.container) {
             this.resizeObserver?.observe(this.container);
         }
+        window.addEventListener('keydown', this._handleKeyDown);
+        window.addEventListener('keyup', this._handleKeyUp);
     }
 
     protected updated(changedProps: PropertyValues) {
@@ -478,7 +488,8 @@ export class Heatmap3D extends LitElement {
         const sensors = Object.keys(this.device.environmentAttributes?.sensorCoordinates || {});
         const env = this.device.environmentAttributes;
         const fanEntities = env?.circulationFanEntities || (env?.circulationFanEntity ? [env.circulationFanEntity] : []);
-        const allTracked = Array.from(new Set([...sensors, ...fanEntities]));
+        const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
+        const allTracked = Array.from(new Set([...sensors, ...fanEntities, ...exhaustEntities]));
 
         let dataHash = `${this.selectedMetric}_${this.timelineIndex}_${this.device.deviceId}`;
 
@@ -497,6 +508,7 @@ export class Heatmap3D extends LitElement {
             changedProps.has('showPlants') ||
             changedProps.has('showLights') ||
             changedProps.has('showFans') ||
+            changedProps.has('showHeatmap') ||
             (changedProps.has('hass') && dataHash !== this.lastProcessedData);
 
         if (shouldUpdate) {
@@ -594,6 +606,13 @@ export class Heatmap3D extends LitElement {
         const env = this.device.environmentAttributes;
         const fanEntities = env?.circulationFanEntities || (env?.circulationFanEntity ? [env.circulationFanEntity] : []);
         return fanEntities.includes(entityId);
+    }
+
+    private isExhaust(entityId: string): boolean {
+        if (!this.device) return false;
+        const env = this.device.environmentAttributes;
+        const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
+        return exhaustEntities.includes(entityId);
     }
 
     private getStatusColorForValue(val: number, thresholds: { dLow: number, wLow: number, wHigh: number, dHigh: number }): string {
@@ -715,6 +734,7 @@ export class Heatmap3D extends LitElement {
         // Reset tracking arrays
         this._animatingMaterials = [];
         this._fanHeads = [];
+        this._exhaustFans = [];
         this._plantHitBoxes = [];
 
         // Also clear any stray axis labels that might have been added to scene directly
@@ -726,34 +746,8 @@ export class Heatmap3D extends LitElement {
         const height = this.device.dimensions?.height ?? 200;
         const depth = this.device.dimensions?.length ?? (this.device.dimensions as any)?.depth ?? 120;
 
-        // 1. Draw Growspace Box (Glowing)
-        const boxGeometry = new THREE.BoxGeometry(width, height, depth);
-
-        // Inner thin line
-        const edges = new THREE.EdgesGeometry(boxGeometry);
-        const line = new THREE.LineSegments(
-            edges,
-            new THREE.LineBasicMaterial({ color: 0x448aff, transparent: true, opacity: 0.8 })
-        );
-        line.position.y = height / 2;
-        this.volatileGroup.add(line);
-
-        // Outer glow lines (simulated with slightly larger geometry)
-        for (let i = 1; i <= 3; i++) {
-            const glowGeo = new THREE.BoxGeometry(width + i * 0.5, height + i * 0.5, depth + i * 0.5);
-            const glowEdges = new THREE.EdgesGeometry(glowGeo);
-            const glowLine = new THREE.LineSegments(
-                glowEdges,
-                new THREE.LineBasicMaterial({
-                    color: 0x448aff,
-                    transparent: true,
-                    opacity: 0.15 / i,
-                    blending: THREE.AdditiveBlending
-                })
-            );
-            glowLine.position.y = height / 2;
-            this.volatileGroup.add(glowLine);
-        }
+        // 1. Draw Growspace Frame (Aluminum Poles)
+        this.renderFrame(width, height, depth);
 
         // 2. Helper Grid on floor (Subtle)
         const gridHelper = new THREE.GridHelper(Math.max(width, depth) * 1.5, 10, 0x222222, 0x111111);
@@ -811,7 +805,7 @@ export class Heatmap3D extends LitElement {
             dLow: 30, wLow: 45, wHigh: 65, dHigh: 85
         });
 
-        if (heatmapPositions.length > 0) {
+        if (this.showHeatmap && heatmapPositions.length > 0) {
             const volGeometry = new THREE.BoxGeometry(width, height, depth);
             const volMaterial = new THREE.ShaderMaterial({
                 transparent: true,
@@ -941,8 +935,6 @@ export class Heatmap3D extends LitElement {
 
         // 5. Draw Sensor Indicators (Small refined spheres) + Labels
         this.sensorMeshes.clear(); // Clear previous meshes
-        const sensorGeometry = new THREE.SphereGeometry(width * 0.02, 16, 16);
-
         displayEntities.forEach((entityId) => {
             const coords = sensorCoords[entityId];
             if (!coords) return;
@@ -968,23 +960,30 @@ export class Heatmap3D extends LitElement {
                 icon = 'mdi:white-balance-sunny';
             }
 
-            const mat = new THREE.MeshBasicMaterial({
-                color: new THREE.Color(healthColor),
-                transparent: true,
-                opacity: 0.9
-            });
-            const mesh = new THREE.Mesh(sensorGeometry, mat);
+            let sensorModel: THREE.Object3D;
 
-            // Set position relative to center
-            mesh.position.set(
+            if (isMetric) {
+                sensorModel = this.createSensorProbeModel(healthColor);
+            } else {
+                // Light sensor or other non-metric indicator
+                const sensorGeometry = new THREE.SphereGeometry(width * 0.02, 16, 16);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(healthColor),
+                    transparent: true,
+                    opacity: 0.9
+                });
+                sensorModel = new THREE.Mesh(sensorGeometry, mat);
+            }
+
+            sensorModel.position.set(
                 coords.x - width / 2,
                 coords.z,
                 coords.y - depth / 2
             );
 
             // Store mesh for drag controls
-            this.sensorMeshes.set(entityId, mesh);
-            this.volatileGroup!.add(mesh);
+            this.sensorMeshes.set(entityId, sensorModel);
+            this.volatileGroup!.add(sensorModel);
 
             // Add visual indicator for edit mode
             if (this.editMode3DCords) {
@@ -996,7 +995,7 @@ export class Heatmap3D extends LitElement {
                     side: THREE.BackSide
                 });
                 const outline = new THREE.Mesh(outlineGeometry, outlineMat);
-                mesh.add(outline);
+                sensorModel.add(outline);
             }
 
             // Add CSS2D Label
@@ -1013,7 +1012,7 @@ export class Heatmap3D extends LitElement {
 
             const label = new CSS2DObject(labelDiv);
             label.position.set(0, 0, 0);
-            mesh.add(label);
+            sensorModel.add(label);
         });
 
         // 6. Add Axis Labels
@@ -1051,6 +1050,94 @@ export class Heatmap3D extends LitElement {
         if (this.showFans) {
             this.renderBreeze(width, height, depth);
         }
+    }
+
+    private renderFrame(width: number, height: number, depth: number) {
+        if (!this.volatileGroup) return;
+
+        if (!this.aluminumMaterial) {
+            this.aluminumMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf0f0f0, // Off-white aluminum
+                metalness: 0.6,
+                roughness: 0.4,
+            });
+        }
+
+        const poleRadius = 1.0;
+        const connectorSize = 2.4;
+        const group = new THREE.Group();
+
+        // 1. Vertical Poles (4)
+        const verticalPoleGeo = new THREE.CylinderGeometry(poleRadius, poleRadius, height, 12);
+        const positions = [
+            { x: -width / 2, z: -depth / 2 },
+            { x: width / 2, z: -depth / 2 },
+            { x: -width / 2, z: depth / 2 },
+            { x: width / 2, z: depth / 2 },
+        ];
+
+        positions.forEach(pos => {
+            const pole = new THREE.Mesh(verticalPoleGeo, this.aluminumMaterial);
+            pole.position.set(pos.x, height / 2, pos.z);
+            group.add(pole);
+        });
+
+        // 2. Horizontal Poles - Width (4: Top/Bottom Front/Back)
+        const widthPoleGeo = new THREE.CylinderGeometry(poleRadius, poleRadius, width, 12);
+        widthPoleGeo.rotateZ(Math.PI / 2);
+
+        const widthPositions = [
+            { y: 0, z: -depth / 2 },
+            { y: height, z: -depth / 2 },
+            { y: 0, z: depth / 2 },
+            { y: height, z: depth / 2 },
+        ];
+
+        widthPositions.forEach(pos => {
+            const pole = new THREE.Mesh(widthPoleGeo, this.aluminumMaterial);
+            pole.position.set(0, pos.y, pos.z);
+            group.add(pole);
+        });
+
+        // 3. Horizontal Poles - Depth (4: Top/Bottom Left/Right)
+        const depthPoleGeo = new THREE.CylinderGeometry(poleRadius, poleRadius, depth, 12);
+        depthPoleGeo.rotateX(Math.PI / 2);
+
+        const depthPositions = [
+            { y: 0, x: -width / 2 },
+            { y: height, x: -width / 2 },
+            { y: 0, x: width / 2 },
+            { y: height, x: width / 2 },
+        ];
+
+        depthPositions.forEach(pos => {
+            const pole = new THREE.Mesh(depthPoleGeo, this.aluminumMaterial);
+            pole.position.set(pos.x, pos.y, 0);
+            group.add(pole);
+        });
+
+        // 4. Corner Connectors (8)
+        const connectorGeo = new THREE.BoxGeometry(connectorSize, connectorSize, connectorSize);
+        const connectorMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8, metalness: 0.2 }); // Dark plastic connectors
+
+        const corners = [
+            { x: -width / 2, y: 0, z: -depth / 2 },
+            { x: width / 2, y: 0, z: -depth / 2 },
+            { x: -width / 2, y: height, z: -depth / 2 },
+            { x: width / 2, y: height, z: -depth / 2 },
+            { x: -width / 2, y: 0, z: depth / 2 },
+            { x: width / 2, y: 0, z: depth / 2 },
+            { x: -width / 2, y: height, z: depth / 2 },
+            { x: width / 2, y: height, z: depth / 2 },
+        ];
+
+        corners.forEach(pos => {
+            const connector = new THREE.Mesh(connectorGeo, connectorMat);
+            connector.position.set(pos.x, pos.y, pos.z);
+            group.add(connector);
+        });
+
+        this.volatileGroup.add(group);
     }
 
     private renderLightbars(width: number, height: number, depth: number) {
@@ -1174,9 +1261,9 @@ export class Heatmap3D extends LitElement {
         fanEntities.forEach((entityId) => {
             let coords = sensorCoords[entityId];
 
-            // Provide default coordinates if missing so they show up and can be moved
+            // Provide default coordinates if missing (default to top-back-left corner)
             if (!coords) {
-                coords = { x: width / 2, y: depth / 2, z: height * 0.8, rotation: 0 };
+                coords = { x: 0, y: 0, z: height * 0.8, rotation: 0 };
             }
 
             const stateObj = this.hass?.states[entityId];
@@ -1198,14 +1285,25 @@ export class Heatmap3D extends LitElement {
 
             fanSpeed = Math.max(0, Math.min(10, fanSpeed));
 
+            // Snap circulation fans to vertical frame poles (x/y 0 or maxDimension)
+            const snappedX = coords.x < width / 2 ? 0 : width;
+            const snappedY = coords.y < depth / 2 ? 0 : depth;
+
             const fanGroup = this.createFanModel(fanSpeed, coords.rotation || 0, entityId);
 
-            // Set position relative to center
+            // Set position relative to snapped pole position
             fanGroup.position.set(
-                coords.x - width / 2,
+                snappedX - width / 2,
                 coords.z,
-                coords.y - depth / 2
+                snappedY - depth / 2
             );
+
+            // Auto-rotate fan to point inward if it's strictly at a corner and no rotation is specified
+            if (coords.rotation === 0 || coords.rotation === undefined) {
+                const angleX = snappedX === 0 ? 45 : -45;
+                const angleY = snappedY === 0 ? 45 : -45;
+                fanGroup.rotation.y = (angleX + angleY) * Math.PI / 180;
+            }
 
             // Track fan head for animation
             const head = fanGroup.getObjectByName("fanHead");
@@ -1214,6 +1312,205 @@ export class Heatmap3D extends LitElement {
             this.volatileGroup!.add(fanGroup);
             this.sensorMeshes.set(entityId, fanGroup);
         });
+
+        // 6. Render Exhaust Fans
+        const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
+        exhaustEntities.forEach((entityId) => {
+            const coords = sensorCoords[entityId];
+            if (!coords) return;
+
+            let exhaustSpeed = 0;
+            const stateObj = this.hass?.states[entityId];
+            if (stateObj) {
+                const val = parseFloat(stateObj.state);
+                if (!isNaN(val)) {
+                    if (val > 10) exhaustSpeed = val / 10;
+                    else exhaustSpeed = val;
+                } else if (stateObj.attributes?.percentage !== undefined) {
+                    exhaustSpeed = stateObj.attributes.percentage / 10;
+                } else if (stateObj.state === 'on') {
+                    exhaustSpeed = 5;
+                }
+            }
+            exhaustSpeed = Math.max(0, Math.min(10, exhaustSpeed));
+
+            const exhaustGroup = this.createExhaustModel(exhaustSpeed, coords.rotation || 0, entityId);
+            exhaustGroup.position.set(
+                coords.x - width / 2,
+                coords.z,
+                coords.y - depth / 2
+            );
+
+            this._exhaustFans.push(exhaustGroup);
+            this.volatileGroup!.add(exhaustGroup);
+            this.sensorMeshes.set(entityId, exhaustGroup);
+        });
+    }
+
+    private createExhaustModel(exhaustSpeed: number, baseRotation: number, entityId: string): THREE.Group {
+        const group = new THREE.Group();
+        group.userData = { exhaustSpeed, baseRotation, entityId, isExhaust: true };
+        group.rotation.y = (baseRotation * Math.PI) / 180;
+
+        // Main Body (Cylinder)
+        const bodyGeo = new THREE.CylinderGeometry(15, 15, 30, 24);
+        bodyGeo.rotateX(Math.PI / 2);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.6, metalness: 0.4 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        group.add(body);
+
+        // Tapered Ports (Intake/Exhaust)
+        const portGeo = new THREE.CylinderGeometry(11, 15, 12, 24);
+        portGeo.rotateX(Math.PI / 2);
+
+        const intakePort = new THREE.Mesh(portGeo, bodyMat);
+        intakePort.position.z = -21;
+        intakePort.name = "intake";
+        group.add(intakePort);
+
+        const exhaustPort = new THREE.Mesh(portGeo, bodyMat);
+        exhaustPort.position.z = 21;
+        exhaustPort.name = "exhaust";
+        exhaustPort.rotation.x = Math.PI;
+        group.add(exhaustPort);
+
+        // Decorative Ribs (similar to image)
+        const ribGeo = new THREE.TorusGeometry(15.5, 0.5, 8, 32);
+        ribGeo.rotateX(Math.PI / 2);
+        const ribMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+
+        const rib1 = new THREE.Mesh(ribGeo, ribMat);
+        rib1.position.z = -10;
+        group.add(rib1);
+
+        const rib2 = new THREE.Mesh(ribGeo, ribMat);
+        rib2.position.z = 10;
+        group.add(rib2);
+
+        // Control Box
+        const boxGeo = new THREE.BoxGeometry(6, 16, 14);
+        const boxMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3 });
+        const box = new THREE.Mesh(boxGeo, boxMat);
+        box.position.set(13, 0, 0);
+        group.add(box);
+
+        // Label/Logo panel on box
+        const logoGeo = new THREE.PlaneGeometry(12, 14);
+        const logoMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.2 });
+        const logo = new THREE.Mesh(logoGeo, logoMat);
+        logo.position.set(16.1, 0, 0);
+        logo.rotation.y = Math.PI / 2;
+        group.add(logo);
+
+        // Stand/Bracket
+        const bracketGroup = new THREE.Group();
+        const baseGeo = new THREE.BoxGeometry(20, 1, 16);
+        const baseMesh = new THREE.Mesh(baseGeo, bodyMat);
+        baseMesh.position.y = -18;
+        bracketGroup.add(baseMesh);
+
+        const legGeo = new THREE.BoxGeometry(2, 6, 16);
+        const leg1 = new THREE.Mesh(legGeo, bodyMat);
+        leg1.position.set(-9, -15, 0);
+        bracketGroup.add(leg1);
+        const leg2 = new THREE.Mesh(legGeo, bodyMat);
+        leg2.position.set(9, -15, 0);
+        bracketGroup.add(leg2);
+
+        group.add(bracketGroup);
+
+        // Internal Blades
+        const bladesGroup = new THREE.Group();
+        bladesGroup.name = "exhaustBlades";
+        const bladeGeo = new THREE.BoxGeometry(28, 0.5, 6);
+        const bladeMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1 });
+        for (let i = 0; i < 4; i++) {
+            const blade = new THREE.Mesh(bladeGeo, bladeMat);
+            blade.rotation.z = (i * Math.PI) / 2;
+            blade.rotation.y = 0.2; // Angle
+            bladesGroup.add(blade);
+        }
+        group.add(bladesGroup);
+
+        return group;
+    }
+
+    private createSensorProbeModel(color: string): THREE.Group {
+        const group = new THREE.Group();
+
+        // 1. Cable (Black, dangling down slightly)
+        const cablePath = new THREE.CurvePath<THREE.Vector3>();
+        const curve = new THREE.CubicBezierCurve3(
+            new THREE.Vector3(0, 40, 0),    // Top spawn point
+            new THREE.Vector3(0, 20, 0),    // Control point
+            new THREE.Vector3(0, 10, 5),    // Control point
+            new THREE.Vector3(0, 5, 0)      // Connect to gland
+        );
+        cablePath.add(curve);
+        const cableGeo = new THREE.TubeGeometry(curve, 10, 0.4, 8, false);
+        const cableMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.8 });
+        const cable = new THREE.Mesh(cableGeo, cableMat);
+        group.add(cable);
+
+        // 2. Cable Gland (Grey/Metallic)
+        const glandGeo = new THREE.CylinderGeometry(1.2, 1.2, 3, 12);
+        const glandMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.8, roughness: 0.2 });
+        const gland = new THREE.Mesh(glandGeo, glandMat);
+        gland.position.y = 3.5;
+        group.add(gland);
+
+        // 3. Probe Body (White)
+        const bodyGeo = new THREE.CylinderGeometry(2.5, 2.5, 12, 16);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = -4;
+        group.add(body);
+
+        // 4. Protective Cage/Filter (Metallic Grey)
+        const cageGroup = new THREE.Group();
+        cageGroup.position.y = -12;
+
+        // Perforated look using wires/tubes or a mesh with texture (simplest is another cylinder)
+        const filterGeo = new THREE.CylinderGeometry(2.4, 2.4, 6, 16);
+        const filterMat = new THREE.MeshStandardMaterial({
+            color: 0xbbbbbb,
+            metalness: 0.6,
+            roughness: 0.3,
+            wireframe: false
+        });
+        const filter = new THREE.Mesh(filterGeo, filterMat);
+        cageGroup.add(filter);
+
+        // Add rings for detail
+        for (let i = -1; i <= 1; i++) {
+            const ringGeo = new THREE.TorusGeometry(2.5, 0.1, 8, 24);
+            const ring = new THREE.Mesh(ringGeo, glandMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = i * 2.5;
+            cageGroup.add(ring);
+        }
+
+        group.add(cageGroup);
+
+        // 5. Active Indicator (The Glowing Diode/Value color)
+        // We'll place a small glowing ring between body and filter
+        const diodeGeo = new THREE.TorusGeometry(2.51, 0.2, 8, 24);
+        const diodeMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(color),
+            emissive: new THREE.Color(color),
+            emissiveIntensity: 1,
+            transparent: true,
+            opacity: 0.9
+        });
+        const diode = new THREE.Mesh(diodeGeo, diodeMat);
+        diode.rotation.x = Math.PI / 2;
+        diode.position.y = -10;
+        group.add(diode);
+
+        // Scale the whole thing to fit the scene
+        group.scale.set(0.3, 0.3, 0.3);
+
+        return group;
     }
 
     private createFanModel(fanSpeed: number, baseRotation: number, entityId: string): THREE.Group {
@@ -1221,103 +1518,156 @@ export class Heatmap3D extends LitElement {
         group.rotation.y = (baseRotation * Math.PI) / 180;
         group.userData = { fanSpeed, baseRotation, entityId };
 
-        // Scale Factor for 15.24cm blades (approx 6 inches)
-        // Previous blade was 5 units. new is 15.24. Scale approx 3x.
+        const plasticMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.2 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.3, metalness: 0.5 });
 
-        // 1. Base/Stand - adjustable height/telescopic look
-        const standRadius = 1.5;
-        const standHeight = 30; // Taller stand for larger fan
-        const standGeo = new THREE.CylinderGeometry(standRadius, standRadius, standHeight, 16);
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
-        const stand = new THREE.Mesh(standGeo, standMat);
-        stand.position.y = -standHeight / 2;
-        group.add(stand);
+        // 1. Clip Assembly (clamps to the vertical pole)
+        const clipGroup = new THREE.Group();
 
-        // Base plate
-        const plateGeo = new THREE.CylinderGeometry(8, 8, 1, 32);
-        const plate = new THREE.Mesh(plateGeo, standMat);
-        plate.position.y = -standHeight;
-        group.add(plate);
+        // Clamp body
+        const clampGeo = new THREE.BoxGeometry(3, 5, 4);
+        const clamp = new THREE.Mesh(clampGeo, plasticMat);
+        clamp.position.set(0, 0, 1.5); // Offset from center of pole
+        clipGroup.add(clamp);
 
-        // 2. Motor Housing (Oscillating part)
+        // Clamp jaws wrapping around the pole
+        const jawGeo = new THREE.TorusGeometry(1.2, 0.4, 8, 12, Math.PI * 1.2);
+        const topJaw = new THREE.Mesh(jawGeo, plasticMat);
+        topJaw.rotation.x = Math.PI / 2;
+        topJaw.position.set(0, 2, 0);
+        clipGroup.add(topJaw);
+
+        const bottomJaw = new THREE.Mesh(jawGeo, plasticMat);
+        bottomJaw.rotation.x = Math.PI / 2;
+        bottomJaw.position.set(0, -2, 0);
+        clipGroup.add(bottomJaw);
+
+        group.add(clipGroup);
+
+        // 2. Connecting Arm and Swivel Joint
+        const armGroup = new THREE.Group();
+        armGroup.position.set(0, 0, 3);
+
+        const armGeo = new THREE.CylinderGeometry(0.8, 0.8, 4, 12);
+        armGeo.rotateX(Math.PI / 2);
+        const arm = new THREE.Mesh(armGeo, plasticMat);
+        arm.position.z = 2;
+        armGroup.add(arm);
+
+        const jointGeo = new THREE.SphereGeometry(1.5, 16, 16);
+        const joint = new THREE.Mesh(jointGeo, accentMat);
+        joint.position.z = 4;
+        armGroup.add(joint);
+
+        group.add(armGroup);
+
+        // 3. Fan Head (Motor + Cage + Blades) - Pointing towards +Z
         const oscillatingGroup = new THREE.Group();
         oscillatingGroup.name = "fanHead";
+        oscillatingGroup.position.set(0, 0, 8.5);
         group.add(oscillatingGroup);
 
-        const motorGeo = new THREE.CylinderGeometry(4, 4, 10, 16);
+        // Motor housing
+        const motorGeo = new THREE.CylinderGeometry(3, 3.5, 5, 16);
         motorGeo.rotateX(Math.PI / 2);
-        const motor = new THREE.Mesh(motorGeo, standMat);
+        const motor = new THREE.Mesh(motorGeo, plasticMat);
+        motor.position.z = -2.5;
         oscillatingGroup.add(motor);
 
-        // 3. Fan Cage - Scaled to ~17-18cm radius to fit 15.24cm blades
-        const cageRadius = 17.5;
-        const cageGeo = new THREE.SphereGeometry(cageRadius, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5); // Hemisphere-ish or flattened sphere
-        cageGeo.scale(1, 1, 0.3); // Flatten
+        // Control button/dial on motor back
+        const knobGeo = new THREE.CylinderGeometry(1, 1, 1, 12);
+        knobGeo.rotateX(Math.PI / 2);
+        const knob = new THREE.Mesh(knobGeo, accentMat);
+        knob.position.z = -5;
+        oscillatingGroup.add(knob);
 
-        // Back Cage
-        const cageMat = new THREE.MeshStandardMaterial({
-            color: 0x888888,
-            wireframe: true,
+        // Fan Cage - Sleek circular design
+        const cageRadius = 15;
+        const cageDepth = 5;
+
+        // Back grill plate
+        const backPlateGeo = new THREE.CircleGeometry(cageRadius, 32);
+        const backPlateMat = new THREE.MeshStandardMaterial({
+            color: 0x111111,
             transparent: true,
-            opacity: 0.15,
+            opacity: 0.8,
             side: THREE.DoubleSide
         });
-        const backCage = new THREE.Mesh(cageGeo, cageMat);
-        backCage.rotation.x = Math.PI; // Face back
-        backCage.position.z = 2; // Behind blades
-        oscillatingGroup.add(backCage);
+        const backPlate = new THREE.Mesh(backPlateGeo, backPlateMat);
+        backPlate.position.z = -0.5;
+        oscillatingGroup.add(backPlate);
 
-        // Front Cage
-        const frontCage = new THREE.Mesh(cageGeo, cageMat);
-        frontCage.position.z = 2;
-        oscillatingGroup.add(frontCage);
-
-        // Cage Rim
-        const rimGeo = new THREE.TorusGeometry(cageRadius, 0.5, 8, 64);
-        const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const rim = new THREE.Mesh(rimGeo, rimMat);
-        rim.position.z = 2;
+        // Outer Cage Rim
+        const rimGeo = new THREE.TorusGeometry(cageRadius, 0.6, 8, 64);
+        const rim = new THREE.Mesh(rimGeo, accentMat);
+        rim.position.z = cageDepth / 2;
         oscillatingGroup.add(rim);
 
+        const backRim = new THREE.Mesh(rimGeo, accentMat);
+        backRim.position.z = -cageDepth / 2;
+        oscillatingGroup.add(backRim);
+
+        // Radial Grill Bars (Spiral effect like image)
+        const grillCount = 24;
+        const grillMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        for (let i = 0; i < grillCount; i++) {
+            const angle = (i / grillCount) * Math.PI * 2;
+            const barGeo = new THREE.CylinderGeometry(0.15, 0.15, cageRadius, 8);
+            const bar = new THREE.Mesh(barGeo, grillMat);
+
+            // Positioning bars to create a spiral-like front grill
+            bar.position.set(Math.cos(angle) * cageRadius / 2, Math.sin(angle) * cageRadius / 2, cageDepth / 2);
+            bar.rotation.z = angle + Math.PI / 4; // Slanted for spiral look
+            oscillatingGroup.add(bar);
+        }
+
+        // Center Logo Hub
+        const logoGeo = new THREE.CylinderGeometry(3, 3, 0.5, 16);
+        logoGeo.rotateX(Math.PI / 2);
+        const logo = new THREE.Mesh(logoGeo, plasticMat);
+        logo.position.z = cageDepth / 2 + 0.2;
+        oscillatingGroup.add(logo);
+
+        const iconGeo = new THREE.PlaneGeometry(2, 2);
+        const iconMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+        const icon = new THREE.Mesh(iconGeo, iconMat);
+        icon.position.z = cageDepth / 2 + 0.4;
+        oscillatingGroup.add(icon);
 
         // 4. Blades
         const bladesGroup = new THREE.Group();
         bladesGroup.name = "fanBlades";
-        bladesGroup.position.z = 2.5; // Inside cage
+        bladesGroup.position.z = 1;
         oscillatingGroup.add(bladesGroup);
 
-        // 15.24cm Blade Length
-        const bladeLength = 15.24;
-        const bladeWidth = 4.5;
+        const bladeLength = 13;
+        const bladeWidth = 5;
+        const bladeShape = new THREE.Shape();
+        bladeShape.moveTo(0, 0);
+        bladeShape.bezierCurveTo(bladeWidth, bladeLength * 0.4, bladeWidth, bladeLength * 0.8, 0, bladeLength);
+        bladeShape.bezierCurveTo(-bladeWidth, bladeLength * 0.8, -bladeWidth, bladeLength * 0.4, 0, 0);
 
-        // Blade Geometry (Leaf shape approx)
-        const shape = new THREE.Shape();
-        shape.moveTo(0, 0);
-        shape.bezierCurveTo(bladeWidth, bladeLength * 0.3, bladeWidth, bladeLength * 0.7, 0, bladeLength);
-        shape.bezierCurveTo(-bladeWidth, bladeLength * 0.7, -bladeWidth, bladeLength * 0.3, 0, 0);
-
-        const bladeGeo = new THREE.ShapeGeometry(shape);
+        const bladeGeo = new THREE.ShapeGeometry(bladeShape);
         const bladeMat = new THREE.MeshStandardMaterial({
-            color: 0xeeeeee,
+            color: 0x0a0a0a,
             side: THREE.DoubleSide,
-            roughness: 0.2,
-            metalness: 0.1
+            roughness: 0.1,
+            metalness: 0.3
         });
 
-        // Hub
-        const hubGeo = new THREE.CylinderGeometry(2, 2, 1, 16);
+        // Hub for blades
+        const hubGeo = new THREE.CylinderGeometry(2, 2, 2, 16);
         hubGeo.rotateX(Math.PI / 2);
-        const hub = new THREE.Mesh(hubGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        bladesGroup.add(hub);
+        bladesGroup.add(new THREE.Mesh(hubGeo, plasticMat));
 
-        // Create 3 Blades
         for (let i = 0; i < 3; i++) {
+            const bladePivot = new THREE.Group();
+            bladePivot.rotation.z = (i * Math.PI * 2) / 3;
+
             const blade = new THREE.Mesh(bladeGeo, bladeMat);
-            // Rotate around Z axis for placement
-            blade.rotation.z = (i * Math.PI * 2) / 3;
-            // Twist blade for aerodynamics look
-            blade.rotateY(0.3);
-            bladesGroup.add(blade);
+            blade.rotation.x = -0.3; // Attack angle
+            bladePivot.add(blade);
+            bladesGroup.add(bladePivot);
         }
 
         return group;
@@ -1369,44 +1719,62 @@ export class Heatmap3D extends LitElement {
         const cellWidth = width / plantsPerRow;
         const cellDepth = depth / effectiveRows;
 
-        plants.forEach((plant) => {
-            const row = (plant.attributes?.row ?? 1) - 1;
-            const col = (plant.attributes?.col ?? 1) - 1;
-
-            if (row < 0 || row >= effectiveRows || col < 0 || col >= plantsPerRow) return;
-
-            const plantGroup = new THREE.Group();
-
-            // Calculate position
-            const posX = (col + 0.5) * cellWidth - width / 2;
-            const posZ = (row + 0.5) * cellDepth - depth / 2;
-            plantGroup.position.set(posX, 0, posZ);
-
-            // 1. Create Pot
-            const potHeight = Math.min(25, cellWidth * 0.4);
-            const potRadius = Math.min(12, cellWidth * 0.35);
-            const pot = this.createPotModel(potRadius, potHeight);
-            plantGroup.add(pot);
-
-            // 2. Create Plant
-            const stage = PlantUtils.getPlantStage(plant);
-            const plantModel = this.createPlantModel(stage, potHeight);
-            plantGroup.add(plantModel);
-
-            // 3. Create HitBox for Raycasting (O(1) intersection instead of O(Nx))
-            const hitBoxGeo = new THREE.CylinderGeometry(potRadius * 1.5, potRadius * 1.5, potHeight + 50, 8);
-            const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
-            const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
-            hitBox.position.y = (potHeight + 50) / 2;
-            hitBox.userData = { plant };
-            plantGroup.add(hitBox);
-            this._plantHitBoxes.push(hitBox);
-
-            this.volatileGroup?.add(plantGroup);
+        // Create a grid map for quick lookup
+        const gridMap = new Map<string, PlantEntity>();
+        plants.forEach(p => {
+            const r = (p.attributes?.row ?? 1);
+            const c = (p.attributes?.col ?? 1);
+            gridMap.set(`${r},${c}`, p);
         });
+
+        for (let rowIdx = 0; rowIdx < effectiveRows; rowIdx++) {
+            for (let colIdx = 0; colIdx < plantsPerRow; colIdx++) {
+                const row = rowIdx + 1;
+                const col = colIdx + 1;
+                const plant = gridMap.get(`${row},${col}`);
+
+                const plantGroup = new THREE.Group();
+
+                // Calculate position
+                const posX = (colIdx + 0.5) * cellWidth - width / 2;
+                const posZ = (rowIdx + 0.5) * cellDepth - depth / 2;
+                plantGroup.position.set(posX, 0, posZ);
+
+                // 1. Create Pot
+                const potHeight = Math.min(25, cellWidth * 0.4);
+                const potRadius = Math.min(12, cellWidth * 0.35);
+                const pot = this.createPotModel(potRadius, potHeight);
+                plantGroup.add(pot);
+
+                if (plant) {
+                    // 2. Create Plant
+                    const stage = PlantUtils.getPlantStage(plant);
+                    const plantModel = this.createPlantModel(stage, potHeight);
+                    plantGroup.add(plantModel);
+                }
+
+                // 3. Create HitBox for Raycasting
+                const hitBoxHeight = plant ? potHeight + 50 : potHeight;
+                const hitBoxGeo = new THREE.CylinderGeometry(potRadius * 1.5, potRadius * 1.5, hitBoxHeight, 8);
+                const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+                hitBox.position.y = hitBoxHeight / 2;
+
+                if (plant) {
+                    hitBox.userData = { plant };
+                } else {
+                    hitBox.userData = { emptySlot: { row: rowIdx, col: colIdx } };
+                }
+
+                plantGroup.add(hitBox);
+                this._plantHitBoxes.push(hitBox);
+
+                this.volatileGroup?.add(plantGroup);
+            }
+        }
     }
 
-    private _getPlantFromPoint(clientX: number, clientY: number): PlantEntity | null {
+    private _getInteractionFromPoint(clientX: number, clientY: number): { plant?: PlantEntity, emptySlot?: { row: number, col: number } } | null {
         if (!this.container || !this.camera || this._plantHitBoxes.length === 0) return null;
 
         const rect = this.container.getBoundingClientRect();
@@ -1418,7 +1786,7 @@ export class Heatmap3D extends LitElement {
         const intersects = this._raycaster.intersectObjects(this._plantHitBoxes, false);
 
         if (intersects.length > 0) {
-            return intersects[0].object.userData?.plant || null;
+            return intersects[0].object.userData || null;
         }
         return null;
     }
@@ -1431,10 +1799,10 @@ export class Heatmap3D extends LitElement {
         if (now - this._lastRaycastTime < 32) return;
         this._lastRaycastTime = now;
 
-        const foundPlant = this._getPlantFromPoint(e.clientX, e.clientY);
+        const interaction = this._getInteractionFromPoint(e.clientX, e.clientY);
 
-        if (foundPlant) {
-            this._hoveredPlant = foundPlant;
+        if (interaction) {
+            this._hoveredPlant = interaction.plant || null;
             const rect = this.container!.getBoundingClientRect();
             this._tooltipPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
             this.container!.style.cursor = 'pointer';
@@ -1447,10 +1815,29 @@ export class Heatmap3D extends LitElement {
     private _handleMouseClick(e: MouseEvent) {
         if (this.isDragging) return;
 
-        const foundPlant = this._getPlantFromPoint(e.clientX, e.clientY);
-        if (foundPlant && this.store) {
-            this.store.handlePlantClick(foundPlant);
+        const interaction = this._getInteractionFromPoint(e.clientX, e.clientY);
+        if (interaction && this.store) {
+            if (interaction.plant) {
+                this.store.handlePlantClick(interaction.plant);
+            } else if (interaction.emptySlot) {
+                this.store.openAddPlantDialog(interaction.emptySlot.row, interaction.emptySlot.col);
+            }
         }
+    }
+
+    private _handleKeyDown = (e: KeyboardEvent) => {
+        if (!this.keyboardRotateEnabled) return;
+        this._keysPressed.add(e.code);
+
+        // Prevent scroll if keys are for rotation
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+            // Only prevent if mouse is over or card is focusable
+            e.preventDefault();
+        }
+    }
+
+    private _handleKeyUp = (e: KeyboardEvent) => {
+        this._keysPressed.delete(e.code);
     }
 
     private createPotModel(radius: number, height: number): THREE.Group {
@@ -1653,6 +2040,24 @@ export class Heatmap3D extends LitElement {
 
     private _animateLoop() {
         this.animationId = requestAnimationFrame(() => this._animateLoop());
+
+        // Keyboard Rotation logic
+        if (this.keyboardRotateEnabled && this.controls && this._keysPressed.size > 0 && this.camera) {
+            const rotSpeed = 0.05 * this.keyboardRotateSpeed;
+            if (this._keysPressed.has('ArrowLeft') || this._keysPressed.has('KeyA')) {
+                (this.controls as any)._rotateLeft(rotSpeed);
+            }
+            if (this._keysPressed.has('ArrowRight') || this._keysPressed.has('KeyD')) {
+                (this.controls as any)._rotateLeft(-rotSpeed);
+            }
+            if (this._keysPressed.has('ArrowUp') || this._keysPressed.has('KeyW')) {
+                (this.controls as any)._rotateUp(rotSpeed);
+            }
+            if (this._keysPressed.has('ArrowDown') || this._keysPressed.has('KeyS')) {
+                (this.controls as any)._rotateUp(-rotSpeed);
+            }
+        }
+
         if (this.controls) this.controls.update();
 
         // Update shaders
@@ -1691,6 +2096,19 @@ export class Heatmap3D extends LitElement {
             });
         }
 
+        // Update Exhaust Fan Animations (Blades)
+        if (this._exhaustFans.length > 0) {
+            this._exhaustFans.forEach(group => {
+                const speed = group.userData.exhaustSpeed;
+                if (speed > 0) {
+                    const blades = group.getObjectByName("exhaustBlades");
+                    if (blades) {
+                        blades.rotation.z += (speed * 0.2);
+                    }
+                }
+            });
+        }
+
         // Update wind particles
         if (this.windParticles && this.volatileGroup) {
             const positions = this.windParticles.geometry.attributes.position.array as Float32Array;
@@ -1698,8 +2116,9 @@ export class Heatmap3D extends LitElement {
             const lifetimes = this.windParticles.geometry.attributes.lifetime.array as Float32Array;
 
             const activeFans = this._fanHeads.filter(head => head.parent && head.parent.userData.fanSpeed > 0);
+            const activeExhausts = this._exhaustFans.filter(group => group.userData.exhaustSpeed > 0);
 
-            if (activeFans.length === 0) {
+            if (activeFans.length === 0 && activeExhausts.length === 0) {
                 for (let i = 0; i < positions.length / 3; i++) {
                     positions[i * 3 + 1] = -1000;
                 }
@@ -1708,23 +2127,67 @@ export class Heatmap3D extends LitElement {
                     lifetimes[i] -= 0.02;
 
                     if (lifetimes[i] <= 0) {
-                        const fanHead = activeFans[Math.floor(Math.random() * activeFans.length)];
-                        const worldPos = new THREE.Vector3();
-                        fanHead.getWorldPosition(worldPos);
+                        const totalActive = activeFans.length + activeExhausts.length;
+                        const randSource = Math.floor(Math.random() * totalActive);
 
-                        const fanGroup = fanHead.parent!;
-                        const angle = fanGroup.rotation.y + fanHead.rotation.y;
+                        if (randSource < activeFans.length) {
+                            // Standard Fan logic
+                            const fanHead = activeFans[randSource];
+                            const worldPos = new THREE.Vector3();
+                            fanHead.getWorldPosition(worldPos);
 
-                        const speed = 2.5 + Math.random();
-                        velocities[i * 3] = Math.sin(angle) * speed;
-                        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
-                        velocities[i * 3 + 2] = Math.cos(angle) * speed;
+                            const forward = new THREE.Vector3();
+                            fanHead.getWorldDirection(forward);
 
-                        positions[i * 3] = worldPos.x + (Math.random() - 0.5) * 5;
-                        positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 5;
-                        positions[i * 3 + 2] = worldPos.z + (Math.random() - 0.5) * 5;
+                            const fanSpeed = fanHead.parent?.userData.fanSpeed || 5;
+                            const speed = (2.5 + Math.random()) * (fanSpeed / 5);
 
-                        lifetimes[i] = 1.0;
+                            // Origin in front of blades (~10 units forward)
+                            positions[i * 3] = worldPos.x + forward.x * 10 + (Math.random() - 0.5) * 5;
+                            positions[i * 3 + 1] = worldPos.y + forward.y * 10 + (Math.random() - 0.5) * 5;
+                            positions[i * 3 + 2] = worldPos.z + forward.z * 10 + (Math.random() - 0.5) * 5;
+
+                            velocities[i * 3] = forward.x * speed;
+                            velocities[i * 3 + 1] = forward.y * speed + (Math.random() - 0.5) * 0.5;
+                            velocities[i * 3 + 2] = forward.z * speed;
+                            lifetimes[i] = 1.0;
+                        } else {
+                            // Exhaust Fan logic (Suck in and Blow out)
+                            const exhaustGroup = activeExhausts[randSource - activeFans.length];
+                            const worldPos = new THREE.Vector3();
+                            exhaustGroup.getWorldPosition(worldPos);
+
+                            const angle = exhaustGroup.rotation.y;
+                            const exhaustSpeed = exhaustGroup.userData.exhaustSpeed;
+                            const speed = (2.0 + Math.random()) * (exhaustSpeed / 5);
+
+                            const isSuction = Math.random() > 0.5;
+                            const dir = isSuction ? 1 : 1; // Both move forward relative to their local start
+
+                            if (isSuction) {
+                                // Moves TOWARDS intake
+                                const startOffset = -40;
+                                positions[i * 3] = worldPos.x + Math.sin(angle) * startOffset + (Math.random() - 0.5) * 10;
+                                positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 10;
+                                positions[i * 3 + 2] = worldPos.z + Math.cos(angle) * startOffset + (Math.random() - 0.5) * 10;
+
+                                velocities[i * 3] = Math.sin(angle) * speed;
+                                velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.2;
+                                velocities[i * 3 + 2] = Math.cos(angle) * speed;
+                                lifetimes[i] = 0.5; // Short life for intake particles
+                            } else {
+                                // Moves AWAY from exhaust
+                                const startOffset = 21;
+                                positions[i * 3] = worldPos.x + Math.sin(angle) * startOffset + (Math.random() - 0.5) * 6;
+                                positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 6;
+                                positions[i * 3 + 2] = worldPos.z + Math.cos(angle) * startOffset + (Math.random() - 0.5) * 6;
+
+                                velocities[i * 3] = Math.sin(angle) * speed * 1.5;
+                                velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+                                velocities[i * 3 + 2] = Math.cos(angle) * speed * 1.5;
+                                lifetimes[i] = 1.0;
+                            }
+                        }
                     } else {
                         positions[i * 3] += velocities[i * 3];
                         positions[i * 3 + 1] += velocities[i * 3 + 1];
@@ -2114,6 +2577,15 @@ export class Heatmap3D extends LitElement {
             </div>
         `;
     }
+    private _dispatchViewOptionChange(key: string, value: any) {
+        this.dispatchEvent(
+            new CustomEvent('sensor-position-changed', {
+                detail: { [key]: value },
+                bubbles: true,
+                composed: true,
+            })
+        );
+    }
 
     render() {
         const maxLen = this.getMaxHistoryLength();
@@ -2125,7 +2597,7 @@ export class Heatmap3D extends LitElement {
         const range = ranges[this.selectedMetric];
 
         return html`
-      <div id="container">
+      <div id="container" tabIndex="0">
         <!-- Three.js Canvas and LabelRenderer will be appended here once -->
         
         ${this.renderTooltip()}
@@ -2163,6 +2635,13 @@ export class Heatmap3D extends LitElement {
                         ></ha-checkbox>
                         <span>Fans</span>
                     </div>
+                    <div class="toggle-item" @click=${() => this.showHeatmap = !this.showHeatmap}>
+                        <ha-checkbox
+                            .checked=${this.showHeatmap}
+                            @change=${(e: any) => { e.stopPropagation(); this.showHeatmap = e.target.checked; }}
+                        ></ha-checkbox>
+                        <span>Heatmap</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2182,7 +2661,7 @@ export class Heatmap3D extends LitElement {
             return html`
                         <div class="sensor-item">
                             <div class="sensor-header">
-                                <span>${this.isFan(id) ? 'Fan' : `Sensor ${i + 1}`}</span>
+                                <span>${this.isFan(id) ? 'Fan' : (this.isExhaust(id) ? 'Exhaust' : `Sensor ${i + 1}`)}</span>
                                 <span style="font-size: 9px; opacity: 0.5">${id.split('.').pop()}</span>
                             </div>
                             <div class="slider-group">
@@ -2207,7 +2686,7 @@ export class Heatmap3D extends LitElement {
                                         @change=${() => this.handleSliderChange(id)}>
                                     <span class="slider-val">${z}</span>
                                 </div>
-                                ${this.isFan(id) ? html`
+                                ${(this.isFan(id) || this.isExhaust(id)) ? html`
                                     <div class="slider-row">
                                         <label>R</label>
                                         <input type="range" class="edit-slider" min="0" max="360" .value=${rotation} 
@@ -2220,6 +2699,38 @@ export class Heatmap3D extends LitElement {
                         </div>
                     `;
         })}
+                
+                <h3>View Controls</h3>
+                <div class="sensor-item">
+                    <div class="toggle-item" @click=${() => {
+                    this.keyboardRotateEnabled = !this.keyboardRotateEnabled;
+                    this._dispatchViewOptionChange('keyboard_rotate_enabled', this.keyboardRotateEnabled);
+                }}>
+                        <ha-checkbox
+                            .checked=${this.keyboardRotateEnabled}
+                            @change=${(e: any) => {
+                    e.stopPropagation();
+                    this.keyboardRotateEnabled = e.target.checked;
+                    this._dispatchViewOptionChange('keyboard_rotate_enabled', this.keyboardRotateEnabled);
+                }}
+                        ></ha-checkbox>
+                        <span>Keyboard Rotation</span>
+                    </div>
+                    <div class="slider-group">
+                        <div class="slider-row">
+                            <label style="width: 40px">Speed</label>
+                            <input type="range" class="edit-slider" min="0.1" max="5.0" step="0.1" 
+                                .value=${this.keyboardRotateSpeed} 
+                                @input=${(e: any) => {
+                    this.keyboardRotateSpeed = parseFloat(e.target.value);
+                }}
+                                @change=${(e: any) => {
+                    this._dispatchViewOptionChange('keyboard_rotate_speed', parseFloat(e.target.value));
+                }}>
+                            <span class="slider-val">${this.keyboardRotateSpeed.toFixed(1)}x</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         ` : ''}
 
@@ -2235,13 +2746,15 @@ export class Heatmap3D extends LitElement {
                     class="${this.selectedMetric === 'vpd' ? 'active' : ''}" 
                     @click=${() => this.setMetric('vpd')}>VPD</button>
             </div>
-            <div class="legend-container">
-                <div class="legend"></div>
-                <div class="legend-labels">
-                    <span>Low (${range.min}${range.unit})</span>
-                    <span>High (${range.max}${range.unit})</span>
+            ${this.showHeatmap ? html`
+                <div class="legend-container">
+                    <div class="legend"></div>
+                    <div class="legend-labels">
+                        <span>Low (${range.min}${range.unit})</span>
+                        <span>High (${range.max}${range.unit})</span>
+                    </div>
                 </div>
-            </div>
+            ` : nothing}
         </div>
 
         ${maxLen > 0 ? html`
