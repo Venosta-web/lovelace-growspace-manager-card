@@ -425,12 +425,19 @@ export class Heatmap3D extends LitElement {
         if (!this.device) return;
 
         const sensors = Object.keys(this.device.environmentAttributes?.sensorCoordinates || {});
+        const env = this.device.environmentAttributes;
+        const fanEntities = env?.circulationFanEntities || (env?.circulationFanEntity ? [env.circulationFanEntity] : []);
+        const allTracked = Array.from(new Set([...sensors, ...fanEntities]));
+
         let dataHash = `${this.selectedMetric}_${this.timelineIndex}_${this.device.deviceId}`;
 
         // Add sensor values to hash to detect state changes
-        sensors.forEach(id => {
-            const state = this.hass?.states[id]?.state;
-            dataHash += `_${id}:${state}`;
+        allTracked.forEach(id => {
+            const stateObj = this.hass?.states[id];
+            const state = stateObj?.state;
+            // Also track percentage for fans
+            const percentage = stateObj?.attributes?.percentage;
+            dataHash += `_${id}:${state}:${percentage}`;
         });
 
         const shouldUpdate = changedProps.has('device') ||
@@ -497,7 +504,7 @@ export class Heatmap3D extends LitElement {
 
         // Check for illuminance/light characteristics
         const isIlluminance = deviceClass === 'illuminance' || (unit && (unit.includes('lx') || unit.includes('fc') || unit.toLowerCase().includes('lux')));
-        const isLightId = lowerId.includes('light_sensor') || lowerId.includes('illuminance') || (lowerId.includes('light') && !lowerId.includes('humidifier_light'));
+        const isLightId = lowerId.includes('light_sensor') || lowerId.includes('illuminance') || (lowerId.includes('light') && !lowerId.includes('humidifier_light') && !lowerId.includes('vpd'));
 
         return isIlluminance || isLightId;
     }
@@ -518,7 +525,8 @@ export class Heatmap3D extends LitElement {
         // Robust check for sensor type excluding ambiguous names if they are light sensors
         const isTemp = deviceClass === 'temperature' || (unit && unit.includes('°')) || lowerId.includes('temp');
         const isHumi = (deviceClass === 'humidity' || (unit && unit.includes('%')) || lowerId.includes('humi') || lowerId.includes('humid')) && !this.isLight(entityId);
-        const isVpd = deviceClass === 'pressure' || (unit && (unit.includes('Pa') || unit.includes('vpd'))) || lowerId.includes('vpd') || lowerId.includes('calculated_vpd');
+        // Looser VPD check to catch calculated sensors
+        const isVpd = deviceClass === 'pressure' || (unit && (unit.includes('Pa') || unit.includes('vpd'))) || lowerId.includes('vpd') || lowerId.includes('calculated_vpd') || lowerId.includes('deficit');
 
         if (this.selectedMetric === 'temperature') return isTemp;
         if (this.selectedMetric === 'humidity') return isHumi;
@@ -891,7 +899,7 @@ export class Heatmap3D extends LitElement {
             } else {
                 // It's a light sensor being displayed alongside another metric
                 healthColor = '#ffeb3b'; // Yellow/Gold for light
-                unit = ' lx';
+                unit = ' %';
                 const state = this.hass?.states[entityId];
                 if (state && state.attributes.unit_of_measurement?.includes('fc')) unit = ' fc';
                 icon = 'mdi:white-balance-sunny';
@@ -1100,10 +1108,31 @@ export class Heatmap3D extends LitElement {
                 coords = { x: width / 2, y: depth / 2, z: height * 0.8, rotation: 0 };
             }
 
-            const state = this.hass?.states[entityId];
-            const isOn = state?.state === 'on';
+            const stateObj = this.hass?.states[entityId];
+            let fanSpeed = 0;
 
-            const fanGroup = this.createFanModel(isOn, coords.rotation || 0, entityId);
+            if (stateObj) {
+                const val = parseFloat(stateObj.state);
+                // Check if the state is mapped 0-10 or 0-100 directly
+                if (!isNaN(val)) {
+                    // Try to deduce scale. If > 10, likely percentage.
+                    if (val > 10) fanSpeed = val / 10;
+                    else fanSpeed = val;
+                } else if (stateObj.state === 'on') {
+                    // Check percentage attribute
+                    if (stateObj.attributes.percentage !== undefined && stateObj.attributes.percentage !== null) {
+                        fanSpeed = stateObj.attributes.percentage / 10;
+                    } else {
+                        // Default to medium speed (5) if just ON without attributes
+                        fanSpeed = 5;
+                    }
+                }
+            }
+
+            // Ensure speed is within 0-10 range
+            fanSpeed = Math.max(0, Math.min(10, fanSpeed));
+
+            const fanGroup = this.createFanModel(fanSpeed, coords.rotation || 0, entityId);
 
             // Set position relative to center
             fanGroup.position.set(
@@ -1117,55 +1146,107 @@ export class Heatmap3D extends LitElement {
         });
     }
 
-    private createFanModel(isOn: boolean, baseRotation: number, entityId: string): THREE.Group {
+    private createFanModel(fanSpeed: number, baseRotation: number, entityId: string): THREE.Group {
         const group = new THREE.Group();
         group.rotation.y = (baseRotation * Math.PI) / 180;
-        group.userData = { isOn, baseRotation, entityId };
+        group.userData = { fanSpeed, baseRotation, entityId };
 
-        // 1. Base/Stand
-        const standGeo = new THREE.CylinderGeometry(1, 1, 10, 8);
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        // Scale Factor for 15.24cm blades (approx 6 inches)
+        // Previous blade was 5 units. new is 15.24. Scale approx 3x.
+
+        // 1. Base/Stand - adjustable height/telescopic look
+        const standRadius = 1.5;
+        const standHeight = 30; // Taller stand for larger fan
+        const standGeo = new THREE.CylinderGeometry(standRadius, standRadius, standHeight, 16);
+        const standMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
         const stand = new THREE.Mesh(standGeo, standMat);
-        stand.position.y = -5;
+        stand.position.y = -standHeight / 2;
         group.add(stand);
+
+        // Base plate
+        const plateGeo = new THREE.CylinderGeometry(8, 8, 1, 32);
+        const plate = new THREE.Mesh(plateGeo, standMat);
+        plate.position.y = -standHeight;
+        group.add(plate);
 
         // 2. Motor Housing (Oscillating part)
         const oscillatingGroup = new THREE.Group();
         oscillatingGroup.name = "fanHead";
         group.add(oscillatingGroup);
 
-        const motorGeo = new THREE.SphereGeometry(3, 16, 16);
-        motorGeo.scale(1, 1, 1.5);
+        const motorGeo = new THREE.CylinderGeometry(4, 4, 10, 16);
+        motorGeo.rotateX(Math.PI / 2);
         const motor = new THREE.Mesh(motorGeo, standMat);
         oscillatingGroup.add(motor);
 
-        // 3. Fan Cage
-        const cageGeo = new THREE.SphereGeometry(6, 16, 16);
+        // 3. Fan Cage - Scaled to ~17-18cm radius to fit 15.24cm blades
+        const cageRadius = 17.5;
+        const cageGeo = new THREE.SphereGeometry(cageRadius, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5); // Hemisphere-ish or flattened sphere
+        cageGeo.scale(1, 1, 0.3); // Flatten
+
+        // Back Cage
         const cageMat = new THREE.MeshStandardMaterial({
-            color: 0x666666,
+            color: 0x888888,
             wireframe: true,
             transparent: true,
-            opacity: 0.3
+            opacity: 0.15,
+            side: THREE.DoubleSide
         });
-        const cage = new THREE.Mesh(cageGeo, cageMat);
-        cage.position.z = 4;
-        oscillatingGroup.add(cage);
+        const backCage = new THREE.Mesh(cageGeo, cageMat);
+        backCage.rotation.x = Math.PI; // Face back
+        backCage.position.z = 2; // Behind blades
+        oscillatingGroup.add(backCage);
+
+        // Front Cage
+        const frontCage = new THREE.Mesh(cageGeo, cageMat);
+        frontCage.position.z = 2;
+        oscillatingGroup.add(frontCage);
+
+        // Cage Rim
+        const rimGeo = new THREE.TorusGeometry(cageRadius, 0.5, 8, 64);
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.position.z = 2;
+        oscillatingGroup.add(rim);
+
 
         // 4. Blades
         const bladesGroup = new THREE.Group();
         bladesGroup.name = "fanBlades";
-        bladesGroup.position.z = 4;
+        bladesGroup.position.z = 2.5; // Inside cage
         oscillatingGroup.add(bladesGroup);
 
-        const bladeGeo = new THREE.PlaneGeometry(2, 5);
+        // 15.24cm Blade Length
+        const bladeLength = 15.24;
+        const bladeWidth = 4.5;
+
+        // Blade Geometry (Leaf shape approx)
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        shape.bezierCurveTo(bladeWidth, bladeLength * 0.3, bladeWidth, bladeLength * 0.7, 0, bladeLength);
+        shape.bezierCurveTo(-bladeWidth, bladeLength * 0.7, -bladeWidth, bladeLength * 0.3, 0, 0);
+
+        const bladeGeo = new THREE.ShapeGeometry(shape);
         const bladeMat = new THREE.MeshStandardMaterial({
-            color: 0x999999,
-            side: THREE.DoubleSide
+            color: 0xeeeeee,
+            side: THREE.DoubleSide,
+            roughness: 0.2,
+            metalness: 0.1
         });
+
+        // Hub
+        const hubGeo = new THREE.CylinderGeometry(2, 2, 1, 16);
+        hubGeo.rotateX(Math.PI / 2);
+        const hub = new THREE.Mesh(hubGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        bladesGroup.add(hub);
+
+        // Create 3 Blades
         for (let i = 0; i < 3; i++) {
             const blade = new THREE.Mesh(bladeGeo, bladeMat);
+            // Rotate around Z axis for placement
             blade.rotation.z = (i * Math.PI * 2) / 3;
-            blade.position.y = 2.5;
+            // Twist blade for aerodynamics look
+            blade.rotateY(0.3);
             bladesGroup.add(blade);
         }
 
@@ -1173,45 +1254,38 @@ export class Heatmap3D extends LitElement {
     }
 
     private renderBreeze(width: number, height: number, depth: number) {
-        if (!this.volatileGroup || !this.device) return;
+        if (!this.volatileGroup) return;
 
-        const anyFanOn = Object.values(this.hass?.states || {}).some(
-            (state: any) => this.isFan(state.entity_id) && state.state === "on"
-        );
-
-        if (!anyFanOn) {
-            this.windParticles = undefined;
-            return;
-        }
-
-        // Create wind particles if they don't exist
-        const particleCount = 200;
+        // Create a pool of wind particles
+        const particleCount = 400; // More particles for better effect
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const velocities = new Float32Array(particleCount * 3);
+        const lifetimes = new Float32Array(particleCount); // 0-1 lifecycle
 
+        // Inherit fan positions for initial spawn (will be reset in animate loop)
         for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * width;
-            positions[i * 3 + 1] = Math.random() * height;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * depth;
-
-            velocities[i * 3] = (Math.random() - 0.5) * 0.2;
-            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.05;
-            velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.2;
+            positions[i * 3] = 0;
+            positions[i * 3 + 1] = -1000; // Hide initially
+            positions[i * 3 + 2] = 0;
+            lifetimes[i] = Math.random(); // Random start phase
         }
 
-        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute("velocity", new THREE.BufferAttribute(velocities, 3));
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        geometry.setAttribute('lifetime', new THREE.BufferAttribute(lifetimes, 1));
 
         const material = new THREE.PointsMaterial({
-            color: 0x448aff,
-            size: 1.5,
+            color: 0xaec4c7, // Light breezy blue-grey
+            size: 0.8,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.6,
             blending: THREE.AdditiveBlending,
+            sizeAttenuation: true
         });
 
         this.windParticles = new THREE.Points(geometry, material);
+        this.windParticles.name = "windSystem";
         this.volatileGroup.add(this.windParticles);
     }
 
@@ -1515,40 +1589,92 @@ export class Heatmap3D extends LitElement {
             this.volatileGroup.traverse((obj) => {
                 if (obj.name === "fanHead") {
                     const fanRoot = obj.parent;
-                    if (fanRoot && fanRoot.userData?.isOn) {
+                    if (fanRoot && (fanRoot.userData?.fanSpeed > 0)) {
                         // Oscillation: ±45 degrees (PI/4)
                         obj.rotation.y = Math.sin(time * 2) * (Math.PI / 4);
                     }
                 }
                 if (obj.name === "fanBlades") {
                     const fanRoot = obj.parent?.parent;
-                    if (fanRoot && fanRoot.userData?.isOn) {
-                        // Blade rotation
-                        obj.rotation.z += 0.5;
+                    if (fanRoot && (fanRoot.userData?.fanSpeed > 0)) {
+                        const speed = fanRoot.userData.fanSpeed;
+                        // Blade rotation: Scale speed 1-10 to reasonable rotation speed
+                        // Level 1 = 0.1 rad/frame, Level 10 = 1.0 rad/frame
+                        obj.rotation.z += (speed * 0.1);
                     }
                 }
             });
 
             // Update wind particles
-            if (this.windParticles) {
+            if (this.windParticles && this.volatileGroup) {
                 const positions = this.windParticles.geometry.attributes.position.array as Float32Array;
                 const velocities = this.windParticles.geometry.attributes.velocity.array as Float32Array;
+                const lifetimes = this.windParticles.geometry.attributes.lifetime.array as Float32Array;
 
-                const width = this.device?.dimensions?.width ?? 120;
-                const height = this.device?.dimensions?.height ?? 200;
-                const depth = this.device?.dimensions?.length ?? (this.device?.dimensions as any)?.depth ?? 120;
+                // Find all active fans (speed > 0)
+                const activeFans: THREE.Group[] = [];
+                this.volatileGroup.traverse((obj) => {
+                    if (obj.name === "fanHead" && (obj.parent?.userData?.fanSpeed > 0)) {
+                        activeFans.push(obj as THREE.Group); // Push the HEAD, which rotates
+                    }
+                });
 
-                for (let i = 0; i < positions.length / 3; i++) {
-                    positions[i * 3] += velocities[i * 3];
-                    positions[i * 3 + 1] += velocities[i * 3 + 1];
-                    positions[i * 3 + 2] += velocities[i * 3 + 2];
+                if (activeFans.length === 0) {
+                    // Hide particles
+                    for (let i = 0; i < positions.length / 3; i++) {
+                        positions[i * 3 + 1] = -1000;
+                    }
+                } else {
+                    for (let i = 0; i < positions.length / 3; i++) {
+                        lifetimes[i] -= 0.02; // Decay
 
-                    // Reset if out of bounds
-                    if (Math.abs(positions[i * 3]) > width / 2) positions[i * 3] *= -0.9;
-                    if (positions[i * 3 + 1] < 0 || positions[i * 3 + 1] > height) positions[i * 3 + 1] = Math.random() * height;
-                    if (Math.abs(positions[i * 3 + 2]) > depth / 2) positions[i * 3 + 2] *= -0.9;
+                        if (lifetimes[i] <= 0) {
+                            // Respawn at a random active fan
+                            const fanHead = activeFans[Math.floor(Math.random() * activeFans.length)];
+
+                            // Get world position/rotation of the fan head (where air comes from)
+                            const worldPos = new THREE.Vector3();
+                            fanHead.getWorldPosition(worldPos);
+
+                            // Direction: The fan head faces -Z (or +Z) depending on model. 
+                            // My model: blades are at Z=2.5. Cage faces Z.
+                            // I want to shoot particles in the direction of the rotation.
+                            const direction = new THREE.Vector3(0, 0, 1);
+                            direction.applyQuaternion(fanHead.parent!.quaternion); // Base rotation
+                            // Add head oscillation? Usually oscillation is local Y.
+                            // Actually, simplified: Use the parent (Base) rotation for main direction, 
+                            // and maybe minor add for head.
+                            // But wait, fanHead rotates. I should use fanHead world rotation?
+
+                            // Let's use simple forward vector from the fan Group (base) + oscillation
+                            const fanGroup = fanHead.parent!;
+                            const angle = fanGroup.rotation.y + fanHead.rotation.y;
+
+                            // Assuming 0 rotation points to +Z? 
+                            // In createFanModel: group.rotation.y = baseRotation.
+                            // Need to verify default "Forward".
+                            // Usually identity rotation means facing +Z or -Z.
+
+                            const speed = 2.5 + Math.random();
+                            velocities[i * 3] = Math.sin(angle) * speed;
+                            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5; // Slight vertical spread
+                            velocities[i * 3 + 2] = Math.cos(angle) * speed;
+
+                            positions[i * 3] = worldPos.x + (Math.random() - 0.5) * 5;
+                            positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 5;
+                            positions[i * 3 + 2] = worldPos.z + (Math.random() - 0.5) * 5;
+
+                            lifetimes[i] = 1.0;
+                        } else {
+                            // Move
+                            positions[i * 3] += velocities[i * 3];
+                            positions[i * 3 + 1] += velocities[i * 3 + 1];
+                            positions[i * 3 + 2] += velocities[i * 3 + 2];
+                        }
+                    }
                 }
                 this.windParticles.geometry.attributes.position.needsUpdate = true;
+                this.windParticles.geometry.attributes.lifetime.needsUpdate = true;
             }
         }
 
