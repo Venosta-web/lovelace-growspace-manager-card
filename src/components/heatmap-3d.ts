@@ -63,6 +63,7 @@ export class Heatmap3D extends LitElement {
     private _exhaustFans: THREE.Object3D[] = [];
     private _humidifiers: THREE.Group[] = [];
     private _humidifierParticles?: THREE.Points;
+    private _dryAirParticles?: THREE.Points;
     private _plantHitBoxes: THREE.Object3D[] = [];
     private _keysPressed: Set<string> = new Set();
     private _strainColorCache: Map<string, string[]> = new Map();
@@ -895,6 +896,9 @@ export class Heatmap3D extends LitElement {
         this._fanHeads = [];
         this._exhaustFans = [];
         this._plantHitBoxes = [];
+        this._humidifierParticles = undefined;
+        this._dryAirParticles = undefined;
+        this.windParticles = undefined;
 
         // Also clear any stray axis labels that might have been added to scene directly
         const strays = this.scene.children.filter(c => !(c as any).isLight && c !== this.volatileGroup);
@@ -1647,15 +1651,15 @@ export class Heatmap3D extends LitElement {
             let deviceGroup: THREE.Group;
 
             if (isDehumidifier) {
-                deviceGroup = this.createDehumidifierModel(intensity, isOutside, coords, width, depth, height);
+                deviceGroup = this.createDehumidifierModel(intensity, isOutside, coords, width, depth, height, coords.z);
             } else {
-                deviceGroup = this.createHumidifierModel(intensity, isOutside, coords, width, depth, height);
+                deviceGroup = this.createHumidifierModel(intensity, isOutside, coords, width, depth, height, coords.z);
             }
 
             // Position
             deviceGroup.position.set(
                 coords.x - width / 2,
-                coords.z,
+                0, // On the floor
                 coords.y - depth / 2
             );
 
@@ -1681,9 +1685,14 @@ export class Heatmap3D extends LitElement {
         if (!this._humidifierParticles && this._humidifiers.length > 0) {
             this.initHumidifierParticles();
         }
+
+        // Initialize dry air particles for dehumidifiers
+        if (!this._dryAirParticles && this._humidifiers.some(h => h.userData.isDehumidifier)) {
+            this.initDryAirParticles();
+        }
     }
 
-    private createHumidifierModel(intensity: number, isOutside: boolean, coords: { x: number, y: number, z: number, rotation?: number }, frameWidth: number, frameDepth: number, frameHeight: number): THREE.Group {
+    private createHumidifierModel(intensity: number, isOutside: boolean, coords: { x: number, y: number, z: number, rotation?: number }, frameWidth: number, frameDepth: number, frameHeight: number, hoseTargetHeight: number): THREE.Group {
         const group = new THREE.Group();
 
         // Dimensions
@@ -1753,9 +1762,10 @@ export class Heatmap3D extends LitElement {
             // 4. Hose Attachment
             // Determine Closest Point on Frame (Local to Scene usually, but here we need relative logic)
             // Scene Coords of Humidifier:
+            // Scene Coords of Humidifier (now on floor, so y=0):
             const hPos = new THREE.Vector3(
                 coords.x - frameWidth / 2,
-                coords.z, // y in scene!
+                0, // Device is on floor
                 coords.y - frameDepth / 2
             );
 
@@ -1764,9 +1774,7 @@ export class Heatmap3D extends LitElement {
             const maxX = frameWidth / 2;
             const minZ = -frameDepth / 2;
             const maxZ = frameDepth / 2;
-            const maxY = frameHeight; // Base is 0? 
-            // Wait, frame logic in renderFrame centers vertically if not careful? 
-            // renderFrame: y=0 to y=height. Correct.
+            const maxY = frameHeight;
 
             // Find closest point on the box (Clamp)
             const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
@@ -1776,7 +1784,7 @@ export class Heatmap3D extends LitElement {
             // Since we know it is OUTSIDE, simple clamp should land on the surface/edge.
 
             const targetX = clamp(hPos.x, minX, maxX);
-            const targetY = clamp(hPos.y, 0, maxY); // height
+            const targetY = clamp(hoseTargetHeight, 0, maxY); // Target height from slider
             const targetZ = clamp(hPos.z, minZ, maxZ);
 
             const targetPos = new THREE.Vector3(targetX, targetY, targetZ);
@@ -1799,7 +1807,7 @@ export class Heatmap3D extends LitElement {
             const path = new THREE.CatmullRomCurve3([
                 outputPoint.clone(),
                 outputPoint.clone().add(new THREE.Vector3(0, 15, 0)), // Up
-                localTarget.clone().add(new THREE.Vector3(0, 10, 0).applyEuler(new THREE.Euler(0, Math.atan2(localTarget.x, localTarget.z), 0))), // Toward target but high
+                localTarget.clone().lerp(outputPoint, 0.15), // Smooth approach
                 localTarget
             ]);
 
@@ -1818,7 +1826,7 @@ export class Heatmap3D extends LitElement {
         return group;
     }
 
-    private createDehumidifierModel(intensity: number, isOutside: boolean, coords: { x: number, y: number, z: number, rotation?: number }, frameWidth: number, frameDepth: number, frameHeight: number): THREE.Group {
+    private createDehumidifierModel(intensity: number, isOutside: boolean, coords: { x: number, y: number, z: number, rotation?: number }, frameWidth: number, frameDepth: number, frameHeight: number, hoseTargetHeight: number): THREE.Group {
         const group = new THREE.Group();
 
         // Dimensions
@@ -1888,7 +1896,7 @@ export class Heatmap3D extends LitElement {
             // Hose Logic
             const hPos = new THREE.Vector3(
                 coords.x - frameWidth / 2,
-                coords.z,
+                0, // Device is on floor
                 coords.y - frameDepth / 2
             );
 
@@ -1903,7 +1911,7 @@ export class Heatmap3D extends LitElement {
             const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
 
             const targetX = clamp(hPos.x, minX, maxX);
-            const targetY = clamp(hPos.y, 0, maxY);
+            const targetY = clamp(hoseTargetHeight, 0, maxY); // Target height from slider
             const targetZ = clamp(hPos.z, minZ, maxZ);
 
             const targetPos = new THREE.Vector3(targetX, targetY, targetZ);
@@ -1918,11 +1926,11 @@ export class Heatmap3D extends LitElement {
             const path = new THREE.CatmullRomCurve3([
                 outputPoint.clone(),
                 outputPoint.clone().add(new THREE.Vector3(0, 25, 0)), // Up higher
-                localTarget.clone().add(new THREE.Vector3(0, 15, 0).applyEuler(new THREE.Euler(0, Math.atan2(localTarget.x, localTarget.z), 0))),
+                localTarget.clone().lerp(outputPoint, 0.15), // Smooth approach
                 localTarget
             ]);
 
-            const hoseRadius = 2.25; // 50% bigger than 1.5
+            const hoseRadius = 4.5; // 3x standard (1.5 * 3)
             const hoseGeo = new THREE.TubeGeometry(path, 20, hoseRadius, 8, false);
             const hoseMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
             const hose = new THREE.Mesh(hoseGeo, hoseMat);
@@ -1983,7 +1991,58 @@ export class Heatmap3D extends LitElement {
         });
 
         this._humidifierParticles = new THREE.Points(geom, mat);
+        this._humidifierParticles.frustumCulled = false; // Fix: Prevent culling when particles move into view
         this.volatileGroup?.add(this._humidifierParticles);
+    }
+
+    private initDryAirParticles() {
+        if (this._dryAirParticles) return;
+
+        const count = 300;
+        const geom = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = new Float32Array(count * 3);
+        const lifetimes = new Float32Array(count * 1); // Only needs 1 component if it's a float
+        const sizes = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+            positions[i * 3 + 1] = -1000; // Hide initially
+            lifetimes[i] = 0;
+            sizes[i] = Math.random() * 1.5 + 0.5; // Smaller, faster particles
+        }
+
+        geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geom.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+        geom.setAttribute('lifetime', new THREE.BufferAttribute(lifetimes, 1));
+        geom.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // Use same texture as humidifier for now
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255,255,240,1)'); // Slightly warm/white
+            grad.addColorStop(1, 'rgba(255,255,240,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 32, 32);
+        }
+        const texture = new THREE.CanvasTexture(canvas);
+
+        const mat = new THREE.PointsMaterial({
+            color: 0xfffff0,
+            size: 2,
+            map: texture,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        this._dryAirParticles = new THREE.Points(geom, mat);
+        this._dryAirParticles.frustumCulled = false; // Fix: Prevent culling when particles move into view
+        this.volatileGroup?.add(this._dryAirParticles);
     }
 
     private createExhaustModel(exhaustSpeed: number, baseRotation: number, entityId: string): THREE.Group {
@@ -2344,6 +2403,7 @@ export class Heatmap3D extends LitElement {
         });
 
         this.windParticles = new THREE.Points(geometry, material);
+        this.windParticles.frustumCulled = false; // Fix: Prevent culling when particles move into view
         this.windParticles.name = "windSystem";
         this.volatileGroup.add(this.windParticles);
     }
@@ -3146,6 +3206,66 @@ export class Heatmap3D extends LitElement {
                 }
             }
             this._humidifierParticles.geometry.attributes.position.needsUpdate = true;
+        }
+
+        // Update Dry Air Particles
+        if (this._dryAirParticles && this._humidifiers.length > 0) {
+            const positions = this._dryAirParticles.geometry.attributes.position.array as Float32Array;
+            const velocities = this._dryAirParticles.geometry.attributes.velocity.array as Float32Array;
+            const lifetimes = this._dryAirParticles.geometry.attributes.lifetime.array as Float32Array;
+            const count = lifetimes.length;
+
+            const activeDehumidifiers = this._humidifiers.filter(h => h.userData.isDehumidifier && h.userData.intensity > 0);
+
+            if (activeDehumidifiers.length === 0) {
+                for (let i = 0; i < count; i++) positions[i * 3 + 1] = -1000;
+            } else {
+                for (let i = 0; i < count; i++) {
+                    lifetimes[i] -= 0.02; // Faster fade
+
+                    if (lifetimes[i] <= 0) {
+                        // Respawn
+                        const source = activeDehumidifiers[Math.floor(Math.random() * activeDehumidifiers.length)];
+                        const localStart = source.userData.hoseEnd as THREE.Vector3;
+                        const worldStart = source.localToWorld(localStart.clone());
+
+                        const spread = 2.0; // Wider spread
+                        positions[i * 3] = worldStart.x + (Math.random() - 0.5) * spread;
+                        positions[i * 3 + 1] = worldStart.y + (Math.random() - 0.5) * spread;
+                        positions[i * 3 + 2] = worldStart.z + (Math.random() - 0.5) * spread;
+
+                        // Shoot OUT based on context?
+                        // If it has a hose, we assume it's pointing into the tent.
+                        // We want "dry air pumping IN" (from hose)?
+                        // User request: "dry air pumping in animation with particles going out off the hose"
+                        // So particles should shoot from the hose end into the space.
+                        // Direction: From hose end, roughly towards center or just "out".
+                        // Let's make them shoot forcefully from the hose end.
+
+                        // Since we don't have the hose normal easily, we'll randomize generally "forward/up".
+                        // Or just spherical expansion.
+                        const speed = 1.0 + Math.random();
+                        const angle = Math.random() * Math.PI * 2;
+                        const phi = Math.random() * Math.PI;
+
+                        velocities[i * 3] = Math.sin(phi) * Math.cos(angle) * speed;
+                        velocities[i * 3 + 1] = Math.abs(Math.cos(phi)) * speed; // More Up
+                        velocities[i * 3 + 2] = Math.sin(phi) * Math.sin(angle) * speed;
+
+                        lifetimes[i] = 1.0;
+                    } else {
+                        positions[i * 3] += velocities[i * 3];
+                        positions[i * 3 + 1] += velocities[i * 3 + 1];
+                        positions[i * 3 + 2] += velocities[i * 3 + 2];
+
+                        // No gravity, maybe slight drag
+                        velocities[i * 3] *= 0.95;
+                        velocities[i * 3 + 1] *= 0.95;
+                        velocities[i * 3 + 2] *= 0.95;
+                    }
+                }
+            }
+            this._dryAirParticles.geometry.attributes.position.needsUpdate = true;
         }
 
         if (this.renderer && this.scene && this.camera) {
