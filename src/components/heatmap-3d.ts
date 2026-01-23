@@ -9,7 +9,8 @@ import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRe
 import { GrowspaceDevice, PlantEntity, PlantStage, StrainEntry } from '../types';
 import { StatusLevel, STATUS_COLORS } from '../constants';
 import { PlantUtils } from '../utils/plant-utils';
-import { strainLibraryContext } from '../context';
+import { strainLibraryContext, storeContext } from '../context';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
@@ -22,9 +23,15 @@ export class Heatmap3D extends LitElement {
     @state() private isPlaying: boolean = false;
     @state() private _hoveredPlant: PlantEntity | null = null;
     @state() private _tooltipPos = { x: 0, y: 0 };
+    @state() private showPlants: boolean = true;
+    @state() private showLights: boolean = true;
+    @state() private showFans: boolean = true;
 
     @consume({ context: strainLibraryContext, subscribe: true })
     strainLibrary: StrainEntry[] = [];
+
+    @consume({ context: storeContext, subscribe: true })
+    private store?: GrowspaceStore;
 
     private playbackTimer?: any;
 
@@ -46,6 +53,10 @@ export class Heatmap3D extends LitElement {
     private isDragging = false;
     private _mouse = new THREE.Vector2();
     private _raycaster = new THREE.Raycaster();
+    private _lastRaycastTime = 0;
+    private _animatingMaterials: THREE.ShaderMaterial[] = [];
+    private _fanHeads: THREE.Object3D[] = [];
+    private _plantHitBoxes: THREE.Object3D[] = [];
 
     static styles = css`
     :host {
@@ -84,21 +95,61 @@ export class Heatmap3D extends LitElement {
         color: white;
         letter-spacing: 0.5px;
     }
+    .header-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        pointer-events: auto;
+    }
+    .toggles-container {
+        display: flex;
+        gap: 12px;
+        pointer-events: auto;
+    }
+    .toggle-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .toggle-item:hover {
+        color: white;
+    }
+    .toggle-item span {
+        position: relative;
+        top: 1px;
+    }
+    .toggle-item ha-checkbox {
+        --mdc-checkbox-unchecked-color: rgba(255, 255, 255, 0.5);
+        --mdc-checkbox-disabled-color: rgba(255, 255, 255, 0.3);
+        --mdc-checkbox-ink-color: #448aff;
+    }
     .header-actions {
         display: flex;
         gap: 4px;
         pointer-events: auto;
     }
-    .header-actions ha-icon-button {
+    .header ha-icon-button {
         color: #607d8b;
         transition: all 0.2s ease;
+        --mdc-icon-button-size: 32px;
+        --mdc-icon-size: 18px;
     }
-    .header-actions ha-icon-button.active {
+    .header ha-icon-button.active {
         color: #448aff;
         background: rgba(68, 138, 255, 0.15);
         border-radius: 50%;
     }
-    .header-actions ha-icon-button:hover {
+    .header ha-icon-button:hover {
         color: #64b5f6;
     }
     .overlay {
@@ -443,6 +494,9 @@ export class Heatmap3D extends LitElement {
         const shouldUpdate = changedProps.has('device') ||
             changedProps.has('selectedMetric') ||
             changedProps.has('timelineIndex') ||
+            changedProps.has('showPlants') ||
+            changedProps.has('showLights') ||
+            changedProps.has('showFans') ||
             (changedProps.has('hass') && dataHash !== this.lastProcessedData);
 
         if (shouldUpdate) {
@@ -621,8 +675,12 @@ export class Heatmap3D extends LitElement {
         // Mouse Move for Tooltips
         this.container.addEventListener('mousemove', (e) => this._handleMouseMove(e));
         this.container.addEventListener('mouseleave', () => {
+            if (this.container) this.container.style.cursor = 'default';
             this._hoveredPlant = null;
         });
+
+        // Click handler for plants
+        this.container.addEventListener('click', (e) => this._handleMouseClick(e));
 
         // One-time forced resize
         setTimeout(() => this.handleResize(), 200);
@@ -653,6 +711,11 @@ export class Heatmap3D extends LitElement {
                 }
             });
         }
+
+        // Reset tracking arrays
+        this._animatingMaterials = [];
+        this._fanHeads = [];
+        this._plantHitBoxes = [];
 
         // Also clear any stray axis labels that might have been added to scene directly
         const strays = this.scene.children.filter(c => !(c as any).isLight && c !== this.volatileGroup);
@@ -970,16 +1033,24 @@ export class Heatmap3D extends LitElement {
         }
 
         // 7. Draw Plants and Pots
-        this.renderPlants(width, height, depth);
+        if (this.showPlants) {
+            this.renderPlants(width, height, depth);
+        }
 
         // 8. Draw Growlight Lightbars
-        this.renderLightbars(width, height, depth);
+        if (this.showLights) {
+            this.renderLightbars(width, height, depth);
+        }
 
         // 9. Draw Circulation Fans
-        this.renderFans(width, height, depth);
+        if (this.showFans) {
+            this.renderFans(width, height, depth);
+        }
 
         // 10. Draw Breeze Animation
-        this.renderBreeze(width, height, depth);
+        if (this.showFans) {
+            this.renderBreeze(width, height, depth);
+        }
     }
 
     private renderLightbars(width: number, height: number, depth: number) {
@@ -1113,23 +1184,18 @@ export class Heatmap3D extends LitElement {
 
             if (stateObj) {
                 const val = parseFloat(stateObj.state);
-                // Check if the state is mapped 0-10 or 0-100 directly
                 if (!isNaN(val)) {
-                    // Try to deduce scale. If > 10, likely percentage.
                     if (val > 10) fanSpeed = val / 10;
                     else fanSpeed = val;
                 } else if (stateObj.state === 'on') {
-                    // Check percentage attribute
                     if (stateObj.attributes.percentage !== undefined && stateObj.attributes.percentage !== null) {
                         fanSpeed = stateObj.attributes.percentage / 10;
                     } else {
-                        // Default to medium speed (5) if just ON without attributes
                         fanSpeed = 5;
                     }
                 }
             }
 
-            // Ensure speed is within 0-10 range
             fanSpeed = Math.max(0, Math.min(10, fanSpeed));
 
             const fanGroup = this.createFanModel(fanSpeed, coords.rotation || 0, entityId);
@@ -1140,6 +1206,10 @@ export class Heatmap3D extends LitElement {
                 coords.z,
                 coords.y - depth / 2
             );
+
+            // Track fan head for animation
+            const head = fanGroup.getObjectByName("fanHead");
+            if (head) this._fanHeads.push(head);
 
             this.volatileGroup!.add(fanGroup);
             this.sensorMeshes.set(entityId, fanGroup);
@@ -1323,43 +1393,63 @@ export class Heatmap3D extends LitElement {
             const plantModel = this.createPlantModel(stage, potHeight);
             plantGroup.add(plantModel);
 
-            // Add plant data for hover detection
-            plantGroup.userData = { plant };
+            // 3. Create HitBox for Raycasting (O(1) intersection instead of O(Nx))
+            const hitBoxGeo = new THREE.CylinderGeometry(potRadius * 1.5, potRadius * 1.5, potHeight + 50, 8);
+            const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+            hitBox.position.y = (potHeight + 50) / 2;
+            hitBox.userData = { plant };
+            plantGroup.add(hitBox);
+            this._plantHitBoxes.push(hitBox);
 
             this.volatileGroup?.add(plantGroup);
         });
     }
 
-    private _handleMouseMove(e: MouseEvent) {
-        if (!this.container || !this.camera || !this.volatileGroup) return;
+    private _getPlantFromPoint(clientX: number, clientY: number): PlantEntity | null {
+        if (!this.container || !this.camera || this._plantHitBoxes.length === 0) return null;
 
         const rect = this.container.getBoundingClientRect();
-        this._mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        this._mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        this._mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        this._mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
         this._raycaster.setFromCamera(this._mouse, this.camera);
-        const intersects = this._raycaster.intersectObjects(this.volatileGroup.children, true);
+        // Intersect ONLY against simple hitboxes, NON-RECURSIVE
+        const intersects = this._raycaster.intersectObjects(this._plantHitBoxes, false);
 
-        let foundPlant: PlantEntity | null = null;
         if (intersects.length > 0) {
-            for (const intersect of intersects) {
-                let obj: THREE.Object3D | null = intersect.object;
-                while (obj && obj !== this.volatileGroup) {
-                    if (obj.userData?.plant) {
-                        foundPlant = obj.userData.plant;
-                        break;
-                    }
-                    obj = obj.parent;
-                }
-                if (foundPlant) break;
-            }
+            return intersects[0].object.userData?.plant || null;
         }
+        return null;
+    }
+
+    private _handleMouseMove(e: MouseEvent) {
+        if (this.isDragging) return;
+
+        // Throttle raycasting to ~30fps to save CPU
+        const now = performance.now();
+        if (now - this._lastRaycastTime < 32) return;
+        this._lastRaycastTime = now;
+
+        const foundPlant = this._getPlantFromPoint(e.clientX, e.clientY);
 
         if (foundPlant) {
             this._hoveredPlant = foundPlant;
+            const rect = this.container!.getBoundingClientRect();
             this._tooltipPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            this.container!.style.cursor = 'pointer';
         } else {
             this._hoveredPlant = null;
+            if (this.container) this.container.style.cursor = 'default';
+        }
+    }
+
+    private _handleMouseClick(e: MouseEvent) {
+        if (this.isDragging) return;
+
+        const foundPlant = this._getPlantFromPoint(e.clientX, e.clientY);
+        if (foundPlant && this.store) {
+            this.store.handlePlantClick(foundPlant);
         }
     }
 
@@ -1565,9 +1655,10 @@ export class Heatmap3D extends LitElement {
         this.animationId = requestAnimationFrame(() => this._animateLoop());
         if (this.controls) this.controls.update();
 
-        this.scene?.traverse(obj => {
-            if ((obj as any).material?.uniforms?.u_time) {
-                (obj as any).material.uniforms.u_time.value = performance.now() / 1000;
+        // Update shaders
+        this._animatingMaterials.forEach(mat => {
+            if (mat.uniforms.u_time) {
+                mat.uniforms.u_time.value = performance.now() / 1000;
             }
         });
 
@@ -1575,7 +1666,6 @@ export class Heatmap3D extends LitElement {
         if (this.ledMaterial && this.device) {
             const isDay = this.device.biologicalMetrics?.isDay;
             if (isDay) {
-                // Subtle breathing animation when on
                 const breath = 0.8 + Math.sin(performance.now() / 1000 * 2) * 0.2;
                 this.ledMaterial.emissiveIntensity = breath;
             } else {
@@ -1584,98 +1674,66 @@ export class Heatmap3D extends LitElement {
         }
 
         // Update Fan Animations
-        if (this.volatileGroup) {
+        if (this._fanHeads.length > 0) {
             const time = performance.now() / 1000;
-            this.volatileGroup.traverse((obj) => {
-                if (obj.name === "fanHead") {
-                    const fanRoot = obj.parent;
-                    if (fanRoot && (fanRoot.userData?.fanSpeed > 0)) {
-                        // Oscillation: ±45 degrees (PI/4)
-                        obj.rotation.y = Math.sin(time * 2) * (Math.PI / 4);
-                    }
-                }
-                if (obj.name === "fanBlades") {
-                    const fanRoot = obj.parent?.parent;
-                    if (fanRoot && (fanRoot.userData?.fanSpeed > 0)) {
-                        const speed = fanRoot.userData.fanSpeed;
-                        // Blade rotation: Scale speed 1-10 to reasonable rotation speed
-                        // Level 1 = 0.1 rad/frame, Level 10 = 1.0 rad/frame
-                        obj.rotation.z += (speed * 0.1);
+            this._fanHeads.forEach(head => {
+                const parent = head.parent; // Fan Group
+                if (parent && parent.userData.fanSpeed > 0) {
+                    // Oscillation
+                    head.rotation.y = Math.sin(time * 2) * (Math.PI / 4);
+
+                    // Blades
+                    const blades = head.getObjectByName("fanBlades");
+                    if (blades) {
+                        blades.rotation.z += (parent.userData.fanSpeed * 0.1);
                     }
                 }
             });
+        }
 
-            // Update wind particles
-            if (this.windParticles && this.volatileGroup) {
-                const positions = this.windParticles.geometry.attributes.position.array as Float32Array;
-                const velocities = this.windParticles.geometry.attributes.velocity.array as Float32Array;
-                const lifetimes = this.windParticles.geometry.attributes.lifetime.array as Float32Array;
+        // Update wind particles
+        if (this.windParticles && this.volatileGroup) {
+            const positions = this.windParticles.geometry.attributes.position.array as Float32Array;
+            const velocities = this.windParticles.geometry.attributes.velocity.array as Float32Array;
+            const lifetimes = this.windParticles.geometry.attributes.lifetime.array as Float32Array;
 
-                // Find all active fans (speed > 0)
-                const activeFans: THREE.Group[] = [];
-                this.volatileGroup.traverse((obj) => {
-                    if (obj.name === "fanHead" && (obj.parent?.userData?.fanSpeed > 0)) {
-                        activeFans.push(obj as THREE.Group); // Push the HEAD, which rotates
-                    }
-                });
+            const activeFans = this._fanHeads.filter(head => head.parent && head.parent.userData.fanSpeed > 0);
 
-                if (activeFans.length === 0) {
-                    // Hide particles
-                    for (let i = 0; i < positions.length / 3; i++) {
-                        positions[i * 3 + 1] = -1000;
-                    }
-                } else {
-                    for (let i = 0; i < positions.length / 3; i++) {
-                        lifetimes[i] -= 0.02; // Decay
+            if (activeFans.length === 0) {
+                for (let i = 0; i < positions.length / 3; i++) {
+                    positions[i * 3 + 1] = -1000;
+                }
+            } else {
+                for (let i = 0; i < positions.length / 3; i++) {
+                    lifetimes[i] -= 0.02;
 
-                        if (lifetimes[i] <= 0) {
-                            // Respawn at a random active fan
-                            const fanHead = activeFans[Math.floor(Math.random() * activeFans.length)];
+                    if (lifetimes[i] <= 0) {
+                        const fanHead = activeFans[Math.floor(Math.random() * activeFans.length)];
+                        const worldPos = new THREE.Vector3();
+                        fanHead.getWorldPosition(worldPos);
 
-                            // Get world position/rotation of the fan head (where air comes from)
-                            const worldPos = new THREE.Vector3();
-                            fanHead.getWorldPosition(worldPos);
+                        const fanGroup = fanHead.parent!;
+                        const angle = fanGroup.rotation.y + fanHead.rotation.y;
 
-                            // Direction: The fan head faces -Z (or +Z) depending on model. 
-                            // My model: blades are at Z=2.5. Cage faces Z.
-                            // I want to shoot particles in the direction of the rotation.
-                            const direction = new THREE.Vector3(0, 0, 1);
-                            direction.applyQuaternion(fanHead.parent!.quaternion); // Base rotation
-                            // Add head oscillation? Usually oscillation is local Y.
-                            // Actually, simplified: Use the parent (Base) rotation for main direction, 
-                            // and maybe minor add for head.
-                            // But wait, fanHead rotates. I should use fanHead world rotation?
+                        const speed = 2.5 + Math.random();
+                        velocities[i * 3] = Math.sin(angle) * speed;
+                        velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
+                        velocities[i * 3 + 2] = Math.cos(angle) * speed;
 
-                            // Let's use simple forward vector from the fan Group (base) + oscillation
-                            const fanGroup = fanHead.parent!;
-                            const angle = fanGroup.rotation.y + fanHead.rotation.y;
+                        positions[i * 3] = worldPos.x + (Math.random() - 0.5) * 5;
+                        positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 5;
+                        positions[i * 3 + 2] = worldPos.z + (Math.random() - 0.5) * 5;
 
-                            // Assuming 0 rotation points to +Z? 
-                            // In createFanModel: group.rotation.y = baseRotation.
-                            // Need to verify default "Forward".
-                            // Usually identity rotation means facing +Z or -Z.
-
-                            const speed = 2.5 + Math.random();
-                            velocities[i * 3] = Math.sin(angle) * speed;
-                            velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.5; // Slight vertical spread
-                            velocities[i * 3 + 2] = Math.cos(angle) * speed;
-
-                            positions[i * 3] = worldPos.x + (Math.random() - 0.5) * 5;
-                            positions[i * 3 + 1] = worldPos.y + (Math.random() - 0.5) * 5;
-                            positions[i * 3 + 2] = worldPos.z + (Math.random() - 0.5) * 5;
-
-                            lifetimes[i] = 1.0;
-                        } else {
-                            // Move
-                            positions[i * 3] += velocities[i * 3];
-                            positions[i * 3 + 1] += velocities[i * 3 + 1];
-                            positions[i * 3 + 2] += velocities[i * 3 + 2];
-                        }
+                        lifetimes[i] = 1.0;
+                    } else {
+                        positions[i * 3] += velocities[i * 3];
+                        positions[i * 3 + 1] += velocities[i * 3 + 1];
+                        positions[i * 3 + 2] += velocities[i * 3 + 2];
                     }
                 }
-                this.windParticles.geometry.attributes.position.needsUpdate = true;
-                this.windParticles.geometry.attributes.lifetime.needsUpdate = true;
             }
+            this.windParticles.geometry.attributes.position.needsUpdate = true;
+            this.windParticles.geometry.attributes.lifetime.needsUpdate = true;
         }
 
         if (this.renderer && this.scene && this.camera) {
@@ -2073,17 +2131,39 @@ export class Heatmap3D extends LitElement {
         ${this.renderTooltip()}
 
         <div class="header">
-            <h2>Grow Space 3D Heatmap</h2>
-            <div class="header-actions">
-                <ha-icon-button
-                    class="${this.editMode3DCords ? 'active' : ''}"
-                    .path=${'M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z'}
-                    @click=${this.toggleEditMode}
-                    title="Edit sensor positions"
-                ></ha-icon-button>
-                <ha-icon-button
-                    .path=${'M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.35 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.47,5.32 14.87,5.07L14.49,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.51,2.42L9.13,5.07C8.53,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.35 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.95C7.96,18.34 8.53,18.68 9.13,18.93L9.51,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.49,21.58L14.87,18.93C15.47,18.68 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z'}
-                ></ha-icon-button>
+            <div class="header-title">
+                <div class="title-row">
+                    <h2>${this.device?.name || 'Growspace'} 3D View</h2>
+                    <ha-icon-button
+                        class="${this.editMode3DCords ? 'active' : ''}"
+                        .path=${'M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z'}
+                        @click=${this.toggleEditMode}
+                        title="Edit sensor positions"
+                    ></ha-icon-button>
+                </div>
+                <div class="toggles-container">
+                    <div class="toggle-item" @click=${() => this.showPlants = !this.showPlants}>
+                        <ha-checkbox
+                            .checked=${this.showPlants}
+                            @change=${(e: any) => { e.stopPropagation(); this.showPlants = e.target.checked; }}
+                        ></ha-checkbox>
+                        <span>Plants</span>
+                    </div>
+                    <div class="toggle-item" @click=${() => this.showLights = !this.showLights}>
+                        <ha-checkbox
+                            .checked=${this.showLights}
+                            @change=${(e: any) => { e.stopPropagation(); this.showLights = e.target.checked; }}
+                        ></ha-checkbox>
+                        <span>Lights</span>
+                    </div>
+                    <div class="toggle-item" @click=${() => this.showFans = !this.showFans}>
+                        <ha-checkbox
+                            .checked=${this.showFans}
+                            @change=${(e: any) => { e.stopPropagation(); this.showFans = e.target.checked; }}
+                        ></ha-checkbox>
+                        <span>Fans</span>
+                    </div>
+                </div>
             </div>
         </div>
         ${this.editMode3DCords ? html`
