@@ -60067,6 +60067,48 @@ function testPoint( point, index, localThresholdSq, matrixWorld, raycaster, inte
 }
 
 /**
+ * Creates a texture from a canvas element.
+ *
+ * This is almost the same as the base texture class, except that it sets {@link Texture#needsUpdate}
+ * to `true` immediately since a canvas can directly be used for rendering.
+ *
+ * @augments Texture
+ */
+class CanvasTexture extends Texture {
+
+	/**
+	 * Constructs a new texture.
+	 *
+	 * @param {HTMLCanvasElement} [canvas] - The HTML canvas element.
+	 * @param {number} [mapping=Texture.DEFAULT_MAPPING] - The texture mapping.
+	 * @param {number} [wrapS=ClampToEdgeWrapping] - The wrapS value.
+	 * @param {number} [wrapT=ClampToEdgeWrapping] - The wrapT value.
+	 * @param {number} [magFilter=LinearFilter] - The mag filter value.
+	 * @param {number} [minFilter=LinearMipmapLinearFilter] - The min filter value.
+	 * @param {number} [format=RGBAFormat] - The texture format.
+	 * @param {number} [type=UnsignedByteType] - The texture type.
+	 * @param {number} [anisotropy=Texture.DEFAULT_ANISOTROPY] - The anisotropy value.
+	 */
+	constructor( canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy ) {
+
+		super( canvas, mapping, wrapS, wrapT, magFilter, minFilter, format, type, anisotropy );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCanvasTexture = true;
+
+		this.needsUpdate = true;
+
+	}
+
+}
+
+/**
  * This class can be used to automatically save the depth information of a
  * rendering into a texture.
  *
@@ -66461,6 +66503,536 @@ class MeshStandardMaterial extends Material {
 		this.flatShading = source.flatShading;
 
 		this.fog = source.fog;
+
+		return this;
+
+	}
+
+}
+
+/**
+ * An extension of the {@link MeshStandardMaterial}, providing more advanced
+ * physically-based rendering properties:
+ *
+ * - Anisotropy: Ability to represent the anisotropic property of materials
+ * as observable with brushed metals.
+ * - Clearcoat: Some materials — like car paints, carbon fiber, and wet surfaces — require
+ * a clear, reflective layer on top of another layer that may be irregular or rough.
+ * Clearcoat approximates this effect, without the need for a separate transparent surface.
+ * - Iridescence: Allows to render the effect where hue varies  depending on the viewing
+ * angle and illumination angle. This can be seen on soap bubbles, oil films, or on the
+ * wings of many insects.
+ * - Physically-based transparency: One limitation of {@link Material#opacity} is that highly
+ * transparent materials are less reflective. Physically-based transmission provides a more
+ * realistic option for thin, transparent surfaces like glass.
+ * - Advanced reflectivity: More flexible reflectivity for non-metallic materials.
+ * - Sheen: Can be used for representing cloth and fabric materials.
+ *
+ * As a result of these complex shading features, `MeshPhysicalMaterial` has a
+ * higher performance cost, per pixel, than other three.js materials. Most
+ * effects are disabled by default, and add cost as they are enabled. For
+ * best results, always specify an environment map when using this material.
+ *
+ * @augments MeshStandardMaterial
+ * @demo scenes/material-browser.html#MeshPhysicalMaterial
+ */
+class MeshPhysicalMaterial extends MeshStandardMaterial {
+
+	/**
+	 * Constructs a new mesh physical material.
+	 *
+	 * @param {Object} [parameters] - An object with one or more properties
+	 * defining the material's appearance. Any property of the material
+	 * (including any property from inherited materials) can be passed
+	 * in here. Color values can be passed any type of value accepted
+	 * by {@link Color#set}.
+	 */
+	constructor( parameters ) {
+
+		super();
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isMeshPhysicalMaterial = true;
+
+		this.defines = {
+
+			'STANDARD': '',
+			'PHYSICAL': ''
+
+		};
+
+		this.type = 'MeshPhysicalMaterial';
+
+		/**
+		 * The rotation of the anisotropy in tangent, bitangent space, measured in radians
+		 * counter-clockwise from the tangent. When `anisotropyMap` is present, this
+		 * property provides additional rotation to the vectors in the texture.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.anisotropyRotation = 0;
+
+		/**
+		 * Red and green channels represent the anisotropy direction in `[-1, 1]` tangent,
+		 * bitangent space, to be rotated by `anisotropyRotation`. The blue channel
+		 * contains strength as `[0, 1]` to be multiplied by `anisotropy`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.anisotropyMap = null;
+
+		/**
+		 * The red channel of this texture is multiplied against `clearcoat`,
+		 * for per-pixel control over a coating's intensity.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatMap = null;
+
+		/**
+		 * Roughness of the clear coat layer, from `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.clearcoatRoughness = 0.0;
+
+		/**
+		 * The green channel of this texture is multiplied against
+		 * `clearcoatRoughness`, for per-pixel control over a coating's roughness.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatRoughnessMap = null;
+
+		/**
+		 * How much `clearcoatNormalMap` affects the clear coat layer, from
+		 * `(0,0)` to `(1,1)`.
+		 *
+		 * @type {Vector2}
+		 * @default (1,1)
+		 */
+		this.clearcoatNormalScale = new Vector2( 1, 1 );
+
+		/**
+		 * Can be used to enable independent normals for the clear coat layer.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.clearcoatNormalMap = null;
+
+		/**
+		 * Index-of-refraction for non-metallic materials, from `1.0` to `2.333`.
+		 *
+		 * @type {number}
+		 * @default 1.5
+		 */
+		this.ior = 1.5;
+
+		/**
+		 * Degree of reflectivity, from `0.0` to `1.0`. Default is `0.5`, which
+		 * corresponds to an index-of-refraction of `1.5`.
+		 *
+		 * This models the reflectivity of non-metallic materials. It has no effect
+		 * when `metalness` is `1.0`
+		 *
+		 * @name MeshPhysicalMaterial#reflectivity
+		 * @type {number}
+		 * @default 0.5
+		 */
+		Object.defineProperty( this, 'reflectivity', {
+			get: function () {
+
+				return ( clamp( 2.5 * ( this.ior - 1 ) / ( this.ior + 1 ), 0, 1 ) );
+
+			},
+			set: function ( reflectivity ) {
+
+				this.ior = ( 1 + 0.4 * reflectivity ) / ( 1 - 0.4 * reflectivity );
+
+			}
+		} );
+
+		/**
+		 * The red channel of this texture is multiplied against `iridescence`, for per-pixel
+		 * control over iridescence.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.iridescenceMap = null;
+
+		/**
+		 * Strength of the iridescence RGB color shift effect, represented by an index-of-refraction.
+		 * Between `1.0` to `2.333`.
+		 *
+		 * @type {number}
+		 * @default 1.3
+		 */
+		this.iridescenceIOR = 1.3;
+
+		/**
+		 *Array of exactly 2 elements, specifying minimum and maximum thickness of the iridescence layer.
+		 Thickness of iridescence layer has an equivalent effect of the one `thickness` has on `ior`.
+		 *
+		 * @type {Array<number,number>}
+		 * @default [100,400]
+		 */
+		this.iridescenceThicknessRange = [ 100, 400 ];
+
+		/**
+		 * A texture that defines the thickness of the iridescence layer, stored in the green channel.
+		 * Minimum and maximum values of thickness are defined by `iridescenceThicknessRange` array:
+		 * - `0.0` in the green channel will result in thickness equal to first element of the array.
+		 * - `1.0` in the green channel will result in thickness equal to second element of the array.
+		 * - Values in-between will linearly interpolate between the elements of the array.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.iridescenceThicknessMap = null;
+
+		/**
+		 * The sheen tint.
+		 *
+		 * @type {Color}
+		 * @default (0,0,0)
+		 */
+		this.sheenColor = new Color( 0x000000 );
+
+		/**
+		 * The RGB channels of this texture are multiplied against  `sheenColor`, for per-pixel control
+		 * over sheen tint.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.sheenColorMap = null;
+
+		/**
+		 * Roughness of the sheen layer, from `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.sheenRoughness = 1.0;
+
+		/**
+		 * The alpha channel of this texture is multiplied against `sheenRoughness`, for per-pixel control
+		 * over sheen roughness.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.sheenRoughnessMap = null;
+
+		/**
+		 * The red channel of this texture is multiplied against `transmission`, for per-pixel control over
+		 * optical transparency.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.transmissionMap = null;
+
+		/**
+		 * The thickness of the volume beneath the surface. The value is given in the
+		 * coordinate space of the mesh. If the value is `0` the material is
+		 * thin-walled. Otherwise the material is a volume boundary.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
+		this.thickness = 0;
+
+		/**
+		 * A texture that defines the thickness, stored in the green channel. This will
+		 * be multiplied by `thickness`.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.thicknessMap = null;
+
+		/**
+		 * Density of the medium given as the average distance that light travels in
+		 * the medium before interacting with a particle. The value is given in world
+		 * space units, and must be greater than zero.
+		 *
+		 * @type {number}
+		 * @default Infinity
+		 */
+		this.attenuationDistance = Infinity;
+
+		/**
+		 * The color that white light turns into due to absorption when reaching the
+		 * attenuation distance.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.attenuationColor = new Color( 1, 1, 1 );
+
+		/**
+		 * A float that scales the amount of specular reflection for non-metals only.
+		 * When set to zero, the model is effectively Lambertian. From `0.0` to `1.0`.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
+		this.specularIntensity = 1.0;
+
+		/**
+		 * The alpha channel of this texture is multiplied against `specularIntensity`,
+		 * for per-pixel control over specular intensity.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.specularIntensityMap = null;
+
+		/**
+		 * Tints the specular reflection at normal incidence for non-metals only.
+		 *
+		 * @type {Color}
+		 * @default (1,1,1)
+		 */
+		this.specularColor = new Color( 1, 1, 1 );
+
+		/**
+		 * The RGB channels of this texture are multiplied against `specularColor`,
+		 * for per-pixel control over specular color.
+		 *
+		 * @type {?Texture}
+		 * @default null
+		 */
+		this.specularColorMap = null;
+
+		this._anisotropy = 0;
+		this._clearcoat = 0;
+		this._dispersion = 0;
+		this._iridescence = 0;
+		this._sheen = 0.0;
+		this._transmission = 0;
+
+		this.setValues( parameters );
+
+	}
+
+	/**
+	 * The anisotropy strength, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get anisotropy() {
+
+		return this._anisotropy;
+
+	}
+
+	set anisotropy( value ) {
+
+		if ( this._anisotropy > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._anisotropy = value;
+
+	}
+
+	/**
+	 * Represents the intensity of the clear coat layer, from `0.0` to `1.0`. Use
+	 * clear coat related properties to enable multilayer materials that have a
+	 * thin translucent layer over the base layer.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get clearcoat() {
+
+		return this._clearcoat;
+
+	}
+
+	set clearcoat( value ) {
+
+		if ( this._clearcoat > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._clearcoat = value;
+
+	}
+	/**
+	 * The intensity of the iridescence layer, simulating RGB color shift based on the angle between
+	 * the surface and the viewer, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get iridescence() {
+
+		return this._iridescence;
+
+	}
+
+	set iridescence( value ) {
+
+		if ( this._iridescence > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._iridescence = value;
+
+	}
+
+	/**
+	 * Defines the strength of the angular separation of colors (chromatic aberration) transmitting
+	 * through a relatively clear volume. Any value zero or larger is valid, the typical range of
+	 * realistic values is `[0, 1]`. This property can be only be used with transmissive objects.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get dispersion() {
+
+		return this._dispersion;
+
+	}
+
+	set dispersion( value ) {
+
+		if ( this._dispersion > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._dispersion = value;
+
+	}
+
+	/**
+	 * The intensity of the sheen layer, from `0.0` to `1.0`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get sheen() {
+
+		return this._sheen;
+
+	}
+
+	set sheen( value ) {
+
+		if ( this._sheen > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._sheen = value;
+
+	}
+
+	/**
+	 * Degree of transmission (or optical transparency), from `0.0` to `1.0`.
+	 *
+	 * Thin, transparent or semitransparent, plastic or glass materials remain
+	 * largely reflective even if they are fully transmissive. The transmission
+	 * property can be used to model these materials.
+	 *
+	 * When transmission is non-zero, `opacity` should be  set to `1`.
+	 *
+	 * @type {number}
+	 * @default 0
+	 */
+	get transmission() {
+
+		return this._transmission;
+
+	}
+
+	set transmission( value ) {
+
+		if ( this._transmission > 0 !== value > 0 ) {
+
+			this.version ++;
+
+		}
+
+		this._transmission = value;
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.defines = {
+
+			'STANDARD': '',
+			'PHYSICAL': ''
+
+		};
+
+		this.anisotropy = source.anisotropy;
+		this.anisotropyRotation = source.anisotropyRotation;
+		this.anisotropyMap = source.anisotropyMap;
+
+		this.clearcoat = source.clearcoat;
+		this.clearcoatMap = source.clearcoatMap;
+		this.clearcoatRoughness = source.clearcoatRoughness;
+		this.clearcoatRoughnessMap = source.clearcoatRoughnessMap;
+		this.clearcoatNormalMap = source.clearcoatNormalMap;
+		this.clearcoatNormalScale.copy( source.clearcoatNormalScale );
+
+		this.dispersion = source.dispersion;
+		this.ior = source.ior;
+
+		this.iridescence = source.iridescence;
+		this.iridescenceMap = source.iridescenceMap;
+		this.iridescenceIOR = source.iridescenceIOR;
+		this.iridescenceThicknessRange = [ ...source.iridescenceThicknessRange ];
+		this.iridescenceThicknessMap = source.iridescenceThicknessMap;
+
+		this.sheen = source.sheen;
+		this.sheenColor.copy( source.sheenColor );
+		this.sheenColorMap = source.sheenColorMap;
+		this.sheenRoughness = source.sheenRoughness;
+		this.sheenRoughnessMap = source.sheenRoughnessMap;
+
+		this.transmission = source.transmission;
+		this.transmissionMap = source.transmissionMap;
+
+		this.thickness = source.thickness;
+		this.thicknessMap = source.thicknessMap;
+		this.attenuationDistance = source.attenuationDistance;
+		this.attenuationColor.copy( source.attenuationColor );
+
+		this.specularIntensity = source.specularIntensity;
+		this.specularIntensityMap = source.specularIntensityMap;
+		this.specularColor.copy( source.specularColor );
+		this.specularColorMap = source.specularColorMap;
 
 		return this;
 
@@ -90007,6 +90579,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this._animatingMaterials = [];
         this._fanHeads = [];
         this._exhaustFans = [];
+        this._humidifiers = [];
         this._plantHitBoxes = [];
         this._keysPressed = new Set();
         this._strainColorCache = new Map();
@@ -90269,6 +90842,20 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         const env = this.device.environmentAttributes;
         const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
         return exhaustEntities.includes(entityId);
+    }
+    isHumidifier(entityId) {
+        if (!this.device)
+            return false;
+        const env = this.device.environmentAttributes;
+        const humidifierEntities = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
+        return humidifierEntities.includes(entityId);
+    }
+    isDehumidifier(entityId) {
+        if (!this.device)
+            return false;
+        const env = this.device.environmentAttributes;
+        const dehumidifierEntities = env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+        return dehumidifierEntities.includes(entityId);
     }
     getStatusColorForValue(val, thresholds) {
         if (val < thresholds.dLow)
@@ -90717,6 +91304,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (this.showFans) {
             this.renderBreeze(width, height, depth);
         }
+        // 11. Draw Humidifiers
+        this.renderHumidifiers(width, height, depth);
     }
     getSensorIcon(entityId) {
         if (this._isTemperatureSensor(entityId))
@@ -91001,6 +91590,321 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             this.volatileGroup.add(exhaustGroup);
             this.sensorMeshes.set(entityId, exhaustGroup);
         });
+    }
+    renderHumidifiers(width, height, depth) {
+        if (!this.volatileGroup || !this.device)
+            return;
+        this._humidifiers = []; // Reset list
+        const env = this.device.environmentAttributes;
+        const humidifierEntities = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
+        const dehumidifierEntities = env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+        const allEntities = [...humidifierEntities, ...dehumidifierEntities];
+        if (allEntities.length === 0)
+            return;
+        const sensorCoords = env?.sensorCoordinates || {};
+        allEntities.forEach((entityId) => {
+            const coords = sensorCoords[entityId];
+            if (!coords)
+                return;
+            // Determine if inside or outside frame
+            // Frame checks: 0 <= x <= width, 0 <= y <= depth, 0 <= z <= height (roughly)
+            // Note: In our current coord system (0,0 is corner), if x < 0 or x > width, etc.
+            // Actually, let's look at how we position things.
+            // x, y = floor plan. z = height.
+            // If x < 0 or x > width or y < 0 or y > depth => Outside.
+            const isOutside = (coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth);
+            // Get State (intensity 0-10 or on/off)
+            let intensity = 0;
+            const stateObj = this.hass?.states[entityId];
+            if (stateObj) {
+                const val = parseFloat(stateObj.state);
+                if (!isNaN(val)) {
+                    intensity = val > 10 ? val / 10 : val; // Normalize to 0-10 or 0-1? Let's assume 0-10 scale in UI, but maybe 0-100?
+                    if (val > 10)
+                        intensity = val / 10;
+                }
+                else if (stateObj.state === 'on') {
+                    intensity = 5;
+                }
+            }
+            intensity = Math.max(0, Math.min(10, intensity));
+            const isDehumidifier = dehumidifierEntities.includes(entityId) || env?.dehumidifierEntity === entityId;
+            let deviceGroup;
+            if (isDehumidifier) {
+                deviceGroup = this.createDehumidifierModel(intensity, isOutside, coords, width, depth, height);
+            }
+            else {
+                deviceGroup = this.createHumidifierModel(intensity, isOutside, coords, width, depth, height);
+            }
+            // Position
+            deviceGroup.position.set(coords.x - width / 2, coords.z, coords.y - depth / 2);
+            // Rotation
+            if (coords.rotation) {
+                deviceGroup.rotation.y = (coords.rotation * Math.PI) / 180;
+            }
+            deviceGroup.userData = {
+                entityId,
+                intensity,
+                isOutside,
+                hoseEnd: deviceGroup.userData.hoseEnd,
+                isDehumidifier
+            };
+            this.volatileGroup.add(deviceGroup);
+            this.sensorMeshes.set(entityId, deviceGroup);
+            this._humidifiers.push(deviceGroup);
+        });
+        // Initialize particles if needed
+        if (!this._humidifierParticles && this._humidifiers.length > 0) {
+            this.initHumidifierParticles();
+        }
+    }
+    createHumidifierModel(intensity, isOutside, coords, frameWidth, frameDepth, frameHeight) {
+        const group = new Group();
+        const baseHeight = 15;
+        const tankHeight = 35;
+        // Materials
+        const darkPlastic = new MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.4 });
+        const tankMat = new MeshPhysicalMaterial({
+            color: 0xeeeeee,
+            transmission: 0.9,
+            opacity: 1,
+            roughness: 0.1,
+            metalness: 0.1,
+            thickness: 0.5
+        });
+        new MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.8 });
+        // 1. Base (Chamfered Box)
+        // Simple Box for now to save polys, or Cylinder for round look (like AC Infinity)
+        // Image shows a rounded square/squircle base.
+        const baseGeo = new CylinderGeometry(12, 12, baseHeight, 32);
+        const base = new Mesh(baseGeo, darkPlastic);
+        base.position.y = baseHeight / 2;
+        group.add(base);
+        // Display Panel (approximate)
+        const panelGeo = new PlaneGeometry(8, 6);
+        const panelMat = new MeshStandardMaterial({ color: 0x000000, emissive: 0x000000 });
+        const panel = new Mesh(panelGeo, panelMat);
+        panel.position.set(0, baseHeight / 2, 12.1);
+        group.add(panel);
+        // If on, show digits (simplified texture or just emissive rect)
+        if (intensity > 0) {
+            const digitsGeo = new PlaneGeometry(6, 4);
+            const digitsMat = new MeshBasicMaterial({ color: 0xffffff });
+            const digits = new Mesh(digitsGeo, digitsMat);
+            digits.position.set(0, baseHeight / 2, 12.2);
+            group.add(digits);
+        }
+        // 2. Tank
+        const tankGeo = new CylinderGeometry(12, 12, tankHeight, 32);
+        const tank = new Mesh(tankGeo, tankMat);
+        tank.position.y = baseHeight + tankHeight / 2;
+        group.add(tank);
+        // Internal Tube (visible through tank)
+        const tubeGeo = new CylinderGeometry(2, 2, tankHeight - 2, 16);
+        const tube = new Mesh(tubeGeo, darkPlastic);
+        tube.position.y = baseHeight + tankHeight / 2;
+        group.add(tube);
+        // 3. Top / Nozzle
+        const topHeight = 5;
+        const topGeo = new CylinderGeometry(8, 12, topHeight, 32);
+        const top = new Mesh(topGeo, darkPlastic);
+        top.position.y = baseHeight + tankHeight + topHeight / 2;
+        group.add(top);
+        // Nozzle Output Point (Local Coords)
+        let outputPoint = new Vector3(0, baseHeight + tankHeight + topHeight, 0);
+        if (isOutside) {
+            // 4. Hose Attachment
+            // Determine Closest Point on Frame (Local to Scene usually, but here we need relative logic)
+            // Scene Coords of Humidifier:
+            const hPos = new Vector3(coords.x - frameWidth / 2, coords.z, // y in scene!
+            coords.y - frameDepth / 2);
+            // Bounding Box of Frame in Scene Coords
+            const minX = -frameWidth / 2;
+            const maxX = frameWidth / 2;
+            const minZ = -frameDepth / 2;
+            const maxZ = frameDepth / 2;
+            const maxY = frameHeight; // Base is 0? 
+            // Wait, frame logic in renderFrame centers vertically if not careful? 
+            // renderFrame: y=0 to y=height. Correct.
+            // Find closest point on the box (Clamp)
+            const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+            // We want the point on the SURFACE of the box, not inside. 
+            // Logic: Clamp to box. If inside, push to nearest face.
+            // Since we know it is OUTSIDE, simple clamp should land on the surface/edge.
+            const targetX = clamp(hPos.x, minX, maxX);
+            const targetY = clamp(hPos.y, 0, maxY); // height
+            const targetZ = clamp(hPos.z, minZ, maxZ);
+            const targetPos = new Vector3(targetX, targetY, targetZ);
+            // Create Curve
+            // Start: Top of Humidifier (hPos + outputPoint offset? No, we are building model in local space)
+            // We need targetPos in LOCAL space of the model.
+            // Local Target = TargetPos (World) - ModelPos (World)
+            // Since ModelPos = hPos.
+            const localTarget = targetPos.clone().sub(hPos);
+            // Fix: If the group is rotated, we must counter-rotate the local target so that 
+            // after the group rotation is applied, the hose ends at the correct world position.
+            if (coords.rotation) {
+                const rotRad = (coords.rotation * Math.PI) / 180;
+                localTarget.applyAxisAngle(new Vector3(0, 1, 0), -rotRad);
+            }
+            // Make path curve upwards first
+            const path = new CatmullRomCurve3([
+                outputPoint.clone(),
+                outputPoint.clone().add(new Vector3(0, 15, 0)), // Up
+                localTarget.clone().add(new Vector3(0, 10, 0).applyEuler(new Euler(0, Math.atan2(localTarget.x, localTarget.z), 0))), // Toward target but high
+                localTarget
+            ]);
+            const hoseGeo = new TubeGeometry(path, 20, 1.5, 8, false);
+            const hoseMat = new MeshStandardMaterial({ color: 0x222222, roughness: 0.9 }); // Dark corrugated look
+            const hose = new Mesh(hoseGeo, hoseMat);
+            group.add(hose);
+            // Save local hose end for particles
+            group.userData.hoseEnd = localTarget;
+        }
+        else {
+            // No hose, output is just the top
+            group.userData.hoseEnd = outputPoint;
+        }
+        return group;
+    }
+    createDehumidifierModel(intensity, isOutside, coords, frameWidth, frameDepth, frameHeight) {
+        const group = new Group();
+        // Dimensions
+        const width = 30;
+        const height = 50;
+        const depth = 20;
+        // Materials
+        const darkPlastic = new MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.4 });
+        const matteBlack = new MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9, metalness: 0.1 });
+        const grilleMat = new MeshStandardMaterial({ color: 0x000000, roughness: 0.8 });
+        // 1. Body (Box)
+        const bodyGeo = new BoxGeometry(width, height, depth);
+        const body = new Mesh(bodyGeo, darkPlastic);
+        body.position.y = height / 2;
+        group.add(body);
+        // 2. Front Grille (Circular)
+        const grilleRadius = 11;
+        const grilleGeo = new CylinderGeometry(grilleRadius, grilleRadius, 1, 32);
+        grilleGeo.rotateX(Math.PI / 2);
+        const grille = new Mesh(grilleGeo, grilleMat);
+        grille.position.set(0, height * 0.65, depth / 2 + 0.5);
+        group.add(grille);
+        // Grille slats/lines
+        const slatCount = 10;
+        for (let i = 0; i < slatCount; i++) {
+            const slatGeo = new BoxGeometry(grilleRadius * 1.8, 1, 0.5);
+            const slat = new Mesh(slatGeo, darkPlastic);
+            slat.position.set(0, height * 0.65 + (i - slatCount / 2) * 2, depth / 2 + 1);
+            group.add(slat);
+        }
+        // 3. Side Tank / Indicator
+        const tankGeo = new BoxGeometry(width * 0.25, height * 0.25, 1);
+        const tankMat = new MeshPhysicalMaterial({
+            color: 0x444444,
+            transmission: 0.5,
+            opacity: 0.8,
+            roughness: 0.2
+        });
+        const tank = new Mesh(tankGeo, tankMat);
+        tank.position.set(width / 2 - width * 0.15, height * 0.15, depth / 2 + 0.5);
+        group.add(tank);
+        // 4. Logo / Digital Panel
+        if (intensity > 0) {
+            const digitsGeo = new PlaneGeometry(6, 4);
+            const digitsMat = new MeshBasicMaterial({ color: 0xffffff }); // Bright white digits
+            const digits = new Mesh(digitsGeo, digitsMat);
+            digits.position.set(width / 2 - 5, height - 3, depth / 2 + 0.6);
+            group.add(digits);
+        }
+        // 5. Output / Hose connection
+        const outputRadius = 3;
+        const outputGeo = new CylinderGeometry(outputRadius, outputRadius, 2, 16);
+        const output = new Mesh(outputGeo, matteBlack);
+        output.position.y = height + 1;
+        group.add(output);
+        let outputPoint = new Vector3(0, height + 2, 0);
+        if (isOutside) {
+            // Hose Logic
+            const hPos = new Vector3(coords.x - frameWidth / 2, coords.z, coords.y - frameDepth / 2);
+            // Bounding Box of Frame in Scene Coords
+            const minX = -frameWidth / 2;
+            const maxX = frameWidth / 2;
+            const minZ = -frameDepth / 2;
+            const maxZ = frameDepth / 2;
+            const maxY = frameHeight;
+            // Find closest point on the box
+            const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+            const targetX = clamp(hPos.x, minX, maxX);
+            const targetY = clamp(hPos.y, 0, maxY);
+            const targetZ = clamp(hPos.z, minZ, maxZ);
+            const targetPos = new Vector3(targetX, targetY, targetZ);
+            const localTarget = targetPos.clone().sub(hPos);
+            if (coords.rotation) {
+                const rotRad = (coords.rotation * Math.PI) / 180;
+                localTarget.applyAxisAngle(new Vector3(0, 1, 0), -rotRad);
+            }
+            // More upright hose path for dehumidifier
+            const path = new CatmullRomCurve3([
+                outputPoint.clone(),
+                outputPoint.clone().add(new Vector3(0, 25, 0)), // Up higher
+                localTarget.clone().add(new Vector3(0, 15, 0).applyEuler(new Euler(0, Math.atan2(localTarget.x, localTarget.z), 0))),
+                localTarget
+            ]);
+            const hoseRadius = 2.25; // 50% bigger than 1.5
+            const hoseGeo = new TubeGeometry(path, 20, hoseRadius, 8, false);
+            const hoseMat = new MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+            const hose = new Mesh(hoseGeo, hoseMat);
+            group.add(hose);
+            group.userData.hoseEnd = localTarget;
+        }
+        else {
+            group.userData.hoseEnd = outputPoint;
+        }
+        return group;
+    }
+    initHumidifierParticles() {
+        if (this._humidifierParticles)
+            return;
+        const count = 500;
+        const geom = new BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = new Float32Array(count * 3);
+        const lifetimes = new Float32Array(count);
+        const sizes = new Float32Array(count);
+        for (let i = 0; i < count; i++) {
+            positions[i * 3 + 1] = -1e3; // Hide initially
+            lifetimes[i] = 0;
+            sizes[i] = Math.random() * 2 + 1;
+        }
+        geom.setAttribute('position', new BufferAttribute(positions, 3));
+        geom.setAttribute('velocity', new BufferAttribute(velocities, 3));
+        geom.setAttribute('lifetime', new BufferAttribute(lifetimes, 1));
+        geom.setAttribute('size', new BufferAttribute(sizes, 1));
+        // Simple Soft Particle Texture (generated via canvas or DataURI)
+        // Utilizing a simple circular gradient
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 32, 32);
+        }
+        const texture = new CanvasTexture(canvas);
+        const mat = new PointsMaterial({
+            color: 0xffffff,
+            size: 3,
+            map: texture,
+            transparent: true,
+            opacity: 0.4,
+            depthWrite: false,
+            blending: AdditiveBlending
+        });
+        this._humidifierParticles = new Points(geom, mat);
+        this.volatileGroup?.add(this._humidifierParticles);
     }
     createExhaustModel(exhaustSpeed, baseRotation, entityId) {
         const group = new Group();
@@ -91915,6 +92819,64 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             this.windParticles.geometry.attributes.position.needsUpdate = true;
             this.windParticles.geometry.attributes.lifetime.needsUpdate = true;
         }
+        // Update Humidifier Particles
+        if (this._humidifierParticles && this._humidifiers.length > 0) {
+            const positions = this._humidifierParticles.geometry.attributes.position.array;
+            const velocities = this._humidifierParticles.geometry.attributes.velocity.array;
+            const lifetimes = this._humidifierParticles.geometry.attributes.lifetime.array;
+            const count = lifetimes.length;
+            // Only simulate if at least one humidifier is active
+            const activeHumidifiers = this._humidifiers.filter(h => h.userData.intensity > 0 && !this.isDehumidifier(h.userData.entityId));
+            if (activeHumidifiers.length === 0) {
+                // Hide all
+                for (let i = 0; i < count; i++)
+                    positions[i * 3 + 1] = -1e3;
+            }
+            else {
+                for (let i = 0; i < count; i++) {
+                    lifetimes[i] -= 0.016; // 60fps approx
+                    if (lifetimes[i] <= 0) {
+                        // Respawn
+                        const source = activeHumidifiers[Math.floor(Math.random() * activeHumidifiers.length)];
+                        // Get Spawn Pos
+                        const localStart = source.userData.hoseEnd;
+                        const worldStart = source.localToWorld(localStart.clone()); // localToWorld modifies vector
+                        // Add randomness
+                        const spread = 0.5;
+                        positions[i * 3] = worldStart.x + (Math.random() - 0.5) * spread;
+                        positions[i * 3 + 1] = worldStart.y + (Math.random() - 0.5) * spread;
+                        positions[i * 3 + 2] = worldStart.z + (Math.random() - 0.5) * spread;
+                        // Velocity
+                        // If outside (hose): Direction is roughly 'out' from hose? 
+                        // Actually cold steam falls. But initial velocity is pushed out.
+                        // If no hose: Up.
+                        // Let's approximate direction based on the last segment of hose or just generic.
+                        // Simple: Up + Random spread + slight fall over time (gravity handled in loop) ??
+                        // Cold mist: Shoots up, then falls.
+                        const intensity = source.userData.intensity; // 0-10
+                        const speed = 0.5 + (intensity / 10) * 0.5;
+                        // For hose, we might want to shoot in direction of hose end?
+                        // For now, let's just shoot somewhat UP and Random.
+                        velocities[i * 3] = (Math.random() - 0.5) * 0.5;
+                        velocities[i * 3 + 1] = speed; // Up
+                        velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+                        lifetimes[i] = 1.0 + Math.random(); // 1-2 seconds
+                    }
+                    else {
+                        // Update
+                        positions[i * 3] += velocities[i * 3];
+                        positions[i * 3 + 1] += velocities[i * 3 + 1];
+                        positions[i * 3 + 2] += velocities[i * 3 + 2];
+                        // Gravity / Fall logic for cold steam
+                        velocities[i * 3 + 1] -= 0.01; // Gravity
+                        // Drag
+                        velocities[i * 3] *= 0.98;
+                        velocities[i * 3 + 2] *= 0.98;
+                    }
+                }
+            }
+            this._humidifierParticles.geometry.attributes.position.needsUpdate = true;
+        }
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
             if (this.labelRenderer) {
@@ -92381,26 +93343,35 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                             <div class="slider-group">
                                 <div class="slider-row">
                                     <label>X</label>
-                                    <input type="range" class="edit-slider" min="0" max=${width} .value=${x$1} 
+                                    <input type="range" class="edit-slider" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -width : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? width * 2 : width}" 
+                                        .value=${x$1} 
                                         @input=${(e) => this.handleSliderInput(id, 'x', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
                                     <span class="slider-val">${x$1}</span>
                                 </div>
                                 <div class="slider-row">
                                     <label>Y</label>
-                                    <input type="range" class="edit-slider" min="0" max=${depth} .value=${y} 
+                                    <input type="range" class="edit-slider" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -height : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? depth * 2 : depth}" 
+                                        .value=${y} 
                                         @input=${(e) => this.handleSliderInput(id, 'y', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
                                     <span class="slider-val">${y}</span>
                                 </div>
                                 <div class="slider-row">
                                     <label>Z</label>
-                                    <input type="range" class="edit-slider" min="0" max=${height} .value=${z} 
+                                    <input type="range" class="edit-slider" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -height : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? height * 2 : height}" 
+                                        .value=${z} 
                                         @input=${(e) => this.handleSliderInput(id, 'z', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
                                     <span class="slider-val">${z}</span>
                                 </div>
-                                ${(this.isFan(id) || this.isExhaust(id)) ? x `
+                                ${(this.isFan(id) || this.isExhaust(id) || this.isHumidifier(id) || this.isDehumidifier(id)) ? x `
                                     <div class="slider-row">
                                         <label>R</label>
                                         <input type="range" class="edit-slider" min="0" max="360" .value=${rotation} 
