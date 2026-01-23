@@ -75,6 +75,8 @@ export class GrowspaceAdapter {
       soilMoistureValue: wsData.soil_moisture_value,
       exhaustSensor: wsData.exhaust_sensor,
       humidifierSensor: wsData.humidifier_sensor,
+      irrigationPumpState: wsData.irrigation_pump_state,
+      drainPumpState: wsData.drain_pump_state,
       irrigationTanks: wsData.irrigation_tanks?.map((t: any) => ({
         sensorEntity: t.sensor_entity,
         name: t.name,
@@ -82,6 +84,7 @@ export class GrowspaceAdapter {
         fillLevel: t.fill_level,
         isWarning: t.is_warning,
       })),
+      activeEvents: wsData.active_events,
       sensorCoordinates: wsData.sensor_coordinates,
       sensorTypes: wsData.sensor_types,
     };

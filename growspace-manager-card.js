@@ -5085,6 +5085,8 @@ class GrowspaceAdapter {
             soilMoistureValue: wsData.soil_moisture_value,
             exhaustSensor: wsData.exhaust_sensor,
             humidifierSensor: wsData.humidifier_sensor,
+            irrigationPumpState: wsData.irrigation_pump_state,
+            drainPumpState: wsData.drain_pump_state,
             irrigationTanks: wsData.irrigation_tanks?.map((t) => ({
                 sensorEntity: t.sensor_entity,
                 name: t.name,
@@ -5092,6 +5094,7 @@ class GrowspaceAdapter {
                 fillLevel: t.fill_level,
                 isWarning: t.is_warning,
             })),
+            activeEvents: wsData.active_events,
             sensorCoordinates: wsData.sensor_coordinates,
             sensorTypes: wsData.sensor_types,
         };
@@ -90580,6 +90583,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this._fanHeads = [];
         this._exhaustFans = [];
         this._humidifiers = [];
+        this._pumps = [];
         this._plantHitBoxes = [];
         this._keysPressed = new Set();
         this._strainColorCache = new Map();
@@ -90623,7 +90627,23 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         const env = this.device.environmentAttributes;
         const fanEntities = env?.circulationFanEntities || (env?.circulationFanEntity ? [env.circulationFanEntity] : []);
         const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
-        const allTracked = Array.from(new Set([...sensors, ...fanEntities, ...exhaustEntities]));
+        const pumpEntities = [
+            this.device.irrigationConfig?.irrigationPumpEntity,
+            this.device.irrigationConfig?.drainPumpEntity,
+        ].filter(Boolean);
+        const humidifierEntities = [
+            env?.humidifierEntity,
+            ...(env?.humidifierEntities || []),
+            env?.dehumidifierEntity,
+            ...(env?.dehumidifierEntities || [])
+        ].filter(Boolean);
+        const allTracked = Array.from(new Set([
+            ...sensors,
+            ...fanEntities,
+            ...exhaustEntities,
+            ...pumpEntities,
+            ...humidifierEntities
+        ]));
         let dataHash = `${this.selectedMetric}_${this.timelineIndex}_${this.device.deviceId}`;
         // Add sensor values to hash to detect state changes
         allTracked.forEach(id => {
@@ -90896,7 +90916,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         });
         this.renderer.setSize(width, height);
         this.renderer.setPixelRatio(window.devicePixelRatio);
-        this.renderer.setClearColor(0x0a0a0a, 1);
+        this.renderer.setClearColor(0x000000, 0); // Transparent
         this.renderer.domElement.style.display = 'block';
         this.container.appendChild(this.renderer.domElement);
         // Label Renderer
@@ -90912,7 +90932,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.container.appendChild(this.labelRenderer.domElement);
         // Scene
         this.scene = new Scene();
-        this.scene.background = new Color(0x0a0a0a);
+        this.scene.background = null; // Use CSS background through transparency
         // Camera
         this.camera = new PerspectiveCamera(45, width / height, 0.1, 2000);
         this.camera.position.set(300, 300, 300);
@@ -90975,6 +90995,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this._plantHitBoxes = [];
         this._humidifierParticles = undefined;
         this._dryAirParticles = undefined;
+        this._pumps = [];
+        this._pumpWaterParticles = undefined;
         this.windParticles = undefined;
         // Also clear any stray axis labels that might have been added to scene directly
         const strays = this.scene.children.filter(c => !c.isLight && c !== this.volatileGroup);
@@ -91309,6 +91331,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         }
         // 11. Draw Humidifiers
         this.renderHumidifiers(width, height, depth);
+        // 12. Draw Pumps
+        this.renderPumps(width, height, depth);
     }
     getSensorIcon(entityId) {
         if (this._isTemperatureSensor(entityId))
@@ -91665,6 +91689,228 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (!this._dryAirParticles && this._humidifiers.some(h => h.userData.isDehumidifier)) {
             this.initDryAirParticles();
         }
+    }
+    renderPumps(width, height, depth) {
+        if (!this.volatileGroup || !this.device)
+            return;
+        this._pumps = []; // Reset list
+        const irrigationConfig = this.device.irrigationConfig;
+        const pumpEntities = [];
+        if (irrigationConfig?.irrigationPumpEntity)
+            pumpEntities.push(irrigationConfig.irrigationPumpEntity);
+        if (irrigationConfig?.drainPumpEntity)
+            pumpEntities.push(irrigationConfig.drainPumpEntity);
+        // Also check sensor types for pumps
+        const env = this.device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes || {};
+        Object.keys(sensorTypes).forEach(id => {
+            if ((sensorTypes[id] === 'irrigation_pump' || sensorTypes[id] === 'drain_pump') && !pumpEntities.includes(id)) {
+                pumpEntities.push(id);
+            }
+        });
+        if (pumpEntities.length === 0)
+            return;
+        const sensorCoords = env?.sensorCoordinates || {};
+        pumpEntities.forEach((entityId) => {
+            let coords = sensorCoords[entityId];
+            if (!coords && this.editMode3DCords) {
+                coords = { x: width / 2, y: depth / 2, z: 0 };
+            }
+            if (!coords)
+                return;
+            const isOutside = (coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth);
+            const isDrain = entityId === irrigationConfig?.drainPumpEntity || sensorTypes[entityId] === 'drain_pump';
+            // Get State (active or not)
+            let isActive = false;
+            const stateObj = this.hass?.states[entityId];
+            if (stateObj) {
+                isActive = stateObj.state === 'on' || (stateObj.state !== 'off' && stateObj.state !== 'unavailable' && parseFloat(stateObj.state) > 0);
+            }
+            // Enhanced Check: Use precision timing from activeEvents
+            if (env?.activeEvents) {
+                const eventType = sensorTypes[entityId] === 'irrigation_pump' ? 'irrigation' : (sensorTypes[entityId] === 'drain_pump' ? 'drain' : null);
+                if (eventType && env.activeEvents[eventType]) {
+                    const event = env.activeEvents[eventType];
+                    const startTime = new Date(event.start).getTime();
+                    const now = new Date().getTime();
+                    const durationMs = event.duration * 1000;
+                    if (now >= startTime && now < (startTime + durationMs)) {
+                        isActive = true;
+                    }
+                }
+            }
+            const pumpGroup = this.createPumpModel(isDrain, isOutside, coords, width, depth, height, coords.z, isActive);
+            // Position (on the floor)
+            pumpGroup.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+            // Rotation
+            if (coords.rotation) {
+                pumpGroup.rotation.y = (coords.rotation * Math.PI) / 180;
+            }
+            pumpGroup.userData = {
+                entityId,
+                isActive,
+                isOutside,
+                isDrain,
+                hoseEnd: pumpGroup.userData.hoseEnd,
+                hosePath: pumpGroup.userData.hosePath
+            };
+            this.volatileGroup.add(pumpGroup);
+            this.sensorMeshes.set(entityId, pumpGroup);
+            this._pumps.push(pumpGroup);
+        });
+        // Initialize particles if needed
+        if (!this._pumpWaterParticles && this._pumps.length > 0) {
+            this.initPumpWaterParticles();
+        }
+    }
+    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive) {
+        const group = new Group();
+        // Pump dimensions (approximate based on image)
+        const bodyRadius = 8;
+        const bodyLength = 15;
+        const baseHeight = 4;
+        // Materials
+        const darkPlastic = new MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.4 });
+        const bracketMat = new MeshPhysicalMaterial({
+            color: 0xeeeeee,
+            transmission: 0.5,
+            opacity: 0.7,
+            roughness: 0.2,
+            metalness: 0.1,
+            transparent: true
+        });
+        // 1. Main Body (Horizontal Cylinder)
+        const bodyGeo = new CylinderGeometry(bodyRadius, bodyRadius, bodyLength, 32);
+        bodyGeo.rotateZ(Math.PI / 2);
+        const body = new Mesh(bodyGeo, darkPlastic);
+        body.position.y = bodyRadius + baseHeight;
+        group.add(body);
+        // 2. Front Head (Slightly larger diameter, shorter)
+        const headRadius = bodyRadius * 1.1;
+        const headLength = 5;
+        const headGeo = new CylinderGeometry(headRadius, headRadius, headLength, 32);
+        headGeo.rotateZ(Math.PI / 2);
+        const head = new Mesh(headGeo, darkPlastic);
+        head.position.set(-bodyLength / 2 - headLength / 2, bodyRadius + baseHeight, 0);
+        group.add(head);
+        // 3. Inlet/Outlet Ports (Small cylinders)
+        const portRadius = 2.5;
+        const portLength = 5;
+        const portGeo = new CylinderGeometry(portRadius, portRadius, portLength, 16);
+        // Front port
+        const port1 = new Mesh(portGeo, darkPlastic);
+        port1.position.set(-bodyLength / 2 - headLength - portLength / 2, bodyRadius + baseHeight, 0);
+        port1.rotateZ(Math.PI / 2);
+        group.add(port1);
+        // Top port
+        const port2 = new Mesh(portGeo, darkPlastic);
+        port2.position.set(-bodyLength / 2 - headLength / 2, bodyRadius * 2 + baseHeight, 0);
+        group.add(port2);
+        // 4. Mounting Brackets (Based on image: two translucent straps with feet)
+        for (let i = 0; i < 2; i++) {
+            const bracketX = (i === 0 ? bodyLength / 4 : -bodyLength / 4);
+            // Strap
+            const strapGeo = new CylinderGeometry(bodyRadius + 0.5, bodyRadius + 0.5, 2, 32, 1, true, 0, Math.PI);
+            strapGeo.rotateZ(Math.PI / 2);
+            strapGeo.rotateX(Math.PI);
+            const strap = new Mesh(strapGeo, bracketMat);
+            strap.position.set(bracketX, bodyRadius + baseHeight, 0);
+            group.add(strap);
+            // Feet
+            const footGeo = new BoxGeometry(2, baseHeight, 10);
+            const footL = new Mesh(footGeo, bracketMat);
+            footL.position.set(bracketX, baseHeight / 2, 4);
+            group.add(footL);
+            const footR = new Mesh(footGeo, bracketMat);
+            footR.position.set(bracketX, baseHeight / 2, -4);
+            group.add(footR);
+        }
+        // Port Output Point (Forward-facing port or top port depending on orientation? Let's use front for now)
+        let outputPoint = new Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
+        if (isOutside) {
+            const hPos = new Vector3(coords.x - frameWidth / 2, 0, coords.y - frameDepth / 2);
+            const minX = -frameWidth / 2;
+            const maxX = frameWidth / 2;
+            const minZ = -frameDepth / 2;
+            const maxZ = frameDepth / 2;
+            const maxY = frameHeight;
+            const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+            const targetX = clamp(hPos.x, minX, maxX);
+            const targetY = clamp(hoseTargetHeight, 0, maxY);
+            const targetZ = clamp(hPos.z, minZ, maxZ);
+            const targetPos = new Vector3(targetX, targetY, targetZ);
+            const localTarget = targetPos.clone().sub(hPos);
+            if (coords.rotation) {
+                const rotRad = (coords.rotation * Math.PI) / 180;
+                localTarget.applyAxisAngle(new Vector3(0, 1, 0), -rotRad);
+            }
+            const path = new CatmullRomCurve3([
+                outputPoint.clone(),
+                outputPoint.clone().add(new Vector3(-10, 5, 0)), // Curve out
+                localTarget.clone().lerp(outputPoint, 0.2),
+                localTarget
+            ]);
+            const pumpHoseRadius = 0.75; // 50% of humidifier hose
+            const hoseGeo = new TubeGeometry(path, 32, pumpHoseRadius, 8, false);
+            const hoseMat = new MeshPhysicalMaterial({
+                color: isActive ? 0x003399 : 0x88ccff,
+                transmission: 0.9,
+                opacity: 0.4,
+                transparent: true,
+                roughness: 0.1,
+                thickness: 0.2
+            });
+            const hose = new Mesh(hoseGeo, hoseMat);
+            group.add(hose);
+            group.userData.hoseMesh = hose;
+            group.userData.hoseEnd = localTarget;
+            group.userData.hosePath = path;
+        }
+        else {
+            group.userData.hoseEnd = outputPoint;
+        }
+        return group;
+    }
+    initPumpWaterParticles() {
+        if (this._pumpWaterParticles)
+            return;
+        const count = 300;
+        const geom = new BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const lifetimes = new Float32Array(count);
+        const progress = new Float32Array(count); // Normalised progress along hose path
+        for (let i = 0; i < count; i++) {
+            positions[i * 3 + 1] = -1e3;
+            lifetimes[i] = 0;
+            progress[i] = 0;
+        }
+        geom.setAttribute('position', new BufferAttribute(positions, 3));
+        geom.setAttribute('lifetime', new BufferAttribute(lifetimes, 1));
+        geom.setAttribute('progress', new BufferAttribute(progress, 1));
+        const canvas = document.createElement('canvas');
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(100,200,255,1)');
+            grad.addColorStop(1, 'rgba(100,200,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 32, 32);
+        }
+        const texture = new CanvasTexture(canvas);
+        const mat = new PointsMaterial({
+            color: 0x448aff,
+            size: 2,
+            map: texture,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: AdditiveBlending
+        });
+        this._pumpWaterParticles = new Points(geom, mat);
+        this._pumpWaterParticles.frustumCulled = false;
+        this.volatileGroup?.add(this._pumpWaterParticles);
     }
     createHumidifierModel(intensity, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight) {
         const group = new Group();
@@ -92961,28 +93207,109 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                         // So particles should shoot from the hose end into the space.
                         // Direction: From hose end, roughly towards center or just "out".
                         // Let's make them shoot forcefully from the hose end.
-                        // Since we don't have the hose normal easily, we'll randomize generally "forward/up".
-                        // Or just spherical expansion.
-                        const speed = 1.0 + Math.random();
-                        const angle = Math.random() * Math.PI * 2;
-                        const phi = Math.random() * Math.PI;
-                        velocities[i * 3] = Math.sin(phi) * Math.cos(angle) * speed;
-                        velocities[i * 3 + 1] = Math.abs(Math.cos(phi)) * speed; // More Up
-                        velocities[i * 3 + 2] = Math.sin(phi) * Math.sin(angle) * speed;
-                        lifetimes[i] = 1.0;
+                        velocities[i * 3] = (Math.random() - 0.5) * 5.0;
+                        velocities[i * 3 + 1] = (Math.random() - 0.2) * 5.0;
+                        velocities[i * 3 + 2] = (Math.random() - 0.5) * 5.0;
+                        lifetimes[i] = 0.5 + Math.random() * 0.5;
                     }
                     else {
                         positions[i * 3] += velocities[i * 3];
                         positions[i * 3 + 1] += velocities[i * 3 + 1];
                         positions[i * 3 + 2] += velocities[i * 3 + 2];
-                        // No gravity, maybe slight drag
-                        velocities[i * 3] *= 0.95;
-                        velocities[i * 3 + 1] *= 0.95;
-                        velocities[i * 3 + 2] *= 0.95;
+                        velocities[i * 3 + 1] -= 0.1; // More gravity
                     }
                 }
             }
             this._dryAirParticles.geometry.attributes.position.needsUpdate = true;
+        }
+        // Dynamic Pump State tracking for precise visual timing
+        if (this._pumps.length > 0 && this.device) {
+            const env = this.device.environmentAttributes;
+            const sensorTypes = env?.sensorTypes || {};
+            const activeEvents = env?.activeEvents || {};
+            const now = Date.now();
+            this._pumps.forEach(p => {
+                const entityId = p.userData.entityId;
+                let isActive = false;
+                // 1. Check entity state
+                const stateObj = this.hass?.states[entityId];
+                if (stateObj) {
+                    isActive = stateObj.state === 'on' || (stateObj.state !== 'off' && stateObj.state !== 'unavailable' && parseFloat(stateObj.state) > 0);
+                }
+                // 2. High-precision check (Active Events)
+                const eventType = sensorTypes[entityId] === 'irrigation_pump' ? 'irrigation' : (sensorTypes[entityId] === 'drain_pump' ? 'drain' : null);
+                if (!isActive && eventType && activeEvents[eventType]) {
+                    const event = activeEvents[eventType];
+                    const startTime = new Date(event.start).getTime();
+                    const durationMs = (event.duration || 0) * 1000;
+                    if (now >= startTime && now < (startTime + durationMs)) {
+                        isActive = true;
+                    }
+                }
+                // Update visual state if it changed
+                if (isActive !== p.userData.isActive) {
+                    p.userData.isActive = isActive;
+                    const hoseMesh = p.userData.hoseMesh;
+                    if (hoseMesh && hoseMesh.material instanceof MeshPhysicalMaterial) {
+                        hoseMesh.material.color.setHex(isActive ? 0x003399 : 0x88ccff);
+                        hoseMesh.material.needsUpdate = true;
+                    }
+                }
+            });
+        }
+        // Update Pump Water Particles
+        if (this._pumpWaterParticles && this._pumps.length > 0) {
+            const positions = this._pumpWaterParticles.geometry.attributes.position.array;
+            const progressArr = this._pumpWaterParticles.geometry.attributes.progress.array;
+            const lifetimes = this._pumpWaterParticles.geometry.attributes.lifetime.array;
+            const count = lifetimes.length;
+            const activePumps = this._pumps.filter(p => p.userData.isActive && p.userData.isOutside && p.userData.hosePath);
+            if (activePumps.length === 0) {
+                for (let i = 0; i < count; i++)
+                    positions[i * 3 + 1] = -1e3;
+            }
+            else {
+                for (let i = 0; i < count; i++) {
+                    lifetimes[i] -= 0.02;
+                    if (lifetimes[i] <= 0) {
+                        // Respawn
+                        const source = activePumps[Math.floor(Math.random() * activePumps.length)];
+                        progressArr[i] = source.userData.isDrain ? 1.0 : 0.0;
+                        lifetimes[i] = 1.0;
+                        // Initial position
+                        const path = source.userData.hosePath;
+                        const point = path.getPoint(progressArr[i]);
+                        const worldPos = source.localToWorld(point.clone());
+                        positions[i * 3] = worldPos.x;
+                        positions[i * 3 + 1] = worldPos.y;
+                        positions[i * 3 + 2] = worldPos.z;
+                    }
+                    else {
+                        // Move along curve
+                        const source = activePumps[i % activePumps.length]; // Simplified track
+                        const step = 0.02;
+                        if (source.userData.isDrain) {
+                            progressArr[i] -= step;
+                            if (progressArr[i] < 0)
+                                lifetimes[i] = 0;
+                        }
+                        else {
+                            progressArr[i] += step;
+                            if (progressArr[i] > 1)
+                                lifetimes[i] = 0;
+                        }
+                        if (lifetimes[i] > 0) {
+                            const path = source.userData.hosePath;
+                            const point = path.getPoint(Math.max(0, Math.min(1, progressArr[i])));
+                            const worldPos = source.localToWorld(point.clone());
+                            positions[i * 3] = worldPos.x;
+                            positions[i * 3 + 1] = worldPos.y;
+                            positions[i * 3 + 2] = worldPos.z;
+                        }
+                    }
+                }
+            }
+            this._pumpWaterParticles.geometry.attributes.position.needsUpdate = true;
         }
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
@@ -93451,8 +93778,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>X</label>
                                     <input type="range" class="edit-slider" 
-                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -width : 0}" 
-                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? width * 2 : width}" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? -width : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? width * 2 : width}" 
                                         .value=${x$1} 
                                         @input=${(e) => this.handleSliderInput(id, 'x', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
@@ -93461,8 +93788,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>Y</label>
                                     <input type="range" class="edit-slider" 
-                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -height : 0}" 
-                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? depth * 2 : depth}" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? -height : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? depth * 2 : depth}" 
                                         .value=${y} 
                                         @input=${(e) => this.handleSliderInput(id, 'y', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
@@ -93471,14 +93798,14 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>Z</label>
                                     <input type="range" class="edit-slider" 
-                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? -height : 0}" 
-                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id)) ? height * 2 : height}" 
+                                        min="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? -height : 0}" 
+                                        max="${(this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? height * 2 : height}" 
                                         .value=${z} 
                                         @input=${(e) => this.handleSliderInput(id, 'z', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
                                     <span class="slider-val">${z}</span>
                                 </div>
-                                ${(this.isFan(id) || this.isExhaust(id) || this.isHumidifier(id) || this.isDehumidifier(id)) ? x `
+                                ${(this.isFan(id) || this.isExhaust(id) || this.isHumidifier(id) || this.isDehumidifier(id) || this._isIrrigationSensor(id)) ? x `
                                     <div class="slider-row">
                                         <label>R</label>
                                         <input type="range" class="edit-slider" min="0" max="360" .value=${rotation} 
@@ -93582,7 +93909,7 @@ Heatmap3D.styles = i$6 `
     #container {
       width: 100%;
       height: 600px;
-      background: #0a0a0a;
+      background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color, #0a0a0a)));
       border-radius: var(--ha-card-border-radius, 12px);
       overflow: hidden;
       position: relative;
@@ -93600,7 +93927,7 @@ Heatmap3D.styles = i$6 `
         justify-content: space-between;
         align-items: center;
         z-index: 20;
-        background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
         pointer-events: none;
     }
     .header h2 {

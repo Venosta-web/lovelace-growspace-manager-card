@@ -175,6 +175,11 @@ export interface SerializedEnvironmentAttributes {
   circulation_fan_entity?: string;
   circulation_fan_entities?: string[];
 
+  // Irrigation Pump States
+  irrigation_pump_state?: string;
+  drain_pump_state?: string;
+  active_events?: Record<string, { start: string; duration: number }>;
+
   // Values calculated by serializer
   vpd?: string;
   soil_moisture_value?: string;
@@ -249,6 +254,8 @@ export interface EnvironmentAttributes {
   exhaustFanEntities?: string[];
   circulationFanEntity?: string;
   circulationFanEntities?: string[];
+  irrigationPumpState?: string;
+  drainPumpState?: string;
   vpd?: string;
   soilMoistureValue?: string;
   exhaustSensor?: string;
@@ -256,6 +263,7 @@ export interface EnvironmentAttributes {
   irrigationTanks?: IrrigationTank[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   sensorTypes?: Record<string, string>;
+  activeEvents?: Record<string, { start: string; duration: number }>;
 }
 
 
