@@ -131,6 +131,7 @@ export const GrowspaceAPIResponseSchema = z
     veg_week: z.number().optional().default(0),
     flower_week: z.number().optional().default(0),
     max_stage_summary: z.string().optional().default(''),
+    sensor_types: z.record(z.string(), z.string()).optional().default({}),
 
     // Biological Metrics
     vpd_status: z.string().optional().default('unknown'),

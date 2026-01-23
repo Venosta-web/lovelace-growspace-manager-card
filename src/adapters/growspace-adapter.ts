@@ -83,6 +83,7 @@ export class GrowspaceAdapter {
         isWarning: t.is_warning,
       })),
       sensorCoordinates: wsData.sensor_coordinates,
+      sensorTypes: wsData.sensor_types,
     };
 
     const stats: GrowspaceStats = {

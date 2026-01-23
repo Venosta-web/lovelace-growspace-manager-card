@@ -7,7 +7,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { GrowspaceDevice, PlantEntity, PlantStage, StrainEntry } from '../types';
-import { StatusLevel, STATUS_COLORS } from '../constants';
 import { PlantUtils } from '../utils/plant-utils';
 import { strainLibraryContext, storeContext } from '../context';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -29,6 +28,7 @@ export class Heatmap3D extends LitElement {
     @state() private showHeatmap: boolean = true;
     @property({ type: Boolean }) keyboardRotateEnabled = false;
     @property({ type: Number }) keyboardRotateSpeed = 1.0;
+    @state() private _activeSensorTab: 'temperature' | 'humidity' | 'vpd' | 'lights' | 'ventilation' | 'environment' | 'irrigation' = 'temperature';
 
     @consume({ context: strainLibraryContext, subscribe: true })
     strainLibrary: StrainEntry[] = [];
@@ -63,6 +63,7 @@ export class Heatmap3D extends LitElement {
     private _exhaustFans: THREE.Object3D[] = [];
     private _plantHitBoxes: THREE.Object3D[] = [];
     private _keysPressed: Set<string> = new Set();
+    private _strainColorCache: Map<string, string[]> = new Map();
 
     static styles = css`
     :host {
@@ -396,8 +397,40 @@ export class Heatmap3D extends LitElement {
     .slider-val {
         font-size: 10px;
         color: #9e9e9e;
-        width: 25px;
         text-align: right;
+        width: 25px;
+    }
+
+    /* Sensor Tab Styles */
+    .sensor-tabs {
+        display: flex;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 2px;
+        margin-bottom: 8px;
+    }
+    .sensor-tab {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: #757575;
+        padding: 6px 2px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    .sensor-tab.active {
+        background: #2c2c2e;
+        color: #448aff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .sensor-tab:hover:not(.active) {
+        color: #e0e0e0;
+        background: rgba(255,255,255,0.05);
     }
 
     /* Tooltip Styles */
@@ -529,6 +562,7 @@ export class Heatmap3D extends LitElement {
 
     private toggleEditMode() {
         this.editMode3DCords = !this.editMode3DCords;
+        this.updateScene();
         this.dispatchEvent(
             new CustomEvent('edit-mode-changed', {
                 detail: { enabled: this.editMode3DCords },
@@ -560,7 +594,16 @@ export class Heatmap3D extends LitElement {
     }
 
     private isLight(entityId: string): boolean {
-        if (!this.hass || !entityId) return false;
+        if (!this.device || !entityId) return false;
+
+        // Priority 1: Explicit mapping from backend
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            return sensorTypes[entityId] === 'light';
+        }
+
+        // Priority 2: Heuristics (fallback)
+        if (!this.hass) return false;
         const state = this.hass.states[entityId];
         if (!state) return false;
 
@@ -576,29 +619,129 @@ export class Heatmap3D extends LitElement {
     }
 
     private isSensorOfMetric(entityId: string): boolean {
-        if (!this.hass || !entityId) return false;
+        if (!this.device || !entityId) return false;
 
-        // Light is never a primary metric for heatmap calculation
+        // Priority 1: Explicit mapping from backend
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            return sensorTypes[entityId] === this.selectedMetric;
+        }
+
+        // Priority 2: Heuristics (fallback)
         if (this.isLight(entityId)) return false;
 
+        if (this.selectedMetric === 'temperature') return this._isTemperatureSensor(entityId);
+        if (this.selectedMetric === 'humidity') return this._isHumiditySensor(entityId);
+        if (this.selectedMetric === 'vpd') return this._isVPDSensor(entityId);
+
+        return false;
+    }
+
+    private _isTemperatureSensor(entityId: string): boolean {
+        if (!this.device || !entityId) return false;
+
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            return sensorTypes[entityId] === 'temperature';
+        }
+
+        if (!this.hass) return false;
         const state = this.hass.states[entityId];
         if (!state) return false;
-
         const deviceClass = state.attributes.device_class;
         const unit = state.attributes.unit_of_measurement;
         const lowerId = entityId.toLowerCase();
+        return deviceClass === 'temperature' || (unit && unit.includes('°')) || lowerId.includes('temp');
+    }
 
-        // Robust check for sensor type excluding ambiguous names if they are light sensors
-        const isTemp = deviceClass === 'temperature' || (unit && unit.includes('°')) || lowerId.includes('temp');
-        const isHumi = (deviceClass === 'humidity' || (unit && unit.includes('%')) || lowerId.includes('humi') || lowerId.includes('humid')) && !this.isLight(entityId);
-        // Looser VPD check to catch calculated sensors
-        const isVpd = deviceClass === 'pressure' || (unit && (unit.includes('Pa') || unit.includes('vpd'))) || lowerId.includes('vpd') || lowerId.includes('calculated_vpd') || lowerId.includes('deficit');
+    private _isHumiditySensor(entityId: string): boolean {
+        if (!this.device || !entityId) return false;
 
-        if (this.selectedMetric === 'temperature') return isTemp;
-        if (this.selectedMetric === 'humidity') return isHumi;
-        if (this.selectedMetric === 'vpd') return isVpd;
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            return sensorTypes[entityId] === 'humidity';
+        }
 
-        return false;
+        if (!this.hass) return false;
+        const state = this.hass.states[entityId];
+        if (!state) return false;
+        const deviceClass = state.attributes.device_class;
+        const unit = state.attributes.unit_of_measurement;
+        const lowerId = entityId.toLowerCase();
+        return (deviceClass === 'humidity' || (unit && unit.includes('%')) || lowerId.includes('humi') || lowerId.includes('humid')) && !this.isLight(entityId);
+    }
+
+    private _isVPDSensor(entityId: string): boolean {
+        if (!this.device || !entityId) return false;
+
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            return sensorTypes[entityId] === 'vpd';
+        }
+
+        if (!this.hass) return false;
+        const state = this.hass.states[entityId];
+        if (!state) return false;
+        const deviceClass = state.attributes.device_class;
+        const unit = state.attributes.unit_of_measurement;
+        const lowerId = entityId.toLowerCase();
+        return deviceClass === 'pressure' || (unit && (unit.includes('Pa') || unit.includes('vpd'))) || lowerId.includes('vpd') || lowerId.includes('calculated_vpd') || lowerId.includes('deficit');
+    }
+
+    private _isEnvironmentSensor(entityId: string): boolean {
+        if (!this.device || !entityId) return false;
+
+        // 1. Check direct configuration
+        const env = this.device.environmentAttributes;
+        if (env) {
+            const co2 = env.co2Sensors || (env.co2Sensor ? [env.co2Sensor] : []);
+            if (co2.includes(entityId)) return true;
+
+            const dehum = env.dehumidifierEntities || (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+            if (dehum.includes(entityId)) return true;
+
+            const hum = env.humidifierEntities || (env.humidifierEntity ? [env.humidifierEntity] : []);
+            if (hum.includes(entityId)) return true;
+        }
+
+        // 2. Check sensor types map
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            const type = sensorTypes[entityId];
+            return type === 'dehumidifier' || type === 'humidifier' || type === 'co2';
+        }
+
+        // 3. Fallback to name matching
+        const lowerId = entityId.toLowerCase();
+        return lowerId.includes('co2') || lowerId.includes('carbon_dioxide');
+    }
+
+    private _isIrrigationSensor(entityId: string): boolean {
+        if (!this.device || !entityId) return false;
+
+        // 1. Check irrigation config
+        if (this.device.irrigationConfig) {
+            if (this.device.irrigationConfig.irrigationPumpEntity === entityId) return true;
+            if (this.device.irrigationConfig.drainPumpEntity === entityId) return true;
+        }
+
+        // 2. Check soil moisture sensors
+        const env = this.device.environmentAttributes;
+        if (env) {
+            const moisture = env.soilMoistureSensors || (env.soilMoistureSensor ? [env.soilMoistureSensor] : []);
+            if (moisture.includes(entityId)) return true;
+        }
+
+        // 3. Check sensor types map
+        const sensorTypes = this.device.environmentAttributes?.sensorTypes;
+        if (sensorTypes && sensorTypes[entityId]) {
+            const type = sensorTypes[entityId];
+            return type === 'soil_moisture' || type === 'irrigation_pump' || type === 'drain_pump';
+        }
+
+        // 4. Fallback to name matching
+        const lowerId = entityId.toLowerCase();
+        return lowerId.includes('moisture') || lowerId.includes('soil');
     }
 
     private isFan(entityId: string): boolean {
@@ -767,18 +910,44 @@ export class Heatmap3D extends LitElement {
         };
         const range = ranges[this.selectedMetric];
 
-        for (const [entityId, coords] of Object.entries(sensorCoords)) {
-            if (!coords) continue;
+        // Collect all sensor entities from attributes + coordinates
+        const allSensorEntities = new Set(Object.keys(sensorCoords));
+        if (this.device.environmentAttributes) {
+            const env = this.device.environmentAttributes;
+            const sources = [
+                env.temperatureSensor, ...(env.temperatureSensors || []),
+                env.humiditySensor, ...(env.humiditySensors || []),
+                env.vpdSensor, ...(env.vpdSensors || []),
+                env.lightSensor, ...(env.lightSensors || []),
+                env.co2Sensor, ...(env.co2Sensors || []),
+                env.soilMoistureSensor, ...(env.soilMoistureSensors || []),
+                env.humidifierEntity, ...(env.humidifierEntities || []),
+                env.dehumidifierEntity, ...(env.dehumidifierEntities || []),
+                this.device.irrigationConfig?.irrigationPumpEntity,
+                this.device.irrigationConfig?.drainPumpEntity
+            ];
+            sources.forEach(id => { if (id) allSensorEntities.add(id); });
+        }
 
-            const isMetric = this.isSensorOfMetric(entityId);
+        for (const entityId of allSensorEntities) {
+            const isTemp = this._isTemperatureSensor(entityId);
+            const isHumi = this._isHumiditySensor(entityId);
+            const isVpd = this._isVPDSensor(entityId);
             const isLight = this.isLight(entityId);
+            const isMetric = this.isSensorOfMetric(entityId);
+            const isEnv = this._isEnvironmentSensor(entityId);
+            const isIrrig = this._isIrrigationSensor(entityId);
+            const isFan = this.isFan(entityId);
+            const isExhaust = this.isExhaust(entityId);
 
-            // Always display if it matches selected metric OR if it's a light sensor
-            if (isMetric || isLight) {
+            // Display if it matches selected metric OR if it's a light sensor OR if in edit mode and is any tracked sensor
+            // Exclude fans/exhausts from this generic loop as they have their own renderers
+            if (!isFan && !isExhaust && (isMetric || isLight || (this.editMode3DCords && (isTemp || isHumi || isVpd || isEnv || isIrrig)))) {
                 displayEntities.push(entityId);
             }
 
-            if (isMetric) {
+            if (isMetric && sensorCoords[entityId]) {
+                const coords = sensorCoords[entityId];
                 const val = this.getMetricValue(entityId);
                 const normalizedVal = Math.max(0, Math.min(1, (val - range.min) / (range.max - range.min)));
 
@@ -936,11 +1105,20 @@ export class Heatmap3D extends LitElement {
         // 5. Draw Sensor Indicators (Small refined spheres) + Labels
         this.sensorMeshes.clear(); // Clear previous meshes
         displayEntities.forEach((entityId) => {
-            const coords = sensorCoords[entityId];
+            let coords = sensorCoords[entityId];
+
+            // Provide default coordinates if missing and in edit mode
+            if (!coords && this.editMode3DCords) {
+                coords = { x: width / 2, y: depth / 2, z: height / 2 };
+            }
+
             if (!coords) return;
 
             const isMetric = this.isSensorOfMetric(entityId);
             const isLight = this.isLight(entityId);
+            const isTemp = this._isTemperatureSensor(entityId);
+            const isHumi = this._isHumiditySensor(entityId);
+            const isVpd = this._isVPDSensor(entityId);
             const realVal = this.getMetricValue(entityId);
 
             let healthColor: string;
@@ -950,19 +1128,31 @@ export class Heatmap3D extends LitElement {
             if (isMetric) {
                 healthColor = this.getStatusColorForValue(realVal, thresholds);
                 unit = this.selectedMetric === 'temperature' ? '°C' : (this.selectedMetric === 'humidity' ? '%' : ' kPa');
-                icon = this.selectedMetric === 'temperature' ? 'mdi:thermometer' : (this.selectedMetric === 'humidity' ? 'mdi:water-percent' : 'mdi:gauge');
-            } else {
-                // It's a light sensor being displayed alongside another metric
+                icon = this.getSensorIcon(entityId);
+            } else if (isLight) {
                 healthColor = '#ffeb3b'; // Yellow/Gold for light
                 unit = ' %';
                 const state = this.hass?.states[entityId];
                 if (state && state.attributes.unit_of_measurement?.includes('fc')) unit = ' fc';
-                icon = 'mdi:white-balance-sunny';
+                icon = this.getSensorIcon(entityId);
+            } else {
+                // Secondary sensor being displayed in edit mode
+                healthColor = '#9e9e9e'; // Grey for non-active sensors
+                if (isTemp) {
+                    unit = '°C';
+                } else if (isHumi) {
+                    unit = '%';
+                } else if (isVpd) {
+                    unit = ' kPa';
+                } else {
+                    unit = '';
+                }
+                icon = this.getSensorIcon(entityId);
             }
 
             let sensorModel: THREE.Object3D;
 
-            if (isMetric) {
+            if (isMetric || isTemp || isHumi || isVpd) {
                 sensorModel = this.createSensorProbeModel(healthColor);
             } else {
                 // Light sensor or other non-metric indicator
@@ -1003,11 +1193,17 @@ export class Heatmap3D extends LitElement {
             labelDiv.className = 'sensor-label';
             const hexColor = healthColor;
 
+            let labelPrefix = 'S';
+            if (isLight) labelPrefix = 'L';
+            else if (isTemp) labelPrefix = 'T';
+            else if (isHumi) labelPrefix = 'H';
+            else if (isVpd) labelPrefix = 'V';
+
             labelDiv.innerHTML = `
                 <div class="sensor-icon" style="background: ${hexColor}33; border-color: ${hexColor}">
                     <ha-icon icon="${icon}" style="color: ${hexColor}; --mdc-icon-size: 10px"></ha-icon>
                 </div>
-                <span style="color: ${hexColor}">${isMetric ? 'S' + (displayEntities.indexOf(entityId) + 1) : 'L'}: ${realVal.toFixed(1)}${unit}</span>
+                <span style="color: ${hexColor}">${labelPrefix}${displayEntities.indexOf(entityId) + 1}: ${realVal.toFixed(1)}${unit}</span>
             `;
 
             const label = new CSS2DObject(labelDiv);
@@ -1018,12 +1214,12 @@ export class Heatmap3D extends LitElement {
         // 6. Add Axis Labels
         this.addAxisLabels(width, height, depth);
 
+
         // Update controls target to center the view on the growspace box
         if (this.controls) {
             this.controls.target.set(0, height / 2, 0);
             this.controls.update();
         }
-
 
         // Update drag controls if in edit mode
         if (this.editMode3DCords) {
@@ -1050,6 +1246,44 @@ export class Heatmap3D extends LitElement {
         if (this.showFans) {
             this.renderBreeze(width, height, depth);
         }
+    }
+
+    private getSensorIcon(entityId: string): string {
+        if (this._isTemperatureSensor(entityId)) return 'mdi:thermometer';
+        if (this._isHumiditySensor(entityId)) return 'mdi:water-percent';
+        if (this._isVPDSensor(entityId)) return 'mdi:cloud-outline';
+        if (this.isLight(entityId)) return 'mdi:lightbulb-on';
+        if (this.isFan(entityId)) return 'mdi:fan';
+        if (this.isExhaust(entityId)) return 'mdi:fan';
+
+        const env = this.device?.environmentAttributes;
+        const types = env?.sensorTypes || {};
+
+        // Soil Moisture
+        if (env?.soilMoistureSensors?.includes(entityId) || env?.soilMoistureSensor === entityId || types[entityId] === 'soil_moisture') {
+            return 'mdi:water-percent';
+        }
+
+        // Irrigation / Drain
+        if (this.device?.irrigationConfig?.irrigationPumpEntity === entityId || types[entityId] === 'irrigation_pump') return 'mdi:water';
+        if (this.device?.irrigationConfig?.drainPumpEntity === entityId || types[entityId] === 'drain_pump') return 'mdi:water-minus';
+
+        // CO2
+        if (env?.co2Sensors?.includes(entityId) || env?.co2Sensor === entityId || types[entityId] === 'co2' || entityId.toLowerCase().includes('co2')) {
+            return 'mdi:weather-cloudy';
+        }
+
+        // Humidifier
+        if (env?.humidifierEntities?.includes(entityId) || env?.humidifierEntity === entityId || types[entityId] === 'humidifier') {
+            return 'mdi:air-humidifier';
+        }
+
+        // Dehumidifier
+        if (env?.dehumidifierEntities?.includes(entityId) || env?.dehumidifierEntity === entityId || types[entityId] === 'dehumidifier') {
+            return 'mdi:air-humidifier-off';
+        }
+
+        return 'mdi:sensor';
     }
 
     private renderFrame(width: number, height: number, depth: number) {
@@ -1673,7 +1907,7 @@ export class Heatmap3D extends LitElement {
         return group;
     }
 
-    private renderBreeze(width: number, height: number, depth: number) {
+    private renderBreeze(_width: number, _height: number, _depth: number) {
         if (!this.volatileGroup) return;
 
         // Create a pool of wind particles
@@ -1749,7 +1983,7 @@ export class Heatmap3D extends LitElement {
                 if (plant) {
                     // 2. Create Plant
                     const stage = PlantUtils.getPlantStage(plant);
-                    const plantModel = this.createPlantModel(stage, potHeight);
+                    const plantModel = this.createPlantModel(stage, potHeight, plant);
                     plantGroup.add(plantModel);
                 }
 
@@ -1918,7 +2152,7 @@ export class Heatmap3D extends LitElement {
         return leafGroup;
     }
 
-    private createPlantModel(stage: PlantStage, potHeight: number): THREE.Group {
+    private createPlantModel(stage: PlantStage, potHeight: number, plant?: PlantEntity): THREE.Group {
         const group = new THREE.Group();
 
         let scale = 1;
@@ -1981,34 +2215,272 @@ export class Heatmap3D extends LitElement {
 
         // Colas for Flower stage
         if (stage === PlantStage.FLOWER) {
-            const budMat = new THREE.MeshStandardMaterial({
-                color: 0x81c784,
-                roughness: 0.5,
-                emissive: 0x1b5e20,
-                emissiveIntensity: 0.2
-            });
-
-            // Main Top Cola
-            const colaGeo = new THREE.DodecahedronGeometry(6 * scale, 1);
-            colaGeo.scale(0.8, 1.5, 0.8);
-            const mainCola = new THREE.Mesh(colaGeo, budMat);
-            mainCola.position.y = potHeight + stemHeight;
-            group.add(mainCola);
-
-            // Side Buds
-            for (let i = 0; i < 4; i++) {
-                const sideBud = new THREE.Mesh(new THREE.DodecahedronGeometry(4 * scale, 0), budMat);
-                const angle = (i / 4) * Math.PI * 2;
-                sideBud.position.set(
-                    Math.cos(angle) * 8 * scale,
-                    potHeight + stemHeight * 0.7,
-                    Math.sin(angle) * 8 * scale
-                );
-                group.add(sideBud);
-            }
+            this._addFlowerDetails(group, scale, potHeight, stemHeight, plant);
         }
 
         return group;
+    }
+
+    private async _addFlowerDetails(group: THREE.Group, scale: number, potHeight: number, stemHeight: number, plant?: PlantEntity) {
+        let strainColors: string[] = [];
+
+        if (plant && this.strainLibrary) {
+            const plantData = PlantUtils.getPlantDisplayData(plant, this.strainLibrary);
+            if (plantData.imageUrl && !plantData.imageUrl.includes('stages/')) {
+                if (this._strainColorCache.has(plantData.imageUrl)) {
+                    strainColors = this._strainColorCache.get(plantData.imageUrl)!;
+                } else {
+                    this._extractStrainColors(plantData.imageUrl).then(colors => {
+                        if (colors && colors.length > 0) {
+                            this.requestUpdate();
+                        }
+                    });
+                }
+            }
+        }
+
+        const flowerDays = plant ? PlantUtils.calculatePlantAge(plant) : 0;
+
+        // Requirement: Pistils/buds start appearing on day 16 of flower
+        if (flowerDays < 16) return;
+
+        // Bud Scaling Logic:
+        // At flowerDays = 16, buds start at 20%
+        // Day 16-40: Linear growth from 20% to 50%
+        // Day 40-65: Faster growth from 50% to 100%
+        let budScaleFactor = 1.0;
+        if (flowerDays < 40) {
+            const t = (flowerDays - 16) / (40 - 16);
+            budScaleFactor = 0.2 + (t * 0.3);
+        } else if (flowerDays <= 65) {
+            const t = (flowerDays - 40) / (65 - 40);
+            budScaleFactor = 0.5 + (t * 0.5);
+        }
+
+        // Pistil Color Progress (0.0 at day 16, 1.0 at day 65)
+        const pistilProgress = Math.min(1.0, Math.max(0.0, (flowerDays - 16) / (65 - 16)));
+
+        const budColor = strainColors.length > 0 ? new THREE.Color(strainColors[0]) : new THREE.Color(0x81c784);
+        const pistilTargetColor = strainColors.length > 1 ? new THREE.Color(strainColors[1]) : new THREE.Color(0xffa726); // Default orange
+        const leafColor = strainColors.length > 2 ? new THREE.Color(strainColors[2]) : new THREE.Color(0x2e7d32);
+        const pistilWhiteColor = new THREE.Color(0xffffff);
+
+        const budMat = new THREE.MeshStandardMaterial({
+            color: budColor,
+            roughness: 0.7,
+            emissive: budColor.clone().multiplyScalar(0.1),
+            emissiveIntensity: 0.1
+        });
+
+        const whitePistilMat = new THREE.MeshStandardMaterial({ color: pistilWhiteColor, roughness: 0.9 });
+        const orangePistilMat = new THREE.MeshStandardMaterial({ color: pistilTargetColor, roughness: 0.9 });
+
+        // Helper to add a bud with pistils and sugar leaves
+        const addBud = (x: number, y: number, z: number, targetBudScale: number) => {
+            const budGroup = new THREE.Group();
+            budGroup.position.set(x, y, z);
+
+            const budScale = targetBudScale * budScaleFactor;
+
+            // 1. Core Bud Shape (Dodecahedron like before but more irregular)
+            const colaGeo = new THREE.DodecahedronGeometry(budScale, 1);
+            colaGeo.scale(0.8, 1.3, 0.8);
+            const budMesh = new THREE.Mesh(colaGeo, budMat);
+            budGroup.add(budMesh);
+
+            // 2. Add Sugar Leaves
+            const leafCount = 6;
+            const sugarLeafMat = new THREE.MeshStandardMaterial({
+                color: leafColor,
+                roughness: 0.8,
+                side: THREE.DoubleSide
+            });
+
+            for (let i = 0; i < leafCount; i++) {
+                const angle = (i / leafCount) * Math.PI * 2;
+                const leafGeo = new THREE.SphereGeometry(1, 4, 4);
+                const lScale = budScale * 0.6;
+                leafGeo.scale(lScale * 0.2, 0.05, lScale);
+                const leaf = new THREE.Mesh(leafGeo, sugarLeafMat);
+
+                leaf.position.set(
+                    Math.cos(angle) * budScale * 0.6,
+                    (Math.random() - 0.5) * budScale,
+                    Math.sin(angle) * budScale * 0.6
+                );
+                leaf.rotation.set(Math.PI * 0.2, angle, Math.PI * 0.1);
+                budGroup.add(leaf);
+            }
+
+            // 3. Add Pistils
+            let pistilCount = 36;
+            if (flowerDays > 40) {
+                const t = Math.min(1.0, (flowerDays - 40) / (65 - 40));
+                pistilCount = Math.floor(36 + (t * 24));
+            }
+
+            for (let i = 0; i < pistilCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const pLength = budScale * 0.4;
+
+                const pistilGeo = new THREE.CylinderGeometry(0.05, 0.05, pLength, 4);
+                // Gradually turn more pistils from white to orange
+                const shouldBeOrange = (i / pistilCount) < pistilProgress;
+                const pistil = new THREE.Mesh(pistilGeo, shouldBeOrange ? orangePistilMat : whitePistilMat);
+
+                // Position on surface
+                const r = budScale * 0.8;
+                pistil.position.set(
+                    r * Math.sin(phi) * Math.cos(angle),
+                    r * Math.cos(phi) * 1.2, // Slightly elongated
+                    r * Math.sin(phi) * Math.sin(angle)
+                );
+
+                pistil.rotation.set(Math.random() * 0.5, angle, Math.random() * 0.5);
+                budGroup.add(pistil);
+            }
+
+            group.add(budGroup);
+        };
+
+        // Main Top Cola
+        addBud(0, potHeight + stemHeight, 0, 8 * scale);
+
+        // Side Buds
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            addBud(
+                Math.cos(angle) * 8 * scale,
+                potHeight + stemHeight * 0.7,
+                Math.sin(angle) * 8 * scale,
+                5 * scale
+            );
+        }
+
+        // If colors were extracted, we might need to request a re-render if it was async
+        if (strainColors.length > 0) {
+            this.requestUpdate();
+        }
+    }
+
+    private async _extractStrainColors(imageUrl: string): Promise<string[]> {
+        if (this._strainColorCache.has(imageUrl)) {
+            return this._strainColorCache.get(imageUrl)!;
+        }
+
+        try {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = imageUrl;
+
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                setTimeout(() => reject(new Error("Timeout")), 5000);
+            });
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return [];
+
+            const sampleSize = 100;
+            canvas.width = sampleSize;
+            canvas.height = sampleSize;
+
+            // Larger focus area (60% of center) to avoid missing colors if bud is off-center
+            const focus = 0.2;
+            const sourceWidth = img.width;
+            const sourceHeight = img.height;
+            const focusWidth = sourceWidth * focus;
+            const focusHeight = sourceHeight * focus;
+            const sourceX = (sourceWidth - focusWidth) / 2;
+            const sourceY = (sourceHeight - focusHeight) / 2;
+
+            ctx.drawImage(img, sourceX, sourceY, focusWidth, focusHeight, 0, 0, sampleSize, sampleSize);
+
+            const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+            const colorScores: Record<string, { count: number, maxSaturation: number, r: number, g: number, b: number, hue: number }> = {};
+
+            const getHue = (r: number, g: number, b: number) => {
+                const normR = r / 255, normG = g / 255, normB = b / 255;
+                const max = Math.max(normR, normG, normB), min = Math.min(normR, normG, normB);
+                let h = 0;
+                if (max === min) h = 0;
+                else if (max === normR) h = (60 * (normG - normB) / (max - min) + 360) % 360;
+                else if (max === normG) h = 60 * (normB - normR) / (max - min) + 120;
+                else if (max === normB) h = 60 * (normR - normG) / (max - min) + 240;
+                return h;
+            };
+
+            for (let i = 0; i < imageData.length; i += 4) {
+                const r = imageData[i];
+                const g = imageData[i + 1];
+                const b = imageData[i + 2];
+
+                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                // Stricter luminance: avoid very dark and very bright overexposed spots
+                if (luminance < 0.15 || luminance > 0.85) continue;
+
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const saturation = (max - min) / (max || 1);
+                // Stricter saturation: ignore colors that are too close to grayscale
+                if (saturation < 0.15) continue;
+
+                // Tighter buckets for color precision
+                const qr = Math.floor(r / 8) * 8;
+                const qg = Math.floor(g / 8) * 8;
+                const qb = Math.floor(b / 8) * 8;
+                const key = `${qr},${qg},${qb}`;
+
+                if (!colorScores[key]) {
+                    colorScores[key] = { count: 0, maxSaturation: 0, r: qr, g: qg, b: qb, hue: getHue(qr, qg, qb) };
+                }
+                colorScores[key].count++;
+                colorScores[key].maxSaturation = Math.max(colorScores[key].maxSaturation, saturation);
+            }
+
+            const sorted = Object.values(colorScores)
+                .map(item => {
+                    let scoreMultiplier = 1.0;
+                    const h = item.hue;
+
+                    // Foliage Green Penalty (70-175): Extremely aggressive
+                    if (h >= 70 && h <= 175) {
+                        scoreMultiplier = 0.01;
+                    }
+                    // Purple/Pink Boost (240-340)
+                    else if (h >= 240 && h <= 340) {
+                        scoreMultiplier = 8.0;
+                    }
+                    // Orange/Red/Pistil Boost (0-60, 340-360)
+                    else if (h <= 60 || h >= 340) {
+                        scoreMultiplier = 4.0;
+                    }
+
+                    return {
+                        ...item,
+                        // Heavier weight on saturation to prefer vibrant "bud" colors over drab background leakage
+                        score: item.count * (1 + item.maxSaturation * 10) * scoreMultiplier
+                    };
+                })
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 3);
+
+            if (sorted.length === 0) {
+                this._strainColorCache.set(imageUrl, []);
+                return [];
+            }
+
+            const results = sorted.map(item => `rgb(${item.r},${item.g},${item.b})`);
+            this._strainColorCache.set(imageUrl, results);
+            return results;
+        } catch (e) {
+            console.warn('[Heatmap3D] Color extraction failed for', imageUrl, e);
+            this._strainColorCache.set(imageUrl, []);
+            return [];
+        }
     }
 
     private addAxisLabels(width: number, height: number, depth: number) {
@@ -2133,19 +2605,25 @@ export class Heatmap3D extends LitElement {
                         if (randSource < activeFans.length) {
                             // Standard Fan logic
                             const fanHead = activeFans[randSource];
-                            const worldPos = new THREE.Vector3();
-                            fanHead.getWorldPosition(worldPos);
-
                             const forward = new THREE.Vector3();
                             fanHead.getWorldDirection(forward);
 
                             const fanSpeed = fanHead.parent?.userData.fanSpeed || 5;
                             const speed = (2.5 + Math.random()) * (fanSpeed / 5);
 
-                            // Origin in front of blades (~10 units forward)
-                            positions[i * 3] = worldPos.x + forward.x * 10 + (Math.random() - 0.5) * 5;
-                            positions[i * 3 + 1] = worldPos.y + forward.y * 10 + (Math.random() - 0.5) * 5;
-                            positions[i * 3 + 2] = worldPos.z + forward.z * 10 + (Math.random() - 0.5) * 5;
+                            // Random point on a disk within the fan radius (15), slightly inside (14)
+                            const angle = Math.random() * Math.PI * 2;
+                            const r = Math.sqrt(Math.random()) * 14;
+                            const localPos = new THREE.Vector3(
+                                Math.cos(angle) * r,
+                                Math.sin(angle) * r,
+                                5 // Start 5 units in front of the head
+                            );
+                            const spawnPos = fanHead.localToWorld(localPos);
+
+                            positions[i * 3] = spawnPos.x;
+                            positions[i * 3 + 1] = spawnPos.y;
+                            positions[i * 3 + 2] = spawnPos.z;
 
                             velocities[i * 3] = forward.x * speed;
                             velocities[i * 3 + 1] = forward.y * speed + (Math.random() - 0.5) * 0.5;
@@ -2555,7 +3033,7 @@ export class Heatmap3D extends LitElement {
         });
 
         return html`
-            <div class="plant-tooltip" style=${style}>
+    <div class="plant-tooltip" style=${style}>
                 <div class="tooltip-header">
                     <span class="tooltip-strain">${strainName}</span>
                     ${pheno ? html`<span class="tooltip-pheno">${pheno}</span>` : nothing}
@@ -2577,6 +3055,7 @@ export class Heatmap3D extends LitElement {
             </div>
         `;
     }
+
     private _dispatchViewOptionChange(key: string, value: any) {
         this.dispatchEvent(
             new CustomEvent('sensor-position-changed', {
@@ -2614,28 +3093,28 @@ export class Heatmap3D extends LitElement {
                     ></ha-icon-button>
                 </div>
                 <div class="toggles-container">
-                    <div class="toggle-item" @click=${() => this.showPlants = !this.showPlants}>
+                    <div class="toggle-item" @click=${() => { this.showPlants = !this.showPlants; }}>
                         <ha-checkbox
                             .checked=${this.showPlants}
                             @change=${(e: any) => { e.stopPropagation(); this.showPlants = e.target.checked; }}
                         ></ha-checkbox>
                         <span>Plants</span>
                     </div>
-                    <div class="toggle-item" @click=${() => this.showLights = !this.showLights}>
+                    <div class="toggle-item" @click=${() => { this.showLights = !this.showLights; }}>
                         <ha-checkbox
                             .checked=${this.showLights}
                             @change=${(e: any) => { e.stopPropagation(); this.showLights = e.target.checked; }}
                         ></ha-checkbox>
                         <span>Lights</span>
                     </div>
-                    <div class="toggle-item" @click=${() => this.showFans = !this.showFans}>
+                    <div class="toggle-item" @click=${() => { this.showFans = !this.showFans; }}>
                         <ha-checkbox
                             .checked=${this.showFans}
                             @change=${(e: any) => { e.stopPropagation(); this.showFans = e.target.checked; }}
                         ></ha-checkbox>
                         <span>Fans</span>
                     </div>
-                    <div class="toggle-item" @click=${() => this.showHeatmap = !this.showHeatmap}>
+                    <div class="toggle-item" @click=${() => { this.showHeatmap = !this.showHeatmap; }}>
                         <ha-checkbox
                             .checked=${this.showHeatmap}
                             @change=${(e: any) => { e.stopPropagation(); this.showHeatmap = e.target.checked; }}
@@ -2648,21 +3127,56 @@ export class Heatmap3D extends LitElement {
         ${this.editMode3DCords ? html`
             <div class="side-panel">
                 <h3>Sensor Positions</h3>
-                ${Array.from(this.sensorMeshes.keys()).map((id, i) => {
-            const mesh = this.sensorMeshes.get(id)!;
-            const width = this.device?.dimensions?.width ?? 120;
-            const height = this.device?.dimensions?.height ?? 200;
-            const depth = this.device?.dimensions?.length ?? (this.device?.dimensions as any)?.depth ?? 120;
-            const x = Math.round(mesh.position.x + width / 2);
-            const y = Math.round(mesh.position.z + depth / 2);
-            const z = Math.round(mesh.position.y);
-            const rotation = Math.round(this.device?.environmentAttributes?.sensorCoordinates?.[id]?.rotation || 0);
+                
+                <div class="sensor-tabs">
+                    <button class="sensor-tab ${this._activeSensorTab === 'temperature' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'temperature'; }}>Temp</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'humidity' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'humidity'; }}>Humi</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'vpd' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'vpd'; }}>VPD</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'lights' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'lights'; }}>Lights</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'ventilation' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'ventilation'; }}>Fan</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'environment' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'environment'; }}>Env</button>
+                    <button class="sensor-tab ${this._activeSensorTab === 'irrigation' ? 'active' : ''}" 
+                        @click=${() => { this._activeSensorTab = 'irrigation'; }}>Irrig</button>
+                </div>
 
-            return html`
+                ${Array.from(this.sensorMeshes.keys())
+                    .filter(id => {
+                        if (this._activeSensorTab === 'temperature') return this._isTemperatureSensor(id);
+                        if (this._activeSensorTab === 'humidity') return this._isHumiditySensor(id);
+                        if (this._activeSensorTab === 'vpd') return this._isVPDSensor(id);
+                        if (this._activeSensorTab === 'lights') return this.isLight(id);
+                        if (this._activeSensorTab === 'ventilation') return this.isFan(id) || this.isExhaust(id);
+                        if (this._activeSensorTab === 'environment') return this._isEnvironmentSensor(id);
+                        if (this._activeSensorTab === 'irrigation') return this._isIrrigationSensor(id);
+                        return false;
+                    })
+                    .map((id) => {
+                        const mesh = this.sensorMeshes.get(id)!;
+                        const width = this.device?.dimensions?.width ?? 120;
+                        const height = this.device?.dimensions?.height ?? 200;
+                        const depth = this.device?.dimensions?.length ?? (this.device?.dimensions as any)?.depth ?? 120;
+                        const x = Math.round(mesh.position.x + width / 2);
+                        const y = Math.round(mesh.position.z + depth / 2);
+                        const z = Math.round(mesh.position.y);
+                        const rotation = Math.round(this.device?.environmentAttributes?.sensorCoordinates?.[id]?.rotation || 0);
+
+                        const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;
+                        const name = friendlyName || `Sensor ${id.split('.').pop()}`;
+
+                        return html`
                         <div class="sensor-item">
                             <div class="sensor-header">
-                                <span>${this.isFan(id) ? 'Fan' : (this.isExhaust(id) ? 'Exhaust' : `Sensor ${i + 1}`)}</span>
-                                <span style="font-size: 9px; opacity: 0.5">${id.split('.').pop()}</span>
+                                <span>${this.isFan(id) ? (friendlyName || 'Fan') :
+                                (this.isExhaust(id) ? (friendlyName || 'Exhaust') :
+                                    name)}</span>
+                                <ha-icon style="font-size: 14px; opacity: 0.5" 
+                                    icon="${this.getSensorIcon(id)}"></ha-icon>
                             </div>
                             <div class="slider-group">
                                 <div class="slider-row">
@@ -2698,7 +3212,7 @@ export class Heatmap3D extends LitElement {
                             </div>
                         </div>
                     `;
-        })}
+                    })}
                 
                 <h3>View Controls</h3>
                 <div class="sensor-item">

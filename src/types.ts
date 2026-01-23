@@ -188,6 +188,7 @@ export interface SerializedEnvironmentAttributes {
 
   // 3D Sensor Coordinates
   sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+  sensor_types?: Record<string, string>;
 }
 
 
@@ -254,6 +255,7 @@ export interface EnvironmentAttributes {
   humidifierSensor?: string;
   irrigationTanks?: IrrigationTank[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+  sensorTypes?: Record<string, string>;
 }
 
 
