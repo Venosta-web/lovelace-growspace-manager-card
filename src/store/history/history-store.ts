@@ -58,19 +58,7 @@ export class GrowspaceHistoryStore {
     this.$combinedHistory = computed(
       this.$historyCache,
       (cache): SensorHistories => ({
-        temperature: cache.temperature || [],
-        humidity: cache.humidity || [],
-        vpd: cache.vpd || [],
-        co2: cache.co2 || [],
-        dehumidifier: cache.dehumidifier || [],
-        exhaust: cache.exhaust || [],
-        humidifier: cache.humidifier || [],
-        circulation_fan: cache.circulation_fan || [],
-        soil_moisture: cache.soil_moisture || [],
-        light: cache.light || [],
-        irrigation: cache.irrigation || [],
-        drain: cache.drain || [],
-        optimal: cache.optimal || [],
+        ...cache,
       })
     );
   }
@@ -297,11 +285,12 @@ export class GrowspaceHistoryStore {
 
     // 2. Identify Metric Entities
     for (const metric of metricsToFetch) {
-      const entityId = this.getEntityIdForMetric(device, metric);
-      if (entityId) {
-        entityMap[metric] = entityId;
+      const entityIds = this.getEntityIdsForMetric(device, metric);
+      entityIds.forEach((entityId) => {
+        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+        entityMap[key] = entityId;
         entitiesToFetch.add(entityId);
-      }
+      });
     }
 
     // 3. Identify Composite Keys (Multi-Device Graphs)
@@ -332,12 +321,13 @@ export class GrowspaceHistoryStore {
     const formattedUpdates: Record<string, HistorySensorState[]> = {};
 
     for (const metric of metricsToFetch) {
-      const entityId = entityMap[metric];
-      if (entityId) {
+      const entityIds = this.getEntityIdsForMetric(device, metric);
+      entityIds.forEach((entityId) => {
+        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
         const result = batchResults[entityId] || [];
-        formattedUpdates[metric] = result;
-        this.updateLastTimestamp(metric, result);
-      }
+        formattedUpdates[key] = result;
+        this.updateLastTimestamp(key, result);
+      });
     }
 
     this.setHistoryBatch(formattedUpdates);
@@ -386,12 +376,15 @@ export class GrowspaceHistoryStore {
     }
 
     for (const metric of metricsToFetch) {
-      const entityId = this.getEntityIdForMetric(device, metric);
-      const lastTimestamp = currentTimestamps[metric];
-      if (entityId && lastTimestamp) {
-        entityMap[metric] = entityId;
-        entitiesToFetch.add(entityId);
-      }
+      const entityIds = this.getEntityIdsForMetric(device, metric);
+      entityIds.forEach((entityId) => {
+        const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+        const lastTimestamp = currentTimestamps[key];
+        if (lastTimestamp) {
+          entityMap[key] = entityId;
+          entitiesToFetch.add(entityId);
+        }
+      });
     }
 
     // Composite Keys Delta
@@ -425,10 +418,10 @@ export class GrowspaceHistoryStore {
         true
       );
 
-      for (const [metric, entityId] of Object.entries(entityMap)) {
+      for (const [key, entityId] of Object.entries(entityMap)) {
         const deltaData = batchResults[entityId] || [];
         if (deltaData.length > 0) {
-          this._mergeDeltaData(metric, deltaData);
+          this._mergeDeltaData(key, deltaData);
         }
       }
 
@@ -515,10 +508,11 @@ export class GrowspaceHistoryStore {
 
   // --- Utils ---
 
-  private getEntityIdForMetric(device: GrowspaceDevice, metricKey: string): string | null {
+  private getEntityIdsForMetric(device: GrowspaceDevice, metricKey: string): string[] {
+    const ids: string[] = [];
+
     if (metricKey === 'optimal') {
       let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-      // Fallback to snake_case for backward compatibility/runtime safety
       const overviewId = device.overviewEntityId || (device as unknown as Record<string, unknown>).overview_entity_id as string;
 
       if (overviewId) {
@@ -528,70 +522,73 @@ export class GrowspaceHistoryStore {
       if (slug === 'cure') optimalId = `binary_sensor.cure_optimal_curing`;
       else if (slug === 'dry') optimalId = `binary_sensor.dry_optimal_drying`;
 
-      console.log(
-        `[HistoryStore] Resolved Optimal ID for ${device.name}: ${optimalId} (slug: ${slug})`
-      );
-      return optimalId;
+      ids.push(optimalId);
+      return ids;
     }
 
     const mapping = METRIC_ENTITY_KEYS[metricKey];
-    if (!mapping) return null;
+    if (!mapping) return ids;
 
+    const envAttrs = (device.environmentAttributes ||
+      (device as unknown as Record<string, unknown>).environment_attributes ||
+      {}) as Record<string, unknown>;
+
+    // 1. Try plural keys first
+    const pluralKey = mapping.primary.endsWith('Sensor')
+      ? mapping.primary.replace('Sensor', 'Sensors')
+      : `${mapping.primary}s`;
+
+    let pluralIds = envAttrs[pluralKey] as string[] | undefined;
+    if (!pluralIds && /[A-Z]/.test(pluralKey)) {
+      const snakePlural = pluralKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+      pluralIds = envAttrs[snakePlural] as string[] | undefined;
+    }
+
+    if (pluralIds && Array.isArray(pluralIds) && pluralIds.length > 0) {
+      return pluralIds;
+    }
+
+    // 2. Fallback to single primary/fallback
     if (mapping.source === 'irrigation') {
-      // Handle both camelCase and snake_case for irrigationConfig
       const config = (device.irrigationConfig ||
         (device as unknown as Record<string, unknown>).irrigation_config) as unknown as Record<string, unknown>;
-      if (!config) return null;
+      if (!config) return ids;
 
-      // Try explicit mapping primary key first
       let entityId = config[mapping.primary];
-
-      // If not found, try snake_case version of the key if it looks camelCase
       if (!entityId && /[A-Z]/.test(mapping.primary)) {
         const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
         entityId = config[snakeKey];
       }
-
-      if (typeof entityId === 'string') return entityId;
-    }
-
-    // Default: environment_attributes (handle camelCase and snake_case)
-    const envAttrs = (device.environmentAttributes ||
-      (device as unknown as Record<string, unknown>).environment_attributes ||
-      {}) as Record<string, unknown>;
-    let entityId = envAttrs[mapping.primary] as string | undefined;
-
-    // Try fallback if primary not found
-    if (!entityId && mapping.fallback) {
-      entityId = envAttrs[mapping.fallback] as string | undefined;
-    }
-
-    // Try snake_case mapping if not found
-    if (!entityId && /[A-Z]/.test(mapping.primary)) {
-      const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-      entityId = envAttrs[snakeKey] as string | undefined;
-    }
-
-    // Special fallback for VPD calculated sensor
-    if (!entityId && metricKey === 'vpd' && device.name) {
-      const slugify = (text: string) =>
-        text
-          .toString()
-          .toLowerCase()
-          .replace(/\s+/g, '_')
-          .replace(/[^\w-]+/g, '')
-          .replace(/--+/g, '_')
-          .replace(/^-+/, '')
-          .replace(/-+$/, '');
-
-      const calcName = `${device.name} Calculated VPD`;
-      const calculatedId = `sensor.${slugify(calcName)}`;
-      if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
-        entityId = calculatedId;
+      if (typeof entityId === 'string') ids.push(entityId);
+    } else {
+      let entityId = envAttrs[mapping.primary] as string | undefined;
+      if (!entityId && mapping.fallback) {
+        entityId = envAttrs[mapping.fallback] as string | undefined;
       }
+      if (!entityId && /[A-Z]/.test(mapping.primary)) {
+        const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+        entityId = envAttrs[snakeKey] as string | undefined;
+      }
+
+      // Special fallback for VPD calculated sensor
+      if (!entityId && metricKey === 'vpd' && device.name) {
+        const slugify = (text: string) =>
+          text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+        const calcName = `${device.name} Calculated VPD`;
+        const calculatedId = `sensor.${slugify(calcName)}`;
+        if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
+          entityId = calculatedId;
+        }
+      }
+      if (entityId) ids.push(entityId);
     }
 
-    return entityId || null;
+    return ids;
+  }
+
+  private getEntityIdForMetric(device: GrowspaceDevice, metricKey: string): string | null {
+    const ids = this.getEntityIdsForMetric(device, metricKey);
+    return ids.length > 0 ? ids[0] : null;
   }
 
   private calculateTimeRange(range: '1h' | '6h' | '24h' | '7d') {

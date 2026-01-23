@@ -26,6 +26,7 @@ import {
   mdiDumbbell,
   mdiPlus,
   mdiDna,
+  mdiCube,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions')
@@ -96,6 +97,13 @@ export class GrowspaceHeaderActions extends LitElement {
         const currentMode = this._viewModeController.value;
         this.store.ui.setViewMode(
           currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT
+        );
+        break;
+      }
+      case 'heatmap': {
+        const currentMode = this._viewModeController.value;
+        this.store.ui.setViewMode(
+          currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP
         );
         break;
       }
@@ -368,7 +376,7 @@ export class GrowspaceHeaderActions extends LitElement {
         <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
           <div class="chips-wrapper">
             ${this.deviceChips.map(
-              (chip) => html`
+      (chip) => html`
                 <growspace-chip
                   .icon=${chip.icon}
                   .label=${chip.label}
@@ -386,7 +394,7 @@ export class GrowspaceHeaderActions extends LitElement {
                   @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
                 ></growspace-chip>
               `
-            )}
+    )}
           </div>
         </scroll-container>
       </div>
@@ -396,9 +404,9 @@ export class GrowspaceHeaderActions extends LitElement {
             <div
               class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
               @click=${() =>
-                this.dispatchEvent(
-                  new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
-                )}
+            this.dispatchEvent(
+              new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
+            )}
               title="Toggle Link Mode"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
@@ -428,9 +436,20 @@ export class GrowspaceHeaderActions extends LitElement {
           <span class="menu-item-label">Edit Mode</span>
           <div
             class=${classMap({
-              'menu-toggle-switch': true,
-              active: this._isEditModeController?.value || false,
-            })}
+      'menu-toggle-switch': true,
+      active: this._isEditModeController?.value || false,
+    })}
+          ></div>
+        </div>
+
+        <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
+          <span class="menu-item-label">3D Heatmap</span>
+          <div
+            class=${classMap({
+      'menu-toggle-switch': true,
+      active: this._viewModeController?.value === ViewMode.HEATMAP,
+    })}
           ></div>
         </div>
 
@@ -441,8 +460,8 @@ export class GrowspaceHeaderActions extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
           <span class="menu-item-label"
             >${(this._selectedPlantsController?.value?.size || 0) > 0
-              ? 'Water Selected'
-              : 'Water Growspace'}</span
+        ? 'Water Selected'
+        : 'Water Growspace'}</span
           >
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
@@ -453,16 +472,16 @@ export class GrowspaceHeaderActions extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
           <span class="menu-item-label"
             >${(this._selectedPlantsController?.value?.size || 0) > 0
-              ? 'Apply IPM to Selected'
-              : 'Log / Manage IPM'}</span
+        ? 'Apply IPM to Selected'
+        : 'Log / Manage IPM'}</span
           >
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('training')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
           <span class="menu-item-label"
             >${(this._selectedPlantsController?.value?.size || 0) > 0
-              ? 'Train Selected'
-              : 'Log Training'}</span
+        ? 'Train Selected'
+        : 'Log Training'}</span
           >
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>

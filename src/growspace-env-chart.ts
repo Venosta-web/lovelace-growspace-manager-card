@@ -259,7 +259,21 @@ export class GrowspaceEnvChart extends LitElement {
     durationMillis: number,
     now: Date
   ): GraphSeries[] {
-    const metricKeys = this.isCombined ? this.metrics : [this.metricKey];
+    const baseKeys = this.isCombined ? this.metrics : [this.metricKey];
+    const metricKeys: string[] = [];
+
+    // Expand composite keys for multi-sensor metrics
+    for (const key of baseKeys) {
+      const compositeKeys = Object.keys(this.sensorHistory || {}).filter((hKey) =>
+        hKey.startsWith(`${key}:`)
+      );
+      if (compositeKeys.length > 0) {
+        metricKeys.push(...compositeKeys);
+      } else {
+        metricKeys.push(key);
+      }
+    }
+
     const seriesList: GraphSeries[] = [];
     const startTimeMs = startTime.getTime();
     const nowMs = now.getTime();
@@ -273,13 +287,42 @@ export class GrowspaceEnvChart extends LitElement {
       );
     }
 
-    metricKeys.forEach((key) => {
-      const config = this.metricConfig[key] || {
-        color: this.isCombined ? METRIC_CONFIG[key]?.color || '#ffffff' : this.color,
-        title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[key]?.title || key : this.title),
-        unit: this.isCombined ? METRIC_CONFIG[key]?.unit || '' : this.unit,
-        icon: this.isCombined ? METRIC_CONFIG[key]?.icon || '' : this.icon,
+    metricKeys.forEach((key, seriesIdx) => {
+      // Extract base metric if using composite key
+      const baseKey = key.includes(':') ? key.split(':')[0] : key;
+
+      const baseConfig = this.metricConfig[baseKey] || {
+        color: this.isCombined ? METRIC_CONFIG[baseKey]?.color || '#ffffff' : this.color,
+        title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[baseKey]?.title || baseKey : this.title),
+        unit: this.isCombined ? METRIC_CONFIG[baseKey]?.unit || '' : this.unit,
+        icon: this.isCombined ? METRIC_CONFIG[baseKey]?.icon || '' : this.icon,
       };
+
+      // Handle color deviation for multi-sensor series
+      let seriesBaseColor = baseConfig.color || '#fff';
+      let seriesTitle = baseConfig.title || baseKey;
+      if (key.includes(':')) {
+        const parts = key.split(':');
+        const entityId = parts[1];
+
+        // Only deviate if this is not the first sensor for this baseMetric in our metricKeys
+        const sameBaseIndices = metricKeys
+          .map((k, i) => (k.startsWith(`${baseKey}:`) ? i : -1))
+          .filter((i) => i !== -1);
+        const subIdx = sameBaseIndices.indexOf(seriesIdx);
+
+        if (subIdx > 0) {
+          seriesBaseColor = `color-mix(in srgb, ${seriesBaseColor}, white ${subIdx * 20}%)`;
+        }
+
+        // Try to refine title if it's a multi-sensor series
+        const stateObj = this.hass?.states[entityId];
+        const friendlyName = stateObj?.attributes?.friendly_name || entityId;
+        const baseTitle = baseConfig.title || baseKey;
+        seriesTitle = `${baseTitle} (${friendlyName})`;
+      }
+
+      const config = { ...baseConfig, color: seriesBaseColor, title: seriesTitle };
 
       const historySource = this.sensorHistory[key] || [];
       if (historySource.length === 0) return;
@@ -420,7 +463,7 @@ export class GrowspaceEnvChart extends LitElement {
           max,
           avg,
           path: pathStr,
-          fillType: this.isCombined ? 'flat' : 'gradient',
+          fillType: this.isCombined || key.includes(':') ? 'flat' : 'gradient',
           vpdSegments,
         });
       }

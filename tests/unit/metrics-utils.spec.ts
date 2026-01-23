@@ -1144,4 +1144,61 @@ describe('MetricsUtils', () => {
             expect(lightChip!.multiValues).toEqual(['on', 'off']);
         });
     });
+
+    it('should aggregate multiple sensors correctly', () => {
+        const multiHass = {
+            states: {
+                ...mockHass.states,
+                'sensor.temp1': { state: '24' },
+                'sensor.temp2': { state: '26' },
+                'sensor.hum1': { state: '55' },
+                'sensor.hum2': { state: '65' },
+                'sensor.vpd1': { state: '1.1' },
+                'sensor.vpd2': { state: '1.3' },
+                'sensor.co21': { state: '450' },
+                'sensor.co22': { state: '550' },
+                'sensor.soil1': { state: '30' },
+                'sensor.soil2': { state: '40' },
+            }
+        } as any;
+
+        const multiDevice = {
+            ...mockDevice,
+            environmentAttributes: {
+                temperatureSensors: ['sensor.temp1', 'sensor.temp2'],
+                humiditySensors: ['sensor.hum1', 'sensor.hum2'],
+                vpdSensors: ['sensor.vpd1', 'sensor.vpd2'],
+                co2Sensors: ['sensor.co21', 'sensor.co22'],
+                soilMoistureSensors: ['sensor.soil1', 'sensor.soil2'],
+            }
+        } as any;
+
+        const result = MetricsUtils.computeHeaderMetrics(
+            multiHass,
+            multiDevice,
+            new Set(),
+            []
+        );
+
+        const tempChip = result.mainChips.find(c => c.key === 'temperature');
+        expect(tempChip!.value).toBe('Multiple');
+        expect(tempChip!.multiValues).toEqual(['24°C', '26°C']);
+        expect(tempChip!.entityIds).toEqual(['sensor.temp1', 'sensor.temp2']);
+
+        const humChip = result.mainChips.find(c => c.key === 'humidity');
+        expect(humChip!.value).toBe('Multiple');
+        expect(humChip!.multiValues).toEqual(['55%', '65%']);
+
+        const vpdChip = result.mainChips.find(c => c.key === 'vpd');
+        expect(vpdChip!.value).toBe('Multiple');
+        expect(vpdChip!.multiValues).toEqual(['1.1 kPa', '1.3 kPa']);
+
+        const co2Chip = result.mainChips.find(c => c.key === 'co2');
+        expect(co2Chip!.value).toBe('Multiple');
+        expect(co2Chip!.multiValues).toEqual(['450 ppm', '550 ppm']);
+
+        const soilChip = result.mainChips.find(c => c.key === 'soil_moisture');
+        expect(soilChip!.value).toBe('Multiple');
+        expect(soilChip!.multiValues).toEqual(['30%', '40%']);
+    });
 });

@@ -7,11 +7,13 @@ import { ViewMode } from '../constants';
 import './views/growspace-view-compact';
 import './views/growspace-view-header';
 import './views/growspace-view-standard';
+import './views/growspace-view-heatmap';
 import './error-boundary';
 
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
   @property({ type: String }) viewMode: string = ViewMode.STANDARD;
+  @property({ attribute: false }) hass: any;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
   @property({ attribute: false }) grid: (PlantEntity | null)[][] = [];
@@ -66,6 +68,18 @@ export class GrowspaceViewSwitcher extends LitElement {
             .device=${this.device}
             .growspaceOptions=${this.growspaceOptions}
           ></growspace-view-header>
+        </error-boundary>
+      `;
+    }
+
+    if (this.viewMode === ViewMode.HEATMAP) {
+      return html`
+        <error-boundary heading="Heatmap View Error">
+          <growspace-view-heatmap
+            .device=${this.device}
+            .hass=${this.hass}
+            .growspaceOptions=${this.growspaceOptions}
+          ></growspace-view-heatmap>
         </error-boundary>
       `;
     }

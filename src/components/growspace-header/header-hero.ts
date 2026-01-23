@@ -112,6 +112,26 @@ export class GrowspaceHeaderHero extends LitElement {
         background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
       }
 
+      .hero-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        z-index: 1;
+      }
+
+      .hero-icon {
+        --mdc-icon-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .hero-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
       .hero-value-group {
         display: flex;
         align-items: baseline;
@@ -254,18 +274,39 @@ export class GrowspaceHeaderHero extends LitElement {
     }
 
     const useVpdSegments = isVpd && vpdSegments.length > 0;
-    let sparklinePath = '';
+    const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
+    const entityIds = chip.entityIds || [];
+    const sparklinePaths: Array<{ d: string; color: string }> = [];
 
     if (!useVpdSegments && this.store?.history) {
-      sparklinePath = ChartUtils.generateSparklinePath(
-        this._historyCacheController?.value?.[chip.key],
-        sparklineWidth,
-        sparklineHeight,
-        timeRange
-      );
+      if (entityIds.length > 1) {
+        entityIds.forEach((id, idx) => {
+          const path = ChartUtils.generateSparklinePath(
+            this._historyCacheController?.value?.[`${chip.key}:${id}`],
+            sparklineWidth,
+            sparklineHeight,
+            timeRange
+          );
+          if (path) {
+            const color =
+              idx === 0
+                ? sparklineColor
+                : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
+            sparklinePaths.push({ d: path, color });
+          }
+        });
+      } else {
+        const path = ChartUtils.generateSparklinePath(
+          this._historyCacheController?.value?.[chip.key],
+          sparklineWidth,
+          sparklineHeight,
+          timeRange
+        );
+        if (path) {
+          sparklinePaths.push({ d: path, color: sparklineColor });
+        }
+      }
     }
-
-    const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
 
     return html`
       <div
@@ -301,7 +342,7 @@ export class GrowspaceHeaderHero extends LitElement {
         )}
               </svg>
             `
-        : sparklinePath
+        : sparklinePaths.length > 0
           ? html`
                 <svg
                   class="hero-sparkline"
@@ -320,21 +361,31 @@ export class GrowspaceHeaderHero extends LitElement {
                       <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
                     </linearGradient>
                   </defs>
+                  ${sparklinePaths.map(
+            (p) => svg`
+                    <path
+                      d="${p.d}"
+                      fill="none"
+                      stroke="${p.color}"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      style="opacity: ${p.color === sparklineColor ? 1 : 0.6}"
+                    />
+                  `
+          )}
                   <path
-                    d="${sparklinePath} V ${sparklineHeight} H 0 Z"
+                    d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
                     fill="url(#sparkline-grad-${chip.key})"
-                  />
-                  <path
-                    d="${sparklinePath}"
-                    fill="none"
-                    stroke="${sparklineColor}"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
                   />
                 </svg>
               `
           : ''}
+
+        <div class="hero-header">
+          <ha-icon class="hero-icon" .icon=${chip.icon}></ha-icon>
+          <span class="hero-label">${chip.label || chip.key}</span>
+        </div>
 
         <div class="hero-value-group">
           ${chip.multiValues && chip.multiValues.length > 0

@@ -124,7 +124,10 @@ export class GrowspaceStore {
     }
   }
 
-  async refreshData() {
+  async refreshData(force = false) {
+    if (force) {
+      this.dataService.invalidateCache();
+    }
     await this.syncService.refreshGrowspaceData();
     this._pruneOptimisticDeletions();
   }

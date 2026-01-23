@@ -6,10 +6,10 @@ export class SubscriptionController implements ReactiveController {
   private host: ReactiveControllerHost;
   private _unsubEvents?: () => void;
   private _hass?: HomeAssistant;
-  private _onUpdate?: () => void;
+  private _onUpdate?: (refresh?: boolean) => void;
   private dataStore: GrowspaceDataStore;
 
-  constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: () => void) {
+  constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: (refresh?: boolean) => void) {
     this.host = host;
     this.dataStore = dataStore;
     this._onUpdate = onUpdate;
@@ -70,14 +70,17 @@ export class SubscriptionController implements ReactiveController {
     const { event_type, data } = haEvent.data;
 
     // eslint-disable-next-line camelcase
+    let requestedRefresh = false;
     if (event_type === 'plant_added' || event_type === 'plant_updated') {
       this._handlePlantUpdate(data.plant);
       // eslint-disable-next-line camelcase
     } else if (event_type === 'plant_removed') {
       this._handlePlantRemoval(data.plant_id as string, data.growspace_id as string | undefined);
+    } else if (event_type === 'growspace_manager_updated') {
+      requestedRefresh = true;
     }
 
-    if (this._onUpdate) this._onUpdate();
+    if (this._onUpdate) this._onUpdate(requestedRefresh);
   }
 
   // Logic moved from GrowspaceStore, adapted to use dataStore actions

@@ -446,17 +446,22 @@ export class IrrigationDialog extends LitElement {
     if (!this.device?.deviceId || !this._dataService) return;
 
     try {
+      // Ensure time is in HH:MM:SS format (append :00 if only HH:MM)
+      const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
+
       await this._dataService.addIrrigationTime({
         growspaceId: this.device.deviceId,
-        time,
+        time: formattedTime,
         duration: duration || this._irrigationDuration,
       });
 
       // Optimistic update
-      const newTime: IrrigationTime = { time, duration: duration || this._irrigationDuration };
-      this._irrigationTimes = [...this._irrigationTimes, newTime].sort((a, b) =>
-        a.time.localeCompare(b.time)
-      );
+      const newTime: IrrigationTime = { time: formattedTime, duration: duration || this._irrigationDuration };
+      this._irrigationTimes = [...this._irrigationTimes, newTime].sort((a, b) => {
+        const timeA = a.time || a.start_time || '';
+        const timeB = b.time || b.start_time || '';
+        return timeA.localeCompare(timeB);
+      });
       this._addingIrrigationTime = undefined;
       this._notifyDataChanged();
     } catch (e) {
@@ -485,17 +490,22 @@ export class IrrigationDialog extends LitElement {
     if (!this.device?.deviceId || !this._dataService) return;
 
     try {
+      // Ensure time is in HH:MM:SS format (append :00 if only HH:MM)
+      const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
+
       await this._dataService.addDrainTime({
         growspaceId: this.device.deviceId,
-        time,
+        time: formattedTime,
         duration: duration || this._drainDuration,
       });
 
       // Optimistic update
-      const newTime: IrrigationTime = { time, duration: duration || this._drainDuration };
-      this._drainTimes = [...this._drainTimes, newTime].sort((a, b) =>
-        a.time.localeCompare(b.time)
-      );
+      const newTime: IrrigationTime = { time: formattedTime, duration: duration || this._drainDuration };
+      this._drainTimes = [...this._drainTimes, newTime].sort((a, b) => {
+        const timeA = a.time || a.start_time || '';
+        const timeB = b.time || b.start_time || '';
+        return timeA.localeCompare(timeB);
+      });
       this._addingDrainTime = undefined;
       this._notifyDataChanged();
     } catch (e) {
@@ -902,27 +912,32 @@ export class IrrigationDialog extends LitElement {
               </div>
             `
       )}
-          ${times.map((t: IrrigationTime) => {
-        const [hours, minutes] = t.time.split(':').map(Number);
+          ${times.filter((t: IrrigationTime) => t && (t.time || t.start_time)).map((t: IrrigationTime) => {
+        const timeStr = (t.time || t.start_time)!; // Non-null assertion safe due to filter
+        const timeParts = timeStr.split(':');
+        const hours = Number(timeParts[0]);
+        const minutes = Number(timeParts[1]);
         const position = ((hours + minutes / 60) / 24) * 100;
+        const displayTime = timeStr.substring(0, 5); // HH:MM format
+        const duration = t.duration || t.duration_seconds || defaultDuration;
         return html`
               <div
                 class="chart-marker"
                 @click=${(e: Event) => {
             e.stopPropagation();
-            if (confirm(`Remove ${type} time ${t.time}?`)) {
+            if (confirm(`Remove ${type} time ${displayTime}?`)) {
               if (type === 'irrigation') {
-                this._removeIrrigationTime(t.time);
+                this._removeIrrigationTime(timeStr);
               } else {
-                this._removeDrainTime(t.time);
+                this._removeDrainTime(timeStr);
               }
             }
           }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
-                title="${t.time} | Duration: ${t.duration || defaultDuration}seconds"
+                title="${displayTime} | Duration: ${duration} seconds"
               >
                 <div class="chart-tooltip" style="background: ${color};">
-                  ${t.time} | ${t.duration || defaultDuration}s
+                  ${displayTime} | ${duration}s
                 </div>
               </div>
             `;

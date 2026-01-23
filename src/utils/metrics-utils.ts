@@ -11,6 +11,7 @@ import {
   mdiFan,
   mdiAirHumidifier,
   mdiAirHumidifierOff,
+  mdiWaterMinus,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -218,18 +219,121 @@ export class MetricsUtils {
       if (!times || !times.length) return undefined;
       const now = DateTime.now();
       const upcoming = times
+        .filter((t) => t && (t.time || t.start_time)) // Support both time and start_time
         .map((t) => {
-          const [h, m] = t.time.split(':').map(Number);
+          // Handle both 'time' and 'start_time' properties
+          const timeStr = (t.time || t.start_time)!; // Non-null assertion safe due to filter
+          // Handle both HH:MM and HH:MM:SS formats
+          const parts = timeStr.split(':');
+          const h = Number(parts[0]);
+          const m = Number(parts[1]);
           let dt = now.set({ hour: h, minute: m, second: 0 });
           if (dt < now) dt = dt.plus({ days: 1 });
           return dt;
         })
         .sort((a, b) => a.toMillis() - b.toMillis())[0];
-      return upcoming.toFormat('HH:mm');
+      return upcoming?.toFormat('HH:mm');
     };
 
     const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
     const nextDrain = getNextEvent(device.irrigationConfig?.drainTimes);
+
+    // Aggregate core sensors
+    const getAggregateSensorState = (
+      single: string | undefined,
+      multi: string[] | undefined,
+      unit: string,
+      fallbackValue?: string | number
+    ): { value: string | undefined; multiValues?: string[]; entityIds?: string[] } => {
+      const ids = new Set<string>();
+      if (multi && multi.length > 0) multi.forEach((id) => ids.add(id));
+      else if (single) ids.add(single);
+
+      if (ids.size === 0) {
+        if (fallbackValue !== undefined && fallbackValue !== null) {
+          const sVal = String(fallbackValue);
+          const fVal = parseFloat(sVal);
+          const isValid =
+            !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+
+          if (isValid) {
+            return { value: fallbackValue + unit, entityIds: [] };
+          }
+        }
+        return { value: undefined, entityIds: [] };
+      }
+
+      const states: string[] = [];
+      const entityIds: string[] = Array.from(ids);
+
+      ids.forEach((id) => {
+        const s = hass.states[id];
+        if (
+          s &&
+          s.state &&
+          s.state !== EntityState.UNAVAILABLE &&
+          s.state !== EntityState.UNKNOWN
+        ) {
+          const fVal = parseFloat(s.state);
+          if (!isNaN(fVal) || s.state === '') {
+            states.push(s.state + unit);
+          } else {
+            states.push('-');
+          }
+        } else {
+          states.push('-');
+        }
+      });
+
+      if (ids.size > 1) {
+        return { value: 'Multiple', multiValues: states, entityIds };
+      }
+
+      let singleValue = states[0] !== '-' ? states[0] : undefined;
+      if (singleValue === undefined && fallbackValue !== undefined && fallbackValue !== null) {
+        const sVal = String(fallbackValue);
+        const fVal = parseFloat(sVal);
+        const isValid =
+          !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+
+        if (isValid) {
+          singleValue = sVal + unit;
+        }
+      }
+
+      return { value: singleValue, entityIds };
+    };
+
+    const tempAgg = getAggregateSensorState(
+      envAttrs.temperatureSensor,
+      envAttrs.temperatureSensors,
+      '°C',
+      temp as string | number | undefined
+    );
+    const humAgg = getAggregateSensorState(
+      envAttrs.humiditySensor,
+      envAttrs.humiditySensors,
+      '%',
+      hum as string | number | undefined
+    );
+    const vpdAgg = getAggregateSensorState(
+      envAttrs.vpdSensor,
+      envAttrs.vpdSensors,
+      ' kPa',
+      vpd as string | number | undefined
+    );
+    const co2Agg = getAggregateSensorState(
+      envAttrs.co2Sensor,
+      envAttrs.co2Sensors,
+      ' ppm',
+      co2 as string | number | undefined
+    );
+    const soilAgg = getAggregateSensorState(
+      envAttrs.soilMoistureSensor,
+      envAttrs.soilMoistureSensors,
+      '%',
+      this._getAttributeValue(overviewEntity, 'soil_moisture_value') as string | number | undefined
+    );
 
     // Build Chips
     const createChipData = (
@@ -276,48 +380,40 @@ export class MetricsUtils {
       createChipData(
         MetricKey.TEMPERATURE,
         mdiThermometer,
-        temp !== undefined ? `${temp}°C` : undefined,
-        undefined,
-        undefined
+        tempAgg.value,
+        tempAgg.multiValues,
+        tempAgg.entityIds
       ),
       createChipData(
         MetricKey.HUMIDITY,
         mdiWaterPercent,
-        hum !== undefined ? `${hum}%` : undefined,
-        undefined,
-        undefined
+        humAgg.value,
+        humAgg.multiValues,
+        humAgg.entityIds
       ),
       createChipData(
         MetricKey.VPD,
         mdiCloudOutline,
-        vpd !== undefined ? `${vpd} kPa` : undefined,
-        undefined,
-        undefined,
+        vpdAgg.value,
+        vpdAgg.multiValues,
+        vpdAgg.entityIds,
         undefined,
         vpdStatus,
         vpdTargetMin !== undefined && vpdTargetMax !== undefined
           ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
           : ''
       ),
-      createChipData(
-        MetricKey.CO2,
-        mdiWeatherCloudy,
-        co2 !== undefined ? `${co2} ppm` : undefined,
-        undefined,
-        undefined
-      ),
+      createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds),
       createChipData(
         MetricKey.SOIL_MOISTURE,
         mdiWaterPercent,
-        this._getAttributeValue(overviewEntity, 'soil_moisture_value') !== undefined
-          ? `${this._getAttributeValue(overviewEntity, 'soil_moisture_value')}%`
-          : undefined,
-        undefined,
-        undefined,
+        soilAgg.value,
+        soilAgg.multiValues,
+        soilAgg.entityIds,
         'Moisture'
       ),
       createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
-      createChipData(MetricKey.DRAIN, mdiWater, nextDrain, undefined, undefined, 'Next'),
+      createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
       envEntity
         ? createChipData(
           MetricKey.OPTIMAL,

@@ -35,10 +35,18 @@ const PlantSlotSchema = z
   .catchall(z.unknown())
   .nullable();
 
-const IrrigationScheduleItemSchema = z.object({
-  time: z.string(),
-  duration: z.number().optional(),
-});
+const IrrigationScheduleItemSchema = z
+  .object({
+    time: z.string().optional(),
+    start_time: z.string().optional(),
+    duration: z.number().nullable().optional(), // Allow nullable for Python None
+    duration_seconds: z.number().nullable().optional(), // Alias
+  })
+  .transform((data) => ({
+    time: data.time || data.start_time || '',
+    duration: data.duration !== null ? data.duration : (data.duration_seconds !== null ? data.duration_seconds : undefined),
+  }))
+  .refine((data) => data.time !== '', { message: "Time is required" });
 
 const IrrigationStrategySchema = z.object({
   enabled: z.boolean(),

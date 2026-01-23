@@ -167,6 +167,7 @@ export enum ViewMode {
   STANDARD = 'standard',
   COMPACT = 'compact',
   HEADER = 'header',
+  HEATMAP = 'heatmap',
 }
 
 export enum GridOverlayMode {

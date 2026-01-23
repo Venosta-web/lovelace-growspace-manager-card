@@ -32,8 +32,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
   store = new GrowspaceStore();
 
-  protected _subscriptionController = new SubscriptionController(this, this.store.data, () =>
-    this.store.updateHass(this.hass)
+  protected _subscriptionController = new SubscriptionController(
+    this,
+    this.store.data,
+    (refresh) => {
+      this.store.updateHass(this.hass);
+      if (refresh) {
+        this.store.refreshData(true);
+      }
+    }
   );
 
   // UI Store Controllers
@@ -278,6 +285,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
           >
             <growspace-view-switcher
               .viewMode=${this._cardViewController.value.viewMode}
+              .hass=${this.hass}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}

@@ -71,8 +71,10 @@ export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
 // --- Backend Data Models ---
 
 export interface IrrigationScheduleItem {
-  time: string; // HH:MM:SS
-  duration?: number;
+  time?: string; // HH:MM or HH:MM:SS - Legacy support
+  start_time?: string; // HH:MM:SS - New format
+  duration?: number; // Legacy: seconds
+  duration_seconds?: number; // New format: seconds
 }
 
 // Alias for legacy support
@@ -135,13 +137,26 @@ export interface SerializedBiologicalMetrics {
   air_exchange?: string | null;
 }
 
+export interface SerializedIrrigationTank {
+  sensor_entity: string;
+  name: string;
+  warning_level: number;
+  fill_level: number | null;
+  is_warning: boolean;
+}
+
 export interface SerializedEnvironmentAttributes {
   // Sensors
   temperature_sensor?: string;
+  temperature_sensors?: string[];
   humidity_sensor?: string;
+  humidity_sensors?: string[];
   vpd_sensor?: string;
+  vpd_sensors?: string[];
   co2_sensor?: string;
+  co2_sensors?: string[];
   soil_moisture_sensor?: string;
+  soil_moisture_sensors?: string[];
   light_sensor?: string;
   light_sensors?: string[];
 
@@ -168,15 +183,12 @@ export interface SerializedEnvironmentAttributes {
 
   // Irrigation tanks
   irrigation_tanks?: SerializedIrrigationTank[];
+
+  // 3D Sensor Coordinates
+  sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
 }
 
-export interface SerializedIrrigationTank {
-  sensor_entity: string;
-  name: string;
-  warning_level: number;
-  fill_level: number | null;
-  is_warning: boolean;
-}
+
 
 export interface SerializedStats {
   max_veg_days: number;
@@ -202,12 +214,25 @@ export interface BiologicalMetrics {
   airExchange?: string | null;
 }
 
+export interface IrrigationTank {
+  sensorEntity: string;
+  name: string;
+  warningLevel: number;
+  fillLevel: number | null;
+  isWarning: boolean;
+}
+
 export interface EnvironmentAttributes {
   temperatureSensor?: string;
+  temperatureSensors?: string[];
   humiditySensor?: string;
+  humiditySensors?: string[];
   vpdSensor?: string;
+  vpdSensors?: string[];
   co2Sensor?: string;
+  co2Sensors?: string[];
   soilMoistureSensor?: string;
+  soilMoistureSensors?: string[];
   lightSensor?: string;
   lightSensors?: string[];
   dehumidifierEntity?: string;
@@ -226,15 +251,10 @@ export interface EnvironmentAttributes {
   exhaustSensor?: string;
   humidifierSensor?: string;
   irrigationTanks?: IrrigationTank[];
+  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
 }
 
-export interface IrrigationTank {
-  sensorEntity: string;
-  name: string;
-  warningLevel: number;
-  fillLevel: number | null;
-  isWarning: boolean;
-}
+
 
 export interface GrowspaceStats {
   maxVegDays: number;
@@ -322,6 +342,7 @@ export interface GrowspaceAPIResponse
   plants_per_row: number;
   notification_target?: string | null;
   overview_entity_id?: string;
+  dimensions?: { length: number; width: number; height: number; unit: string };
 
   grid: Record<string, RawPlantData | null>;
   irrigation_config: SerializedIrrigationConfig;
@@ -353,6 +374,7 @@ export interface GrowspaceDevice {
   overviewEntityId?: string;
   name: string;
   type: GrowspaceType;
+  dimensions?: { length: number; width: number; height: number; unit: string };
 
   plants: PlantEntity[];
   grid: Record<string, RawPlantData | null>;

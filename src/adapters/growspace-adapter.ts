@@ -49,10 +49,15 @@ export class GrowspaceAdapter {
 
     const environmentAttributes: EnvironmentAttributes = {
       temperatureSensor: wsData.temperature_sensor,
+      temperatureSensors: wsData.temperature_sensors,
       humiditySensor: wsData.humidity_sensor,
+      humiditySensors: wsData.humidity_sensors,
       vpdSensor: wsData.vpd_sensor,
+      vpdSensors: wsData.vpd_sensors,
       co2Sensor: wsData.co2_sensor,
+      co2Sensors: wsData.co2_sensors,
       soilMoistureSensor: wsData.soil_moisture_sensor,
+      soilMoistureSensors: wsData.soil_moisture_sensors,
       lightSensor: wsData.light_sensor,
       lightSensors: wsData.light_sensors,
       dehumidifierEntity: wsData.dehumidifier_entity,
@@ -77,6 +82,7 @@ export class GrowspaceAdapter {
         fillLevel: t.fill_level,
         isWarning: t.is_warning,
       })),
+      sensorCoordinates: wsData.sensor_coordinates,
     };
 
     const stats: GrowspaceStats = {
@@ -147,6 +153,12 @@ export class GrowspaceAdapter {
       rows: wsData.rows,
       plantsPerRow: wsData.plants_per_row,
       notificationTarget: wsData.notification_target,
+      dimensions: wsData.dimensions ? {
+        width: wsData.dimensions.width,
+        height: wsData.dimensions.height,
+        length: wsData.dimensions.length || (wsData.dimensions as any).depth || 120,
+        unit: wsData.dimensions.unit || 'cm'
+      } : undefined,
       lastUpdated: overview?.last_updated || new Date().toISOString(),
 
       // Structural Data
