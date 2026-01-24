@@ -71,7 +71,7 @@ vi.mock('three', async () => {
     });
 
     const createMockCamera = () => ({
-        position: { set: vi.fn(), x: 0, y: 0, z: 0 },
+        position: { set: vi.fn(function (x, y, z) { this.x = x; this.y = y; this.z = z; return this; }), x: 0, y: 0, z: 0 },
         lookAt: vi.fn(),
         updateProjectionMatrix: vi.fn(),
         aspect: 1
@@ -82,7 +82,7 @@ vi.mock('three', async () => {
         remove: createRemoveFn(),
         children: [] as any[],
         traverse: createTraverseFn(),
-        position: { set: vi.fn(), x: 0, y: 0, z: 0 },
+        position: { set: vi.fn(function (x, y, z) { this.x = x; this.y = y; this.z = z; return this; }), x: 0, y: 0, z: 0 },
         rotation: { set: vi.fn(), x: 0, y: 0, z: 0 },
         scale: { set: vi.fn(), x: 1, y: 1, z: 1 },
         getObjectByName: createGetObjectByNameFn(),
@@ -91,7 +91,7 @@ vi.mock('three', async () => {
     });
 
     const createMockMesh = () => ({
-        position: { set: vi.fn(), x: 0, y: 0, z: 0 },
+        position: { set: vi.fn(function (x, y, z) { this.x = x; this.y = y; this.z = z; return this; }), x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0, set: vi.fn() },
         scale: { set: vi.fn() },
         add: createAddFn(),
@@ -126,7 +126,7 @@ vi.mock('three', async () => {
         PerspectiveCamera: vi.fn().mockImplementation(function () { return createMockCamera(); }),
         Group: vi.fn().mockImplementation(function () { return createMockGroup(); }),
         Mesh: vi.fn().mockImplementation(function () { return createMockMesh(); }),
-        Vector3: vi.fn().mockImplementation(function (x = 0, y = 0, z = 0) { return { x, y, z, set: vi.fn(), sub: vi.fn(), normalize: vi.fn(), add: vi.fn(), multiplyScalar: vi.fn(), copy: vi.fn(), clone: vi.fn(() => ({ x, y, z })) }; }),
+        Vector3: vi.fn().mockImplementation(function (x = 0, y = 0, z = 0) { return { x, y, z, set: vi.fn(function (nx, ny, nz) { this.x = nx; this.y = ny; this.z = nz; return this; }), sub: vi.fn(), normalize: vi.fn(), add: vi.fn(), multiplyScalar: vi.fn(), copy: vi.fn(), clone: vi.fn(() => ({ x, y, z })) }; }),
         Vector2: vi.fn().mockImplementation(function (x = 0, y = 0) { return { x, y, set: vi.fn() }; }),
         Color: vi.fn().mockImplementation(function () { return {}; }),
         BoxGeometry: vi.fn().mockImplementation(function () { return { dispose: createDisposeFn(), rotateZ: vi.fn(), rotateX: vi.fn(), boundingBox: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, getIndex: vi.fn(), getAttribute: vi.fn(() => ({ count: 10, array: [], getX: vi.fn(() => 0), getY: vi.fn(() => 0), getZ: vi.fn(() => 0), itemSize: 3 })) }; }),
