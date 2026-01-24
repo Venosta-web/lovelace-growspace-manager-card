@@ -8,7 +8,7 @@ export class TankRenderer extends BaseRenderer {
 
     public render() {
         this._tankWaves = [];
-        const { device, volatileGroup, hass } = this.context;
+        const { device, volatileGroup, hass, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
         const env = device.environmentAttributes;
@@ -31,7 +31,7 @@ export class TankRenderer extends BaseRenderer {
         tanks.forEach((tank: any) => {
             const entityId = tank.sensorEntity;
             currentTankIds.add(entityId);
-            let coords = sensorCoords[entityId] || { x: -width * 0.5, y: depth / 2, z: 0 };
+            let coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
 
             const isWarning = tank.isWarning;
             const fill = tank.fillLevel || 0;
@@ -112,6 +112,7 @@ export class TankRenderer extends BaseRenderer {
 
             const label = tankGroup.getObjectByName('label') as CSS2DObject;
             if (label) {
+                label.visible = visibility?.tooltips ?? true;
                 const newHTML = `
                     <div class="sensor-icon" style="background: ${hex}33; border-color: ${hex}">
                         <ha-icon icon="mdi:barrel" style="color: ${hex}; --mdc-icon-size: 10px"></ha-icon>

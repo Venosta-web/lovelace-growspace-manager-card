@@ -17,7 +17,15 @@ export class SensorRenderer extends BaseRenderer {
         const currentSensorIds = new Set<string>();
 
         allSensorEntities.forEach(entityId => {
-            if (SensorTypeUtils.isFan(device, entityId) || SensorTypeUtils.isExhaust(device, entityId)) return;
+            // Skip entities handled by specialized renderers
+            if (SensorTypeUtils.isFan(device, entityId) ||
+                SensorTypeUtils.isExhaust(device, entityId) ||
+                SensorTypeUtils.isIrrigationPump(device, entityId) ||
+                SensorTypeUtils.isDrainPump(device, entityId) ||
+                SensorTypeUtils.isIrrigationTank(device, entityId) ||
+                SensorTypeUtils.isHumidifier(device, entityId) ||
+                SensorTypeUtils.isDehumidifier(device, entityId)
+            ) return;
 
             const isLight = SensorTypeUtils.isLight(device, hass, entityId);
             const matchesMetric = this.isMetric(entityId, selectedMetric);
@@ -68,7 +76,7 @@ export class SensorRenderer extends BaseRenderer {
             // Update Label Content
             const label = sensorModel.getObjectByName('label') as CSS2DObject;
             if (label) {
-                label.visible = isVisible;
+                label.visible = isVisible && (visibility?.tooltips ?? true);
                 if (isVisible) {
                     const icon = SensorTypeUtils.getSensorIcon(device, hass, entityId);
                     const unit = this.getUnit(entityId, selectedMetric, isLight);

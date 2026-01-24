@@ -89,8 +89,10 @@ export class SceneManager {
                 plants: true,
                 lights: true,
                 fans: true,
-                heatmap: true
-            }
+                heatmap: true,
+                tooltips: true
+            },
+            camera: this.camera
         };
 
         // 3. Initialize Renderers

@@ -89362,7 +89362,14 @@ class SensorRenderer extends BaseRenderer {
         const allSensorEntities = Object.keys(sensorCoords);
         const currentSensorIds = new Set();
         allSensorEntities.forEach(entityId => {
-            if (SensorTypeUtils.isFan(device, entityId) || SensorTypeUtils.isExhaust(device, entityId))
+            // Skip entities handled by specialized renderers
+            if (SensorTypeUtils.isFan(device, entityId) ||
+                SensorTypeUtils.isExhaust(device, entityId) ||
+                SensorTypeUtils.isIrrigationPump(device, entityId) ||
+                SensorTypeUtils.isDrainPump(device, entityId) ||
+                SensorTypeUtils.isIrrigationTank(device, entityId) ||
+                SensorTypeUtils.isHumidifier(device, entityId) ||
+                SensorTypeUtils.isDehumidifier(device, entityId))
                 return;
             const isLight = SensorTypeUtils.isLight(device, hass, entityId);
             const matchesMetric = this.isMetric(entityId, selectedMetric);
@@ -89413,7 +89420,7 @@ class SensorRenderer extends BaseRenderer {
             // Update Label Content
             const label = sensorModel.getObjectByName('label');
             if (label) {
-                label.visible = isVisible;
+                label.visible = isVisible && visibility.tooltips;
                 if (isVisible) {
                     const icon = SensorTypeUtils.getSensorIcon(device, hass, entityId);
                     const unit = this.getUnit(entityId, selectedMetric, isLight);
@@ -90251,6 +90258,15 @@ class EquipmentRenderer extends BaseRenderer {
         const env = device.environmentAttributes;
         const sensorCoords = env?.sensorCoordinates || {};
         const currentEntityIds = new Set();
+        // Initialize particles if needed
+        if (!this._humidifierParticles)
+            this.initHumidifierParticles();
+        if (!this._dryAirParticles)
+            this.initDryAirParticles();
+        if (!this._pumpWaterParticles)
+            this.initPumpWaterParticles();
+        if (!this._windParticles)
+            this.initWindParticles();
         // 1. Humidifiers / Dehumidifiers
         const hums = env?.humidifierEntities || (env?.humidifierEntity ? [env.humidifierEntity] : []);
         const dehums = env?.dehumidifierEntities || (env?.dehumidifierEntity ? [env.dehumidifierEntity] : []);
@@ -90297,9 +90313,9 @@ class EquipmentRenderer extends BaseRenderer {
         pumps.forEach(entityId => {
             if (!entityId)
                 return;
-            const coords = sensorCoords[entityId];
+            let coords = sensorCoords[entityId];
             if (!coords)
-                return;
+                coords = { x: 0, y: 0, z: 0, rotation: 0 };
             currentEntityIds.add(entityId);
             const isOutside = (coords.x < 0 || coords.x > width || coords.y < 0 || coords.y > depth);
             const isDrain = entityId === irrigationConfig?.drainPumpEntity || env?.sensorTypes?.[entityId] === this.SENSOR_TYPES.DRAIN_PUMP;
@@ -90315,29 +90331,63 @@ class EquipmentRenderer extends BaseRenderer {
                 if (now >= start && now < start + (evt.duration * 1000))
                     isActive = true;
             }
+            // Link Logic
+            const tankId = env?.pump_tank_links?.[entityId];
+            const tankMesh = tankId ? this.context.sensorMeshes.get(tankId) : null;
             let group = this.cache.get(entityId);
             if (group) {
                 // UPDATE
-                this.updatePumpModel(group, isDrain, isOutside, coords, width, depth, height, coords.z, isActive);
+                this.updatePumpModel(group, isDrain, isOutside, coords, width, depth, height, coords.z, isActive, tankMesh);
             }
             else {
                 // CREATE
-                group = this.createPumpModel(isDrain, isOutside, coords, width, depth, height, coords.z, isActive);
+                group = this.createPumpModel(isDrain, isOutside, coords, width, depth, height, coords.z, isActive, tankMesh);
                 this.cache.set(entityId, group);
                 volatileGroup.add(group);
+                // Add Unlink Icon
+                const unlinkDiv = document.createElement('div');
+                unlinkDiv.className = 'sensor-label link-icon';
+                unlinkDiv.style.cursor = 'pointer';
+                const unlinkIcon = new CSS2DObject(unlinkDiv);
+                unlinkIcon.name = 'unlinkIcon';
+                unlinkIcon.position.set(0, 20, 0); // Above pump
+                group.add(unlinkIcon);
             }
-            group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
-            if (coords.rotation)
-                group.rotation.y = MathUtils.degToRad(coords.rotation);
-            group.userData = { ...group.userData, entityId, isActive, isOutside, isDrain, types: isDrain ? ['drain_pump'] : ['irrigation_pump'] };
+            if (tankMesh && tankMesh.userData.entityId === tankId) {
+                // Positioned relative to tank in world (simplified by setting world position to match tank bottom)
+                const tankPos = tankMesh.position.clone();
+                group.position.set(tankPos.x, 2, tankPos.z); // Slightly above bottom
+                if (tankMesh.rotation.y)
+                    group.rotation.y = tankMesh.rotation.y;
+            }
+            else {
+                group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+                if (coords.rotation)
+                    group.rotation.y = MathUtils.degToRad(coords.rotation);
+            }
+            const unlinkIcon = group.getObjectByName('unlinkIcon');
+            if (unlinkIcon) {
+                unlinkIcon.visible = !!tankId;
+                if (unlinkIcon.visible) {
+                    unlinkIcon.element.innerHTML = `<ha-icon icon="mdi:link-variant-off" style="color: #f44336; --mdc-icon-size: 14px"></ha-icon>`;
+                    unlinkIcon.element.onclick = (e) => {
+                        e.stopPropagation();
+                        if (this.context.requestUpdate) {
+                            // Heatmap3D handles unlink event
+                            this.context.scene.userData.element?.dispatchEvent(new CustomEvent('unlink', { detail: { entityId } }));
+                        }
+                    };
+                }
+            }
+            group.userData = { ...group.userData, entityId, isActive, isOutside, isDrain, types: isDrain ? ['drain_pump'] : ['irrigation_pump'], tankId };
             this.context.sensorMeshes.set(entityId, group);
         });
         // 3. Exhaust Fans
         const exhaustEntities = env?.exhaustFanEntities || (env?.exhaustEntity ? [env.exhaustEntity] : []);
         exhaustEntities.forEach(entityId => {
-            const coords = sensorCoords[entityId];
+            let coords = sensorCoords[entityId];
             if (!coords)
-                return;
+                coords = { x: width / 2, y: depth / 2, z: height, rotation: 0 };
             currentEntityIds.add(entityId);
             let speed = 0;
             const state = hass?.states[entityId];
@@ -90371,7 +90421,7 @@ class EquipmentRenderer extends BaseRenderer {
         // Sync local arrays for animation
         this._humidifiers = Array.from(this.cache.values()).filter(g => g.userData.types?.includes('humidifier') || g.userData.types?.includes('dehumidifier'));
         this._pumps = Array.from(this.cache.values()).filter(g => g.userData.types?.includes('irrigation_pump') || g.userData.types?.includes('drain_pump'));
-        this._exhaustFans = Array.from(this.cache.values()).filter(g => g.userData.types?.includes('exhaust_fan') || g.userData.entityId?.includes('exhaust'));
+        this._exhaustFans = Array.from(this.cache.values()).filter(g => g.userData.types?.includes('exhaust') || g.userData.entityId?.includes('exhaust'));
     }
     animate(deltaTime) {
         // 1. Exhaust Animation
@@ -90433,9 +90483,9 @@ class EquipmentRenderer extends BaseRenderer {
         }
         group.userData = { ...group.userData, intensity, isOutside, targetH };
     }
-    updatePumpModel(group, isDrain, isOutside, coords, w, d, h, targetH, isActive) {
+    updatePumpModel(group, isDrain, isOutside, coords, w, d, h, targetH, isActive, tankMesh) {
         // Update Hose if state or target height changed
-        if (isOutside && (group.userData.isActive !== isActive || group.userData.isOutside !== isOutside || group.userData.targetH !== targetH)) {
+        if ((isOutside || tankMesh) && (group.userData.isActive !== isActive || group.userData.isOutside !== isOutside || group.userData.targetH !== targetH || group.userData.tankId !== tankMesh?.userData?.entityId)) {
             const oldHose = group.getObjectByName('pumpHose');
             if (oldHose) {
                 group.remove(oldHose);
@@ -90451,12 +90501,29 @@ class EquipmentRenderer extends BaseRenderer {
             const bodyRadius = 8;
             const portLength = 5;
             const outputPoint = new Vector3(-15 / 2 - 5 - portLength, bodyRadius + 4, 0);
-            const path = new CatmullRomCurve3([
-                outputPoint.clone(),
-                outputPoint.clone().add(new Vector3(-10, 5, 0)),
-                localTarget.clone().lerp(outputPoint, 0.2),
-                localTarget
-            ]);
+            let path;
+            if (tankMesh) {
+                // Route through tank lid (lid is at y=45+4=49 approx in tank space)
+                // Pump is at y=2 in world. Tank is at y=0.
+                // relative to pump, lid is at y=47? 
+                // Let's use world coordinates for path if easier, but renderers use local.
+                // In local pump space:
+                const lidHeight = 47;
+                path = new CatmullRomCurve3([
+                    outputPoint.clone(),
+                    new Vector3(0, lidHeight, 0),
+                    new Vector3(localTarget.x, lidHeight + 10, localTarget.z),
+                    localTarget
+                ]);
+            }
+            else {
+                path = new CatmullRomCurve3([
+                    outputPoint.clone(),
+                    outputPoint.clone().add(new Vector3(-10, 5, 0)),
+                    localTarget.clone().lerp(outputPoint, 0.2),
+                    localTarget
+                ]);
+            }
             const hoseGeo = new TubeGeometry(path, 32, 0.75, 8, false);
             const hoseMat = new MeshPhysicalMaterial({
                 color: isActive ? 0x003399 : 0x88ccff,
@@ -90571,7 +90638,7 @@ class EquipmentRenderer extends BaseRenderer {
         }
         return group;
     }
-    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive) {
+    createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, tankMesh) {
         const group = new Group();
         const bodyRadius = 8;
         const bodyLength = 15;
@@ -90912,7 +90979,7 @@ class TankRenderer extends BaseRenderer {
     }
     render() {
         this._tankWaves = [];
-        const { device, volatileGroup, hass } = this.context;
+        const { device, volatileGroup, hass, visibility } = this.context;
         const width = device.dimensions?.width ?? 120;
         const depth = device.dimensions?.length ?? device.dimensions?.depth ?? 120;
         const env = device.environmentAttributes;
@@ -90931,7 +90998,7 @@ class TankRenderer extends BaseRenderer {
         tanks.forEach((tank) => {
             const entityId = tank.sensorEntity;
             currentTankIds.add(entityId);
-            let coords = sensorCoords[entityId] || { x: -width * 0.5, y: depth / 2};
+            let coords = sensorCoords[entityId] || { x: 0, y: depth / 2};
             const isWarning = tank.isWarning;
             const fill = tank.fillLevel || 0;
             const liquidColor = isWarning ? 0xff4422 : 0x00aaff;
@@ -90997,6 +91064,7 @@ class TankRenderer extends BaseRenderer {
                 cap.material.color.set(liquidColor);
             const label = tankGroup.getObjectByName('label');
             if (label) {
+                label.visible = visibility.tooltips;
                 const newHTML = `
                     <div class="sensor-icon" style="background: ${hex}33; border-color: ${hex}">
                         <ha-icon icon="mdi:barrel" style="color: ${hex}; --mdc-icon-size: 10px"></ha-icon>
@@ -91082,7 +91150,8 @@ class VpdCloudRenderer extends BaseRenderer {
                 u_boxSize: { value: new Vector3(width, height, depth) },
                 u_opacity: { value: 0.7 },
                 u_thresholds: { value: new Vector4(0, 0, 0, 0) },
-                u_time: { value: 0 }
+                u_time: { value: 0 },
+                u_localCameraPos: { value: new Vector3() }
             },
             vertexShader: `
                 varying vec3 vLocalPos;
@@ -91099,12 +91168,86 @@ class VpdCloudRenderer extends BaseRenderer {
 
                 varying vec3 vLocalPos;
                 varying vec3 vWorldPos;
+
                 uniform vec3 u_sensorPositions[16];
                 uniform float u_sensorValues[16];
                 uniform int u_sensorCount;
                 uniform vec3 u_boxSize;
                 uniform float u_opacity;
-                uniform vec4 u_thresholds; // x: dLow, y: wLow, z: wHigh, w: dHigh
+                uniform vec4 u_thresholds;
+                uniform float u_time;
+                uniform vec3 u_localCameraPos;
+
+                // --- 3D Noise (Simplex-ish) ---
+                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+                vec3 fade(vec3 t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
+
+                float noise(vec3 P) {
+                    vec3 i0 = floor(P);
+                    vec3 i1 = i0 + vec3(1.0);
+                    vec3 f0 = fract(P);
+                    vec3 f1 = f0 - vec3(1.0);
+                    vec3 f = fade(f0);
+                    vec4 ix = vec4(i0.x, i1.x, i0.x, i1.x);
+                    vec4 iy = vec4(i0.y, i0.y, i1.y, i1.y);
+                    vec4 iz0 = vec4(i0.z, i0.z, i0.z, i0.z);
+                    vec4 iz1 = vec4(i1.z, i1.z, i1.z, i1.z);
+
+                    vec4 ixy = permute(permute(ix) + iy);
+                    vec4 ixy0 = permute(ixy + iz0);
+                    vec4 ixy1 = permute(ixy + iz1);
+
+                    vec4 gx0 = ixy0 * (1.0 / 7.0);
+                    vec4 gy0 = fract(floor(gx0) * (1.0 / 7.0)) - 0.5;
+                    gx0 = fract(gx0);
+                    vec4 gz0 = vec4(0.5, 0.5, 0.5, 0.5) - abs(gx0) - abs(gy0);
+                    vec4 sz0 = step(gz0, vec4(0.0, 0.0, 0.0, 0.0));
+                    gx0 -= sz0 * (step(vec4(0.0, 0.0, 0.0, 0.0), gx0) - 0.5);
+                    gy0 -= sz0 * (step(vec4(0.0, 0.0, 0.0, 0.0), gy0) - 0.5);
+
+                    vec4 gx1 = ixy1 * (1.0 / 7.0);
+                    vec4 gy1 = fract(floor(gx1) * (1.0 / 7.0)) - 0.5;
+                    gx1 = fract(gx1);
+                    vec4 gz1 = vec4(0.5, 0.5, 0.5, 0.5) - abs(gx1) - abs(gy1);
+                    vec4 sz1 = step(gz1, vec4(0.0, 0.0, 0.0, 0.0));
+                    gx1 -= sz1 * (step(vec4(0.0, 0.0, 0.0, 0.0), gx1) - 0.5);
+                    gy1 -= sz1 * (step(vec4(0.0, 0.0, 0.0, 0.0), gy1) - 0.5);
+
+                    vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+                    vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+                    vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+                    vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+                    vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+                    vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+                    vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+                    vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+
+                    vec4 norm0 = taylorInvSqrt(vec4(dot(g000, g000), dot(g100, g100), dot(g010, g010), dot(g110, g110)));
+                    g000 *= norm0.x; g100 *= norm0.y; g010 *= norm0.z; g110 *= norm0.w;
+                    vec4 norm1 = taylorInvSqrt(vec4(dot(g001, g001), dot(g101, g101), dot(g011, g011), dot(g111, g111)));
+                    g001 *= norm1.x; g101 *= norm1.y; g011 *= norm1.z; g111 *= norm1.w;
+
+                    float n000 = dot(g000, f0);
+                    float n100 = dot(g100, vec3(f1.x, f0.y, f0.z));
+                    float n010 = dot(g010, vec3(f0.x, f1.y, f0.z));
+                    float n110 = dot(g110, vec3(f1.x, f1.y, f0.z));
+                    float n001 = dot(g001, vec3(f0.x, f0.y, f1.z));
+                    float n101 = dot(g101, vec3(f1.x, f0.y, f1.z));
+                    float n011 = dot(g011, vec3(f0.x, f1.y, f1.z));
+                    float n111 = dot(g111, f1);
+
+                    float nx00 = mix(n000, n100, f.x);
+                    float nx01 = mix(n001, n101, f.x);
+                    float nx10 = mix(n010, n110, f.x);
+                    float nx11 = mix(n011, n111, f.x);
+
+                    float nxy0 = mix(nx00, nx10, f.y);
+                    float nxy1 = mix(nx01, nx11, f.y);
+
+                    return 0.5 + 0.5 * mix(nxy0, nxy1, f.z);
+                }
 
                 vec3 getHealthColor(float val) {
                     vec3 dangerLow = vec3(0.051, 0.278, 0.631); // #0d47a1
@@ -91126,7 +91269,6 @@ class VpdCloudRenderer extends BaseRenderer {
                         return mix(warnHigh, dangerHigh, t);
                     }
                     
-                    // Internal Optimal range
                     float center = (u_thresholds.y + u_thresholds.z) * 0.5;
                     if (val < center) {
                         float t = (val - u_thresholds.y) / (center - u_thresholds.y);
@@ -91137,52 +91279,84 @@ class VpdCloudRenderer extends BaseRenderer {
                     }
                 }
 
-                void main() {
-                    vec3 rayOrigin = cameraPosition;
-                    vec3 rayDir = normalize(vWorldPos - rayOrigin);
-                    
-                    float accumVal = 0.0;
-                    float accumAlpha = 0.0;
-                    float boxLength = length(u_boxSize);
-                    float stepSize = boxLength / 16.0;
-                    
-                    for(int i = 0; i < 16; i++) {
-                        vec3 p = vLocalPos - rayDir * (float(i) * stepSize * 0.5);
-                        
-                        if(abs(p.x) > u_boxSize.x * 0.501 || 
-                           abs(p.y) > u_boxSize.y * 0.501 || 
-                           abs(p.z) > u_boxSize.z * 0.501) {
-                            continue;
-                        }
+                // Ray-AABB intersection for unit box [-0.5, 0.5]
+                bool intersectBox(vec3 ro, vec3 rd, out float tnear, out float tfar) {
+                    vec3 m = 1.0 / rd;
+                    vec3 n = m * ro;
+                    vec3 k = abs(m) * 0.5;
+                    vec3 t1 = -n - k;
+                    vec3 t2 = -n + k;
+                    tnear = max(max(t1.x, t1.y), t1.z);
+                    tfar = min(min(t2.x, t2.y), t2.z);
+                    return tnear < tfar && tfar > 0.0;
+                }
 
+                void main() {
+                    vec3 rayOrigin = u_localCameraPos;
+                    vec3 rayDir = normalize(vLocalPos - rayOrigin);
+
+                    float tnear, tfar;
+                    if (!intersectBox(rayOrigin, rayDir, tnear, tfar)) { discard; }
+
+                    tnear = max(tnear, 0.0);
+                    
+                    float boxMaxSize = max(u_boxSize.x, max(u_boxSize.y, u_boxSize.z));
+                    int steps = 64;
+                    float stepSize = (tfar - tnear) / float(steps);
+                    
+                    vec4 accum = vec4(0.0, 0.0, 0.0, 0.0);
+                    vec3 p = rayOrigin + rayDir * tnear;
+
+                    for(int i = 0; i < 64; i++) {
+                        if (accum.a >= 0.95) break;
+
+                        // IDW Interpolation
                         float pointVal = 0.0;
                         float totalWeight = 0.0;
+                        float minDist = 1e10;
+
                         for(int j = 0; j < 16; j++) {
                             if(j < u_sensorCount) {
-                                float d = distance(p, u_sensorPositions[j]);
-                                float w = 1.0 / (pow(d / (boxLength * 0.25), 2.0) + 0.001);
+                                float d = distance(p * u_boxSize, u_sensorPositions[j]);
+                                minDist = min(minDist, d);
+                                // Softer falloff for more "blurry" cloud
+                                float w = 1.0 / (pow(d / (boxMaxSize * 0.45), 2.2) + 0.0001);
                                 pointVal += u_sensorValues[j] * w;
                                 totalWeight += w;
                             }
                         }
                         
                         float val = pointVal / (totalWeight + 0.0001);
+                        vec3 color = getHealthColor(val);
+
+                        // Density calculation
+                        // Drifting noise using u_time
+                        float n1 = noise(p * 3.5 + vec3(u_time * 0.1, u_time * 0.05, 0.0));
+                        float n2 = noise(p * 7.0 - vec3(0.0, u_time * 0.1, u_time * 0.05));
+                        float n = mix(n1, n2, 0.4);
                         
-                        float spread = 0.5;
-                        float edgeX = 1.0 - smoothstep(u_boxSize.x * (spread - 0.1), u_boxSize.x * spread, abs(p.x));
-                        float edgeY = 1.0 - smoothstep(u_boxSize.y * (spread - 0.1), u_boxSize.y * spread, abs(p.y));
-                        float edgeZ = 1.0 - smoothstep(u_boxSize.z * (spread - 0.1), u_boxSize.z * spread, abs(p.z));
+                        // Distance-based fade: cloud is denser near sensors
+                        float sensorFade = smoothstep(boxMaxSize * 0.7, boxMaxSize * 0.1, minDist);
+                        
+                        // Edge fade
+                        float edgeX = 1.0 - smoothstep(0.4, 0.5, abs(p.x));
+                        float edgeY = 1.0 - smoothstep(0.4, 0.5, abs(p.y));
+                        float edgeZ = 1.0 - smoothstep(0.4, 0.5, abs(p.z));
                         float edgeFactor = edgeX * edgeY * edgeZ;
+
+                        // More clumpy density
+                        float density = pow(n, 2.0) * 1.5 * sensorFade * edgeFactor * u_opacity;
                         
-                        accumVal += val * edgeFactor;
-                        accumAlpha += 0.1 * edgeFactor;
+                        // Alpha blending
+                        float alpha = density * stepSize * 4.0; 
+                        accum.rgb += (1.0 - accum.a) * color * alpha;
+                        accum.a += (1.0 - accum.a) * alpha;
+
+                        p += rayDir * stepSize;
                     }
 
-                    if (accumAlpha < 0.01) discard;
-
-                    float finalVal = accumVal / (accumAlpha * 10.0 + 0.001);
-                    vec3 color = getHealthColor(finalVal);
-                    gl_FragColor = vec4(color, clamp(accumAlpha * u_opacity, 0.0, 1.0));
+                    if (accum.a < 0.01) { discard; }
+                    gl_FragColor = accum;
                 }
             `
         });
@@ -91192,6 +91366,16 @@ class VpdCloudRenderer extends BaseRenderer {
         volMesh.userData.isVpdCloud = true;
         volMesh.userData.dimensions = `${width}_${height}_${depth}`;
         return volMesh;
+    }
+    animate(deltaTime) {
+        const { volatileGroup } = this.context;
+        const volMesh = volatileGroup.children.find(c => c.userData?.isVpdCloud);
+        if (!volMesh)
+            return;
+        const material = volMesh.material;
+        if (material.uniforms.u_time) {
+            material.uniforms.u_time.value += deltaTime;
+        }
     }
     updateUniforms() {
         const { device, volatileGroup, sensorMeshes, selectedMetric } = this.context;
@@ -91214,6 +91398,11 @@ class VpdCloudRenderer extends BaseRenderer {
         // Update box size if changed
         if (material.uniforms.u_boxSize) {
             material.uniforms.u_boxSize.value.set(width, height, depth);
+        }
+        if (material.uniforms.u_localCameraPos) {
+            const worldInv = new Matrix4().copy(volMesh.matrixWorld).invert();
+            const localCam = this.context.camera.position.clone().applyMatrix4(worldInv);
+            material.uniforms.u_localCameraPos.value.copy(localCam);
         }
         // Collect sensor data
         // We need 3D positions of active sensors.
@@ -91357,8 +91546,10 @@ class SceneManager {
                 plants: true,
                 lights: true,
                 fans: true,
-                heatmap: true
-            }
+                heatmap: true,
+                tooltips: true
+            },
+            camera: this.camera
         };
         // 3. Initialize Renderers
         this.initRenderers();
@@ -91887,6 +92078,8 @@ class InteractionManager {
         this.hoveredPlant = null;
         this.tooltipPos = { x: 0, y: 0 };
         this.editMode = false;
+        this.linkMode = false;
+        this.selectedForLink = null;
         this._raycaster = new Raycaster();
         this._pointer = new Vector2();
         this.sceneManager = sceneManager;
@@ -91895,6 +92088,14 @@ class InteractionManager {
     }
     setEditMode(enabled) {
         this.editMode = enabled;
+        if (!enabled)
+            this.setLinkMode(false);
+        this.updateDragControls();
+        this.updateVisuals();
+    }
+    setLinkMode(enabled) {
+        this.linkMode = enabled;
+        this.selectedForLink = null;
         this.updateDragControls();
         this.updateVisuals();
     }
@@ -91916,26 +92117,32 @@ class InteractionManager {
         const rect = this.container.getBoundingClientRect();
         this._pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this._pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        if (this.editMode) {
+        if (this.editMode && !this.linkMode) {
             // Drag checks are handled by DragControls
             return;
         }
-        // Raycast for Plants
+        // Raycast for Plants & Sensors
         this._raycaster.setFromCamera(this._pointer, this.sceneManager.camera);
-        // We need to access plant hitboxes. PlantRenderer exposes them?
-        // Actually, SceneManager -> volatiles -> find hitboxes
-        // Or better: PlantRenderer should register hitboxes with SceneManager or InteractionManager?
-        // Let's iterate volatiles and check userData.plant
         const intersects = this._raycaster.intersectObjects(this.sceneManager.volatileGroup.children, true);
         let foundPlant = null;
+        let foundSensor = null;
         for (const hit of intersects) {
             const mesh = hit.object;
             // Check for plant hitbox
-            if (mesh.userData && (mesh.userData.plant || mesh.userData.emptySlot)) {
+            if (!foundPlant && mesh.userData && (mesh.userData.plant || mesh.userData.emptySlot)) {
                 foundPlant = mesh.userData.plant || mesh.userData.emptySlot;
                 this.tooltipPos = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-                break;
             }
+            // Check for sensor/equipment
+            if (!foundSensor && mesh.userData && mesh.userData.entityId) {
+                foundSensor = mesh.userData.entityId;
+            }
+            if (foundPlant || foundSensor)
+                break;
+        }
+        if (this.linkMode) {
+            this.container.style.cursor = foundSensor ? 'pointer' : 'default';
+            return;
         }
         if (foundPlant !== this.hoveredPlant) {
             this.hoveredPlant = foundPlant;
@@ -91952,6 +92159,39 @@ class InteractionManager {
         }
     }
     handleClick(event) {
+        if (this.linkMode) {
+            const rect = this.container.getBoundingClientRect();
+            this._pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            this._pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            this._raycaster.setFromCamera(this._pointer, this.sceneManager.camera);
+            const intersects = this._raycaster.intersectObjects(this.sceneManager.volatileGroup.children, true);
+            let entityId = null;
+            for (const hit of intersects) {
+                if (hit.object.userData && hit.object.userData.entityId) {
+                    entityId = hit.object.userData.entityId;
+                    break;
+                }
+            }
+            if (entityId) {
+                if (!this.selectedForLink) {
+                    this.selectedForLink = entityId;
+                    this.updateVisuals();
+                }
+                else if (this.selectedForLink === entityId) {
+                    this.selectedForLink = null;
+                    this.updateVisuals();
+                }
+                else {
+                    // Emit link event
+                    if (this.mouseCallback) {
+                        this.mouseCallback('link', { from: this.selectedForLink, to: entityId });
+                    }
+                    this.selectedForLink = null;
+                    this.updateVisuals();
+                }
+            }
+            return;
+        }
         if (this.editMode)
             return;
         if (this.hoveredPlant) {
@@ -91965,15 +92205,13 @@ class InteractionManager {
             this.dragControls.dispose();
             this.dragControls = undefined;
         }
-        if (this.editMode && this.sceneManager.sensorMeshes.size > 0 && this.sceneManager.camera && this.sceneManager.renderer) {
+        if (this.editMode && !this.linkMode && this.sceneManager.sensorMeshes.size > 0 && this.sceneManager.camera && this.sceneManager.renderer) {
             const draggableObjects = Array.from(this.sceneManager.sensorMeshes.values());
             this.dragControls = new DragControls(draggableObjects, this.sceneManager.camera, this.sceneManager.renderer.domElement);
             this.dragControls.addEventListener('dragstart', () => {
                 this.sceneManager.controls.enabled = false;
             });
             this.dragControls.addEventListener('drag', (event) => {
-                // Notify visual update (e.g. shader position)
-                // We can tell SceneManager directly or via callback
                 if (this.mouseCallback)
                     this.mouseCallback('drag', { object: event.object });
             });
@@ -91988,12 +92226,7 @@ class InteractionManager {
     // This logic was in heatmap-3d.ts:updateSensorVisuals
     updateVisuals() {
         const meshes = this.sceneManager.sensorMeshes;
-        // Access width from device? We need device context.
-        // Assuming we look at mesh scale or generic size.
-        // Or SceneManager passes context.
-        // Let's use a fixed relative size or infer.
-        // width = 120 default approx.
-        meshes.forEach((mesh) => {
+        meshes.forEach((mesh, id) => {
             // Cleanup old
             const oldOutline = mesh.children.find(c => c.name === 'editOutline');
             if (oldOutline) {
@@ -92006,8 +92239,6 @@ class InteractionManager {
                 oldHit.geometry.dispose();
             }
             // Update CSS Label
-            // We can't easily access CSS2DObject element classList here unless exposed.
-            // But we can traverse.
             mesh.traverse(c => {
                 if (c.constructor.name === 'CSS2DObject') {
                     const el = c.element;
@@ -92018,25 +92249,23 @@ class InteractionManager {
                 }
             });
             if (this.editMode) {
+                const isSelected = this.selectedForLink === id;
                 // Add Outline
-                const g = new SphereGeometry(2.5, 16, 16); // Approx size
-                const m = new MeshBasicMaterial({ color: 0x448aff, transparent: true, opacity: 0.3, side: BackSide });
+                const g = new SphereGeometry(isSelected ? 6 : 2.5, 16, 16);
+                const m = new MeshBasicMaterial({
+                    color: isSelected ? 0x00ff00 : 0x448aff,
+                    transparent: true,
+                    opacity: isSelected ? 0.5 : 0.3,
+                    side: BackSide
+                });
                 const outline = new Mesh(g, m);
                 outline.name = 'editOutline';
                 mesh.add(outline);
                 // Hit Area
-                const hg = new SphereGeometry(5, 16, 16);
-                const hm = new MeshBasicMaterial({ visible: false }); // Raycaster hits invisible objects by default? No.
-                // In DragControls, it uses Raycaster.
-                // DragControls checks recursive children?
+                const hg = new SphereGeometry(isSelected ? 7 : 5, 16, 16);
+                const hm = new MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 });
                 const hit = new Mesh(hg, hm);
                 hit.name = 'hitArea';
-                hit.visible = false; // DragControls raycaster might skip invisible.
-                // Actually Three.js raycaster DOES skip invisible by default.
-                // But DragControls might pass a raycaster with unique params?
-                // Usually people make it visible but opacity 0.
-                hm.opacity = 0;
-                hm.transparent = true;
                 hit.visible = true;
                 mesh.add(hit);
             }
@@ -92111,9 +92340,11 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.showLights = true;
         this.showFans = true;
         this.showHeatmap = true;
+        this.showTooltips = true;
         this.keyboardRotateEnabled = false;
         this.keyboardRotateSpeed = 1.0;
         this._activeSensorTab = 'temperature';
+        this._linkMode = false;
         this.strainLibrary = [];
     }
     connectedCallback() {
@@ -92137,6 +92368,12 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.dataService = new DataService(this.hass);
         // Initialize Scene Manager
         this.sceneManager = new SceneManager(this.container, this.device, this.hass, { strainLibrary: this.strainLibrary });
+        // Expose element for renderers to dispatch events back
+        this.sceneManager.scene.userData.element = this.container;
+        this.container.addEventListener('unlink', (e) => {
+            if (e.detail?.entityId)
+                this._handleUnlink(e.detail.entityId);
+        });
         this.sceneManager.setCallbacks({
             requestUpdate: () => this.requestUpdate(),
             getSensorValue: (id, metric) => this.getSensorValue(id, metric)
@@ -92159,7 +92396,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             plants: this.showPlants,
             lights: this.showLights,
             fans: this.showFans,
-            heatmap: this.showHeatmap
+            heatmap: this.showHeatmap,
+            tooltips: this.showTooltips
         });
     }
     willUpdate(changedProps) {
@@ -92204,6 +92442,68 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             this.updateLocalCoordinates(data.object);
             this.updateBackendCoordinates(data.object);
             this.requestUpdate();
+        }
+        if (event === 'link' && data.from && data.to) {
+            this._handleLink(data.from, data.to);
+        }
+        if (event === 'unlink' && data.entityId) {
+            this._handleUnlink(data.entityId);
+        }
+        if (event === 'click' && data.plant) {
+            if (data.plant.entity_id) {
+                // Existing plant
+                this.store?.openPlantOverviewDialog(data.plant);
+            }
+            else if (data.plant.row !== undefined && data.plant.col !== undefined) {
+                // Empty slot
+                this.store?.openAddPlantDialog(data.plant.row, data.plant.col);
+            }
+        }
+    }
+    _handleLink(fromId, toId) {
+        if (!this.device || !this.sceneManager)
+            return;
+        const fromMesh = this.sceneManager.sensorMeshes.get(fromId);
+        const toMesh = this.sceneManager.sensorMeshes.get(toId);
+        if (!fromMesh || !toMesh)
+            return;
+        const fromTypes = (fromMesh.userData.types || []);
+        const toTypes = (toMesh.userData.types || []);
+        const isPump = fromTypes.includes('irrigation_pump') || fromTypes.includes('drain_pump');
+        const isTank = toTypes.includes('irrigation_tank');
+        // Allow reverse selection too
+        let pumpId = isPump ? fromId : (toTypes.includes('irrigation_pump') || toTypes.includes('drain_pump') ? toId : null);
+        let tankId = isTank ? toId : (fromTypes.includes('irrigation_tank') ? fromId : null);
+        if (pumpId && tankId) {
+            if (!this.device.environmentAttributes)
+                this.device.environmentAttributes = {};
+            if (!this.device.environmentAttributes.pump_tank_links)
+                this.device.environmentAttributes.pump_tank_links = {};
+            this.device.environmentAttributes.pump_tank_links[pumpId] = tankId;
+            // Sync to backend
+            this._updatePumpTankLinks();
+            this.requestUpdate();
+        }
+    }
+    _handleUnlink(pumpId) {
+        if (!this.device || !this.device.environmentAttributes?.pump_tank_links)
+            return;
+        delete this.device.environmentAttributes.pump_tank_links[pumpId];
+        this._updatePumpTankLinks();
+        this.requestUpdate();
+    }
+    _updatePumpTankLinks() {
+        if (!this.device)
+            return;
+        this.dataService?.callService('growspace_manager', 'update_environment_attributes', {
+            growspace_id: this.device.deviceId,
+            pump_tank_links: this.device.environmentAttributes.pump_tank_links
+        });
+    }
+    toggleLinkMode() {
+        this._linkMode = !this._linkMode;
+        if (this.interactionManager) {
+            this.interactionManager.setLinkMode(this._linkMode);
         }
     }
     updateLocalCoordinates(mesh) {
@@ -92458,6 +92758,13 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                         ></ha-checkbox>
                         <span>Heatmap</span>
                     </div>
+                    <div class="toggle-item" @click=${() => { this.showTooltips = !this.showTooltips; }}>
+                        <ha-checkbox
+                            .checked=${this.showTooltips}
+                            @change=${(e) => { e.stopPropagation(); this.showTooltips = e.target.checked; }}
+                        ></ha-checkbox>
+                        <span>Tooltips</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -92576,6 +92883,19 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                         @click=${() => { this._activeSensorTab = 'irrigation'; }}>Irrig</button>
                 </div>
 
+                ${this._activeSensorTab === 'irrigation' ? x `
+                    <div style="padding: 0 10px 10px 10px">
+                        <button 
+                            class="sensor-tab ${this._linkMode ? 'active' : ''}" 
+                            style="width: 100%;"
+                            @click=${this.toggleLinkMode}
+                        >
+                            <ha-icon icon="${this._linkMode ? 'mdi:link-variant-off' : 'mdi:link-variant'}" style="--mdc-icon-size: 14px; margin-right: 4px;"></ha-icon>
+                            ${this._linkMode ? 'Exit Link Mode' : 'Pump-Tank Link Mode'}
+                        </button>
+                    </div>
+                ` : ''}
+
                 ${Array.from(this.sceneManager.sensorMeshes.keys())
             .filter(id => {
             const mesh = this.sceneManager.sensorMeshes.get(id);
@@ -92600,9 +92920,17 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         })
             .map((id) => {
             const mesh = this.sceneManager.sensorMeshes.get(id);
+            const types = (mesh.userData.types || []);
+            const isAllowedOutside = types.some(t => ['humidifier', 'dehumidifier', 'irrigation_tank', 'irrigation_pump', 'drain_pump'].includes(t));
             const width = this.device?.dimensions?.width ?? 120;
             const height = this.device?.dimensions?.height ?? 200;
             const depth = this.device?.dimensions?.length ?? this.device?.dimensions?.depth ?? 120;
+            const xMin = isAllowedOutside ? -100 : 0;
+            const xMax = isAllowedOutside ? width + 100 : width;
+            const yMin = isAllowedOutside ? -100 : 0;
+            const yMax = isAllowedOutside ? depth + 100 : depth;
+            const zMin = isAllowedOutside ? -50 : 0;
+            const zMax = isAllowedOutside ? height + 50 : height;
             const x$1 = Math.round(mesh.position.x + width / 2);
             const y = Math.round(mesh.position.z + depth / 2);
             const z = Math.round(mesh.position.y);
@@ -92619,7 +92947,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>X</label>
                                     <input type="range" class="edit-slider" 
-                                        min="0" max="${width}" 
+                                        min="${xMin}" max="${xMax}" 
                                         .value=${x$1} 
                                         @input=${(e) => this.handleSliderInput(id, 'x', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
@@ -92628,7 +92956,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>Y</label>
                                     <input type="range" class="edit-slider" 
-                                        min="0" max="${depth}" 
+                                        min="${yMin}" max="${yMax}" 
                                         .value=${y} 
                                         @input=${(e) => this.handleSliderInput(id, 'y', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
@@ -92637,7 +92965,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                                 <div class="slider-row">
                                     <label>Z</label>
                                     <input type="range" class="edit-slider" 
-                                        min="0" max="${height}" 
+                                        min="${zMin}" max="${zMax}" 
                                         .value=${z} 
                                         @input=${(e) => this.handleSliderInput(id, 'z', parseFloat(e.target.value))}
                                         @change=${() => this.handleSliderChange(id)}>
@@ -93111,6 +93439,9 @@ __decorate([
     r$2()
 ], Heatmap3D.prototype, "showHeatmap", void 0);
 __decorate([
+    r$2()
+], Heatmap3D.prototype, "showTooltips", void 0);
+__decorate([
     n$5({ type: Boolean })
 ], Heatmap3D.prototype, "keyboardRotateEnabled", void 0);
 __decorate([
@@ -93119,6 +93450,9 @@ __decorate([
 __decorate([
     r$2()
 ], Heatmap3D.prototype, "_activeSensorTab", void 0);
+__decorate([
+    r$2()
+], Heatmap3D.prototype, "_linkMode", void 0);
 __decorate([
     c$2({ context: strainLibraryContext, subscribe: true })
 ], Heatmap3D.prototype, "strainLibrary", void 0);

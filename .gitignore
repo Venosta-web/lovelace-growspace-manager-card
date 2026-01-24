@@ -50,5 +50,5 @@ playwright-report/.auth/*
 
 # Verification scratchpad
 verification/
-
 tests/unit/*.png
+tests/unit/*/*.png

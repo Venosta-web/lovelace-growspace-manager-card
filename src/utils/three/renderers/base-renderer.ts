@@ -19,7 +19,9 @@ export interface RendererContext {
         lights: boolean;
         fans: boolean;
         heatmap: boolean;
+        tooltips: boolean;
     };
+    camera: THREE.PerspectiveCamera;
 }
 
 export abstract class BaseRenderer {

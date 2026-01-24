@@ -58,7 +58,8 @@ vi.mock('three', async () => {
         children: [] as any[],
         background: null,
         traverse: createTraverseFn(),
-        getObjectByName: createGetObjectByNameFn()
+        getObjectByName: createGetObjectByNameFn(),
+        userData: {}
     });
 
     const createMockRenderer = () => ({
@@ -679,6 +680,10 @@ describe('Heatmap3D Logic', () => {
             const heatmapToggle = element.shadowRoot?.querySelector('.toggles-container .toggle-item:nth-child(4)') as HTMLElement;
             heatmapToggle.click();
             expect(element['showHeatmap']).toBe(false);
+
+            const tooltipsToggle = element.shadowRoot?.querySelector('.toggles-container .toggle-item:nth-child(5)') as HTMLElement;
+            tooltipsToggle.click();
+            expect(element['showTooltips']).toBe(false);
         });
 
         it('should update selected metric on button click', async () => {
@@ -1071,25 +1076,22 @@ describe('Heatmap3D Logic', () => {
             expect((element as any).container.style.cursor).toBe('default');
         });
 
-        it('should handle mouse click on plant or empty slot', () => {
-            const getInteractionSpy = vi.spyOn(element as any, '_getInteractionFromPoint');
-            const mockPlant = { id: 'p1' };
+        it('should handle plant or empty slot click via handleInteraction', () => {
             const storeSpy = {
-                handlePlantClick: vi.fn(),
+                openPlantOverviewDialog: vi.fn(),
                 openAddPlantDialog: vi.fn()
             };
             (element as any).store = storeSpy;
 
-            // Click plant
-            getInteractionSpy.mockReturnValue({ plant: mockPlant });
-            const clickEvent = new MouseEvent('click', { clientX: 100, clientY: 100 });
-            (element as any)._handleMouseClick(clickEvent);
-            expect(storeSpy.handlePlantClick).toHaveBeenCalledWith(mockPlant);
+            // 1. Click plant (has entity_id)
+            const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
+            (element as any).handleInteraction('click', { plant: mockPlant });
+            expect(storeSpy.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
 
-            // Click empty slot
-            getInteractionSpy.mockReturnValue({ emptySlot: { row: 1, col: 2 } });
-            (element as any)._handleMouseClick(clickEvent);
-            expect(storeSpy.openAddPlantDialog).toHaveBeenCalledWith(1, 2);
+            // 2. Click empty slot (has row, col)
+            const mockEmpty = { row: 3, col: 4 };
+            (element as any).handleInteraction('click', { plant: mockEmpty });
+            expect(storeSpy.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
         });
 
         it('should handle keyboard rotation', () => {
