@@ -216,6 +216,16 @@ template:
           {% set base = 65 %}
           {% set amplitude = 5 %}
           {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+      # Humidity 5
+      - name: 'Test Humidity 5'
+        unique_id: test_humidity_5
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 40 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
       # VPD 2
       - name: 'Test VPD 2'
         unique_id: test_vpd_2

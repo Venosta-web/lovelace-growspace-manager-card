@@ -87,6 +87,7 @@ vi.mock('three', async () => {
         scale: { set: vi.fn(), x: 1, y: 1, z: 1 },
         getObjectByName: createGetObjectByNameFn(),
         localToWorld: vi.fn((v) => v),
+        lookAt: vi.fn(),
         userData: {}
     });
 
@@ -116,6 +117,7 @@ vi.mock('three', async () => {
                 }
             }
         },
+        lookAt: vi.fn(),
         userData: {}
     });
 
@@ -746,7 +748,7 @@ describe('Heatmap3D Logic', () => {
             // Mock sensorMeshes with proper THREE objects
             const mockMesh = new THREE.Object3D();
             mockMesh.position.set(0, 0, 0);
-            (element as any).sensorMeshes.set('sensor.temp1', mockMesh);
+            (element as any).sceneManager.sensorMeshes.set('sensor.temp1', mockMesh);
 
             await elementUpdated(element);
             const sensorItem = element.shadowRoot?.querySelector('.sensor-item');
@@ -759,7 +761,7 @@ describe('Heatmap3D Logic', () => {
             (element as any)._activeSensorTab = 'ventilation';
 
             const mockFan = new THREE.Object3D();
-            (element as any).sensorMeshes.set('fan.circ1', mockFan);
+            (element as any).sceneManager.sensorMeshes.set('fan.circ1', mockFan);
 
             await elementUpdated(element);
             const sensorItem = element.shadowRoot?.querySelector('.sensor-item');
