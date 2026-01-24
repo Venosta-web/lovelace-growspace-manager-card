@@ -682,16 +682,19 @@ export class Heatmap3D extends LitElement {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                const z = mesh.position.y;
+                const z = mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
+
 
                 if (!this.device.environmentAttributes) this.device.environmentAttributes = {};
                 if (!this.device.environmentAttributes.sensorCoordinates) this.device.environmentAttributes.sensorCoordinates = {};
 
                 const currentCoords = this.device.environmentAttributes.sensorCoordinates[id] || {};
+                const logicalZ = m.userData.logicalZ !== undefined ? m.userData.logicalZ : m.position.y;
                 this.device.environmentAttributes.sensorCoordinates[id] = {
                     ...currentCoords,
-                    x, y, z
+                    x, y, z: logicalZ
                 };
+
                 break;
             }
         }
@@ -709,7 +712,8 @@ export class Heatmap3D extends LitElement {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                const z = mesh.position.y;
+                const z = mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
+
 
                 let rotation: number | undefined;
                 // Rotation usually stored in userData or traverse
@@ -726,12 +730,21 @@ export class Heatmap3D extends LitElement {
 
     private async fetchHistory() {
         if (!this.dataService || !this.device) return;
-        const sensorCoords = this.device.environmentAttributes?.sensorCoordinates || {};
-        const entityIds = Object.keys(sensorCoords);
-        if (entityIds.length === 0) return;
+        const env = this.device.environmentAttributes;
+        const sensorCoords = env?.sensorCoordinates || {};
+        const sensorGroups = env?.sensorGroups || [];
+
+        const entityIds = new Set<string>(Object.keys(sensorCoords));
+        sensorGroups.forEach(group => {
+            group.temperature_sensors.forEach(id => entityIds.add(id));
+            group.humidity_sensors.forEach(id => entityIds.add(id));
+            group.vpd_sensors.forEach(id => entityIds.add(id));
+        });
+
+        if (entityIds.size === 0) return;
 
         const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        this.historyData = await this.dataService.fetchHistory(entityIds, start);
+        this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
     }
 
     // UI Helpers
@@ -849,16 +862,27 @@ export class Heatmap3D extends LitElement {
 
         if (axis === 'x') mesh.position.x = value - width / 2;
         if (axis === 'y') mesh.position.z = value - depth / 2; // HA Y maps to Scene Z
-        if (axis === 'z') mesh.position.y = value; // HA Z maps to Scene Y
+        if (axis === 'z') {
+            mesh.userData.logicalZ = value;
+            // Only update physical Y if not ground-locked (not outside)
+            const isOutside = (mesh.position.x + width / 2 < 0 || mesh.position.x + width / 2 > width ||
+                mesh.position.z + depth / 2 < 0 || mesh.position.z + depth / 2 > depth);
+            if (!isOutside) mesh.position.y = value;
+        }
+
 
         // Optimistic update to device object so renderers don't overwrite on next frame
         if (this.device.environmentAttributes?.sensorCoordinates) {
             const coords = this.device.environmentAttributes.sensorCoordinates[entityId] || { x: 0, y: 0, z: 0, rotation: 0 };
             if (axis === 'x') coords.x = value;
             if (axis === 'y') coords.y = value;
-            if (axis === 'z') coords.z = value;
+            if (axis === 'z') {
+                coords.z = value;
+                mesh.userData.logicalZ = value; // Update logicalZ immediately for UI
+            }
             this.device.environmentAttributes.sensorCoordinates[entityId] = { ...coords };
         }
+
 
         if (axis === 'rotation') {
             // We need to access the fan model group or similar.
@@ -1124,7 +1148,8 @@ export class Heatmap3D extends LitElement {
 
                     const x = Math.round(mesh.position.x + width / 2);
                     const y = Math.round(mesh.position.z + depth / 2);
-                    const z = Math.round(mesh.position.y);
+                    const z = Math.round(mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y);
+
                     // Rotation?
                     let rotation = 0;
 

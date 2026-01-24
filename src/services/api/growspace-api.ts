@@ -211,6 +211,9 @@ export class GrowspaceAPI extends BaseAPI {
     flowerMidDayHours?: number;
     flowerLateDayHours?: number;
     minimumSourceAirTemperature?: number;
+    sensorGroups?: import('../../types').SensorGroup[];
+    sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+    irrigationTanks?: any[];
   }): Promise<void> {
     console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
     try {
@@ -247,6 +250,9 @@ export class GrowspaceAPI extends BaseAPI {
       if (data.flowerLateDayHours) payload.flower_late_day_hours = data.flowerLateDayHours;
       if (data.minimumSourceAirTemperature)
         payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
+      if (data.sensorGroups) payload.sensor_groups = data.sensorGroups;
+      if (data.sensorCoordinates) payload.sensor_coordinates = data.sensorCoordinates;
+      if (data.irrigationTanks) payload.irrigation_tanks = data.irrigationTanks;
 
       await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
       console.log('[GrowspaceAPI:configureEnvironment] Service Called');

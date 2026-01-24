@@ -161,6 +161,7 @@ export enum ConfigTab {
   EDIT_GROWSPACE = 'edit_growspace',
   ENVIRONMENT = 'environment',
   DEHUMIDIFIER = 'dehumidifier',
+  SENSOR_GROUPS = 'sensor_groups',
 }
 
 export enum ViewMode {

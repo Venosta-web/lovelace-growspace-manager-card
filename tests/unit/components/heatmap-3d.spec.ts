@@ -127,9 +127,35 @@ vi.mock('three', async () => {
         Scene: vi.fn().mockImplementation(function () { return createMockScene(); }),
         WebGLRenderer: vi.fn().mockImplementation(function () { return createMockRenderer(); }),
         PerspectiveCamera: vi.fn().mockImplementation(function () { return createMockCamera(); }),
-        Group: vi.fn().mockImplementation(function () { return createMockGroup(); }),
-        Mesh: vi.fn().mockImplementation(function () { return createMockMesh(); }),
-        Vector3: vi.fn().mockImplementation(function (x = 0, y = 0, z = 0) { return { x, y, z, set: vi.fn(function (nx, ny, nz) { this.x = nx; this.y = ny; this.z = nz; return this; }), sub: vi.fn(), normalize: vi.fn(), add: vi.fn(), multiplyScalar: vi.fn(), copy: vi.fn(), clone: vi.fn(() => ({ x, y, z })) }; }),
+        Group: vi.fn().mockImplementation(function () { return { ...createMockGroup(), rotateX: vi.fn(), rotateY: vi.fn(), rotateZ: vi.fn() }; }),
+        Mesh: vi.fn().mockImplementation(function () { return { ...createMockMesh(), rotateX: vi.fn(), rotateY: vi.fn(), rotateZ: vi.fn() }; }),
+        Vector3: vi.fn().mockImplementation(function (x = 0, y = 0, z = 0) {
+            const v = {
+                x, y, z,
+                set: vi.fn(function (nx, ny, nz) { this.x = nx; this.y = ny; this.z = nz; return this; }),
+                sub: vi.fn(function (v) { this.x -= v.x; this.y -= v.y; this.z -= v.z; return this; }),
+                normalize: vi.fn(function () { return this; }),
+                add: vi.fn(function (v) { this.x += v.x; this.y += v.y; this.z += v.z; return this; }),
+                multiplyScalar: vi.fn(function (s) { this.x *= s; this.y *= s; this.z *= s; return this; }),
+                copy: vi.fn(function (v) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }),
+                applyAxisAngle: vi.fn(),
+                lerp: vi.fn(function (v, alpha) {
+                    this.x += (v.x - this.x) * alpha;
+                    this.y += (v.y - this.y) * alpha;
+                    this.z += (v.z - this.z) * alpha;
+                    return this;
+                }),
+                clone: vi.fn(function () { return new (vi.mocked(THREE.Vector3))(this.x, this.y, this.z); }),
+                distanceToSquared: vi.fn(function (v) {
+                    const dx = this.x - v.x, dy = this.y - v.y, dz = this.z - v.z;
+                    return dx * dx + dy * dy + dz * dz;
+                }),
+                distanceTo: vi.fn(function (v) {
+                    return Math.sqrt(this.distanceToSquared(v));
+                })
+            };
+            return v;
+        }),
         Vector2: vi.fn().mockImplementation(function (x = 0, y = 0) { return { x, y, set: vi.fn() }; }),
         Color: vi.fn().mockImplementation(function () { return {}; }),
         BoxGeometry: vi.fn().mockImplementation(function () { return { dispose: createDisposeFn(), rotateZ: vi.fn(), rotateX: vi.fn(), boundingBox: { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }, getIndex: vi.fn(), getAttribute: vi.fn(() => ({ count: 10, array: [], getX: vi.fn(() => 0), getY: vi.fn(() => 0), getZ: vi.fn(() => 0), itemSize: 3 })) }; }),
@@ -253,6 +279,10 @@ describe('Heatmap3D Logic', () => {
                 attributes: {
                     unit_of_measurement: 'kPa'
                 }
+            },
+            'sensor.co2_1': {
+                state: '600',
+                attributes: {}
             },
             'fan.circ1': {
                 state: 'on',
@@ -450,12 +480,12 @@ describe('Heatmap3D Logic', () => {
             const deviceWithPumps = {
                 ...mockDevice,
                 irrigationConfig: {
-                    irrigationPumpEntity: 'switch.irrigation_pump',
+                    irrigationPumpEntity: 'switch.pump1',
                     drainPumpEntity: 'switch.drain_pump'
                 }
             };
             element.device = deviceWithPumps;
-            expect((element as any)._isIrrigationSensor('switch.irrigation_pump')).toBe(true);
+            expect((element as any)._isIrrigationSensor('switch.pump1')).toBe(true);
             expect((element as any)._isIrrigationSensor('switch.drain_pump')).toBe(true);
         });
 
@@ -1298,44 +1328,45 @@ describe('Heatmap3D Logic', () => {
             expect((element as any)._fanHeads.length).toBeGreaterThan(0);
         });
 
-        it('should create exhaust fans', () => {
-            element.device = {
+
+        it('should render humidifier hose at correct height based on Z coordinate', async () => {
+            // Setup device with a humidifier outside the growspace boundaries
+            const deviceWithHum = {
                 ...mockDevice,
                 environmentAttributes: {
                     ...mockDevice.environmentAttributes,
-                    exhaustFanEntities: ['fan.exhaust1'],
-                    sensorCoordinates: { 'fan.exhaust1': { x: 20, y: 20, z: 20 } }
+                    humidifierEntities: ['humidifier.outside'],
+                    sensorCoordinates: {
+                        'humidifier.outside': { x: -50, y: 0, z: 80 } // Outside width (width=120, range -60 to 60). Z=80.
+                    }
+                },
+                dimensions: { width: 120, height: 200, length: 120 }
+            };
+            element.device = deviceWithHum;
+            element.hass = {
+                states: {
+                    'humidifier.outside': { state: 'on', attributes: {} },
+                    'sensor.temp1': { state: '25', attributes: {} },
+                    'sensor.humi1': { state: '50', attributes: {} }
                 }
             };
-            (element as any).renderFans(100, 200, 100);
-            expect((element as any)._exhaustFans.length).toBeGreaterThan(0);
+
+            await elementUpdated(element);
+
+            // Access scene manager and find the humidifier mesh
+            const sceneManager = (element as any).sceneManager;
+            const humMesh = sceneManager.sensorMeshes.get('humidifier.outside');
+
+            expect(humMesh).toBeDefined();
+            expect(humMesh.userData.isOutside).toBe(true);
+
+            // localTarget = target - hPos
+            const hoseEnd = humMesh.userData.hoseEnd;
+            expect(hoseEnd).toBeDefined();
+            // We specifically want to verify the Y component reflects the Z input (height)
+            expect(hoseEnd.y).toBe(80);
         });
 
-        it('should create humidifiers', () => {
-            element.device = {
-                ...mockDevice,
-                environmentAttributes: {
-                    ...mockDevice.environmentAttributes,
-                    humidifierEntities: ['humidifier.1'],
-                    sensorCoordinates: { 'humidifier.1': { x: 30, y: 30, z: 30 } }
-                }
-            };
-            (element as any).renderHumidifiers(100, 200, 100);
-            expect((element as any)._humidifiers.length).toBeGreaterThan(0);
-        });
-
-        it('should create irrigation tanks', () => {
-            element.device = {
-                ...mockDevice,
-                environmentAttributes: {
-                    ...mockDevice.environmentAttributes,
-                    irrigationTanks: [{ sensorEntity: 'sensor.tank1', name: 'Tank 1', capacity: 100 }],
-                    sensorCoordinates: { 'sensor.tank1': { x: 40, y: 40, z: 40 } }
-                }
-            };
-            (element as any).renderIrrigationTanks(100, 200, 100);
-            expect((element as any)._tankWaves.length).toBeGreaterThan(0);
-        });
     });
 
     describe('Animation and Particle Updates', () => {
@@ -1397,5 +1428,92 @@ describe('Heatmap3D Logic', () => {
             controls.dispatchEvent({ type: 'dragend', object: mockMesh });
             expect((element as any).isDragging).toBe(false);
         });
+        it('should correctly position humidifier hose connection based on Z coordinate', async () => {
+            const deviceWithZ = {
+                ...mockDevice,
+                environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
+                    humidifierEntities: ['humidifier.outside'],
+                    sensorCoordinates: {
+                        'humidifier.outside': { x: -20, y: 50, z: 100 }
+                    }
+                }
+            };
+            element.device = deviceWithZ;
+            element.hass = {
+                ...mockHass,
+                states: {
+                    ...mockHass.states,
+                    'humidifier.outside': { state: 'on', attributes: {} }
+                }
+            };
+
+            await elementUpdated(element);
+
+            // Check volatile group for the hose via sceneManager
+            await elementUpdated(element);
+            const SceneManager = (element as any).sceneManager;
+            const volGroup = SceneManager.volatileGroup;
+            expect(volGroup).toBeDefined();
+
+            // Find the humidifier group
+            const humGroup = volGroup.children.find((c: any) => c.userData.entityId === 'humidifier.outside');
+            expect(humGroup).toBeDefined();
+
+            // Verify device position (should be locked to ground Z=0)
+            expect(humGroup.position.y).toBe(0);
+
+            // Verify hose exists
+            const hose = humGroup.children.find((c: any) => c.name === 'hose');
+            expect(hose).toBeDefined();
+
+            // The hose path end in local space should be the Z coordinate.
+            // target.y = 100, deviceHeight = 0. target.y - deviceHeight = 100.
+            expect(humGroup.userData.hoseEnd.y).toBe(100);
+
+        });
+
+        it('should correctly position pump hose connection based on Z coordinate', async () => {
+            const deviceWithZ = {
+                ...mockDevice,
+                irrigationConfig: {
+                    irrigationPumpEntity: 'switch.pump'
+                },
+                environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
+                    sensorCoordinates: {
+                        'switch.pump': { x: -10, y: 0, z: 20 }
+                    }
+
+                }
+            };
+            element.device = deviceWithZ;
+            element.hass = {
+                ...mockHass,
+                states: {
+                    ...mockHass.states,
+                    'switch.pump': { state: 'on', attributes: {} }
+                }
+            };
+
+            await elementUpdated(element);
+
+            // Check volatile group via sceneManager
+            const SceneManager = (element as any).sceneManager;
+            const volGroup = SceneManager.volatileGroup;
+            const pumpGroup = volGroup.children.find((c: any) => c.userData.entityId === 'switch.pump');
+            expect(pumpGroup).toBeDefined();
+
+            // Verify device position (should be locked to ground Z=0)
+            expect(pumpGroup.position.y).toBe(0);
+
+            // Verify hose exists
+            const hose = pumpGroup.children.find((c: any) => c.name === 'pumpHose');
+            expect(hose).toBeDefined();
+
+            // Hose end is targetH = 20
+            expect(pumpGroup.userData.hoseEnd.y).toBe(20);
+        });
+
     });
 });

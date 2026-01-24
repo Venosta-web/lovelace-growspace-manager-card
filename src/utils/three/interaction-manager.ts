@@ -8,11 +8,13 @@ import { PlantUtils } from '../plant-utils';
 export class InteractionManager {
     private sceneManager: SceneManager;
     private container: HTMLElement;
-    private dragControls?: DragControls;
+    public dragControls?: DragControls;
     private hoveredPlant: any = null;
     private tooltipPos = { x: 0, y: 0 };
     private editMode: boolean = false;
+    public isDragging: boolean = false;
     private linkMode: boolean = false;
+
     private selectedForLink: string | null = null;
     private mouseCallback?: (event: string, data?: any) => void;
 
@@ -157,17 +159,21 @@ export class InteractionManager {
             this.dragControls = new DragControls(draggableObjects, this.sceneManager.camera, this.sceneManager.renderer.domElement);
 
             this.dragControls.addEventListener('dragstart', () => {
+                this.isDragging = true;
                 this.sceneManager.controls.enabled = false;
             });
+
 
             this.dragControls.addEventListener('drag', (event: any) => {
                 if (this.mouseCallback) this.mouseCallback('drag', { object: event.object });
             });
 
             this.dragControls.addEventListener('dragend', (event: any) => {
+                this.isDragging = false;
                 this.sceneManager.controls.enabled = true;
                 if (this.mouseCallback) this.mouseCallback('dragend', { object: event.object });
             });
+
         }
     }
 

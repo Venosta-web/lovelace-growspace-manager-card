@@ -66,10 +66,25 @@ export class EquipmentRenderer extends BaseRenderer {
                 volatileGroup.add(group);
             }
 
-            group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+            const yPos = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+            group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
             if (coords.rotation) group.rotation.y = THREE.MathUtils.degToRad(coords.rotation);
 
-            group.userData = { ...group.userData, entityId, intensity, isOutside, isDehumidifier: isDehum, types: isDehum ? ['dehumidifier'] : ['humidifier'] };
+
+            const logicalZ = coords.z !== undefined ? coords.z : 0;
+            const updatedUserData = {
+                ...group.userData,
+                entityId,
+                intensity,
+                isOutside,
+                logicalZ,
+                targetH: logicalZ,
+                isDehumidifier: isDehum,
+                types: isDehum ? ['dehumidifier'] : ['humidifier']
+            };
+            group.userData = updatedUserData;
+
+
             this.context.sensorMeshes.set(entityId, group);
         });
 
@@ -133,9 +148,11 @@ export class EquipmentRenderer extends BaseRenderer {
                 group.position.set(tankPos.x, 2, tankPos.z); // Slightly above bottom
                 if (tankMesh.rotation.y) group.rotation.y = tankMesh.rotation.y;
             } else {
-                group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+                const yPos = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+                group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
                 if (coords.rotation) group.rotation.y = THREE.MathUtils.degToRad(coords.rotation);
             }
+
 
             const unlinkIcon = group.getObjectByName('unlinkIcon') as CSS2DObject;
             if (unlinkIcon) {
@@ -152,7 +169,21 @@ export class EquipmentRenderer extends BaseRenderer {
                 }
             }
 
-            group.userData = { ...group.userData, entityId, isActive, isOutside, isDrain, types: isDrain ? ['drain_pump'] : ['irrigation_pump'], tankId };
+            const logicalZ = coords.z !== undefined ? coords.z : 0;
+            const updatedUserData = {
+                ...group.userData,
+                entityId,
+                isActive,
+                isOutside,
+                logicalZ,
+                targetH: logicalZ,
+                isDrain,
+                types: isDrain ? ['drain_pump'] : ['irrigation_pump'],
+                tankId
+            };
+            group.userData = updatedUserData;
+
+
             this.context.sensorMeshes.set(entityId, group);
         });
 
@@ -216,6 +247,9 @@ export class EquipmentRenderer extends BaseRenderer {
     }
 
     private updateHumidifierModel(group: THREE.Group, intensity: number, isOutside: boolean, coords: any, w: number, d: number, h: number, targetH: number) {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+
+
         // 1. Update Intensity (Digit Panel)
         const oldIntensity = group.userData.intensity;
         if (oldIntensity !== intensity) {
@@ -244,7 +278,7 @@ export class EquipmentRenderer extends BaseRenderer {
             }
 
             const outputPoint = new THREE.Vector3(0, 52.5, 0);
-            const hPos = new THREE.Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new THREE.Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const target = new THREE.Vector3(
                 Math.max(-w / 2, Math.min(w / 2, hPos.x)),
                 Math.max(0, Math.min(h, targetH)),
@@ -272,6 +306,9 @@ export class EquipmentRenderer extends BaseRenderer {
     }
 
     private updatePumpModel(group: THREE.Group, isDrain: boolean, isOutside: boolean, coords: any, w: number, d: number, h: number, targetH: number, isActive: boolean, tankMesh?: THREE.Object3D | null) {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+
+
         // Update Hose if state or target height changed
         if ((isOutside || tankMesh) && (group.userData.isActive !== isActive || group.userData.isOutside !== isOutside || group.userData.targetH !== targetH || group.userData.tankId !== (tankMesh as any)?.userData?.entityId)) {
             const oldHose = group.getObjectByName('pumpHose');
@@ -280,7 +317,7 @@ export class EquipmentRenderer extends BaseRenderer {
                 this.disposeObject(oldHose);
             }
 
-            const hPos = new THREE.Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new THREE.Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const targetPos = new THREE.Vector3(
                 Math.max(-w / 2, Math.min(w / 2, hPos.x)),
                 Math.max(0, Math.min(h, targetH)),
@@ -366,8 +403,10 @@ export class EquipmentRenderer extends BaseRenderer {
 
         const outputPoint = new THREE.Vector3(0, 52.5, 0);
 
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         if (isOutside) {
-            const hPos = new THREE.Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new THREE.Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
+
             const target = new THREE.Vector3(
                 Math.max(-w / 2, Math.min(w / 2, hPos.x)),
                 Math.max(0, Math.min(h, targetH)),
@@ -408,7 +447,10 @@ export class EquipmentRenderer extends BaseRenderer {
             group.add(digits);
         }
 
+        group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
+
         return group;
+
     }
 
     private createDehumidifierModel(intensity: number, isOutside: boolean, coords: any, w: number, d: number, h: number, targetH: number) {
@@ -421,8 +463,10 @@ export class EquipmentRenderer extends BaseRenderer {
 
         const outputPoint = new THREE.Vector3(0, 52, 0);
 
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         if (isOutside) {
-            const hPos = new THREE.Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new THREE.Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
+
             const target = new THREE.Vector3(
                 Math.max(-w / 2, Math.min(w / 2, hPos.x)),
                 Math.max(0, Math.min(h, targetH)),
@@ -457,10 +501,14 @@ export class EquipmentRenderer extends BaseRenderer {
             group.add(digits);
         }
 
+        group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
         return group;
+
     }
 
     private createPumpModel(isDrain: boolean, isOutside: boolean, coords: any, frameWidth: number, frameDepth: number, frameHeight: number, hoseTargetHeight: number, isActive: boolean, tankMesh?: THREE.Object3D | null): THREE.Group {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+
         const group = new THREE.Group();
 
         const bodyRadius = 8;
@@ -536,7 +584,8 @@ export class EquipmentRenderer extends BaseRenderer {
         const outputPoint = new THREE.Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
 
         if (isOutside) {
-            const hPos = new THREE.Vector3(coords.x - frameWidth / 2, 0, coords.y - frameDepth / 2);
+            const hPos = new THREE.Vector3(coords.x - frameWidth / 2, deviceHeight, coords.y - frameDepth / 2);
+
             const targetPos = new THREE.Vector3(
                 Math.max(-frameWidth / 2, Math.min(frameWidth / 2, hPos.x)),
                 Math.max(0, Math.min(frameHeight, hoseTargetHeight)),
@@ -574,7 +623,10 @@ export class EquipmentRenderer extends BaseRenderer {
             group.userData.hoseEnd = outputPoint;
         }
 
+        group.userData = { ...group.userData, isActive, isOutside, targetH: hoseTargetHeight, logicalZ: hoseTargetHeight };
         return group;
+
+
     }
 
     private createExhaustModel(speed: number, rotation: number, entityId: string) {

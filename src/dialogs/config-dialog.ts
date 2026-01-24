@@ -21,6 +21,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
+import './sensor-group-dialog';
 import {
   GrowspaceDevice,
   DehumidifierStage,
@@ -89,8 +90,18 @@ export class ConfigDialog extends LitElement {
     string,
     Record<string, { on: number; off: number }>
   > = {};
+  @state() private envSensorCoordinates: Record<
+    string,
+    { x: number; y: number; z: number; rotation?: number }
+  > = {};
+  @state() private envIrrigationTanks: any[] = [];
 
   @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
+
+  // Sensor Groups
+  @state() private envSensorGroups: import('../types').SensorGroup[] = [];
+  @state() private _showGroupDialog = false;
+  @state() private _editingGroup: import('../types').SensorGroup | undefined;
 
   static styles = [
     dialogStyles,
@@ -145,6 +156,10 @@ export class ConfigDialog extends LitElement {
       .config-tab.active {
         color: var(--primary-color, #4caf50);
         border-bottom-color: var(--primary-color, #4caf50);
+      }
+      .config-tab.active.sensor-groups-tab {
+         color: var(--accent-color, #2980b9);
+         border-bottom-color: var(--accent-color, #2980b9);
       }
       .config-content {
         padding: 24px;
@@ -297,6 +312,9 @@ export class ConfigDialog extends LitElement {
       this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
       this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
       this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
+      this.envSensorGroups = environmentData.sensorGroups || [];
+      this.envSensorCoordinates = environmentData.sensorCoordinates || {};
+      this.envIrrigationTanks = environmentData.irrigationTanks || [];
 
       // Also pre-select for Edit/Delete actions
       if (environmentData.selectedGrowspaceId) {
@@ -310,6 +328,8 @@ export class ConfigDialog extends LitElement {
   }
 
   private _close() {
+    // Prevent closing if we are showing the sub-dialog (which implies the main dialog unmounted)
+    if (this._showGroupDialog) return;
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
@@ -358,6 +378,9 @@ export class ConfigDialog extends LitElement {
           dehumidifierThresholds: this.envDehumidifierThresholds,
           soilMoistureSensor: this.envSoilMoistureSensor,
           dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
+          sensorGroups: this.envSensorGroups,
+          sensorCoordinates: this.envSensorCoordinates,
+          irrigationTanks: this.envIrrigationTanks,
         } as EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
@@ -435,6 +458,21 @@ export class ConfigDialog extends LitElement {
   render() {
     if (!this.open) return html``;
 
+    if (this._showGroupDialog) {
+      return html`
+        <sensor-group-dialog
+          .open=${true}
+          .hass=${this.hass}
+          .sensorGroup=${this._editingGroup}
+          @close=${(e: Event) => {
+          e.stopPropagation();
+          this._showGroupDialog = false;
+        }}
+          @save-sensor-group=${this._handleSaveGroup}
+        ></sensor-group-dialog>
+      `;
+    }
+
     return html`
       <ha-dialog
         open
@@ -496,6 +534,13 @@ export class ConfigDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
             </div>
+            <div
+              class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.SENSOR_GROUPS)}
+            >
+               <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
+              3D Heatmap
+            </div>
           </div>
 
           <!--Content -->
@@ -503,9 +548,11 @@ export class ConfigDialog extends LitElement {
             ${this.currentTab === ConfigTab.ADD_GROWSPACE ? this.renderAddGrowspaceTab() : nothing}
             ${this.currentTab === ConfigTab.EDIT_GROWSPACE
         ? this.renderEditGrowspaceTab()
-        : nothing}
+        : nothing
+      }
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
+            ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : nothing}
           </div>
 
           <!--Actions -->
@@ -517,14 +564,16 @@ export class ConfigDialog extends LitElement {
                     Add Growspace
                   </button>
                 `
-        : nothing}
-            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
+        : nothing
+      }
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
         ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
                   </button>
                 `
-        : nothing}
+        : nothing
+      }
             ${this.currentTab === ConfigTab.EDIT_GROWSPACE && !this._showDeleteConfirm
         ? html`
                   <button
@@ -548,11 +597,81 @@ export class ConfigDialog extends LitElement {
                     Save Changes
                   </button>
                 `
-        : nothing}
+        : nothing
+      }
           </div>
         </div>
       </ha-dialog>
     `;
+  }
+
+  private renderSensorGroupsTab() {
+    return html`
+      <div class="detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3>Sensor Groups</h3>
+          <button class="md3-button tonal" @click=${this._openAddGroup}>
+            Add Group
+          </button>
+        </div>
+        
+        ${this.envSensorGroups.length === 0
+        ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No sensor groups configured.</div>`
+        : html`
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${this.envSensorGroups.map(group => html`
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+                  <div>
+                    <div style="font-weight:500;">${group.name}</div>
+                    <div style="font-size:0.8rem; color:var(--secondary-text-color);">
+                      X: ${group.x}, Y: ${group.y}, Z: ${group.z}
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button class="md3-button text" @click=${() => this._editGroup(group)} style="padding:8px; min-width:auto;">
+                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                    </button>
+                    <button class="md3-button text error" @click=${() => this._deleteGroup(group.id)} style="padding:8px; min-width:auto;">
+                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              `)}
+            </div>
+          `}
+      </div>
+    `;
+  }
+
+  private _openAddGroup() {
+    this._editingGroup = undefined;
+    this._showGroupDialog = true;
+  }
+
+  private _editGroup(group: import('../types').SensorGroup) {
+    this._editingGroup = group;
+    this._showGroupDialog = true;
+  }
+
+  private _deleteGroup(id: string) {
+    this.envSensorGroups = this.envSensorGroups.filter(g => g.id !== id);
+  }
+
+  private _handleSaveGroup(e: CustomEvent) {
+    const group = e.detail.group as import('../types').SensorGroup;
+    const index = this.envSensorGroups.findIndex(g => g.id === group.id);
+
+    if (index >= 0) {
+      // Update existing
+      const newGroups = [...this.envSensorGroups];
+      newGroups[index] = group;
+      this.envSensorGroups = newGroups;
+    } else {
+      // Add new
+      this.envSensorGroups = [...this.envSensorGroups, group];
+    }
+
+    this._showGroupDialog = false;
   }
 
   private renderAddGrowspaceTab() {

@@ -195,6 +195,9 @@ export interface SerializedEnvironmentAttributes {
   sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   sensor_types?: Record<string, string>;
   pump_tank_links?: Record<string, string>;
+
+  // Sensor Groups
+  sensor_groups?: SensorGroup[];
 }
 
 
@@ -266,6 +269,7 @@ export interface EnvironmentAttributes {
   sensorTypes?: Record<string, string>;
   pump_tank_links?: Record<string, string>;
   activeEvents?: Record<string, { start: string; duration: number }>;
+  sensorGroups?: SensorGroup[];
 }
 
 
@@ -563,6 +567,17 @@ export interface StrainLibraryDialogState {
   returnPayload?: unknown;
 }
 
+export interface SensorGroup {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+  temperature_sensors: string[];
+  humidity_sensors: string[];
+  vpd_sensors: string[];
+}
+
 export interface EnvironmentConfigData {
   selectedGrowspaceId: string;
   temperatureSensor: string;
@@ -594,6 +609,9 @@ export interface EnvironmentConfigData {
   dehumidifierControlEnabled: boolean;
 
   soilMoistureSensor: string;
+  sensorGroups?: SensorGroup[];
+  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+  irrigationTanks?: any[];
 }
 
 export interface EnvironmentConfigEventDetail {
@@ -617,10 +635,13 @@ export interface EnvironmentConfigEventDetail {
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   soilMoistureSensor?: string | null;
   dehumidifierControlEnabled: boolean;
+  sensorGroups?: SensorGroup[];
+  sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+  irrigationTanks?: any[];
 }
 
 export interface ConfigDialogState {
-  currentTab: 'add_growspace' | 'environment' | 'dehumidifier';
+  currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' | 'sensor_groups';
   environmentData: EnvironmentConfigData;
 }
 

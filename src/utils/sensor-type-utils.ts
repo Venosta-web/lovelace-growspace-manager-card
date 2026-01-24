@@ -28,8 +28,12 @@ export class SensorTypeUtils {
 
     static isTemperature(device: GrowspaceDevice | undefined, hass: any, entityId: string): boolean {
         if (!device || !entityId) return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId]) return sensorTypes[entityId] === 'temperature';
+
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.temperature_sensors.includes(entityId))) return true;
 
         if (!hass) return false;
         const state = hass.states[entityId];
@@ -42,8 +46,12 @@ export class SensorTypeUtils {
 
     static isHumidity(device: GrowspaceDevice | undefined, hass: any, entityId: string): boolean {
         if (!device || !entityId) return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId]) return sensorTypes[entityId] === 'humidity';
+
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.humidity_sensors.includes(entityId))) return true;
 
         if (this.isLight(device, hass, entityId)) return false;
 
@@ -58,8 +66,12 @@ export class SensorTypeUtils {
 
     static isVPD(device: GrowspaceDevice | undefined, hass: any, entityId: string): boolean {
         if (!device || !entityId) return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId]) return sensorTypes[entityId] === 'vpd';
+
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.vpd_sensors.includes(entityId))) return true;
 
         if (!hass) return false;
         const state = hass.states[entityId];

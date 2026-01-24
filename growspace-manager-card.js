@@ -15,6 +15,7 @@ var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
 var mdiChartTimelineVariant = "M3,14L3.5,14.07L8.07,9.5C7.89,8.85 8.06,8.11 8.59,7.59C9.37,6.8 10.63,6.8 11.41,7.59C11.94,8.11 12.11,8.85 11.93,9.5L14.5,12.07L15,12C15.18,12 15.35,12 15.5,12.07L19.07,8.5C19,8.35 19,8.18 19,8A2,2 0 0,1 21,6A2,2 0 0,1 23,8A2,2 0 0,1 21,10C20.82,10 20.65,10 20.5,9.93L16.93,13.5C17,13.65 17,13.82 17,14A2,2 0 0,1 15,16A2,2 0 0,1 13,14L13.07,13.5L10.5,10.93C10.18,11 9.82,11 9.5,10.93L4.93,15.5L5,16A2,2 0 0,1 3,18A2,2 0 0,1 1,16A2,2 0 0,1 3,14Z";
+var mdiChartTree = "M14,6H22V22H14V6M2,4H22V2H2V4M2,8H12V6H2V8M9,22H12V10H9V22M2,22H7V10H2V22Z";
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
 var mdiCheckboxMarked = "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z";
@@ -221,6 +222,7 @@ var ConfigTab;
     ConfigTab["EDIT_GROWSPACE"] = "edit_growspace";
     ConfigTab["ENVIRONMENT"] = "environment";
     ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
+    ConfigTab["SENSOR_GROUPS"] = "sensor_groups";
 })(ConfigTab || (ConfigTab = {}));
 var ViewMode;
 (function (ViewMode) {
@@ -5057,6 +5059,41 @@ class GrowspaceAdapter {
             flowerWeek: wsData.flower_week,
             airExchange: wsData.air_exchange,
         };
+        // Normalize Coordinates (Merge Group ones into main map for UI consumption)
+        const sensorCoordinates = { ...wsData.sensor_coordinates };
+        // 1. Merge Group Coordinates
+        wsData.sensor_groups?.forEach((g) => {
+            const groupCoords = { x: g.x, y: g.y, z: g.z };
+            [...(g.temperature_sensors || []), ...(g.humidity_sensors || []), ...(g.vpd_sensors || [])].forEach(id => {
+                if (!sensorCoordinates[id]) {
+                    sensorCoordinates[id] = groupCoords;
+                }
+            });
+        });
+        // 2. Backfill Defaults for missing known sensors (Lights, CO2, etc.)
+        // This ensures they appear in SceneManager/SensorRenderer even if not explicitly positioned
+        const midX = (wsData.dimensions?.width || 120) / 2;
+        const midY = (wsData.dimensions?.length || wsData.dimensions?.depth || 120) / 2;
+        const defaultCoords = { x: midX, y: midY, z: 0 };
+        const ensureCoord = (id) => {
+            if (id && !sensorCoordinates[id]) {
+                sensorCoordinates[id] = { ...defaultCoords };
+            }
+        };
+        // Singles
+        ensureCoord(wsData.temperature_sensor);
+        ensureCoord(wsData.humidity_sensor);
+        ensureCoord(wsData.vpd_sensor);
+        ensureCoord(wsData.co2_sensor);
+        ensureCoord(wsData.soil_moisture_sensor);
+        ensureCoord(wsData.light_sensor);
+        // Arrays
+        wsData.temperature_sensors?.forEach(ensureCoord);
+        wsData.humidity_sensors?.forEach(ensureCoord);
+        wsData.vpd_sensors?.forEach(ensureCoord);
+        wsData.co2_sensors?.forEach(ensureCoord);
+        wsData.light_sensors?.forEach(ensureCoord);
+        wsData.soil_moisture_sensors?.forEach(ensureCoord);
         const environmentAttributes = {
             temperatureSensor: wsData.temperature_sensor,
             temperatureSensors: wsData.temperature_sensors,
@@ -5095,8 +5132,9 @@ class GrowspaceAdapter {
                 isWarning: t.is_warning,
             })),
             activeEvents: wsData.active_events,
-            sensorCoordinates: wsData.sensor_coordinates,
+            sensorCoordinates,
             sensorTypes: wsData.sensor_types,
+            sensorGroups: wsData.sensor_groups,
         };
         const stats = {
             maxVegDays: wsData.max_veg_days,
@@ -5391,6 +5429,12 @@ class GrowspaceAPI extends BaseAPI {
                 payload.flower_late_day_hours = data.flowerLateDayHours;
             if (data.minimumSourceAirTemperature)
                 payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
+            if (data.sensorGroups)
+                payload.sensor_groups = data.sensorGroups;
+            if (data.sensorCoordinates)
+                payload.sensor_coordinates = data.sensorCoordinates;
+            if (data.irrigationTanks)
+                payload.irrigation_tanks = data.irrigationTanks;
             await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
@@ -15250,6 +15294,260 @@ StrainLibraryDialog = __decorate([
     t$2('strain-library-dialog')
 ], StrainLibraryDialog);
 
+let SensorGroupDialog = class SensorGroupDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._name = '';
+        this._x = 0;
+        this._y = 0;
+        this._z = 0;
+        this._tempSensors = [];
+        this._humidSensors = [];
+        this._vpdSensors = [];
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('sensorGroup') && this.sensorGroup) {
+            this._name = this.sensorGroup.name;
+            this._x = this.sensorGroup.x;
+            this._y = this.sensorGroup.y;
+            this._z = this.sensorGroup.z;
+            this._tempSensors = [...(this.sensorGroup.temperature_sensors || [])];
+            this._humidSensors = [...(this.sensorGroup.humidity_sensors || [])];
+            this._vpdSensors = [...(this.sensorGroup.vpd_sensors || [])];
+        }
+        else if (changedProperties.has('sensorGroup') && !this.sensorGroup) {
+            this._name = '';
+            this._x = 0;
+            this._y = 0;
+            this._z = 0;
+            this._tempSensors = [];
+            this._humidSensors = [];
+            this._vpdSensors = [];
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _save() {
+        const group = {
+            id: this.sensorGroup?.id || `group_${Date.now()}`,
+            name: this._name || 'Unnamed Group',
+            x: this._x,
+            y: this._y,
+            z: this._z,
+            temperature_sensors: this._tempSensors,
+            humidity_sensors: this._humidSensors,
+            vpd_sensors: this._vpdSensors,
+        };
+        this.dispatchEvent(new CustomEvent('save-sensor-group', {
+            detail: { group },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _toggleSensor(sensorList, sensor, listName) {
+        const newList = sensorList.includes(sensor)
+            ? sensorList.filter(s => s !== sensor)
+            : [...sensorList, sensor];
+        this[listName] = newList;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const allSensors = this._getAvailableSensors();
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${''}
+        heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
+      >
+        <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChartTree}"></path></svg>
+            </div>
+            <div class="dialog-title-group">
+                <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                <div class="dialog-subtitle">Configure 3D heatmap coordinates & sensors</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            </button>
+          </div>
+
+          <div class="config-content" style="padding: 20px;">
+            <div class="group-form">
+              <md3-text-input
+                label="Group Name"
+                .value=${this._name}
+                @change=${(e) => (this._name = e.detail)}
+              ></md3-text-input>
+
+              <div class="coord-grid">
+                <md3-number-input
+                  label="X"
+                  .value=${this._x}
+                  @change=${(e) => (this._x = parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Y"
+                  .value=${this._y}
+                  @change=${(e) => (this._y = parseFloat(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Z (Optional)"
+                  .value=${this._z}
+                  @change=${(e) => (this._z = parseFloat(e.detail))}
+                ></md3-number-input>
+              </div>
+
+              <div class="sensor-columns">
+                <div class="sensor-column">
+                  <div class="column-title">Temp Sensors</div>
+                  ${allSensors.temp.map(s => this._renderCheckbox(s, this._tempSensors, '_tempSensors'))}
+                </div>
+                <div class="sensor-column">
+                  <div class="column-title">Humidity Sensors</div>
+                  ${allSensors.humid.map(s => this._renderCheckbox(s, this._humidSensors, '_humidSensors'))}
+                </div>
+                <div class="sensor-column">
+                  <div class="column-title">VPD Sensors</div>
+                  ${allSensors.vpd.map(s => this._renderCheckbox(s, this._vpdSensors, '_vpdSensors'))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="button-group" style="padding: 16px;">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._save}>
+              ${this.sensorGroup ? 'Save Changes' : 'Create Group'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderCheckbox(sensor, currentList, type) {
+        const friendlyName = this.hass.states[sensor]?.attributes.friendly_name || sensor.split('.')[1];
+        return x `
+      <label class="checkbox-item">
+        <input 
+          type="checkbox" 
+          .checked=${currentList.includes(sensor)}
+          @change=${() => this._toggleSensor(currentList, sensor, type)}
+        >
+        <div style="display:flex; flex-direction:column; min-width:0;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${friendlyName}</span>
+          <span class="entity-id">${sensor}</span>
+        </div>
+      </label>
+    `;
+    }
+    _getAvailableSensors() {
+        if (!this.hass)
+            return { temp: [], humid: [], vpd: [] };
+        const entities = Object.keys(this.hass.states);
+        const filterByClass = (cls) => entities.filter(e => this.hass.states[e].attributes.device_class === cls);
+        return {
+            temp: filterByClass('temperature').sort(),
+            humid: filterByClass('humidity').sort(),
+            vpd: entities.filter(e => e.includes('vpd')).sort()
+        };
+    }
+};
+SensorGroupDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .group-form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 8px 0;
+      }
+      .coord-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      .sensor-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 16px;
+        margin-top: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 8px;
+      }
+      .sensor-column {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .column-title {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .checkbox-item input {
+        cursor: pointer;
+      }
+      .entity-id {
+        font-size: 0.7rem;
+        color: var(--secondary-text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean })
+], SensorGroupDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SensorGroupDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SensorGroupDialog.prototype, "sensorGroup", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_name", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_x", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_y", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_z", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_tempSensors", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_humidSensors", void 0);
+__decorate([
+    r$2()
+], SensorGroupDialog.prototype, "_vpdSensors", void 0);
+SensorGroupDialog = __decorate([
+    t$2('sensor-group-dialog')
+], SensorGroupDialog);
+
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -15291,7 +15589,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envSoilMoistureSensor = '';
         this.envDehumidifierControlEnabled = false;
         this.envDehumidifierThresholds = {};
+        this.envSensorCoordinates = {};
+        this.envIrrigationTanks = [];
         this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
+        // Sensor Groups
+        this.envSensorGroups = [];
+        this._showGroupDialog = false;
         this._showDeleteConfirm = false;
     }
     willUpdate(changedProperties) {
@@ -15338,6 +15641,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
             this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
             this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
+            this.envSensorGroups = environmentData.sensorGroups || [];
+            this.envSensorCoordinates = environmentData.sensorCoordinates || {};
+            this.envIrrigationTanks = environmentData.irrigationTanks || [];
             // Also pre-select for Edit/Delete actions
             if (environmentData.selectedGrowspaceId) {
                 console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
@@ -15346,6 +15652,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     _close() {
+        // Prevent closing if we are showing the sub-dialog (which implies the main dialog unmounted)
+        if (this._showGroupDialog)
+            return;
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _switchTab(tab) {
@@ -15387,6 +15696,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 dehumidifierThresholds: this.envDehumidifierThresholds,
                 soilMoistureSensor: this.envSoilMoistureSensor,
                 dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
+                sensorGroups: this.envSensorGroups,
+                sensorCoordinates: this.envSensorCoordinates,
+                irrigationTanks: this.envIrrigationTanks,
             },
             bubbles: true,
             composed: true,
@@ -15450,6 +15762,20 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     render() {
         if (!this.open)
             return x ``;
+        if (this._showGroupDialog) {
+            return x `
+        <sensor-group-dialog
+          .open=${true}
+          .hass=${this.hass}
+          .sensorGroup=${this._editingGroup}
+          @close=${(e) => {
+                e.stopPropagation();
+                this._showGroupDialog = false;
+            }}
+          @save-sensor-group=${this._handleSaveGroup}
+        ></sensor-group-dialog>
+      `;
+        }
         return x `
       <ha-dialog
         open
@@ -15511,6 +15837,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
             </div>
+            <div
+              class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.SENSOR_GROUPS)}
+            >
+               <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
+              3D Heatmap
+            </div>
           </div>
 
           <!--Content -->
@@ -15521,6 +15854,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             : E}
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : E}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : E}
+            ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : E}
           </div>
 
           <!--Actions -->
@@ -15533,7 +15867,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   </button>
                 `
             : E}
-            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER].includes(this.currentTab)
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
@@ -15568,6 +15902,69 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
       </ha-dialog>
     `;
+    }
+    renderSensorGroupsTab() {
+        return x `
+      <div class="detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3>Sensor Groups</h3>
+          <button class="md3-button tonal" @click=${this._openAddGroup}>
+            Add Group
+          </button>
+        </div>
+        
+        ${this.envSensorGroups.length === 0
+            ? x `<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No sensor groups configured.</div>`
+            : x `
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${this.envSensorGroups.map(group => x `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+                  <div>
+                    <div style="font-weight:500;">${group.name}</div>
+                    <div style="font-size:0.8rem; color:var(--secondary-text-color);">
+                      X: ${group.x}, Y: ${group.y}, Z: ${group.z}
+                    </div>
+                  </div>
+                  <div style="display:flex; gap:8px;">
+                    <button class="md3-button text" @click=${() => this._editGroup(group)} style="padding:8px; min-width:auto;">
+                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                    </button>
+                    <button class="md3-button text error" @click=${() => this._deleteGroup(group.id)} style="padding:8px; min-width:auto;">
+                      <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              `)}
+            </div>
+          `}
+      </div>
+    `;
+    }
+    _openAddGroup() {
+        this._editingGroup = undefined;
+        this._showGroupDialog = true;
+    }
+    _editGroup(group) {
+        this._editingGroup = group;
+        this._showGroupDialog = true;
+    }
+    _deleteGroup(id) {
+        this.envSensorGroups = this.envSensorGroups.filter(g => g.id !== id);
+    }
+    _handleSaveGroup(e) {
+        const group = e.detail.group;
+        const index = this.envSensorGroups.findIndex(g => g.id === group.id);
+        if (index >= 0) {
+            // Update existing
+            const newGroups = [...this.envSensorGroups];
+            newGroups[index] = group;
+            this.envSensorGroups = newGroups;
+        }
+        else {
+            // Add new
+            this.envSensorGroups = [...this.envSensorGroups, group];
+        }
+        this._showGroupDialog = false;
     }
     renderAddGrowspaceTab() {
         return x `
@@ -16196,6 +16593,10 @@ ConfigDialog.styles = [
         color: var(--primary-color, #4caf50);
         border-bottom-color: var(--primary-color, #4caf50);
       }
+      .config-tab.active.sensor-groups-tab {
+         color: var(--accent-color, #2980b9);
+         border-bottom-color: var(--accent-color, #2980b9);
+      }
       .config-content {
         padding: 24px;
         overflow-y: auto;
@@ -16406,7 +16807,22 @@ __decorate([
 ], ConfigDialog.prototype, "envDehumidifierThresholds", void 0);
 __decorate([
     r$2()
+], ConfigDialog.prototype, "envSensorCoordinates", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envIrrigationTanks", void 0);
+__decorate([
+    r$2()
 ], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envSensorGroups", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_showGroupDialog", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_editingGroup", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
@@ -22983,6 +23399,9 @@ let DialogHost = class DialogHost extends i$3 {
                 exhaustFanEntities: detail.exhaustFanEntities,
                 humidifierEntities: detail.humidifierEntities,
                 dehumidifierEntities: detail.dehumidifierEntities,
+                sensorGroups: detail.sensorGroups,
+                sensorCoordinates: detail.sensorCoordinates,
+                irrigationTanks: detail.irrigationTanks,
             });
             this.store.showToast('Environment configured successfully!', 'success');
             await this.store.refreshData();
@@ -89213,9 +89632,13 @@ class SensorTypeUtils {
     static isTemperature(device, hass, entityId) {
         if (!device || !entityId)
             return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId])
             return sensorTypes[entityId] === 'temperature';
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.temperature_sensors.includes(entityId)))
+            return true;
         if (!hass)
             return false;
         const state = hass.states[entityId];
@@ -89229,9 +89652,13 @@ class SensorTypeUtils {
     static isHumidity(device, hass, entityId) {
         if (!device || !entityId)
             return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId])
             return sensorTypes[entityId] === 'humidity';
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.humidity_sensors.includes(entityId)))
+            return true;
         if (this.isLight(device, hass, entityId))
             return false;
         if (!hass)
@@ -89247,9 +89674,13 @@ class SensorTypeUtils {
     static isVPD(device, hass, entityId) {
         if (!device || !entityId)
             return false;
-        const sensorTypes = device.environmentAttributes?.sensorTypes;
+        const env = device.environmentAttributes;
+        const sensorTypes = env?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId])
             return sensorTypes[entityId] === 'vpd';
+        // Check Sensor Groups
+        if (env?.sensorGroups?.some(g => g.vpd_sensors.includes(entityId)))
+            return true;
         if (!hass)
             return false;
         const state = hass.states[entityId];
@@ -89420,7 +89851,7 @@ class SensorRenderer extends BaseRenderer {
             // Update Label Content
             const label = sensorModel.getObjectByName('label');
             if (label) {
-                label.visible = isVisible && visibility.tooltips;
+                label.visible = isVisible && (visibility?.tooltips ?? true);
                 if (isVisible) {
                     const icon = SensorTypeUtils.getSensorIcon(device, hass, entityId);
                     const unit = this.getUnit(entityId, selectedMetric, isLight);
@@ -90296,10 +90727,22 @@ class EquipmentRenderer extends BaseRenderer {
                 this.cache.set(entityId, group);
                 volatileGroup.add(group);
             }
-            group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+            const yPos = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+            group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
             if (coords.rotation)
                 group.rotation.y = MathUtils.degToRad(coords.rotation);
-            group.userData = { ...group.userData, entityId, intensity, isOutside, isDehumidifier: isDehum, types: isDehum ? ['dehumidifier'] : ['humidifier'] };
+            const logicalZ = coords.z !== undefined ? coords.z : 0;
+            const updatedUserData = {
+                ...group.userData,
+                entityId,
+                intensity,
+                isOutside,
+                logicalZ,
+                targetH: logicalZ,
+                isDehumidifier: isDehum,
+                types: isDehum ? ['dehumidifier'] : ['humidifier']
+            };
+            group.userData = updatedUserData;
             this.context.sensorMeshes.set(entityId, group);
         });
         // 2. Pumps
@@ -90361,7 +90804,8 @@ class EquipmentRenderer extends BaseRenderer {
                     group.rotation.y = tankMesh.rotation.y;
             }
             else {
-                group.position.set(coords.x - width / 2, 0, coords.y - depth / 2);
+                const yPos = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
+                group.position.set(coords.x - width / 2, yPos, coords.y - depth / 2);
                 if (coords.rotation)
                     group.rotation.y = MathUtils.degToRad(coords.rotation);
             }
@@ -90379,7 +90823,19 @@ class EquipmentRenderer extends BaseRenderer {
                     };
                 }
             }
-            group.userData = { ...group.userData, entityId, isActive, isOutside, isDrain, types: isDrain ? ['drain_pump'] : ['irrigation_pump'], tankId };
+            const logicalZ = coords.z !== undefined ? coords.z : 0;
+            const updatedUserData = {
+                ...group.userData,
+                entityId,
+                isActive,
+                isOutside,
+                logicalZ,
+                targetH: logicalZ,
+                isDrain,
+                types: isDrain ? ['drain_pump'] : ['irrigation_pump'],
+                tankId
+            };
+            group.userData = updatedUserData;
             this.context.sensorMeshes.set(entityId, group);
         });
         // 3. Exhaust Fans
@@ -90436,6 +90892,7 @@ class EquipmentRenderer extends BaseRenderer {
         this.animateParticles(deltaTime);
     }
     updateHumidifierModel(group, intensity, isOutside, coords, w, d, h, targetH) {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         // 1. Update Intensity (Digit Panel)
         const oldIntensity = group.userData.intensity;
         if (oldIntensity !== intensity) {
@@ -90463,7 +90920,7 @@ class EquipmentRenderer extends BaseRenderer {
                 this.disposeObject(oldHose);
             }
             const outputPoint = new Vector3(0, 52.5, 0);
-            const hPos = new Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const target = new Vector3(Math.max(-w / 2, Math.min(w / 2, hPos.x)), Math.max(0, Math.min(h, targetH)), Math.max(-d / 2, Math.min(d / 2, hPos.z)));
             const localTarget = target.clone().sub(hPos);
             if (coords.rotation) {
@@ -90484,6 +90941,7 @@ class EquipmentRenderer extends BaseRenderer {
         group.userData = { ...group.userData, intensity, isOutside, targetH };
     }
     updatePumpModel(group, isDrain, isOutside, coords, w, d, h, targetH, isActive, tankMesh) {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         // Update Hose if state or target height changed
         if ((isOutside || tankMesh) && (group.userData.isActive !== isActive || group.userData.isOutside !== isOutside || group.userData.targetH !== targetH || group.userData.tankId !== tankMesh?.userData?.entityId)) {
             const oldHose = group.getObjectByName('pumpHose');
@@ -90491,7 +90949,7 @@ class EquipmentRenderer extends BaseRenderer {
                 group.remove(oldHose);
                 this.disposeObject(oldHose);
             }
-            const hPos = new Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const targetPos = new Vector3(Math.max(-w / 2, Math.min(w / 2, hPos.x)), Math.max(0, Math.min(h, targetH)), Math.max(-d / 2, Math.min(d / 2, hPos.z)));
             const localTarget = targetPos.clone().sub(hPos);
             if (coords.rotation) {
@@ -90561,8 +91019,9 @@ class EquipmentRenderer extends BaseRenderer {
         top.position.y = 15 + 35 + 2.5;
         group.add(top);
         const outputPoint = new Vector3(0, 52.5, 0);
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         if (isOutside) {
-            const hPos = new Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const target = new Vector3(Math.max(-w / 2, Math.min(w / 2, hPos.x)), Math.max(0, Math.min(h, targetH)), Math.max(-d / 2, Math.min(d / 2, hPos.z)));
             const localTarget = target.clone().sub(hPos);
             if (coords.rotation) {
@@ -90596,6 +91055,7 @@ class EquipmentRenderer extends BaseRenderer {
             digits.position.set(0, 7.5, 12.2);
             group.add(digits);
         }
+        group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
         return group;
     }
     createDehumidifierModel(intensity, isOutside, coords, w, d, h, targetH) {
@@ -90606,8 +91066,9 @@ class EquipmentRenderer extends BaseRenderer {
         body.position.y = 25;
         group.add(body);
         const outputPoint = new Vector3(0, 52, 0);
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         if (isOutside) {
-            const hPos = new Vector3(coords.x - w / 2, 0, coords.y - d / 2);
+            const hPos = new Vector3(coords.x - w / 2, deviceHeight, coords.y - d / 2);
             const target = new Vector3(Math.max(-w / 2, Math.min(w / 2, hPos.x)), Math.max(0, Math.min(h, targetH)), Math.max(-d / 2, Math.min(d / 2, hPos.z)));
             const localTarget = target.clone().sub(hPos);
             if (coords.rotation) {
@@ -90636,9 +91097,11 @@ class EquipmentRenderer extends BaseRenderer {
             digits.position.set(30 / 2 - 5, 50 - 3, 20 / 2 + 0.6);
             group.add(digits);
         }
+        group.userData = { ...group.userData, intensity, isOutside, targetH, logicalZ: targetH };
         return group;
     }
     createPumpModel(isDrain, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight, isActive, tankMesh) {
+        const deviceHeight = isOutside ? 0 : (coords.z !== undefined ? coords.z : 0);
         const group = new Group();
         const bodyRadius = 8;
         const bodyLength = 15;
@@ -90699,7 +91162,7 @@ class EquipmentRenderer extends BaseRenderer {
         }
         const outputPoint = new Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
         if (isOutside) {
-            const hPos = new Vector3(coords.x - frameWidth / 2, 0, coords.y - frameDepth / 2);
+            const hPos = new Vector3(coords.x - frameWidth / 2, deviceHeight, coords.y - frameDepth / 2);
             const targetPos = new Vector3(Math.max(-frameWidth / 2, Math.min(frameWidth / 2, hPos.x)), Math.max(0, Math.min(frameHeight, hoseTargetHeight)), Math.max(-frameDepth / 2, Math.min(frameDepth / 2, hPos.z)));
             const localTarget = targetPos.clone().sub(hPos);
             if (coords.rotation) {
@@ -90729,6 +91192,7 @@ class EquipmentRenderer extends BaseRenderer {
         else {
             group.userData.hoseEnd = outputPoint;
         }
+        group.userData = { ...group.userData, isActive, isOutside, targetH: hoseTargetHeight, logicalZ: hoseTargetHeight };
         return group;
     }
     createExhaustModel(speed, rotation, entityId) {
@@ -91064,7 +91528,7 @@ class TankRenderer extends BaseRenderer {
                 cap.material.color.set(liquidColor);
             const label = tankGroup.getObjectByName('label');
             if (label) {
-                label.visible = visibility.tooltips;
+                label.visible = visibility?.tooltips ?? true;
                 const newHTML = `
                     <div class="sensor-icon" style="background: ${hex}33; border-color: ${hex}">
                         <ha-icon icon="mdi:barrel" style="color: ${hex}; --mdc-icon-size: 10px"></ha-icon>
@@ -92078,6 +92542,7 @@ class InteractionManager {
         this.hoveredPlant = null;
         this.tooltipPos = { x: 0, y: 0 };
         this.editMode = false;
+        this.isDragging = false;
         this.linkMode = false;
         this.selectedForLink = null;
         this._raycaster = new Raycaster();
@@ -92209,6 +92674,7 @@ class InteractionManager {
             const draggableObjects = Array.from(this.sceneManager.sensorMeshes.values());
             this.dragControls = new DragControls(draggableObjects, this.sceneManager.camera, this.sceneManager.renderer.domElement);
             this.dragControls.addEventListener('dragstart', () => {
+                this.isDragging = true;
                 this.sceneManager.controls.enabled = false;
             });
             this.dragControls.addEventListener('drag', (event) => {
@@ -92216,6 +92682,7 @@ class InteractionManager {
                     this.mouseCallback('drag', { object: event.object });
             });
             this.dragControls.addEventListener('dragend', (event) => {
+                this.isDragging = false;
                 this.sceneManager.controls.enabled = true;
                 if (this.mouseCallback)
                     this.mouseCallback('dragend', { object: event.object });
@@ -92515,15 +92982,16 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                const z = mesh.position.y;
+                mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
                 if (!this.device.environmentAttributes)
                     this.device.environmentAttributes = {};
                 if (!this.device.environmentAttributes.sensorCoordinates)
                     this.device.environmentAttributes.sensorCoordinates = {};
                 const currentCoords = this.device.environmentAttributes.sensorCoordinates[id] || {};
+                const logicalZ = m.userData.logicalZ !== undefined ? m.userData.logicalZ : m.position.y;
                 this.device.environmentAttributes.sensorCoordinates[id] = {
                     ...currentCoords,
-                    x, y, z
+                    x, y, z: logicalZ
                 };
                 break;
             }
@@ -92540,7 +93008,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             if (m === mesh) {
                 const x = mesh.position.x + width / 2;
                 const y = mesh.position.z + depth / 2;
-                const z = mesh.position.y;
+                const z = mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y;
                 let rotation;
                 // Rotation usually stored in userData or traverse
                 if (this.sceneManager.volatileGroup) {
@@ -92556,12 +93024,19 @@ let Heatmap3D = class Heatmap3D extends i$3 {
     async fetchHistory() {
         if (!this.dataService || !this.device)
             return;
-        const sensorCoords = this.device.environmentAttributes?.sensorCoordinates || {};
-        const entityIds = Object.keys(sensorCoords);
-        if (entityIds.length === 0)
+        const env = this.device.environmentAttributes;
+        const sensorCoords = env?.sensorCoordinates || {};
+        const sensorGroups = env?.sensorGroups || [];
+        const entityIds = new Set(Object.keys(sensorCoords));
+        sensorGroups.forEach(group => {
+            group.temperature_sensors.forEach(id => entityIds.add(id));
+            group.humidity_sensors.forEach(id => entityIds.add(id));
+            group.vpd_sensors.forEach(id => entityIds.add(id));
+        });
+        if (entityIds.size === 0)
             return;
         const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        this.historyData = await this.dataService.fetchHistory(entityIds, start);
+        this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
     }
     // UI Helpers
     getSensorValue(entityId, metric) {
@@ -92672,8 +93147,14 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             mesh.position.x = value - width / 2;
         if (axis === 'y')
             mesh.position.z = value - depth / 2; // HA Y maps to Scene Z
-        if (axis === 'z')
-            mesh.position.y = value; // HA Z maps to Scene Y
+        if (axis === 'z') {
+            mesh.userData.logicalZ = value;
+            // Only update physical Y if not ground-locked (not outside)
+            const isOutside = (mesh.position.x + width / 2 < 0 || mesh.position.x + width / 2 > width ||
+                mesh.position.z + depth / 2 < 0 || mesh.position.z + depth / 2 > depth);
+            if (!isOutside)
+                mesh.position.y = value;
+        }
         // Optimistic update to device object so renderers don't overwrite on next frame
         if (this.device.environmentAttributes?.sensorCoordinates) {
             const coords = this.device.environmentAttributes.sensorCoordinates[entityId] || { x: 0, y: 0, z: 0, rotation: 0 };
@@ -92681,8 +93162,10 @@ let Heatmap3D = class Heatmap3D extends i$3 {
                 coords.x = value;
             if (axis === 'y')
                 coords.y = value;
-            if (axis === 'z')
+            if (axis === 'z') {
                 coords.z = value;
+                mesh.userData.logicalZ = value; // Update logicalZ immediately for UI
+            }
             this.device.environmentAttributes.sensorCoordinates[entityId] = { ...coords };
         }
         this.requestUpdate();
@@ -92933,7 +93416,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             const zMax = isAllowedOutside ? height + 50 : height;
             const x$1 = Math.round(mesh.position.x + width / 2);
             const y = Math.round(mesh.position.z + depth / 2);
-            const z = Math.round(mesh.position.y);
+            const z = Math.round(mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y);
             const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;
             const name = friendlyName || `Sensor ${id.split('.').pop()}`;
             const icon = SensorTypeUtils.getSensorIcon(this.device, this.hass, id);
@@ -95899,6 +96382,9 @@ function openConfigDialog(ctx, device) {
                 dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
                 soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
                 dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
+                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
+                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
             },
         },
     });

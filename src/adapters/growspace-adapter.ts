@@ -47,6 +47,49 @@ export class GrowspaceAdapter {
       airExchange: wsData.air_exchange,
     };
 
+
+    // Normalize Coordinates (Merge Group ones into main map for UI consumption)
+    const sensorCoordinates = { ...wsData.sensor_coordinates };
+
+    // 1. Merge Group Coordinates
+    wsData.sensor_groups?.forEach((g: any) => {
+      const groupCoords = { x: g.x, y: g.y, z: g.z };
+      [...(g.temperature_sensors || []), ...(g.humidity_sensors || []), ...(g.vpd_sensors || [])].forEach(id => {
+        if (!sensorCoordinates[id]) {
+          sensorCoordinates[id] = groupCoords;
+        }
+      });
+    });
+
+    // 2. Backfill Defaults for missing known sensors (Lights, CO2, etc.)
+    // This ensures they appear in SceneManager/SensorRenderer even if not explicitly positioned
+    const midX = (wsData.dimensions?.width || 120) / 2;
+    const midY = (wsData.dimensions?.length || (wsData.dimensions as any)?.depth || 120) / 2;
+    const defaultCoords = { x: midX, y: midY, z: 0 };
+
+    const ensureCoord = (id: string | null | undefined) => {
+      if (id && !sensorCoordinates[id]) {
+        sensorCoordinates[id] = { ...defaultCoords };
+      }
+    };
+
+    // Singles
+    ensureCoord(wsData.temperature_sensor);
+    ensureCoord(wsData.humidity_sensor);
+    ensureCoord(wsData.vpd_sensor);
+    ensureCoord(wsData.co2_sensor);
+    ensureCoord(wsData.soil_moisture_sensor);
+    ensureCoord(wsData.light_sensor);
+
+    // Arrays
+    wsData.temperature_sensors?.forEach(ensureCoord);
+    wsData.humidity_sensors?.forEach(ensureCoord);
+    wsData.vpd_sensors?.forEach(ensureCoord);
+    wsData.co2_sensors?.forEach(ensureCoord);
+    wsData.light_sensors?.forEach(ensureCoord);
+    wsData.soil_moisture_sensors?.forEach(ensureCoord);
+
+
     const environmentAttributes: EnvironmentAttributes = {
       temperatureSensor: wsData.temperature_sensor,
       temperatureSensors: wsData.temperature_sensors,
@@ -85,8 +128,9 @@ export class GrowspaceAdapter {
         isWarning: t.is_warning,
       })),
       activeEvents: wsData.active_events,
-      sensorCoordinates: wsData.sensor_coordinates,
+      sensorCoordinates,
       sensorTypes: wsData.sensor_types,
+      sensorGroups: wsData.sensor_groups,
     };
 
     const stats: GrowspaceStats = {

@@ -119,6 +119,9 @@ export class DataService {
     flowerMidDayHours?: number;
     flowerLateDayHours?: number;
     minimumSourceAirTemperature?: number;
+    sensorGroups?: import('./types').SensorGroup[];
+    sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+    irrigationTanks?: any[];
   }) => this._growspaceAPI.configureEnvironment(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
@@ -259,7 +262,7 @@ export class DataService {
     cure_start?: string;
   }) => this._plantAPI.addPlants(params);
 
-  updatePlant = (params: { plant_id: string; [key: string]: unknown }) =>
+  updatePlant = (params: { plant_id: string;[key: string]: unknown }) =>
     this._plantAPI.updatePlant(params);
 
   removePlant = (plantId: string) => this._plantAPI.removePlant(plantId);

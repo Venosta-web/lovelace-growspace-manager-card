@@ -522,6 +522,9 @@ export class DialogHost extends LitElement {
         exhaustFanEntities: detail.exhaustFanEntities,
         humidifierEntities: detail.humidifierEntities,
         dehumidifierEntities: detail.dehumidifierEntities,
+        sensorGroups: detail.sensorGroups,
+        sensorCoordinates: detail.sensorCoordinates,
+        irrigationTanks: detail.irrigationTanks,
       });
       this.store.showToast('Environment configured successfully!', 'success');
       await this.store.refreshData();

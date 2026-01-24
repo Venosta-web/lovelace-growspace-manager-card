@@ -383,4 +383,36 @@ describe('GrowspaceAdapter', () => {
             expect(result?.overviewEntityId).toBe('sensor.growspace_test_overview');
         });
     });
+
+    it('should backfill sensorCoordinates for known sensors if missing', () => {
+        const wsDataWithoutCoords: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            name: 'Test Room',
+            type: GrowspaceTypeEnum.NORMAL,
+            rows: 2,
+            plants_per_row: 2,
+            total_plants: 0,
+            grid: {},
+            irrigation_config: { irrigation_times: [], drain_times: [] },
+            vpd_status: 'ok',
+
+            // Defined Sensors
+            temperature_sensor: 'sensor.temp',
+            light_sensor: 'sensor.light',
+
+            // Empty coordinates
+            sensor_coordinates: {},
+
+            dimensions: { width: 200, length: 200, height: 200, unit: 'cm' }
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsDataWithoutCoords);
+        const coords = result?.environmentAttributes?.sensorCoordinates || {};
+
+        expect(coords['sensor.temp']).toBeDefined();
+        expect(coords['sensor.temp']).toEqual({ x: 100, y: 100, z: 0 }); // Midpoint
+
+        expect(coords['sensor.light']).toBeDefined();
+        expect(coords['sensor.light']).toEqual({ x: 100, y: 100, z: 0 });
+    });
 });

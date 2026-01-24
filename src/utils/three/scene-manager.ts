@@ -23,7 +23,7 @@ export class SceneManager {
     public volatileGroup: THREE.Group;
     public sensorMeshes: Map<string, THREE.Group> = new Map();
 
-    private renderers: any[] = [];
+    public renderers: any[] = [];
     private animationId?: number;
     private container: HTMLElement;
 

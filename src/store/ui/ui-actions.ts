@@ -295,6 +295,9 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
         dehumidifierControlEnabled:
           device?.environmentAttributes?.dehumidifierControlEnabled || false,
+        sensorGroups: device?.environmentAttributes?.sensorGroups || [],
+        sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
+        irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
       } as EnvironmentConfigData,
     },
   });
