@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import { GrowspaceDevice, PlantEntity, PlantStage, StrainEntry } from '../types';
+import { GrowspaceDevice, PlantEntity, PlantStage, StrainEntry, IrrigationTank } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { strainLibraryContext, storeContext } from '../context';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -66,6 +66,7 @@ export class Heatmap3D extends LitElement {
     private _humidifierParticles?: THREE.Points;
     private _dryAirParticles?: THREE.Points;
     private _pumpWaterParticles?: THREE.Points;
+    private _tankWaves: THREE.Mesh[] = [];
     private _plantHitBoxes: THREE.Object3D[] = [];
     private _keysPressed: Set<string> = new Set();
     private _strainColorCache: Map<string, string[]> = new Map();
@@ -538,12 +539,15 @@ export class Heatmap3D extends LitElement {
             ...(env?.dehumidifierEntities || [])
         ].filter(Boolean) as string[];
 
+        const tankEntities = (env?.irrigationTanks || []).map(t => t.sensorEntity);
+
         const allTracked = Array.from(new Set([
             ...sensors,
             ...fanEntities,
             ...exhaustEntities,
             ...pumpEntities,
-            ...humidifierEntities
+            ...humidifierEntities,
+            ...tankEntities
         ]));
 
         let dataHash = `${this.selectedMetric}_${this.timelineIndex}_${this.device.deviceId}`;
@@ -752,18 +756,21 @@ export class Heatmap3D extends LitElement {
         if (env) {
             const moisture = env.soilMoistureSensors || (env.soilMoistureSensor ? [env.soilMoistureSensor] : []);
             if (moisture.includes(entityId)) return true;
+
+            // Check irrigation tanks
+            if (env.irrigationTanks?.some(t => t.sensorEntity === entityId)) return true;
         }
 
         // 3. Check sensor types map
         const sensorTypes = this.device.environmentAttributes?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId]) {
             const type = sensorTypes[entityId];
-            return type === 'soil_moisture' || type === 'irrigation_pump' || type === 'drain_pump';
+            return type === 'soil_moisture' || type === 'irrigation_pump' || type === 'drain_pump' || type === 'irrigation_tank';
         }
 
         // 4. Fallback to name matching
         const lowerId = entityId.toLowerCase();
-        return lowerId.includes('moisture') || lowerId.includes('soil');
+        return lowerId.includes('moisture') || lowerId.includes('soil') || lowerId.includes('tank');
     }
 
     private isFan(entityId: string): boolean {
@@ -1293,6 +1300,9 @@ export class Heatmap3D extends LitElement {
 
         // 12. Draw Pumps
         this.renderPumps(width, height, depth);
+
+        // 13. Draw Irrigation Tanks
+        this.renderIrrigationTanks(width, height, depth);
     }
 
     private getSensorIcon(entityId: string): string {
@@ -1328,6 +1338,11 @@ export class Heatmap3D extends LitElement {
         // Dehumidifier
         if (env?.dehumidifierEntities?.includes(entityId) || env?.dehumidifierEntity === entityId || types[entityId] === 'dehumidifier') {
             return 'mdi:air-humidifier-off';
+        }
+
+        // Irrigation Tanks
+        if (env?.irrigationTanks?.some(t => t.sensorEntity === entityId) || types[entityId] === 'irrigation_tank' || entityId.toLowerCase().includes('tank')) {
+            return 'mdi:barrel';
         }
 
         return 'mdi:sensor';
@@ -1880,7 +1895,7 @@ export class Heatmap3D extends LitElement {
         }
 
         // Port Output Point (Forward-facing port or top port depending on orientation? Let's use front for now)
-        let outputPoint = new THREE.Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
+        const outputPoint = new THREE.Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
 
         if (isOutside) {
             const hPos = new THREE.Vector3(
@@ -1990,7 +2005,6 @@ export class Heatmap3D extends LitElement {
         const group = new THREE.Group();
 
         // Dimensions
-        const baseWidth = 25;
         const baseHeight = 15;
         const tankHeight = 35;
 
@@ -2004,7 +2018,6 @@ export class Heatmap3D extends LitElement {
             metalness: 0.1,
             thickness: 0.5
         });
-        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.8 });
 
         // 1. Base (Chamfered Box)
         // Simple Box for now to save polys, or Cylinder for round look (like AC Infinity)
@@ -2050,7 +2063,7 @@ export class Heatmap3D extends LitElement {
         group.add(top);
 
         // Nozzle Output Point (Local Coords)
-        let outputPoint = new THREE.Vector3(0, baseHeight + tankHeight + topHeight, 0);
+        const outputPoint = new THREE.Vector3(0, baseHeight + tankHeight + topHeight, 0);
 
         if (isOutside) {
             // 4. Hose Attachment
@@ -2184,7 +2197,7 @@ export class Heatmap3D extends LitElement {
         output.position.y = height + 1;
         group.add(output);
 
-        let outputPoint = new THREE.Vector3(0, height + 2, 0);
+        const outputPoint = new THREE.Vector3(0, height + 2, 0);
 
         if (isOutside) {
             // Hose Logic
@@ -2423,6 +2436,167 @@ export class Heatmap3D extends LitElement {
             bladesGroup.add(blade);
         }
         group.add(bladesGroup);
+
+        return group;
+    }
+
+    private renderIrrigationTanks(width: number, height: number, depth: number) {
+        if (!this.volatileGroup || !this.device) return;
+
+        const env = this.device.environmentAttributes;
+        const tanks = env?.irrigationTanks || [];
+        if (tanks.length === 0) return;
+
+        const sensorCoords = env?.sensorCoordinates || {};
+
+        tanks.forEach((tank) => {
+            const entityId = tank.sensorEntity;
+            let coords = sensorCoords[entityId];
+
+            // If no coords, default to outside
+            if (!coords && this.editMode3DCords) {
+                coords = { x: -width * 0.5, y: depth / 2, z: 0 };
+            }
+            if (!coords) return;
+
+            const tankModel = this.createIrrigationTankModel(tank);
+
+            tankModel.position.set(
+                coords.x - width / 2,
+                0, // On floor
+                coords.y - depth / 2
+            );
+
+            if (coords.rotation) {
+                tankModel.rotation.y = (coords.rotation * Math.PI) / 180;
+            }
+
+            tankModel.userData = {
+                entityId,
+                fillLevel: tank.fillLevel,
+                warningLevel: tank.warningLevel,
+                isWarning: tank.isWarning
+            };
+
+            this.volatileGroup!.add(tankModel);
+            this.sensorMeshes.set(entityId, tankModel);
+        });
+    }
+
+    private createIrrigationTankModel(tank: IrrigationTank): THREE.Group {
+        const group = new THREE.Group();
+        const width = 30;
+        const height = 45;
+        const depth = 30;
+
+        // Colors
+        const isWarning = tank.isWarning;
+        const liquidColor = isWarning ? new THREE.Color(0xff4422) : new THREE.Color(0x00aaff);
+
+        // 1. Container (Outer Glass/Plastic)
+        const containerGeo = new THREE.BoxGeometry(width, height, depth);
+        const containerMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.15,
+            roughness: 0.1,
+            metalness: 0.1,
+            side: THREE.BackSide // Render inside too
+        });
+        const container = new THREE.Mesh(containerGeo, containerMat);
+        container.position.y = height / 2;
+        group.add(container);
+
+        // Glass Outline (to define the shape better)
+        const edgeGeo = new THREE.EdgesGeometry(containerGeo);
+        const edgeMat = new THREE.LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.3 });
+        const edges = new THREE.LineSegments(edgeGeo, edgeMat);
+        edges.position.y = height / 2;
+        group.add(edges);
+
+        // 2. Frame / Reinforcement
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.3 });
+
+        // Bottom Base
+        const baseGeo = new THREE.BoxGeometry(width + 2, 2, depth + 2);
+        const base = new THREE.Mesh(baseGeo, frameMat);
+        base.position.y = 1;
+        group.add(base);
+
+        // Top Lid / Jerrycan handle area
+        const lidGeo = new THREE.BoxGeometry(width + 2, 4, depth + 2);
+        const lid = new THREE.Mesh(lidGeo, frameMat);
+        lid.position.y = height + 1;
+        group.add(lid);
+
+        // Tank Cap (The blue/red cap from screenshot)
+        const capGeo = new THREE.CylinderGeometry(5, 5, 4, 16);
+        const capMat = new THREE.MeshStandardMaterial({ color: liquidColor, roughness: 0.4 });
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.set(0, height + 4.5, 0);
+        group.add(cap);
+
+        // Horizontal Ribs (visual detail like in screenshot)
+        const ribGeo = new THREE.BoxGeometry(width + 0.5, 1, depth + 0.5);
+        const rib1 = new THREE.Mesh(ribGeo, frameMat);
+        rib1.position.y = height * 0.75;
+        group.add(rib1);
+        const rib2 = new THREE.Mesh(ribGeo, frameMat);
+        rib2.position.y = height * 0.25;
+        group.add(rib2);
+
+        // 3. Liquid
+        const fillPercent = Math.max(0.02, Math.min(1.0, (tank.fillLevel || 0) / 100));
+        const liquidHeight = (height - 4) * fillPercent;
+
+        const liquidGeo = new THREE.BoxGeometry(width * 0.94, liquidHeight, depth * 0.94);
+        const liquidMat = new THREE.MeshStandardMaterial({
+            color: liquidColor,
+            transparent: true,
+            opacity: 0.75, // Increased opacity
+            roughness: 0.3,
+            metalness: 0.2,
+            emissive: liquidColor, // Add glow
+            emissiveIntensity: 0.2
+        });
+        const liquid = new THREE.Mesh(liquidGeo, liquidMat);
+        liquid.position.y = liquidHeight / 2 + 2.1; // Above base top
+        group.add(liquid);
+
+        // 4. Wave Animation Surface
+        const waveGeo = new THREE.PlaneGeometry(width * 0.94, depth * 0.94, 20, 20);
+        const waveMat = new THREE.MeshStandardMaterial({
+            color: liquidColor,
+            transparent: true,
+            opacity: 0.9,
+            emissive: liquidColor,
+            emissiveIntensity: 0.3,
+            side: THREE.DoubleSide
+        });
+        const wave = new THREE.Mesh(waveGeo, waveMat);
+        wave.rotation.x = -Math.PI / 2;
+        wave.position.y = liquidHeight + 2.15;
+        wave.name = "tankWave";
+        group.add(wave);
+        this._tankWaves.push(wave);
+
+        // 5. Numerical Label (Numerical percentage display)
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'sensor-label tank-label';
+        const level = tank.fillLevel !== null ? Math.round(tank.fillLevel) : 0;
+        const hexColor = isWarning ? '#f44336' : '#2196f3';
+
+        labelDiv.innerHTML = `
+            <div class="sensor-icon" style="background: ${hexColor}33; border-color: ${hexColor}">
+                <ha-icon icon="mdi:barrel" style="color: ${hexColor}; --mdc-icon-size: 10px"></ha-icon>
+            </div>
+            <span style="color: white; font-weight: 800; font-size: 13px;">${level}%</span>
+            ${isWarning ? '<ha-icon icon="mdi:alert" style="color: #ffeb3b; --mdc-icon-size: 12px; margin-left: 2px;"></ha-icon>' : ''}
+        `;
+
+        const label = new CSS2DObject(labelDiv);
+        label.position.set(0, height * 0.5, depth / 2 + 2); // Center on front face
+        group.add(label);
 
         return group;
     }
@@ -3645,6 +3819,22 @@ export class Heatmap3D extends LitElement {
             this._pumpWaterParticles.geometry.attributes.position.needsUpdate = true;
         }
 
+        // Update Tank Waves
+        if (this._tankWaves.length > 0) {
+            const time = Date.now() * 0.003;
+            this._tankWaves.forEach(wave => {
+                const pos = wave.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const px = pos.getX(i);
+                    const py = pos.getY(i);
+                    // Stronger wave pattern
+                    const pz = Math.sin(px * 0.15 + time) * 0.8 + Math.cos(py * 0.15 + time) * 0.8;
+                    pos.setZ(i, pz);
+                }
+                pos.needsUpdate = true;
+            });
+        }
+
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
             if (this.labelRenderer) {
@@ -3678,6 +3868,7 @@ export class Heatmap3D extends LitElement {
         this.camera = undefined;
         this.controls = undefined;
         this.sensorMeshes.clear();
+        this._tankWaves = [];
     }
 
     private updateDragControls() {

@@ -61233,6 +61233,179 @@ class DodecahedronGeometry extends PolyhedronGeometry {
 
 }
 
+const _v0$3 = /*@__PURE__*/ new Vector3();
+const _v1$1 = /*@__PURE__*/ new Vector3();
+const _normal = /*@__PURE__*/ new Vector3();
+const _triangle = /*@__PURE__*/ new Triangle();
+
+/**
+ * Can be used as a helper object to view the edges of a geometry.
+ *
+ * ```js
+ * const geometry = new THREE.BoxGeometry();
+ * const edges = new THREE.EdgesGeometry( geometry );
+ * const line = new THREE.LineSegments( edges );
+ * scene.add( line );
+ * ```
+ *
+ * Note: It is not yet possible to serialize/deserialize instances of this class.
+ *
+ * @augments BufferGeometry
+ */
+class EdgesGeometry extends BufferGeometry {
+
+	/**
+	 * Constructs a new edges geometry.
+	 *
+	 * @param {?BufferGeometry} [geometry=null] - The geometry.
+	 * @param {number} [thresholdAngle=1] - An edge is only rendered if the angle (in degrees)
+	 * between the face normals of the adjoining faces exceeds this value.
+	 */
+	constructor( geometry = null, thresholdAngle = 1 ) {
+
+		super();
+
+		this.type = 'EdgesGeometry';
+
+		/**
+		 * Holds the constructor parameters that have been
+		 * used to generate the geometry. Any modification
+		 * after instantiation does not change the geometry.
+		 *
+		 * @type {Object}
+		 */
+		this.parameters = {
+			geometry: geometry,
+			thresholdAngle: thresholdAngle
+		};
+
+		if ( geometry !== null ) {
+
+			const precisionPoints = 4;
+			const precision = Math.pow( 10, precisionPoints );
+			const thresholdDot = Math.cos( DEG2RAD * thresholdAngle );
+
+			const indexAttr = geometry.getIndex();
+			const positionAttr = geometry.getAttribute( 'position' );
+			const indexCount = indexAttr ? indexAttr.count : positionAttr.count;
+
+			const indexArr = [ 0, 0, 0 ];
+			const vertKeys = [ 'a', 'b', 'c' ];
+			const hashes = new Array( 3 );
+
+			const edgeData = {};
+			const vertices = [];
+			for ( let i = 0; i < indexCount; i += 3 ) {
+
+				if ( indexAttr ) {
+
+					indexArr[ 0 ] = indexAttr.getX( i );
+					indexArr[ 1 ] = indexAttr.getX( i + 1 );
+					indexArr[ 2 ] = indexAttr.getX( i + 2 );
+
+				} else {
+
+					indexArr[ 0 ] = i;
+					indexArr[ 1 ] = i + 1;
+					indexArr[ 2 ] = i + 2;
+
+				}
+
+				const { a, b, c } = _triangle;
+				a.fromBufferAttribute( positionAttr, indexArr[ 0 ] );
+				b.fromBufferAttribute( positionAttr, indexArr[ 1 ] );
+				c.fromBufferAttribute( positionAttr, indexArr[ 2 ] );
+				_triangle.getNormal( _normal );
+
+				// create hashes for the edge from the vertices
+				hashes[ 0 ] = `${ Math.round( a.x * precision ) },${ Math.round( a.y * precision ) },${ Math.round( a.z * precision ) }`;
+				hashes[ 1 ] = `${ Math.round( b.x * precision ) },${ Math.round( b.y * precision ) },${ Math.round( b.z * precision ) }`;
+				hashes[ 2 ] = `${ Math.round( c.x * precision ) },${ Math.round( c.y * precision ) },${ Math.round( c.z * precision ) }`;
+
+				// skip degenerate triangles
+				if ( hashes[ 0 ] === hashes[ 1 ] || hashes[ 1 ] === hashes[ 2 ] || hashes[ 2 ] === hashes[ 0 ] ) {
+
+					continue;
+
+				}
+
+				// iterate over every edge
+				for ( let j = 0; j < 3; j ++ ) {
+
+					// get the first and next vertex making up the edge
+					const jNext = ( j + 1 ) % 3;
+					const vecHash0 = hashes[ j ];
+					const vecHash1 = hashes[ jNext ];
+					const v0 = _triangle[ vertKeys[ j ] ];
+					const v1 = _triangle[ vertKeys[ jNext ] ];
+
+					const hash = `${ vecHash0 }_${ vecHash1 }`;
+					const reverseHash = `${ vecHash1 }_${ vecHash0 }`;
+
+					if ( reverseHash in edgeData && edgeData[ reverseHash ] ) {
+
+						// if we found a sibling edge add it into the vertex array if
+						// it meets the angle threshold and delete the edge from the map.
+						if ( _normal.dot( edgeData[ reverseHash ].normal ) <= thresholdDot ) {
+
+							vertices.push( v0.x, v0.y, v0.z );
+							vertices.push( v1.x, v1.y, v1.z );
+
+						}
+
+						edgeData[ reverseHash ] = null;
+
+					} else if ( ! ( hash in edgeData ) ) {
+
+						// if we've already got an edge here then skip adding a new one
+						edgeData[ hash ] = {
+
+							index0: indexArr[ j ],
+							index1: indexArr[ jNext ],
+							normal: _normal.clone(),
+
+						};
+
+					}
+
+				}
+
+			}
+
+			// iterate over all remaining, unmatched edges and add them to the vertex array
+			for ( const key in edgeData ) {
+
+				if ( edgeData[ key ] ) {
+
+					const { index0, index1 } = edgeData[ key ];
+					_v0$3.fromBufferAttribute( positionAttr, index0 );
+					_v1$1.fromBufferAttribute( positionAttr, index1 );
+
+					vertices.push( _v0$3.x, _v0$3.y, _v0$3.z );
+					vertices.push( _v1$1.x, _v1$1.y, _v1$1.z );
+
+				}
+
+			}
+
+			this.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
+
+		}
+
+	}
+
+	copy( source ) {
+
+		super.copy( source );
+
+		this.parameters = Object.assign( {}, source.parameters );
+
+		return this;
+
+	}
+
+}
+
 /**
  * An abstract base class for creating an analytic curve object that contains methods
  * for interpolation.
@@ -90584,6 +90757,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this._exhaustFans = [];
         this._humidifiers = [];
         this._pumps = [];
+        this._tankWaves = [];
         this._plantHitBoxes = [];
         this._keysPressed = new Set();
         this._strainColorCache = new Map();
@@ -90637,12 +90811,14 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             env?.dehumidifierEntity,
             ...(env?.dehumidifierEntities || [])
         ].filter(Boolean);
+        const tankEntities = (env?.irrigationTanks || []).map(t => t.sensorEntity);
         const allTracked = Array.from(new Set([
             ...sensors,
             ...fanEntities,
             ...exhaustEntities,
             ...pumpEntities,
-            ...humidifierEntities
+            ...humidifierEntities,
+            ...tankEntities
         ]));
         let dataHash = `${this.selectedMetric}_${this.timelineIndex}_${this.device.deviceId}`;
         // Add sensor values to hash to detect state changes
@@ -90838,16 +91014,19 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             const moisture = env.soilMoistureSensors || (env.soilMoistureSensor ? [env.soilMoistureSensor] : []);
             if (moisture.includes(entityId))
                 return true;
+            // Check irrigation tanks
+            if (env.irrigationTanks?.some(t => t.sensorEntity === entityId))
+                return true;
         }
         // 3. Check sensor types map
         const sensorTypes = this.device.environmentAttributes?.sensorTypes;
         if (sensorTypes && sensorTypes[entityId]) {
             const type = sensorTypes[entityId];
-            return type === 'soil_moisture' || type === 'irrigation_pump' || type === 'drain_pump';
+            return type === 'soil_moisture' || type === 'irrigation_pump' || type === 'drain_pump' || type === 'irrigation_tank';
         }
         // 4. Fallback to name matching
         const lowerId = entityId.toLowerCase();
-        return lowerId.includes('moisture') || lowerId.includes('soil');
+        return lowerId.includes('moisture') || lowerId.includes('soil') || lowerId.includes('tank');
     }
     isFan(entityId) {
         if (!this.device)
@@ -91333,6 +91512,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.renderHumidifiers(width, height, depth);
         // 12. Draw Pumps
         this.renderPumps(width, height, depth);
+        // 13. Draw Irrigation Tanks
+        this.renderIrrigationTanks(width, height, depth);
     }
     getSensorIcon(entityId) {
         if (this._isTemperatureSensor(entityId))
@@ -91369,6 +91550,10 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         // Dehumidifier
         if (env?.dehumidifierEntities?.includes(entityId) || env?.dehumidifierEntity === entityId || types[entityId] === 'dehumidifier') {
             return 'mdi:air-humidifier-off';
+        }
+        // Irrigation Tanks
+        if (env?.irrigationTanks?.some(t => t.sensorEntity === entityId) || types[entityId] === 'irrigation_tank' || entityId.toLowerCase().includes('tank')) {
+            return 'mdi:barrel';
         }
         return 'mdi:sensor';
     }
@@ -91826,7 +92011,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             group.add(footR);
         }
         // Port Output Point (Forward-facing port or top port depending on orientation? Let's use front for now)
-        let outputPoint = new Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
+        const outputPoint = new Vector3(-bodyLength / 2 - headLength - portLength, bodyRadius + baseHeight, 0);
         if (isOutside) {
             const hPos = new Vector3(coords.x - frameWidth / 2, 0, coords.y - frameDepth / 2);
             const minX = -frameWidth / 2;
@@ -91914,6 +92099,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
     }
     createHumidifierModel(intensity, isOutside, coords, frameWidth, frameDepth, frameHeight, hoseTargetHeight) {
         const group = new Group();
+        // Dimensions
         const baseHeight = 15;
         const tankHeight = 35;
         // Materials
@@ -91926,7 +92112,6 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             metalness: 0.1,
             thickness: 0.5
         });
-        new MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.3, metalness: 0.8 });
         // 1. Base (Chamfered Box)
         // Simple Box for now to save polys, or Cylinder for round look (like AC Infinity)
         // Image shows a rounded square/squircle base.
@@ -91965,7 +92150,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         top.position.y = baseHeight + tankHeight + topHeight / 2;
         group.add(top);
         // Nozzle Output Point (Local Coords)
-        let outputPoint = new Vector3(0, baseHeight + tankHeight + topHeight, 0);
+        const outputPoint = new Vector3(0, baseHeight + tankHeight + topHeight, 0);
         if (isOutside) {
             // 4. Hose Attachment
             // Determine Closest Point on Frame (Local to Scene usually, but here we need relative logic)
@@ -92075,7 +92260,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         const output = new Mesh(outputGeo, matteBlack);
         output.position.y = height + 1;
         group.add(output);
-        let outputPoint = new Vector3(0, height + 2, 0);
+        const outputPoint = new Vector3(0, height + 2, 0);
         if (isOutside) {
             // Hose Logic
             const hPos = new Vector3(coords.x - frameWidth / 2, 0, // Device is on floor
@@ -92276,6 +92461,141 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             bladesGroup.add(blade);
         }
         group.add(bladesGroup);
+        return group;
+    }
+    renderIrrigationTanks(width, height, depth) {
+        if (!this.volatileGroup || !this.device)
+            return;
+        const env = this.device.environmentAttributes;
+        const tanks = env?.irrigationTanks || [];
+        if (tanks.length === 0)
+            return;
+        const sensorCoords = env?.sensorCoordinates || {};
+        tanks.forEach((tank) => {
+            const entityId = tank.sensorEntity;
+            let coords = sensorCoords[entityId];
+            // If no coords, default to outside
+            if (!coords && this.editMode3DCords) {
+                coords = { x: -width * 0.5, y: depth / 2, z: 0 };
+            }
+            if (!coords)
+                return;
+            const tankModel = this.createIrrigationTankModel(tank);
+            tankModel.position.set(coords.x - width / 2, 0, // On floor
+            coords.y - depth / 2);
+            if (coords.rotation) {
+                tankModel.rotation.y = (coords.rotation * Math.PI) / 180;
+            }
+            tankModel.userData = {
+                entityId,
+                fillLevel: tank.fillLevel,
+                warningLevel: tank.warningLevel,
+                isWarning: tank.isWarning
+            };
+            this.volatileGroup.add(tankModel);
+            this.sensorMeshes.set(entityId, tankModel);
+        });
+    }
+    createIrrigationTankModel(tank) {
+        const group = new Group();
+        const width = 30;
+        const height = 45;
+        const depth = 30;
+        // Colors
+        const isWarning = tank.isWarning;
+        const liquidColor = isWarning ? new Color(0xff4422) : new Color(0x00aaff);
+        // 1. Container (Outer Glass/Plastic)
+        const containerGeo = new BoxGeometry(width, height, depth);
+        const containerMat = new MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.15,
+            roughness: 0.1,
+            metalness: 0.1,
+            side: BackSide // Render inside too
+        });
+        const container = new Mesh(containerGeo, containerMat);
+        container.position.y = height / 2;
+        group.add(container);
+        // Glass Outline (to define the shape better)
+        const edgeGeo = new EdgesGeometry(containerGeo);
+        const edgeMat = new LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.3 });
+        const edges = new LineSegments(edgeGeo, edgeMat);
+        edges.position.y = height / 2;
+        group.add(edges);
+        // 2. Frame / Reinforcement
+        const frameMat = new MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.3 });
+        // Bottom Base
+        const baseGeo = new BoxGeometry(width + 2, 2, depth + 2);
+        const base = new Mesh(baseGeo, frameMat);
+        base.position.y = 1;
+        group.add(base);
+        // Top Lid / Jerrycan handle area
+        const lidGeo = new BoxGeometry(width + 2, 4, depth + 2);
+        const lid = new Mesh(lidGeo, frameMat);
+        lid.position.y = height + 1;
+        group.add(lid);
+        // Tank Cap (The blue/red cap from screenshot)
+        const capGeo = new CylinderGeometry(5, 5, 4, 16);
+        const capMat = new MeshStandardMaterial({ color: liquidColor, roughness: 0.4 });
+        const cap = new Mesh(capGeo, capMat);
+        cap.position.set(0, height + 4.5, 0);
+        group.add(cap);
+        // Horizontal Ribs (visual detail like in screenshot)
+        const ribGeo = new BoxGeometry(width + 0.5, 1, depth + 0.5);
+        const rib1 = new Mesh(ribGeo, frameMat);
+        rib1.position.y = height * 0.75;
+        group.add(rib1);
+        const rib2 = new Mesh(ribGeo, frameMat);
+        rib2.position.y = height * 0.25;
+        group.add(rib2);
+        // 3. Liquid
+        const fillPercent = Math.max(0.02, Math.min(1.0, (tank.fillLevel || 0) / 100));
+        const liquidHeight = (height - 4) * fillPercent;
+        const liquidGeo = new BoxGeometry(width * 0.94, liquidHeight, depth * 0.94);
+        const liquidMat = new MeshStandardMaterial({
+            color: liquidColor,
+            transparent: true,
+            opacity: 0.75, // Increased opacity
+            roughness: 0.3,
+            metalness: 0.2,
+            emissive: liquidColor, // Add glow
+            emissiveIntensity: 0.2
+        });
+        const liquid = new Mesh(liquidGeo, liquidMat);
+        liquid.position.y = liquidHeight / 2 + 2.1; // Above base top
+        group.add(liquid);
+        // 4. Wave Animation Surface
+        const waveGeo = new PlaneGeometry(width * 0.94, depth * 0.94, 20, 20);
+        const waveMat = new MeshStandardMaterial({
+            color: liquidColor,
+            transparent: true,
+            opacity: 0.9,
+            emissive: liquidColor,
+            emissiveIntensity: 0.3,
+            side: DoubleSide
+        });
+        const wave = new Mesh(waveGeo, waveMat);
+        wave.rotation.x = -Math.PI / 2;
+        wave.position.y = liquidHeight + 2.15;
+        wave.name = "tankWave";
+        group.add(wave);
+        this._tankWaves.push(wave);
+        // 5. Numerical Label (Numerical percentage display)
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'sensor-label tank-label';
+        const level = tank.fillLevel !== null ? Math.round(tank.fillLevel) : 0;
+        const hexColor = isWarning ? '#f44336' : '#2196f3';
+        labelDiv.innerHTML = `
+            <div class="sensor-icon" style="background: ${hexColor}33; border-color: ${hexColor}">
+                <ha-icon icon="mdi:barrel" style="color: ${hexColor}; --mdc-icon-size: 10px"></ha-icon>
+            </div>
+            <span style="color: white; font-weight: 800; font-size: 13px;">${level}%</span>
+            ${isWarning ? '<ha-icon icon="mdi:alert" style="color: #ffeb3b; --mdc-icon-size: 12px; margin-left: 2px;"></ha-icon>' : ''}
+        `;
+        const label = new CSS2DObject(labelDiv);
+        label.position.set(0, height * 0.5, depth / 2 + 2); // Center on front face
+        group.add(label);
         return group;
     }
     createSensorProbeModel(color) {
@@ -93311,6 +93631,21 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             }
             this._pumpWaterParticles.geometry.attributes.position.needsUpdate = true;
         }
+        // Update Tank Waves
+        if (this._tankWaves.length > 0) {
+            const time = Date.now() * 0.003;
+            this._tankWaves.forEach(wave => {
+                const pos = wave.geometry.attributes.position;
+                for (let i = 0; i < pos.count; i++) {
+                    const px = pos.getX(i);
+                    const py = pos.getY(i);
+                    // Stronger wave pattern
+                    const pz = Math.sin(px * 0.15 + time) * 0.8 + Math.cos(py * 0.15 + time) * 0.8;
+                    pos.setZ(i, pz);
+                }
+                pos.needsUpdate = true;
+            });
+        }
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
             if (this.labelRenderer) {
@@ -93344,6 +93679,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.camera = undefined;
         this.controls = undefined;
         this.sensorMeshes.clear();
+        this._tankWaves = [];
     }
     updateDragControls() {
         if (!this.camera || !this.renderer || !this.scene)
