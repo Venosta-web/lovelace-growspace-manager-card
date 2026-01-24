@@ -17,7 +17,7 @@ export interface NotePayload {
  * Centralizes all backend API calls related to timelines
  */
 export class TimelineService {
-  constructor(private hass: HomeAssistant) { }
+  constructor(public readonly hass: HomeAssistant) { }
 
   /**
    * Fetch growspace event log
@@ -92,8 +92,7 @@ let _instance: TimelineService | null = null;
 
 export function getTimelineService(hass: HomeAssistant): TimelineService {
   // Create new instance if none exists or HASS instance changed
-  // Simply recreate if we don't have an instance - the hass comparison was trying to optimize but accessing private property
-  if (!_instance) {
+  if (!_instance || _instance.hass !== hass) {
     _instance = new TimelineService(hass);
   }
   return _instance;

@@ -28,10 +28,6 @@ server.log
 test_*.txt
 test-*.txt
 
-# Build artifacts
-dist/
-growspace-manager-card.js
-
 # Playwright
 playwright-report/
 coverage/tmp
@@ -55,17 +51,4 @@ playwright-report/.auth/*
 # Verification scratchpad
 verification/
 
-tests/unit/__screenshots__/
-tests/unit/components/manager/__screenshots__/
-tests/unit/dialogs/__screenshots__/ 
-tests/unit/growspace-manager-card/__screenshots__/
-tests/unit/growspace-store/__screenshots__/
-tests/unit/plant-actions/__screenshots__/
-tests/unit/training-dialog/__screenshots__/
-tests/unit/components/growspace-header/__screenshots__/
-tests/unit/components/growspace-manager-card/__screenshots__/
-tests/unit/components/growspace-header/__screenshots__/
-tests/unit/schemas/__screenshots__/
-tests/unit/schemas/__screenshots__/
-tests/unit/services/api/__screenshots__/
-tests/unit/services/api/__screenshots__/
+tests/unit/*.png

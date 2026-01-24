@@ -362,10 +362,10 @@ describe('GrowspaceHeaderActions', () => {
             (menuItems?.[4] as HTMLElement).click(); // IPM
             (menuItems?.[5] as HTMLElement).click(); // Training
             (menuItems?.[6] as HTMLElement).click(); // Nutrients
-            (menuItems?.[7] as HTMLElement).click(); // Add Plant
-            (menuItems?.[8] as HTMLElement).click(); // Strains
-            (menuItems?.[9] as HTMLElement).click(); // Logbook
-            (menuItems?.[10] as HTMLElement).click(); // Ask AI
+            (menuItems?.[8] as HTMLElement).click(); // Add Plant
+            (menuItems?.[9] as HTMLElement).click(); // Strains
+            (menuItems?.[10] as HTMLElement).click(); // Logbook
+            (menuItems?.[11] as HTMLElement).click(); // Ask AI
 
             expect(mockStore.openGrowMasterDialog).toHaveBeenCalled();
         });

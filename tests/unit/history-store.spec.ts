@@ -690,7 +690,7 @@ describe('history-store', () => {
             } as any]);
             dataStore.setSelectedDevice('d1');
 
-            vi.spyOn(store as any, 'getEntityIdForMetric').mockReturnValue(null);
+            vi.spyOn(store as any, 'getEntityIdsForMetric').mockReturnValue([]);
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
 
             await (store as any)._fetchHistory();

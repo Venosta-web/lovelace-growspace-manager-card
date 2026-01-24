@@ -539,7 +539,7 @@ describe('ConfigDialog', () => {
             (element as any)._submitAddGrowspace();
 
             expect(listener).toHaveBeenCalled();
-            expect(listener.mock.calls[0][0].detail.notification_service).toBe('mobile_app_test');
+            expect(listener.mock.calls[0][0].detail.notificationService).toBe('mobile_app_test');
         });
 
         it('should handle edit population when device is not found', () => {

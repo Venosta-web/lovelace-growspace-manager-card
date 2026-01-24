@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -149,6 +149,65 @@ describe('API Schemas', () => {
             const result = validateStrainLibrary(invalidData);
             expect(result.success).toBe(false);
             spy.mockRestore();
+        });
+
+        it('should handle irrigation schedule transformations', () => {
+            const data = {
+                growspace_id: 'gs1',
+                name: 'GS1',
+                type: 'flower',
+                rows: 1,
+                plants_per_row: 1,
+                irrigation_config: {
+                    irrigation_times: [
+                        '08:00', // string transform
+                        { start_time: '10:00', duration_seconds: 60 }, // start_time and duration_seconds alias
+                        { time: '12:00', duration: null, duration_seconds: 120 } // null duration fallback
+                    ],
+                    drain_times: [
+                        '18:00', // string transform
+                        { time: '14:00', duration: 45 }, // explicit time and duration
+                        { time: '16:00', duration: null, duration_seconds: null } // both null -> undefined
+                    ]
+                }
+            };
+            const result = GrowspaceAPIResponseSchema.parse(data);
+
+            // irrigation_times[0]: '08:00' -> { time: '08:00' }
+            expect(result.irrigation_config.irrigation_times[0]).toEqual({ time: '08:00' });
+
+            // irrigation_times[1]: { start_time: '10:00', duration_seconds: 60 } -> { time: '10:00', duration: 60 }
+            expect(result.irrigation_config.irrigation_times[1] as any).toEqual({ time: '10:00', duration: 60 });
+
+            // irrigation_times[2]: { time: '12:00', duration: null, duration_seconds: 120 } -> { time: '12:00', duration: 120 }
+            expect(result.irrigation_config.irrigation_times[2] as any).toEqual({ time: '12:00', duration: 120 });
+
+            // drain_times[0]: '18:00' -> { time: '18:00' }
+            expect(result.irrigation_config.drain_times[0]).toEqual({ time: '18:00' });
+
+            // drain_times[1]: { time: '14:00', duration: 45 } -> { time: '14:00', duration: 45 }
+            expect(result.irrigation_config.drain_times[1] as any).toEqual({ time: '14:00', duration: 45 });
+
+            // drain_times[2]: { time: '16:00', duration: null, duration_seconds: null } -> { time: '16:00', duration: undefined }
+            expect(result.irrigation_config.drain_times[2].time).toBe('16:00');
+            expect((result.irrigation_config.drain_times[2] as any).duration).toBeUndefined();
+        });
+
+        it('should fail if irrigation schedule time is empty', () => {
+            const data = {
+                growspace_id: 'gs1',
+                name: 'GS1',
+                type: 'flower',
+                rows: 1,
+                plants_per_row: 1,
+                irrigation_config: {
+                    irrigation_times: [
+                        { duration: 60 } // Missing time and start_time
+                    ]
+                }
+            };
+            const result = GrowspaceAPIResponseSchema.safeParse(data);
+            expect(result.success).toBe(false);
         });
     });
 

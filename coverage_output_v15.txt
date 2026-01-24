@@ -1,0 +1,159 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | unknown test
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+ [31m❯[39m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts [2m([22m[2m53 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m2 skipped[39m[2m)[22m[33m 16219[2mms[22m[39m
+       [32m✓[39m should identify light sensors via explicit mapping[32m 108[2mms[22m[39m
+       [32m✓[39m should identify light sensors via heuristics[32m 69[2mms[22m[39m
+       [32m✓[39m should identify temperature sensors[32m 68[2mms[22m[39m
+       [32m✓[39m should identify humidity sensors[32m 77[2mms[22m[39m
+       [32m✓[39m should identify VPD sensors[32m 65[2mms[22m[39m
+       [32m✓[39m should identify environment sensors[32m 75[2mms[22m[39m
+       [32m✓[39m should identify irrigation sensors[32m 67[2mms[22m[39m
+       [32m✓[39m should identify fans[32m 71[2mms[22m[39m
+       [32m✓[39m should identify exhaust fans[32m 89[2mms[22m[39m
+       [32m✓[39m should identify humidifiers[32m 79[2mms[22m[39m
+       [32m✓[39m should identify dehumidifiers[32m 64[2mms[22m[39m
+       [32m✓[39m should handle identification with missing hass or state[32m 70[2mms[22m[39m
+       [32m✓[39m should use heuristics for CO2 and moisture[32m 69[2mms[22m[39m
+       [32m✓[39m should identify pump entities[32m 71[2mms[22m[39m
+       [32m✓[39m should handle identification fallbacks for single entities[32m 68[2mms[22m[39m
+       [32m✓[39m should identify environment sensors via sensorTypes map[32m 72[2mms[22m[39m
+       [32m✓[39m should get metric value correctly[32m 80[2mms[22m[39m
+       [32m✓[39m should return correct status color for value[32m 89[2mms[22m[39m
+       [32m✓[39m should setup event listeners on connect[32m 97[2mms[22m[39m
+       [32m✓[39m should cleanup on disconnect[32m 94[2mms[22m[39m
+       [32m✓[39m should handle fetchHistory failure[32m 77[2mms[22m[39m
+       [32m✓[39m should return correct icons for sensors[32m 82[2mms[22m[39m
+       [32m✓[39m should toggle edit mode and dispatch event[32m 81[2mms[22m[39m
+       [32m✓[39m should set metric[32m 83[2mms[22m[39m
+       [32m✓[39m should handle playback[32m 96[2mms[22m[39m
+       [32m✓[39m should allow manually stopping playback[32m 81[2mms[22m[39m
+       [32m✓[39m should format time correctly[32m 93[2mms[22m[39m
+       [32m✓[39m should calculate max history length[32m 82[2mms[22m[39m
+       [32m✓[39m should toggle visibility flags on checkbox click[32m 84[2mms[22m[39m
+       [32m✓[39m should update selected metric on button click[32m 77[2mms[22m[39m
+       [32m✓[39m should toggle keyboard rotation and update speed[32m 132[2mms[22m[39m
+       [32m✓[39m should switch between sensor tabs in edit mode[32m 152[2mms[22m[39m
+       [32m✓[39m should render sensor items in the side panel[32m 137[2mms[22m[39m
+       [32m✓[39m should render correct fallback name for fans in side panel[32m 140[2mms[22m[39m
+       [32m✓[39m should call WS and dispatch event on updateSensorPosition[32m 147[2mms[22m[39m
+       [32m✓[39m should log error when callWS fails in updateSensorPosition[32m 141[2mms[22m[39m
+       [32m✓[39m should update mesh position on slider input[32m 139[2mms[22m[39m
+       [32m✓[39m should update mesh rotation on slider input[32m 144[2mms[22m[39m
+       [2m[90m↓[39m[22m should update shader positions when meshes exist
+       [32m✓[39m should call updateSensorPosition on slider change[32m 151[2mms[22m[39m
+       [32m✓[39m should handle timeline change[32m 142[2mms[22m[39m
+       [32m✓[39m should return correct formatted time or fallback[32m 149[2mms[22m[39m
+[31m       [31m×[31m should identify sensor metric type correctly[39m[33m 1821[2mms[22m[39m
+       [2m[90m↓[39m[22m should handle keyboard rotation keys
+       [33m[2m✓[22m[39m should handle resize [33m 8604[2mms[22m[39m
+       [32m✓[39m should update scene when showPlants changes[32m 242[2mms[22m[39m
+       [32m✓[39m should update scene when other visibility flags change[32m 216[2mms[22m[39m
+       [32m✓[39m should update scene when hass states change[32m 206[2mms[22m[39m
+       [32m✓[39m should update scene and fetch history when device changes[32m 232[2mms[22m[39m
+       [32m✓[39m should dispatch event on view option change[32m 232[2mms[22m[39m
+       [32m✓[39m should render tooltip when plant is hovered[32m 246[2mms[22m[39m
+       [32m✓[39m should render tooltip without phenotype[32m 230[2mms[22m[39m
+       [32m✓[39m should return nothing when no plant is hovered[32m 237[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mUtilities[2m > [22mshould identify sensor metric type correctly
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Utilities-should-identify-sensor-metric-type-correctly-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m659:79[22m[39m
+    [90m657| [39m            element.device = { ...mockDevice, environmentAttributes: {…
+    [90m658| [39m            (element [35mas[39m any)[33m.[39mselectedMetric [33m=[39m [32m'temperature'[39m[33m;[39m
+    [90m659| [39m            expect((element as any).isSensorOfMetric('sensor.temp_heur…
+    [90m   | [39m                                                                              [31m^[39m
+    [90m660| [39m            (element [35mas[39m any)[33m.[39mselectedMetric [33m=[39m [32m'humidity'[39m[33m;[39m
+    [90m661| [39m            expect((element as any).isSensorOfMetric('sensor.humi_heur…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m50 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (53)[39m
+[2m   Start at [22m 09:54:43
+[2m   Duration [22m 18.13s[2m (transform 0ms, setup 6ms, import 121ms, tests 16.22s, environment 0ms)[22m
+

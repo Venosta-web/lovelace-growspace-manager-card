@@ -4143,7 +4143,6 @@ export class Heatmap3D extends LitElement {
         }
 
         this.updateShaderPositions();
-        this.requestUpdate();
     }
 
     private handleSliderChange(entityId: string) {

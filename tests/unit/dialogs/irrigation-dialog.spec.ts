@@ -159,7 +159,7 @@ describe('IrrigationDialog', () => {
 
             expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
-                time: '12:00',
+                time: '12:00:00',
                 duration: 120
             }));
         });
@@ -219,7 +219,7 @@ describe('IrrigationDialog', () => {
 
             expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
-                time: '14:00',
+                time: '14:00:00',
                 duration: 45
             }));
         });

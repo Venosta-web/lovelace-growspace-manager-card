@@ -1,0 +1,283 @@
+
+> lovelace-growspace-manager-card@1.0.30-alpha.1 test:unit
+> vitest run /home/maxi/core/core/vendor/lovelace-growspace-manager-card/tests/unit/components/heatmap-3d.spec.ts --coverage
+
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | unknown test
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[90mstderr[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mUtilities[2m > [22m[2mshould identify sensor metric type correctly
+[22m[39mHeatmap3D: Failed to fetch history [TypeError: this.hass.callWS is not a function]
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create exhaust fans
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create humidifiers
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAdditional Component Creation[2m > [22m[2mshould create irrigation tanks
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mAnimation and Particle Updates[2m > [22m[2mshould update humidifier particles when active
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+ [31m❯[39m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts [2m([22m[2m73 tests[22m[2m | [22m[31m5 failed[39m[2m | [22m[33m2 skipped[39m[2m)[22m[33m 27808[2mms[22m[39m
+       [32m✓[39m should identify light sensors via explicit mapping[32m 104[2mms[22m[39m
+       [32m✓[39m should identify light sensors via heuristics[32m 68[2mms[22m[39m
+       [32m✓[39m should identify temperature sensors[32m 67[2mms[22m[39m
+       [32m✓[39m should identify humidity sensors[32m 71[2mms[22m[39m
+       [32m✓[39m should identify VPD sensors[32m 69[2mms[22m[39m
+       [32m✓[39m should identify environment sensors[32m 70[2mms[22m[39m
+       [32m✓[39m should identify irrigation sensors[32m 67[2mms[22m[39m
+       [32m✓[39m should identify fans[32m 67[2mms[22m[39m
+       [32m✓[39m should identify exhaust fans[32m 69[2mms[22m[39m
+       [32m✓[39m should identify humidifiers[32m 72[2mms[22m[39m
+       [32m✓[39m should identify dehumidifiers[32m 66[2mms[22m[39m
+       [32m✓[39m should handle identification with missing hass or state[32m 68[2mms[22m[39m
+       [32m✓[39m should use heuristics for CO2 and moisture[32m 66[2mms[22m[39m
+       [32m✓[39m should identify pump entities[32m 70[2mms[22m[39m
+       [32m✓[39m should handle identification fallbacks for single entities[32m 69[2mms[22m[39m
+       [32m✓[39m should identify environment sensors via sensorTypes map[32m 62[2mms[22m[39m
+       [32m✓[39m should get metric value correctly[32m 84[2mms[22m[39m
+       [32m✓[39m should return correct status color for value[32m 76[2mms[22m[39m
+       [32m✓[39m should handle getMetricValue with timelineIndex >= 0[32m 90[2mms[22m[39m
+       [32m✓[39m should handle getMetricValue with missing hass or state[32m 79[2mms[22m[39m
+       [32m✓[39m should setup event listeners on connect[32m 72[2mms[22m[39m
+       [32m✓[39m should cleanup on disconnect[32m 87[2mms[22m[39m
+       [32m✓[39m should handle fetchHistory failure[32m 75[2mms[22m[39m
+       [32m✓[39m should return correct icons for sensors[32m 80[2mms[22m[39m
+       [32m✓[39m should toggle edit mode and dispatch event[32m 84[2mms[22m[39m
+       [32m✓[39m should set metric[32m 81[2mms[22m[39m
+       [32m✓[39m should handle playback[32m 77[2mms[22m[39m
+       [32m✓[39m should allow manually stopping playback[32m 81[2mms[22m[39m
+       [32m✓[39m should format time correctly[32m 82[2mms[22m[39m
+       [32m✓[39m should calculate max history length[32m 75[2mms[22m[39m
+       [32m✓[39m should toggle visibility flags on checkbox click[32m 135[2mms[22m[39m
+       [32m✓[39m should update selected metric on button click[32m 141[2mms[22m[39m
+       [32m✓[39m should toggle keyboard rotation and update speed[32m 142[2mms[22m[39m
+       [32m✓[39m should switch between sensor tabs in edit mode[32m 144[2mms[22m[39m
+       [32m✓[39m should render sensor items in the side panel[32m 146[2mms[22m[39m
+       [32m✓[39m should render correct fallback name for fans in side panel[32m 141[2mms[22m[39m
+       [32m✓[39m should call WS and dispatch event on updateSensorPosition[32m 144[2mms[22m[39m
+       [32m✓[39m should log error when callWS fails in updateSensorPosition[32m 146[2mms[22m[39m
+       [32m✓[39m should update mesh position on slider input[32m 142[2mms[22m[39m
+       [32m✓[39m should update mesh rotation on slider input[32m 137[2mms[22m[39m
+       [32m✓[39m should call updateSensorPosition on slider change with rotation[32m 149[2mms[22m[39m
+       [2m[90m↓[39m[22m should update shader positions when meshes exist
+       [32m✓[39m should call updateSensorPosition on slider change[32m 143[2mms[22m[39m
+       [32m✓[39m should handle timeline change[32m 147[2mms[22m[39m
+       [32m✓[39m should return correct formatted time or fallback[32m 149[2mms[22m[39m
+       [32m✓[39m should identify sensor metric type correctly[32m 149[2mms[22m[39m
+       [2m[90m↓[39m[22m should handle keyboard rotation keys
+       [32m✓[39m should handle resize[32m 149[2mms[22m[39m
+       [32m✓[39m should update scene when showPlants changes[32m 138[2mms[22m[39m
+       [32m✓[39m should update scene when other visibility flags change[32m 149[2mms[22m[39m
+       [32m✓[39m should update scene when hass states change[32m 138[2mms[22m[39m
+       [32m✓[39m should update scene and fetch history when device changes[32m 139[2mms[22m[39m
+       [32m✓[39m should dispatch event on view option change[32m 149[2mms[22m[39m
+       [32m✓[39m should handle interaction with checkbox change[32m 133[2mms[22m[39m
+       [32m✓[39m should handle mouse move and tooltips[32m 146[2mms[22m[39m
+       [32m✓[39m should handle mouse click on plant or empty slot[32m 141[2mms[22m[39m
+       [32m✓[39m should handle keyboard rotation[32m 138[2mms[22m[39m
+       [32m✓[39m should handle updated lifecycle branching[32m 147[2mms[22m[39m
+       [32m✓[39m should render tooltip when plant is hovered[32m 130[2mms[22m[39m
+       [32m✓[39m should render tooltip without phenotype[32m 146[2mms[22m[39m
+       [32m✓[39m should return nothing when no plant hovered[32m 142[2mms[22m[39m
+       [32m✓[39m should render frame poles[32m 148[2mms[22m[39m
+       [32m✓[39m should render lightbars when light sensors exist[32m 148[2mms[22m[39m
+       [32m✓[39m should not render lightbars and return early if no lights[32m 139[2mms[22m[39m
+       [32m✓[39m should dispose resources on cleanup[32m 150[2mms[22m[39m
+       [32m✓[39m should identify environment and irrigation sensors via heuristics[32m 135[2mms[22m[39m
+       [32m✓[39m should identify sensors from config early[32m 143[2mms[22m[39m
+[31m       [31m×[31m should create fans[39m[33m 1807[2mms[22m[39m
+[31m       [31m×[31m should create exhaust fans[39m[33m 7491[2mms[22m[39m
+[31m       [31m×[31m should create humidifiers[39m[33m 4260[2mms[22m[39m
+[31m       [31m×[31m should create irrigation tanks[39m[33m 3586[2mms[22m[39m
+[31m       [31m×[31m should update humidifier particles when active[39m[33m 3312[2mms[22m[39m
+       [32m✓[39m should handle dragging events[32m 102[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 5 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mAdditional Component Creation[2m > [22mshould create fans
+[31m[1mTypeError[22m: element._createFans is not a function[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Additional-Component-Creation-should-create-fans-1.png[22m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m1082:29[22m[39m
+    [90m1080| [39m                }
+    [90m1081| [39m            }[33m;[39m
+    [90m1082| [39m            (element [35mas[39m any)[33m.[39m[34m_createFans[39m([34m100[39m[33m,[39m [34m200[39m[33m,[39m [34m100[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m1083| [39m            expect((element as any)._fanHeads.length).toBeGreaterThan(…
+    [90m1084| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mAdditional Component Creation[2m > [22mshould create exhaust fans
+[31m[1mTypeError[22m: element._createExhaustFans is not a function[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Additional-Component-Creation-should-create-exhaust-fans-1.png[22m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m1093:29[22m[39m
+    [90m1091| [39m                }
+    [90m1092| [39m            }[33m;[39m
+    [90m1093| [39m            (element [35mas[39m any)[33m.[39m[34m_createExhaustFans[39m([34m100[39m[33m,[39m [34m200[39m[33m,[39m [34m100[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m1094| [39m            expect((element as any)._exhaustFans.length).toBeGreaterTh…
+    [90m1095| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mAdditional Component Creation[2m > [22mshould create humidifiers
+[31m[1mTypeError[22m: element._createHumidifiers is not a function[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Additional-Component-Creation-should-create-humidifiers-1.png[22m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m1104:29[22m[39m
+    [90m1102| [39m                }
+    [90m1103| [39m            }[33m;[39m
+    [90m1104| [39m            (element [35mas[39m any)[33m.[39m[34m_createHumidifiers[39m([34m100[39m[33m,[39m [34m200[39m[33m,[39m [34m100[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m1105| [39m            expect((element as any)._humidifiers.length).toBeGreaterTh…
+    [90m1106| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mAdditional Component Creation[2m > [22mshould create irrigation tanks
+[31m[1mTypeError[22m: element._createIrrigationTanks is not a function[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Additional-Component-Creation-should-create-irrigation-tanks-1.png[22m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m1115:29[22m[39m
+    [90m1113| [39m                }
+    [90m1114| [39m            }[33m;[39m
+    [90m1115| [39m            (element [35mas[39m any)[33m.[39m[34m_createIrrigationTanks[39m([34m100[39m[33m,[39m [34m200[39m[33m,[39m [34m100[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m1116| [39m            expect((element as any)._tankWaves.length).toBeGreaterThan…
+    [90m1117| [39m        })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mAnimation and Particle Updates[2m > [22mshould update humidifier particles when active
+[31m[1mTypeError[22m: Failed to execute 'animate' on 'Element': 1 argument required, but only 0 present.[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Animation-and-Particle-Updates-should-update-humidifier-particles-when-active-1.png[22m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m1144:29[22m[39m
+    [90m1142| [39m
+    [90m1143| [39m            (element as any).updateScene(); // To trigger initial stat…
+    [90m1144| [39m            (element [35mas[39m any)[33m.[39m[34manimate[39m()[33m;[39m [90m// Should trigger updates[39m
+    [90m   | [39m                            [31m^[39m
+    [90m1145| [39m
+    [90m1146| [39m            [90m// If it respawns a particle, its lifetime should be > 0[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m66 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (73)[39m
+[2m   Start at [22m 10:14:58
+[2m   Duration [22m 28.94s[2m (transform 0ms, setup 6ms, import 105ms, tests 27.81s, environment 0ms)[22m
+

@@ -44,7 +44,7 @@ const IrrigationScheduleItemSchema = z
   })
   .transform((data) => ({
     time: data.time || data.start_time || '',
-    duration: data.duration !== null ? data.duration : (data.duration_seconds !== null ? data.duration_seconds : undefined),
+    duration: (data.duration ?? data.duration_seconds) ?? undefined,
   }))
   .refine((data) => data.time !== '', { message: "Time is required" });
 

@@ -1,0 +1,155 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | unknown test
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mSlider Handling[2m > [22m[2mshould update shader positions when meshes exist
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mKeyboard and Resize[2m > [22m[2mshould handle keyboard rotation keys
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mKeyboard and Resize[2m > [22m[2mshould handle keyboard rotation keys
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mKeyboard and Resize[2m > [22m[2mshould handle keyboard rotation keys
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mKeyboard and Resize[2m > [22m[2mshould handle keyboard rotation keys
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts[2m > [22m[2mHeatmap3D Logic[2m > [22m[2mKeyboard and Resize[2m > [22m[2mshould handle keyboard rotation keys
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+[90mstdout[2m | tests/unit/components/heatmap-3d.spec.ts
+[22m[39mTHREE.WebGLRenderer: Context Lost.
+ [31m❯[39m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts [2m([22m[2m43 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 20045[2mms[22m[39m
+       [32m✓[39m should identify light sensors via explicit mapping[32m 111[2mms[22m[39m
+       [32m✓[39m should identify light sensors via heuristics[32m 68[2mms[22m[39m
+       [32m✓[39m should identify temperature sensors[32m 74[2mms[22m[39m
+       [32m✓[39m should identify humidity sensors[32m 80[2mms[22m[39m
+       [32m✓[39m should identify VPD sensors[32m 71[2mms[22m[39m
+       [32m✓[39m should identify environment sensors[32m 75[2mms[22m[39m
+       [32m✓[39m should identify irrigation sensors[32m 67[2mms[22m[39m
+       [32m✓[39m should identify fans[32m 73[2mms[22m[39m
+       [32m✓[39m should identify exhaust fans[32m 69[2mms[22m[39m
+       [32m✓[39m should identify humidifiers[32m 66[2mms[22m[39m
+       [32m✓[39m should identify dehumidifiers[32m 68[2mms[22m[39m
+       [32m✓[39m should handle identification with missing hass or state[32m 69[2mms[22m[39m
+       [32m✓[39m should use heuristics for CO2 and moisture[32m 82[2mms[22m[39m
+       [32m✓[39m should get metric value correctly[32m 71[2mms[22m[39m
+       [32m✓[39m should return correct status color for value[32m 79[2mms[22m[39m
+       [32m✓[39m should setup event listeners on connect[32m 69[2mms[22m[39m
+       [32m✓[39m should cleanup on disconnect[32m 86[2mms[22m[39m
+       [32m✓[39m should handle fetchHistory failure[32m 73[2mms[22m[39m
+       [32m✓[39m should return correct icons for sensors[32m 89[2mms[22m[39m
+       [32m✓[39m should toggle edit mode and dispatch event[32m 92[2mms[22m[39m
+       [32m✓[39m should set metric[32m 75[2mms[22m[39m
+       [32m✓[39m should handle playback[32m 89[2mms[22m[39m
+       [32m✓[39m should format time correctly[32m 72[2mms[22m[39m
+       [32m✓[39m should calculate max history length[32m 82[2mms[22m[39m
+       [32m✓[39m should toggle visibility flags on checkbox click[32m 79[2mms[22m[39m
+       [32m✓[39m should update selected metric on button click[32m 78[2mms[22m[39m
+       [32m✓[39m should toggle keyboard rotation and update speed[32m 70[2mms[22m[39m
+       [32m✓[39m should switch between sensor tabs in edit mode[32m 82[2mms[22m[39m
+       [32m✓[39m should render sensor items in the side panel[32m 75[2mms[22m[39m
+       [32m✓[39m should call WS and dispatch event on updateSensorPosition[32m 103[2mms[22m[39m
+       [32m✓[39m should update mesh position on slider input[32m 154[2mms[22m[39m
+       [32m✓[39m should update mesh rotation on slider input[32m 138[2mms[22m[39m
+[31m       [31m×[31m should update shader positions when meshes exist[39m[33m 2196[2mms[22m[39m
+       [33m[2m✓[22m[39m should call updateSensorPosition on slider change [33m 8209[2mms[22m[39m
+       [32m✓[39m should handle timeline change[32m 242[2mms[22m[39m
+       [32m✓[39m should return correct formatted time or fallback[32m 240[2mms[22m[39m
+       [32m✓[39m should identify sensor metric type correctly[32m 241[2mms[22m[39m
+[31m       [31m×[31m should handle keyboard rotation keys[39m[33m 999[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle resize [33m 4381[2mms[22m[39m
+       [32m✓[39m should update scene when showPlants changes[32m 235[2mms[22m[39m
+       [32m✓[39m should update scene when other visibility flags change[32m 218[2mms[22m[39m
+       [32m✓[39m should render tooltip when plant is hovered[32m 227[2mms[22m[39m
+       [32m✓[39m should return nothing when no plant is hovered[32m 229[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mSlider Handling[2m > [22mshould update shader positions when meshes exist
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Slider-Handling-should-update-shader-positions-when-meshes-exist-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m519:49[22m[39m
+    [90m517| [39m
+    [90m518| [39m            const uniforms = (volMesh.material as THREE.ShaderMaterial…
+    [90m519| [39m            [34mexpect[39m(uniforms[33m.[39mu_sensorCount[33m.[39mvalue)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                                                [31m^[39m
+    [90m520| [39m        })[33m;[39m
+    [90m521| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/components/heatmap-3d.spec.ts[2m > [22mHeatmap3D Logic[2m > [22mKeyboard and Resize[2m > [22mshould handle keyboard rotation keys
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+Failure screenshot:
+  - [2mtests/unit/components/__screenshots__/heatmap-3d.spec.ts/Heatmap3D-Logic-Keyboard-and-Resize-should-handle-keyboard-rotation-keys-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/unit/components/heatmap-3d.spec.ts:[2m573:67[22m[39m
+    [90m571| [39m            const keyDown = new KeyboardEvent('keydown', { key: 'Arrow…
+    [90m572| [39m            (element [35mas[39m any)[33m.[39m[34m_handleKeyDown[39m(keyDown)[33m;[39m
+    [90m573| [39m            expect((element as any)._keysPressed.has('ArrowLeft')).toB…
+    [90m   | [39m                                                                  [31m^[39m
+    [90m574| [39m
+    [90m575| [39m            const keyUp = new KeyboardEvent('keyup', { key: 'ArrowLeft…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m41 passed[39m[22m[90m (43)[39m
+[2m   Start at [22m 09:47:56
+[2m   Duration [22m 21.87s[2m (transform 0ms, setup 6ms, import 107ms, tests 20.05s, environment 0ms)[22m
+

@@ -57,9 +57,22 @@ export class GrowspaceHistoryStore {
 
     this.$combinedHistory = computed(
       this.$historyCache,
-      (cache): SensorHistories => ({
-        ...cache,
-      })
+      (cache): SensorHistories => {
+        const result: SensorHistories = { ...cache };
+        const commonMetrics = [
+          'temperature',
+          'humidity',
+          'vpd',
+          'co2',
+          'soil_moisture',
+          'light',
+          'optimal',
+        ];
+        commonMetrics.forEach((m) => {
+          if (!result[m]) result[m] = [];
+        });
+        return result;
+      }
     );
   }
 
@@ -315,6 +328,8 @@ export class GrowspaceHistoryStore {
       true
     );
 
+    if (!batchResults) return;
+
     // Overview/Main
 
     // Metrics
@@ -417,6 +432,8 @@ export class GrowspaceHistoryStore {
         5, // Small interval
         true
       );
+
+      if (!batchResults) return;
 
       for (const [key, entityId] of Object.entries(entityMap)) {
         const deltaData = batchResults[entityId] || [];
