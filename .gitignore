@@ -52,3 +52,6 @@ playwright-report/.auth/*
 verification/
 tests/unit/*.png
 tests/unit/*/*.png
+
+# Git worktrees
+.worktrees/
