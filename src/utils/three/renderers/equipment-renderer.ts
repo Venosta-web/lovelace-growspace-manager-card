@@ -223,6 +223,7 @@ export class EquipmentRenderer extends BaseRenderer {
                 volatileGroup.remove(obj);
                 this.disposeObject(obj);
                 this.cache.delete(eid);
+                this.context.sensorMeshes.delete(eid);
             }
         });
 

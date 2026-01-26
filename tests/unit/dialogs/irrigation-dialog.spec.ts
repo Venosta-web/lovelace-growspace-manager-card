@@ -1109,4 +1109,194 @@ describe('IrrigationDialog', () => {
             expect(options?.length).toBe(1);
         });
     });
+
+    describe('Tanks Tab', () => {
+        beforeEach(async () => {
+            element.open = true;
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: {
+                    irrigationTanks: [
+                        { name: 'Main Tank', fillLevel: 75, isWarning: false, warningLevel: 20 },
+                        { name: 'Reserve Tank', fillLevel: 15, isWarning: true, warningLevel: 20 },
+                        { name: 'Empty Tank', fillLevel: null, isWarning: true, warningLevel: 10 }
+                    ]
+                }
+            } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Switch to Tanks Tab
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            (tabs?.[3] as HTMLElement).click();
+            await element.updateComplete;
+        });
+
+        it('should render tank cards', () => {
+            const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
+            expect(tankCards?.length).toBe(3);
+        });
+
+        it('should render main tank with correct level', () => {
+            const mainTank = element.shadowRoot?.querySelector('.tank-card:nth-child(1)');
+            expect(mainTank?.textContent).toContain('Main Tank');
+            expect(mainTank?.querySelector('.percentage-text')?.textContent).toContain('75%');
+            expect(mainTank?.classList.contains('warning')).toBe(false);
+        });
+
+        it('should render reserve tank with warning', () => {
+            const reserveTank = element.shadowRoot?.querySelector('.tank-card:nth-child(2)');
+            expect(reserveTank?.textContent).toContain('Reserve Tank');
+            expect(reserveTank?.querySelector('.percentage-text')?.textContent).toContain('15%');
+            expect(reserveTank?.classList.contains('warning')).toBe(true);
+            expect(reserveTank?.querySelector('.warning-icon')).toBeTruthy();
+        });
+
+        it('should handle null fill level', () => {
+            const emptyTank = element.shadowRoot?.querySelector('.tank-card:nth-child(3)');
+            const percentageText = emptyTank?.querySelector('.percentage-text');
+            // We want to make sure it contains 'N/A' and NOT '0%'
+            expect(percentageText?.textContent).toContain('N/A');
+            expect(percentageText?.textContent).not.toContain('0%');
+        });
+
+        it('should render empty state when no tanks configured', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: { irrigationTanks: [] }
+            } as any;
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.textContent).toContain('No irrigation tanks configured');
+        });
+
+        it('should render empty state when environmentAttributes is missing', async () => {
+            element.device = { ...mockDevice, environmentAttributes: undefined } as any;
+            await element.updateComplete;
+
+            expect(element.shadowRoot?.textContent).toContain('No irrigation tanks configured');
+        });
+    });
+
+    describe('Additional Branch Coverage', () => {
+        it('should handle formatting time in _addIrrigationTime', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Test HH:MM format (should append :00)
+            await (element as any)._addIrrigationTime('10:00');
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
+                time: '10:00:00'
+            }));
+
+            // Test HH:MM:SS format (should remain same)
+            await (element as any)._addIrrigationTime('11:11:11');
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
+                time: '11:11:11'
+            }));
+        });
+
+        it('should handle formatting time in _addDrainTime', async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            // Test HH:MM format
+            await (element as any)._addDrainTime('05:30');
+            expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
+                time: '05:30:00'
+            }));
+        });
+
+        it('should notify data changed', () => {
+            const spy = vi.fn();
+            element.addEventListener('data-changed', spy);
+            (element as any)._notifyDataChanged();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should sort entities by friendly name or entity_id', async () => {
+            element.hass = {
+                states: {
+                    'switch.z_last': { entity_id: 'switch.z_last', attributes: { friendly_name: 'Z' } },
+                    'switch.a_first': { entity_id: 'switch.a_first', attributes: { friendly_name: 'A' } },
+                    'switch.id_only': { entity_id: 'switch.id_only', attributes: {} },
+                    'switch.another_id': { entity_id: 'switch.another_id', attributes: {} }
+                }
+            } as any;
+
+            const entities = (element as any)._getEntities(['switch']);
+            // A first (by friendly name)
+            expect(entities[0].attributes.friendly_name).toBe('A');
+            // another_id (by entity_id as no friendly_name)
+            expect(entities[1].entity_id).toBe('switch.another_id');
+            // id_only (by entity_id)
+            expect(entities[2].entity_id).toBe('switch.id_only');
+            // Z (by friendly name)
+            expect(entities[3].attributes.friendly_name).toBe('Z');
+        });
+
+        it('should handle start_time in schedules', async () => {
+            element.open = true;
+            element.device = {
+                ...mockDevice,
+                irrigationConfig: {
+                    ...mockDevice.irrigationConfig!,
+                    irrigationTimes: [{ start_time: '11:00' } as any] // Using start_time instead of time
+                }
+            } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            expect(markers?.length).toBeGreaterThan(0);
+            expect(markers?.[0].querySelector('.chart-tooltip')?.textContent).toContain('11:00');
+        });
+
+        it('should handle both time and start_time fallback in filter', async () => {
+            element.hass = {} as any;
+            element.open = true;
+            element.device = {
+                ...mockDevice,
+                irrigationConfig: {
+                    ...mockDevice.irrigationConfig!,
+                    irrigationTimes: [
+                        { time: '10:00' },
+                        { start_time: '11:00' } as any,
+                        { something_else: '12:00' } as any // should be filtered out
+                    ]
+                }
+            } as any;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const irrigationBar = element.shadowRoot?.querySelector('.irrigation-time-bar');
+            const markers = irrigationBar?.querySelectorAll('.chart-marker');
+            expect(markers?.length).toBe(2);
+            document.body.removeChild(element);
+        });
+
+        it('should handle sorting with mixed time and start_time', async () => {
+            element.hass = {} as any;
+            element.open = true;
+            element.device = {
+                ...mockDevice,
+                irrigationConfig: {
+                    ...mockDevice.irrigationConfig!,
+                    irrigationTimes: [{ start_time: '12:00' } as any]
+                }
+            } as any;
+            // Connect to DOM to trigger willUpdate which creates _dataService
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            await (element as any)._addIrrigationTime('11:00');
+
+            const times = (element as any)._irrigationTimes;
+            expect(times[0].time).toBe('11:00:00');
+            expect(times[1].start_time).toBe('12:00');
+            document.body.removeChild(element);
+        });
+    });
 });

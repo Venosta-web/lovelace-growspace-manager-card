@@ -1535,6 +1535,126 @@ describe('GrowspaceEnvChart', () => {
             const card = element.shadowRoot?.querySelector('.gs-env-graph-card');
             expect(card).toBeTruthy();
         });
+
+        it('should handle multi-sensor metric expansion and color deviation', async () => {
+            const now = Date.now();
+            element.isCombined = true;
+            element.metrics = ['temperature'];
+            element.sensorHistory = {
+                'temperature:sensor1': [{ state: '20', last_changed: new Date(now).toISOString() }] as any,
+                'temperature:sensor2': [{ state: '22', last_changed: new Date(now).toISOString() }] as any
+            };
+            (element as any).hass = {
+                states: {
+                    'sensor1': { attributes: { friendly_name: 'Room 1' } },
+                    'sensor2': { attributes: { friendly_name: 'Room 2' } }
+                }
+            };
+
+            await element.updateComplete;
+
+            const series = (element as any)._renderSeries;
+            expect(series.length).toBe(2);
+            expect(series[0].title).toContain('Room 1');
+            expect(series[1].title).toContain('Room 2');
+            expect(series[1].color).toContain('color-mix');
+        });
+
+        it('should handle fallback metric config for unknown keys', async () => {
+            const now = Date.now();
+            element.isCombined = true;
+            element.metrics = ['unknown_metric'];
+            element.sensorHistory = {
+                'unknown_metric': [{ state: '50', last_changed: new Date(now).toISOString() }] as any
+            };
+
+            await element.updateComplete;
+
+            const series = (element as any)._renderSeries;
+            expect(series.length).toBe(1);
+            expect(series[0].title).toBe('unknown_metric');
+            expect(series[0].color).toBe('#ffffff');
+        });
+
+        it('should cover binary state variants for dehumidifier and light', async () => {
+            const now = Date.now();
+            element.metricKey = 'dehumidifier';
+            element.sensorHistory = {
+                'dehumidifier': [
+                    { state: 'heating', last_changed: new Date(now - 1000).toISOString() },
+                    { state: 'drying', last_changed: new Date(now).toISOString() }
+                ] as any
+            };
+            await element.updateComplete;
+            let series = (element as any)._renderSeries;
+            expect(series[0].points[0].value).toBe(1);
+            expect(series[0].points[1].value).toBe(1);
+
+            element.metricKey = 'light';
+            element.sensorHistory = {
+                'light': [
+                    { state: 'on', last_changed: new Date(now - 2000).toISOString() },
+                    { state: 'off', last_changed: new Date(now - 1000).toISOString() },
+                    { state: '50', last_changed: new Date(now).toISOString() } // Numeric > 0 = ON
+                ] as any
+            };
+            await element.updateComplete;
+            series = (element as any)._renderSeries;
+            // The series adds an initial point at startTime, one for each history item, and one at 'now'.
+            // History: 'on' at -2000, 'off' at -1000, '50' at 0
+            // dataPoints: [startTime, 'on', 'off', '50', now] -> total 5 points
+            expect(series[0].points.length).toBe(5);
+            expect(series[0].points[0].value).toBe(1); // carried from 'on' at startTime
+            expect(series[0].points[1].value).toBe(1); // 'on'
+            expect(series[0].points[2].value).toBe(0); // 'off'
+            expect(series[0].points[3].value).toBe(1); // '50'
+            expect(series[0].points[4].value).toBe(1); // 'now'
+        });
+
+        it('should handle tooltips when cached rect is missing', async () => {
+            vi.useFakeTimers();
+            const now = Date.now();
+            element.metricKey = 'temp';
+            element.sensorHistory = { 'temp': [{ state: '20', last_changed: new Date(now).toISOString() }] } as any;
+            await element.updateComplete;
+
+            (element as any)._cachedChartRect = null; // Clear cache
+            const container = element.shadowRoot?.querySelector('.gs-env-chart-container') as HTMLElement;
+            vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({ left: 10, top: 10, width: 800, height: 200 } as any);
+
+            const event = new MouseEvent('mousemove', { clientX: 100, clientY: 100 });
+            (element as any)._onMouseMove(event, (element as any)._renderSeries, new Date(now - 3600000), 3600000);
+
+            await vi.runAllTimersAsync();
+            await element.updateComplete;
+
+            expect((element as any)._activeTooltip).not.toBeNull();
+            expect((element as any)._cachedChartRect).not.toBeNull();
+            vi.useRealTimers();
+        });
+
+        it('should dispatch chart-clicked event on click if hoverTime is set', async () => {
+            const now = Date.now();
+            (element as any)._hoverTime = now;
+            const listener = vi.fn();
+            element.addEventListener('chart-clicked', listener);
+
+            (element as any)._onChartClick();
+
+            expect(listener).toHaveBeenCalledWith(expect.objectContaining({
+                detail: { timestamp: now }
+            }));
+        });
+
+        it('should cancel tooltip RAF on mousemove if already pending', async () => {
+            const cancelSpy = vi.spyOn(window, 'cancelAnimationFrame');
+            (element as any)._tooltipRafId = 123;
+            const event = new MouseEvent('mousemove');
+            (element as any)._onMouseMove(event, [], new Date(), 1000);
+            expect(cancelSpy).toHaveBeenCalledWith(123);
+        });
+
+
     });
 });
 

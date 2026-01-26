@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
+import { ConfigTab } from '../../../src/constants';
 import { html, render } from 'lit';
 import { mdiViewDashboard } from '@mdi/js';
 
@@ -24,8 +25,13 @@ describe('ConfigDialog Interactions', () => {
         const buttons = element.shadowRoot?.querySelectorAll('.config-tab');
         expect(buttons?.length).toBeGreaterThan(0);
 
-        const tabs: ('add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier')[] =
-            ['add_growspace', 'edit_growspace', 'environment', 'dehumidifier'];
+        const tabs = [
+            ConfigTab.ADD_GROWSPACE,
+            ConfigTab.EDIT_GROWSPACE,
+            ConfigTab.ENVIRONMENT,
+            ConfigTab.DEHUMIDIFIER,
+            ConfigTab.SENSOR_GROUPS
+        ];
 
         if (buttons) {
             for (let i = 0; i < buttons.length; i++) {
@@ -37,7 +43,7 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger sensor changes via DOM select', async () => {
-        element.setInitialState('environment', {
+        element.setInitialState(ConfigTab.ENVIRONMENT, {
             selectedGrowspaceId: 'gs1'
         } as any);
         element.hass = {
@@ -58,7 +64,7 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger updateThreshold via night/off selection', async () => {
-        element.setInitialState('dehumidifier', {
+        element.setInitialState(ConfigTab.DEHUMIDIFIER, {
             dehumidifier_thresholds: {
                 'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
             }

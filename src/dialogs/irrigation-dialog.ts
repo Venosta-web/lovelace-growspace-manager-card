@@ -1077,7 +1077,7 @@ export class IrrigationDialog extends LitElement {
               </div>
               
               <div class="percentage-text">
-                ${fillLevel !== null ? `${fillLevel.toFixed(0)}%` : 'N/A'}
+                ${tank.fillLevel !== null && tank.fillLevel !== undefined ? `${fillLevel.toFixed(0)}%` : 'N/A'}
                 ${isWarning ? html`<span class="warning-icon">⚠️</span>` : ''}
               </div>
             </div>

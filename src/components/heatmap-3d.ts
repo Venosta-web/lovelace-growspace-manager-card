@@ -743,8 +743,12 @@ export class Heatmap3D extends LitElement {
 
         if (entityIds.size === 0) return;
 
-        const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+        try {
+            const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+        } catch (e) {
+            console.error('Failed to fetch history:', e);
+        }
     }
 
     // UI Helpers
@@ -1153,8 +1157,9 @@ export class Heatmap3D extends LitElement {
                     // Rotation?
                     let rotation = 0;
 
+                    if (!id) return nothing;
                     const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;
-                    const name = friendlyName || `Sensor ${id.split('.').pop()}`;
+                    const name = friendlyName || `Sensor ${id.includes('.') ? id.split('.').pop() : id}`;
                     const icon = SensorTypeUtils.getSensorIcon(this.device, this.hass, id);
 
                     return html`

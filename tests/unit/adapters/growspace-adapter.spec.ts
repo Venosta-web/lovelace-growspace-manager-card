@@ -384,6 +384,126 @@ describe('GrowspaceAdapter', () => {
         });
     });
 
+    it('should process sensor_groups and merge coordinates', () => {
+        const wsWithGroups: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            sensor_groups: [
+                {
+                    id: 'group1',
+                    x: 10, y: 20, z: 5,
+                    temperature_sensors: ['sensor.group_temp'],
+                    humidity_sensors: ['sensor.group_hum'],
+                    vpd_sensors: ['sensor.group_vpd']
+                }
+            ],
+            sensor_coordinates: {
+                'sensor.existing': { x: 50, y: 50, z: 0 }
+            }
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithGroups);
+        const coords = result?.environmentAttributes?.sensorCoordinates || {};
+
+        expect(coords['sensor.group_temp']).toEqual({ x: 10, y: 20, z: 5 });
+        expect(coords['sensor.group_hum']).toEqual({ x: 10, y: 20, z: 5 });
+        expect(coords['sensor.group_vpd']).toEqual({ x: 10, y: 20, z: 5 });
+        expect(coords['sensor.existing']).toEqual({ x: 50, y: 50, z: 0 });
+    });
+
+    it('should map irrigation_tanks correctly', () => {
+        const wsWithTanks: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            irrigation_tanks: [
+                {
+                    sensor_entity: 'sensor.tank1',
+                    name: 'Main Tank',
+                    warning_level: 20,
+                    fill_level: 80,
+                    is_warning: false
+                }
+            ]
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithTanks);
+        const tanks = result?.environmentAttributes!.irrigationTanks;
+
+        expect(tanks![0]).toEqual({
+            sensorEntity: 'sensor.tank1',
+            name: 'Main Tank',
+            warningLevel: 20,
+            fillLevel: 80,
+            isWarning: false
+        });
+    });
+
+    it('should fallback to dimensions.depth and handle missing units', () => {
+        const wsWithDepth: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            dimensions: {
+                width: 150,
+                depth: 150, // Legacy/Alternative field
+                height: 200
+            } as any
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithDepth);
+        expect(result?.dimensions?.length).toBe(150);
+        expect(result?.dimensions?.unit).toBe('cm');
+    });
+
+    it('should handle sensor groups with missing sensor arrays', () => {
+        const wsWithEmptyGroups: GrowspaceAPIResponse = {
+            growspace_id: 'test_gs',
+            sensor_groups: [
+                {
+                    id: 'group_empty',
+                    x: 10, y: 10, z: 10
+                    // temperature_sensors etc are missing
+                }
+            ]
+        } as any;
+
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsWithEmptyGroups);
+        expect(result).toBeDefined();
+        // Should not crash and should still have sensor_groups in attributes
+        expect(result?.environmentAttributes?.sensorGroups).toHaveLength(1);
+    });
+
+    it('should NOT overwrite existing sensor coordinates with group coordinates', () => {
+        const ws: GrowspaceAPIResponse = {
+            growspace_id: 'gs',
+            sensor_coordinates: {
+                'sensor.fixed': { x: 1, y: 1, z: 1 }
+            },
+            sensor_groups: [
+                {
+                    id: 'g1', x: 2, y: 2, z: 2,
+                    temperature_sensors: ['sensor.fixed']
+                }
+            ]
+        } as any;
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+        expect(result?.environmentAttributes?.sensorCoordinates!['sensor.fixed']).toEqual({ x: 1, y: 1, z: 1 });
+    });
+
+    it('should use dimensions.length if available before falling back to depth', () => {
+        const ws: GrowspaceAPIResponse = {
+            growspace_id: 'gs',
+            dimensions: { width: 100, length: 111, height: 100 }
+        } as any;
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+        expect(result?.dimensions?.length).toBe(111);
+    });
+
+    it('should fallback to 120 for dimensions.length if length and depth are missing', () => {
+        const ws: GrowspaceAPIResponse = {
+            growspace_id: 'gs',
+            dimensions: { width: 100, height: 100 } as any
+        } as any;
+        const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+        expect(result?.dimensions?.length).toBe(120);
+    });
+
     it('should backfill sensorCoordinates for known sensors if missing', () => {
         const wsDataWithoutCoords: GrowspaceAPIResponse = {
             growspace_id: 'test_gs',
@@ -396,23 +516,16 @@ describe('GrowspaceAdapter', () => {
             irrigation_config: { irrigation_times: [], drain_times: [] },
             vpd_status: 'ok',
 
-            // Defined Sensors
             temperature_sensor: 'sensor.temp',
             light_sensor: 'sensor.light',
-
-            // Empty coordinates
             sensor_coordinates: {},
-
             dimensions: { width: 200, length: 200, height: 200, unit: 'cm' }
         } as any;
 
         const result = GrowspaceAdapter.transformGrowspace(mockOverview, wsDataWithoutCoords);
         const coords = result?.environmentAttributes?.sensorCoordinates || {};
 
-        expect(coords['sensor.temp']).toBeDefined();
-        expect(coords['sensor.temp']).toEqual({ x: 100, y: 100, z: 0 }); // Midpoint
-
-        expect(coords['sensor.light']).toBeDefined();
+        expect(coords['sensor.temp']).toEqual({ x: 100, y: 100, z: 0 });
         expect(coords['sensor.light']).toEqual({ x: 100, y: 100, z: 0 });
     });
 });

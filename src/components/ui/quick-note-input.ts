@@ -314,6 +314,7 @@ export class QuickNoteInput extends LitElement {
                     @change=${this._handleFileSelect}
                     multiple
                     accept="image/*"
+                    capture="environment"
                   />
                   <button
                     @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}

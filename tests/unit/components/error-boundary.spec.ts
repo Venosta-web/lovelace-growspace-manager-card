@@ -254,4 +254,75 @@ describe('ErrorBoundary', () => {
         const buttons = Array.from(element.shadowRoot?.querySelectorAll('button.error-button') || []);
         expect(buttons.some(b => b.textContent?.includes('Retry'))).toBe(true);
     });
+
+    it('handles non-Error objects thrown in callbacks', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+        // Test retry with string throw
+        element.onRetry = () => { throw 'String Error'; };
+        element.setError(new Error('Initial Error'));
+        await element.updateComplete;
+        (element as any)._handleRetry();
+        await element.updateComplete;
+        expect(consoleSpy).toHaveBeenCalled();
+        expect((element as any)._error.message).toBe('String Error');
+
+        // Test reset with string throw
+        element.onReset = () => { throw 'Reset String Error'; };
+        element.setError(new Error('Initial Error'));
+        await element.updateComplete;
+        (element as any)._handleReset();
+        await element.updateComplete;
+        expect((element as any)._error.message).toBe('Reset String Error');
+    });
+
+    it('handles empty error message in render', async () => {
+        element.setError(new Error(''));
+        await element.updateComplete;
+        const errorMsg = element.shadowRoot?.querySelector('.error-message');
+        expect(errorMsg?.textContent).toBe('An unexpected error occurred');
+    });
+
+    it('respects showDetails property', async () => {
+        vi.spyOn(element as any, '_isDev', 'get').mockReturnValue(true);
+        element.setError(new Error('Test Error'));
+        element.showDetails = true;
+        await element.updateComplete;
+
+        const details = element.shadowRoot?.querySelector('details');
+        expect(details?.hasAttribute('open')).toBe(true);
+        expect(details?.querySelector('summary')?.textContent).toContain('Hide');
+    });
+
+    it('dispatches error-caught event', async () => {
+        const eventSpy = vi.fn();
+        element.addEventListener('error-caught', eventSpy);
+
+        const testError = new Error('Test Event');
+        element.setError(testError, { some: 'info' });
+
+        expect(eventSpy).toHaveBeenCalled();
+        const event = eventSpy.mock.calls[0][0] as CustomEvent;
+        expect(event.detail.error).toBe(testError);
+        expect(event.detail.errorInfo).toEqual({ some: 'info' });
+        expect(event.detail.errorCount).toBe(1);
+    });
+
+    it('resets error count after interval', async () => {
+        vi.useFakeTimers();
+
+        element.setError(new Error('E1'));
+        expect((element as any)._errorCount).toBe(1);
+
+        // Advance time more than ERROR_RESET_INTERVAL (5000ms)
+        vi.advanceTimersByTime(6000);
+
+        // Trigger an update to run the 'updated' lifecycle
+        element.requestUpdate();
+        await element.updateComplete;
+
+        expect((element as any)._errorCount).toBe(0);
+
+        vi.useRealTimers();
+    });
 });

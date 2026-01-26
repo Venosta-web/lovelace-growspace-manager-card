@@ -10924,6 +10924,7 @@ let QuickNoteInput = class QuickNoteInput extends i$3 {
                     @change=${this._handleFileSelect}
                     multiple
                     accept="image/*"
+                    capture="environment"
                   />
                   <button
                     @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
@@ -14164,7 +14165,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <input
                           type="file"
                           accept="image/*"
-                          capture="environment"
+                          capture
                           style="display:none"
                           @change=${handleFileChange}
                         />
@@ -17847,7 +17848,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               </div>
               
               <div class="percentage-text">
-                ${fillLevel !== null ? `${fillLevel.toFixed(0)}%` : 'N/A'}
+                ${tank.fillLevel !== null && tank.fillLevel !== undefined ? `${fillLevel.toFixed(0)}%` : 'N/A'}
                 ${isWarning ? x `<span class="warning-icon">⚠️</span>` : ''}
               </div>
             </div>
@@ -90872,6 +90873,7 @@ class EquipmentRenderer extends BaseRenderer {
                 volatileGroup.remove(obj);
                 this.disposeObject(obj);
                 this.cache.delete(eid);
+                this.context.sensorMeshes.delete(eid);
             }
         });
         // Sync local arrays for animation
@@ -92024,7 +92026,7 @@ class SceneManager {
         this.handleResize = this.handleResize.bind(this);
         window.addEventListener('resize', this.handleResize);
         // Initial resize
-        setTimeout(() => this.handleResize(), 100);
+        this.resizeTimeoutId = setTimeout(() => this.handleResize(), 100);
     }
     initRenderers() {
         this.renderers = [
@@ -92104,6 +92106,8 @@ class SceneManager {
     dispose() {
         if (this.animationId)
             cancelAnimationFrame(this.animationId);
+        if (this.resizeTimeoutId)
+            clearTimeout(this.resizeTimeoutId);
         window.removeEventListener('resize', this.handleResize);
         // Dispose all renderers (this cleans their caches)
         this.renderers.forEach(r => r.dispose());
@@ -93035,8 +93039,13 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         });
         if (entityIds.size === 0)
             return;
-        const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+        try {
+            const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+        }
+        catch (e) {
+            console.error('Failed to fetch history:', e);
+        }
     }
     // UI Helpers
     getSensorValue(entityId, metric) {
@@ -93417,8 +93426,10 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             const x$1 = Math.round(mesh.position.x + width / 2);
             const y = Math.round(mesh.position.z + depth / 2);
             const z = Math.round(mesh.userData.logicalZ !== undefined ? mesh.userData.logicalZ : mesh.position.y);
+            if (!id)
+                return E;
             const friendlyName = this.hass?.states[id]?.attributes?.friendly_name;
-            const name = friendlyName || `Sensor ${id.split('.').pop()}`;
+            const name = friendlyName || `Sensor ${id.includes('.') ? id.split('.').pop() : id}`;
             const icon = SensorTypeUtils.getSensorIcon(this.device, this.hass, id);
             return x `
                         <div class="sensor-item">

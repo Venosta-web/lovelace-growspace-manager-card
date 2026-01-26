@@ -31,12 +31,24 @@ export class SensorRenderer extends BaseRenderer {
             const matchesMetric = this.isMetric(entityId, selectedMetric);
             const isVisible = matchesMetric || isLight;
 
-            currentSensorIds.add(entityId);
             const coords = sensorCoords[entityId];
             if (!coords) return;
 
             let sensorModel = this.cache.get(entityId);
             const val = this.getValue(entityId);
+            if (isNaN(val)) {
+                // Remove if it exists in cache but now has invalid value
+                if (sensorModel) {
+                    volatileGroup.remove(sensorModel);
+                    this.cache.delete(entityId);
+                    this.context.sensorMeshes.delete(entityId);
+                }
+                return;
+            }
+
+            // ONLY mark as current if it's a valid sensor and not skipped
+            currentSensorIds.add(entityId);
+
             const healthColor = isLight ? '#ffeb3b' : '#4caf50';
 
             if (!sensorModel) {
@@ -101,6 +113,7 @@ export class SensorRenderer extends BaseRenderer {
                 volatileGroup.remove(obj);
                 this.disposeObject(obj);
                 this.cache.delete(key);
+                this.context.sensorMeshes.delete(key);
             }
         });
     }
@@ -113,6 +126,8 @@ export class SensorRenderer extends BaseRenderer {
         if (metric === 'temperature') return SensorTypeUtils.isTemperature(device, hass, id);
         if (metric === 'humidity') return SensorTypeUtils.isHumidity(device, hass, id);
         if (metric === 'vpd') return SensorTypeUtils.isVPD(device, hass, id);
+        if (metric === 'co2') return SensorTypeUtils.isCO2(device, id);
+        if (metric === 'soil_moisture') return SensorTypeUtils.isSoilMoisture(device, id);
         return false;
     }
 
@@ -139,7 +154,7 @@ export class SensorRenderer extends BaseRenderer {
             return point ? parseFloat(point.s) : 0;
         }
         const state = hass?.states[entityId];
-        return state ? parseFloat(state.state) : 0;
+        return (state && state.state) ? parseFloat(state.state) : 0;
     }
 
     private createSensorProbeModel(color: string): THREE.Group {

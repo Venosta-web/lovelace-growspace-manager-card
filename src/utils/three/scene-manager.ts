@@ -25,6 +25,7 @@ export class SceneManager {
 
     public renderers: any[] = [];
     private animationId?: number;
+    private resizeTimeoutId?: any;
     private container: HTMLElement;
 
     // Context needs to be mutable or updated?
@@ -106,7 +107,7 @@ export class SceneManager {
         this.handleResize = this.handleResize.bind(this);
         window.addEventListener('resize', this.handleResize);
         // Initial resize
-        setTimeout(() => this.handleResize(), 100);
+        this.resizeTimeoutId = setTimeout(() => this.handleResize(), 100);
     }
 
     private initRenderers() {
@@ -189,6 +190,7 @@ export class SceneManager {
 
     public dispose() {
         if (this.animationId) cancelAnimationFrame(this.animationId);
+        if (this.resizeTimeoutId) clearTimeout(this.resizeTimeoutId);
         window.removeEventListener('resize', this.handleResize);
 
         // Dispose all renderers (this cleans their caches)

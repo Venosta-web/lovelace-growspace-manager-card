@@ -61,7 +61,7 @@ describe('GrowspaceManagerCardEditor', () => {
             }
         };
 
-        element.hass = mockHass;
+        element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
 
@@ -84,7 +84,7 @@ describe('GrowspaceManagerCardEditor', () => {
             states: {},
             connection: { subscribeEvents: vi.fn().mockResolvedValue(() => { }) }
         };
-        element.hass = mockHass;
+        element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
 
@@ -124,7 +124,7 @@ describe('GrowspaceManagerCardEditor', () => {
             connection: { subscribeEvents: vi.fn().mockResolvedValue(() => { }) }
         };
 
-        element.hass = mockHass;
+        element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
 
@@ -149,7 +149,7 @@ describe('GrowspaceManagerCardEditor', () => {
             connection: { subscribeEvents: subscribeMock }
         };
 
-        element.hass = mockHass;
+        element.hass = mockHass as any;
         element.requestUpdate();
         await element.updateComplete;
 
@@ -168,7 +168,7 @@ describe('GrowspaceManagerCardEditor', () => {
             connection: { subscribeEvents: subscribeMock }
         };
 
-        element.hass = mockHass;
+        element.hass = mockHass as any;
         element.setConfig({ type: 'test' });
         await element.updateComplete;
 
@@ -198,14 +198,14 @@ describe('GrowspaceManagerCardEditor', () => {
                 connection: { subscribeEvents: subscribeMock }
             };
 
-            element.hass = mockHass;
+            element.hass = mockHass as any;
             await element.updateComplete;
 
             // First subscription
             expect(subscribeMock).toHaveBeenCalledTimes(1);
 
             // Trigger update again
-            element.hass = { ...mockHass };
+            element.hass = { ...mockHass } as any;
             await element.updateComplete;
 
             // Should still be 1 call due to _hasSubscription guard
@@ -219,7 +219,7 @@ describe('GrowspaceManagerCardEditor', () => {
                 connection: { subscribeEvents: subscribeMock }
             };
 
-            element.hass = mockHass;
+            element.hass = mockHass as any;
             await element.updateComplete;
 
             expect((element as any)._hasSubscription).toBe(true);
@@ -241,7 +241,7 @@ describe('GrowspaceManagerCardEditor', () => {
                 connection: { subscribeEvents: subscribeMock }
             };
 
-            element.hass = mockHass;
+            element.hass = mockHass as any;
             element.setConfig({ type: 'test' });
             await element.updateComplete;
 
@@ -274,7 +274,7 @@ describe('GrowspaceManagerCardEditor', () => {
                 connection: { subscribeEvents: subscribeMock }
             };
 
-            element.hass = mockHass;
+            element.hass = mockHass as any;
             element.setConfig({ type: 'test' });
             await element.updateComplete;
 
@@ -314,6 +314,42 @@ describe('GrowspaceManagerCardEditor', () => {
 
             // _hasSubscription should remain false
             expect((newElement as any)._hasSubscription).toBe(false);
+        });
+
+        it('should fire config-changed event on keyboard rotation toggle', async () => {
+            element.setConfig({ type: 'custom:growspace-manager-card' });
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('config-changed', listener);
+
+            const rotateSwitch = element.shadowRoot?.querySelector('ha-form-switch');
+            if (rotateSwitch) {
+                (rotateSwitch as any).checked = true;
+                rotateSwitch.dispatchEvent(new Event('change'));
+            }
+
+            expect(listener).toHaveBeenCalled();
+            const eventDetail = listener.mock.calls[0][0].detail;
+            expect(eventDetail.config.keyboard_rotate_enabled).toBe(true);
+        });
+
+        it('should fire config-changed event on keyboard rotation speed change', async () => {
+            element.setConfig({ type: 'custom:growspace-manager-card' });
+            await element.updateComplete;
+
+            const listener = vi.fn();
+            element.addEventListener('config-changed', listener);
+
+            const speedInput = element.shadowRoot?.querySelector('input[type="range"]');
+            if (speedInput) {
+                (speedInput as HTMLInputElement).value = '2.5';
+                speedInput.dispatchEvent(new Event('change'));
+            }
+
+            expect(listener).toHaveBeenCalled();
+            const eventDetail = listener.mock.calls[0][0].detail;
+            expect(eventDetail.config.keyboard_rotate_speed).toBe(2.5);
         });
     });
 });
