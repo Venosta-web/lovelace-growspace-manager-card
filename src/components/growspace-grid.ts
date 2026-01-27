@@ -14,6 +14,10 @@ import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import './plant-card';
 
+// Phase 2: New plant-card implementation
+import { FEATURE_FLAGS } from '../features/shared/config/feature-flags';
+import '../features/plants/containers/plant-card.container';
+
 /**
  * Defines the RGBA color values for various grid overlay states.
  */
@@ -587,21 +591,39 @@ export class GrowspaceGrid extends LitElement {
     const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
     const overlayColor = this._getOverlayColor(overlayMode, plant);
 
+    // Phase 2: Feature flag to toggle between old and new plant card
+    const useNewPlantCard = FEATURE_FLAGS.USE_NEW_PLANT_CARD;
+
     return html`
       <div class="grid-item-wrapper">
-        <growspace-plant-card
-          .plant=${plant}
-          .row=${row}
-          .col=${col}
-          @plant-click=${() => this._handlePlantClick(plant)}
-          @plant-drag-start=${() => this._handleDragStart(plant)}
-          @plant-drop=${(e: CustomEvent) =>
-        this._handleDrop(e.detail.originalEvent, row, col, plant)}
-          @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-        ></growspace-plant-card>
+        ${useNewPlantCard
+          ? html`
+              <plant-card-container
+                .plant=${plant}
+                .row=${row}
+                .col=${col}
+                @plant-click=${() => this._handlePlantClick(plant)}
+                @plant-drag-start=${() => this._handleDragStart(plant)}
+                @plant-drop=${(e: CustomEvent) =>
+                  this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+              ></plant-card-container>
+            `
+          : html`
+              <growspace-plant-card
+                .plant=${plant}
+                .row=${row}
+                .col=${col}
+                @plant-click=${() => this._handlePlantClick(plant)}
+                @plant-drag-start=${() => this._handleDragStart(plant)}
+                @plant-drop=${(e: CustomEvent) =>
+                  this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+              ></growspace-plant-card>
+            `}
         ${overlayMode !== GridOverlayMode.NONE
-        ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
-        : nothing}
+          ? html`<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
+          : nothing}
       </div>
     `;
   }

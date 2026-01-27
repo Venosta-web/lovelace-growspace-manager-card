@@ -34981,6 +34981,718 @@ const variables = i$6 `
   }
 `;
 
+let clean = Symbol('clean');
+
+let listenerQueue = [];
+let lqIndex = 0;
+const QUEUE_ITEMS_PER_LISTENER = 4;
+let epoch = 0;
+
+/* @__NO_SIDE_EFFECTS__ */
+const atom = initialValue => {
+  let listeners = [];
+  let $atom = {
+    get() {
+      if (!$atom.lc) {
+        $atom.listen(() => {})();
+      }
+      return $atom.value
+    },
+    lc: 0,
+    listen(listener) {
+      $atom.lc = listeners.push(listener);
+
+      return () => {
+        for (
+          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
+          i < listenerQueue.length;
+
+        ) {
+          if (listenerQueue[i] === listener) {
+            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
+          } else {
+            i += QUEUE_ITEMS_PER_LISTENER;
+          }
+        }
+
+        let index = listeners.indexOf(listener);
+        if (~index) {
+          listeners.splice(index, 1);
+          if (!--$atom.lc) $atom.off();
+        }
+      }
+    },
+    notify(oldValue, changedKey) {
+      epoch++;
+      let runListenerQueue = !listenerQueue.length;
+      for (let listener of listeners) {
+        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
+      }
+
+      if (runListenerQueue) {
+        for (
+          lqIndex = 0;
+          lqIndex < listenerQueue.length;
+          lqIndex += QUEUE_ITEMS_PER_LISTENER
+        ) {
+          listenerQueue[lqIndex](
+            listenerQueue[lqIndex + 1],
+            listenerQueue[lqIndex + 2],
+            listenerQueue[lqIndex + 3]
+          );
+        }
+        listenerQueue.length = 0;
+      }
+    },
+    /* It will be called on last listener unsubscribing.
+       We will redefine it in onMount and onStop. */
+    off() {},
+    set(newValue) {
+      let oldValue = $atom.value;
+      if (oldValue !== newValue) {
+        $atom.value = newValue;
+        $atom.notify(oldValue);
+      }
+    },
+    subscribe(listener) {
+      let unbind = $atom.listen(listener);
+      listener($atom.value);
+      return unbind
+    },
+    value: initialValue
+  };
+
+  {
+    $atom[clean] = () => {
+      listeners = [];
+      $atom.lc = 0;
+      $atom.off();
+    };
+  }
+
+  return $atom
+};
+
+const MOUNT = 5;
+const UNMOUNT = 6;
+const REVERT_MUTATION = 10;
+
+let on = (object, listener, eventKey, mutateStore) => {
+  object.events = object.events || {};
+  if (!object.events[eventKey + REVERT_MUTATION]) {
+    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
+      // eslint-disable-next-line no-sequences
+      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
+        shared: {},
+        ...eventProps
+      });
+    });
+  }
+  object.events[eventKey] = object.events[eventKey] || [];
+  object.events[eventKey].push(listener);
+  return () => {
+    let currentListeners = object.events[eventKey];
+    let index = currentListeners.indexOf(listener);
+    currentListeners.splice(index, 1);
+    if (!currentListeners.length) {
+      delete object.events[eventKey];
+      object.events[eventKey + REVERT_MUTATION]();
+      delete object.events[eventKey + REVERT_MUTATION];
+    }
+  }
+};
+
+let STORE_UNMOUNT_DELAY = 1000;
+
+let onMount = ($store, initialize) => {
+  let listener = payload => {
+    let destroy = initialize(payload);
+    if (destroy) $store.events[UNMOUNT].push(destroy);
+  };
+  return on($store, listener, MOUNT, runListeners => {
+    let originListen = $store.listen;
+    $store.listen = (...args) => {
+      if (!$store.lc && !$store.active) {
+        $store.active = true;
+        runListeners();
+      }
+      return originListen(...args)
+    };
+
+    let originOff = $store.off;
+    $store.events[UNMOUNT] = [];
+    $store.off = () => {
+      originOff();
+      setTimeout(() => {
+        if ($store.active && !$store.lc) {
+          $store.active = false;
+          for (let destroy of $store.events[UNMOUNT]) destroy();
+          $store.events[UNMOUNT] = [];
+        }
+      }, STORE_UNMOUNT_DELAY);
+    };
+
+    {
+      let originClean = $store[clean];
+      $store[clean] = () => {
+        for (let destroy of $store.events[UNMOUNT]) destroy();
+        $store.events[UNMOUNT] = [];
+        $store.active = false;
+        originClean();
+      };
+    }
+
+    return () => {
+      $store.listen = originListen;
+      $store.off = originOff;
+    }
+  })
+};
+
+let computedStore = (stores, cb, batched) => {
+  if (!Array.isArray(stores)) stores = [stores];
+
+  let previousArgs;
+  let currentEpoch;
+  let set = () => {
+    if (currentEpoch === epoch) return
+    currentEpoch = epoch;
+    let args = stores.map($store => $store.get());
+    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
+      previousArgs = args;
+      let value = cb(...args);
+      if (value && value.then && value.t) {
+        value.then(asyncValue => {
+          if (previousArgs === args) {
+            // Prevent a stale set
+            $computed.set(asyncValue);
+          }
+        });
+      } else {
+        $computed.set(value);
+        currentEpoch = epoch;
+      }
+    }
+  };
+  let $computed = atom(undefined);
+  let get = $computed.get;
+  $computed.get = () => {
+    set();
+    return get()
+  };
+  let run = set;
+
+  onMount($computed, () => {
+    let unbinds = stores.map($store => $store.listen(run));
+    set();
+    return () => {
+      for (let unbind of unbinds) unbind();
+    }
+  });
+
+  return $computed
+};
+
+/* @__NO_SIDE_EFFECTS__ */
+const computed = (stores, fn) => computedStore(stores, fn);
+
+/* @__NO_SIDE_EFFECTS__ */
+const map = (initial = {}) => {
+  let $map = atom(initial);
+
+  $map.setKey = function (key, value) {
+    let oldMap = $map.value;
+    if (typeof value === 'undefined' && key in $map.value) {
+      $map.value = { ...$map.value };
+      delete $map.value[key];
+      $map.notify(oldMap, key);
+    } else if ($map.value[key] !== value) {
+      $map.value = {
+        ...$map.value,
+        [key]: value
+      };
+      $map.notify(oldMap, key);
+    }
+  };
+
+  return $map
+};
+
+/**
+ * Plant Card ViewModel
+ *
+ * Consolidates all business logic and state for plant card display.
+ * Single computed atom that components subscribe to.
+ */
+/**
+ * Check if plant was recently watered (within 24 hours)
+ */
+function isRecentlyWatered(plant) {
+    const lastWatered = plant.attributes.last_watered;
+    if (!lastWatered)
+        return false;
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+    return new Date(lastWatered) > twentyFourHoursAgo;
+}
+/**
+ * Check if plant has a recommended nutrient preset
+ */
+function hasRecommendedPreset(plant, nutrientPresets, devices) {
+    const growspaceId = plant.attributes.growspace_id;
+    const device = devices.find((d) => d.deviceId === growspaceId);
+    if (!device)
+        return false;
+    const currentStage = plant.attributes.stage;
+    const daysInStage = plant.attributes.days_in_stage || 0;
+    return Object.values(nutrientPresets).some((preset) => preset.stage === currentStage &&
+        (!preset.min_days_in_stage || daysInStage >= preset.min_days_in_stage));
+}
+/**
+ * Create plant card view model
+ *
+ * @param plant - Plant entity to display
+ * @param store - Global store instance
+ * @returns Computed atom with view model data
+ */
+function createPlantCardViewModel(plant, store) {
+    return computed([
+        store.ui.$isEditMode,
+        store.ui.$selectedPlants,
+        store.data.$strainLibrary,
+        store.data.$nutrientPresets,
+        store.data.$devices,
+    ], (isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
+        // Get plant ID
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        // Compute display data
+        const displayData = PlantUtils.getPlantDisplayData(plant, strainLibrary);
+        // Find strain for growth deviation calculation
+        const strain = strainLibrary.find((s) => s.strain === plant.attributes.strain);
+        const growthDeviation = calculateGrowthDeviation(plant, strain);
+        // Compute status indicators
+        const statusIndicators = {
+            hasTraining: !!plant.attributes.last_training_technique,
+            hasIPM: !!plant.attributes.last_ipm,
+            isRecentlyWatered: isRecentlyWatered(plant),
+            hasProblem: !!plant.attributes.problem,
+            hasGrowthDeviation: growthDeviation !== 0,
+            hasRecommendedPreset: hasRecommendedPreset(plant, nutrientPresets, devices),
+        };
+        // Accessibility labels
+        const strainName = displayData.strainName || 'Unknown strain';
+        const stageName = plant.state || 'unknown';
+        const ariaLabel = `${strainName} in ${stageName} stage`;
+        const checkboxAriaLabel = `Select ${strainName}`;
+        return {
+            plant,
+            displayData,
+            isSelected: selectedPlants.has(plantId),
+            isEditMode,
+            isDraggable: isEditMode,
+            growthDeviation,
+            statusIndicators,
+            ariaLabel,
+            checkboxAriaLabel,
+        };
+    });
+}
+
+/**
+ * Plant Card UI - Pure Presentational Component
+ *
+ * Receives all data via props, emits events for user interactions.
+ * No store access, no business logic, no subscriptions.
+ */
+/**
+ * Pure presentational plant card component
+ */
+let PlantCardUI = class PlantCardUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        // State props
+        this.isSelected = false;
+        this.isEditMode = false;
+        this.isDraggable = false;
+        this.growthDeviation = 0;
+        // Accessibility props
+        this.ariaLabel = '';
+        this.checkboxAriaLabel = '';
+    }
+    /**
+     * Focus the card element
+     */
+    focus(options) {
+        const card = this.shadowRoot?.querySelector('.plant-card-rich');
+        if (card) {
+            card.focus(options);
+        }
+        else {
+            super.focus(options);
+        }
+    }
+    render() {
+        if (!this.plant || !this.displayData) {
+            return x ``;
+        }
+        const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this.displayData;
+        // Construct srcset for responsive images
+        let srcset = '';
+        if (imageUrl && imageUrl.endsWith('.webp')) {
+            const smallUrl = imageUrl.replace('.webp', '_small.webp');
+            srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
+        }
+        return x `
+      <div
+        class="plant-card-rich"
+        style=${o({ '--stage-color': stageColor })}
+        draggable="${this.isDraggable}"
+        tabindex="0"
+        role="button"
+        aria-label="${this.ariaLabel}"
+        @click=${this._handleClick}
+        @keydown=${this._handleKeyDown}
+      >
+        ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderCheckbox()}
+        ${this._renderStatusIcons()}
+        ${this._renderContent(strainName, pheno, stages)}
+      </div>
+    `;
+    }
+    _renderBackground(imageUrl, srcset, strainName, imageCropMeta) {
+        if (!imageUrl) {
+            return E;
+        }
+        return x `
+      <img
+        class="plant-card-bg"
+        src="${imageUrl}"
+        srcset="${srcset}"
+        sizes="(max-width: 600px) 320px, 1024px"
+        loading="lazy"
+        decoding="async"
+        alt="${strainName}"
+        style="${PlantUtils.getImgStyle(imageCropMeta)}"
+      />
+      <div class="plant-card-overlay"></div>
+    `;
+    }
+    _renderCheckbox() {
+        if (!this.isEditMode) {
+            return E;
+        }
+        return x `
+      <div
+        class=${e({ 'plant-card-checkbox': true, selected: this.isSelected })}
+        role="checkbox"
+        aria-checked=${this.isSelected ? 'true' : 'false'}
+        tabindex="0"
+        aria-label="${this.checkboxAriaLabel}"
+        @click=${this._handleToggleSelection}
+        @keydown=${this._handleCheckboxKeyDown}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          style=${o({
+            width: '24px',
+            height: '24px',
+            fill: this.isSelected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)',
+        })}
+        >
+          <path d="${this.isSelected ? mdiCheckboxMarked : mdiCheckboxBlankOutline}"></path>
+        </svg>
+      </div>
+    `;
+    }
+    _renderStatusIcons() {
+        return x `
+      <div class="status-icons">
+        ${this._renderTrainingIcon()}
+        ${this._renderIPMIcon()}
+        ${this._renderWateringIcon()}
+        ${this._renderProblemIcon()}
+        ${this._renderGrowthDeviationIcon()}
+      </div>
+    `;
+    }
+    _renderTrainingIcon() {
+        if (!this.statusIndicators.hasTraining) {
+            return E;
+        }
+        return x `
+      <div
+        class="status-icon training"
+        role="img"
+        aria-label="Last trained with: ${this.plant.attributes.last_training_technique}"
+        title="Last trained with: ${this.plant.attributes.last_training_technique}"
+      >
+        <ha-svg-icon .path=${mdiContentCut}></ha-svg-icon>
+      </div>
+    `;
+    }
+    _renderIPMIcon() {
+        if (!this.statusIndicators.hasIPM) {
+            return E;
+        }
+        return x `
+      <div
+        class="status-icon ipm"
+        role="img"
+        aria-label="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}"
+        title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}"
+      >
+        <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
+      </div>
+    `;
+    }
+    _renderWateringIcon() {
+        if (!this.statusIndicators.isRecentlyWatered) {
+            return E;
+        }
+        return x `
+      <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
+        <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
+      </div>
+    `;
+    }
+    _renderProblemIcon() {
+        if (!this.statusIndicators.hasProblem) {
+            return E;
+        }
+        return x `
+      <div
+        class="status-icon problem"
+        role="img"
+        aria-label="Problem detected: ${this.plant.attributes.problem}"
+        title="Problem detected: ${this.plant.attributes.problem}"
+      >
+        <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+      </div>
+    `;
+    }
+    _renderGrowthDeviationIcon() {
+        if (!this.statusIndicators.hasGrowthDeviation) {
+            return E;
+        }
+        const isAhead = this.growthDeviation > 0;
+        const color = isAhead ? '#4caf50' : '#f44336';
+        const bgColor = isAhead ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
+        return x `
+      <div
+        class="status-icon deviation ${isAhead ? 'ahead' : 'behind'}"
+        role="img"
+        aria-label="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+        title="Growth Deviation: ${Math.round(this.growthDeviation)}%"
+        style="background: ${bgColor}; border: 1px solid ${color};"
+      >
+        <ha-svg-icon
+          .path=${isAhead ? mdiTrendingUp : mdiTrendingDown}
+          style="color: ${color}"
+        ></ha-svg-icon>
+      </div>
+    `;
+    }
+    _renderContent(strainName, pheno, stages) {
+        return x `
+      <div class="plant-card-content">
+        <div class="pc-info">
+          <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+          ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
+            ${this.statusIndicators.hasRecommendedPreset
+            ? x `
+                  <ha-svg-icon
+                    .path=${mdiStar}
+                    style="--mdc-icon-size: 14px; color: var(--primary-color);"
+                    title="Nutrient Preset Recommended"
+                  ></ha-svg-icon>
+                `
+            : E}
+          </div>
+        </div>
+
+        <growspace-plant-stats .stages=${stages}></growspace-plant-stats>
+      </div>
+    `;
+    }
+    // Event handlers - just emit custom events
+    _handleClick() {
+        this.dispatchEvent(new CustomEvent('plant-click', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+        // Trigger haptic feedback
+        this.dispatchEvent(new CustomEvent('haptic', {
+            detail: 'light',
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleToggleSelection(e) {
+        e.stopPropagation();
+        this.dispatchEvent(new CustomEvent('plant-toggle-selection', {
+            detail: { plant: this.plant },
+            bubbles: true,
+            composed: true,
+        }));
+        // Trigger haptic feedback
+        this.dispatchEvent(new CustomEvent('haptic', {
+            detail: 'selection',
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleKeyDown(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this._handleClick();
+        }
+    }
+    _handleCheckboxKeyDown(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this._handleToggleSelection(e);
+        }
+    }
+};
+PlantCardUI.styles = [sharedStyles, plantCardStyles];
+__decorate([
+    n$5({ attribute: false })
+], PlantCardUI.prototype, "plant", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantCardUI.prototype, "displayData", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantCardUI.prototype, "statusIndicators", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantCardUI.prototype, "isSelected", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantCardUI.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantCardUI.prototype, "isDraggable", void 0);
+__decorate([
+    n$5({ type: Number })
+], PlantCardUI.prototype, "growthDeviation", void 0);
+__decorate([
+    n$5()
+], PlantCardUI.prototype, "ariaLabel", void 0);
+__decorate([
+    n$5()
+], PlantCardUI.prototype, "checkboxAriaLabel", void 0);
+PlantCardUI = __decorate([
+    t$2('plant-card-ui')
+], PlantCardUI);
+
+/**
+ * Plant Card Container - Smart Component
+ *
+ * Connects ViewModel to UI component and dispatches actions.
+ * Handles store access, subscriptions, and event-to-action mapping.
+ */
+/**
+ * Container component for plant card
+ */
+let PlantCardContainer = class PlantCardContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.forceDraggable = false;
+        // Drag & drop controller
+        this.dragController = new DragDropController(this);
+    }
+    // Satisfy DragDropHost interface
+    get isEditMode() {
+        return this.viewModelController?.value?.isEditMode ?? false;
+    }
+    get selected() {
+        return this.viewModelController?.value?.isSelected ?? false;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.plant && this.store) {
+            // Create ViewModel for this plant
+            this.viewModel = createPlantCardViewModel(this.plant, this.store);
+            this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+    }
+    /**
+     * Focus the card
+     */
+    focus(options) {
+        const cardUI = this.shadowRoot?.querySelector('plant-card-ui');
+        if (cardUI && typeof cardUI.focus === 'function') {
+            cardUI.focus(options);
+        }
+        else {
+            super.focus(options);
+        }
+    }
+    render() {
+        if (!this.viewModelController) {
+            return x ``;
+        }
+        const vm = this.viewModelController.value;
+        return x `
+      <plant-card-ui
+        .plant=${vm.plant}
+        .displayData=${vm.displayData}
+        .statusIndicators=${vm.statusIndicators}
+        .isSelected=${vm.isSelected}
+        .isEditMode=${vm.isEditMode}
+        .isDraggable=${vm.isDraggable}
+        .growthDeviation=${vm.growthDeviation}
+        .ariaLabel=${vm.ariaLabel}
+        .checkboxAriaLabel=${vm.checkboxAriaLabel}
+        @plant-click=${this._handlePlantClick}
+        @plant-toggle-selection=${this._handleToggleSelection}
+      ></plant-card-ui>
+    `;
+    }
+    // Event handlers - dispatch actions through store
+    _handlePlantClick(e) {
+        const { plant } = e.detail;
+        // Open plant overview dialog
+        this.store.ui.setActiveDialog({
+            type: 'PLANT_OVERVIEW',
+            payload: {
+                plant,
+                editedAttributes: {},
+                activeTab: 'dashboard',
+            },
+        });
+    }
+    _handleToggleSelection(e) {
+        const { plant } = e.detail;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        // Toggle plant selection
+        this.store.ui.togglePlantSelection(plantId);
+    }
+};
+__decorate([
+    n$5({ attribute: false })
+], PlantCardContainer.prototype, "plant", void 0);
+__decorate([
+    n$5({ type: Number })
+], PlantCardContainer.prototype, "row", void 0);
+__decorate([
+    n$5({ type: Number })
+], PlantCardContainer.prototype, "col", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantCardContainer.prototype, "forceDraggable", void 0);
+__decorate([
+    c$2({ context: storeContext })
+], PlantCardContainer.prototype, "store", void 0);
+PlantCardContainer = __decorate([
+    t$2('plant-card-container')
+], PlantCardContainer);
+
 /**
  * Defines the RGBA color values for various grid overlay states.
  */
@@ -35173,15 +35885,18 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         const overlayColor = this._getOverlayColor(overlayMode, plant);
         return x `
       <div class="grid-item-wrapper">
-        <growspace-plant-card
-          .plant=${plant}
-          .row=${row}
-          .col=${col}
-          @plant-click=${() => this._handlePlantClick(plant)}
-          @plant-drag-start=${() => this._handleDragStart(plant)}
-          @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
-          @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-        ></growspace-plant-card>
+        ${x `
+              <plant-card-container
+                .plant=${plant}
+                .row=${row}
+                .col=${col}
+                @plant-click=${() => this._handlePlantClick(plant)}
+                @plant-drag-start=${() => this._handleDragStart(plant)}
+                @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
+                @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
+              ></plant-card-container>
+            `
+            }
         ${overlayMode !== GridOverlayMode.NONE
             ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
             : E}
@@ -94186,243 +94901,6 @@ GrowspaceViewSwitcher = __decorate([
     t$2('growspace-view-switcher')
 ], GrowspaceViewSwitcher);
 
-let clean = Symbol('clean');
-
-let listenerQueue = [];
-let lqIndex = 0;
-const QUEUE_ITEMS_PER_LISTENER = 4;
-let epoch = 0;
-
-/* @__NO_SIDE_EFFECTS__ */
-const atom = initialValue => {
-  let listeners = [];
-  let $atom = {
-    get() {
-      if (!$atom.lc) {
-        $atom.listen(() => {})();
-      }
-      return $atom.value
-    },
-    lc: 0,
-    listen(listener) {
-      $atom.lc = listeners.push(listener);
-
-      return () => {
-        for (
-          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
-          i < listenerQueue.length;
-
-        ) {
-          if (listenerQueue[i] === listener) {
-            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
-          } else {
-            i += QUEUE_ITEMS_PER_LISTENER;
-          }
-        }
-
-        let index = listeners.indexOf(listener);
-        if (~index) {
-          listeners.splice(index, 1);
-          if (!--$atom.lc) $atom.off();
-        }
-      }
-    },
-    notify(oldValue, changedKey) {
-      epoch++;
-      let runListenerQueue = !listenerQueue.length;
-      for (let listener of listeners) {
-        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
-      }
-
-      if (runListenerQueue) {
-        for (
-          lqIndex = 0;
-          lqIndex < listenerQueue.length;
-          lqIndex += QUEUE_ITEMS_PER_LISTENER
-        ) {
-          listenerQueue[lqIndex](
-            listenerQueue[lqIndex + 1],
-            listenerQueue[lqIndex + 2],
-            listenerQueue[lqIndex + 3]
-          );
-        }
-        listenerQueue.length = 0;
-      }
-    },
-    /* It will be called on last listener unsubscribing.
-       We will redefine it in onMount and onStop. */
-    off() {},
-    set(newValue) {
-      let oldValue = $atom.value;
-      if (oldValue !== newValue) {
-        $atom.value = newValue;
-        $atom.notify(oldValue);
-      }
-    },
-    subscribe(listener) {
-      let unbind = $atom.listen(listener);
-      listener($atom.value);
-      return unbind
-    },
-    value: initialValue
-  };
-
-  {
-    $atom[clean] = () => {
-      listeners = [];
-      $atom.lc = 0;
-      $atom.off();
-    };
-  }
-
-  return $atom
-};
-
-const MOUNT = 5;
-const UNMOUNT = 6;
-const REVERT_MUTATION = 10;
-
-let on = (object, listener, eventKey, mutateStore) => {
-  object.events = object.events || {};
-  if (!object.events[eventKey + REVERT_MUTATION]) {
-    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
-      // eslint-disable-next-line no-sequences
-      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
-        shared: {},
-        ...eventProps
-      });
-    });
-  }
-  object.events[eventKey] = object.events[eventKey] || [];
-  object.events[eventKey].push(listener);
-  return () => {
-    let currentListeners = object.events[eventKey];
-    let index = currentListeners.indexOf(listener);
-    currentListeners.splice(index, 1);
-    if (!currentListeners.length) {
-      delete object.events[eventKey];
-      object.events[eventKey + REVERT_MUTATION]();
-      delete object.events[eventKey + REVERT_MUTATION];
-    }
-  }
-};
-
-let STORE_UNMOUNT_DELAY = 1000;
-
-let onMount = ($store, initialize) => {
-  let listener = payload => {
-    let destroy = initialize(payload);
-    if (destroy) $store.events[UNMOUNT].push(destroy);
-  };
-  return on($store, listener, MOUNT, runListeners => {
-    let originListen = $store.listen;
-    $store.listen = (...args) => {
-      if (!$store.lc && !$store.active) {
-        $store.active = true;
-        runListeners();
-      }
-      return originListen(...args)
-    };
-
-    let originOff = $store.off;
-    $store.events[UNMOUNT] = [];
-    $store.off = () => {
-      originOff();
-      setTimeout(() => {
-        if ($store.active && !$store.lc) {
-          $store.active = false;
-          for (let destroy of $store.events[UNMOUNT]) destroy();
-          $store.events[UNMOUNT] = [];
-        }
-      }, STORE_UNMOUNT_DELAY);
-    };
-
-    {
-      let originClean = $store[clean];
-      $store[clean] = () => {
-        for (let destroy of $store.events[UNMOUNT]) destroy();
-        $store.events[UNMOUNT] = [];
-        $store.active = false;
-        originClean();
-      };
-    }
-
-    return () => {
-      $store.listen = originListen;
-      $store.off = originOff;
-    }
-  })
-};
-
-let computedStore = (stores, cb, batched) => {
-  if (!Array.isArray(stores)) stores = [stores];
-
-  let previousArgs;
-  let currentEpoch;
-  let set = () => {
-    if (currentEpoch === epoch) return
-    currentEpoch = epoch;
-    let args = stores.map($store => $store.get());
-    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
-      previousArgs = args;
-      let value = cb(...args);
-      if (value && value.then && value.t) {
-        value.then(asyncValue => {
-          if (previousArgs === args) {
-            // Prevent a stale set
-            $computed.set(asyncValue);
-          }
-        });
-      } else {
-        $computed.set(value);
-        currentEpoch = epoch;
-      }
-    }
-  };
-  let $computed = atom(undefined);
-  let get = $computed.get;
-  $computed.get = () => {
-    set();
-    return get()
-  };
-  let run = set;
-
-  onMount($computed, () => {
-    let unbinds = stores.map($store => $store.listen(run));
-    set();
-    return () => {
-      for (let unbind of unbinds) unbind();
-    }
-  });
-
-  return $computed
-};
-
-/* @__NO_SIDE_EFFECTS__ */
-const computed = (stores, fn) => computedStore(stores, fn);
-
-/* @__NO_SIDE_EFFECTS__ */
-const map = (initial = {}) => {
-  let $map = atom(initial);
-
-  $map.setKey = function (key, value) {
-    let oldMap = $map.value;
-    if (typeof value === 'undefined' && key in $map.value) {
-      $map.value = { ...$map.value };
-      delete $map.value[key];
-      $map.notify(oldMap, key);
-    } else if ($map.value[key] !== value) {
-      $map.value = {
-        ...$map.value,
-        [key]: value
-      };
-      $map.notify(oldMap, key);
-    }
-  };
-
-  return $map
-};
-
 class GrowspaceDataStore {
     constructor() {
         /** Indicates if store has active subscribers (for lazy loading) */
@@ -96939,6 +97417,146 @@ class OptimisticManager {
     }
 }
 
+/**
+ * Event Bus - Centralized event system for cross-component communication
+ *
+ * Provides a typed, subscription-based event system that allows components
+ * to communicate without tight coupling or prop drilling.
+ */
+/**
+ * Event Bus for pub/sub communication
+ */
+class EventBus {
+    constructor() {
+        this.handlers = new Map();
+        this.debug = false;
+    }
+    /**
+     * Enable/disable debug logging
+     */
+    setDebug(enabled) {
+        this.debug = enabled;
+    }
+    /**
+     * Subscribe to an event
+     *
+     * @param event - Event name to subscribe to
+     * @param handler - Handler function to call when event is emitted
+     * @returns Unsubscribe function
+     */
+    on(event, handler) {
+        if (!this.handlers.has(event)) {
+            this.handlers.set(event, new Set());
+        }
+        const handlers = this.handlers.get(event);
+        handlers.add(handler);
+        if (this.debug) {
+            console.log(`[EventBus] Subscribed to "${event}" (${handlers.size} handlers)`);
+        }
+        // Return unsubscribe function
+        return () => {
+            handlers.delete(handler);
+            if (handlers.size === 0) {
+                this.handlers.delete(event);
+            }
+            if (this.debug) {
+                console.log(`[EventBus] Unsubscribed from "${event}"`);
+            }
+        };
+    }
+    /**
+     * Emit an event to all subscribers
+     *
+     * @param event - Event name to emit
+     * @param payload - Data to pass to handlers
+     */
+    emit(event, payload) {
+        const handlers = this.handlers.get(event);
+        if (!handlers || handlers.size === 0) {
+            if (this.debug) {
+                console.warn(`[EventBus] No handlers for event "${event}"`);
+            }
+            return;
+        }
+        if (this.debug) {
+            console.log(`[EventBus] Emitting "${event}" to ${handlers.size} handlers`, payload);
+        }
+        // Call all handlers (catch errors to prevent one handler from breaking others)
+        handlers.forEach((handler) => {
+            try {
+                handler(payload);
+            }
+            catch (error) {
+                console.error(`[EventBus] Handler error for event "${event}":`, error);
+            }
+        });
+    }
+    /**
+     * Subscribe to an event, but only handle it once
+     *
+     * @param event - Event name to subscribe to
+     * @param handler - Handler function (will be called once and auto-unsubscribed)
+     */
+    once(event, handler) {
+        const wrappedHandler = (payload) => {
+            handler(payload);
+            this.handlers.get(event)?.delete(wrappedHandler);
+            if (this.debug) {
+                console.log(`[EventBus] One-time handler for "${event}" executed and removed`);
+            }
+        };
+        this.on(event, wrappedHandler);
+    }
+    /**
+     * Check if event has any subscribers
+     *
+     * @param event - Event name to check
+     * @returns True if event has subscribers
+     */
+    hasSubscribers(event) {
+        const handlers = this.handlers.get(event);
+        return !!handlers && handlers.size > 0;
+    }
+    /**
+     * Get number of subscribers for an event
+     *
+     * @param event - Event name to check
+     * @returns Number of subscribers
+     */
+    subscriberCount(event) {
+        return this.handlers.get(event)?.size || 0;
+    }
+    /**
+     * Remove all subscribers for a specific event
+     *
+     * @param event - Event name to clear
+     */
+    off(event) {
+        this.handlers.delete(event);
+        if (this.debug) {
+            console.log(`[EventBus] Cleared all handlers for "${event}"`);
+        }
+    }
+    /**
+     * Remove all subscribers for all events
+     */
+    clear() {
+        const eventCount = this.handlers.size;
+        this.handlers.clear();
+        if (this.debug) {
+            console.log(`[EventBus] Cleared all handlers (${eventCount} events)`);
+        }
+    }
+    /**
+     * Get all event names that have subscribers
+     *
+     * @returns Array of event names
+     */
+    getEvents() {
+        return Array.from(this.handlers.keys());
+    }
+}
+
 class GrowspaceStore {
     /** Unified Action Context */
     get context() {
@@ -96979,10 +97597,25 @@ class GrowspaceStore {
         this.syncService = new SyncService(this.dataService, this.data, this.ui);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
         this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
+        // Initialize new infrastructure (Phase 1)
+        this.eventBus = new EventBus();
     }
-    /** Cleanup all subscriptions and resources */
+    /**
+     * Initialize store with Home Assistant instance and start subscriptions
+     * (Phase 1: New method for cleaner lifecycle management)
+     */
+    initialize(hass) {
+        this.hass = hass;
+        this.updateHass(hass);
+        // History store subscriptions will be initialized here in future phases
+    }
+    /**
+     * Cleanup all subscriptions and resources
+     * (Phase 1: Enhanced to include event bus cleanup)
+     */
     destroy() {
         this.history.destroy();
+        this.eventBus.clear();
     }
     // === Undo/Redo Methods ===
     pushUndoAction(action) {
