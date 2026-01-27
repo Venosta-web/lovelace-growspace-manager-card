@@ -4,12 +4,18 @@ import { TrainingTechnique } from '../../src/types';
 
 // Mock DataService
 const mockCallService = vi.fn();
-vi.mock('../../src/services/data-service', () => {
+const mockDataServiceInstance = {
+    hass: { callService: mockCallService },
+    updateHass: vi.fn(),
+};
+
+vi.mock('../../src/data-service', () => {
     return {
-        DataService: vi.fn().mockImplementation(() => ({
-            hass: { callService: mockCallService },
-            updateHass: vi.fn(),
-        }))
+        DataService: class {
+            constructor() {
+                return mockDataServiceInstance;
+            }
+        }
     };
 });
 

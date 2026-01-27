@@ -2,11 +2,13 @@ import { LitElement, html, CSSResultGroup, TemplateResult, PropertyValues } from
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
-import { hassContext, configContext, strainLibraryContext, storeContext } from './context';
+import { hassContext, configContext, strainLibraryContext, storeContext } from './lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
-import { GrowspaceManagerCardConfig, GrowspaceDevice, StrainEntry } from './types';
-import { ViewMode } from './constants';
+import type { GrowspaceManagerCardConfig } from './lib/types/config';
+import type { GrowspaceDevice } from './services/types';
+import type { StrainEntry } from './features/plants/types';
+import { ViewMode } from './features/environment/constants';
 
 import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
@@ -16,7 +18,7 @@ import './components/plant-card';
 import './components/growspace-header';
 import './components/growspace-toast';
 
-import { LibraryExportReadyEvent } from './events';
+import { LibraryExportReadyEvent } from './lib/events';
 import './components/growspace-view-switcher';
 import './components/ui'; // Register MD3 components
 import './components/error-boundary';

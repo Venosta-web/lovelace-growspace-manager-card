@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { LovelaceCardEditor, HomeAssistant } from 'custom-card-helpers';
-import type { GrowspaceManagerCardConfig } from './types';
+import type { GrowspaceManagerCardConfig } from './lib/types/config';
 
 import { HassSubscriptionController } from './controllers/hass-subscription-controller';
 
