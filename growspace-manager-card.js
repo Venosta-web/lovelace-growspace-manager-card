@@ -1,3 +1,65 @@
+var EntityState;
+(function (EntityState) {
+    EntityState["ON"] = "on";
+    EntityState["OFF"] = "off";
+    EntityState["UNAVAILABLE"] = "unavailable";
+    EntityState["UNKNOWN"] = "unknown";
+    EntityState["TRUE"] = "true";
+    EntityState["FALSE"] = "false";
+    EntityState["ACTIVE"] = "active";
+    EntityState["IDLE"] = "idle";
+})(EntityState || (EntityState = {}));
+const BINARY_ON_STATES = [
+    EntityState.ON,
+    EntityState.TRUE,
+    '1',
+    'heating',
+    'drying',
+    EntityState.ACTIVE,
+];
+const BINARY_OFF_STATES = [EntityState.OFF, EntityState.FALSE, '0', EntityState.IDLE];
+
+// --- Enums ---
+var PlantStage;
+(function (PlantStage) {
+    PlantStage["SEEDLING"] = "seedling";
+    PlantStage["CLONE"] = "clone";
+    PlantStage["MOTHER"] = "mother";
+    PlantStage["VEG"] = "veg";
+    PlantStage["FLOWER"] = "flower";
+    PlantStage["DRY"] = "dry";
+    PlantStage["CURE"] = "cure";
+})(PlantStage || (PlantStage = {}));
+var DehumidifierStage;
+(function (DehumidifierStage) {
+    DehumidifierStage["SEEDLING"] = "seedling";
+    DehumidifierStage["VEG"] = "veg";
+    DehumidifierStage["EARLY_FLOWER"] = "early_flower";
+    DehumidifierStage["MID_FLOWER"] = "mid_flower";
+    DehumidifierStage["LATE_FLOWER"] = "late_flower";
+    DehumidifierStage["DRYING"] = "drying";
+    DehumidifierStage["CURING"] = "curing";
+})(DehumidifierStage || (DehumidifierStage = {}));
+var GrowspaceType;
+(function (GrowspaceType) {
+    GrowspaceType["NORMAL"] = "normal";
+    GrowspaceType["MOTHER"] = "mother";
+    GrowspaceType["CLONE"] = "clone";
+    GrowspaceType["DRY"] = "dry";
+    GrowspaceType["CURE"] = "cure";
+    GrowspaceType["VEG"] = "veg";
+})(GrowspaceType || (GrowspaceType = {}));
+var TrainingTechnique;
+(function (TrainingTechnique) {
+    TrainingTechnique["TOPPING"] = "topping";
+    TrainingTechnique["FIM"] = "fim";
+    TrainingTechnique["LST"] = "lst";
+    TrainingTechnique["SUPER_CROPPING"] = "super_cropping";
+    TrainingTechnique["SCROG"] = "scrog";
+    TrainingTechnique["DEFOLIATING"] = "defoliating";
+    TrainingTechnique["LOLLIPOPPING"] = "lollipopping";
+})(TrainingTechnique || (TrainingTechnique = {}));
+
 // Material Design Icons v7.4.47
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
@@ -84,6 +146,20 @@ var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
 var mdiWhiteBalanceSunny = "M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13";
+
+const STAGE_CONFIG = {
+    [PlantStage.SEEDLING]: {
+        icon: mdiSprout,
+        title: 'Seedling',
+        colorVar: '--state-seedling-color',
+    },
+    [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
+    [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
+    [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
+    [PlantStage.FLOWER]: { icon: mdiFlower, title: 'Flower', colorVar: '--state-flower-color' },
+    [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
+    [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
+};
 
 var MetricKey;
 (function (MetricKey) {
@@ -216,14 +292,6 @@ var ScrollDirection;
     ScrollDirection["LEFT"] = "left";
     ScrollDirection["RIGHT"] = "right";
 })(ScrollDirection || (ScrollDirection = {}));
-var ConfigTab;
-(function (ConfigTab) {
-    ConfigTab["ADD_GROWSPACE"] = "add_growspace";
-    ConfigTab["EDIT_GROWSPACE"] = "edit_growspace";
-    ConfigTab["ENVIRONMENT"] = "environment";
-    ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
-    ConfigTab["SENSOR_GROUPS"] = "sensor_groups";
-})(ConfigTab || (ConfigTab = {}));
 var ViewMode;
 (function (ViewMode) {
     ViewMode["STANDARD"] = "standard";
@@ -239,21 +307,21 @@ var GridOverlayMode;
     GridOverlayMode["VPD"] = "vpd";
     GridOverlayMode["BIO_STATUS"] = "bio_status";
 })(GridOverlayMode || (GridOverlayMode = {}));
-var GrowspaceType;
-(function (GrowspaceType) {
-    GrowspaceType["NORMAL"] = "normal";
-    GrowspaceType["MOTHER"] = "mother";
-    GrowspaceType["CLONE"] = "clone";
-    GrowspaceType["DRY"] = "dry";
-    GrowspaceType["CURE"] = "cure";
-    GrowspaceType["VEG"] = "veg";
-})(GrowspaceType || (GrowspaceType = {}));
-const STORAGE_KEYS = {
-    HISTORY_PREFIX: 'growspace_history_',
-};
-({
+var ConfigTab;
+(function (ConfigTab) {
+    ConfigTab["ADD_GROWSPACE"] = "add_growspace";
+    ConfigTab["EDIT_GROWSPACE"] = "edit_growspace";
+    ConfigTab["ENVIRONMENT"] = "environment";
+    ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
+    ConfigTab["SENSOR_GROUPS"] = "sensor_groups";
+})(ConfigTab || (ConfigTab = {}));
+const DEFAULT_METRIC_CONFIG = {
+    color: '#fff',
+    title: 'Unknown',
+    unit: '',
+    icon: mdiMagnify,
     type: ChartType.LINE,
-});
+};
 const SENSOR_CHART_DEFAULTS = {
     exhaust: { min: 0, max: 10, disablePadding: true, unit: 'state' },
     dehumidifier: { min: 0, max: 1, disablePadding: true, binary: true },
@@ -279,138 +347,16 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
     [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
 };
-const DOMAIN = 'growspace_manager';
-const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
-const WS_TYPE_GET_LOG = 'growspace_manager/get_log';
-const WS_TYPE_GET_ALERTS = 'growspace_manager/get_alerts';
-const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
-const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
-const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
-const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
-const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
-const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
-const SERVICES = {
-    GET_STRAIN_LIBRARY: 'get_strain_library',
-    ADD_PLANT: 'add_plant',
-    UPDATE_PLANT: 'update_plant',
-    REMOVE_PLANT: 'remove_plant',
-    HARVEST_PLANT: 'harvest_plant',
-    TAKE_CLONE: 'take_clone',
-    SWITCH_PLANTS: 'switch_plants',
-    MOVE_CLONE: 'move_clone',
-    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
-    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
-    ADD_IRRIGATION_TIME: 'add_irrigation_time',
-    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
-    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
-    ADD_DRAIN_TIME: 'add_drain_time',
-    REMOVE_DRAIN_TIME: 'remove_drain_time',
-    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
-    ADD_STRAIN: 'add_strain',
-    REMOVE_STRAIN: 'remove_strain',
-    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
-    ADD_GROWSPACE: 'add_growspace',
-    UPDATE_GROWSPACE: 'update_growspace',
-    REMOVE_GROWSPACE: 'remove_growspace',
-    CONFIGURE_ENVIRONMENT: 'configure_environment',
-    ASK_GROW_ADVICE: 'ask_grow_advice',
-    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
-    STRAIN_RECOMMENDATION: 'strain_recommendation',
-    ADD_PLANTS: 'add_plants',
-    WATER_PLANT: 'water_plant',
-    WATER_GROWSPACE: 'water_growspace',
-    SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
-    REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
-    SAVE_IPM_PRESET: 'save_ipm_preset',
-    REMOVE_IPM_PRESET: 'remove_ipm_preset',
-    APPLY_IPM: 'apply_ipm',
-};
-/**
- * Default configuration values to replace magic numbers throughout the codebase.
- */
-const DEFAULTS = {
-    /** VPD thresholds */
-    VPD: {
-        TARGET_MIN: 0.8,
-        TARGET_MAX: 1.2,
-        DANGER_MIN: 0.4,
-        DANGER_MAX: 1.6,
-    }};
-var EntityState;
-(function (EntityState) {
-    EntityState["ON"] = "on";
-    EntityState["OFF"] = "off";
-    EntityState["UNAVAILABLE"] = "unavailable";
-    EntityState["UNKNOWN"] = "unknown";
-    EntityState["TRUE"] = "true";
-    EntityState["FALSE"] = "false";
-    EntityState["ACTIVE"] = "active";
-    EntityState["IDLE"] = "idle";
-})(EntityState || (EntityState = {}));
-const BINARY_ON_STATES = [
-    EntityState.ON,
-    EntityState.TRUE,
-    '1',
-    'heating',
-    'drying',
-    EntityState.ACTIVE,
-];
-[EntityState.OFF, EntityState.FALSE, '0', EntityState.IDLE];
 
-// --- Enums ---
-var PlantStage;
-(function (PlantStage) {
-    PlantStage["SEEDLING"] = "seedling";
-    PlantStage["CLONE"] = "clone";
-    PlantStage["MOTHER"] = "mother";
-    PlantStage["VEG"] = "veg";
-    PlantStage["FLOWER"] = "flower";
-    PlantStage["DRY"] = "dry";
-    PlantStage["CURE"] = "cure";
-})(PlantStage || (PlantStage = {}));
-var DehumidifierStage;
-(function (DehumidifierStage) {
-    DehumidifierStage["SEEDLING"] = "seedling";
-    DehumidifierStage["VEG"] = "veg";
-    DehumidifierStage["EARLY_FLOWER"] = "early_flower";
-    DehumidifierStage["MID_FLOWER"] = "mid_flower";
-    DehumidifierStage["LATE_FLOWER"] = "late_flower";
-    DehumidifierStage["DRYING"] = "drying";
-    DehumidifierStage["CURING"] = "curing";
-})(DehumidifierStage || (DehumidifierStage = {}));
-// --- Configuration Constants ---
-const STAGE_CONFIG = {
-    [PlantStage.SEEDLING]: {
-        icon: mdiSprout,
-        title: 'Seedling',
-        colorVar: '--state-seedling-color',
-    },
-    [PlantStage.CLONE]: { icon: mdiSprout, title: 'Clone', colorVar: '--state-clone-color' },
-    [PlantStage.MOTHER]: { icon: mdiSprout, title: 'Mother', colorVar: '--state-mother-color' },
-    [PlantStage.VEG]: { icon: mdiSprout, title: 'Veg', colorVar: '--state-veg-color' },
-    [PlantStage.FLOWER]: { icon: mdiFlower, title: 'Flower', colorVar: '--state-flower-color' },
-    [PlantStage.DRY]: { icon: mdiHairDryer, title: 'Dry', colorVar: '--state-dry-color' },
-    [PlantStage.CURE]: { icon: mdiCannabis, title: 'Cure', colorVar: '--state-cure-color' },
-};
-var TrainingTechnique;
-(function (TrainingTechnique) {
-    TrainingTechnique["TOPPING"] = "topping";
-    TrainingTechnique["FIM"] = "fim";
-    TrainingTechnique["LST"] = "lst";
-    TrainingTechnique["SUPER_CROPPING"] = "super_cropping";
-    TrainingTechnique["SCROG"] = "scrog";
-    TrainingTechnique["DEFOLIATING"] = "defoliating";
-    TrainingTechnique["LOLLIPOPPING"] = "lollipopping";
-})(TrainingTechnique || (TrainingTechnique = {}));
 // --- Utils ---
 function createGrowspaceDevice(params) {
     return {
-        type: GrowspaceType.NORMAL,
+        type: 'normal',
         rows: 3,
         plantsPerRow: 3,
         plants: [],
         grid: {},
-        irrigationConfig: { irrigation_times: [], drain_times: [] },
+        irrigationConfig: { irrigationTimes: [], drainTimes: [] },
         // Default Empty Objects to prevent UI crashes
         biologicalMetrics: {
             vpdStatus: 'unknown',
@@ -430,7 +376,7 @@ function createGrowspaceDevice(params) {
             vegWeek: 0,
             flowerWeek: 0,
             maxStageSummary: '',
-            total_plants: 0,
+            totalPlants: 0,
         },
         ...params,
     };
@@ -5223,6 +5169,68 @@ class GrowspaceAdapter {
         return [];
     }
 }
+
+const DOMAIN = 'growspace_manager';
+// WebSocket message types
+const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
+const WS_TYPE_GET_LOG = 'growspace_manager/get_log';
+const WS_TYPE_GET_ALERTS = 'growspace_manager/get_alerts';
+const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
+const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
+const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
+const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
+const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
+const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
+// Home Assistant services
+const SERVICES = {
+    GET_STRAIN_LIBRARY: 'get_strain_library',
+    ADD_PLANT: 'add_plant',
+    UPDATE_PLANT: 'update_plant',
+    REMOVE_PLANT: 'remove_plant',
+    HARVEST_PLANT: 'harvest_plant',
+    TAKE_CLONE: 'take_clone',
+    SWITCH_PLANTS: 'switch_plants',
+    MOVE_CLONE: 'move_clone',
+    SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+    SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
+    ADD_IRRIGATION_TIME: 'add_irrigation_time',
+    REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',
+    SET_IRRIGATION_STRATEGY: 'set_irrigation_strategy',
+    ADD_DRAIN_TIME: 'add_drain_time',
+    REMOVE_DRAIN_TIME: 'remove_drain_time',
+    EXPORT_STRAIN_LIBRARY: 'export_strain_library',
+    ADD_STRAIN: 'add_strain',
+    REMOVE_STRAIN: 'remove_strain',
+    CLEAR_STRAIN_LIBRARY: 'clear_strain_library',
+    ADD_GROWSPACE: 'add_growspace',
+    UPDATE_GROWSPACE: 'update_growspace',
+    REMOVE_GROWSPACE: 'remove_growspace',
+    CONFIGURE_ENVIRONMENT: 'configure_environment',
+    ASK_GROW_ADVICE: 'ask_grow_advice',
+    ANALYZE_ALL_GROWSPACES: 'analyze_all_growspaces',
+    STRAIN_RECOMMENDATION: 'strain_recommendation',
+    ADD_PLANTS: 'add_plants',
+    WATER_PLANT: 'water_plant',
+    WATER_GROWSPACE: 'water_growspace',
+    SAVE_NUTRIENT_PRESET: 'save_nutrient_preset',
+    REMOVE_NUTRIENT_PRESET: 'remove_nutrient_preset',
+    SAVE_IPM_PRESET: 'save_ipm_preset',
+    REMOVE_IPM_PRESET: 'remove_ipm_preset',
+    APPLY_IPM: 'apply_ipm',
+};
+// Storage keys
+const STORAGE_KEYS = {
+    HISTORY_PREFIX: 'growspace_history_',
+};
+// Default configuration values
+const DEFAULTS = {
+    /** VPD thresholds */
+    VPD: {
+        TARGET_MIN: 0.8,
+        TARGET_MAX: 1.2,
+        DANGER_MIN: 0.4,
+        DANGER_MAX: 1.6,
+    }};
 
 /**
  * API service for growspace operations.
@@ -12290,26 +12298,6 @@ class AddPlantClickEvent extends CustomEvent {
     }
 }
 AddPlantClickEvent.TYPE = 'add-plant-click';
-class PlantDropEvent extends CustomEvent {
-    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
-        super(PlantDropEvent.TYPE, {
-            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantDropEvent.TYPE = 'plant-drop';
-class SelectionChangedEvent extends CustomEvent {
-    constructor(selectedPlants) {
-        super(SelectionChangedEvent.TYPE, {
-            detail: { selectedPlants },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-SelectionChangedEvent.TYPE = 'selection-changed';
 class UpdatePlantEvent extends CustomEvent {
     constructor(updates) {
         super(UpdatePlantEvent.TYPE, {
@@ -12370,6 +12358,28 @@ class MoveCloneEvent extends CustomEvent {
     }
 }
 MoveCloneEvent.TYPE = 'move-clone';
+
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
+
 class LibraryExportReadyEvent extends CustomEvent {
     constructor(url) {
         super(LibraryExportReadyEvent.TYPE, {
@@ -14165,7 +14175,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <input
                           type="file"
                           accept="image/*"
-                          capture
+                          capture="environment"
                           style="display:none"
                           @change=${handleFileChange}
                         />
@@ -89806,12 +89816,22 @@ class SensorRenderer extends BaseRenderer {
             const isLight = SensorTypeUtils.isLight(device, hass, entityId);
             const matchesMetric = this.isMetric(entityId, selectedMetric);
             const isVisible = matchesMetric || isLight;
-            currentSensorIds.add(entityId);
             const coords = sensorCoords[entityId];
             if (!coords)
                 return;
             let sensorModel = this.cache.get(entityId);
             const val = this.getValue(entityId);
+            if (isNaN(val)) {
+                // Remove if it exists in cache but now has invalid value
+                if (sensorModel) {
+                    volatileGroup.remove(sensorModel);
+                    this.cache.delete(entityId);
+                    this.context.sensorMeshes.delete(entityId);
+                }
+                return;
+            }
+            // ONLY mark as current if it's a valid sensor and not skipped
+            currentSensorIds.add(entityId);
             const healthColor = isLight ? '#ffeb3b' : '#4caf50';
             if (!sensorModel) {
                 if (isLight) {
@@ -89875,6 +89895,7 @@ class SensorRenderer extends BaseRenderer {
                 volatileGroup.remove(obj);
                 this.disposeObject(obj);
                 this.cache.delete(key);
+                this.context.sensorMeshes.delete(key);
             }
         });
     }
@@ -89891,6 +89912,10 @@ class SensorRenderer extends BaseRenderer {
             return SensorTypeUtils.isHumidity(device, hass, id);
         if (metric === 'vpd')
             return SensorTypeUtils.isVPD(device, hass, id);
+        if (metric === 'co2')
+            return SensorTypeUtils.isCO2(device, id);
+        if (metric === 'soil_moisture')
+            return SensorTypeUtils.isSoilMoisture(device, id);
         return false;
     }
     getUnit(id, selectedMetric, isLight) {
@@ -89920,7 +89945,7 @@ class SensorRenderer extends BaseRenderer {
             return point ? parseFloat(point.s) : 0;
         }
         const state = hass?.states[entityId];
-        return state ? parseFloat(state.state) : 0;
+        return (state && state.state) ? parseFloat(state.state) : 0;
     }
     createSensorProbeModel(color) {
         const group = new Group();
@@ -98636,5 +98661,5 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
-export { DataService$1 as DataService, DehumidifierStage, GridOverlayMode as GridOverlayModeEnum, GrowspaceManagerCard, GrowspaceType as GrowspaceTypeEnum, PlantStage, PlantUtils, STAGE_CONFIG, TrainingTechnique, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceManagerCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
