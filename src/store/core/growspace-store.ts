@@ -34,6 +34,9 @@ import { SyncService } from '../../services/sync-service';
 import { UndoRedoManager, UndoableAction } from '../../services/undo-redo-manager';
 import { OptimisticManager } from '../system/optimistic-manager';
 
+// New infrastructure (Phase 1)
+import { EventBus } from '../../features/shared/events/event-bus';
+
 export class GrowspaceStore {
   dataService!: DataService;
   hass!: HomeAssistant;
@@ -48,6 +51,9 @@ export class GrowspaceStore {
   public readonly syncService: SyncService;
   public readonly undoRedoManager: UndoRedoManager;
   public readonly optimisticManager: OptimisticManager;
+
+  // New infrastructure (Phase 1)
+  public readonly eventBus: EventBus;
 
   /** Unified Action Context */
   public get context(): ActionContext {
@@ -87,11 +93,28 @@ export class GrowspaceStore {
       this.showToast(msg, type, action)
     );
     this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
+
+    // Initialize new infrastructure (Phase 1)
+    this.eventBus = new EventBus();
   }
 
-  /** Cleanup all subscriptions and resources */
-  public destroy() {
+  /**
+   * Initialize store with Home Assistant instance and start subscriptions
+   * (Phase 1: New method for cleaner lifecycle management)
+   */
+  public initialize(hass: HomeAssistant): void {
+    this.hass = hass;
+    this.updateHass(hass);
+    // History store subscriptions will be initialized here in future phases
+  }
+
+  /**
+   * Cleanup all subscriptions and resources
+   * (Phase 1: Enhanced to include event bus cleanup)
+   */
+  public destroy(): void {
     this.history.destroy();
+    this.eventBus.clear();
   }
 
   // === Undo/Redo Methods ===
