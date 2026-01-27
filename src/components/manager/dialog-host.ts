@@ -3,6 +3,7 @@ import { customElement } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/core/growspace-store';
+import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
 // Global store imports removed
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../ui-state';
@@ -16,6 +17,7 @@ import {
 import '../../dialogs/add-plant-dialog';
 import '../../dialogs/add-plants-dialog';
 import '../../dialogs/plant-overview-dialog';
+import '../../features/plants/containers/plant-overview.container'; // Phase 3: New dialog
 import '../../dialogs/strain-library-dialog';
 import '../../dialogs/config-dialog';
 import '../../dialogs/grow-master-dialog';
@@ -304,6 +306,35 @@ export class DialogHost extends LitElement {
   ): TemplateResult {
     if (active.type !== 'PLANT_OVERVIEW') return html``;
     const dialogState = active.payload;
+
+    // Phase 3: Feature flag to toggle between old and new dialog
+    const useNewDialog = FEATURE_FLAGS.USE_NEW_DIALOGS;
+
+    if (useNewDialog) {
+      // New refactored dialog with ViewModel pattern
+      return html`
+        <plant-overview-container
+          .open=${true}
+          .plant=${dialogState.plant}
+          .editedAttributes=${dialogState.editedAttributes}
+          @update-plant=${(e: CustomEvent) =>
+          this.store.updatePlantFromDialog({
+            plant: dialogState.plant,
+            editedAttributes: e.detail,
+            selectedPlantIds: dialogState.selectedPlantIds,
+          })}
+          @delete-plant=${(e: CustomEvent) => this.store.actions.plant.delete(e.detail.plantId)}
+          @harvest-plant=${(e: CustomEvent) => this.store.actions.plant.nextStage(e.detail.plant)}
+          @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
+          @take-clone=${(e: CustomEvent) =>
+          this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+          @move-clone=${(e: CustomEvent) =>
+          this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        ></plant-overview-container>
+      `;
+    }
+
+    // Old dialog implementation
     return html`
       <plant-overview-dialog
         .open=${true}
@@ -320,7 +351,7 @@ export class DialogHost extends LitElement {
         @update-plant=${(e: CustomEvent) =>
         this.store.updatePlantFromDialog({
           plant: dialogState.plant,
-          editedAttributes: e.detail, // Event detail is the attributes object
+          editedAttributes: e.detail,
           selectedPlantIds: dialogState.selectedPlantIds,
         })}
         @delete-plant=${(e: CustomEvent) => this.store.actions.plant.delete(e.detail.plantId)}

@@ -13613,6 +13613,1794 @@ PlantOverviewDialog = __decorate([
     t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
 
+let clean = Symbol('clean');
+
+let listenerQueue = [];
+let lqIndex = 0;
+const QUEUE_ITEMS_PER_LISTENER = 4;
+let epoch = 0;
+
+/* @__NO_SIDE_EFFECTS__ */
+const atom = initialValue => {
+  let listeners = [];
+  let $atom = {
+    get() {
+      if (!$atom.lc) {
+        $atom.listen(() => {})();
+      }
+      return $atom.value
+    },
+    lc: 0,
+    listen(listener) {
+      $atom.lc = listeners.push(listener);
+
+      return () => {
+        for (
+          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
+          i < listenerQueue.length;
+
+        ) {
+          if (listenerQueue[i] === listener) {
+            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
+          } else {
+            i += QUEUE_ITEMS_PER_LISTENER;
+          }
+        }
+
+        let index = listeners.indexOf(listener);
+        if (~index) {
+          listeners.splice(index, 1);
+          if (!--$atom.lc) $atom.off();
+        }
+      }
+    },
+    notify(oldValue, changedKey) {
+      epoch++;
+      let runListenerQueue = !listenerQueue.length;
+      for (let listener of listeners) {
+        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
+      }
+
+      if (runListenerQueue) {
+        for (
+          lqIndex = 0;
+          lqIndex < listenerQueue.length;
+          lqIndex += QUEUE_ITEMS_PER_LISTENER
+        ) {
+          listenerQueue[lqIndex](
+            listenerQueue[lqIndex + 1],
+            listenerQueue[lqIndex + 2],
+            listenerQueue[lqIndex + 3]
+          );
+        }
+        listenerQueue.length = 0;
+      }
+    },
+    /* It will be called on last listener unsubscribing.
+       We will redefine it in onMount and onStop. */
+    off() {},
+    set(newValue) {
+      let oldValue = $atom.value;
+      if (oldValue !== newValue) {
+        $atom.value = newValue;
+        $atom.notify(oldValue);
+      }
+    },
+    subscribe(listener) {
+      let unbind = $atom.listen(listener);
+      listener($atom.value);
+      return unbind
+    },
+    value: initialValue
+  };
+
+  {
+    $atom[clean] = () => {
+      listeners = [];
+      $atom.lc = 0;
+      $atom.off();
+    };
+  }
+
+  return $atom
+};
+
+const MOUNT = 5;
+const UNMOUNT = 6;
+const REVERT_MUTATION = 10;
+
+let on = (object, listener, eventKey, mutateStore) => {
+  object.events = object.events || {};
+  if (!object.events[eventKey + REVERT_MUTATION]) {
+    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
+      // eslint-disable-next-line no-sequences
+      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
+        shared: {},
+        ...eventProps
+      });
+    });
+  }
+  object.events[eventKey] = object.events[eventKey] || [];
+  object.events[eventKey].push(listener);
+  return () => {
+    let currentListeners = object.events[eventKey];
+    let index = currentListeners.indexOf(listener);
+    currentListeners.splice(index, 1);
+    if (!currentListeners.length) {
+      delete object.events[eventKey];
+      object.events[eventKey + REVERT_MUTATION]();
+      delete object.events[eventKey + REVERT_MUTATION];
+    }
+  }
+};
+
+let STORE_UNMOUNT_DELAY = 1000;
+
+let onMount = ($store, initialize) => {
+  let listener = payload => {
+    let destroy = initialize(payload);
+    if (destroy) $store.events[UNMOUNT].push(destroy);
+  };
+  return on($store, listener, MOUNT, runListeners => {
+    let originListen = $store.listen;
+    $store.listen = (...args) => {
+      if (!$store.lc && !$store.active) {
+        $store.active = true;
+        runListeners();
+      }
+      return originListen(...args)
+    };
+
+    let originOff = $store.off;
+    $store.events[UNMOUNT] = [];
+    $store.off = () => {
+      originOff();
+      setTimeout(() => {
+        if ($store.active && !$store.lc) {
+          $store.active = false;
+          for (let destroy of $store.events[UNMOUNT]) destroy();
+          $store.events[UNMOUNT] = [];
+        }
+      }, STORE_UNMOUNT_DELAY);
+    };
+
+    {
+      let originClean = $store[clean];
+      $store[clean] = () => {
+        for (let destroy of $store.events[UNMOUNT]) destroy();
+        $store.events[UNMOUNT] = [];
+        $store.active = false;
+        originClean();
+      };
+    }
+
+    return () => {
+      $store.listen = originListen;
+      $store.off = originOff;
+    }
+  })
+};
+
+let computedStore = (stores, cb, batched) => {
+  if (!Array.isArray(stores)) stores = [stores];
+
+  let previousArgs;
+  let currentEpoch;
+  let set = () => {
+    if (currentEpoch === epoch) return
+    currentEpoch = epoch;
+    let args = stores.map($store => $store.get());
+    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
+      previousArgs = args;
+      let value = cb(...args);
+      if (value && value.then && value.t) {
+        value.then(asyncValue => {
+          if (previousArgs === args) {
+            // Prevent a stale set
+            $computed.set(asyncValue);
+          }
+        });
+      } else {
+        $computed.set(value);
+        currentEpoch = epoch;
+      }
+    }
+  };
+  let $computed = atom(undefined);
+  let get = $computed.get;
+  $computed.get = () => {
+    set();
+    return get()
+  };
+  let run = set;
+
+  onMount($computed, () => {
+    let unbinds = stores.map($store => $store.listen(run));
+    set();
+    return () => {
+      for (let unbind of unbinds) unbind();
+    }
+  });
+
+  return $computed
+};
+
+/* @__NO_SIDE_EFFECTS__ */
+const computed = (stores, fn) => computedStore(stores, fn);
+
+/* @__NO_SIDE_EFFECTS__ */
+const map = (initial = {}) => {
+  let $map = atom(initial);
+
+  $map.setKey = function (key, value) {
+    let oldMap = $map.value;
+    if (typeof value === 'undefined' && key in $map.value) {
+      $map.value = { ...$map.value };
+      delete $map.value[key];
+      $map.notify(oldMap, key);
+    } else if ($map.value[key] !== value) {
+      $map.value = {
+        ...$map.value,
+        [key]: value
+      };
+      $map.notify(oldMap, key);
+    }
+  };
+
+  return $map
+};
+
+/**
+ * Plant Overview ViewModel
+ *
+ * Consolidates all business logic and state computations for plant overview dialog.
+ * Single computed atom replaces multiple subscriptions and scattered state.
+ */
+/**
+ * Process plant timeline events
+ */
+function processTimelineEvents(plant, logbookEvents) {
+    const events = [];
+    // Extract milestones from plant attributes
+    const milestoneFields = [
+        { key: 'planted_date', label: 'Planted' },
+        { key: 'seedling_start', label: 'Seedling' },
+        { key: 'mother_start', label: 'Mother' },
+        { key: 'clone_start', label: 'Clone' },
+        { key: 'veg_start', label: 'Vegetative' },
+        { key: 'flower_start', label: 'Flowering' },
+        { key: 'dry_start', label: 'Drying' },
+        { key: 'cure_start', label: 'Curing' },
+        { key: 'harvest_date', label: 'Harvested' },
+    ];
+    milestoneFields.forEach((field) => {
+        const date = plant.attributes?.[field.key];
+        if (date && typeof date === 'string') {
+            events.push({
+                type: 'milestone',
+                date,
+                label: field.label,
+            });
+        }
+    });
+    // Add recorded events from plant attributes (PlantTimelineEvent[])
+    const recordedEvents = plant.attributes?.events || [];
+    recordedEvents.forEach((evt) => {
+        // Convert PlantTimelineEvent to display TimelineEvent
+        if (evt.type === 'action') {
+            events.push({
+                type: 'action',
+                date: evt.date,
+                label: evt.action,
+                description: evt.details,
+            });
+        }
+        else if (evt.type === 'note') {
+            events.push({
+                type: 'note',
+                date: evt.date,
+                label: 'Note',
+                description: evt.text,
+            });
+        }
+        else if (evt.type === 'milestone') {
+            events.push({
+                type: 'milestone',
+                date: evt.date,
+                label: evt.label,
+            });
+        }
+    });
+    // Add logbook events for this plant
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    logbookEvents
+        .filter((evt) => evt.plant_id === plantId || evt.growspace_id === plant.attributes?.growspace_id)
+        .forEach((evt) => {
+        events.push({
+            type: evt.category === 'note' ? 'note' : 'action',
+            date: evt.timestamp || evt.start_time || new Date().toISOString(),
+            label: evt.category || 'Event',
+            description: evt.notes,
+            category: evt.category,
+        });
+    });
+    // Sort by date descending (most recent first)
+    return events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+/**
+ * Calculate plant statistics
+ */
+function calculatePlantStats(plant) {
+    const stats = [];
+    const attrs = plant.attributes;
+    // Days in stage
+    if (attrs?.days_in_stage !== undefined) {
+        stats.push({
+            label: 'Days in Stage',
+            value: attrs.days_in_stage,
+            unit: 'd',
+        });
+    }
+    // Total days
+    if (attrs?.total_days !== undefined) {
+        stats.push({
+            label: 'Total Days',
+            value: attrs.total_days,
+            unit: 'd',
+        });
+    }
+    // Last watered
+    if (attrs?.last_watered) {
+        const date = new Date(attrs.last_watered);
+        const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+        stats.push({
+            label: 'Last Watered',
+            value: daysAgo === 0 ? 'Today' : `${daysAgo}d ago`,
+        });
+    }
+    // Last training
+    if (attrs?.last_training_technique) {
+        stats.push({
+            label: 'Last Training',
+            value: attrs.last_training_technique,
+        });
+    }
+    // Last IPM
+    if (attrs?.last_ipm_type) {
+        stats.push({
+            label: 'Last IPM',
+            value: attrs.last_ipm_type,
+        });
+    }
+    // Harvest weight
+    if (attrs?.harvest_weight_wet !== undefined) {
+        stats.push({
+            label: 'Harvest Weight (Wet)',
+            value: attrs.harvest_weight_wet,
+            unit: 'g',
+        });
+    }
+    if (attrs?.harvest_weight_dry !== undefined) {
+        stats.push({
+            label: 'Harvest Weight (Dry)',
+            value: attrs.harvest_weight_dry,
+            unit: 'g',
+        });
+    }
+    return stats;
+}
+/**
+ * Determine available actions based on plant stage
+ */
+function getAvailableActions(plant) {
+    const stage = plant.state;
+    const actions = [
+        {
+            id: 'water',
+            label: 'Water Plant',
+            icon: 'mdiWater',
+            enabled: stage !== 'harvested' && stage !== 'dry' && stage !== 'cure',
+            tooltip: stage === 'harvested' ? 'Cannot water harvested plant' : undefined,
+        },
+        {
+            id: 'training',
+            label: 'Log Training',
+            icon: 'mdiDumbbell',
+            enabled: stage === 'vegetative' || stage === 'flowering',
+            tooltip: stage !== 'vegetative' && stage !== 'flowering' ? 'Training only in veg/flower' : undefined,
+        },
+        {
+            id: 'ipm',
+            label: 'Log IPM',
+            icon: 'mdiBug',
+            enabled: stage !== 'harvested' && stage !== 'dry' && stage !== 'cure',
+            tooltip: stage === 'harvested' ? 'Cannot apply IPM to harvested plant' : undefined,
+        },
+        {
+            id: 'clone',
+            label: 'Take Clone',
+            icon: 'mdiContentCopy',
+            enabled: stage === 'mother' || stage === 'vegetative',
+            tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
+        },
+    ];
+    return actions;
+}
+/**
+ * Check if attributes have unsaved changes
+ */
+function hasUnsavedChanges(plant, editedAttributes) {
+    const original = plant.attributes;
+    return (editedAttributes.strain !== original?.strain ||
+        editedAttributes.phenotype !== original?.phenotype ||
+        editedAttributes.row !== original?.row ||
+        editedAttributes.col !== original?.col ||
+        editedAttributes.veg_start !== original?.veg_start ||
+        editedAttributes.flower_start !== original?.flower_start ||
+        editedAttributes.seedling_start !== original?.seedling_start ||
+        editedAttributes.mother_start !== original?.mother_start ||
+        editedAttributes.clone_start !== original?.clone_start ||
+        editedAttributes.dry_start !== original?.dry_start ||
+        editedAttributes.cure_start !== original?.cure_start);
+}
+/**
+ * Validate edited attributes
+ */
+function canSaveAttributes(editedAttributes) {
+    // Must have strain name
+    const strain = editedAttributes.strain;
+    if (!strain || typeof strain !== 'string' || strain.trim() === '') {
+        return false;
+    }
+    // Row/col must be non-negative if provided
+    if (editedAttributes.row !== undefined && editedAttributes.row < 0) {
+        return false;
+    }
+    if (editedAttributes.col !== undefined && editedAttributes.col < 0) {
+        return false;
+    }
+    return true;
+}
+/**
+ * Create ViewModel for plant overview dialog
+ */
+function createPlantOverviewViewModel(plant, editedAttributes, uiState, store) {
+    return computed([
+        // We don't need many store subscriptions for this dialog
+        // Most data comes from props (plant, editedAttributes)
+        // But we do watch for new logbook events
+        store.data.$strainLibrary, // For strain data
+    ], (strainLibrary) => {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const stageColor = PlantUtils.getPlantStageColor(plant.state);
+        const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+        // Ensure displayName is a string (editedAttributes.strain is PlantAttributeValue)
+        const strainValue = editedAttributes.strain;
+        const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
+        const phenoValue = editedAttributes.phenotype;
+        const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
+        // Process timeline events (we'll need to pass logbook events as prop)
+        const timelineEvents = processTimelineEvents(plant, []);
+        // Calculate stats
+        const plantStats = calculatePlantStats(plant);
+        // Available actions
+        const availableActions = getAvailableActions(plant);
+        // Validation
+        const unsavedChanges = hasUnsavedChanges(plant, editedAttributes);
+        const canSave = canSaveAttributes(editedAttributes);
+        return {
+            // Core data
+            plant,
+            editedAttributes,
+            // UI state
+            activeTab: uiState.activeTab,
+            isEditing: uiState.isEditing,
+            showAllDates: uiState.showAllDates,
+            showDeleteConfirmation: uiState.showDeleteConfirmation,
+            // Computed identifiers
+            plantId,
+            stageColor,
+            stageIcon,
+            displayName,
+            displaySubtitle,
+            // Timeline data
+            timelineEvents,
+            // Plant stats
+            plantStats,
+            // Available actions
+            availableActions,
+            // Validation
+            hasUnsavedChanges: unsavedChanges,
+            canSave: canSave && unsavedChanges,
+        };
+    });
+}
+
+/**
+ * Plant Identity Card - Presentational Component
+ *
+ * Displays and allows editing of plant identity and location information.
+ * Pure component: props in, events out.
+ */
+let PlantIdentityCard = class PlantIdentityCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.isEditing = false;
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <h3>Identity & Location</h3>
+        ${this.isEditing ? this._renderEditMode() : this._renderViewMode()}
+      </div>
+    `;
+    }
+    _renderEditMode() {
+        return x `
+      <md3-text-input
+        label="Strain Name"
+        .value=${this.editedAttributes.strain || ''}
+        @change=${(e) => this._emitAttributeChange('strain', e.detail)}
+      ></md3-text-input>
+      <md3-text-input
+        label="Phenotype"
+        .value=${this.editedAttributes.phenotype || ''}
+        @change=${(e) => this._emitAttributeChange('phenotype', e.detail)}
+      ></md3-text-input>
+
+      <div class="input-row">
+        <md3-number-input
+          label="Row"
+          .value=${this.editedAttributes.row ?? ''}
+          @change=${(e) => this._emitAttributeChange('row', e.detail)}
+        ></md3-number-input>
+        <md3-number-input
+          label="Column"
+          .value=${this.editedAttributes.col ?? ''}
+          @change=${(e) => this._emitAttributeChange('col', e.detail)}
+        ></md3-number-input>
+      </div>
+    `;
+    }
+    _renderViewMode() {
+        return x `
+      <div class="stat-grid">
+        <div class="stat-item">
+          <span class="stat-value">${this.plant.attributes?.strain || 'Unknown'}</span>
+          <span class="stat-label">Strain</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
+          <span class="stat-label">Phenotype</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
+          <span class="stat-label">Row</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
+          <span class="stat-label">Col</span>
+        </div>
+      </div>
+    `;
+    }
+    _emitAttributeChange(key, value) {
+        this.dispatchEvent(new CustomEvent('attribute-change', {
+            detail: { key, value },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+PlantIdentityCard.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .detail-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .detail-card h3 {
+        margin: 0 0 16px 0;
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+      }
+
+      .stat-item {
+        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 16px;
+      }
+
+      .input-row > * {
+        flex: 1;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantIdentityCard.prototype, "plant", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantIdentityCard.prototype, "editedAttributes", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantIdentityCard.prototype, "isEditing", void 0);
+PlantIdentityCard = __decorate([
+    t$2('plant-identity-card')
+], PlantIdentityCard);
+
+/**
+ * Plant Stats Card - Presentational Component
+ *
+ * Displays plant statistics in a grid layout.
+ * Pure component: props in, no events out (read-only display).
+ */
+let PlantStatsCard = class PlantStatsCard extends i$3 {
+    render() {
+        if (!this.stats || this.stats.length === 0) {
+            return x ``;
+        }
+        return x `
+      <div class="detail-card">
+        <h3>Plant Statistics</h3>
+        <div class="stat-grid">
+          ${this.stats.map((stat) => this._renderStatItem(stat))}
+        </div>
+      </div>
+    `;
+    }
+    _renderStatItem(stat) {
+        return x `
+      <div class="stat-item">
+        <span class="stat-value">
+          ${stat.value}
+          ${stat.unit ? x `<span class="stat-unit">${stat.unit}</span>` : ''}
+        </span>
+        <span class="stat-label">${stat.label}</span>
+      </div>
+    `;
+    }
+};
+PlantStatsCard.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .detail-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .detail-card h3 {
+        margin: 0 0 16px 0;
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .stat-item {
+        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stat-value {
+        font-size: 1.1rem;
+        font-weight: 500;
+      }
+
+      .stat-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+
+      .stat-unit {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin-left: 2px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantStatsCard.prototype, "stats", void 0);
+PlantStatsCard = __decorate([
+    t$2('plant-stats-card')
+], PlantStatsCard);
+
+/**
+ * Plant Lifecycle Dates Card - Presentational Component
+ *
+ * Displays and allows editing of plant lifecycle milestone dates.
+ * Pure component: props in, events out.
+ */
+let PlantLifecycleDatesCard = class PlantLifecycleDatesCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.showAllDates = false;
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <div class="card-header">
+          <h3>Lifecycle Dates</h3>
+          <button
+            class="toggle-button"
+            @click=${this._toggleDates}
+            aria-label="Toggle Dates"
+            title="Toggle Dates"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="${mdiPencil}"></path>
+            </svg>
+          </button>
+        </div>
+
+        ${this.showAllDates ? this._renderAllDates() : this._renderCurrentStage()}
+      </div>
+    `;
+    }
+    _renderAllDates() {
+        return x `
+      <md3-date-input
+        label="Seedling Start"
+        .value=${this.editedAttributes.seedling_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('seedling_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Mother Start"
+        .value=${this.editedAttributes.mother_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('mother_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Clone Start"
+        .value=${this.editedAttributes.clone_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('clone_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Vegetative Start"
+        .value=${this.editedAttributes.veg_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('veg_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Flowering Start"
+        .value=${this.editedAttributes.flower_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('flower_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Dry Start"
+        .value=${this.editedAttributes.dry_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('dry_start', e.detail)}
+      ></md3-date-input>
+      <md3-date-input
+        label="Cure Start"
+        .value=${this.editedAttributes.cure_start ?? ''}
+        ?time=${true}
+        @change=${(e) => this._emitAttributeChange('cure_start', e.detail)}
+      ></md3-date-input>
+    `;
+    }
+    _renderCurrentStage() {
+        // Show only relevant dates based on current values
+        const hasVeg = !!this.editedAttributes.veg_start;
+        const hasFlower = !!this.editedAttributes.flower_start;
+        const hasDry = !!this.editedAttributes.dry_start;
+        const hasCure = !!this.editedAttributes.cure_start;
+        return x `
+      ${hasVeg
+            ? x `
+            <md3-date-input
+              label="Vegetative Start"
+              .value=${this.editedAttributes.veg_start ?? ''}
+              ?time=${true}
+              @change=${(e) => this._emitAttributeChange('veg_start', e.detail)}
+            ></md3-date-input>
+          `
+            : ''}
+      ${hasFlower
+            ? x `
+            <md3-date-input
+              label="Flowering Start"
+              .value=${this.editedAttributes.flower_start ?? ''}
+              ?time=${true}
+              @change=${(e) => this._emitAttributeChange('flower_start', e.detail)}
+            ></md3-date-input>
+          `
+            : ''}
+      ${hasDry
+            ? x `
+            <md3-date-input
+              label="Dry Start"
+              .value=${this.editedAttributes.dry_start ?? ''}
+              ?time=${true}
+              @change=${(e) => this._emitAttributeChange('dry_start', e.detail)}
+            ></md3-date-input>
+          `
+            : ''}
+      ${hasCure
+            ? x `
+            <md3-date-input
+              label="Cure Start"
+              .value=${this.editedAttributes.cure_start ?? ''}
+              ?time=${true}
+              @change=${(e) => this._emitAttributeChange('cure_start', e.detail)}
+            ></md3-date-input>
+          `
+            : ''}
+      ${!hasVeg && !hasFlower && !hasDry && !hasCure
+            ? x `<p style="opacity: 0.6; font-size: 0.9rem;">Click the edit button to add dates</p>`
+            : ''}
+    `;
+    }
+    _toggleDates() {
+        this.dispatchEvent(new CustomEvent('toggle-dates', {
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _emitAttributeChange(key, value) {
+        this.dispatchEvent(new CustomEvent('attribute-change', {
+            detail: { key, value },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+PlantLifecycleDatesCard.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .detail-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .card-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .toggle-button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background 0.2s;
+        color: var(--primary-text-color);
+      }
+
+      .toggle-button:hover {
+        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
+      }
+
+      .toggle-button svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantLifecycleDatesCard.prototype, "editedAttributes", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantLifecycleDatesCard.prototype, "showAllDates", void 0);
+PlantLifecycleDatesCard = __decorate([
+    t$2('plant-lifecycle-dates-card')
+], PlantLifecycleDatesCard);
+
+/**
+ * Plant Dashboard Tab - Presentational Component
+ *
+ * Composes identity, stats, and lifecycle cards into dashboard view.
+ * Pure component: props in, events out.
+ */
+let PlantDashboardTab = class PlantDashboardTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.isEditing = false;
+        this.showAllDates = false;
+    }
+    render() {
+        return x `
+      <div class="dashboard-grid">
+        <plant-identity-card
+          .plant=${this.plant}
+          .editedAttributes=${this.editedAttributes}
+          .isEditing=${this.isEditing}
+          @attribute-change=${this._handleAttributeChange}
+        ></plant-identity-card>
+
+        <plant-stats-card .stats=${this.plantStats}></plant-stats-card>
+
+        <plant-lifecycle-dates-card
+          .editedAttributes=${this.editedAttributes}
+          .showAllDates=${this.showAllDates}
+          @attribute-change=${this._handleAttributeChange}
+          @toggle-dates=${this._handleToggleDates}
+        ></plant-lifecycle-dates-card>
+      </div>
+    `;
+    }
+    _handleAttributeChange(e) {
+        // Bubble up to container
+        this.dispatchEvent(new CustomEvent('attribute-change', {
+            detail: e.detail,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleToggleDates() {
+        // Bubble up to container
+        this.dispatchEvent(new CustomEvent('toggle-dates', {
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+PlantDashboardTab.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantDashboardTab.prototype, "plant", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantDashboardTab.prototype, "editedAttributes", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantDashboardTab.prototype, "plantStats", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantDashboardTab.prototype, "isEditing", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PlantDashboardTab.prototype, "showAllDates", void 0);
+PlantDashboardTab = __decorate([
+    t$2('plant-dashboard-tab')
+], PlantDashboardTab);
+
+/**
+ * Plant Actions Tab - Presentational Component
+ *
+ * Displays quick action cards for plant management.
+ * Pure component: props in, events out.
+ */
+let PlantActionsTab = class PlantActionsTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        // Icon mapping
+        this._iconMap = {
+            mdiWater,
+            mdiDumbbell,
+            mdiBug,
+            mdiContentCopy,
+        };
+    }
+    render() {
+        return x `
+      <div class="detail-card">
+        <h3>Quick Actions</h3>
+        <div class="action-grid">
+          ${this.availableActions.map((action) => this._renderActionCard(action))}
+        </div>
+      </div>
+    `;
+    }
+    _renderActionCard(action) {
+        const iconPath = this._iconMap[action.icon];
+        return x `
+      <div
+        class="action-card ${action.enabled ? '' : 'disabled'}"
+        @click=${() => action.enabled && this._handleActionClick(action.id)}
+        title="${action.tooltip || action.label}"
+      >
+        ${iconPath
+            ? x `
+              <svg viewBox="0 0 24 24">
+                <path d="${iconPath}"></path>
+              </svg>
+            `
+            : E}
+        <span>${action.label}</span>
+      </div>
+    `;
+    }
+    _handleActionClick(actionId) {
+        this.dispatchEvent(new CustomEvent('action-click', {
+            detail: { actionId },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+PlantActionsTab.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .detail-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        grid-column: 1 / -1;
+      }
+
+      .detail-card h3 {
+        margin: 0 0 16px 0;
+        font-size: 1rem;
+        font-weight: 500;
+        opacity: 0.9;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+      }
+
+      .action-card {
+        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+      }
+
+      .action-card:not(.disabled):hover {
+        background: var(--primary-color, rgba(76, 175, 80, 0.1));
+        border-color: var(--primary-color, #4caf50);
+        transform: translateY(-2px);
+      }
+
+      .action-card.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .action-card svg {
+        width: 32px;
+        height: 32px;
+        fill: currentColor;
+      }
+
+      .action-card span {
+        font-size: 0.9rem;
+        text-align: center;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantActionsTab.prototype, "availableActions", void 0);
+PlantActionsTab = __decorate([
+    t$2('plant-actions-tab')
+], PlantActionsTab);
+
+/**
+ * Plant Timeline Tab - Presentational Component
+ *
+ * Displays plant timeline with milestones and events.
+ * Pure component: props in, no events out (read-only display).
+ */
+let PlantTimelineTab = class PlantTimelineTab extends i$3 {
+    render() {
+        if (!this.timelineEvents || this.timelineEvents.length === 0) {
+            return this._renderEmptyState();
+        }
+        return x `
+      <div class="timeline">
+        ${this.timelineEvents.map((event) => this._renderTimelineEvent(event))}
+      </div>
+    `;
+    }
+    _renderTimelineEvent(event) {
+        const formattedDate = this._formatDate(event.date);
+        return x `
+      <div class="timeline-event ${event.type}">
+        <div class="timeline-date">${formattedDate}</div>
+        <div class="timeline-content">
+          <div class="timeline-label">${event.label}</div>
+          ${event.description
+            ? x `<div class="timeline-description">${event.description}</div>`
+            : E}
+          ${event.category
+            ? x `<span class="timeline-category">${event.category}</span>`
+            : E}
+        </div>
+      </div>
+    `;
+    }
+    _renderEmptyState() {
+        return x `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16Z"
+          />
+        </svg>
+        <div>No timeline events yet</div>
+        <div style="font-size: 0.9rem; margin-top: 8px;">
+          Events will appear here as you interact with your plant
+        </div>
+      </div>
+    `;
+    }
+    _formatDate(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            // Relative time for recent events
+            if (diffMins < 1) {
+                return 'Just now';
+            }
+            else if (diffMins < 60) {
+                return `${diffMins}m ago`;
+            }
+            else if (diffHours < 24) {
+                return `${diffHours}h ago`;
+            }
+            else if (diffDays < 7) {
+                return `${diffDays}d ago`;
+            }
+            // Absolute date for older events
+            return date.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        }
+        catch (e) {
+            return dateStr;
+        }
+    }
+};
+PlantTimelineTab.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        margin-top: 16px;
+      }
+
+      .timeline-event {
+        margin-bottom: 24px;
+        position: relative;
+      }
+
+      .timeline-event::before {
+        content: '';
+        position: absolute;
+        left: -31px;
+        top: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--event-color, #4caf50);
+        border: 2px solid var(--card-background-color, #2c2c2c);
+      }
+
+      .timeline-event.milestone::before {
+        background: var(--primary-color, #4caf50);
+      }
+
+      .timeline-event.action::before {
+        background: var(--accent-color, #2196f3);
+      }
+
+      .timeline-event.note::before {
+        background: var(--warning-color, #ff9800);
+      }
+
+      .timeline-date {
+        font-size: 0.8rem;
+        opacity: 0.6;
+        margin-bottom: 4px;
+      }
+
+      .timeline-content {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .timeline-label {
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      .timeline-description {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+
+      .timeline-category {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
+        margin-top: 8px;
+        opacity: 0.7;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.6;
+      }
+
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        fill: currentColor;
+        margin-bottom: 16px;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantTimelineTab.prototype, "timelineEvents", void 0);
+PlantTimelineTab = __decorate([
+    t$2('plant-timeline-tab')
+], PlantTimelineTab);
+
+/**
+ * Plant Overview Container - Smart Component
+ *
+ * Connects ViewModel to UI components and dispatches actions.
+ * Handles store access, subscriptions, and event-to-action mapping.
+ */
+/**
+ * Container component for plant overview dialog
+ */
+let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        // Local UI state
+        this._activeTab = 'dashboard';
+        this._isEditing = true;
+        this._showAllDates = false;
+        this._showDeleteConfirmation = false;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.plant && this.store) {
+            // Create ViewModel for this dialog
+            this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
+                activeTab: this._activeTab,
+                isEditing: this._isEditing,
+                showAllDates: this._showAllDates,
+                showDeleteConfirmation: this._showDeleteConfirmation,
+            }, this.store);
+            this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+    }
+    willUpdate(changedProps) {
+        // Recreate ViewModel if inputs change
+        if ((changedProps.has('plant') ||
+            changedProps.has('editedAttributes') ||
+            changedProps.has('_activeTab') ||
+            changedProps.has('_isEditing') ||
+            changedProps.has('_showAllDates') ||
+            changedProps.has('_showDeleteConfirmation')) &&
+            this.plant &&
+            this.store) {
+            this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
+                activeTab: this._activeTab,
+                isEditing: this._isEditing,
+                showAllDates: this._showAllDates,
+                showDeleteConfirmation: this._showDeleteConfirmation,
+            }, this.store);
+            // Recreate controller with new ViewModel
+            this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+    }
+    render() {
+        if (!this.viewModelController) {
+            return x ``;
+        }
+        const vm = this.viewModelController.value;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._handleClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: ${vm.stageColor}">
+          ${this._showDeleteConfirmation ? this._renderDeleteOverlay(vm) : E}
+
+          <!-- HEADER -->
+          ${this._renderHeader(vm)}
+
+          <!-- TABS -->
+          ${this._renderTabs()}
+
+          <!-- CONTENT -->
+          <div class="overview-grid">
+            ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : E}
+            ${this._activeTab === 'actions' ? this._renderActions(vm) : E}
+            ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : E}
+          </div>
+
+          <!-- ACTIONS -->
+          ${this._renderFooter(vm)}
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderHeader(vm) {
+        return x `
+      <div class="dialog-header">
+        <div class="dialog-icon">
+          <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${vm.stageIcon}"></path>
+          </svg>
+        </div>
+        <div class="dialog-title-group">
+          <h2 class="dialog-title">${vm.displayName}</h2>
+          <div class="dialog-subtitle">${vm.displaySubtitle}</div>
+        </div>
+        <button
+          class="md3-button text"
+          @click=${this._openStrainEditor}
+          style="min-width: auto; padding: 8px;"
+          title="Edit Strain Library Entry"
+        >
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiDna}"></path>
+          </svg>
+        </button>
+        <button
+          class="md3-button text"
+          @click=${this._handleClose}
+          style="min-width: auto; padding: 8px;"
+          aria-label="Close"
+          title="Close"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiClose}"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+    }
+    _renderTabs() {
+        return x `
+      <div class="tabs-container">
+        <button
+          class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}"
+          @click=${() => (this._activeTab = 'dashboard')}
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"
+            ></path>
+          </svg>
+          Overview
+        </button>
+        <button
+          class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}"
+          @click=${() => (this._activeTab = 'actions')}
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M7,2V13H10V22L17,10H13L17,2H7Z"
+            ></path>
+          </svg>
+          Actions
+        </button>
+        <button
+          class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}"
+          @click=${() => (this._activeTab = 'timeline')}
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"
+            ></path>
+          </svg>
+          Timeline
+        </button>
+      </div>
+    `;
+    }
+    _renderDashboard(vm) {
+        return x `
+      <plant-dashboard-tab
+        .plant=${vm.plant}
+        .editedAttributes=${vm.editedAttributes}
+        .plantStats=${vm.plantStats}
+        .isEditing=${vm.isEditing}
+        .showAllDates=${vm.showAllDates}
+        @attribute-change=${this._handleAttributeChange}
+        @toggle-dates=${this._handleToggleDates}
+      ></plant-dashboard-tab>
+    `;
+    }
+    _renderActions(vm) {
+        return x `
+      <plant-actions-tab
+        .availableActions=${vm.availableActions}
+        @action-click=${this._handleActionClick}
+      ></plant-actions-tab>
+    `;
+    }
+    _renderTimeline(vm) {
+        return x `
+      <plant-timeline-tab .timelineEvents=${vm.timelineEvents}></plant-timeline-tab>
+    `;
+    }
+    _renderFooter(vm) {
+        return x `
+      <div
+        class="dialog-actions"
+        style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;"
+      >
+        <div class="standard-actions" style="display:flex; gap:12px;">
+          <button class="md3-button danger" @click=${() => this._handleDelete(vm.plantId)}>
+            <svg
+              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiDelete}"></path>
+            </svg>
+            Delete
+          </button>
+        </div>
+        <div class="primary-actions" style="display:flex; gap:12px;">
+          <button class="md3-button outlined" @click=${this._handleClose}>Cancel</button>
+          <button
+            class="md3-button filled"
+            @click=${this._handleSave}
+            ?disabled=${!vm.canSave}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiCheck}"></path>
+            </svg>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderDeleteOverlay(vm) {
+        return x `
+      <div class="delete-overlay">
+        <div class="delete-confirm-card">
+          <h3>Delete Plant?</h3>
+          <p>
+            Are you sure you want to delete <strong>${vm.displayName}</strong>? This action cannot
+            be undone.
+          </p>
+          <div class="delete-actions">
+            <button class="md3-button outlined" @click=${this._cancelDelete}>Cancel</button>
+            <button class="md3-button danger" @click=${this._confirmDelete}>Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    // Event handlers
+    _handleClose() {
+        this.store.ui.closeDialog();
+    }
+    _handleAttributeChange(e) {
+        const { key, value } = e.detail;
+        this.editedAttributes = {
+            ...this.editedAttributes,
+            [key]: value,
+        };
+    }
+    _handleToggleDates() {
+        this._showAllDates = !this._showAllDates;
+    }
+    _handleSave() {
+        // Update plant through store
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.updatePlantFromDialog({
+            plant: this.plant,
+            editedAttributes: this.editedAttributes,
+            selectedPlantIds: [plantId],
+        });
+        this._handleClose();
+    }
+    _handleDelete(plantId) {
+        this._showDeleteConfirmation = true;
+    }
+    _confirmDelete() {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.actions.plant.delete(plantId);
+        this._handleClose();
+    }
+    _cancelDelete() {
+        this._showDeleteConfirmation = false;
+    }
+    _handleActionClick(e) {
+        const { actionId } = e.detail;
+        // Open appropriate dialogs based on action
+        switch (actionId) {
+            case 'water':
+                this._openWatering();
+                break;
+            case 'training':
+                this._openTraining();
+                break;
+            case 'ipm':
+                this._openIPM();
+                break;
+            case 'clone':
+                this._openClone();
+                break;
+        }
+    }
+    _openWatering() {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: {
+                plantIds: [plantId],
+                growspaceId: this.plant.attributes?.growspace_id,
+                mode: 'plant',
+            },
+        });
+    }
+    _openTraining() {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: {
+                isOpen: true,
+                plantIds: [plantId],
+                growspaceId: this.plant.attributes?.growspace_id,
+            },
+        });
+    }
+    _openIPM() {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.ui.setActiveDialog({
+            type: 'IPM',
+            payload: {
+                plantIds: [plantId],
+                growspaceId: this.plant.attributes?.growspace_id,
+            },
+        });
+    }
+    _openClone() {
+        this.store.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: {
+                sourcePlant: this.plant,
+                defaultGrowspaceId: this.plant.attributes?.growspace_id || '',
+            },
+        });
+    }
+    _openStrainEditor() {
+        this.store.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: {},
+        });
+    }
+};
+PlantOverviewContainer.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        max-height: 60vh;
+      }
+
+      .tabs-container {
+        display: flex;
+        gap: 0;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .tab-btn:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
+      .tab-btn.active {
+        border-bottom-color: var(--primary-color, #4caf50);
+        color: var(--primary-color, #4caf50);
+      }
+
+      .tab-btn svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      .delete-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+      }
+
+      .delete-confirm-card {
+        background: var(--card-background-color, #2c2c2c);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 400px;
+        text-align: center;
+      }
+
+      .delete-confirm-card h3 {
+        margin: 0 0 16px 0;
+        color: var(--error-color, #f44336);
+      }
+
+      .delete-confirm-card p {
+        margin: 0 0 24px 0;
+        opacity: 0.8;
+      }
+
+      .delete-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], PlantOverviewContainer.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext })
+], PlantOverviewContainer.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantOverviewContainer.prototype, "plant", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantOverviewContainer.prototype, "editedAttributes", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], PlantOverviewContainer.prototype, "open", void 0);
+__decorate([
+    r$2()
+], PlantOverviewContainer.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], PlantOverviewContainer.prototype, "_isEditing", void 0);
+__decorate([
+    r$2()
+], PlantOverviewContainer.prototype, "_showAllDates", void 0);
+__decorate([
+    r$2()
+], PlantOverviewContainer.prototype, "_showDeleteConfirmation", void 0);
+PlantOverviewContainer = __decorate([
+    t$2('plant-overview-container')
+], PlantOverviewContainer);
+
 let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -23227,80 +25015,26 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
-        return x `
-      <plant-overview-dialog
-        .open=${true}
-        .plant=${dialogState.plant}
-        .editedAttributes=${dialogState.editedAttributes}
-        .activeTab=${dialogState.activeTab}
-        .selectedPlantIds=${dialogState.selectedPlantIds}
-        .growspaceOptions=${growspaceOptions}
-        @close=${() => {
-            if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
-                this.store.ui.closeDialog();
-            }
-        }}
-        @update-plant=${(e) => this.store.updatePlantFromDialog({
-            plant: dialogState.plant,
-            editedAttributes: e.detail, // Event detail is the attributes object
-            selectedPlantIds: dialogState.selectedPlantIds,
-        })}
-        @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
-        @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
-        @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-        @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
-        @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-        @open-watering=${(e) => this.store.ui.setActiveDialog({
-            type: 'WATERING',
-            payload: e.detail,
-        })}
-        @open-training=${(e) => this.store.ui.setActiveDialog({
-            type: 'TRAINING',
-            payload: e.detail,
-        })}
-        @open-ipm=${(e) => this.store.ui.setActiveDialog({
-            type: 'IPM',
-            payload: e.detail,
-        })}
-        @open-clone=${(e) => this.store.ui.setActiveDialog({
-            type: 'TAKE_CLONE',
-            payload: e.detail,
-        })}
-        @open-strain-editor=${(e) => {
-            const { strain, phenotype } = e.detail;
-            const strainLibrary = this.store.data.$strainLibrary.get();
-            // Normalize empty strings, null, and undefined to compare properly
-            const normalizedPhenotype = phenotype || '';
-            let strainEntry = strainLibrary.find((s) => {
-                const entryPhenotype = s.phenotype || '';
-                return s.strain === strain && entryPhenotype === normalizedPhenotype;
-            });
-            // If no match found, create a new entry for the user to complete
-            if (!strainEntry && strain) {
-                const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
-                strainEntry = {
-                    strain,
-                    phenotype: normalizedPhenotype,
-                    key,
-                    breeder: '',
-                    type: 'Hybrid',
-                    flowering_days_min: 60,
-                    flowering_days_max: 70,
-                    lineage: '',
-                    sex: 'Feminized',
-                    description: '',
-                    image: '',
-                    sativa_percentage: 50,
-                    indica_percentage: 50,
-                };
-            }
-            this.store.ui.setActiveDialog({
-                type: 'STRAIN_LIBRARY',
-                payload: { editingStrain: strainEntry },
-            });
-        }}
-      ></plant-overview-dialog>
-    `;
+        {
+            // New refactored dialog with ViewModel pattern
+            return x `
+        <plant-overview-container
+          .open=${true}
+          .plant=${dialogState.plant}
+          .editedAttributes=${dialogState.editedAttributes}
+          @update-plant=${(e) => this.store.updatePlantFromDialog({
+                plant: dialogState.plant,
+                editedAttributes: e.detail,
+                selectedPlantIds: dialogState.selectedPlantIds,
+            })}
+          @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
+          @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
+          @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+          @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+          @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        ></plant-overview-container>
+      `;
+        }
     }
     _renderStrainLibraryDialog(active, strainLibrary, _selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
@@ -34980,243 +36714,6 @@ const variables = i$6 `
     --primary-light-color-active: rgba(255, 255, 255, 0.2);
   }
 `;
-
-let clean = Symbol('clean');
-
-let listenerQueue = [];
-let lqIndex = 0;
-const QUEUE_ITEMS_PER_LISTENER = 4;
-let epoch = 0;
-
-/* @__NO_SIDE_EFFECTS__ */
-const atom = initialValue => {
-  let listeners = [];
-  let $atom = {
-    get() {
-      if (!$atom.lc) {
-        $atom.listen(() => {})();
-      }
-      return $atom.value
-    },
-    lc: 0,
-    listen(listener) {
-      $atom.lc = listeners.push(listener);
-
-      return () => {
-        for (
-          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
-          i < listenerQueue.length;
-
-        ) {
-          if (listenerQueue[i] === listener) {
-            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
-          } else {
-            i += QUEUE_ITEMS_PER_LISTENER;
-          }
-        }
-
-        let index = listeners.indexOf(listener);
-        if (~index) {
-          listeners.splice(index, 1);
-          if (!--$atom.lc) $atom.off();
-        }
-      }
-    },
-    notify(oldValue, changedKey) {
-      epoch++;
-      let runListenerQueue = !listenerQueue.length;
-      for (let listener of listeners) {
-        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
-      }
-
-      if (runListenerQueue) {
-        for (
-          lqIndex = 0;
-          lqIndex < listenerQueue.length;
-          lqIndex += QUEUE_ITEMS_PER_LISTENER
-        ) {
-          listenerQueue[lqIndex](
-            listenerQueue[lqIndex + 1],
-            listenerQueue[lqIndex + 2],
-            listenerQueue[lqIndex + 3]
-          );
-        }
-        listenerQueue.length = 0;
-      }
-    },
-    /* It will be called on last listener unsubscribing.
-       We will redefine it in onMount and onStop. */
-    off() {},
-    set(newValue) {
-      let oldValue = $atom.value;
-      if (oldValue !== newValue) {
-        $atom.value = newValue;
-        $atom.notify(oldValue);
-      }
-    },
-    subscribe(listener) {
-      let unbind = $atom.listen(listener);
-      listener($atom.value);
-      return unbind
-    },
-    value: initialValue
-  };
-
-  {
-    $atom[clean] = () => {
-      listeners = [];
-      $atom.lc = 0;
-      $atom.off();
-    };
-  }
-
-  return $atom
-};
-
-const MOUNT = 5;
-const UNMOUNT = 6;
-const REVERT_MUTATION = 10;
-
-let on = (object, listener, eventKey, mutateStore) => {
-  object.events = object.events || {};
-  if (!object.events[eventKey + REVERT_MUTATION]) {
-    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
-      // eslint-disable-next-line no-sequences
-      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
-        shared: {},
-        ...eventProps
-      });
-    });
-  }
-  object.events[eventKey] = object.events[eventKey] || [];
-  object.events[eventKey].push(listener);
-  return () => {
-    let currentListeners = object.events[eventKey];
-    let index = currentListeners.indexOf(listener);
-    currentListeners.splice(index, 1);
-    if (!currentListeners.length) {
-      delete object.events[eventKey];
-      object.events[eventKey + REVERT_MUTATION]();
-      delete object.events[eventKey + REVERT_MUTATION];
-    }
-  }
-};
-
-let STORE_UNMOUNT_DELAY = 1000;
-
-let onMount = ($store, initialize) => {
-  let listener = payload => {
-    let destroy = initialize(payload);
-    if (destroy) $store.events[UNMOUNT].push(destroy);
-  };
-  return on($store, listener, MOUNT, runListeners => {
-    let originListen = $store.listen;
-    $store.listen = (...args) => {
-      if (!$store.lc && !$store.active) {
-        $store.active = true;
-        runListeners();
-      }
-      return originListen(...args)
-    };
-
-    let originOff = $store.off;
-    $store.events[UNMOUNT] = [];
-    $store.off = () => {
-      originOff();
-      setTimeout(() => {
-        if ($store.active && !$store.lc) {
-          $store.active = false;
-          for (let destroy of $store.events[UNMOUNT]) destroy();
-          $store.events[UNMOUNT] = [];
-        }
-      }, STORE_UNMOUNT_DELAY);
-    };
-
-    {
-      let originClean = $store[clean];
-      $store[clean] = () => {
-        for (let destroy of $store.events[UNMOUNT]) destroy();
-        $store.events[UNMOUNT] = [];
-        $store.active = false;
-        originClean();
-      };
-    }
-
-    return () => {
-      $store.listen = originListen;
-      $store.off = originOff;
-    }
-  })
-};
-
-let computedStore = (stores, cb, batched) => {
-  if (!Array.isArray(stores)) stores = [stores];
-
-  let previousArgs;
-  let currentEpoch;
-  let set = () => {
-    if (currentEpoch === epoch) return
-    currentEpoch = epoch;
-    let args = stores.map($store => $store.get());
-    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
-      previousArgs = args;
-      let value = cb(...args);
-      if (value && value.then && value.t) {
-        value.then(asyncValue => {
-          if (previousArgs === args) {
-            // Prevent a stale set
-            $computed.set(asyncValue);
-          }
-        });
-      } else {
-        $computed.set(value);
-        currentEpoch = epoch;
-      }
-    }
-  };
-  let $computed = atom(undefined);
-  let get = $computed.get;
-  $computed.get = () => {
-    set();
-    return get()
-  };
-  let run = set;
-
-  onMount($computed, () => {
-    let unbinds = stores.map($store => $store.listen(run));
-    set();
-    return () => {
-      for (let unbind of unbinds) unbind();
-    }
-  });
-
-  return $computed
-};
-
-/* @__NO_SIDE_EFFECTS__ */
-const computed = (stores, fn) => computedStore(stores, fn);
-
-/* @__NO_SIDE_EFFECTS__ */
-const map = (initial = {}) => {
-  let $map = atom(initial);
-
-  $map.setKey = function (key, value) {
-    let oldMap = $map.value;
-    if (typeof value === 'undefined' && key in $map.value) {
-      $map.value = { ...$map.value };
-      delete $map.value[key];
-      $map.notify(oldMap, key);
-    } else if ($map.value[key] !== value) {
-      $map.value = {
-        ...$map.value,
-        [key]: value
-      };
-      $map.notify(oldMap, key);
-    }
-  };
-
-  return $map
-};
 
 /**
  * Plant Card ViewModel
