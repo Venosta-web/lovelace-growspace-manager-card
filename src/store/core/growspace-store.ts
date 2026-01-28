@@ -198,6 +198,10 @@ export class GrowspaceStore {
     this.ui.showToast(message, type, action);
   }
 
+  handleDeepLink(plantId: string) {
+    uiActions.handleDeepLink(this.context, plantId);
+  }
+
   toggleEnvGraph(metric: string) {
     if (!this.history) return;
     const isNowActive = this.history.toggleEnvGraph(metric);

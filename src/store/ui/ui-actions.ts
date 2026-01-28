@@ -92,6 +92,45 @@ export function openPlantOverviewDialog(
   });
 }
 
+export function handleDeepLink(ctx: ActionContext, plantId: string) {
+  // 1. Wait for data to be ready if needed - for now we check devices
+  const devices = ctx.data.$devices.get();
+
+  if (!devices || devices.length === 0) {
+    console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
+    ctx.ui.setPendingDeepLink(plantId);
+    return;
+  }
+
+  // 2. Find the plant across all devices
+  let foundPlant: PlantEntity | undefined;
+  for (const device of devices) {
+    if (!device.plants) continue;
+    foundPlant = device.plants.find(
+      (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
+    );
+    if (foundPlant) break;
+  }
+
+  if (foundPlant) {
+    console.log('[DeepLink] Plant found, opening dialog:', plantId);
+    openPlantOverviewDialog(ctx, foundPlant);
+
+    // 3. Clear pending state
+    ctx.ui.setPendingDeepLink(null);
+
+    // 4. Cleanup URL to prevent re-opening on refresh
+    const url = new URL(window.location.href);
+    url.searchParams.delete('plantId');
+    window.history.replaceState({}, '', url.toString());
+  } else {
+    // Not found - could be stale or restricted access
+    console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+    // Still clear pending state to avoid infinite retries if the ID is just wrong
+    ctx.ui.setPendingDeepLink(null);
+  }
+}
+
 export function openBatchWateringDialog(ctx: ActionContext, growspaceId?: string) {
   const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
   if (selectedIds.length === 0 && !growspaceId) return;

@@ -99,6 +99,29 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.fetchNutrientPresets();
     this.store.fetchIPMPresets();
     this.store.fetchNutrientInventory();
+
+    // Check for deep link
+    this._checkDeepLink();
+  }
+
+  private _checkDeepLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const plantId = urlParams.get('plantId');
+
+    // Use a global tracker to prevent multiple instances from processing the same deep link
+    const globalTracker = (window as any).GROWSPACE_DEEP_LINK_TRACKED;
+
+    if (plantId && globalTracker !== plantId) {
+      (window as any).GROWSPACE_DEEP_LINK_TRACKED = plantId;
+      console.log('[GrowspaceCard] Deep link detected for plant:', plantId);
+
+      // Cleanup URL immediately to prevent other instances from picking it up
+      const url = new URL(window.location.href);
+      url.searchParams.delete('plantId');
+      window.history.replaceState({}, '', url.toString());
+
+      this.store.handleDeepLink(plantId);
+    }
   }
 
   connectedCallback() {
@@ -123,6 +146,12 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
       this._subscriptionController.updateHass(this.hass);
+
+      // Re-check for pending deep link when hass (and thus devices) updates
+      const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
+      if (pendingId) {
+        this.store.handleDeepLink(pendingId);
+      }
     }
 
     // Sync strain library to context provider

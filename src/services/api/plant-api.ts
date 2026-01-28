@@ -198,6 +198,7 @@ export class PlantAPI extends BaseAPI {
     breeder_logo?: string;
     device_id?: string;
     preview?: boolean;
+    base_url?: string;
   }): Promise<any> {
     console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
     try {

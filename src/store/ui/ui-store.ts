@@ -23,6 +23,7 @@ export class GrowspaceUIStore {
   public readonly $defaultApplied: WritableAtom<boolean>;
   public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
   public readonly $language: WritableAtom<string>;
+  public readonly $pendingDeepLinkPlantId: WritableAtom<string | null>;
 
   // Computed stores
   public readonly $isCompactView: ReadableAtom<boolean>;
@@ -41,6 +42,7 @@ export class GrowspaceUIStore {
     this.$defaultApplied = atom<boolean>(false);
     this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
     this.$language = atom<string>('en');
+    this.$pendingDeepLinkPlantId = atom<string | null>(null);
 
     this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
 
@@ -180,5 +182,9 @@ export class GrowspaceUIStore {
 
   public setLanguage(lang: string) {
     this.$language.set(lang);
+  }
+
+  public setPendingDeepLink(plantId: string | null) {
+    this.$pendingDeepLinkPlantId.set(plantId);
   }
 }

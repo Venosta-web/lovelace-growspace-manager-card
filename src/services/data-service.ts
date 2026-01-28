@@ -300,6 +300,7 @@ export class DataService {
     breeder_logo?: string;
     device_id?: string;
     preview?: boolean;
+    base_url?: string;
   }): Promise<any> => this._plantAPI.printLabel(params);
 
   // ========================================

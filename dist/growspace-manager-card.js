@@ -98008,6 +98008,7 @@ class GrowspaceUIStore {
         this.$defaultApplied = atom(false);
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
         this.$language = atom('en');
+        this.$pendingDeepLinkPlantId = atom(null);
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
         this.$cardViewState = computed([
             this.$viewMode,
@@ -98098,6 +98099,9 @@ class GrowspaceUIStore {
     }
     setLanguage(lang) {
         this.$language.set(lang);
+    }
+    setPendingDeepLink(plantId) {
+        this.$pendingDeepLinkPlantId.set(plantId);
     }
 }
 
@@ -99357,6 +99361,7 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
  */
 async function printLabel(ctx, params) {
     const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
+    const baseUrl = window.location.origin + window.location.pathname;
     try {
         const result = await ctx.dataService.printLabel({
             plant_id: plantId,
@@ -99367,6 +99372,7 @@ async function printLabel(ctx, params) {
             breeder_logo: breederLogo,
             device_id: deviceId,
             preview,
+            base_url: baseUrl,
         });
         if (!preview) {
             ctx.showToast('Label printing command sent', 'success');
@@ -99592,6 +99598,40 @@ function openPlantOverviewDialog(ctx, plant, selectedIds) {
             selectedPlantIds: selectedIds,
         },
     });
+}
+function handleDeepLink(ctx, plantId) {
+    // 1. Wait for data to be ready if needed - for now we check devices
+    const devices = ctx.data.$devices.get();
+    if (!devices || devices.length === 0) {
+        console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
+        ctx.ui.setPendingDeepLink(plantId);
+        return;
+    }
+    // 2. Find the plant across all devices
+    let foundPlant;
+    for (const device of devices) {
+        if (!device.plants)
+            continue;
+        foundPlant = device.plants.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
+        if (foundPlant)
+            break;
+    }
+    if (foundPlant) {
+        console.log('[DeepLink] Plant found, opening dialog:', plantId);
+        openPlantOverviewDialog(ctx, foundPlant);
+        // 3. Clear pending state
+        ctx.ui.setPendingDeepLink(null);
+        // 4. Cleanup URL to prevent re-opening on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('plantId');
+        window.history.replaceState({}, '', url.toString());
+    }
+    else {
+        // Not found - could be stale or restricted access
+        console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+        // Still clear pending state to avoid infinite retries if the ID is just wrong
+        ctx.ui.setPendingDeepLink(null);
+    }
 }
 function openBatchWateringDialog(ctx, growspaceId) {
     const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
@@ -100613,6 +100653,9 @@ class GrowspaceStore {
     showToast(message, type = 'info', action) {
         this.ui.showToast(message, type, action);
     }
+    handleDeepLink(plantId) {
+        handleDeepLink(this.context, plantId);
+    }
     toggleEnvGraph(metric) {
         if (!this.history)
             return;
@@ -100946,6 +100989,23 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.fetchNutrientPresets();
         this.store.fetchIPMPresets();
         this.store.fetchNutrientInventory();
+        // Check for deep link
+        this._checkDeepLink();
+    }
+    _checkDeepLink() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const plantId = urlParams.get('plantId');
+        // Use a global tracker to prevent multiple instances from processing the same deep link
+        const globalTracker = window.GROWSPACE_DEEP_LINK_TRACKED;
+        if (plantId && globalTracker !== plantId) {
+            window.GROWSPACE_DEEP_LINK_TRACKED = plantId;
+            console.log('[GrowspaceCard] Deep link detected for plant:', plantId);
+            // Cleanup URL immediately to prevent other instances from picking it up
+            const url = new URL(window.location.href);
+            url.searchParams.delete('plantId');
+            window.history.replaceState({}, '', url.toString());
+            this.store.handleDeepLink(plantId);
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -100962,6 +101022,11 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
             this._subscriptionController.updateHass(this.hass);
+            // Re-check for pending deep link when hass (and thus devices) updates
+            const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
+            if (pendingId) {
+                this.store.handleDeepLink(pendingId);
+            }
         }
         // Sync strain library to context provider
         if (this._strainLibraryController.value !== this._strainLibrary) {

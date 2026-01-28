@@ -680,6 +680,8 @@ export async function printLabel(
   }
 ): Promise<any> {
   const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
+  const baseUrl = window.location.origin + window.location.pathname;
+
   try {
     const result = await ctx.dataService.printLabel({
       plant_id: plantId,
@@ -690,6 +692,7 @@ export async function printLabel(
       breeder_logo: breederLogo,
       device_id: deviceId,
       preview,
+      base_url: baseUrl,
     });
     if (!preview) {
       ctx.showToast('Label printing command sent', 'success');
