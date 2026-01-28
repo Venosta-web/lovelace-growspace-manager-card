@@ -6122,7 +6122,7 @@ class PlantAPI extends BaseAPI {
         }
     }
     async printLabel(params) {
-        console.log('[PlantAPI:printLabel] Printing label for plant:', params.plant_id);
+        console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
         try {
             return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
         }
@@ -15555,6 +15555,22 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         this._editorState = newState;
     }
+    _handlePrintLabel() {
+        const s = this._editorState;
+        if (!s.strain)
+            return;
+        this.dispatchEvent(new CustomEvent('open-print-label', {
+            detail: {
+                strainName: s.strain,
+                phenotype: s.phenotype,
+                lineage: s.lineage,
+                breeder: s.breeder,
+                breederLogo: s.breeder_logo,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
     _toggleCropMode(active) {
         this._isCropping = active;
     }
@@ -16371,6 +16387,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             : x `<div></div>`}
 
         <div style="display:flex; gap:12px;">
+          ${s.strain ? x `
+            <button class="md3-button outlined" @click=${this._handlePrintLabel}>
+              <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
+                <path d="${mdiDownload}"></path>
+              </svg>
+              Print Label
+            </button>
+          ` : E}
           <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._handleSave()}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -24966,13 +24990,24 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         }
     }
     async _fetchPreview() {
-        if (!this.dialogState?.plantId || !this._selectedDeviceId)
+        if (!this.dialogState || !this._selectedDeviceId)
+            return;
+        if (!this.dialogState.plantId && !this.dialogState.strainName)
             return;
         this._previewLoading = true;
         this._previewError = null;
         try {
             // 1. Trigger the generation
-            await this.store.printLabel(this.dialogState.plantId, undefined, true);
+            await this.store.printLabel({
+                plantId: this.dialogState.plantId,
+                strain: this.dialogState.strainName,
+                phenotype: this.dialogState.phenotype,
+                breeder: this.dialogState.breeder,
+                lineage: this.dialogState.lineage,
+                breederLogo: this.dialogState.breederLogo,
+                deviceId: undefined,
+                preview: true
+            });
             // 2. Wait for HA state propagation
             await new Promise(r => setTimeout(r, 800));
             // 3. Grab the image URL from the entity state
@@ -25021,7 +25056,16 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
             return;
         this._isSubmitting = true;
         try {
-            await this.store.printLabel(this.dialogState.plantId, this._selectedDeviceId || undefined);
+            await this.store.printLabel({
+                plantId: this.dialogState.plantId,
+                strain: this.dialogState.strainName,
+                phenotype: this.dialogState.phenotype,
+                breeder: this.dialogState.breeder,
+                lineage: this.dialogState.lineage,
+                breederLogo: this.dialogState.breederLogo,
+                deviceId: this._selectedDeviceId || undefined,
+                preview: false
+            });
             this.store.showToast('Label printing command sent', 'success');
             this._close();
         }
@@ -25042,7 +25086,8 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
             return E;
         const plantId = this.dialogState?.plantId;
         const plant = this._getPlant(plantId);
-        this._getStrain(plant?.attributes.strain, plant?.attributes.phenotype);
+        const strainName = plant?.attributes.strain || this.dialogState?.strainName || 'Unknown';
+        const subtitle = plantId ? `${strainName} (${plantId})` : strainName;
         const printers = this._getPrinters();
         return x `
       <ha-dialog open @closed=${this._close} hideActions .heading=${'Print Label'}>
@@ -25053,7 +25098,7 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
             </div>
             <div class="dialog-title-group">
               <h2 class="dialog-title">Print Label</h2>
-              <div class="dialog-subtitle">${plant?.attributes.strain || 'Unknown Plant'} (${plantId})</div>
+              <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
@@ -25612,6 +25657,12 @@ let DialogHost = class DialogHost extends i$3 {
         @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
         @export-library=${() => this.store.handleExportLibrary()}
         @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
+        @open-print-label=${(e) => {
+            this.store.ui.setActiveDialog({
+                type: 'PRINT_LABEL',
+                payload: e.detail,
+            });
+        }}
       ></strain-library-dialog>
     `;
     }
@@ -99302,11 +99353,21 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
     }
 }
 /**
- * Print a label for a plant.
+ * Print a label for a plant or strain.
  */
-async function printLabel(ctx, plantId, deviceId, preview) {
+async function printLabel(ctx, params) {
+    const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
     try {
-        const result = await ctx.dataService.printLabel({ plant_id: plantId, device_id: deviceId, preview });
+        const result = await ctx.dataService.printLabel({
+            plant_id: plantId,
+            strain,
+            phenotype,
+            breeder,
+            lineage,
+            breeder_logo: breederLogo,
+            device_id: deviceId,
+            preview,
+        });
         if (!preview) {
             ctx.showToast('Label printing command sent', 'success');
         }
@@ -100593,8 +100654,8 @@ class GrowspaceStore {
     async waterGrowspace(growspaceId, amount, nutrients, presetId) {
         await waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
     }
-    async printLabel(plantId, deviceId, preview) {
-        return await printLabel(this.context, plantId, deviceId, preview);
+    async printLabel(params) {
+        return await printLabel(this.context, params);
     }
     togglePlantSelection(plantOrId) {
         togglePlantSelection(this.context, plantOrId);

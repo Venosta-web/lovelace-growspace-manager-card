@@ -481,6 +481,12 @@ export class DialogHost extends LitElement {
         @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
         @export-library=${() => this.store.handleExportLibrary()}
         @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
+        @open-print-label=${(e: CustomEvent) => {
+        this.store.ui.setActiveDialog({
+          type: 'PRINT_LABEL',
+          payload: e.detail,
+        });
+      }}
       ></strain-library-dialog>
     `;
   }

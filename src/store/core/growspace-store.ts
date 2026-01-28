@@ -264,8 +264,17 @@ export class GrowspaceStore {
     await plantActions.waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
   }
 
-  async printLabel(plantId: string, deviceId?: string, preview?: boolean): Promise<any> {
-    return await plantActions.printLabel(this.context, plantId, deviceId, preview);
+  async printLabel(params: {
+    plantId?: string;
+    strain?: string;
+    phenotype?: string;
+    breeder?: string;
+    lineage?: string;
+    breederLogo?: string;
+    deviceId?: string;
+    preview?: boolean;
+  }): Promise<any> {
+    return await plantActions.printLabel(this.context, params);
   }
 
   togglePlantSelection(plantOrId: string | PlantEntity) {

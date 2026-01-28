@@ -156,6 +156,11 @@ export interface IPMDialogState {
 }
 
 export interface PrintLabelDialogState {
-  plantId: string;
+  plantId?: string;
+  strainName?: string;
+  phenotype?: string;
+  lineage?: string;
+  breeder?: string;
+  breederLogo?: string;
   deviceId?: string;
 }

@@ -664,16 +664,33 @@ export async function waterGrowspace(
 }
 
 /**
- * Print a label for a plant.
+ * Print a label for a plant or strain.
  */
 export async function printLabel(
   ctx: ActionContext,
-  plantId: string,
-  deviceId?: string,
-  preview?: boolean
+  params: {
+    plantId?: string;
+    strain?: string;
+    phenotype?: string;
+    breeder?: string;
+    lineage?: string;
+    breederLogo?: string;
+    deviceId?: string;
+    preview?: boolean;
+  }
 ): Promise<any> {
+  const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
   try {
-    const result = await ctx.dataService.printLabel({ plant_id: plantId, device_id: deviceId, preview });
+    const result = await ctx.dataService.printLabel({
+      plant_id: plantId,
+      strain,
+      phenotype,
+      breeder,
+      lineage,
+      breeder_logo: breederLogo,
+      device_id: deviceId,
+      preview,
+    });
     if (!preview) {
       ctx.showToast('Label printing command sent', 'success');
     }

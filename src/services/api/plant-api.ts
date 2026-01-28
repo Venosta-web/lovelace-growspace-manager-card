@@ -189,8 +189,17 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async printLabel(params: { plant_id: string; device_id?: string; preview?: boolean }): Promise<any> {
-    console.log('[PlantAPI:printLabel] Printing label for plant:', params.plant_id);
+  async printLabel(params: {
+    plant_id?: string;
+    strain?: string;
+    phenotype?: string;
+    breeder?: string;
+    lineage?: string;
+    breeder_logo?: string;
+    device_id?: string;
+    preview?: boolean;
+  }): Promise<any> {
+    console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
     try {
       return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
     } catch (err) {

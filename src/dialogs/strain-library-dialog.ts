@@ -686,6 +686,25 @@ export class StrainLibraryDialog extends LitElement {
     this._editorState = newState;
   }
 
+  private _handlePrintLabel() {
+    const s = this._editorState;
+    if (!s.strain) return;
+
+    this.dispatchEvent(
+      new CustomEvent('open-print-label', {
+        detail: {
+          strainName: s.strain,
+          phenotype: s.phenotype,
+          lineage: s.lineage,
+          breeder: s.breeder,
+          breederLogo: s.breeder_logo,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _toggleCropMode(active: boolean) {
     this._isCropping = active;
   }
@@ -1525,6 +1544,14 @@ export class StrainLibraryDialog extends LitElement {
         : html`<div></div>`}
 
         <div style="display:flex; gap:12px;">
+          ${s.strain ? html`
+            <button class="md3-button outlined" @click=${this._handlePrintLabel}>
+              <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
+                <path d="${mdiDownload}"></path>
+              </svg>
+              Print Label
+            </button>
+          ` : nothing}
           <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._handleSave()}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">

@@ -291,8 +291,16 @@ export class DataService {
     presetId?: string
   ) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
 
-  printLabel = (params: { plant_id: string; device_id?: string; preview?: boolean }): Promise<any> =>
-    this._plantAPI.printLabel(params);
+  printLabel = (params: {
+    plant_id?: string;
+    strain?: string;
+    phenotype?: string;
+    breeder?: string;
+    lineage?: string;
+    breeder_logo?: string;
+    device_id?: string;
+    preview?: boolean;
+  }): Promise<any> => this._plantAPI.printLabel(params);
 
   // ========================================
   // Irrigation API Delegations

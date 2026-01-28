@@ -112,14 +112,24 @@ export class PrintLabelDialog extends LitElement {
     }
 
     async _fetchPreview() {
-        if (!this.dialogState?.plantId || !this._selectedDeviceId) return;
+        if (!this.dialogState || !this._selectedDeviceId) return;
+        if (!this.dialogState.plantId && !this.dialogState.strainName) return;
 
         this._previewLoading = true;
         this._previewError = null;
 
         try {
             // 1. Trigger the generation
-            await this.store.printLabel(this.dialogState.plantId, undefined, true);
+            await this.store.printLabel({
+                plantId: this.dialogState.plantId,
+                strain: this.dialogState.strainName,
+                phenotype: this.dialogState.phenotype,
+                breeder: this.dialogState.breeder,
+                lineage: this.dialogState.lineage,
+                breederLogo: this.dialogState.breederLogo,
+                deviceId: undefined,
+                preview: true
+            });
 
             // 2. Wait for HA state propagation
             await new Promise(r => setTimeout(r, 800));
@@ -174,7 +184,16 @@ export class PrintLabelDialog extends LitElement {
         this._isSubmitting = true;
 
         try {
-            await this.store.printLabel(this.dialogState.plantId, this._selectedDeviceId || undefined);
+            await this.store.printLabel({
+                plantId: this.dialogState.plantId,
+                strain: this.dialogState.strainName,
+                phenotype: this.dialogState.phenotype,
+                breeder: this.dialogState.breeder,
+                lineage: this.dialogState.lineage,
+                breederLogo: this.dialogState.breederLogo,
+                deviceId: this._selectedDeviceId || undefined,
+                preview: false
+            });
             this.store.showToast('Label printing command sent', 'success');
             this._close();
         } catch (e: unknown) {
@@ -195,7 +214,9 @@ export class PrintLabelDialog extends LitElement {
 
         const plantId = this.dialogState?.plantId;
         const plant = this._getPlant(plantId);
-        const strainEntry = this._getStrain(plant?.attributes.strain, plant?.attributes.phenotype);
+
+        const strainName = plant?.attributes.strain || this.dialogState?.strainName || 'Unknown';
+        const subtitle = plantId ? `${strainName} (${plantId})` : strainName;
 
         const printers = this._getPrinters();
 
@@ -208,7 +229,7 @@ export class PrintLabelDialog extends LitElement {
             </div>
             <div class="dialog-title-group">
               <h2 class="dialog-title">Print Label</h2>
-              <div class="dialog-subtitle">${plant?.attributes.strain || 'Unknown Plant'} (${plantId})</div>
+              <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
