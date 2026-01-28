@@ -24966,16 +24966,23 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         }
     }
     async _fetchPreview() {
-        if (!this.dialogState?.plantId)
+        if (!this.dialogState?.plantId || !this._selectedDeviceId)
             return;
         this._previewLoading = true;
         this._previewError = null;
         try {
-            const response = await this.store.printLabel(this.dialogState.plantId, undefined, true);
-            // The niimbot integration returns a dict, handle potential response structures
-            this._previewImage = response?.image || response?.data || response?.preview_url || null;
-            if (!this._previewImage) {
-                this._previewError = 'No preview image received from Niimbot integration';
+            // 1. Trigger the generation
+            await this.store.printLabel(this.dialogState.plantId, undefined, true);
+            // 2. Wait a brief moment for the state to propagate (HA is async)
+            await new Promise(r => setTimeout(r, 500));
+            // 3. Grab the image URL from the entity state
+            const stateObj = this.hass.states[this._selectedDeviceId]; // e.g., image.b1_...
+            if (stateObj?.attributes.entity_picture) {
+                // The entity_picture is a path like /api/image_proxy/image.xxx
+                this._previewImage = stateObj.attributes.entity_picture;
+            }
+            else {
+                this._previewError = 'Image entity updated, but no picture attribute found.';
             }
         }
         catch (e) {

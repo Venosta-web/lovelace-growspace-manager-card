@@ -111,21 +111,29 @@ export class PrintLabelDialog extends LitElement {
         }
     }
 
-    private async _fetchPreview() {
-        if (!this.dialogState?.plantId) return;
+    async _fetchPreview() {
+        if (!this.dialogState?.plantId || !this._selectedDeviceId) return;
 
         this._previewLoading = true;
         this._previewError = null;
 
         try {
-            const response = await this.store.printLabel(this.dialogState.plantId, undefined, true);
-            // The niimbot integration returns a dict, handle potential response structures
-            this._previewImage = response?.image || response?.data || response?.preview_url || null;
+            // 1. Trigger the generation
+            await this.store.printLabel(this.dialogState.plantId, undefined, true);
 
-            if (!this._previewImage) {
-                this._previewError = 'No preview image received from Niimbot integration';
+            // 2. Wait a brief moment for the state to propagate (HA is async)
+            await new Promise(r => setTimeout(r, 500));
+
+            // 3. Grab the image URL from the entity state
+            const stateObj = this.hass.states[this._selectedDeviceId]; // e.g., image.b1_...
+
+            if (stateObj?.attributes.entity_picture) {
+                // The entity_picture is a path like /api/image_proxy/image.xxx
+                this._previewImage = stateObj.attributes.entity_picture;
+            } else {
+                this._previewError = 'Image entity updated, but no picture attribute found.';
             }
-        } catch (e: unknown) {
+        } catch (e) {
             this._previewError = e instanceof Error ? e.message : 'Failed to fetch preview';
         } finally {
             this._previewLoading = false;
