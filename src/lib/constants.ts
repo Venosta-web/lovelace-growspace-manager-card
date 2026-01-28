@@ -62,6 +62,7 @@ export const SERVICES = {
   SAVE_IPM_PRESET: 'save_ipm_preset',
   REMOVE_IPM_PRESET: 'remove_ipm_preset',
   APPLY_IPM: 'apply_ipm',
+  PRINT_LABEL: 'print_label',
 };
 
 // Storage keys

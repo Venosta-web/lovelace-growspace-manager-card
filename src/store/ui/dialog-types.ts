@@ -11,6 +11,7 @@ import type {
   TrainingDialogState,
   IPMDialogState,
   CloneDialogState,
+  PrintLabelDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -30,5 +31,6 @@ export type ActiveDialogState =
   | { type: 'TRAINING'; payload: TrainingDialogState }
   | { type: 'IPM'; payload: IPMDialogState }
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
+  | { type: 'PRINT_LABEL'; payload: PrintLabelDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> };

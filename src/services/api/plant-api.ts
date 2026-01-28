@@ -62,7 +62,7 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async updatePlant(params: { plant_id: string; [key: string]: unknown }): Promise<void> {
+  async updatePlant(params: { plant_id: string;[key: string]: unknown }): Promise<void> {
     console.log('[PlantAPI:updatePlant] Sending payload:', params);
     try {
       await this.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
@@ -185,6 +185,16 @@ export class PlantAPI extends BaseAPI {
       console.log('[PlantAPI:waterPlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:waterPlant] Error:', err);
+      throw err;
+    }
+  }
+
+  async printLabel(params: { plant_id: string; device_id?: string; preview?: boolean }): Promise<any> {
+    console.log('[PlantAPI:printLabel] Printing label for plant:', params.plant_id);
+    try {
+      return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
+    } catch (err) {
+      console.error('[PlantAPI:printLabel] Error:', err);
       throw err;
     }
   }

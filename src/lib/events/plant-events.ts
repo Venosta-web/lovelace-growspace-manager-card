@@ -87,3 +87,13 @@ export class MoveCloneEvent extends CustomEvent<{ plant: PlantEntity; targetGrow
     });
   }
 }
+export class PrintLabelEvent extends CustomEvent<{ plant: PlantEntity }> {
+  static readonly TYPE = 'print-label';
+  constructor(plant: PlantEntity) {
+    super(PrintLabelEvent.TYPE, {
+      detail: { plant },
+      bubbles: true,
+      composed: true,
+    });
+  }
+}

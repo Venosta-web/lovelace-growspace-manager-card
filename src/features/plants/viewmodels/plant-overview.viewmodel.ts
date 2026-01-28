@@ -266,6 +266,13 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       enabled: stage === 'mother' || stage === 'vegetative',
       tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
     },
+    {
+      id: 'print_label',
+      label: 'Print Label',
+      icon: 'mdiPrinter',
+      enabled: stage !== 'harvested',
+      tooltip: stage === 'harvested' ? 'Cannot print labels for harvested plants' : undefined,
+    },
   ];
 
   return actions;

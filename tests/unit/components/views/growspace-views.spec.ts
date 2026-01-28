@@ -4,6 +4,7 @@ import { GrowspaceViewHeader } from '../../../../src/components/views/growspace-
 import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
 import { GrowspaceDevice } from '../../../../src/types';
 import * as uiStore from '../../../../src/store/ui/ui-store';
+import { FEATURE_FLAGS } from '../../../../src/features/shared/config/feature-flags';
 
 // Mock ui-store
 vi.mock('../../../../src/store/ui/ui-store', () => ({
@@ -35,6 +36,11 @@ vi.mock('../../../../src/components/growspace-grid', () => ({
         focusPlant = vi.fn();
     }
 }));
+vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({
+    GrowspaceGridContainer: class extends HTMLElement {
+        focusPlant = vi.fn();
+    }
+}));
 vi.mock('../../../../src/components/growspace-header', () => ({
     GrowspaceHeader: class extends HTMLElement { }
 }));
@@ -44,6 +50,10 @@ vi.mock('../../../../src/components/growspace-analytics', () => ({
 vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({
     GrowspaceEditModeBanner: class extends HTMLElement { }
 }));
+
+// Helper to get grid selector based on feature flag
+const getGridSelector = () =>
+    FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID ? 'growspace-grid-container' : 'growspace-grid';
 
 describe('Growspace Views', () => {
 
@@ -61,7 +71,7 @@ describe('Growspace Views', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            const grid = element.shadowRoot?.querySelector('growspace-grid');
+            const grid = element.shadowRoot?.querySelector(getGridSelector());
             expect(grid).toBeTruthy();
             // Note: compact is now controlled by StoreController, not a property
 
@@ -72,7 +82,7 @@ describe('Growspace Views', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            const gridMock = element.shadowRoot?.querySelector('growspace-grid') as any;
+            const gridMock = element.shadowRoot?.querySelector(getGridSelector()) as any;
             gridMock.focusPlant = vi.fn();
 
             element.focusPlant(1);
@@ -90,7 +100,7 @@ describe('Growspace Views', () => {
             // Should not throw
             element.focusPlant(1);
 
-            expect(spy).toHaveBeenCalledWith('growspace-grid');
+            expect(spy).toHaveBeenCalledWith(getGridSelector());
 
             document.body.removeChild(element);
         });
@@ -208,7 +218,7 @@ describe('Growspace Views', () => {
 
             expect(element.shadowRoot?.querySelector('growspace-header')).toBeTruthy();
             expect(element.shadowRoot?.querySelector('growspace-analytics')).toBeTruthy();
-            expect(element.shadowRoot?.querySelector('growspace-grid')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector(getGridSelector())).toBeTruthy();
 
             document.body.removeChild(element);
         });
@@ -248,7 +258,7 @@ describe('Growspace Views', () => {
 
             // Should not throw
             element.focusPlant(5);
-            expect(spy).toHaveBeenCalledWith('growspace-grid');
+            expect(spy).toHaveBeenCalledWith(getGridSelector());
 
             document.body.removeChild(element);
         });
@@ -257,7 +267,7 @@ describe('Growspace Views', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            const gridMock = element.shadowRoot?.querySelector('growspace-grid') as any;
+            const gridMock = element.shadowRoot?.querySelector(getGridSelector()) as any;
             gridMock.focusPlant = vi.fn();
 
             element.focusPlant(5);

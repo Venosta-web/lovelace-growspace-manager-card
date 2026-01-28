@@ -492,9 +492,10 @@ export class PlantUtils {
     const strainName = plant.attributes?.strain || 'Unknown Strain';
     const pheno = plant.attributes?.phenotype || '';
 
-    // Image logic
+    // Image & Logo logic
     let imageUrl: string | undefined;
     let imageCropMeta: CropMeta | undefined;
+    let breederLogo: string | undefined;
     const library = strainLibrary || [];
 
     if (strainName !== 'Unknown Strain') {
@@ -516,6 +517,12 @@ export class PlantUtils {
             imageCropMeta = anyMatch.image_crop_meta;
           }
         }
+      }
+
+      // Find breeder logo
+      const breederMatch = library.find((s) => s.strain === strainName && !!s.breeder_logo);
+      if (breederMatch) {
+        breederLogo = breederMatch.breeder_logo;
       }
     }
 
@@ -568,6 +575,7 @@ export class PlantUtils {
       pheno,
       imageUrl,
       imageCropMeta,
+      breederLogo,
       stages,
     };
   }

@@ -12,6 +12,7 @@ import {
   mdiDumbbell,
   mdiBug,
   mdiContentCopy,
+  mdiPrinter,
 } from '@mdi/js';
 import type { ActionConfig } from '../viewmodels/plant-overview.viewmodel';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -26,6 +27,7 @@ export class PlantActionsTab extends LitElement {
     mdiDumbbell,
     mdiBug,
     mdiContentCopy,
+    mdiPrinter,
   };
 
   static styles = [
@@ -113,12 +115,12 @@ export class PlantActionsTab extends LitElement {
         title="${action.tooltip || action.label}"
       >
         ${iconPath
-          ? html`
+        ? html`
               <svg viewBox="0 0 24 24">
                 <path d="${iconPath}"></path>
               </svg>
             `
-          : nothing}
+        : nothing}
         <span>${action.label}</span>
       </div>
     `;

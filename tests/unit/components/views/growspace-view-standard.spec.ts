@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom } from 'nanostores';
+import { FEATURE_FLAGS } from '../../../../src/features/shared/config/feature-flags';
 
 // Mock imports
 vi.mock('../../../../src/components/growspace-header', () => ({}));
@@ -9,6 +10,7 @@ vi.mock('../../../../src/components/growspace-analytics', () => ({}));
 vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({}));
 vi.mock('../../../../src/components/transplant-source-panel', () => ({}));
 vi.mock('../../../../src/components/growspace-grid', () => ({}));
+vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 
 // Defines mocks
 @customElement('growspace-header')
@@ -34,6 +36,15 @@ class MockGrid extends LitElement {
     static get properties() { return { plants: { type: Array }, rows: { type: Number }, cols: { type: Number } }; }
     focusPlant(index: number) { }
 }
+@customElement('growspace-grid-container')
+class MockGridContainer extends LitElement {
+    static get properties() { return { plants: { type: Array }, rows: { type: Number }, cols: { type: Number } }; }
+    focusPlant(index: number) { }
+}
+
+// Helper to get grid selector based on feature flag
+const getGridSelector = () =>
+    FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID ? 'growspace-grid-container' : 'growspace-grid';
 
 import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
 
@@ -106,7 +117,7 @@ describe('GrowspaceViewStandard', () => {
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('growspace-header')).toBeTruthy();
         expect(element.shadowRoot?.querySelector('growspace-analytics')).toBeTruthy();
-        expect(element.shadowRoot?.querySelector('growspace-grid')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector(getGridSelector())).toBeTruthy();
     });
 
     it('should show edit mode banner when isEditMode is true', async () => {
@@ -191,7 +202,7 @@ describe('GrowspaceViewStandard', () => {
     });
 
     it('should delegate focusPlant to grid', async () => {
-        const grid = element.shadowRoot?.querySelector('growspace-grid') as any;
+        const grid = element.shadowRoot?.querySelector(getGridSelector()) as any;
         const spy = vi.spyOn(grid!, 'focusPlant');
 
         element.focusPlant(5);
@@ -200,7 +211,7 @@ describe('GrowspaceViewStandard', () => {
 
     it('should handle transplant drop successfully', async () => {
         vi.useFakeTimers();
-        const grid = element.shadowRoot?.querySelector('growspace-grid');
+        const grid = element.shadowRoot?.querySelector(getGridSelector());
 
         // Mock successful service call
         mockStore.hass.callService.mockReturnValue(Promise.resolve({}));
@@ -233,7 +244,7 @@ describe('GrowspaceViewStandard', () => {
     });
 
     it('should handle transplant drop failure', async () => {
-        const grid = element.shadowRoot?.querySelector('growspace-grid');
+        const grid = element.shadowRoot?.querySelector(getGridSelector());
 
         mockStore.hass.callService.mockRejectedValue(new Error('Fail'));
 

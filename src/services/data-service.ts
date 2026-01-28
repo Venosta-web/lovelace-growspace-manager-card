@@ -151,6 +151,7 @@ export class DataService {
     image_crop_meta?: CropMeta;
     sativa_percentage?: number;
     indica_percentage?: number;
+    breeder_logo?: string;
   }) => this._strainAPI.addStrain(data);
 
   removeStrain = (strain: string, phenotype?: string) =>
@@ -289,6 +290,9 @@ export class DataService {
     nutrients?: Record<string, number>,
     presetId?: string
   ) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
+
+  printLabel = (params: { plant_id: string; device_id?: string; preview?: boolean }): Promise<any> =>
+    this._plantAPI.printLabel(params);
 
   // ========================================
   // Irrigation API Delegations

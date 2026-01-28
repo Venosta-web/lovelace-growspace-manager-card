@@ -122,6 +122,7 @@ var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,2
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
+var mdiPrinter = "M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z";
 var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
 var mdiRefresh = "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
@@ -778,9 +779,10 @@ class PlantUtils {
         const stageColor = this.getPlantStageColor(plant.state);
         const strainName = plant.attributes?.strain || 'Unknown Strain';
         const pheno = plant.attributes?.phenotype || '';
-        // Image logic
+        // Image & Logo logic
         let imageUrl;
         let imageCropMeta;
+        let breederLogo;
         const library = strainLibrary || [];
         if (strainName !== 'Unknown Strain') {
             const phenoMatch = library.find((s) => s.strain === strainName && s.phenotype === pheno);
@@ -801,6 +803,11 @@ class PlantUtils {
                         imageCropMeta = anyMatch.image_crop_meta;
                     }
                 }
+            }
+            // Find breeder logo
+            const breederMatch = library.find((s) => s.strain === strainName && !!s.breeder_logo);
+            if (breederMatch) {
+                breederLogo = breederMatch.breeder_logo;
             }
         }
         // Fallback to default stage image if no specific image found
@@ -846,6 +853,7 @@ class PlantUtils {
             pheno,
             imageUrl,
             imageCropMeta,
+            breederLogo,
             stages,
         };
     }
@@ -910,7 +918,7 @@ class BaseAPI {
      * @param serviceData - Service data payload
      */
     async callService(domain, service, serviceData) {
-        await this.hass.callService(domain, service, serviceData);
+        return await this.hass.callService(domain, service, serviceData);
     }
     /**
      * Send a WebSocket message to Home Assistant.
@@ -4906,6 +4914,7 @@ const StrainPhenotypeSchema = objectType({
 const StrainDataSchema = objectType({
     meta: objectType({
         breeder: stringType().optional(),
+        breeder_logo: stringType().optional(),
         type: stringType().optional(),
         lineage: stringType().optional(),
         sex: stringType().optional(),
@@ -5217,6 +5226,7 @@ const SERVICES = {
     SAVE_IPM_PRESET: 'save_ipm_preset',
     REMOVE_IPM_PRESET: 'remove_ipm_preset',
     APPLY_IPM: 'apply_ipm',
+    PRINT_LABEL: 'print_label',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -5514,6 +5524,7 @@ class StrainAPI extends BaseAPI {
                         phenotype: phenoName,
                         key: `${strainName}|${phenoName}`,
                         breeder: meta.breeder,
+                        breeder_logo: meta.breeder_logo,
                         type: meta.type,
                         lineage: meta.lineage,
                         sex: meta.sex,
@@ -5583,6 +5594,7 @@ class StrainAPI extends BaseAPI {
                         phenotype: phenoName,
                         key: `${strainName}|${phenoName}`,
                         breeder: meta.breeder,
+                        breeder_logo: meta.breeder_logo,
                         type: meta.type,
                         lineage: meta.lineage,
                         sex: meta.sex,
@@ -6109,6 +6121,16 @@ class PlantAPI extends BaseAPI {
             throw err;
         }
     }
+    async printLabel(params) {
+        console.log('[PlantAPI:printLabel] Printing label for plant:', params.plant_id);
+        try {
+            return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
+        }
+        catch (err) {
+            console.error('[PlantAPI:printLabel] Error:', err);
+            throw err;
+        }
+    }
 }
 
 /**
@@ -6401,6 +6423,7 @@ let DataService$1 = class DataService {
         this.moveClone = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
         this.swapPlants = (plant1Id, plant2Id) => this._plantAPI.swapPlants(plant1Id, plant2Id);
         this.waterPlant = (plantId, amount, nutrients, presetId) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
+        this.printLabel = (params) => this._plantAPI.printLabel(params);
         // ========================================
         // Irrigation API Delegations
         // ========================================
@@ -12358,6 +12381,16 @@ class MoveCloneEvent extends CustomEvent {
     }
 }
 MoveCloneEvent.TYPE = 'move-clone';
+class PrintLabelEvent extends CustomEvent {
+    constructor(plant) {
+        super(PrintLabelEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PrintLabelEvent.TYPE = 'print-label';
 
 class PlantDropEvent extends CustomEvent {
     constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
@@ -12615,6 +12648,11 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             bubbles: true,
             composed: true,
         }));
+    }
+    _openLabelPrinter() {
+        if (!this.plant)
+            return;
+        this.dispatchEvent(new PrintLabelEvent(this.plant));
     }
     _openStrainEditor() {
         if (!this.plant)
@@ -13157,6 +13195,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
           <div class="action-card" @click=${() => this._openClone()}>
             <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
             <span>Take Clone</span>
+          </div>
+          <div class="action-card" @click=${() => this._openLabelPrinter()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
+            <span>Print Label</span>
           </div>
         </div>
       </div>
@@ -14023,6 +14065,13 @@ function getAvailableActions(plant) {
             enabled: stage === 'mother' || stage === 'vegetative',
             tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
         },
+        {
+            id: 'print_label',
+            label: 'Print Label',
+            icon: 'mdiPrinter',
+            enabled: stage !== 'harvested',
+            tooltip: stage === 'harvested' ? 'Cannot print labels for harvested plants' : undefined,
+        },
     ];
     return actions;
 }
@@ -14654,6 +14703,7 @@ let PlantActionsTab = class PlantActionsTab extends i$3 {
             mdiDumbbell,
             mdiBug,
             mdiContentCopy,
+            mdiPrinter,
         };
     }
     render() {
@@ -15235,7 +15285,19 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             case 'clone':
                 this._openClone();
                 break;
+            case 'print_label':
+                this._openPrintLabel();
+                break;
         }
+    }
+    _openPrintLabel() {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        this.store.ui.setActiveDialog({
+            type: 'PRINT_LABEL',
+            payload: {
+                plantId,
+            },
+        });
     }
     _openWatering() {
         const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
@@ -15442,6 +15504,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 sex: 'Feminized',
                 description: '',
                 image: '',
+                breeder_logo: '',
                 sativa_percentage: 50,
                 indica_percentage: 50,
             };
@@ -15482,7 +15545,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._pendingDeleteKey = null;
     }
     _handleEditorChange(field, value) {
-        this._editorState = { ...this._editorState, [field]: value };
+        let newState = { ...this._editorState, [field]: value };
+        // Auto-propagate breeder logo if breeder changes
+        if (field === 'breeder' && typeof value === 'string' && value.trim()) {
+            const existing = this.strains.find((s) => s.breeder?.toLowerCase() === value.trim().toLowerCase() && !!s.breeder_logo);
+            if (existing) {
+                newState.breeder_logo = existing.breeder_logo;
+            }
+        }
+        this._editorState = newState;
     }
     _toggleCropMode(active) {
         this._isCropping = active;
@@ -15809,7 +15880,19 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                   Days</span
                 >`
             : E}
-            ${strain.breeder ? x `<span>Breeder: ${strain.breeder}</span>` : E}
+            ${strain.breeder
+            ? x `
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    ${strain.breeder_logo
+                ? x `<img
+                          src="${strain.breeder_logo}"
+                          style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
+                        />`
+                : E}
+                    <span>Breeder: ${strain.breeder}</span>
+                  </div>
+                `
+            : E}
           </div>
         </div>
       </div>
@@ -16030,6 +16113,68 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 .value=${s.breeder || ''}
                 @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
               />
+
+              <!-- Breeder Logo Upload -->
+              <div
+                class="breeder-logo-upload"
+                style="margin-top: 12px; display: flex; align-items: center; gap: 12px;"
+              >
+                ${s.breeder_logo
+            ? x `
+                      <img
+                        src="${s.breeder_logo}"
+                        style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
+                      />
+                    `
+            : x `
+                      <div
+                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
+                      >
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiImage}"></path>
+                        </svg>
+                      </div>
+                    `}
+                <button
+                  class="md3-button tonal"
+                  style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
+                  @click=${(e) => e.currentTarget.nextElementSibling.click()}
+                >
+                  <svg
+                    style="width:16px;height:16px;fill:currentColor; margin-right:6px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiCloudUpload}"></path>
+                  </svg>
+                  ${s.breeder_logo ? 'Change Logo' : 'Upload Logo'}
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style="display:none"
+                  @change=${(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('breeder_logo', base64))
+                    .catch((err) => console.error('Error compressing logo:', err));
+            }
+        }}
+                />
+                ${s.breeder_logo
+            ? x `
+                      <button
+                        class="md3-button text"
+                        style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
+                        @click=${() => this._handleEditorChange('breeder_logo', '')}
+                      >
+                        <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiDelete}"></path>
+                        </svg>
+                      </button>
+                    `
+            : E}
+              </div>
             </div>
           </div>
 
@@ -24791,6 +24936,307 @@ NutrientDialog = __decorate([
     t$2('nutrient-dialog')
 ], NutrientDialog);
 
+let PrintLabelDialog = class PrintLabelDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._selectedDeviceId = '';
+        this._isSubmitting = false;
+        this._previewImage = null;
+        this._previewLoading = false;
+        this._previewError = null;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._resetForm();
+            this._fetchPreview();
+        }
+    }
+    _resetForm() {
+        this._selectedDeviceId = this.dialogState?.deviceId || '';
+        this._isSubmitting = false;
+        this._previewImage = null;
+        this._previewError = null;
+        // Auto-select first available niimbot if none selected
+        if (!this._selectedDeviceId) {
+            const printers = this._getPrinters();
+            if (printers.length > 0) {
+                this._selectedDeviceId = printers[0].value;
+            }
+        }
+    }
+    async _fetchPreview() {
+        if (!this.dialogState?.plantId)
+            return;
+        this._previewLoading = true;
+        this._previewError = null;
+        try {
+            const response = await this.store.printLabel(this.dialogState.plantId, undefined, true);
+            // The niimbot integration returns a dict, handle potential response structures
+            this._previewImage = response?.image || response?.data || response?.preview_url || null;
+            if (!this._previewImage) {
+                this._previewError = 'No preview image received from Niimbot integration';
+            }
+        }
+        catch (e) {
+            this._previewError = e instanceof Error ? e.message : 'Failed to fetch preview';
+        }
+        finally {
+            this._previewLoading = false;
+        }
+    }
+    _getPrinters() {
+        if (!this.hass)
+            return [];
+        // Look for niimbot buttons or devices
+        // Usually they are in the 'niimbot' domain if using hass-niimbot
+        return Object.keys(this.hass.states)
+            .filter(eid => (eid.toLowerCase().includes('niimbot') || this.hass.states[eid].attributes.friendly_name?.toLowerCase().includes('niimbot'))
+            && (eid.startsWith('button.') || eid.startsWith('select.')))
+            .map(eid => ({
+            label: this.hass.states[eid].attributes.friendly_name || eid,
+            value: eid
+        }));
+    }
+    async _submit() {
+        if (!this.store || !this.dialogState)
+            return;
+        this._isSubmitting = true;
+        try {
+            await this.store.printLabel(this.dialogState.plantId, this._selectedDeviceId || undefined);
+            this.store.showToast('Label printing command sent', 'success');
+            this._close();
+        }
+        catch (e) {
+            const error = e instanceof Error ? e.message : 'Unknown error';
+            console.error('Failed to print label:', e);
+            this.store?.showToast(`Error: ${error}`, 'error');
+        }
+        finally {
+            this._isSubmitting = false;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const plantId = this.dialogState?.plantId;
+        const plant = this._getPlant(plantId);
+        this._getStrain(plant?.attributes.strain, plant?.attributes.phenotype);
+        const printers = this._getPrinters();
+        return x `
+      <ha-dialog open @closed=${this._close} hideActions .heading=${'Print Label'}>
+        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Print Label</h2>
+              <div class="dialog-subtitle">${plant?.attributes.strain || 'Unknown Plant'} (${plantId})</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid" style="display: block;">
+            <div class="form-section">
+               <h3>
+                 Label Preview
+                 <button class="md3-button text icon refresh-btn" @click=${this._fetchPreview} ?disabled=${this._previewLoading}>
+                   <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+                 </button>
+               </h3>
+               <div class="preview-container">
+                 ${this._previewLoading ? x `
+                   <div class="preview-loading">
+                     <ha-circular-progress active size="small"></ha-circular-progress>
+                     <span>Generating preview...</span>
+                   </div>
+                 ` : this._previewError ? x `
+                   <div class="preview-error">
+                     <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                     <span>${this._previewError}</span>
+                     <button class="md3-button tonal small" @click=${this._fetchPreview}>Try Again</button>
+                   </div>
+                 ` : this._previewImage ? x `
+                   <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
+                 ` : x `
+                   <div class="preview-loading">
+                     <span>No preview available</span>
+                   </div>
+                 `}
+               </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Printer Settings</h3>
+              <md3-select
+                label="Niimbot Printer"
+                .value=${this._selectedDeviceId || ''}
+                .options=${[
+            { label: 'Default / Auto', value: '' },
+            ...printers
+        ]}
+                @change=${(e) => {
+            this._selectedDeviceId = e.detail;
+        }}
+              ></md3-select>
+              
+              ${printers.length === 0 ? x `
+                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                  No Niimbot printers discovered. You can still try printing if you have a default printer configured in the integration.
+                </div>
+              ` : E}
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+              @click=${this._submit}
+              ?disabled=${this._isSubmitting}
+            >
+              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+              ${this._isSubmitting ? 'Printing...' : 'Print Now'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _getPlant(plantId) {
+        if (!plantId || !this.store || !this.store.data)
+            return null;
+        const devices = this.store.data.$devices.get();
+        for (const device of devices) {
+            const plant = device.plants.find(p => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
+            if (plant)
+                return plant;
+        }
+        return null;
+    }
+    _getStrain(strainName, phenotype) {
+        if (!strainName || !this.store || !this.store.data)
+            return null;
+        const library = this.store.data.$strainLibrary.get();
+        const pheno = phenotype || 'default';
+        return library.find(s => s.strain === strainName && (s.phenotype === pheno)) || null;
+    }
+    _formatDate(dateStr) {
+        if (!dateStr)
+            return 'N/A';
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
+        }
+        catch (e) {
+            return dateStr;
+        }
+    }
+};
+PrintLabelDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .preview-container {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        min-height: 200px;
+        position: relative;
+      }
+      .preview-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        background: white;
+      }
+      .preview-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        opacity: 0.6;
+      }
+      .preview-error {
+        color: var(--error-color);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+      .refresh-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        --mdc-icon-size: 18px;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      .refresh-btn:hover {
+        opacity: 1;
+      }
+      .form-section h3 {
+        margin-top: 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], PrintLabelDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], PrintLabelDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], PrintLabelDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PrintLabelDialog.prototype, "dialogState", void 0);
+__decorate([
+    r$2()
+], PrintLabelDialog.prototype, "_selectedDeviceId", void 0);
+__decorate([
+    r$2()
+], PrintLabelDialog.prototype, "_isSubmitting", void 0);
+__decorate([
+    r$2()
+], PrintLabelDialog.prototype, "_previewImage", void 0);
+__decorate([
+    r$2()
+], PrintLabelDialog.prototype, "_previewLoading", void 0);
+__decorate([
+    r$2()
+], PrintLabelDialog.prototype, "_previewError", void 0);
+PrintLabelDialog = __decorate([
+    t$2('print-label-dialog')
+], PrintLabelDialog);
+
 let DialogHost = class DialogHost extends i$3 {
     constructor() {
         super(...arguments);
@@ -24860,6 +25306,8 @@ let DialogHost = class DialogHost extends i$3 {
                     return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
                 case 'NUTRIENTS':
                     return this._renderNutrientDialog(active, effectiveDeviceData);
+                case 'PRINT_LABEL':
+                    return this._renderPrintLabelDialog(active, effectiveDeviceData);
                 default:
                     return x ``;
             }
@@ -25015,26 +25463,91 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
-        {
-            // New refactored dialog with ViewModel pattern
-            return x `
-        <plant-overview-container
-          .open=${true}
-          .plant=${dialogState.plant}
-          .editedAttributes=${dialogState.editedAttributes}
-          @update-plant=${(e) => this.store.updatePlantFromDialog({
-                plant: dialogState.plant,
-                editedAttributes: e.detail,
-                selectedPlantIds: dialogState.selectedPlantIds,
-            })}
-          @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
-          @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
-          @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-          @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
-          @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-        ></plant-overview-container>
-      `;
-        }
+        // Old dialog implementation
+        return x `
+      <plant-overview-dialog
+        .open=${true}
+        .plant=${dialogState.plant}
+        .editedAttributes=${dialogState.editedAttributes}
+        .activeTab=${dialogState.activeTab}
+        .selectedPlantIds=${dialogState.selectedPlantIds}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => {
+            if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                this.store.ui.closeDialog();
+            }
+        }}
+        @update-plant=${(e) => this.store.updatePlantFromDialog({
+            plant: dialogState.plant,
+            editedAttributes: e.detail,
+            selectedPlantIds: dialogState.selectedPlantIds,
+        })}
+        @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
+        @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
+        @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+        @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+        @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        @open-watering=${(e) => this.store.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: e.detail,
+        })}
+        @open-training=${(e) => this.store.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: e.detail,
+        })}
+        @open-ipm=${(e) => this.store.ui.setActiveDialog({
+            type: 'IPM',
+            payload: e.detail,
+        })}
+        @open-clone=${(e) => this.store.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: e.detail,
+        })}
+        @open-strain-editor=${(e) => {
+            const { strain, phenotype } = e.detail;
+            const strainLibrary = this.store.data.$strainLibrary.get();
+            // Normalize empty strings, null, and undefined to compare properly
+            const normalizedPhenotype = phenotype || '';
+            let strainEntry = strainLibrary.find((s) => {
+                const entryPhenotype = s.phenotype || '';
+                return s.strain === strain && entryPhenotype === normalizedPhenotype;
+            });
+            // If no match found, create a new entry for the user to complete
+            if (!strainEntry && strain) {
+                const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
+                strainEntry = {
+                    strain,
+                    phenotype: normalizedPhenotype,
+                    key,
+                    breeder: '',
+                    type: 'Hybrid',
+                    flowering_days_min: 60,
+                    flowering_days_max: 70,
+                    lineage: '',
+                    sex: 'Feminized',
+                    description: '',
+                    image: '',
+                    sativa_percentage: 50,
+                    indica_percentage: 50,
+                };
+            }
+            this.store.ui.setActiveDialog({
+                type: 'STRAIN_LIBRARY',
+                payload: { editingStrain: strainEntry },
+            });
+        }}
+        @print-label=${(e) => {
+            const { plant } = e.detail;
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            this.store.ui.setActiveDialog({
+                type: 'PRINT_LABEL',
+                payload: {
+                    plantId,
+                },
+            });
+        }}
+      ></plant-overview-dialog>
+    `;
     }
     _renderStrainLibraryDialog(active, strainLibrary, _selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
@@ -25338,6 +25851,17 @@ let DialogHost = class DialogHost extends i$3 {
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-dialog>
+    `;
+    }
+    _renderPrintLabelDialog(active, _selectedDeviceData) {
+        if (active.type !== 'PRINT_LABEL')
+            return x ``;
+        return x `
+      <print-label-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this.store.ui.closeDialog()}
+      ></print-label-dialog>
     `;
     }
 };
@@ -26435,7 +26959,9 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         </div>
         <div class="plant-card-content">
           <div class="pc-info">
-            <div class="pc-strain-name" title="${strainName}">${strainName}</div>
+            <div class="pc-strain-name" title="${strainName}">
+              ${strainName}
+            </div>
             ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
             <div style="display: flex; align-items: center; gap: 8px;">
               <div class="pc-stage">${this.plant.state || 'Unknown'}</div>
@@ -37193,7 +37719,7 @@ PlantCardContainer = __decorate([
 /**
  * Defines the RGBA color values for various grid overlay states.
  */
-const OVERLAY_COLORS = {
+const OVERLAY_COLORS$1 = {
     OK: 'var(--overlay-ok-color, rgba(76, 175, 80, 0.15))',
     WARNING: 'var(--overlay-warning-color, rgba(255, 152, 0, 0.15))',
     DANGER: 'var(--overlay-danger-color, rgba(244, 67, 54, 0.15))',
@@ -37309,45 +37835,45 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
     }
     _getOverlayColor(mode, plant) {
         if (mode === GridOverlayMode.NONE)
-            return OVERLAY_COLORS.TRANSPARENT;
+            return OVERLAY_COLORS$1.TRANSPARENT;
         const growspaceId = plant.attributes.growspace_id;
         if (!growspaceId)
-            return OVERLAY_COLORS.TRANSPARENT;
+            return OVERLAY_COLORS$1.TRANSPARENT;
         const device = this.store.data.$devices.get().find((d) => d.deviceId === growspaceId);
         if (!device)
-            return OVERLAY_COLORS.TRANSPARENT;
+            return OVERLAY_COLORS$1.TRANSPARENT;
         switch (mode) {
             case GridOverlayMode.VPD: {
                 const { vpdStatus } = device.biologicalMetrics;
                 if (vpdStatus === 'ok')
-                    return OVERLAY_COLORS.OK;
+                    return OVERLAY_COLORS$1.OK;
                 if (vpdStatus === StatusLevel.WARNING)
-                    return OVERLAY_COLORS.WARNING;
+                    return OVERLAY_COLORS$1.WARNING;
                 if (vpdStatus === StatusLevel.DANGER)
-                    return OVERLAY_COLORS.DANGER;
+                    return OVERLAY_COLORS$1.DANGER;
                 break;
             }
             case GridOverlayMode.BIO_STATUS: {
                 const { hass } = this.store;
                 if (!hass)
-                    return OVERLAY_COLORS.TRANSPARENT;
+                    return OVERLAY_COLORS$1.TRANSPARENT;
                 const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
                 const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
                 const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
                 if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
-                    return OVERLAY_COLORS.ALERT;
+                    return OVERLAY_COLORS$1.ALERT;
                 }
                 if (optimalEntity?.state === 'on') {
-                    return OVERLAY_COLORS.OK;
+                    return OVERLAY_COLORS$1.OK;
                 }
                 const { vpdStatus } = device.biologicalMetrics;
                 if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
-                    return OVERLAY_COLORS.WARNING;
+                    return OVERLAY_COLORS$1.WARNING;
                 }
                 break;
             }
         }
-        return OVERLAY_COLORS.TRANSPARENT;
+        return OVERLAY_COLORS$1.TRANSPARENT;
     }
     render() {
         const isListView = this.cols > 5;
@@ -37383,7 +37909,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         return x `
       <div class="grid-item-wrapper">
         ${x `
-              <plant-card-container
+              <growspace-plant-card
                 .plant=${plant}
                 .row=${row}
                 .col=${col}
@@ -37391,9 +37917,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                 @plant-drag-start=${() => this._handleDragStart(plant)}
                 @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
                 @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-              ></plant-card-container>
-            `
-            }
+              ></growspace-plant-card>
+            `}
         ${overlayMode !== GridOverlayMode.NONE
             ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
             : E}
@@ -37788,6 +38313,808 @@ __decorate([
 GrowspaceGrid = __decorate([
     t$2('growspace-grid')
 ], GrowspaceGrid);
+
+/**
+ * Growspace Grid ViewModel
+ *
+ * Consolidates all business logic and state for the growspace grid display.
+ * Single computed atom that components subscribe to.
+ */
+/**
+ * Overlay color constants
+ */
+const OVERLAY_COLORS = {
+    OK: 'var(--overlay-ok-color, rgba(76, 175, 80, 0.15))',
+    WARNING: 'var(--overlay-warning-color, rgba(255, 152, 0, 0.15))',
+    DANGER: 'var(--overlay-danger-color, rgba(244, 67, 54, 0.15))',
+    ALERT: 'var(--overlay-alert-color, rgba(244, 67, 54, 0.2))',
+    TRANSPARENT: 'transparent',
+};
+/**
+ * Calculate overlay color for a plant based on overlay mode
+ */
+function calculateOverlayColor(mode, plant, store) {
+    if (mode === GridOverlayMode.NONE) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    const growspaceId = plant.attributes.growspace_id;
+    if (!growspaceId) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    const device = store.data.$devices.get().find((d) => d.deviceId === growspaceId);
+    if (!device) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    switch (mode) {
+        case GridOverlayMode.VPD: {
+            const { vpdStatus } = device.biologicalMetrics;
+            if (vpdStatus === 'ok')
+                return OVERLAY_COLORS.OK;
+            if (vpdStatus === StatusLevel.WARNING)
+                return OVERLAY_COLORS.WARNING;
+            if (vpdStatus === StatusLevel.DANGER)
+                return OVERLAY_COLORS.DANGER;
+            break;
+        }
+        case GridOverlayMode.BIO_STATUS: {
+            const { hass } = store;
+            if (!hass)
+                return OVERLAY_COLORS.TRANSPARENT;
+            const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
+            const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
+            const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
+            if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
+                return OVERLAY_COLORS.ALERT;
+            }
+            if (optimalEntity?.state === 'on') {
+                return OVERLAY_COLORS.OK;
+            }
+            const { vpdStatus } = device.biologicalMetrics;
+            if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
+                return OVERLAY_COLORS.WARNING;
+            }
+            break;
+        }
+    }
+    return OVERLAY_COLORS.TRANSPARENT;
+}
+/**
+ * Transform flat plant grid into cell data with overlay information
+ */
+function transformGridCells(plants, cols, overlayMode, selectedPlants, store) {
+    const flatGrid = plants.flat();
+    return flatGrid.map((plant, index) => {
+        const row = Math.floor(index / cols) + 1;
+        const col = (index % cols) + 1;
+        return {
+            plant,
+            row,
+            col,
+            overlayColor: plant ? calculateOverlayColor(overlayMode, plant, store) : OVERLAY_COLORS.TRANSPARENT,
+            isSelected: plant ? selectedPlants.has(plant.attributes.plant_id || '') : false,
+        };
+    });
+}
+/**
+ * Create growspace grid view model
+ *
+ * @param plants - 2D array of plants in grid layout
+ * @param rows - Number of rows in grid
+ * @param cols - Number of columns in grid
+ * @param store - Global store instance
+ * @returns Computed atom with view model data
+ */
+function createGrowspaceGridViewModel(plants, rows, cols, store) {
+    return computed([
+        store.ui.$isEditMode,
+        store.ui.$selectedPlants,
+        store.ui.$isCompactView,
+        store.ui.$isLoading,
+        store.ui.$gridOverlayMode,
+        store.data.$devices,
+    ], (isEditMode, selectedPlants, isCompactView, isLoading, overlayMode) => {
+        // Pre-compute list view flag (grids wider than 5 columns use list layout)
+        const isListView = cols > 5;
+        // Transform grid cells with overlay data
+        const cells = transformGridCells(plants, cols, overlayMode, selectedPlants, store);
+        return {
+            rows,
+            cols,
+            isListView,
+            cells,
+            isEditMode,
+            isCompactView,
+            isLoading,
+            overlayMode,
+            selectedPlants,
+        };
+    });
+}
+
+/**
+ * Growspace Grid UI - Presentational Component
+ *
+ * Pure Lit component that renders the plant grid.
+ * Receives all data via props, emits events for user interactions.
+ * No store access, no business logic.
+ */
+let GrowspaceGridUI = class GrowspaceGridUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        // Grid data from ViewModel
+        this.rows = 3;
+        this.cols = 3;
+        this.isListView = false;
+        this.cells = [];
+        // UI state
+        this.isEditMode = false;
+        this.isCompactView = false;
+        this.isLoading = false;
+        this.overlayMode = GridOverlayMode.NONE;
+        // Drag state (managed internally by UI component)
+        this._draggedPlant = null;
+        this._gridRef = e$1();
+    }
+    _handleDragStart(plant) {
+        this._draggedPlant = plant;
+        this.dispatchEvent(new CustomEvent('plant-drag-start', {
+            bubbles: true,
+            composed: true,
+            detail: { plant },
+        }));
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
+    }
+    _handleDrop(e, targetRow, targetCol, targetPlant) {
+        if (e)
+            e.preventDefault();
+        // Emit drop event to container with the dragged plant
+        this.dispatchEvent(new CustomEvent('grid-drop', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                targetRow,
+                targetCol,
+                targetPlant,
+                draggedPlant: this._draggedPlant,
+                originalEvent: e,
+            },
+        }));
+        this._draggedPlant = null;
+    }
+    _handleMobileDrop(e) {
+        // Forward mobile drop event to container
+        this.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+            bubbles: true,
+            composed: true,
+            detail: e.detail,
+        }));
+    }
+    _handleCellClick(cell) {
+        // Emit cell click event
+        this.dispatchEvent(new CustomEvent('cell-click', {
+            bubbles: true,
+            composed: true,
+            detail: { cell },
+        }));
+    }
+    _handleEmptySlotClick(row, col) {
+        // Emit empty slot click event (opens add plant dialog)
+        this.dispatchEvent(new CustomEvent('empty-slot-click', {
+            bubbles: true,
+            composed: true,
+            detail: { row, col },
+        }));
+    }
+    render() {
+        const gridStyle = this.isListView
+            ? ''
+            : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
+        return x `
+      <div
+        class="grid ${this.isCompactView ? 'compact' : ''} ${this.isListView ? 'force-list-view' : ''}"
+        style="${gridStyle}"
+        @mobile-drop=${this._handleMobileDrop}
+        @dragover=${this._handleDragOver}
+        ${n$2(this._gridRef)}
+      >
+        ${this.isLoading
+            ? this._renderSkeletonGrid()
+            : c(this.cells, (cell) => (cell.plant ? cell.plant.attributes?.plant_id || cell.plant.entity_id : `empty-${cell.row}-${cell.col}`), (cell) => this._renderGridCell(cell))}
+      </div>
+    `;
+    }
+    _renderGridCell(cell) {
+        if (!cell.plant) {
+            return this._renderEmptySlot(cell.row, cell.col);
+        }
+        return x `
+      <div class="grid-item-wrapper">
+        <plant-card-container
+          .plant=${cell.plant}
+          .row=${cell.row}
+          .col=${cell.col}
+          @plant-click=${() => this._handleCellClick(cell)}
+          @plant-drag-start=${() => this._handleDragStart(cell.plant)}
+          @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, cell.row, cell.col, cell.plant)}
+        ></plant-card-container>
+        ${this.overlayMode !== GridOverlayMode.NONE
+            ? x `<div class="grid-overlay" style="background-color: ${cell.overlayColor}"></div>`
+            : E}
+      </div>
+    `;
+    }
+    _renderEmptySlot(row, col) {
+        return x `
+      <div
+        class="plant-card-empty"
+        data-row="${row}"
+        data-col="${col}"
+        style="grid-row: ${row}; grid-column: ${col}; position: relative;"
+        @click=${() => this._handleEmptySlotClick(row, col)}
+        @drop=${(e) => this._handleDrop(e, row, col, null)}
+      >
+        <div class="plant-header">
+          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiPlus}"></path>
+          </svg>
+        </div>
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+      </div>
+    `;
+    }
+    _renderSkeletonGrid() {
+        const count = this.rows * this.cols;
+        return Array(count)
+            .fill(0)
+            .map(() => x `<div class="skeleton-card"></div>`);
+    }
+};
+GrowspaceGridUI.styles = [
+    variables,
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        container-type: inline-size;
+        container-name: growspace-grid;
+        /* Overlay colors for theming */
+        --overlay-ok-color: rgba(76, 175, 80, 0.15);
+        --overlay-warning-color: rgba(255, 152, 0, 0.15);
+        --overlay-danger-color: rgba(244, 67, 54, 0.15);
+        --overlay-alert-color: rgba(244, 67, 54, 0.2);
+      }
+
+      .grid {
+        display: grid;
+        gap: var(--spacing-md);
+        /* Position relative needed for coordinate calculation */
+        position: relative;
+        contain: layout;
+      }
+
+      .grid.compact {
+        gap: var(--spacing-sm);
+      }
+
+      /* Empty Plant Card Styles */
+      .plant-card-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        aspect-ratio: 1;
+        border: var(--glass-border);
+        border-radius: var(--border-radius-lg, 16px);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: var(--glass-bg);
+      }
+
+      /* Skeleton Loading */
+      .skeleton-card {
+        height: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--border-radius-lg, 16px);
+        background: var(--glass-bg);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 0.3;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .plant-card-empty:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateY(-2px);
+      }
+
+      .grid-item-wrapper {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        contain: layout;
+      }
+
+      .grid-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--border-radius-lg, 16px);
+        pointer-events: none;
+        z-index: 2;
+        transition: background-color 0.3s ease;
+      }
+
+      .plant-card-rich,
+      .plant-card-empty {
+        min-width: 0;
+      }
+
+      .plant-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+
+      /* Force List View for Wide Grids on Desktop */
+      .grid.force-list-view {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        /* Remove grid template */
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+      }
+
+      .grid.force-list-view .plant-card-rich {
+        min-height: auto;
+        aspect-ratio: unset;
+        flex-direction: row;
+        align-items: center;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .grid.force-list-view .plant-card-bg {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .grid.force-list-view .plant-card-overlay {
+        display: none;
+      }
+
+      .grid.force-list-view .plant-card-content {
+        flex-direction: row;
+        padding: 0;
+        align-items: center;
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .grid.force-list-view .pc-info {
+        margin-top: 0;
+        align-items: flex-start;
+        text-align: left;
+        flex: 1;
+        gap: 2px;
+      }
+
+      .grid.force-list-view .pc-strain-name {
+        font-size: 1rem;
+      }
+
+      .grid.force-list-view .pc-pheno {
+        font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stage {
+        margin-top: 2px;
+        font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stats {
+        width: auto;
+        padding: 0;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .grid.force-list-view .pc-stat-item svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .grid.force-list-view .plant-card-empty {
+        min-height: 80px;
+        aspect-ratio: unset;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 0 24px;
+        gap: 16px;
+      }
+
+      @media (max-width: 600px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+          grid-template-columns: unset !important;
+          grid-template-rows: unset !important;
+        }
+
+        /* Mobile List View for Rich Cards */
+        .plant-card-rich {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: auto;
+          aspect-ratio: unset;
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-bg {
+          /* Turn background into a thumbnail on mobile */
+          position: relative !important;
+          width: 64px !important;
+          height: 64px !important;
+          border-radius: 8px;
+          flex-shrink: 0;
+          background-color: rgba(0, 0, 0, 0.2);
+          object-fit: cover !important;
+        }
+
+        .plant-card-overlay {
+          display: none;
+        }
+
+        .plant-card-content {
+          position: static;
+          z-index: auto;
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          width: 100%;
+          flex-direction: row;
+          padding: 0;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .pc-info {
+          display: flex;
+          flex-direction: column;
+          margin-top: 0;
+          align-items: flex-start;
+          text-align: left;
+          flex: 1;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .pc-strain-name {
+          font-size: 0.9rem;
+          color: var(--primary-text-color, #fff) !important;
+          font-weight: 700;
+        }
+
+        .pc-pheno {
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        .pc-stage {
+          margin-top: 2px;
+          font-size: 0.8rem;
+          color: var(--stage-color, #fff) !important;
+          font-weight: 600;
+        }
+
+        .pc-stats {
+          width: auto;
+          padding: 0;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .pc-stat-item svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+          display: none;
+        }
+
+        /* Empty Slot in List View */
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+          justify-content: flex-start;
+          padding: 0 24px;
+          gap: 16px;
+        }
+      }
+
+      @container growspace-grid (max-width: 400px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+        }
+
+        .plant-card-rich {
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+        }
+      }
+
+      /* Ghost Plant Styling */
+      .ghost-plant {
+        position: absolute;
+        inset: 0;
+        border: 2px dashed var(--primary-color, #4caf50);
+        border-radius: var(--border-radius-lg, 16px);
+        background: rgba(76, 175, 80, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+        pointer-events: none;
+        animation: ghost-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes ghost-pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .ghost-plant-icon {
+        width: 48px;
+        height: 48px;
+        opacity: 0.7;
+        fill: var(--primary-color, #4caf50);
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridUI.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridUI.prototype, "cols", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isListView", void 0);
+__decorate([
+    n$5({ type: Array })
+], GrowspaceGridUI.prototype, "cells", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isCompactView", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isLoading", void 0);
+__decorate([
+    n$5()
+], GrowspaceGridUI.prototype, "overlayMode", void 0);
+GrowspaceGridUI = __decorate([
+    t$2('growspace-grid-ui')
+], GrowspaceGridUI);
+
+/**
+ * Growspace Grid Container
+ *
+ * Smart container that connects the growspace grid ViewModel to the presentational component.
+ * - Consumes store context
+ * - Subscribes to ViewModel
+ * - Dispatches actions
+ * - Handles events from UI component
+ */
+let GrowspaceGridContainer = class GrowspaceGridContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        /** 2D array of plants in grid layout */
+        this.plants = [];
+        /** Number of rows in grid */
+        this.rows = 3;
+        /** Number of columns in grid */
+        this.cols = 3;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this.viewModel = createGrowspaceGridViewModel(this.plants, this.rows, this.cols, this.store);
+            this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        // Recreate ViewModel if grid layout or plants change
+        if (changedProps.has('plants') || changedProps.has('rows') || changedProps.has('cols')) {
+            if (this.store) {
+                this.viewModel = createGrowspaceGridViewModel(this.plants, this.rows, this.cols, this.store);
+                this.viewModelController = new libExports.StoreController(this, this.viewModel);
+            }
+        }
+    }
+    render() {
+        if (!this.viewModelController) {
+            return x `<div>Loading grid...</div>`;
+        }
+        const vm = this.viewModelController.value;
+        return x `
+      <growspace-grid-ui
+        .rows=${vm.rows}
+        .cols=${vm.cols}
+        .isListView=${vm.isListView}
+        .cells=${vm.cells}
+        .isEditMode=${vm.isEditMode}
+        .isCompactView=${vm.isCompactView}
+        .isLoading=${vm.isLoading}
+        .overlayMode=${vm.overlayMode}
+        @cell-click=${this._handleCellClick}
+        @empty-slot-click=${this._handleEmptySlotClick}
+        @grid-drop=${this._handleGridDrop}
+        @grid-mobile-drop=${this._handleGridMobileDrop}
+      ></growspace-grid-ui>
+    `;
+    }
+    /**
+     * Handle cell click - opens plant overview dialog
+     */
+    _handleCellClick(e) {
+        const { cell } = e.detail;
+        if (cell.plant) {
+            this.store.actions.ui.handlePlantClick(cell.plant);
+        }
+    }
+    /**
+     * Handle empty slot click - opens add plant dialog
+     */
+    _handleEmptySlotClick(e) {
+        const { row, col } = e.detail;
+        // Convert from 1-based (display) to 0-based (API)
+        this.store.actions.ui.openAddPlantDialog(row - 1, col - 1);
+    }
+    /**
+     * Handle grid drop - move or switch plants
+     */
+    async _handleGridDrop(e) {
+        const { targetRow, targetCol, targetPlant, draggedPlant, originalEvent } = e.detail;
+        // Check for transplant data from external source
+        if (originalEvent?.dataTransfer) {
+            const transplantData = originalEvent.dataTransfer.getData('application/json');
+            if (transplantData) {
+                try {
+                    const data = JSON.parse(transplantData);
+                    if (data.type === 'transplant') {
+                        // Dispatch transplant event to parent
+                        this.dispatchEvent(new CustomEvent('transplant-drop', {
+                            bubbles: true,
+                            composed: true,
+                            detail: {
+                                plant_id: data.plant_id,
+                                source_growspace_id: data.source_growspace_id,
+                                target_row: targetRow,
+                                target_col: targetCol,
+                            },
+                        }));
+                        return;
+                    }
+                }
+                catch {
+                    // Not transplant data, fall through to regular drop
+                }
+            }
+        }
+        // Regular internal drag-drop - use the dragged plant from the event
+        if (draggedPlant) {
+            await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, draggedPlant);
+        }
+    }
+    /**
+     * Handle mobile drop - coordinate-based plant placement
+     */
+    async _handleGridMobileDrop(e) {
+        const { x, y, plant: sourcePlant } = e.detail;
+        if (!this.shadowRoot)
+            return;
+        // Find target element at coordinates
+        const targetEl = this.shadowRoot.elementFromPoint(x, y);
+        if (!targetEl)
+            return;
+        const dropTarget = targetEl.closest('.plant-card-empty, plant-card-container');
+        if (!dropTarget)
+            return;
+        let targetRow;
+        let targetCol;
+        let targetPlant = null;
+        if (dropTarget.classList.contains('plant-card-empty')) {
+            targetRow = parseInt(dropTarget.getAttribute('data-row') ?? '1', 10);
+            targetCol = parseInt(dropTarget.getAttribute('data-col') ?? '1', 10);
+        }
+        else if (dropTarget.tagName.toLowerCase() === 'plant-card-container') {
+            const card = dropTarget;
+            targetRow = card.row;
+            targetCol = card.col;
+            targetPlant = card.plant;
+        }
+        if (targetRow !== undefined && targetCol !== undefined) {
+            await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, sourcePlant);
+        }
+    }
+    /**
+     * Public method to focus a specific plant card
+     */
+    focusPlant(index) {
+        const gridUI = this.shadowRoot?.querySelector('growspace-grid-ui');
+        if (gridUI) {
+            const cards = gridUI.shadowRoot?.querySelectorAll('plant-card-container');
+            if (cards && cards[index]) {
+                cards[index].focus();
+            }
+        }
+    }
+};
+__decorate([
+    c$2({ context: storeContext })
+], GrowspaceGridContainer.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Array })
+], GrowspaceGridContainer.prototype, "plants", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridContainer.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridContainer.prototype, "cols", void 0);
+GrowspaceGridContainer = __decorate([
+    t$2('growspace-grid-container')
+], GrowspaceGridContainer);
 
 const growspaceCardStyles = i$6 `
   :host {
@@ -38856,7 +40183,8 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
         this.isLoading = false;
     }
     focusPlant(index) {
-        const grid = this.shadowRoot?.querySelector('growspace-grid');
+        const selector = 'growspace-grid';
+        const grid = this.shadowRoot?.querySelector(selector);
         if (grid) {
             grid.focusPlant(index);
         }
@@ -38875,7 +40203,9 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
         </button>
       </div>
       <div class="view-mode-container compact">
-        <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
+        ${x `
+              <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
+            `}
       </div>
     `;
     }
@@ -39448,7 +40778,8 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         }
     }
     focusPlant(index) {
-        const grid = this.shadowRoot?.querySelector('growspace-grid');
+        const selector = 'growspace-grid';
+        const grid = this.shadowRoot?.querySelector(selector);
         if (grid) {
             grid.focusPlant(index);
         }
@@ -39482,12 +40813,14 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
           `
             : ''}
 
-      <growspace-grid
-        .plants=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.cols}
-        @transplant-drop=${(e) => this._handleTransplantDrop(e)}
-      ></growspace-grid>
+      ${x `
+            <growspace-grid
+              .plants=${this.grid}
+              .rows=${this.rows}
+              .cols=${this.cols}
+              @transplant-drop=${(e) => this._handleTransplantDrop(e)}
+            ></growspace-grid>
+          `}
 
       ${this.config?.initial_view_mode === 'header'
             ? x `
@@ -97950,6 +99283,24 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
         throw e;
     }
 }
+/**
+ * Print a label for a plant.
+ */
+async function printLabel(ctx, plantId, deviceId, preview) {
+    try {
+        const result = await ctx.dataService.printLabel({ plant_id: plantId, device_id: deviceId, preview });
+        if (!preview) {
+            ctx.showToast('Label printing command sent', 'success');
+        }
+        return result;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Failed to print label:', e);
+        ctx.showToast(`Failed to print label: ${error}`, 'error');
+        throw e;
+    }
+}
 
 /**
  * Strain & Growspace Actions - Unified CRUD logic.
@@ -97978,6 +99329,7 @@ async function addStrain(ctx, strainData) {
         image_crop_meta: strainData.image_crop_meta,
         sativa_percentage: strainData.sativa_percentage,
         indica_percentage: strainData.indica_percentage,
+        breeder_logo: strainData.breeder_logo,
     };
     try {
         await ctx.dataService.addStrain(payload);
@@ -98091,59 +99443,6 @@ async function removeGrowspace(ctx, growspaceId) {
         ctx.showToast(`Failed to remove growspace: ${error}`, 'error');
         return false;
     }
-}
-
-class ActionDispatcher {
-    constructor(store) {
-        this.store = store;
-        this.plant = {
-            update: (id, updates) => updatePlant(this.ctx, id, updates),
-            delete: (id) => handleDeletePlant(this.ctx, id),
-            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
-            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
-            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
-            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
-            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
-            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
-                row: r,
-                col: c,
-                strain: s,
-                phenotype: p,
-            }),
-            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
-        };
-        this.growspace = {
-            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
-            update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
-            remove: (id) => removeGrowspace(this.ctx, id),
-        };
-        this.strain = {
-            add: (data) => addStrain(this.ctx, data),
-            remove: (key) => removeStrain(this.ctx, key),
-        };
-        this.history = {
-            undo: () => this.store.undo(),
-            redo: () => this.store.redo(),
-            canUndo: () => this.store.canUndo,
-            canRedo: () => this.store.canRedo,
-        };
-    }
-    get ctx() {
-        return this.store.context;
-    }
-}
-
-function initializeSelectedDevice(ctx, config) {
-    ctx.data.setConfig(config);
-    // Set view mode from config
-    if (config?.initial_view_mode) {
-        ctx.ui.setViewMode(config.initial_view_mode);
-    }
-    // Trigger update logic via sync service
-    ctx.syncService.updateDevicesState();
-}
-function handleDeviceChange(ctx, deviceId) {
-    ctx.data.setSelectedDevice(deviceId);
 }
 
 function setIsCompactView(ctx, value) {
@@ -98439,6 +99738,69 @@ function openTrainingDialog(ctx, plantIds, growspaceId) {
 }
 function openNutrientsDialog(ctx) {
     ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+}
+
+class ActionDispatcher {
+    constructor(store) {
+        this.store = store;
+        this.plant = {
+            update: (id, updates) => updatePlant(this.ctx, id, updates),
+            delete: (id) => handleDeletePlant(this.ctx, id),
+            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
+            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
+            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
+            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
+            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
+            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
+                row: r,
+                col: c,
+                strain: s,
+                phenotype: p,
+            }),
+            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
+        };
+        this.growspace = {
+            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
+            update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
+            remove: (id) => removeGrowspace(this.ctx, id),
+        };
+        this.strain = {
+            add: (data) => addStrain(this.ctx, data),
+            remove: (key) => removeStrain(this.ctx, key),
+        };
+        this.history = {
+            undo: () => this.store.undo(),
+            redo: () => this.store.redo(),
+            canUndo: () => this.store.canUndo,
+            canRedo: () => this.store.canRedo,
+        };
+        this.ui = {
+            /** Toggle plant selection state */
+            togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
+            /** Handle plant card click (opens overview dialog) */
+            handlePlantClick: (plant) => handlePlantClick(this.ctx, plant),
+            /** Open add plant dialog at specific position */
+            openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
+            /** Select all plants in current growspace */
+            selectAllPlants: () => selectAllPlants(this.ctx),
+        };
+    }
+    get ctx() {
+        return this.store.context;
+    }
+}
+
+function initializeSelectedDevice(ctx, config) {
+    ctx.data.setConfig(config);
+    // Set view mode from config
+    if (config?.initial_view_mode) {
+        ctx.ui.setViewMode(config.initial_view_mode);
+    }
+    // Trigger update logic via sync service
+    ctx.syncService.updateDevicesState();
+}
+function handleDeviceChange(ctx, deviceId) {
+    ctx.data.setSelectedDevice(deviceId);
 }
 
 async function analyzeGrowspace(ctx, query, all) {
@@ -99212,6 +100574,9 @@ class GrowspaceStore {
     }
     async waterGrowspace(growspaceId, amount, nutrients, presetId) {
         await waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
+    }
+    async printLabel(plantId, deviceId, preview) {
+        return await printLabel(this.context, plantId, deviceId, preview);
     }
     togglePlantSelection(plantOrId) {
         togglePlantSelection(this.context, plantOrId);

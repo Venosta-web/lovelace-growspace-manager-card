@@ -264,6 +264,10 @@ export class GrowspaceStore {
     await plantActions.waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
   }
 
+  async printLabel(plantId: string, deviceId?: string, preview?: boolean): Promise<any> {
+    return await plantActions.printLabel(this.context, plantId, deviceId, preview);
+  }
+
   togglePlantSelection(plantOrId: string | PlantEntity) {
     uiActions.togglePlantSelection(this.context, plantOrId);
   }

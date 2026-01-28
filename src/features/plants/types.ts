@@ -178,6 +178,7 @@ export interface StrainEntry {
   strain_analytics?: StrainAnalytics;
   sativa_percentage?: number;
   indica_percentage?: number;
+  breeder_logo?: string;
 }
 
 // --- Display Models ---
@@ -197,5 +198,6 @@ export interface PlantDisplayData {
   pheno: string;
   imageUrl?: string;
   imageCropMeta?: CropMeta;
+  breederLogo?: string;
   stages: StageDisplay[];
 }

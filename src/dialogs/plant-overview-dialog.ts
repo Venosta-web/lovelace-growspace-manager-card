@@ -17,6 +17,7 @@ import {
   mdiBug,
   mdiPencil,
   mdiFlash,
+  mdiPrinter,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -46,6 +47,7 @@ import {
   FinishDryingEvent,
   TakeCloneEvent,
   MoveCloneEvent,
+  PrintLabelEvent,
 } from '../events';
 import { getTimelineService } from '../services/timeline-service';
 
@@ -593,6 +595,10 @@ export class PlantOverviewDialog extends LitElement {
         composed: true,
       })
     );
+  }
+  private _openLabelPrinter() {
+    if (!this.plant) return;
+    this.dispatchEvent(new PrintLabelEvent(this.plant));
   }
 
   private _openStrainEditor() {
@@ -1146,6 +1152,10 @@ export class PlantOverviewDialog extends LitElement {
           <div class="action-card" @click=${() => this._openClone()}>
             <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
             <span>Take Clone</span>
+          </div>
+          <div class="action-card" @click=${() => this._openLabelPrinter()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
+            <span>Print Label</span>
           </div>
         </div>
       </div>

@@ -621,6 +621,7 @@ export class StrainLibraryDialog extends LitElement {
         sex: 'Feminized',
         description: '',
         image: '',
+        breeder_logo: '',
         sativa_percentage: 50,
         indica_percentage: 50,
       };
@@ -670,7 +671,19 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _handleEditorChange(field: string, value: string | number | CropMeta | undefined) {
-    this._editorState = { ...this._editorState, [field]: value };
+    let newState = { ...this._editorState, [field]: value };
+
+    // Auto-propagate breeder logo if breeder changes
+    if (field === 'breeder' && typeof value === 'string' && value.trim()) {
+      const existing = this.strains.find(
+        (s) => s.breeder?.toLowerCase() === value.trim().toLowerCase() && !!s.breeder_logo
+      );
+      if (existing) {
+        newState.breeder_logo = existing.breeder_logo;
+      }
+    }
+
+    this._editorState = newState;
   }
 
   private _toggleCropMode(active: boolean) {
@@ -1008,7 +1021,19 @@ export class StrainLibraryDialog extends LitElement {
                   Days</span
                 >`
         : nothing}
-            ${strain.breeder ? html`<span>Breeder: ${strain.breeder}</span>` : nothing}
+            ${strain.breeder
+        ? html`
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    ${strain.breeder_logo
+            ? html`<img
+                          src="${strain.breeder_logo}"
+                          style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
+                        />`
+            : nothing}
+                    <span>Breeder: ${strain.breeder}</span>
+                  </div>
+                `
+        : nothing}
           </div>
         </div>
       </div>
@@ -1242,8 +1267,72 @@ export class StrainLibraryDialog extends LitElement {
                 class="sd-input"
                 list="breeder-suggestions"
                 .value=${s.breeder || ''}
-                @input=${(e: InputEvent) => this._handleEditorChange('breeder', (e.target as HTMLInputElement).value)}
+                @input=${(e: InputEvent) =>
+        this._handleEditorChange('breeder', (e.target as HTMLInputElement).value)}
               />
+
+              <!-- Breeder Logo Upload -->
+              <div
+                class="breeder-logo-upload"
+                style="margin-top: 12px; display: flex; align-items: center; gap: 12px;"
+              >
+                ${s.breeder_logo
+        ? html`
+                      <img
+                        src="${s.breeder_logo}"
+                        style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
+                      />
+                    `
+        : html`
+                      <div
+                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
+                      >
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiImage}"></path>
+                        </svg>
+                      </div>
+                    `}
+                <button
+                  class="md3-button tonal"
+                  style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
+                  @click=${(e: Event) =>
+        ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}
+                >
+                  <svg
+                    style="width:16px;height:16px;fill:currentColor; margin-right:6px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiCloudUpload}"></path>
+                  </svg>
+                  ${s.breeder_logo ? 'Change Logo' : 'Upload Logo'}
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style="display:none"
+                  @change=${(e: Event) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          PlantUtils.compressImage(file)
+            .then((base64) => this._handleEditorChange('breeder_logo', base64))
+            .catch((err) => console.error('Error compressing logo:', err));
+        }
+      }}
+                />
+                ${s.breeder_logo
+        ? html`
+                      <button
+                        class="md3-button text"
+                        style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
+                        @click=${() => this._handleEditorChange('breeder_logo', '')}
+                      >
+                        <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiDelete}"></path>
+                        </svg>
+                      </button>
+                    `
+        : nothing}
+              </div>
             </div>
           </div>
 
@@ -1253,13 +1342,13 @@ export class StrainLibraryDialog extends LitElement {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-              let icon = mdiLeaf;
-              if (t === 'Indica') icon = mdiWeatherNight;
-              if (t === 'Sativa') icon = mdiWeatherSunny;
-              if (t === 'Hybrid') icon = mdiTuneVariant;
+          let icon = mdiLeaf;
+          if (t === 'Indica') icon = mdiWeatherNight;
+          if (t === 'Sativa') icon = mdiWeatherSunny;
+          if (t === 'Hybrid') icon = mdiTuneVariant;
 
-              const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-              return html`
+          const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+          return html`
                     <div
                       class="type-option ${isActive ? 'active' : ''}"
                       @click=${() => this._handleEditorChange('type', t)}
@@ -1270,7 +1359,7 @@ export class StrainLibraryDialog extends LitElement {
                       >
                     </div>
                   `;
-            })}
+        })}
               </div>
             </div>
 

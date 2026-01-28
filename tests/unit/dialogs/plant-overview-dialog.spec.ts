@@ -878,7 +878,7 @@ describe('PlantOverviewDialog', () => {
         await element.updateComplete;
 
         const actionCards = element.shadowRoot?.querySelectorAll('.action-card');
-        expect(actionCards?.length).toBe(4);
+        expect(actionCards?.length).toBe(5);
 
         const waterCard = Array.from(actionCards || []).find(b => b.textContent?.includes('Water'));
         expect(waterCard).toBeTruthy();
@@ -892,6 +892,11 @@ describe('PlantOverviewDialog', () => {
         const ipmCard = Array.from(actionCards || []).find(b => b.textContent?.includes('IPM'));
         (ipmCard as HTMLElement).click();
         expect(openIPMSpy).toHaveBeenCalled();
+
+        const openLabelPrinterSpy = vi.spyOn(element as any, '_openLabelPrinter').mockImplementation(() => { });
+        const labelPrinterCard = Array.from(actionCards || []).find(b => b.textContent?.includes('Print Label'));
+        (labelPrinterCard as HTMLElement).click();
+        expect(openLabelPrinterSpy).toHaveBeenCalled();
 
         document.body.removeChild(element);
     });

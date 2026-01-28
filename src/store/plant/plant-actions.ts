@@ -662,3 +662,26 @@ export async function waterGrowspace(
     throw e;
   }
 }
+
+/**
+ * Print a label for a plant.
+ */
+export async function printLabel(
+  ctx: ActionContext,
+  plantId: string,
+  deviceId?: string,
+  preview?: boolean
+): Promise<any> {
+  try {
+    const result = await ctx.dataService.printLabel({ plant_id: plantId, device_id: deviceId, preview });
+    if (!preview) {
+      ctx.showToast('Label printing command sent', 'success');
+    }
+    return result;
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    console.error('Failed to print label:', e);
+    ctx.showToast(`Failed to print label: ${error}`, 'error');
+    throw e;
+  }
+}

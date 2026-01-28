@@ -1,5 +1,6 @@
 import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
+import * as uiActions from '../ui/ui-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 
@@ -88,5 +89,23 @@ export class ActionDispatcher {
     redo: () => this.store.redo(),
     canUndo: () => this.store.canUndo,
     canRedo: () => this.store.canRedo,
+  };
+
+  public readonly ui = {
+    /** Toggle plant selection state */
+    togglePlantSelection: (plantOrId: string | PlantEntity) =>
+      uiActions.togglePlantSelection(this.ctx, plantOrId),
+
+    /** Handle plant card click (opens overview dialog) */
+    handlePlantClick: (plant: PlantEntity) =>
+      uiActions.handlePlantClick(this.ctx, plant),
+
+    /** Open add plant dialog at specific position */
+    openAddPlantDialog: (row?: number, col?: number) =>
+      uiActions.openAddPlantDialog(this.ctx, row, col),
+
+    /** Select all plants in current growspace */
+    selectAllPlants: () =>
+      uiActions.selectAllPlants(this.ctx),
   };
 }

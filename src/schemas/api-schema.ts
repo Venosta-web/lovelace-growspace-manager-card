@@ -168,6 +168,7 @@ export const StrainDataSchema = z
     meta: z
       .object({
         breeder: z.string().optional(),
+        breeder_logo: z.string().optional(),
         type: z.string().optional(),
         lineage: z.string().optional(),
         sex: z.string().optional(),

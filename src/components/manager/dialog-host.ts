@@ -31,6 +31,7 @@ import './nutrient-presets-editor';
 import './ipm-dialog';
 import '../../dialogs/nutrient-inventory-dialog';
 import '../../dialogs/nutrient-dialog';
+import '../../dialogs/print-label-dialog';
 import '../error-boundary';
 
 import { HomeAssistant } from 'custom-card-helpers';
@@ -121,6 +122,8 @@ export class DialogHost extends LitElement {
             return this._renderNutrientInventoryDialog(active, effectiveDeviceData);
           case 'NUTRIENTS':
             return this._renderNutrientDialog(active, effectiveDeviceData);
+          case 'PRINT_LABEL':
+            return this._renderPrintLabelDialog(active, effectiveDeviceData);
           default:
             return html``;
         }
@@ -415,6 +418,16 @@ export class DialogHost extends LitElement {
         this.store.ui.setActiveDialog({
           type: 'STRAIN_LIBRARY',
           payload: { editingStrain: strainEntry },
+        });
+      }}
+        @print-label=${(e: CustomEvent<{ plant: PlantEntity }>) => {
+        const { plant } = e.detail;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        this.store.ui.setActiveDialog({
+          type: 'PRINT_LABEL',
+          payload: {
+            plantId,
+          },
         });
       }}
       ></plant-overview-dialog>
@@ -794,6 +807,20 @@ export class DialogHost extends LitElement {
         @close=${() => this.store.ui.closeDialog()}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-dialog>
+    `;
+  }
+
+  private _renderPrintLabelDialog(
+    active: ActiveDialogState,
+    _selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
+    if (active.type !== 'PRINT_LABEL') return html``;
+    return html`
+      <print-label-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this.store.ui.closeDialog()}
+      ></print-label-dialog>
     `;
   }
 }

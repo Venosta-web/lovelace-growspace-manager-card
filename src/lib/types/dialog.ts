@@ -154,3 +154,8 @@ export interface IPMDialogState {
   growspaceId?: string;
   plantIds?: string[];
 }
+
+export interface PrintLabelDialogState {
+  plantId: string;
+  deviceId?: string;
+}

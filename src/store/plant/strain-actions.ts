@@ -33,6 +33,7 @@ export async function addStrain(
     image_crop_meta: strainData.image_crop_meta,
     sativa_percentage: strainData.sativa_percentage,
     indica_percentage: strainData.indica_percentage,
+    breeder_logo: strainData.breeder_logo,
   };
 
   try {

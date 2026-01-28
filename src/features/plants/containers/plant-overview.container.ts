@@ -455,7 +455,21 @@ export class PlantOverviewContainer extends LitElement {
       case 'clone':
         this._openClone();
         break;
+      case 'print_label':
+        this._openPrintLabel();
+        break;
     }
+  }
+
+  private _openPrintLabel(): void {
+    const plantId =
+      this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+    this.store.ui.setActiveDialog({
+      type: 'PRINT_LABEL',
+      payload: {
+        plantId,
+      },
+    });
   }
 
   private _openWatering(): void {

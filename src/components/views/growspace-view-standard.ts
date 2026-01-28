@@ -11,6 +11,8 @@ import '../growspace-analytics';
 import '../growspace-grid';
 import '../manager/edit-mode-banner';
 import '../transplant-source-panel';
+import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
+import '../../features/plants/containers/growspace-grid.container';
 import { growspaceCardStyles } from '../../styles/growspace-card.styles';
 import { sharedStyles } from '../../styles/shared.styles';
 import { uiStyles } from '../../styles/ui.styles';
@@ -83,7 +85,10 @@ export class GrowspaceViewStandard extends LitElement {
   }
 
   public focusPlant(index: number) {
-    const grid = this.shadowRoot?.querySelector('growspace-grid');
+    const selector = FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID
+      ? 'growspace-grid-container'
+      : 'growspace-grid';
+    const grid = this.shadowRoot?.querySelector(selector);
     if (grid) {
       (grid as unknown as { focusPlant: (index: number) => void }).focusPlant(index);
     }
@@ -120,12 +125,23 @@ export class GrowspaceViewStandard extends LitElement {
           `
         : ''}
 
-      <growspace-grid
-        .plants=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.cols}
-        @transplant-drop=${(e: CustomEvent) => this._handleTransplantDrop(e)}
-      ></growspace-grid>
+      ${FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID
+        ? html`
+            <growspace-grid-container
+              .plants=${this.grid}
+              .rows=${this.rows}
+              .cols=${this.cols}
+              @transplant-drop=${(e: CustomEvent) => this._handleTransplantDrop(e)}
+            ></growspace-grid-container>
+          `
+        : html`
+            <growspace-grid
+              .plants=${this.grid}
+              .rows=${this.rows}
+              .cols=${this.cols}
+              @transplant-drop=${(e: CustomEvent) => this._handleTransplantDrop(e)}
+            ></growspace-grid>
+          `}
 
       ${this.config?.initial_view_mode === 'header'
         ? html`

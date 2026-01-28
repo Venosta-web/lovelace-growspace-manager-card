@@ -31,8 +31,8 @@ export abstract class BaseAPI {
     domain: string,
     service: string,
     serviceData: Record<string, unknown>
-  ): Promise<void> {
-    await this.hass.callService(domain, service, serviceData);
+  ): Promise<any> {
+    return await this.hass.callService(domain, service, serviceData);
   }
 
   /**

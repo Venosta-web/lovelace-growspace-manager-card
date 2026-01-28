@@ -21,6 +21,7 @@ interface RawPhenotypeData {
 interface RawStrainData {
   meta?: {
     breeder?: string;
+    breeder_logo?: string;
     type?: string;
     lineage?: string;
     sex?: string;
@@ -88,6 +89,7 @@ export class StrainAPI extends BaseAPI {
             phenotype: phenoName,
             key: `${strainName}|${phenoName}`,
             breeder: meta.breeder,
+            breeder_logo: meta.breeder_logo,
             type: meta.type,
             lineage: meta.lineage,
             sex: meta.sex,
@@ -168,6 +170,7 @@ export class StrainAPI extends BaseAPI {
             phenotype: phenoName,
             key: `${strainName}|${phenoName}`,
             breeder: meta.breeder,
+            breeder_logo: meta.breeder_logo,
             type: meta.type,
             lineage: meta.lineage,
             sex: meta.sex,
@@ -203,6 +206,7 @@ export class StrainAPI extends BaseAPI {
     image_crop_meta?: CropMeta;
     sativa_percentage?: number;
     indica_percentage?: number;
+    breeder_logo?: string;
   }): Promise<void> {
     console.log('[StrainAPI:addStrain] Adding strain:', data);
     try {
