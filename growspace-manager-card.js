@@ -24990,20 +24990,23 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
             return [];
         return Object.keys(this.hass.states)
             .filter(eid => {
+            // Looking at your screenshot, Niimbot entities start with binary_sensor.b1_... 
+            // or image.b1_... (where b1 is the model).
             this.hass.states[eid];
-            const entityId = eid.toLowerCase();
-            // 1. Look for 'print_label' in the entity ID
-            // 2. Ensure it belongs to the button domain
-            // 3. (Optional) Check for niimbot in the name to avoid other label printers
-            const isNiimbotPrintButton = entityId.startsWith('button.') &&
-                entityId.includes('print_label');
-            return isNiimbotPrintButton;
+            // Filter: We want the main 'image' entity or the 'connection' binary sensor
+            // because they represent the printer device.
+            return (eid.startsWith('image.') &&
+                eid.includes('_last_label_made'));
         })
-            .map(eid => ({
-            // Friendly name will usually be "Niimbot D11 Print Label"
-            label: this.hass.states[eid].attributes.friendly_name || eid,
-            value: eid
-        }));
+            .map(eid => {
+            // This will take "B1-H113120940 Last Label Made" 
+            // and clean it up to just the printer name if you prefer.
+            const name = this.hass.states[eid].attributes.friendly_name || eid;
+            return {
+                label: name.replace(' Last Label Made', ''),
+                value: eid
+            };
+        });
     }
     async _submit() {
         if (!this.store || !this.dialogState)
