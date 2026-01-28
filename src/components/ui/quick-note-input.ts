@@ -308,14 +308,13 @@ export class QuickNoteInput extends LitElement {
           <div class="action-buttons">
             ${this.allowImages
         ? html`
-                  <input
-                    type="file"
-                    id="fileInput"
-                    @change=${this._handleFileSelect}
-                    multiple
-                    accept="image/*"
-                    capture="environment"
-                  />
+                    <input
+                      type="file"
+                      id="fileInput"
+                      @change=${this._handleFileSelect}
+                      multiple
+                      accept="image/*"
+                    />
                   <button
                     @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
                     ?disabled=${this.disabled || this._isSaving}

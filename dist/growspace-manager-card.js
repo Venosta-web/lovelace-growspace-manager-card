@@ -10949,14 +10949,13 @@ let QuickNoteInput = class QuickNoteInput extends i$3 {
           <div class="action-buttons">
             ${this.allowImages
             ? x `
-                  <input
-                    type="file"
-                    id="fileInput"
-                    @change=${this._handleFileSelect}
-                    multiple
-                    accept="image/*"
-                    capture="environment"
-                  />
+                    <input
+                      type="file"
+                      id="fileInput"
+                      @change=${this._handleFileSelect}
+                      multiple
+                      accept="image/*"
+                    />
                   <button
                     @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
                     ?disabled=${this.disabled || this._isSaving}
@@ -16062,7 +16061,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <input
                           type="file"
                           accept="image/*"
-                          capture="environment"
                           style="display:none"
                           @change=${handleFileChange}
                         />

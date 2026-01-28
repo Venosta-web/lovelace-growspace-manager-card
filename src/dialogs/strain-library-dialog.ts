@@ -1218,7 +1218,6 @@ export class StrainLibraryDialog extends LitElement {
                         <input
                           type="file"
                           accept="image/*"
-                          capture="environment"
                           style="display:none"
                           @change=${handleFileChange}
                         />
