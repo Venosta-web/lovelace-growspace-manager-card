@@ -121,15 +121,16 @@ export class PrintLabelDialog extends LitElement {
             // 1. Trigger the generation
             await this.store.printLabel(this.dialogState.plantId, undefined, true);
 
-            // 2. Wait a brief moment for the state to propagate (HA is async)
-            await new Promise(r => setTimeout(r, 500));
+            // 2. Wait for HA state propagation
+            await new Promise(r => setTimeout(r, 800));
 
             // 3. Grab the image URL from the entity state
             const stateObj = this.hass.states[this._selectedDeviceId]; // e.g., image.b1_...
 
             if (stateObj?.attributes.entity_picture) {
-                // The entity_picture is a path like /api/image_proxy/image.xxx
-                this._previewImage = stateObj.attributes.entity_picture;
+                // FIX: Append a timestamp to force a cache refresh
+                const cacheBuster = `&v=${Date.now()}`;
+                this._previewImage = `${stateObj.attributes.entity_picture}${cacheBuster}`;
             } else {
                 this._previewError = 'Image entity updated, but no picture attribute found.';
             }
