@@ -135,15 +135,23 @@ export class PrintLabelDialog extends LitElement {
     private _getPrinters() {
         if (!this.hass) return [];
 
-        // Look for niimbot buttons or devices
-        // Usually they are in the 'niimbot' domain if using hass-niimbot
         return Object.keys(this.hass.states)
-            .filter(eid =>
-                (eid.toLowerCase().includes('niimbot') || this.hass.states[eid].attributes.friendly_name?.toLowerCase().includes('niimbot'))
-                && (eid.startsWith('button.') || eid.startsWith('select.'))
-            )
+            .filter(eid => {
+                const stateObj = this.hass!.states[eid];
+                const entityId = eid.toLowerCase();
+
+                // 1. Look for 'print_label' in the entity ID
+                // 2. Ensure it belongs to the button domain
+                // 3. (Optional) Check for niimbot in the name to avoid other label printers
+                const isNiimbotPrintButton =
+                    entityId.startsWith('button.') &&
+                    entityId.includes('print_label');
+
+                return isNiimbotPrintButton;
+            })
             .map(eid => ({
-                label: this.hass.states[eid].attributes.friendly_name || eid,
+                // Friendly name will usually be "Niimbot D11 Print Label"
+                label: this.hass!.states[eid].attributes.friendly_name || eid,
                 value: eid
             }));
     }
