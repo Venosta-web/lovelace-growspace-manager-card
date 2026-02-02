@@ -46,7 +46,7 @@ import {
   FinishDryingEvent,
   TakeCloneEvent,
   MoveCloneEvent,
-} from '../events';
+} from '../lib/events';
 import { getTimelineService } from '../services/timeline-service';
 
 @customElement('plant-overview-dialog')
