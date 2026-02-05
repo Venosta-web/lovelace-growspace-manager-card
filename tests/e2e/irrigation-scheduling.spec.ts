@@ -63,69 +63,10 @@ test.describe('Irrigation Scheduling', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        const card = page.locator('growspace-manager-card').first();
-
-        // Cleanup: Remove all irrigation times added during test
-        try {
-            // Close any modal overlays first
-            const modalOverlay = card.locator('.overlay-backdrop').first();
-            if (await modalOverlay.isVisible().catch(() => false)) {
-                const cancelBtn = modalOverlay.getByRole('button', { name: /cancel/i }).first();
-                if (await cancelBtn.isVisible().catch(() => false)) {
-                    await cancelBtn.click();
-                    await page.waitForTimeout(300);
-                }
-            }
-
-            // Check if irrigation dialog is open, if not open it
-            let irrigationDialog = card.locator('irrigation-dialog ha-dialog[open]').first();
-            const dialogWasOpen = await irrigationDialog.isVisible().catch(() => false);
-
-            if (!dialogWasOpen) {
-                // Open the dialog to clear schedules
-                const menuTrigger = card.locator('.menu-container .icon-button').last();
-                if (await menuTrigger.isVisible().catch(() => false)) {
-                    await menuTrigger.click();
-                    await page.waitForTimeout(300);
-                    const irrigationMenuItem = card.locator('.menu-item').filter({ hasText: /irrigation/i }).first();
-                    if (await irrigationMenuItem.isVisible().catch(() => false)) {
-                        await irrigationMenuItem.click();
-                        await page.waitForTimeout(500);
-                        irrigationDialog = card.locator('irrigation-dialog ha-dialog[open]').first();
-                    }
-                }
-            }
-
-            // Remove all irrigation time markers
-            if (await irrigationDialog.isVisible().catch(() => false)) {
-                const markers = irrigationDialog.locator('.time-marker');
-                const markerCount = await markers.count();
-
-                for (let i = 0; i < markerCount; i++) {
-                    // Click first marker (index changes as we delete)
-                    const marker = irrigationDialog.locator('.time-marker').first();
-                    if (await marker.isVisible().catch(() => false)) {
-                        await marker.click();
-                        await page.waitForTimeout(200);
-
-                        // Confirm deletion if dialog appears
-                        page.once('dialog', async dialog => {
-                            await dialog.accept();
-                        });
-                        await page.waitForTimeout(300);
-                    }
-                }
-
-                // Close the dialog
-                const closeBtn = irrigationDialog.locator('md-icon-button[dialog-dismiss]').first();
-                if (await closeBtn.isVisible().catch(() => false)) {
-                    await closeBtn.click();
-                    await page.waitForTimeout(500);
-                }
-            }
-        } catch (error) {
-            console.log('Cleanup error (non-fatal):', error);
-        }
+        // Simple cleanup: Just reload the page to reset all state
+        // This is faster and more reliable than trying to manipulate UI
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1000); // Brief wait for rehydration
     });
 
     test.describe('Dialog Opening & Basic Layout', () => {

@@ -10,15 +10,9 @@ test.describe('Growspace Strains View', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Cleanup: Close strain library dialog if open
-        const strainDialog = page.locator('strain-library-dialog .glass-dialog-container');
-        if (await strainDialog.isVisible().catch(() => false)) {
-            const closeBtn = page.locator('strain-library-dialog').getByRole('button', { name: /close/i }).first();
-            if (await closeBtn.isVisible().catch(() => false)) {
-                await closeBtn.click();
-                await page.waitForTimeout(500);
-            }
-        }
+        // Reload to reset state
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(500);
     });
 
     test('Verify "No strains found" message with Lit artifact', async ({ coveragePage: page }) => {

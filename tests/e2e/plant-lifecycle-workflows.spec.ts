@@ -134,35 +134,9 @@ test.describe('Plant Lifecycle Workflows', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Cleanup: Close any open dialogs (plant overview, clone, harvest, etc.)
-        const card = page.locator('growspace-manager-card').first();
-        const openDialogs = card.locator('ha-dialog[open]');
-        const count = await openDialogs.count();
-        for (let i = 0; i < count; i++) {
-            const dialog = openDialogs.nth(i);
-            // Try different close methods
-            const closeBtn = dialog.locator('md-icon-button[dialog-dismiss]').first();
-            if (await closeBtn.isVisible().catch(() => false)) {
-                await closeBtn.click();
-                await page.waitForTimeout(300);
-            } else {
-                // Try Cancel button
-                const cancelBtn = dialog.getByRole('button', { name: /cancel|close/i }).first();
-                if (await cancelBtn.isVisible().catch(() => false)) {
-                    await cancelBtn.click();
-                    await page.waitForTimeout(300);
-                }
-            }
-        }
-        // Also close any confirmation overlays
-        const confirmOverlay = page.locator('.dialog-overlay').first();
-        if (await confirmOverlay.isVisible().catch(() => false)) {
-            const cancelBtn = confirmOverlay.getByRole('button', { name: /cancel/i }).first();
-            if (await cancelBtn.isVisible().catch(() => false)) {
-                await cancelBtn.click();
-                await page.waitForTimeout(300);
-            }
-        }
+        // Simple cleanup: Reload page to reset all state
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1000);
     });
 
     test.describe('Mother → Clone Chain', () => {

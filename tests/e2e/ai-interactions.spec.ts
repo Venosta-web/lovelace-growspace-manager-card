@@ -48,12 +48,11 @@ test.describe('AI Interactions', () => {
         // 6. Wait for generic response
         // Verify dialog remains open
         await expect(aiDialog).toHaveAttribute('open', '');
+    });
 
-        // Cleanup: Close dialog
-        const closeBtn = aiDialog.locator('md-icon-button[dialog-dismiss]').first();
-        if (await closeBtn.isVisible()) {
-            await closeBtn.click();
-            await expect(aiDialog).not.toHaveAttribute('open', '', { timeout: 5000 });
-        }
+    test.afterEach(async ({ coveragePage: page }) => {
+        // Reload page to reset state
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(500);
     });
 });

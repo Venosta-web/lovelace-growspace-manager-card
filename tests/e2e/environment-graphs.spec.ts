@@ -10,20 +10,9 @@ test.describe('Environment Graphs', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Cleanup: Deactivate any active graphs by clicking active chips
-        const card = page.locator('growspace-manager-card').first();
-        if (await card.isVisible()) {
-            const header = card.locator('growspace-header');
-            const activeChips = header.locator('growspace-chip.active');
-            const count = await activeChips.count();
-            for (let i = 0; i < count; i++) {
-                const chip = activeChips.nth(i);
-                if (await chip.isVisible()) {
-                    await chip.click();
-                    await page.waitForTimeout(200);
-                }
-            }
-        }
+        // Simple reload to reset state
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(500);
     });
 
     test('Activate and display individual environment graphs', async ({ coveragePage: page }) => {

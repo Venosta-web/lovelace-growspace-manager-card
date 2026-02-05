@@ -8,18 +8,9 @@ test.describe('Plant Timeline', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Cleanup: Close any open dialogs
-        const card = page.locator('growspace-manager-card').first();
-        const openDialogs = card.locator('ha-dialog[open]');
-        const count = await openDialogs.count();
-        for (let i = 0; i < count; i++) {
-            const dialog = openDialogs.nth(i);
-            const closeBtn = dialog.locator('md-icon-button[dialog-dismiss]').first();
-            if (await closeBtn.isVisible().catch(() => false)) {
-                await closeBtn.click();
-                await page.waitForTimeout(300);
-            }
-        }
+        // Reload to reset state
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(500);
     });
 
     test('Timeline Tab - Opens and Shows Events', async ({ coveragePage: page }) => {
