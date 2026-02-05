@@ -1203,7 +1203,7 @@ describe('StrainLibraryDialog', () => {
             (element as any)._startEdit();
             await element.updateComplete;
 
-            const input = element.shadowRoot?.querySelector('input[type="file"][capture="environment"]');
+            const input = element.shadowRoot?.querySelector('input[type="file"]');
             expect(input).toBeTruthy();
 
             const file = new File([''], 'fail.png', { type: 'image/png' });

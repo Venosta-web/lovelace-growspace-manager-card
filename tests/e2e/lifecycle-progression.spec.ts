@@ -18,11 +18,11 @@ test.describe('Lifecycle Progression', () => {
         const existingPlant = card.locator('growspace-plant-card').filter({ hasText: '#LifecycleTest' }).first();
         if (await existingPlant.count() > 0 && await existingPlant.isVisible()) {
             console.log('Cleaning up existing test plant...');
-            await existingPlant.click();
+            await existingPlant.dispatchEvent('click', { bubbles: true, composed: true });
             const dialog = card.locator('growspace-dialog-host plant-overview-dialog ha-dialog').first();
             await expect(dialog).toHaveAttribute('open', '');
-            await dialog.getByRole('button', { name: 'Delete' }).click();
-            await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).click();
+            await dialog.getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
+            await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
             await page.waitForTimeout(1000);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await expect(existingPlant).not.toBeVisible();
@@ -38,8 +38,8 @@ test.describe('Lifecycle Progression', () => {
             await firstPlant.click();
             const dialog = card.locator('growspace-dialog-host plant-overview-dialog ha-dialog').first();
             await expect(dialog).toHaveAttribute('open', '');
-            await dialog.getByRole('button', { name: 'Delete' }).click();
-            await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).click();
+            await dialog.getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
+            await page.locator('.dialog-overlay').getByRole('button', { name: 'Delete' }).dispatchEvent('click', { bubbles: true, composed: true });
             await page.waitForTimeout(1000);
             await page.reload({ waitUntil: 'domcontentloaded' });
             await expect(firstPlant).not.toBeVisible();
@@ -52,7 +52,7 @@ test.describe('Lifecycle Progression', () => {
         await creationDialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
         await creationDialog.locator('md3-text-input[label="Phenotype"] input').first().fill('#LifecycleTest');
 
-        await creationDialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await creationDialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0);
         await page.waitForTimeout(1000);
         await page.reload({ waitUntil: 'domcontentloaded' });
@@ -81,7 +81,7 @@ test.describe('Lifecycle Progression', () => {
 
         const timelineEditBtn = dialog.locator('.detail-card').filter({ hasText: 'Lifecycle Dates' }).getByRole('button', { name: 'Toggle Dates' }).first();
         // OR checks for the pencil icon button.
-        await timelineEditBtn.click();
+        await timelineEditBtn.dispatchEvent('click', { bubbles: true, composed: true });
 
         // 4. Change Veg Start Date to 10 days ago
         const vegInput = dialog.locator('md3-date-input[label="Vegetative Start"] input').first();

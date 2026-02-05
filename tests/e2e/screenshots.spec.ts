@@ -31,7 +31,7 @@ test.describe('Screenshots for README', () => {
             const addDialog = page.locator('ha-dialog[open]').first();
             await addDialog.locator('md3-select[label="Strain *"] select').first().selectOption({ index: 1 });
             await addDialog.locator('md3-text-input[label="Phenotype"] input').first().fill('SCREENSHOT-PHENO');
-            await addDialog.getByRole('button', { name: /Add Plant/i }).dispatchEvent('click', { bubbles: true, composed: true });
+            await addDialog.getByRole('button', { name: /Add Plant/i }).last().dispatchEvent('click', { bubbles: true, composed: true });
             await page.waitForTimeout(3000);
             plantCard = card.locator('growspace-plant-card').filter({ hasNotText: /Empty/i }).first();
         }
@@ -40,34 +40,52 @@ test.describe('Screenshots for README', () => {
         await plantCard.locator('.plant-card-rich').first().dispatchEvent('click', { bubbles: true, composed: true });
 
         // Be extremely specific to avoid strict mode violation with other open dialogs
-        const dialog = page.locator('plant-overview-dialog ha-dialog[open]').first();
-        await expect(dialog).toBeVisible({ timeout: 20000 });
-        await page.waitForTimeout(2000);
+        const dialogHost = page.locator('plant-overview-dialog').first();
+        await expect(dialogHost).toBeAttached({ timeout: 5000 });
+        await page.waitForTimeout(1000); // Allow dialog animation to complete
+        const dialog = dialogHost.locator('ha-dialog').first();
+        await expect(dialog).toHaveAttribute('open', '', { timeout: 10000 });
 
-        await dialog.screenshot({ path: path.join(SCREENSHOT_DIR, 'plant-overview-tab.png') });
+        // Wait for dialog content to be visible before screenshot
+        await expect(dialog.locator('md3-text-input, .detail-card').first()).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(1000);
 
-        const timelineTab = dialog.locator('.tab').filter({ hasText: /timeline/i }).first();
+        // Take full page screenshot instead of element screenshot due to Shadow DOM visibility issues
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'plant-overview-tab.png'), fullPage: false });
+
+        // Wait for timeline tab to be visible and clickable
+        const timelineTab = dialog.locator('button, .tab').filter({ hasText: /timeline/i }).first();
+        await expect(timelineTab).toBeVisible({ timeout: 5000 });
+        await timelineTab.scrollIntoViewIfNeeded();
         await timelineTab.dispatchEvent('click', { bubbles: true, composed: true });
         await page.waitForTimeout(2000);
 
-        await dialog.screenshot({ path: path.join(SCREENSHOT_DIR, 'plant-timeline-tab.png') });
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'plant-timeline-tab.png'), fullPage: false });
     });
 
     test('Capture Strain Library', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card').first();
 
         await card.locator('growspace-header .menu-container .icon-button').first().dispatchEvent('click', { bubbles: true, composed: true });
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1000); // Wait for menu animation
 
-        // Use visible filter and first() to avoid strict mode
-        const strainsMenuItem = page.locator('.menu-item:visible').filter({ hasText: /^Strains$/ }).first();
+        // Wait for menu to be visible and use card-scoped selector
+        await expect(card.locator('.menu-dropdown')).toBeVisible({ timeout: 5000 });
+        const strainsMenuItem = card.locator('.menu-dropdown .menu-item').filter({ hasText: /Strains/i }).first();
+        await expect(strainsMenuItem).toBeVisible({ timeout: 5000 });
+        await strainsMenuItem.scrollIntoViewIfNeeded();
         await strainsMenuItem.dispatchEvent('click', { bubbles: true, composed: true });
 
         const strainLibrary = page.locator('strain-library-dialog').first();
-        await expect(strainLibrary).toBeVisible({ timeout: 20000 });
-        await page.waitForTimeout(3000);
+        await expect(strainLibrary).toBeAttached({ timeout: 5000 });
+        const libraryDialog = strainLibrary.locator('ha-dialog').first();
+        await expect(libraryDialog).toHaveAttribute('open', '', { timeout: 10000 });
 
-        await strainLibrary.screenshot({ path: path.join(SCREENSHOT_DIR, 'strain-library.png') });
+        // Wait for dialog content to be visible
+        await expect(libraryDialog.locator('.strain-card, input[placeholder*="Search"]').first()).toBeVisible({ timeout: 5000 });
+        await page.waitForTimeout(1000);
+
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'strain-library.png'), fullPage: false });
     });
 
     test('Capture Mobile View', async ({ coveragePage: page }) => {

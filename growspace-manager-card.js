@@ -16061,6 +16061,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                         <input
                           type="file"
                           accept="image/*"
+                          capture="environment"
                           style="display:none"
                           @change=${handleFileChange}
                         />

@@ -32,6 +32,7 @@ const atomMocks = vi.hoisted(() => ({
     $menuOpen: null as any,
     $notification: null as any,
     $cardViewState: null as any,
+    $pendingDeepLinkPlantId: null as any,
 }));
 
 vi.mock('../../src/store/core/growspace-store', () => ({
@@ -59,6 +60,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             $menuOpen: atomMocks.$menuOpen,
             $notification: atomMocks.$notification,
             $cardViewState: atomMocks.$cardViewState,
+            $pendingDeepLinkPlantId: atomMocks.$pendingDeepLinkPlantId,
             setViewMode: vi.fn(),
             setEditMode: vi.fn(),
             clearPlantSelection: vi.fn(),
@@ -116,6 +118,7 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$selectedPlants = atom(new Set());
         atomMocks.$focusedPlantIndex = atom<number>(-1);
         atomMocks.$notification = atom<any>(null);
+        atomMocks.$pendingDeepLinkPlantId = atom<string | null>(null);
 
         // Derived mock for consolidated state - matches implementation
         atomMocks.$cardViewState = computed(
