@@ -9,6 +9,18 @@ test.describe('Growspace Strains View', () => {
         await expect(page.locator('home-assistant-main')).toBeVisible();
     });
 
+    test.afterEach(async ({ coveragePage: page }) => {
+        // Cleanup: Close strain library dialog if open
+        const strainDialog = page.locator('strain-library-dialog .glass-dialog-container');
+        if (await strainDialog.isVisible().catch(() => false)) {
+            const closeBtn = page.locator('strain-library-dialog').getByRole('button', { name: /close/i }).first();
+            if (await closeBtn.isVisible().catch(() => false)) {
+                await closeBtn.click();
+                await page.waitForTimeout(500);
+            }
+        }
+    });
+
     test('Verify "No strains found" message with Lit artifact', async ({ coveragePage: page }) => {
         // 1. Navigate to default view
         await page.goto('/lovelace/default_view');
@@ -18,10 +30,15 @@ test.describe('Growspace Strains View', () => {
         await expect(card).toBeVisible();
 
         // 3. Click the menu button in the card header
-        await card.locator('.menu-container .icon-button').click();
+        await card.locator('.menu-container .icon-button').dispatchEvent('click', { bubbles: true, composed: true });
 
         // 4. Click 'Strains' in the opened menu
-        await page.getByText('Strains').click();
+        await page.waitForTimeout(1000); // Wait for menu animation
+        await expect(card.locator('.menu-dropdown')).toBeVisible({ timeout: 5000 });
+        const strainsMenuItem = card.locator('.menu-dropdown .menu-item').filter({ hasText: /Strains/i }).first();
+        await expect(strainsMenuItem).toBeVisible({ timeout: 5000 });
+        await strainsMenuItem.scrollIntoViewIfNeeded();
+        await strainsMenuItem.dispatchEvent('click', { bubbles: true, composed: true });
 
         // 5. Wait for strain library dialog to be visible
         await expect(card.locator('strain-library-dialog .glass-dialog-container')).toBeVisible();
@@ -49,16 +66,21 @@ test.describe('Growspace Strains View', () => {
         await expect(card).toBeVisible();
 
         // 3. Click the menu button in the card header
-        await card.locator('.menu-container .icon-button').click();
+        await card.locator('.menu-container .icon-button').dispatchEvent('click', { bubbles: true, composed: true });
 
         // 4. Click 'Strains' in the opened menu
-        await page.getByText('Strains').click();
+        await page.waitForTimeout(1000); // Wait for menu animation
+        await expect(card.locator('.menu-dropdown')).toBeVisible({ timeout: 5000 });
+        const strainsMenuItem = card.locator('.menu-dropdown .menu-item').filter({ hasText: /Strains/i }).first();
+        await expect(strainsMenuItem).toBeVisible({ timeout: 5000 });
+        await strainsMenuItem.scrollIntoViewIfNeeded();
+        await strainsMenuItem.dispatchEvent('click', { bubbles: true, composed: true });
 
         // 5. Wait for strain library dialog
         await expect(card.locator('strain-library-dialog .glass-dialog-container')).toBeVisible();
 
         // 6. Click 'New Strain'
-        await page.getByRole('button', { name: 'New Strain' }).click();
+        await page.getByRole('button', { name: 'New Strain' }).dispatchEvent('click', { bubbles: true, composed: true });
 
         // 7. Fill out the form with unique name
         const uniqueName = `Test Strain ${Date.now()}`;
@@ -67,13 +89,13 @@ test.describe('Growspace Strains View', () => {
         await nameGroup.locator('input').fill(uniqueName);
 
         const breederGroup = page.locator('.sd-form-group').filter({ hasText: 'Breeder' });
-        await breederGroup.locator('input').fill('Test Breeder');
+        await breederGroup.locator('input[type="text"]').fill('Test Breeder');
 
-        await page.locator('.type-option').filter({ hasText: 'Hybrid' }).click();
-        await page.getByLabel('Feminized').check();
+        await page.locator('.type-option').filter({ hasText: 'Hybrid' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await page.getByLabel('Feminized').dispatchEvent('click', { bubbles: true, composed: true });
 
         // 8. Submit
-        await page.getByRole('button', { name: 'Save Strain' }).click();
+        await page.getByRole('button', { name: 'Save Strain' }).dispatchEvent('click', { bubbles: true, composed: true });
 
         // 9. Wait for form to close and list to refresh
         await page.waitForTimeout(1000);

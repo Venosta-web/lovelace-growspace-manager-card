@@ -7,6 +7,21 @@ test.describe('Plant Management', () => {
         await page.waitForTimeout(3000); // Hydration wait
     });
 
+    test.afterEach(async ({ coveragePage: page }) => {
+        // Cleanup: Close any open dialogs
+        const card = page.locator('growspace-manager-card').first();
+        const openDialogs = card.locator('ha-dialog[open]');
+        const count = await openDialogs.count();
+        for (let i = 0; i < count; i++) {
+            const dialog = openDialogs.nth(i);
+            const closeBtn = dialog.locator('md-icon-button[dialog-dismiss]').first();
+            if (await closeBtn.isVisible().catch(() => false)) {
+                await closeBtn.click();
+                await page.waitForTimeout(300);
+            }
+        }
+    });
+
     test('1.1 Add New Plant (Happy Path)', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card').first();
 
@@ -48,7 +63,7 @@ test.describe('Plant Management', () => {
         await dialog.locator('md3-number-input').filter({ hasText: /row/i }).getByRole('spinbutton').fill('6');
         await dialog.locator('md3-number-input').filter({ hasText: /col/i }).getByRole('spinbutton').fill('6');
 
-        await dialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await dialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
 
         // Verify Appearance
@@ -89,10 +104,11 @@ test.describe('Plant Management', () => {
         const addCard = card.locator('.plant-card-empty').first();
         await addCard.dispatchEvent('click', { bubbles: true, composed: true });
         const dialog = card.locator('growspace-dialog-host ha-dialog').first();
+        await dialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
         await dialog.locator('md3-text-input[label="Phenotype"] input').first().fill('#ValMe');
         await dialog.locator('md3-number-input').filter({ hasText: /row/i }).getByRole('spinbutton').fill('7');
         await dialog.locator('md3-number-input').filter({ hasText: /col/i }).getByRole('spinbutton').fill('7');
-        await dialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await dialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
 
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
         await expect(card.locator('growspace-toast').getByText(/success/i)).toBeVisible();
@@ -115,7 +131,7 @@ test.describe('Plant Management', () => {
             const addDialog = card.locator('growspace-dialog-host ha-dialog').first();
             await addDialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
             await addDialog.locator('md3-text-input[label="Phenotype"] input').first().fill('#EditMe');
-            await addDialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+            await addDialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
             await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
             await page.waitForTimeout(1000);
             plantCard = card.locator('growspace-plant-card').filter({ hasText: '#EditMe' }).first();
@@ -152,7 +168,7 @@ test.describe('Plant Management', () => {
             const addDialog = card.locator('growspace-dialog-host ha-dialog').first();
             await addDialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
             await addDialog.locator('md3-text-input[label="Phenotype"] input').first().fill('#DeleteMe');
-            await addDialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+            await addDialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
             await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
             await page.waitForTimeout(1000);
             plantCard = card.locator('growspace-plant-card').filter({ hasText: '#DeleteMe' }).first();
@@ -219,7 +235,7 @@ test.describe('Plant Management', () => {
         await dialog.locator('md3-text-input[label="Phenotype"] input').first().fill('DUP-REF');
         await dialog.locator('md3-number-input').filter({ hasText: /row/i }).getByRole('spinbutton').fill('8');
         await dialog.locator('md3-number-input').filter({ hasText: /col/i }).getByRole('spinbutton').fill('8');
-        await dialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await dialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
 
         // Add second at same spot via grid
@@ -230,7 +246,7 @@ test.describe('Plant Management', () => {
         await dialog.locator('md3-text-input[label="Phenotype"] input').first().fill('DUP-OK-TEST');
         await dialog.locator('md3-number-input').filter({ hasText: /row/i }).getByRole('spinbutton').fill('8');
         await dialog.locator('md3-number-input').filter({ hasText: /col/i }).getByRole('spinbutton').fill('8');
-        await dialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+        await dialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
 
         await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
         await expect(card.locator('growspace-toast').getByText(/success/i)).toBeVisible();
@@ -253,7 +269,7 @@ test.describe('Plant Management', () => {
         await dialog.locator('md3-date-input[label="Veg Start"] input').first().fill(new Date().toISOString().split('T')[0]);
         await dialog.locator('md3-date-input[label="Flower Start"] input').first().fill(new Date(Date.now() - 86400000).toISOString().split('T')[0]);
         await dialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
-        await dialog.getByRole('button', { name: /add plant|save/i }).dispatchEvent('click', { bubbles: true, composed: true });
+        await dialog.getByRole('button', { name: /add plant|save/i }).last().dispatchEvent('click', { bubbles: true, composed: true });
     });
 
     test('2.1 Environmental Data Display', async ({ coveragePage: page }) => {

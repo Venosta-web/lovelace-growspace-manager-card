@@ -12,7 +12,10 @@ test.describe('AI Interactions', () => {
 
         // 1. Open Menu -> Ask AI
         await card.locator('growspace-header .menu-container .icon-button').first().dispatchEvent('click', { bubbles: true, composed: true });
-        await card.locator('.menu-dropdown .menu-item').filter({ hasText: 'Ask AI' }).click();
+        await page.waitForTimeout(500); // Wait for menu animation
+        const askAIMenuItem = card.locator('.menu-dropdown .menu-item').filter({ hasText: 'Ask AI' }).first();
+        await askAIMenuItem.scrollIntoViewIfNeeded();
+        await askAIMenuItem.dispatchEvent('click', { bubbles: true, composed: true });
 
         // 2. Wait for Dialog
         // Custom element host might report hidden, so we check independent HA dialog attribute
@@ -45,5 +48,12 @@ test.describe('AI Interactions', () => {
         // 6. Wait for generic response
         // Verify dialog remains open
         await expect(aiDialog).toHaveAttribute('open', '');
+
+        // Cleanup: Close dialog
+        const closeBtn = aiDialog.locator('md-icon-button[dialog-dismiss]').first();
+        if (await closeBtn.isVisible()) {
+            await closeBtn.click();
+            await expect(aiDialog).not.toHaveAttribute('open', '', { timeout: 5000 });
+        }
     });
 });

@@ -7,6 +7,21 @@ test.describe('Plant Timeline', () => {
         await page.waitForTimeout(3000); // Hydration wait
     });
 
+    test.afterEach(async ({ coveragePage: page }) => {
+        // Cleanup: Close any open dialogs
+        const card = page.locator('growspace-manager-card').first();
+        const openDialogs = card.locator('ha-dialog[open]');
+        const count = await openDialogs.count();
+        for (let i = 0; i < count; i++) {
+            const dialog = openDialogs.nth(i);
+            const closeBtn = dialog.locator('md-icon-button[dialog-dismiss]').first();
+            if (await closeBtn.isVisible().catch(() => false)) {
+                await closeBtn.click();
+                await page.waitForTimeout(300);
+            }
+        }
+    });
+
     test('Timeline Tab - Opens and Shows Events', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card').first();
 
@@ -189,7 +204,7 @@ test.describe('Plant Timeline', () => {
 
             await addDialog.locator('md3-select[label="Strain *"] select').first().selectOption({ label: 'Blue Gem' });
             await addDialog.locator('md3-text-input[label="Phenotype"] input').first().fill('#TimelineTest');
-            await addDialog.getByRole('button', { name: 'Add Plant' }).dispatchEvent('click', { bubbles: true, composed: true });
+            await addDialog.getByRole('button', { name: 'Add Plant' }).last().dispatchEvent('click', { bubbles: true, composed: true });
             await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
             await page.waitForTimeout(1000);
 

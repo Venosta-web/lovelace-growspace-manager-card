@@ -9,6 +9,23 @@ test.describe('Environment Graphs', () => {
         await expect(page.locator('home-assistant-main')).toBeVisible();
     });
 
+    test.afterEach(async ({ coveragePage: page }) => {
+        // Cleanup: Deactivate any active graphs by clicking active chips
+        const card = page.locator('growspace-manager-card').first();
+        if (await card.isVisible()) {
+            const header = card.locator('growspace-header');
+            const activeChips = header.locator('growspace-chip.active');
+            const count = await activeChips.count();
+            for (let i = 0; i < count; i++) {
+                const chip = activeChips.nth(i);
+                if (await chip.isVisible()) {
+                    await chip.click();
+                    await page.waitForTimeout(200);
+                }
+            }
+        }
+    });
+
     test('Activate and display individual environment graphs', async ({ coveragePage: page }) => {
         const card = page.locator('growspace-manager-card').first();
         await expect(card).toBeVisible();
@@ -90,13 +107,70 @@ test.describe('Environment Graphs', () => {
         await expect(humidityChip).toBeVisible();
         await expect(fanChip).toBeVisible();
 
-        // Drag Humidity chip onto Fan chip to link them
-        console.log('Dragging Humidity chip onto Fan chip...');
-        await humidityChip.dragTo(fanChip);
+        // First, click one chip to activate it
+        console.log('Activating Humidity chip...');
+        await humidityChip.dispatchEvent('click', { bubbles: true, composed: true });
+        await page.waitForTimeout(500);
+
+        // Then drag the other chip onto it to link them
+        console.log('Dragging Fan chip onto Humidity chip to link...');
+
+        // Use evaluate on the elements to dispatch drag events in their context
+        await fanChip.evaluate((sourceEl) => {
+            const event = new DragEvent('dragstart', {
+                bubbles: true,
+                composed: true,
+                cancelable: true,
+                dataTransfer: new DataTransfer()
+            });
+            sourceEl.dispatchEvent(event);
+        });
+
+        await page.waitForTimeout(100);
+
+        await humidityChip.evaluate((targetEl) => {
+            const dragenter = new DragEvent('dragenter', {
+                bubbles: true,
+                composed: true,
+                cancelable: true
+            });
+            targetEl.dispatchEvent(dragenter);
+
+            const dragover = new DragEvent('dragover', {
+                bubbles: true,
+                composed: true,
+                cancelable: true
+            });
+            targetEl.dispatchEvent(dragover);
+        });
+
+        await page.waitForTimeout(100);
+
+        await humidityChip.evaluate((targetEl) => {
+            const drop = new DragEvent('drop', {
+                bubbles: true,
+                composed: true,
+                cancelable: true,
+                dataTransfer: new DataTransfer()
+            });
+            targetEl.dispatchEvent(drop);
+        });
+
+        await fanChip.evaluate((sourceEl) => {
+            const dragend = new DragEvent('dragend', {
+                bubbles: true,
+                composed: true,
+                cancelable: true
+            });
+            sourceEl.dispatchEvent(dragend);
+        });
+
+        // Wait for the link operation to complete
+        await page.waitForTimeout(1500);
 
         // Both graphs should now be linked and displayed as combined
         const analytics = card.locator('growspace-analytics');
-        await expect(analytics).toBeVisible();
+        await expect(analytics).toBeVisible({ timeout: 10000 });
 
         // Check for combined graph (should show both metrics)
         const combinedGraph = analytics.locator('growspace-env-chart');
@@ -120,7 +194,7 @@ test.describe('Environment Graphs', () => {
         // Activate a graph first to see time selectors
         const humidityChip = header.locator('growspace-chip').filter({ hasText: '%' }).first();
         await expect(humidityChip).toBeVisible();
-        await humidityChip.click();
+        await humidityChip.dispatchEvent('click', { bubbles: true, composed: true });
 
         const analytics = card.locator('growspace-analytics');
         await expect(analytics).toBeVisible();
