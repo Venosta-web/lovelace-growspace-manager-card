@@ -914,6 +914,15 @@ export class StrainLibraryDialog extends LitElement {
               <div
                 class="mobile-menu-item"
                 @click=${() => {
+            this._startEdit();
+            this._mobileMenuOpen = false;
+          }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg> New Strain
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
             this.dispatchEvent(new CustomEvent('get-recommendation'));
             this._mobileMenuOpen = false;
           }}
