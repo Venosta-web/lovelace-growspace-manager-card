@@ -126,6 +126,8 @@ export class GrowspaceAdapter {
         warningLevel: t.warning_level,
         fillLevel: t.fill_level,
         isWarning: t.is_warning,
+        hoursRemaining: t.hours_remaining ?? null,
+        depletionStatus: t.depletion_status ?? null,
       })),
       activeEvents: wsData.active_events,
       sensorCoordinates,

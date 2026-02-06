@@ -225,8 +225,8 @@ describe('MetricsUtils', () => {
                 const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
                 const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
 
-                expect(tankChip?.value).toBe('40'); // Average
-                expect(tankChip?.status).toBe(StatusLevel.WARNING);
+                expect(tankChip?.value).toBe('40%'); // Average
+                expect(tankChip?.status).toBeUndefined(); // No depletion data
             });
 
             it('should handle single tank', () => {
@@ -237,8 +237,158 @@ describe('MetricsUtils', () => {
                 const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
                 const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
 
-                expect(tankChip?.value).toBe('75');
+                expect(tankChip?.value).toBe('75%');
+                expect(tankChip?.status).toBeUndefined(); // No depletion data
+            });
+
+            it('should display tank with depletion time in hours when < 48h', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        name: 'Main Tank',
+                        fillLevel: 40,
+                        isWarning: false,
+                        hoursRemaining: 18,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.value).toBe('40% 18h');
+                expect(tankChip?.tooltip).toBe('Main Tank: 40% (18h remaining)');
+            });
+
+            it('should display tank with depletion time in days when >= 48h', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        name: 'Main Tank',
+                        fillLevel: 80,
+                        isWarning: false,
+                        hoursRemaining: 72,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.value).toBe('80% 3d');
+            });
+
+            it('should show DANGER status when hours_remaining < 12', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 15,
+                        isWarning: false,
+                        hoursRemaining: 8,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBe(StatusLevel.DANGER);
+                expect(tankChip?.value).toBe('15% 8h');
+            });
+
+            it('should show WARNING status when hours_remaining < 24', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 30,
+                        isWarning: false,
+                        hoursRemaining: 20,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
                 expect(tankChip?.status).toBe(StatusLevel.WARNING);
+            });
+
+            it('should show OPTIMAL status when hours_remaining >= 48', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 90,
+                        isWarning: false,
+                        hoursRemaining: 120,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBe(StatusLevel.OPTIMAL);
+            });
+
+            it('should show no status when depletion_status is insufficient_data', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 50,
+                        isWarning: false,
+                        hoursRemaining: null,
+                        depletionStatus: 'insufficient_data'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBeUndefined();
+                expect(tankChip?.value).toBe('50%'); // No time appended
+            });
+
+            it('should show OPTIMAL status when tank is refilling', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 60,
+                        isWarning: false,
+                        hoursRemaining: null,
+                        depletionStatus: 'refilling'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBe(StatusLevel.OPTIMAL);
+            });
+
+            it('should handle multiple tanks with depletion data', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 50,
+                        isWarning: false,
+                        hoursRemaining: 10,
+                        depletionStatus: 'depleting'
+                    },
+                    {
+                        sensorEntity: 'sensor.tank2',
+                        fillLevel: 30,
+                        isWarning: false,
+                        hoursRemaining: 60,
+                        depletionStatus: 'depleting'
+                    }
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find(c => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.value).toBe('40%'); // Average
+                expect(tankChip?.multiValues).toEqual(['50% 10h', '30% 2d']);
+                expect(tankChip?.status).toBe(StatusLevel.DANGER); // Most urgent
             });
 
             it('should pick nearest future event from multiple times', () => {

@@ -66,6 +66,8 @@ export interface SerializedIrrigationTank {
   warning_level: number;
   fill_level: number | null;
   is_warning: boolean;
+  hours_remaining?: number | null;
+  depletion_status?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
 }
 
 export interface IrrigationTank {
@@ -74,6 +76,8 @@ export interface IrrigationTank {
   warningLevel: number;
   fillLevel: number | null;
   isWarning: boolean;
+  hoursRemaining?: number | null;
+  depletionStatus?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
 }
 
 // --- Backend Serialized Models ---
@@ -156,8 +160,8 @@ export interface SerializedStats {
 // The exact structure returned by GrowspaceSerializer.serialize_growspace
 export interface GrowspaceAPIResponse
   extends SerializedBiologicalMetrics,
-    SerializedEnvironmentAttributes,
-    SerializedStats {
+  SerializedEnvironmentAttributes,
+  SerializedStats {
   growspace_id: string;
   name: string;
   type: GrowspaceType;

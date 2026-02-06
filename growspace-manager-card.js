@@ -5095,6 +5095,8 @@ class GrowspaceAdapter {
                 warningLevel: t.warning_level,
                 fillLevel: t.fill_level,
                 isWarning: t.is_warning,
+                hoursRemaining: t.hours_remaining ?? null,
+                depletionStatus: t.depletion_status ?? null,
             })),
             activeEvents: wsData.active_events,
             sensorCoordinates,
@@ -35437,29 +35439,80 @@ class MetricsUtils {
         const vpdAgg = getAggregateSensorState(envAttrs.vpdSensor, envAttrs.vpdSensors, ' kPa', vpd);
         const co2Agg = getAggregateSensorState(envAttrs.co2Sensor, envAttrs.co2Sensors, ' ppm', co2);
         const soilAgg = getAggregateSensorState(envAttrs.soilMoistureSensor, envAttrs.soilMoistureSensors, '%', this._getAttributeValue(overviewEntity, 'soil_moisture_value'));
-        // Calculate aggregate irrigation tank level
+        // Calculate aggregate irrigation tank level with depletion time
         const tanks = envAttrs.irrigationTanks || [];
         let tankLevelValue;
         let tankEntityIds = [];
         let tankMultiValues;
-        let tankWarning = false;
+        let tankStatus;
+        let tankTooltip;
         if (tanks.length > 0) {
             tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
+            // Helper: Format hours remaining as "Xh" or "Xd"
+            const formatTimeRemaining = (hours) => {
+                if (hours === null || hours === undefined)
+                    return '';
+                if (hours >= 48) {
+                    const days = Math.floor(hours / 24);
+                    return ` ${days}d`;
+                }
+                return ` ${Math.round(hours)}h`;
+            };
+            // Helper: Determine status color based on hours remaining
+            const getTankDepletionStatus = (hoursRemaining, depletionStatus) => {
+                // No color if no data or not depleting
+                if (depletionStatus === 'insufficient_data' || depletionStatus === null)
+                    return undefined;
+                if (depletionStatus === 'static' || depletionStatus === 'refilling')
+                    return StatusLevel.OPTIMAL;
+                if (hoursRemaining === null || hoursRemaining === undefined)
+                    return undefined;
+                if (hoursRemaining < 12)
+                    return StatusLevel.DANGER;
+                if (hoursRemaining < 24)
+                    return StatusLevel.WARNING;
+                if (hoursRemaining >= 48)
+                    return StatusLevel.OPTIMAL;
+                return undefined; // 24-48 hours = no special color
+            };
             if (tanks.length === 1) {
                 const tank = tanks[0];
                 if (tank.fillLevel !== null && tank.fillLevel !== undefined) {
-                    tankLevelValue = `${Math.round(tank.fillLevel)}%`;
-                    tankWarning = tank.isWarning;
+                    const fillPct = Math.round(tank.fillLevel);
+                    const timeStr = formatTimeRemaining(tank.hoursRemaining);
+                    tankLevelValue = `${fillPct}%${timeStr}`;
+                    tankStatus = getTankDepletionStatus(tank.hoursRemaining, tank.depletionStatus);
+                    // Build tooltip
+                    if (tank.hoursRemaining !== null && tank.hoursRemaining !== undefined) {
+                        tankTooltip = `${tank.name}: ${fillPct}% (${Math.round(tank.hoursRemaining)}h remaining)`;
+                    }
                 }
             }
             else {
-                // Multiple tanks - compute average
+                // Multiple tanks - compute average and show individual values
                 const validLevels = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
                 if (validLevels.length > 0) {
-                    tankMultiValues = validLevels.map(t => `${Math.round(t.fillLevel)}%`);
+                    tankMultiValues = validLevels.map(t => {
+                        const fillPct = Math.round(t.fillLevel);
+                        const timeStr = formatTimeRemaining(t.hoursRemaining);
+                        return `${fillPct}%${timeStr}`;
+                    });
                     const avg = validLevels.reduce((sum, t) => sum + t.fillLevel, 0) / validLevels.length;
                     tankLevelValue = `${Math.round(avg)}%`;
-                    tankWarning = tanks.some(t => t.isWarning);
+                    // Use most urgent status
+                    const statuses = tanks
+                        .map(t => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
+                        .filter(Boolean);
+                    if (statuses.includes(StatusLevel.DANGER)) {
+                        tankStatus = StatusLevel.DANGER;
+                    }
+                    else if (statuses.includes(StatusLevel.WARNING)) {
+                        tankStatus = StatusLevel.WARNING;
+                    }
+                    else if (statuses.includes(StatusLevel.OPTIMAL)) {
+                        tankStatus = StatusLevel.OPTIMAL;
+                    }
+                    tankTooltip = `${tanks.length} tanks`;
                 }
             }
         }
@@ -35502,7 +35555,7 @@ class MetricsUtils {
                 ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
                 : ''),
             createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds),
-            createChipData(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, tankLevelValue, tankMultiValues, tankEntityIds, 'Tank', tankWarning ? StatusLevel.WARNING : undefined, tanks.length > 1 ? `${tanks.length} tanks` : undefined),
+            createChipData(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, tankLevelValue, tankMultiValues, tankEntityIds, 'Tank', tankStatus, tankTooltip),
             createChipData(MetricKey.SOIL_MOISTURE, mdiWaterPercent, soilAgg.value, soilAgg.multiValues, soilAgg.entityIds, 'Moisture'),
             createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
             createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
