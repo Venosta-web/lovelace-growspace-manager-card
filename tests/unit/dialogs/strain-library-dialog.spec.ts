@@ -754,7 +754,7 @@ describe('StrainLibraryDialog', () => {
             // Get Rec
             const recSpy = vi.fn();
             element.addEventListener('get-recommendation', recSpy);
-            (items?.[0] as HTMLElement).click();
+            (items?.[1] as HTMLElement).click();
             expect(recSpy).toHaveBeenCalled();
 
             // Re-open
@@ -762,7 +762,7 @@ describe('StrainLibraryDialog', () => {
             await element.updateComplete;
 
             // Import (sets dialog open)
-            (items?.[1] as HTMLElement).click();
+            (items?.[2] as HTMLElement).click();
             expect((element as any)._importDialogOpen).toBe(true);
 
             // Re-open
@@ -772,7 +772,7 @@ describe('StrainLibraryDialog', () => {
             // Export
             const expSpy = vi.fn();
             element.addEventListener('export-library', expSpy);
-            (items?.[2] as HTMLElement).click();
+            (items?.[3] as HTMLElement).click();
             expect(expSpy).toHaveBeenCalled();
         });
     });

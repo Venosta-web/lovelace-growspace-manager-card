@@ -432,7 +432,9 @@ describe('GrowspaceAdapter', () => {
             name: 'Main Tank',
             warningLevel: 20,
             fillLevel: 80,
-            isWarning: false
+            isWarning: false,
+            hoursRemaining: null,
+            depletionStatus: null
         });
     });
 
