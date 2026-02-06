@@ -349,7 +349,7 @@ export class MetricsUtils {
       if (tanks.length === 1) {
         const tank = tanks[0];
         if (tank.fillLevel !== null && tank.fillLevel !== undefined) {
-          tankLevelValue = `${Math.round(tank.fillLevel)}`;
+          tankLevelValue = `${Math.round(tank.fillLevel)}%`;
           tankWarning = tank.isWarning;
         }
       } else {
@@ -358,7 +358,7 @@ export class MetricsUtils {
         if (validLevels.length > 0) {
           tankMultiValues = validLevels.map(t => `${Math.round(t.fillLevel!)}%`);
           const avg = validLevels.reduce((sum, t) => sum + t.fillLevel!, 0) / validLevels.length;
-          tankLevelValue = `${Math.round(avg)}`;
+          tankLevelValue = `${Math.round(avg)}%`;
           tankWarning = tanks.some(t => t.isWarning);
         }
       }
