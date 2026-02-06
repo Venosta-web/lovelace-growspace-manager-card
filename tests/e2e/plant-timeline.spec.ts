@@ -8,9 +8,14 @@ test.describe('Plant Timeline', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Reload to reset state
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(500);
+        // Close any open dialogs
+        const openDialogs = page.locator('ha-dialog[open]');
+        const count = await openDialogs.count();
+
+        for (let i = 0; i < count; i++) {
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(300);
+        }
     });
 
     test('Timeline Tab - Opens and Shows Events', async ({ coveragePage: page }) => {

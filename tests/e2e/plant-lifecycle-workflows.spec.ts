@@ -134,9 +134,14 @@ test.describe('Plant Lifecycle Workflows', () => {
     });
 
     test.afterEach(async ({ coveragePage: page }) => {
-        // Simple cleanup: Reload page to reset all state
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(1000);
+        // Close any open dialogs
+        const openDialogs = page.locator('ha-dialog[open]');
+        const count = await openDialogs.count();
+
+        for (let i = 0; i < count; i++) {
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(300);
+        }
     });
 
     test.describe('Mother → Clone Chain', () => {
