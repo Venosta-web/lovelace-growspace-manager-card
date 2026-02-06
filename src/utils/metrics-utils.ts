@@ -12,6 +12,7 @@ import {
   mdiAirHumidifier,
   mdiAirHumidifierOff,
   mdiWaterMinus,
+  mdiBarrel,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -335,6 +336,34 @@ export class MetricsUtils {
       this._getAttributeValue(overviewEntity, 'soil_moisture_value') as string | number | undefined
     );
 
+    // Calculate aggregate irrigation tank level
+    const tanks = envAttrs.irrigationTanks || [];
+    let tankLevelValue: string | undefined;
+    let tankEntityIds: string[] = [];
+    let tankMultiValues: string[] | undefined;
+    let tankWarning = false;
+
+    if (tanks.length > 0) {
+      tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
+
+      if (tanks.length === 1) {
+        const tank = tanks[0];
+        if (tank.fillLevel !== null && tank.fillLevel !== undefined) {
+          tankLevelValue = `${Math.round(tank.fillLevel)}`;
+          tankWarning = tank.isWarning;
+        }
+      } else {
+        // Multiple tanks - compute average
+        const validLevels = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
+        if (validLevels.length > 0) {
+          tankMultiValues = validLevels.map(t => `${Math.round(t.fillLevel!)}%`);
+          const avg = validLevels.reduce((sum, t) => sum + t.fillLevel!, 0) / validLevels.length;
+          tankLevelValue = `${Math.round(avg)}`;
+          tankWarning = tanks.some(t => t.isWarning);
+        }
+      }
+    }
+
     // Build Chips
     const createChipData = (
       key: string,
@@ -404,6 +433,16 @@ export class MetricsUtils {
           : ''
       ),
       createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds),
+      createChipData(
+        MetricKey.IRRIGATION_TANK_LEVEL,
+        mdiBarrel,
+        tankLevelValue,
+        tankMultiValues,
+        tankEntityIds,
+        'Tank',
+        tankWarning ? StatusLevel.WARNING : undefined,
+        tanks.length > 1 ? `${tanks.length} tanks` : undefined
+      ),
       createChipData(
         MetricKey.SOIL_MOISTURE,
         mdiWaterPercent,

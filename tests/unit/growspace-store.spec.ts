@@ -56,6 +56,7 @@ vi.mock('../../src/store/ui/ui-store', () => {
         $isLoading: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
         $notification: { set: vi.fn() },
         $menuOpen: { get: vi.fn(() => false), set: vi.fn(), subscribe: vi.fn() },
+        $language: { get: vi.fn(() => 'en'), set: vi.fn(), subscribe: vi.fn() },
     };
     const actions = {
         setEditMode: vi.fn((v) => atoms.$isEditMode.set(v)),
@@ -72,6 +73,8 @@ vi.mock('../../src/store/ui/ui-store', () => {
         setMenuOpen: vi.fn((v) => atoms.$menuOpen.set(v)),
         showToast: vi.fn(),
         clearToast: vi.fn(),
+        setLanguage: vi.fn(),
+        setPendingDeepLink: vi.fn(),
     };
     const mocks = { ...atoms, ...actions };
     return {
@@ -126,6 +129,7 @@ vi.mock('../../src/store/core/data-store', () => {
 // Mock DataService
 const mockDataServiceInstance: any = {
     getGrowspaceDevices: vi.fn(),
+    invalidateCache: vi.fn(),
     harvestPlant: vi.fn().mockResolvedValue({}),
     moveClone: vi.fn().mockResolvedValue({}),
     fetchStrainLibrary: vi.fn().mockResolvedValue([]),
@@ -250,6 +254,48 @@ describe('GrowspaceStore', () => {
             mockDataServiceInstance.fetchGrowspaceData.mockRejectedValue(new Error('Fetch Error'));
             await store.refreshData();
             expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch growspace data', expect.any(Error));
+        });
+    });
+
+    describe('Lifecycle & Actions', () => {
+        it('should update hass and language if changed', () => {
+            const newHass = { ...store.hass, language: 'es' } as any;
+            store.updateHass(newHass);
+            expect(store.hass).toBe(newHass);
+            expect(uiStore.setLanguage).toHaveBeenCalledWith('es');
+        });
+
+        it('should not update language if not changed', () => {
+            const newHass = { ...store.hass, language: 'en' } as any;
+            store.updateHass(newHass);
+            expect(uiStore.setLanguage).not.toHaveBeenCalled();
+        });
+
+        it('should call initialize and destroy', () => {
+            const initSpy = vi.spyOn(store, 'updateHass');
+            const destroySpy = vi.spyOn((store as any).history, 'destroy');
+            const h = { connection: { subscribeEvents: vi.fn() }, states: {}, locale: {} } as any;
+
+            store.initialize(h);
+            expect(initSpy).toHaveBeenCalledWith(h);
+
+            store.destroy();
+            expect(destroySpy).toHaveBeenCalled();
+        });
+
+        it('should force refresh data when flagged', async () => {
+            const invalidateSpy = vi.spyOn(mockDataServiceInstance, 'invalidateCache');
+            const syncSpy = vi.spyOn((store as any).syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+            await store.refreshData(true);
+            expect(invalidateSpy).toHaveBeenCalled();
+            expect(syncSpy).toHaveBeenCalled();
+        });
+
+        it('should handle deep link delegation', () => {
+            const plantId = 'plant123';
+            store.handleDeepLink(plantId);
+            // Verify delegation via effect on UI store
+            expect(uiStore.setPendingDeepLink).toHaveBeenCalledWith(plantId);
         });
     });
 

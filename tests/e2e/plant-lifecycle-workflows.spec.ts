@@ -36,11 +36,42 @@ async function openPlantOverview(page: Page, plantFilter?: { hasText?: string; r
     return { card, dialog };
 }
 
+// Existing strain that is guaranteed to be in the strain library
+const DEFAULT_STRAIN = 'Blue Gem';
+
+// Helper to transition a plant to mother stage via the overview dialog
+async function transitionToMother(page: Page, phenotype: string) {
+    const card = page.locator('growspace-manager-card').first();
+    await openPlantOverview(page, { hasText: phenotype });
+
+    // Directly set mother_start on the plant-overview-dialog element and trigger save
+    // This bypasses the date input UI which has event propagation issues in Shadow DOM
+    const overviewDialog = card.locator('growspace-dialog-host plant-overview-dialog').first();
+    const today = new Date().toISOString().split('T')[0];
+
+    await overviewDialog.evaluate((el: any, dateVal: string) => {
+        // Set mother_start and clear veg_start: the backend determines stage by
+        // the highest-order date field that is set. veg (order=40) > mother (order=30),
+        // so we must clear veg_start for mother_start to take effect.
+        el.editedAttributes = { ...el.editedAttributes, mother_start: dateVal, veg_start: null };
+        el._update();
+    }, today);
+
+    // Wait for dialog to close (confirms save was processed)
+    await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 15000 });
+    await page.waitForTimeout(1000);
+
+    // Reload to see updated state from backend
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.locator('growspace-manager-card').first()).toBeVisible({ timeout: 15000 });
+    await page.waitForTimeout(2000);
+}
+
 // Helper to create a plant with specific stage
 async function createPlant(
     page: Page,
     params: {
-        strain: string;
+        strain?: string;
         phenotype: string;
         row: number;
         col: number;
@@ -70,60 +101,57 @@ async function createPlant(
     const addDialog = card.locator('growspace-dialog-host ha-dialog').first();
     await expect(addDialog).toHaveAttribute('open', '', { timeout: 10000 });
 
-    // Fill strain (it's a select, not text input)
-    const strainSelect = addDialog.locator('md3-select[label="Strain *"] select').first();
-    await strainSelect.selectOption({ label: params.strain });
+    // Fill strain (it's a select, not text input) - use existing strain from library
+    await addDialog.locator('md3-select[label="Strain *"] select').first()
+        .selectOption({ label: params.strain ?? DEFAULT_STRAIN });
 
     // Fill phenotype
-    const phenotypeInput = addDialog.locator('md3-text-input[label="Phenotype"] input').first();
-    await phenotypeInput.fill(params.phenotype);
+    await addDialog.locator('md3-text-input[label="Phenotype"] input').first()
+        .fill(params.phenotype);
 
-    // Set stage-specific date if needed
+    // Fill row and col (required fields)
+    await addDialog.locator('md3-number-input').filter({ hasText: /row/i })
+        .getByRole('spinbutton').fill(String(params.row));
+    await addDialog.locator('md3-number-input').filter({ hasText: /col/i })
+        .getByRole('spinbutton').fill(String(params.col));
+
+    // Set stage-specific dates in the add plant dialog
+    // Default growspace shows: "Seedling Start", "Veg Start", "Flower Start"
     if (params.stage) {
         const today = new Date().toISOString().split('T')[0];
-        let dateField = '';
+        const dateLabels: string[] = [];
 
         switch (params.stage) {
-            case 'mother':
-                dateField = 'mother_start';
-                break;
-            case 'clone':
-                dateField = 'clone_start';
+            case 'seedling':
+                dateLabels.push('Seedling Start');
                 break;
             case 'veg':
-                dateField = 'veg_start';
+            case 'mother': // Mother not available in default growspace; create as veg
+            case 'clone':  // Clone not available in default growspace; create as veg
+                dateLabels.push('Seedling Start', 'Veg Start');
                 break;
             case 'flower':
-                dateField = 'veg_start';
-                // Also set flower_start
+                dateLabels.push('Seedling Start', 'Veg Start', 'Flower Start');
                 break;
-            default:
-                dateField = 'seedling_start';
         }
 
-        // Find date input (might need to expand "Show All Dates")
-        const showAllBtn = addDialog.getByRole('button', { name: /show all dates/i }).first();
-        if (await showAllBtn.isVisible()) {
-            await showAllBtn.click();
-        }
-
-        const dateInput = addDialog.locator(`md3-date-input[label*="${dateField}"], input[name="${dateField}"]`).first();
-        if (await dateInput.isVisible()) {
-            await dateInput.evaluate((el: any, val) => {
-                el.value = val;
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-            }, today);
+        for (const label of dateLabels) {
+            const dateInput = addDialog.locator(`md3-date-input[label="${label}"] input`).first();
+            if (await dateInput.isVisible()) {
+                await dateInput.fill(today);
+            }
         }
     }
 
-    // Click confirm
-    const confirmBtn = addDialog.getByRole('button', { name: /add plant|confirm/i }).first();
-    await confirmBtn.click();
+    // Click confirm using dispatchEvent (required for Shadow DOM Lit components)
+    await addDialog.getByRole('button', { name: /add plant/i }).last()
+        .dispatchEvent('click', { bubbles: true, composed: true });
 
-    // Wait for dialog to close
-    await expect(addDialog).not.toBeVisible({ timeout: 5000 });
+    // Wait for dialog to fully close
+    await expect(card.locator('growspace-dialog-host ha-dialog')).toHaveCount(0, { timeout: 10000 });
+    await page.waitForTimeout(1000);
 
-    return { strain: params.strain, phenotype: params.phenotype, row: params.row, col: params.col };
+    return { strain: params.strain ?? DEFAULT_STRAIN, phenotype: params.phenotype, row: params.row, col: params.col };
 }
 
 test.describe('Plant Lifecycle Workflows', () => {
@@ -148,19 +176,20 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should create mother plant and take clone', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Step 1: Create a mother plant
-            const motherData = await createPlant(page, {
-                strain: 'Clone Test Mother',
+            // Step 1: Create a veg plant, then transition to mother
+            await createPlant(page, {
                 phenotype: 'MT-1',
                 row: 1,
                 col: 1,
-                stage: 'mother'
+                stage: 'veg'
             });
 
-            await page.waitForTimeout(2000);
+            // Transition to mother stage via overview dialog
+            await transitionToMother(page, 'MT-1');
+            await page.waitForTimeout(1000);
 
-            // Step 2: Open mother plant overview
-            const { dialog } = await openPlantOverview(page, { hasText: 'Clone Test Mother' });
+            // Step 2: Open mother plant overview (identify by unique phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'MT-1' });
 
             // Step 3: Click "Take Clone" button
             const takeCloneBtn = dialog.getByRole('button', { name: /take clone/i }).first();
@@ -173,7 +202,7 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 5: Verify source plant info is displayed
             const dialogContent = await cloneDialog.textContent();
-            expect(dialogContent).toContain('Clone Test Mother');
+            expect(dialogContent).toContain(DEFAULT_STRAIN);
             expect(dialogContent).toContain('MT-1');
 
             // Step 6: Set number of clones
@@ -200,9 +229,9 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 10: Verify clones were created
             // Clones should have same strain but may be in different growspace
-            // Check for clone stage indicators or strain name
+            // Check for clone stage indicators or phenotype
             const clonePlants = card.locator('growspace-plant-card')
-                .filter({ hasText: 'Clone Test Mother' });
+                .filter({ hasText: 'MT-1' });
 
             const cloneCount = await clonePlants.count();
             expect(cloneCount).toBeGreaterThanOrEqual(3); // Mother + 3 clones = 4 total
@@ -211,19 +240,19 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should validate clone count range (1-20)', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create mother plant
+            // Create veg plant, then transition to mother
             await createPlant(page, {
-                strain: 'Range Test Mother',
                 phenotype: 'RT-1',
                 row: 2,
                 col: 1,
-                stage: 'mother'
+                stage: 'veg'
             });
 
-            await page.waitForTimeout(2000);
+            await transitionToMother(page, 'RT-1');
+            await page.waitForTimeout(1000);
 
-            // Open mother overview
-            const { dialog } = await openPlantOverview(page, { hasText: 'Range Test Mother' });
+            // Open mother overview (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'RT-1' });
 
             // Click Take Clone
             const takeCloneBtn = dialog.getByRole('button', { name: /take clone/i }).first();
@@ -266,19 +295,19 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should preserve strain and phenotype in clones', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create mother
+            // Create veg plant, then transition to mother
             await createPlant(page, {
-                strain: 'Genetics Test',
                 phenotype: 'GT-Premium',
                 row: 3,
                 col: 1,
-                stage: 'mother'
+                stage: 'veg'
             });
 
-            await page.waitForTimeout(2000);
+            await transitionToMother(page, 'GT-Premium');
+            await page.waitForTimeout(1000);
 
-            // Take clone
-            const { dialog } = await openPlantOverview(page, { hasText: 'Genetics Test' });
+            // Take clone (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'GT-Premium' });
             const takeCloneBtn = dialog.getByRole('button', { name: /take clone/i }).first();
             await takeCloneBtn.click();
 
@@ -301,7 +330,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Find the new clone and verify genetics
             const clonePlants = card.locator('growspace-plant-card')
-                .filter({ hasText: 'Genetics Test' })
                 .filter({ hasText: 'GT-Premium' });
 
             const count = await clonePlants.count();
@@ -314,7 +342,7 @@ test.describe('Plant Lifecycle Workflows', () => {
             await expect(cloneOverview).toHaveAttribute('open', '');
 
             const content = await cloneOverview.textContent();
-            expect(content).toContain('Genetics Test');
+            expect(content).toContain(DEFAULT_STRAIN);
             expect(content).toContain('GT-Premium');
         });
     });
@@ -325,7 +353,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 1: Create flowering plant
             await createPlant(page, {
-                strain: 'Harvest Test',
                 phenotype: 'HT-1',
                 row: 4,
                 col: 1,
@@ -334,8 +361,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Step 2: Open flower plant overview
-            const { dialog } = await openPlantOverview(page, { hasText: 'Harvest Test' });
+            // Step 2: Open flower plant overview (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'HT-1' });
 
             // Step 3: Verify we're in flower stage
             const content = await dialog.textContent();
@@ -360,9 +387,9 @@ test.describe('Plant Lifecycle Workflows', () => {
             await expect(card).toBeVisible({ timeout: 15000 });
             await page.waitForTimeout(3000);
 
-            // Step 8: Look for dry plant with same strain
+            // Step 8: Look for dry plant with same phenotype
             const dryPlants = card.locator('growspace-plant-card')
-                .filter({ hasText: 'Harvest Test' });
+                .filter({ hasText: 'HT-1' });
 
             // Should have at least one plant (dry stage)
             const count = await dryPlants.count();
@@ -386,7 +413,6 @@ test.describe('Plant Lifecycle Workflows', () => {
             // Step 1: Create dry plant directly
             // (In real workflow, this comes from harvest)
             await createPlant(page, {
-                strain: 'Cure Test',
                 phenotype: 'CT-1',
                 row: 5,
                 col: 1,
@@ -396,7 +422,7 @@ test.describe('Plant Lifecycle Workflows', () => {
             await page.waitForTimeout(2000);
 
             // Step 2: Open plant and manually set dry_start date
-            const { dialog } = await openPlantOverview(page, { hasText: 'Cure Test' });
+            const { dialog } = await openPlantOverview(page, { hasText: 'CT-1' });
 
             // Navigate to lifecycle dates or dashboard
             const dashboardTab = dialog.locator('.tab-item, button').filter({ hasText: /dashboard/i }).first();
@@ -435,7 +461,7 @@ test.describe('Plant Lifecycle Workflows', () => {
             await page.waitForTimeout(1000);
 
             // Step 3: Reopen dry plant
-            const { dialog: dryDialog } = await openPlantOverview(page, { hasText: 'Cure Test' });
+            const { dialog: dryDialog } = await openPlantOverview(page, { hasText: 'CT-1' });
 
             // Step 4: Click "Finish Drying" button
             const finishBtn = dryDialog.getByRole('button', { name: /finish drying/i }).first();
@@ -463,7 +489,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 1: Create seedling
             await createPlant(page, {
-                strain: 'Progression Test',
                 phenotype: 'PT-1',
                 row: 6,
                 col: 1,
@@ -472,8 +497,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Step 2: Open seedling overview
-            const { dialog } = await openPlantOverview(page, { hasText: 'Progression Test' });
+            // Step 2: Open seedling overview (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'PT-1' });
 
             // Step 3: Navigate to lifecycle dates
             const dashboardTab = dialog.locator('.tab-item, button').filter({ hasText: /dashboard/i }).first();
@@ -509,7 +534,7 @@ test.describe('Plant Lifecycle Workflows', () => {
             await closeBtn.click();
             await page.waitForTimeout(1000);
 
-            const { dialog: vegDialog } = await openPlantOverview(page, { hasText: 'Progression Test' });
+            const { dialog: vegDialog } = await openPlantOverview(page, { hasText: 'PT-1' });
 
             const content = await vegDialog.textContent();
             expect(content).toMatch(/veg|vegetative/i);
@@ -520,7 +545,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 1: Create veg plant
             await createPlant(page, {
-                strain: 'Mother Conversion',
                 phenotype: 'MC-1',
                 row: 7,
                 col: 1,
@@ -529,8 +553,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Step 2: Open veg plant overview
-            const { dialog } = await openPlantOverview(page, { hasText: 'Mother Conversion' });
+            // Step 2: Open veg plant overview (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'MC-1' });
 
             // Step 3: Set mother_start date
             const dashboardTab = dialog.locator('.tab-item, button').filter({ hasText: /dashboard/i }).first();
@@ -575,7 +599,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 1: Create a clone
             await createPlant(page, {
-                strain: 'Transplant Test',
                 phenotype: 'TT-1',
                 row: 1,
                 col: 2,
@@ -623,7 +646,7 @@ test.describe('Plant Lifecycle Workflows', () => {
                     // Step 6: Verify clone moved (veg_start should be set)
                     // Open the transplanted plant
                     const transplantedPlant = card.locator('growspace-plant-card')
-                        .filter({ hasText: 'Transplant Test' })
+                        .filter({ hasText: 'TT-1' })
                         .first();
 
                     if (await transplantedPlant.isVisible()) {
@@ -633,7 +656,7 @@ test.describe('Plant Lifecycle Workflows', () => {
                         await expect(overview).toHaveAttribute('open', '');
 
                         const content = await overview.textContent();
-                        expect(content).toContain('Transplant Test');
+                        expect(content).toContain('TT-1');
                         // Should now be in veg stage after transplant
                         expect(content).toMatch(/veg/i);
                     }
@@ -648,7 +671,6 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             // Step 1: Create plant
             await createPlant(page, {
-                strain: 'Timeline Test',
                 phenotype: 'TLT-1',
                 row: 2,
                 col: 2,
@@ -657,8 +679,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Step 2: Open plant and log an event
-            const { dialog } = await openPlantOverview(page, { hasText: 'Timeline Test' });
+            // Step 2: Open plant and log an event (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'TLT-1' });
 
             // Step 3: Navigate to Actions tab and log training
             const actionsTab = dialog.locator('.tab-item, button').filter({ hasText: /actions/i }).first();
@@ -738,19 +760,19 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should preserve custom data fields across clone operation', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Step 1: Create mother with custom data
+            // Step 1: Create veg plant, then transition to mother
             await createPlant(page, {
-                strain: 'Custom Data Mother',
                 phenotype: 'CDM-Special',
                 row: 3,
                 col: 2,
-                stage: 'mother'
+                stage: 'veg'
             });
 
-            await page.waitForTimeout(2000);
+            await transitionToMother(page, 'CDM-Special');
+            await page.waitForTimeout(1000);
 
-            // Step 2: Open mother and verify phenotype
-            const { dialog } = await openPlantOverview(page, { hasText: 'Custom Data Mother' });
+            // Step 2: Open mother and verify phenotype (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'CDM-Special' });
 
             let content = await dialog.textContent();
             expect(content).toContain('CDM-Special');
@@ -776,9 +798,9 @@ test.describe('Plant Lifecycle Workflows', () => {
             await expect(cloneDialog).not.toBeVisible({ timeout: 10000 });
             await page.waitForTimeout(3000);
 
-            // Step 4: Find and verify clone has same phenotype
+            // Step 4: Find and verify clone has same phenotype (identify by phenotype)
             const plants = card.locator('growspace-plant-card')
-                .filter({ hasText: 'Custom Data Mother' });
+                .filter({ hasText: 'CDM-Special' });
 
             // Should have mother + clone
             const count = await plants.count();
@@ -791,7 +813,7 @@ test.describe('Plant Lifecycle Workflows', () => {
             await expect(cloneOverview).toHaveAttribute('open', '');
 
             content = await cloneOverview.textContent();
-            expect(content).toContain('Custom Data Mother');
+            expect(content).toContain(DEFAULT_STRAIN);
             expect(content).toContain('CDM-Special');
         });
     });
@@ -800,9 +822,8 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should only show "Take Clone" button for mother plants', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create veg plant (not mother)
+            // Create veg plant (not mother) - uses default strain
             await createPlant(page, {
-                strain: 'Veg Validation',
                 phenotype: 'VV-1',
                 row: 4,
                 col: 2,
@@ -811,8 +832,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Open veg plant
-            const { dialog } = await openPlantOverview(page, { hasText: 'Veg Validation' });
+            // Open veg plant (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'VV-1' });
 
             // "Take Clone" should NOT be visible
             const takeCloneBtn = dialog.getByRole('button', { name: /take clone/i }).first();
@@ -824,9 +845,8 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should only show "Harvest" button for flowering plants', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create seedling
+            // Create seedling - uses default strain
             await createPlant(page, {
-                strain: 'Seedling Validation',
                 phenotype: 'SV-1',
                 row: 5,
                 col: 2,
@@ -835,8 +855,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Open seedling
-            const { dialog } = await openPlantOverview(page, { hasText: 'Seedling Validation' });
+            // Open seedling (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'SV-1' });
 
             // "Harvest" should NOT be visible
             const harvestBtn = dialog.getByRole('button', { name: /harvest/i }).first();
@@ -848,9 +868,8 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should only show "Finish Drying" for dry stage plants', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create flower plant
+            // Create flower plant - uses default strain
             await createPlant(page, {
-                strain: 'Finish Validation',
                 phenotype: 'FV-1',
                 row: 6,
                 col: 2,
@@ -859,8 +878,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Open flower plant
-            const { dialog } = await openPlantOverview(page, { hasText: 'Finish Validation' });
+            // Open flower plant (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'FV-1' });
 
             // "Finish Drying" should NOT be visible
             const finishBtn = dialog.getByRole('button', { name: /finish drying/i }).first();
@@ -888,10 +907,9 @@ test.describe('Plant Lifecycle Workflows', () => {
         test('should handle rapid stage transitions without data loss', async ({ coveragePage: page }) => {
             const card = page.locator('growspace-manager-card').first();
 
-            // Create plant
+            // Create plant - uses default strain, unique phenotype to avoid collision with RT-1
             await createPlant(page, {
-                strain: 'Rapid Test',
-                phenotype: 'RT-1',
+                phenotype: 'RT-rapid',
                 row: 7,
                 col: 2,
                 stage: 'seedling'
@@ -899,8 +917,8 @@ test.describe('Plant Lifecycle Workflows', () => {
 
             await page.waitForTimeout(2000);
 
-            // Open plant
-            const { dialog } = await openPlantOverview(page, { hasText: 'Rapid Test' });
+            // Open plant (identify by phenotype)
+            const { dialog } = await openPlantOverview(page, { hasText: 'RT-rapid' });
 
             // Navigate to dashboard
             const dashboardTab = dialog.locator('.tab-item').filter({ hasText: /dashboard/i }).first();
@@ -940,7 +958,7 @@ test.describe('Plant Lifecycle Workflows', () => {
 
                 // Verify no errors and data is consistent
                 const content = await dialog.textContent();
-                expect(content).toContain('Rapid Test');
+                expect(content).toContain('RT-rapid');
                 expect(content).toMatch(/flower/i);
             }
         });

@@ -1654,7 +1654,34 @@ describe('GrowspaceEnvChart', () => {
             expect(cancelSpy).toHaveBeenCalledWith(123);
         });
 
+        it('should trigger click handler from template', async () => {
+            const now = Date.now();
+
+            // Setup metrics to ensure valid render (non-empty)
+            element.metricKey = 'temperature';
+            element.sensorHistory = {
+                'temperature': [{ state: '20', last_changed: new Date(now - 1000).toISOString() }]
+            } as any;
+            // Ensure device has the sensor mapping if needed, or stick to what defaults might use
+            // With metricKey='temperature', it might look for device.sensors.temperature or just assume key match?
+            // Let's assume exact match with history key is sufficient if no resolution logic blocks it.
+
+            await element.updateComplete;
+
+            (element as any)._hoverTime = now;
+
+            const listener = vi.fn();
+            element.addEventListener('chart-clicked', listener);
+
+            const container = element.shadowRoot!.querySelector('.gs-env-chart-container') as HTMLElement;
+            expect(container).not.toBeNull();
+            // expect(container.classList.contains('empty')).toBe(false); // Optional verification
+
+            container.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+
+            expect(listener).toHaveBeenCalled();
+        });
+
 
     });
 });
-

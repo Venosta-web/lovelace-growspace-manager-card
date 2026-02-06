@@ -12,6 +12,7 @@ import {
   mdiMagnify,
   mdiCalculator,
   mdiAirFilter,
+  mdiBarrel,
 } from '@mdi/js';
 
 export enum MetricKey {
@@ -19,6 +20,7 @@ export enum MetricKey {
   HUMIDITY = 'humidity',
   VPD = 'vpd',
   CO2 = 'co2',
+  IRRIGATION_TANK_LEVEL = 'irrigation_tank_level',
   SOIL_MOISTURE = 'soil_moisture',
   IRRIGATION = 'irrigation',
   DRAIN = 'drain',
@@ -37,6 +39,7 @@ export const METRIC_SORT_ORDER = [
   MetricKey.HUMIDITY,
   MetricKey.VPD,
   MetricKey.CO2,
+  MetricKey.IRRIGATION_TANK_LEVEL,
   MetricKey.SOIL_MOISTURE,
   MetricKey.IRRIGATION,
   MetricKey.DRAIN,
@@ -82,6 +85,12 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     title: 'Air Exchange',
     unit: 'm³/h',
     icon: mdiAirFilter,
+  },
+  [MetricKey.IRRIGATION_TANK_LEVEL]: {
+    color: '#26a69a',
+    title: 'Tank Level',
+    unit: '%',
+    icon: mdiBarrel,
   },
   [MetricKey.SOIL_MOISTURE]: {
     color: '#03a9f4',
@@ -215,6 +224,7 @@ export const METRIC_ENTITY_KEYS: Record<
   [MetricKey.DEHUMIDIFIER]: { primary: 'dehumidifierEntity' },
   [MetricKey.CIRCULATION_FAN]: { primary: 'circulationFanEntity' },
   [MetricKey.LIGHT]: { primary: 'lightSensor' },
+  [MetricKey.IRRIGATION_TANK_LEVEL]: { primary: 'irrigationTanks' },
   [MetricKey.SOIL_MOISTURE]: { primary: 'soilMoistureSensor' },
   [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
   [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
@@ -227,6 +237,7 @@ export type MetricType =
   | MetricKey.HUMIDITY
   | MetricKey.VPD
   | MetricKey.CO2
+  | MetricKey.IRRIGATION_TANK_LEVEL
   | MetricKey.SOIL_MOISTURE
   | MetricKey.EXHAUST
   | MetricKey.HUMIDIFIER

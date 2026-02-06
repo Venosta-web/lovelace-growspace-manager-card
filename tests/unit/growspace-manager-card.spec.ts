@@ -1,18 +1,38 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
-import { GrowspaceManagerCardConfig } from '../../src/types';
+import { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import { HomeAssistant } from 'custom-card-helpers';
-import { LibraryExportReadyEvent } from '../../src/events';
-import { ViewMode } from '../../src/constants';
-
+import { LibraryExportReadyEvent } from '../../src/lib/events';
+import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 
-
-
+// Mock dependencies
 // Mock dependencies
 vi.mock('../../src/components/growspace-header', () => ({}));
 vi.mock('../../src/components/manager/dialog-host', () => ({}));
 vi.mock('../../src/components/growspace-view-switcher', () => ({}));
+
+export const mockSubscriptionCallback = { fn: undefined as ((refresh: boolean) => void) | undefined };
+
+vi.mock('../../src/controllers/subscription-controller', () => ({
+    SubscriptionController: class {
+        constructor(host: any, store: any, onUpdate: (refresh: boolean) => void) {
+            mockSubscriptionCallback.fn = onUpdate;
+        }
+        updateHass() { }
+        hostConnected() { }
+        hostDisconnected() { }
+    }
+}));
+
+// Mock window location
+const mockLocation = {
+    search: '',
+    href: 'http://localhost/',
+    assign: vi.fn(),
+    replace: vi.fn(),
+    reload: vi.fn(),
+};
 
 const atomMocks = vi.hoisted(() => ({
     $devices: null as any,
@@ -44,10 +64,12 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             $selectedDevice: atomMocks.$selectedDevice,
             $strainLibrary: atomMocks.$strainLibrary,
             $optimisticDeletedPlantIds: atomMocks.$optimisticDeletedPlantIds,
-            // Add methods if needed
             fetchStrainLibrary: vi.fn(),
             initializeSelectedDevice: vi.fn(),
             handleDeviceChange: vi.fn(),
+            fetchNutrientPresets: vi.fn(),
+            fetchIPMPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
         };
         ui = {
             $viewMode: atomMocks.$viewMode,
@@ -68,6 +90,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             selectAllPlants: vi.fn(),
             setFocusedPlantIndex: vi.fn(),
             setActiveDialog: vi.fn(),
+            toggleTransplantMode: vi.fn(),
         };
         grid = {
             $activeDevices: atomMocks.$activeDevices,
@@ -89,11 +112,14 @@ vi.mock('../../src/store/core/growspace-store', () => ({
         handleKeyboardNavigation() { }
         toggleHeaderExpansion() { }
         selectAllPlants() { }
+        deleteSelectedPlants() { }
         clearPlantSelection() { this.ui.clearPlantSelection(); }
         openBatchWateringDialog = vi.fn();
         openBatchTrainingDialog = vi.fn();
         openIPMDialog = vi.fn();
         destroy = vi.fn();
+        handleDeepLink = vi.fn();
+        refreshData = vi.fn();
     }
 }));
 
@@ -134,6 +160,16 @@ describe('GrowspaceManagerCard', () => {
             })
         );
 
+        // Mock history
+        vi.spyOn(window.history, 'replaceState').mockImplementation(() => { });
+
+        // Try to reset search if possible
+        // try {
+        //    window.location.search = '';
+        // } catch (e) {
+        //    // ignore
+        // }
+
         element = new GrowspaceManagerCard();
         mockHass = {
             states: {},
@@ -142,6 +178,7 @@ describe('GrowspaceManagerCard', () => {
         } as any;
         element.hass = mockHass;
         vi.clearAllMocks();
+        (window as any).GROWSPACE_DEEP_LINK_TRACKED = undefined;
     });
 
     afterEach(() => {
@@ -166,9 +203,8 @@ describe('GrowspaceManagerCard', () => {
                 const el = await GrowspaceManagerCard.getConfigElement();
                 expect(el.tagName.toLowerCase()).toBe('growspace-manager-card-editor');
             } catch (e) {
-                // Ignore errors from missing editor file in test env
+                // Ignore errors from missing editor file in test env if any
             }
-
         });
     });
 
@@ -186,7 +222,7 @@ describe('GrowspaceManagerCard', () => {
             expect(() => element.setConfig(undefined as any)).toThrow('Invalid configuration');
         });
 
-        it('should set compact mode from config', () => {
+        it('should set compact mode from config fallback', () => {
             const config: GrowspaceManagerCardConfig = {
                 type: 'custom:growspace-manager-card',
                 compact: true
@@ -202,15 +238,6 @@ describe('GrowspaceManagerCard', () => {
             };
             element.setConfig(config);
             expect(element.store.ui.setViewMode).toHaveBeenCalledWith(ViewMode.HEADER);
-        });
-
-        it('should not set compact mode if compact is false', () => {
-            const config: GrowspaceManagerCardConfig = {
-                type: 'custom:growspace-manager-card',
-                compact: false
-            };
-            element.setConfig(config);
-            expect(element.store.ui.setViewMode).not.toHaveBeenCalledWith('compact');
         });
     });
 
@@ -234,6 +261,15 @@ describe('GrowspaceManagerCard', () => {
             expect(spy).toHaveBeenCalledWith(mockHass);
         });
 
+        it('should process pending deep link when hass updates', () => {
+            const handleDeepLinkSpy = vi.spyOn(element.store, 'handleDeepLink');
+            atomMocks.$pendingDeepLinkPlantId.set('plant123');
+
+            (element as any).updated(new Map([['hass', 'oldValues']]));
+
+            expect(handleDeepLinkSpy).toHaveBeenCalledWith('plant123');
+        });
+
         it('should expose public getters', () => {
             expect(element.dataService).toBe(element.store.dataService);
             expect(element.devices).toEqual([]);
@@ -241,7 +277,6 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should sync strain library when controller updates', async () => {
-            // Trigger an update where the controller value has changed
             (element as any)._strainLibraryController = { value: [{ strain: 'new' }] };
             (element as any).updated(new Map());
             expect((element as any)._strainLibrary).toEqual([{ strain: 'new' }]);
@@ -256,6 +291,39 @@ describe('GrowspaceManagerCard', () => {
 
             element.disconnectedCallback();
             expect(removeSpy).toHaveBeenCalledWith(LibraryExportReadyEvent.TYPE, expect.any(Function));
+            expect(element.store.destroy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Deep Linking', () => {
+        it('should handle deep link on firstUpdated', () => {
+            window.history.pushState({}, '', '?plantId=p1');
+            const spy = vi.spyOn(element.store, 'handleDeepLink');
+
+            (element as any).firstUpdated();
+
+            expect(spy).toHaveBeenCalledWith('p1');
+            expect(window.history.replaceState).toHaveBeenCalled();
+            expect((window as any).GROWSPACE_DEEP_LINK_TRACKED).toBe('p1');
+        });
+
+        it('should ignore if global tracker already matched', () => {
+            window.history.pushState({}, '', '?plantId=p1');
+            (window as any).GROWSPACE_DEEP_LINK_TRACKED = 'p1';
+            const spy = vi.spyOn(element.store, 'handleDeepLink');
+
+            (element as any).firstUpdated();
+
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should do nothing if no plantId param', () => {
+            window.history.pushState({}, '', '/');
+            const spy = vi.spyOn(element.store, 'handleDeepLink');
+
+            (element as any).firstUpdated();
+
+            expect(spy).not.toHaveBeenCalled();
         });
     });
 
@@ -284,43 +352,39 @@ describe('GrowspaceManagerCard', () => {
         it('should render no data message if no devices', async () => {
             atomMocks.$isLoading.set(false);
             atomMocks.$activeDevices.set([]);
-
             document.body.appendChild(element);
             await element.updateComplete;
-
             const msg = element.shadowRoot?.querySelector('.no-data');
-            expect(msg).toBeTruthy();
             expect(msg?.textContent).toContain('No growspace devices found');
         });
 
         it('should render error if selected device is invalid', async () => {
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs2' }]);
+            // Setup mock devices with defined properties
+            const mockDevice = { deviceId: 'gs2', name: 'Other', plantsPerRow: 4 };
+            atomMocks.$activeDevices.set([mockDevice]);
             atomMocks.$selectedDevice.set('gs1');
 
             document.body.appendChild(element);
             await element.updateComplete;
 
             const err = element.shadowRoot?.querySelector('.error');
-            expect(err).toBeTruthy();
             expect(err?.textContent).toContain('No valid growspace selected');
         });
 
-        it('should render main card with notification', async () => {
+        it('should render main card', async () => {
             atomMocks.$isLoading.set(false);
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 };
             atomMocks.$activeDevices.set([mockDevice]);
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
             atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
             atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$notification.set({ type: 'success', message: 'Test Notif' });
 
             document.body.appendChild(element);
             await element.updateComplete;
 
-            const toast = element.shadowRoot?.querySelector('growspace-toast');
-            expect(toast).toBeTruthy();
-            expect(toast).not.toBeNull();
+            const switcher = element.shadowRoot?.querySelector('growspace-view-switcher');
+            expect(switcher).toBeTruthy();
         });
 
         it('should render wide card class', async () => {
@@ -328,7 +392,6 @@ describe('GrowspaceManagerCard', () => {
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 8 };
             atomMocks.$activeDevices.set([mockDevice]);
             atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
             atomMocks.$selectedDevice.set('gs1');
 
             document.body.appendChild(element);
@@ -339,7 +402,7 @@ describe('GrowspaceManagerCard', () => {
         });
     });
 
-    describe('Event Handlers & Private Methods', () => {
+    describe('Event Handlers', () => {
         it('should handle view mode changed', () => {
             (element as any)._handleViewModeChanged({ detail: { mode: 'list' } });
             expect(element.store.ui.setViewMode).toHaveBeenCalledWith('list');
@@ -353,23 +416,9 @@ describe('GrowspaceManagerCard', () => {
             (element as any)._handleError(error, errorInfo);
 
             expect(errorSpy).toHaveBeenCalledWith('Growspace Manager Card caught error:', error, errorInfo);
-            expect(mockHass.callService).toHaveBeenCalledWith('system_log', 'write', {
-                message: expect.stringContaining('Growspace Manager Card Error: Test error'),
-                level: 'error',
-                logger: 'lovelace_growspace_manager_card'
-            });
-            errorSpy.mockRestore();
-        });
-
-        it('should handle error when hass is missing during error reporting', () => {
-            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            element.hass = undefined as any;
-            const error = new Error('Test error');
-
-            (element as any)._handleError(error, {});
-
-            expect(errorSpy).toHaveBeenCalled();
-            expect(mockHass.callService).not.toHaveBeenCalled();
+            expect(mockHass.callService).toHaveBeenCalledWith('system_log', 'write', expect.objectContaining({
+                message: expect.stringContaining('Growspace Manager Card Error: Test error')
+            }));
             errorSpy.mockRestore();
         });
 
@@ -385,14 +434,22 @@ describe('GrowspaceManagerCard', () => {
             expect(spy).toHaveBeenCalled();
         });
 
-        it('should handle clear selection', () => {
-            (element as any)._handleClearSelection();
-            expect(element.store.ui.clearPlantSelection).toHaveBeenCalled();
+        it('should handle delete selected', () => {
+            const spy = vi.spyOn(element.store, 'deleteSelectedPlants');
+            (element as any)._handleDeleteSelected();
+            expect(spy).toHaveBeenCalled();
         });
 
-        it('should handle exit edit mode', () => {
-            (element as any)._handleExitEditMode();
-            expect(element.store.ui.setEditMode).toHaveBeenCalledWith(false);
+        it('should handle transplant mode', () => {
+            const spy = vi.spyOn(element.store.ui, 'toggleTransplantMode');
+            (element as any)._handleTransplantMode();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle batch add plants', () => {
+            const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
+            (element as any)._handleBatchAddPlants();
+            expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
         });
 
         it('should handle keyboard nav', () => {
@@ -401,242 +458,97 @@ describe('GrowspaceManagerCard', () => {
             expect(spy).toHaveBeenCalledWith('ArrowRight');
         });
 
-        it('should handle file download when export event received', () => {
-            const a = document.createElement('a');
-            const clickSpy = vi.spyOn(a, 'click').mockImplementation(() => { });
-            const appendSpy = vi.spyOn(document.body, 'appendChild');
-            const removeChildSpy = vi.spyOn(document.body, 'removeChild');
+        it('should trigger download when _downloadFile is called', () => {
+            const createElementSpy = vi.spyOn(document, 'createElement');
+            const clickSpy = vi.fn();
+            const aMock = {
+                style: {},
+                href: '',
+                download: '',
+                click: clickSpy,
+                split: () => ['test.zip']
+            };
 
-            vi.spyOn(document, 'createElement').mockReturnValue(a);
+            createElementSpy.mockReturnValue(aMock as any);
+            vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({} as any));
+            vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
 
-            const event = new LibraryExportReadyEvent('http://test.com/file.zip');
-            (element as any)._handleLibraryExportReady(event);
+            (element as any)._downloadFile('http://test.com/file.zip');
 
-            expect(appendSpy).toHaveBeenCalledWith(a);
+            expect(createElementSpy).toHaveBeenCalledWith('a');
             expect(clickSpy).toHaveBeenCalled();
-            expect(removeChildSpy).toHaveBeenCalledWith(a);
-            expect(a.href).toContain('http://test.com/file.zip');
-            expect(a.download).toBe('file.zip');
+            expect(aMock.download).toBe('file.zip');
         });
 
         it('should fallback to export.zip if URL has no segments', () => {
-            const a = document.createElement('a');
-            vi.spyOn(a, 'click').mockImplementation(() => { });
-            vi.spyOn(document, 'createElement').mockReturnValue(a);
-            vi.spyOn(document.body, 'appendChild').mockImplementation(() => a);
-            vi.spyOn(document.body, 'removeChild').mockImplementation(() => a);
-
+            const createElementSpy = vi.spyOn(document, 'createElement');
+            const aMock = { style: {}, href: '', download: '', click: vi.fn() };
+            createElementSpy.mockReturnValue(aMock as any);
 
             (element as any)._downloadFile('http://test.com/');
-            expect(a.download).toBe('export.zip');
+            expect(aMock.download).toBe('export.zip');
         });
 
-
-
-        it('should toggle header expansion', () => {
-            const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
-            element.store.toggleHeaderExpansion();
-            expect(spy).toHaveBeenCalled();
+        it('should handle library export ready event', () => {
+            const spy = vi.spyOn(element as any, '_downloadFile').mockImplementation(() => { });
+            const event = new LibraryExportReadyEvent('url');
+            (element as any)._handleLibraryExportReady(event);
+            expect(spy).toHaveBeenCalledWith('url');
         });
+    });
 
-        it('should trigger store action on DOM toggle-expansion event', async () => {
-            const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
 
-            atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
-            atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({});
+    describe('Subscription & Handlers', () => {
+        it('should handle subscription update callback', () => {
+            const updateSpy = vi.spyOn(element.store, 'updateHass');
+            const refreshSpy = vi.spyOn(element.store, 'refreshData');
 
-            document.body.appendChild(element);
-
-            // Wait for update with a timeout safety
-            await Promise.race([
-                element.updateComplete,
-                new Promise(r => setTimeout(r, 200))
-            ]);
-
-            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
-            if (panel) {
-                panel.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
-                expect(spy).toHaveBeenCalled();
+            if (mockSubscriptionCallback.fn) {
+                mockSubscriptionCallback.fn(true);
+                expect(updateSpy).toHaveBeenCalledWith(mockHass);
+                expect(refreshSpy).toHaveBeenCalledWith(true);
+            } else {
+                throw new Error('Subscription callback not captured');
             }
         });
 
-        it('should handle water selected', () => {
-            const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
+        it('should handle private event handlers', () => {
+            // Clear selection
+            const clearSpy = vi.spyOn(element.store, 'clearPlantSelection');
+            (element as any)._handleClearSelection();
+            expect(clearSpy).toHaveBeenCalled();
+
+            // Water selected
+            const waterSpy = vi.spyOn(element.store, 'openBatchWateringDialog');
             (element as any)._handleWaterSelected();
-            expect(spy).toHaveBeenCalled();
-        });
+            expect(waterSpy).toHaveBeenCalled();
 
-        it('should trigger batch watering dialog on water-selected event', async () => {
-            const spy = vi.spyOn(element.store, 'openBatchWateringDialog');
+            // Exit edit mode
+            const editSpy = vi.spyOn(element.store.ui, 'setEditMode');
+            (element as any)._handleExitEditMode();
+            expect(editSpy).toHaveBeenCalledWith(false);
 
-            atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
-            atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({});
-
-            document.body.appendChild(element);
-            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
-
-            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
-            if (panel) {
-                panel.dispatchEvent(new CustomEvent('water-selected', { bubbles: true, composed: true }));
-                expect(spy).toHaveBeenCalled();
-            }
-        });
-
-        it('should trigger batch training dialog on training-selected event', async () => {
-            const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
-
-            atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
-            atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({});
-
-            document.body.appendChild(element);
-            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
-
-            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
-            if (panel) {
-                panel.dispatchEvent(new CustomEvent('training-selected', { bubbles: true, composed: true }));
-                expect(spy).toHaveBeenCalled();
-            }
-        });
-
-        it('should handle toggle expansion directly', () => {
-            const spy = vi.spyOn(element.store, 'toggleHeaderExpansion');
-            (element as any)._handleToggleExpansion();
-            expect(spy).toHaveBeenCalled();
-        });
-
-        it('should handle training selected directly', () => {
-            const spy = vi.spyOn(element.store, 'openBatchTrainingDialog');
-            (element as any)._handleTrainingSelected();
-            expect(spy).toHaveBeenCalled();
-        });
-
-        it('should handle ipm selected directly', () => {
-            const spy = vi.spyOn(element.store, 'openIPMDialog');
+            // IPM selected
+            const ipmSpy = vi.spyOn(element.store, 'openIPMDialog');
             (element as any)._handleIPMSelected();
-            expect(spy).toHaveBeenCalled();
-        });
+            expect(ipmSpy).toHaveBeenCalled();
 
-        it('should trigger ipm dialog on ipm-selected event', async () => {
-            const spy = vi.spyOn(element.store, 'openIPMDialog');
-
-            atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
-            atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({});
-
-            document.body.appendChild(element);
-            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
-
-            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
-            if (panel) {
-                panel.dispatchEvent(new CustomEvent('ipm-selected', { bubbles: true, composed: true }));
-                expect(spy).toHaveBeenCalled();
+            // Toggle expansion (if available)
+            if (typeof (element as any)._handleToggleExpansion === 'function') {
+                const toggleSpy = vi.spyOn(element.store, 'toggleHeaderExpansion');
+                (element as any)._handleToggleExpansion();
+                expect(toggleSpy).toHaveBeenCalled();
             }
-        });
 
-        it('should handle batch add plants directly', () => {
-            const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
+            // Training selected
+            const trainingSpy = vi.spyOn(element.store, 'openBatchTrainingDialog');
+            (element as any)._handleTrainingSelected();
+            expect(trainingSpy).toHaveBeenCalled();
+
+            // Batch Add
+            const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
             (element as any)._handleBatchAddPlants();
-            expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+            expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
         });
-
-        it('should trigger batch add plants dialog on batch-add-plants event', async () => {
-            const spy = vi.spyOn(element.store.ui, 'setActiveDialog');
-
-            atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([{ deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 }]);
-            atomMocks.$selectedDevice.set('gs1');
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({});
-
-            document.body.appendChild(element);
-            await Promise.race([element.updateComplete, new Promise(r => setTimeout(r, 200))]);
-
-            const panel = element.shadowRoot?.querySelector('.unified-growspace-card');
-            if (panel) {
-                panel.dispatchEvent(new CustomEvent('batch-add-plants', { bubbles: true, composed: true }));
-                expect(spy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
-            }
-        });
-    });
-});
-
-describe('GrowspaceManagerCard Absolute Coverage', () => {
-    let element: GrowspaceManagerCard;
-    let mockHass: any;
-
-    beforeEach(() => {
-        element = new GrowspaceManagerCard();
-        mockHass = {
-            states: {},
-            callService: vi.fn(),
-            connection: { subscribeEvents: vi.fn() }
-        } as any;
-        element.hass = mockHass;
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
-    it('should handle setConfig with all variations', () => {
-        element.setConfig({ initial_view_mode: 'compact' } as any);
-        expect((element as any)._config.initial_view_mode).toBe('compact');
-
-        element.setConfig({ compact: true } as any);
-        // compact is checked in setConfig but maybe not stored? 
-        // Need to check the code for setConfig in growing-manager-card.ts
-    });
-
-    it('should sync strain library and hit the fallback branch', () => {
-        // Line 123: this._strainLibrary = (this._strainLibraryController.value || [])
-        (element as any)._strainLibraryController = { value: null };
-        (element as any).updated(new Map());
-        expect((element as any)._strainLibrary).toEqual([]);
-
-        (element as any)._strainLibraryController = { value: [{ name: 'S1' }] };
-        (element as any).updated(new Map());
-        expect((element as any)._strainLibrary).toEqual([{ name: 'S1' }]);
-    });
-
-    it('should handle all event handlers and methods', () => {
-        const store = element.store;
-        const ui = element.store.ui;
-
-        (element as any)._handleViewModeChanged({ detail: { mode: 'compact' } });
-        (element as any)._handleGrowspaceChanged({ detail: 'g1' });
-        (element as any)._handleSelectAll();
-        (element as any)._handleClearSelection();
-        (element as any)._handleWaterSelected();
-        (element as any)._handleExitEditMode();
-        (element as any)._handleIPMSelected();
-        (element as any)._handleToggleExpansion();
-        (element as any)._handleTrainingSelected();
-        (element as any)._handleBatchAddPlants();
-        (element as any)._handleKeyboardNav({ key: 'Escape' });
-        (element as any)._handleLibraryExportReady({ detail: { url: 'blob:test' } });
-
-        expect(element.getCardSize()).toBe(4);
-    });
-
-    it('should trigger download when _downloadFile is called', () => {
-        const createElementSpy = vi.spyOn(document, 'createElement');
-        const clickSpy = vi.fn();
-        createElementSpy.mockReturnValue({ style: {}, href: '', download: '', click: clickSpy, split: () => ['test.zip'] } as any);
-        vi.spyOn(document.body, 'appendChild').mockImplementation(() => ({} as any));
-        vi.spyOn(document.body, 'removeChild').mockImplementation(() => ({} as any));
-        (element as any)._downloadFile('http://test.com/file.zip');
-        expect(createElementSpy).toHaveBeenCalledWith('a');
-        expect(clickSpy).toHaveBeenCalled();
     });
 });

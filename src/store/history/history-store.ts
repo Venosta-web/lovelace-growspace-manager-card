@@ -275,6 +275,7 @@ export class GrowspaceHistoryStore {
       'vpd',
       'co2',
       'light',
+      'irrigation_tank_level',
       'soil_moisture',
       'exhaust',
       'humidifier',
@@ -373,6 +374,7 @@ export class GrowspaceHistoryStore {
       'vpd',
       'co2',
       'light',
+      'irrigation_tank_level',
       'soil_moisture',
       'exhaust',
       'humidifier',
@@ -598,6 +600,12 @@ export class GrowspaceHistoryStore {
         }
       }
       if (entityId) ids.push(entityId);
+    }
+
+    // Special case for irrigation_tank_level - extract sensor entities from tanks array
+    if (metricKey === 'irrigation_tank_level') {
+      const tanks = envAttrs['irrigationTanks'] as unknown as Array<{ sensorEntity?: string }> || [];
+      return tanks.map(t => t.sensorEntity).filter(Boolean) as string[];
     }
 
     return ids;

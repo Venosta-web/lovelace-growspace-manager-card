@@ -237,4 +237,47 @@ describe('DataService - PlantAPI', () => {
             });
         });
     });
+
+    describe('waterPlant', () => {
+        it('should call water_plant service with correct params', async () => {
+            const nutrients = { CalMag: 1.0 };
+            const params = { plant_id: 'p1', amount: 500, nutrients };
+            // Note: method signature: waterPlant(id, amount, nutrients, preset)
+            await service.waterPlant('p1', 500, nutrients);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'p1',
+                amount: 500,
+                nutrients
+            });
+        });
+
+        it('should handle presetId', async () => {
+            await service.waterPlant('p1', 500, undefined, 'preset1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'water_plant', {
+                plant_id: 'p1',
+                amount: 500,
+                preset_id: 'preset1'
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Water fail'));
+            await expect(service.waterPlant('p1', 100))
+                .rejects.toThrow('Water fail');
+        });
+    });
+
+    describe('printLabel', () => {
+        it('should call print_label service with params', async () => {
+            const params = { plant_id: 'p1', copies: 2 };
+            await service.printLabel(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'print_label', params);
+        });
+
+        it('should handle printing error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Print failed'));
+            await expect(service.printLabel({ strain: 'X' }))
+                .rejects.toThrow('Print failed');
+        });
+    });
 });
