@@ -32,13 +32,34 @@ export class IrrigationDialog extends LitElement {
   @state() private _addingIrrigationTime: { time: string; duration: number } | undefined;
   @state() private _addingDrainTime: { time: string; duration: number } | undefined;
 
+  @state() private _editingIrrigationTime: {
+    originalTime: string;  // Original time for backend removal
+    time: string;          // Current time value (editable)
+    duration: number;      // Current duration (editable)
+  } | undefined;
+
+  @state() private _editingDrainTime: {
+    originalTime: string;
+    time: string;
+    duration: number;
+  } | undefined;
+
+  @state() private _pendingUndo: {
+    type: 'irrigation' | 'drain';
+    time: string;
+    duration: number;
+    timeoutId: number;  // setTimeout ID to clear on undo
+  } | undefined;
+
+  @state() private _errorToast: string | undefined;
+
   private _dataService?: DataService;
 
   static styles = [
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: clamp(400px, 750px, 70vw);
+        --mdc-dialog-min-width: clamp(400px, 80vw, 1400px);
       }
 
       /* Overrides/Specific Layouts */

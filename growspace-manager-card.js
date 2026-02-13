@@ -19853,7 +19853,7 @@ IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(400px, 750px, 70vw);
+        --mdc-dialog-min-width: clamp(400px, 80vw, 1400px);
       }
 
       /* Overrides/Specific Layouts */
@@ -20219,6 +20219,18 @@ __decorate([
 __decorate([
     r$2()
 ], IrrigationDialog.prototype, "_addingDrainTime", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_editingIrrigationTime", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_editingDrainTime", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_pendingUndo", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_errorToast", void 0);
 __decorate([
     r$2()
 ], IrrigationDialog.prototype, "_activeTab", void 0);
