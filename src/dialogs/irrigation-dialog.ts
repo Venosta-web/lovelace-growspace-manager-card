@@ -962,6 +962,27 @@ export class IrrigationDialog extends LitElement {
                 `
         : ''}
           </div>
+
+          ${this._pendingUndo
+            ? html`
+                <div class="toast-notification">
+                  <span class="toast-message">
+                    Deleted ${this._pendingUndo.type} time ${this._pendingUndo.time.substring(0, 5)}
+                  </span>
+                  <button class="toast-undo-button" @click=${this._undoDelete}>
+                    UNDO
+                  </button>
+                </div>
+              `
+            : ''}
+
+          ${this._errorToast
+            ? html`
+                <div class="toast-notification error">
+                  <span class="toast-message">${this._errorToast}</span>
+                </div>
+              `
+            : ''}
         </div>
       </ha-dialog>
     `;
