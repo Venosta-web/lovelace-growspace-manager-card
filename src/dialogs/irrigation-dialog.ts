@@ -34,6 +34,7 @@ export class IrrigationDialog extends LitElement {
 
   @state() private _editingIrrigationTime: {
     originalTime: string;  // Original time for backend removal
+    originalDuration: number;  // Original duration for rollback
     time: string;          // Current time value (editable)
     duration: number;      // Current duration (editable)
   } | undefined;
@@ -584,6 +585,7 @@ export class IrrigationDialog extends LitElement {
   private _startEditingIrrigationTime(timeStr: string, duration: number) {
     this._editingIrrigationTime = {
       originalTime: timeStr,
+      originalDuration: duration,
       time: timeStr.substring(0, 5), // HH:MM format for input
       duration: duration,
     };
@@ -602,7 +604,7 @@ export class IrrigationDialog extends LitElement {
       return;
     }
 
-    const { originalTime, time, duration } = this._editingIrrigationTime;
+    const { originalTime, originalDuration, time, duration } = this._editingIrrigationTime;
     const formattedNewTime = time.includes(':') && time.split(':').length === 2
       ? `${time}:00`
       : time;
@@ -647,12 +649,14 @@ export class IrrigationDialog extends LitElement {
           await this._dataService.addIrrigationTime({
             growspaceId: this.device.deviceId,
             time: originalTime,
-            duration: this._editingIrrigationTime.duration,
+            duration: originalDuration,
           });
           this._showErrorToast('Failed to save changes. Original time restored.');
+          this._editingIrrigationTime = undefined;
         } catch (rollbackError) {
           console.error('Rollback failed:', rollbackError);
           this._showErrorToast('Failed to save changes. Please refresh and try again.');
+          this._editingIrrigationTime = undefined;
         }
       }
     } catch (removeError) {
