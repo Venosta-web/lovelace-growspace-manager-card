@@ -740,6 +740,14 @@ export class IrrigationDialog extends LitElement {
     }
   }
 
+  private async _deleteIrrigationTimeFromEdit() {
+    console.log('Delete irrigation - to be implemented in Phase 2');
+  }
+
+  private async _deleteDrainTimeFromEdit() {
+    console.log('Delete drain - to be implemented in Phase 2');
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
   }
@@ -1036,6 +1044,7 @@ export class IrrigationDialog extends LitElement {
     color: string
   ) {
     const addingTime = type === 'irrigation' ? this._addingIrrigationTime : this._addingDrainTime;
+    const editingTime = type === 'irrigation' ? this._editingIrrigationTime : this._editingDrainTime;
 
     return html`
       <div class="detail-card">
@@ -1200,6 +1209,109 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
             `
+        : ''}
+
+      ${editingTime
+        ? html`
+            <div
+              class="overlay-backdrop"
+              @click=${() =>
+                type === 'irrigation'
+                  ? (this._editingIrrigationTime = undefined)
+                  : (this._editingDrainTime = undefined)}
+            >
+              <div
+                class="detail-card"
+                style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
+                @click=${(e: Event) => e.stopPropagation()}
+              >
+                <h3>Edit ${title} Time</h3>
+
+                <md3-text-input
+                  label="Time"
+                  type="time"
+                  .value=${editingTime.time}
+                  @change=${(e: CustomEvent) => {
+                    const val = (e.target as HTMLInputElement).value || e.detail;
+                    if (type === 'irrigation' && this._editingIrrigationTime) {
+                      this._editingIrrigationTime = {
+                        ...this._editingIrrigationTime,
+                        time: val,
+                      };
+                    }
+                    if (type === 'drain' && this._editingDrainTime) {
+                      this._editingDrainTime = {
+                        ...this._editingDrainTime,
+                        time: val,
+                      };
+                    }
+                  }}
+                ></md3-text-input>
+
+                <md3-number-input
+                  label="Duration (seconds)"
+                  .value=${editingTime.duration}
+                  .min=${1}
+                  @change=${(e: CustomEvent) => {
+                    const val = parseInt(e.detail);
+                    if (!isNaN(val)) {
+                      if (type === 'irrigation' && this._editingIrrigationTime) {
+                        this._editingIrrigationTime = {
+                          ...this._editingIrrigationTime,
+                          duration: val,
+                        };
+                      }
+                      if (type === 'drain' && this._editingDrainTime) {
+                        this._editingDrainTime = {
+                          ...this._editingDrainTime,
+                          duration: val,
+                        };
+                      }
+                    }
+                  }}
+                ></md3-number-input>
+
+                <div class="edit-dialog-buttons">
+                  <button
+                    class="md3-button delete-button"
+                    @click=${() =>
+                      type === 'irrigation'
+                        ? this._deleteIrrigationTimeFromEdit()
+                        : this._deleteDrainTimeFromEdit()}
+                  >
+                    Delete
+                  </button>
+
+                  <div class="spacer"></div>
+
+                  <div class="action-buttons">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() =>
+                        type === 'irrigation'
+                          ? (this._editingIrrigationTime = undefined)
+                          : (this._editingDrainTime = undefined)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => {
+                        if (type === 'irrigation') {
+                          this._saveEditedIrrigationTime();
+                        } else {
+                          this._saveEditedDrainTime();
+                        }
+                      }}
+                      style="background: ${color};"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
         : ''}
       </div>
     `;
