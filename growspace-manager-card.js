@@ -19208,7 +19208,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._strategy = {};
     }
     willUpdate(changedProps) {
-        if ((changedProps.has('open') && this.open) || (changedProps.has('device') && this.device)) {
+        // Only initialize state when dialog first opens, not on subsequent device updates
+        // This prevents overwriting optimistic UI updates during active editing
+        if (changedProps.has('open') && this.open) {
             this._initializeState();
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
