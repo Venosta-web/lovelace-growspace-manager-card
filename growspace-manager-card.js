@@ -19392,6 +19392,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _startEditingDrainTime(timeStr, duration) {
         this._editingDrainTime = {
             originalTime: timeStr,
+            originalDuration: duration,
             time: timeStr.substring(0, 5), // HH:MM format for input
             duration: duration,
         };
@@ -19463,7 +19464,165 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._errorToast = undefined;
         }, 5000); // 5 second timeout
     }
+    async _saveEditedDrainTime() {
+        if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+            return;
+        }
+        const { originalTime, originalDuration, time, duration } = this._editingDrainTime;
+        const formattedNewTime = time.includes(':') && time.split(':').length === 2
+            ? `${time}:00`
+            : time;
+        // Check for duplicate time (only if time changed)
+        if (originalTime !== formattedNewTime) {
+            const isDuplicate = this._drainTimes.some(t => t.time === formattedNewTime);
+            if (isDuplicate) {
+                this._showErrorToast(`Drain time ${time} already exists`);
+                return;
+            }
+        }
+        try {
+            // Step 1: Remove old time
+            await this._dataService.removeDrainTime({
+                growspaceId: this.device.deviceId,
+                time: originalTime,
+            });
+            try {
+                // Step 2: Add new time
+                await this._dataService.addDrainTime({
+                    growspaceId: this.device.deviceId,
+                    time: formattedNewTime,
+                    duration: duration,
+                });
+                // Success - update UI
+                this._drainTimes = this._drainTimes
+                    .filter(t => t.time !== originalTime)
+                    .concat([{ time: formattedNewTime, duration }])
+                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                this._editingDrainTime = undefined;
+                this._notifyDataChanged();
+            }
+            catch (addError) {
+                // Rollback: Re-add the original time
+                console.error('Failed to add new drain time, rolling back:', addError);
+                try {
+                    await this._dataService.addDrainTime({
+                        growspaceId: this.device.deviceId,
+                        time: originalTime,
+                        duration: originalDuration,
+                    });
+                    this._showErrorToast('Failed to save changes. Original time restored.');
+                    this._editingDrainTime = undefined;
+                }
+                catch (rollbackError) {
+                    console.error('Rollback failed:', rollbackError);
+                    this._showErrorToast('Failed to save changes. Please refresh and try again.');
+                    this._editingDrainTime = undefined;
+                }
+            }
+        }
+        catch (removeError) {
+            console.error('Failed to remove old drain time:', removeError);
+            this._showErrorToast('Failed to save changes. Please try again.');
+        }
+    }
+    async _deleteIrrigationTimeFromEdit() {
+        if (!this._editingIrrigationTime || !this.device?.deviceId || !this._dataService) {
+            return;
+        }
+        const { originalTime, originalDuration } = this._editingIrrigationTime;
+        try {
+            // Delete from backend immediately
+            await this._dataService.removeIrrigationTime({
+                growspaceId: this.device.deviceId,
+                time: originalTime,
+            });
+            // Optimistic UI update
+            this._irrigationTimes = this._irrigationTimes.filter(t => t.time !== originalTime);
+            // Close edit dialog
+            this._editingIrrigationTime = undefined;
+            // Show toast with undo (10 second timeout)
+            this._showUndoToast('irrigation', originalTime, originalDuration);
+            this._notifyDataChanged();
+        }
+        catch (e) {
+            console.error('Failed to delete irrigation time:', e);
+            this._showErrorToast('Failed to delete. Please try again.');
+        }
+    }
+    async _deleteDrainTimeFromEdit() {
+        if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+            return;
+        }
+        const { originalTime, originalDuration } = this._editingDrainTime;
+        try {
+            // Delete from backend immediately
+            await this._dataService.removeDrainTime({
+                growspaceId: this.device.deviceId,
+                time: originalTime,
+            });
+            // Optimistic UI update
+            this._drainTimes = this._drainTimes.filter(t => t.time !== originalTime);
+            // Close edit dialog
+            this._editingDrainTime = undefined;
+            // Show toast with undo (10 second timeout)
+            this._showUndoToast('drain', originalTime, originalDuration);
+            this._notifyDataChanged();
+        }
+        catch (e) {
+            console.error('Failed to delete drain time:', e);
+            this._showErrorToast('Failed to delete. Please try again.');
+        }
+    }
+    _showUndoToast(type, time, duration) {
+        // Clear any existing undo timeout
+        if (this._pendingUndo?.timeoutId) {
+            clearTimeout(this._pendingUndo.timeoutId);
+        }
+        const timeoutId = window.setTimeout(() => {
+            this._pendingUndo = undefined;
+        }, 10000); // 10 second timeout
+        this._pendingUndo = {
+            type,
+            time,
+            duration,
+            timeoutId,
+        };
+    }
+    async _undoDelete() {
+        if (!this._pendingUndo || !this.device?.deviceId || !this._dataService) {
+            return;
+        }
+        const { type, time, duration, timeoutId } = this._pendingUndo;
+        clearTimeout(timeoutId);
+        // Close any open edit dialogs to prevent conflicts
+        this._editingIrrigationTime = undefined;
+        this._editingDrainTime = undefined;
+        try {
+            // Re-add the deleted time
+            if (type === 'irrigation') {
+                await this._addIrrigationTime(time, duration);
+            }
+            else {
+                await this._addDrainTime(time, duration);
+            }
+            this._pendingUndo = undefined;
+        }
+        catch (e) {
+            console.error('Failed to undo deletion:', e);
+            this._showErrorToast('Failed to undo deletion. Please try again.');
+        }
+    }
     _close() {
+        // Clear any pending undo operations
+        if (this._pendingUndo?.timeoutId) {
+            clearTimeout(this._pendingUndo.timeoutId);
+            this._pendingUndo = undefined;
+        }
+        // Clear edit states
+        this._editingIrrigationTime = undefined;
+        this._editingDrainTime = undefined;
+        // Clear error toast
+        this._errorToast = undefined;
         this.dispatchEvent(new CustomEvent('close'));
     }
     async _saveStrategy() {
@@ -19578,6 +19737,27 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 `
             : ''}
           </div>
+
+          ${this._pendingUndo
+            ? x `
+                <div class="toast-notification">
+                  <span class="toast-message">
+                    Deleted ${this._pendingUndo.type} time ${this._pendingUndo.time.substring(0, 5)}
+                  </span>
+                  <button class="toast-undo-button" @click=${this._undoDelete}>
+                    UNDO
+                  </button>
+                </div>
+              `
+            : ''}
+
+          ${this._errorToast
+            ? x `
+                <div class="toast-notification error">
+                  <span class="toast-message">${this._errorToast}</span>
+                </div>
+              `
+            : ''}
         </div>
       </ha-dialog>
     `;
@@ -19702,6 +19882,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
         const addingTime = type === 'irrigation' ? this._addingIrrigationTime : this._addingDrainTime;
+        const editingTime = type === 'irrigation' ? this._editingIrrigationTime : this._editingDrainTime;
         return x `
       <div class="detail-card">
         <div
@@ -19770,13 +19951,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 class="chart-marker"
                 @click=${(e) => {
                 e.stopPropagation();
-                if (confirm(`Remove ${type} time ${displayTime}?`)) {
-                    if (type === 'irrigation') {
-                        this._removeIrrigationTime(timeStr);
-                    }
-                    else {
-                        this._removeDrainTime(timeStr);
-                    }
+                if (type === 'irrigation') {
+                    this._startEditingIrrigationTime(timeStr, duration);
+                }
+                else {
+                    this._startEditingDrainTime(timeStr, duration);
                 }
             }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
@@ -19867,6 +20046,107 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 </div>
               </div>
             `
+            : ''}
+
+      ${editingTime
+            ? x `
+            <div
+              class="overlay-backdrop"
+              @click=${() => type === 'irrigation'
+                ? (this._editingIrrigationTime = undefined)
+                : (this._editingDrainTime = undefined)}
+            >
+              <div
+                class="detail-card"
+                style="max-width: 400px; margin: 0; background: #2d2d2d; width: 90%;"
+                @click=${(e) => e.stopPropagation()}
+              >
+                <h3>Edit ${title} Time</h3>
+
+                <md3-text-input
+                  label="Time"
+                  type="time"
+                  .value=${editingTime.time}
+                  @change=${(e) => {
+                const val = e.target.value || e.detail;
+                if (type === 'irrigation' && this._editingIrrigationTime) {
+                    this._editingIrrigationTime = {
+                        ...this._editingIrrigationTime,
+                        time: val,
+                    };
+                }
+                if (type === 'drain' && this._editingDrainTime) {
+                    this._editingDrainTime = {
+                        ...this._editingDrainTime,
+                        time: val,
+                    };
+                }
+            }}
+                ></md3-text-input>
+
+                <md3-number-input
+                  label="Duration (seconds)"
+                  .value=${editingTime.duration}
+                  .min=${1}
+                  @change=${(e) => {
+                const val = parseInt(e.detail);
+                if (!isNaN(val)) {
+                    if (type === 'irrigation' && this._editingIrrigationTime) {
+                        this._editingIrrigationTime = {
+                            ...this._editingIrrigationTime,
+                            duration: val,
+                        };
+                    }
+                    if (type === 'drain' && this._editingDrainTime) {
+                        this._editingDrainTime = {
+                            ...this._editingDrainTime,
+                            duration: val,
+                        };
+                    }
+                }
+            }}
+                ></md3-number-input>
+
+                <div class="edit-dialog-buttons">
+                  <button
+                    class="md3-button delete-button"
+                    @click=${() => type === 'irrigation'
+                ? this._deleteIrrigationTimeFromEdit()
+                : this._deleteDrainTimeFromEdit()}
+                  >
+                    Delete
+                  </button>
+
+                  <div class="spacer"></div>
+
+                  <div class="action-buttons">
+                    <button
+                      class="md3-button tonal"
+                      @click=${() => type === 'irrigation'
+                ? (this._editingIrrigationTime = undefined)
+                : (this._editingDrainTime = undefined)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      class="md3-button primary"
+                      @click=${() => {
+                if (type === 'irrigation') {
+                    this._saveEditedIrrigationTime();
+                }
+                else {
+                    this._saveEditedDrainTime();
+                }
+            }}
+                      style="background: ${color};"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
             : ''}
       </div>
     `;
@@ -20259,6 +20539,100 @@ IrrigationDialog.styles = [
         font-size: 0.85rem;
         color: rgba(255, 255, 255, 0.6);
         margin-top: 8px;
+      }
+
+      /* Toast Notification */
+      .toast-notification {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(50, 50, 50, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        z-index: 10001; /* Above overlay-backdrop */
+        animation: toast-slide-up 0.3s ease-out;
+      }
+
+      .toast-notification.error {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      @keyframes toast-slide-up {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      .toast-message {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.9rem;
+      }
+
+      .toast-undo-button {
+        background: transparent;
+        border: 1px solid var(--stage-color, #2196f3);
+        color: var(--stage-color, #2196f3);
+        padding: 6px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+
+      .toast-undo-button:hover {
+        background: rgba(33, 150, 243, 0.1);
+        border-color: var(--stage-color, #2196f3);
+      }
+
+      .toast-undo-button:active {
+        transform: scale(0.95);
+      }
+
+      /* Edit Dialog - Delete Button Styling */
+      .md3-button.delete-button {
+        background: rgba(244, 67, 54, 0.2) !important;
+        color: #f44336 !important;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+
+      .md3-button.delete-button:hover {
+        background: rgba(244, 67, 54, 0.3) !important;
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      /* Edit Dialog - Button Layout */
+      .edit-dialog-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .edit-dialog-buttons .delete-button {
+        flex: 0 0 auto;
+      }
+
+      .edit-dialog-buttons .spacer {
+        flex: 1;
+      }
+
+      .edit-dialog-buttons .action-buttons {
+        display: flex;
+        gap: 8px;
       }
     `,
 ];
