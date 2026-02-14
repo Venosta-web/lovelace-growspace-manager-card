@@ -940,6 +940,19 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _close() {
+    // Clear any pending undo operations
+    if (this._pendingUndo?.timeoutId) {
+      clearTimeout(this._pendingUndo.timeoutId);
+      this._pendingUndo = undefined;
+    }
+
+    // Clear edit states
+    this._editingIrrigationTime = undefined;
+    this._editingDrainTime = undefined;
+
+    // Clear error toast
+    this._errorToast = undefined;
+
     this.dispatchEvent(new CustomEvent('close'));
   }
 
