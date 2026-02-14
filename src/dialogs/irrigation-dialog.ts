@@ -818,6 +818,33 @@ export class IrrigationDialog extends LitElement {
     };
   }
 
+  private async _undoDelete() {
+    if (!this._pendingUndo || !this.device?.deviceId || !this._dataService) {
+      return;
+    }
+
+    const { type, time, duration, timeoutId } = this._pendingUndo;
+    clearTimeout(timeoutId);
+
+    // Close any open edit dialogs to prevent conflicts
+    this._editingIrrigationTime = undefined;
+    this._editingDrainTime = undefined;
+
+    try {
+      // Re-add the deleted time
+      if (type === 'irrigation') {
+        await this._addIrrigationTime(time, duration);
+      } else {
+        await this._addDrainTime(time, duration);
+      }
+
+      this._pendingUndo = undefined;
+    } catch (e) {
+      console.error('Failed to undo deletion:', e);
+      this._showErrorToast('Failed to undo deletion. Please try again.');
+    }
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
   }
