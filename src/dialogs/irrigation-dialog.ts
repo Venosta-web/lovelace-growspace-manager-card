@@ -41,6 +41,7 @@ export class IrrigationDialog extends LitElement {
 
   @state() private _editingDrainTime: {
     originalTime: string;
+    originalDuration: number;  // Original duration for rollback
     time: string;
     duration: number;
   } | undefined;
@@ -594,6 +595,7 @@ export class IrrigationDialog extends LitElement {
   private _startEditingDrainTime(timeStr: string, duration: number) {
     this._editingDrainTime = {
       originalTime: timeStr,
+      originalDuration: duration,
       time: timeStr.substring(0, 5), // HH:MM format for input
       duration: duration,
     };
@@ -670,6 +672,72 @@ export class IrrigationDialog extends LitElement {
     setTimeout(() => {
       this._errorToast = undefined;
     }, 5000); // 5 second timeout
+  }
+
+  private async _saveEditedDrainTime() {
+    if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+      return;
+    }
+
+    const { originalTime, originalDuration, time, duration } = this._editingDrainTime;
+    const formattedNewTime = time.includes(':') && time.split(':').length === 2
+      ? `${time}:00`
+      : time;
+
+    // Check for duplicate time (only if time changed)
+    if (originalTime !== formattedNewTime) {
+      const isDuplicate = this._drainTimes.some(t => t.time === formattedNewTime);
+      if (isDuplicate) {
+        this._showErrorToast(`Drain time ${time} already exists`);
+        return;
+      }
+    }
+
+    try {
+      // Step 1: Remove old time
+      await this._dataService.removeDrainTime({
+        growspaceId: this.device.deviceId,
+        time: originalTime,
+      });
+
+      try {
+        // Step 2: Add new time
+        await this._dataService.addDrainTime({
+          growspaceId: this.device.deviceId,
+          time: formattedNewTime,
+          duration: duration,
+        });
+
+        // Success - update UI
+        this._drainTimes = this._drainTimes
+          .filter(t => t.time !== originalTime)
+          .concat([{ time: formattedNewTime, duration }])
+          .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+        this._editingDrainTime = undefined;
+        this._notifyDataChanged();
+
+      } catch (addError) {
+        // Rollback: Re-add the original time
+        console.error('Failed to add new drain time, rolling back:', addError);
+        try {
+          await this._dataService.addDrainTime({
+            growspaceId: this.device.deviceId,
+            time: originalTime,
+            duration: originalDuration,
+          });
+          this._showErrorToast('Failed to save changes. Original time restored.');
+          this._editingDrainTime = undefined;
+        } catch (rollbackError) {
+          console.error('Rollback failed:', rollbackError);
+          this._showErrorToast('Failed to save changes. Please refresh and try again.');
+          this._editingDrainTime = undefined;
+        }
+      }
+    } catch (removeError) {
+      console.error('Failed to remove old drain time:', removeError);
+      this._showErrorToast('Failed to save changes. Please try again.');
+    }
   }
 
   private _close() {
