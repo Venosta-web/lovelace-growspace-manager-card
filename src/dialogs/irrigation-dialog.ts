@@ -597,6 +597,77 @@ export class IrrigationDialog extends LitElement {
     };
   }
 
+  private async _saveEditedIrrigationTime() {
+    if (!this._editingIrrigationTime || !this.device?.deviceId || !this._dataService) {
+      return;
+    }
+
+    const { originalTime, time, duration } = this._editingIrrigationTime;
+    const formattedNewTime = time.includes(':') && time.split(':').length === 2
+      ? `${time}:00`
+      : time;
+
+    // Check for duplicate time (only if time changed)
+    if (originalTime !== formattedNewTime) {
+      const isDuplicate = this._irrigationTimes.some(t => t.time === formattedNewTime);
+      if (isDuplicate) {
+        this._showErrorToast(`Irrigation time ${time} already exists`);
+        return;
+      }
+    }
+
+    try {
+      // Step 1: Remove old time
+      await this._dataService.removeIrrigationTime({
+        growspaceId: this.device.deviceId,
+        time: originalTime,
+      });
+
+      try {
+        // Step 2: Add new time
+        await this._dataService.addIrrigationTime({
+          growspaceId: this.device.deviceId,
+          time: formattedNewTime,
+          duration: duration,
+        });
+
+        // Success - update UI
+        this._irrigationTimes = this._irrigationTimes
+          .filter(t => t.time !== originalTime)
+          .concat([{ time: formattedNewTime, duration }])
+          .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+        this._editingIrrigationTime = undefined;
+        this._notifyDataChanged();
+
+      } catch (addError) {
+        // Rollback: Re-add the original time
+        console.error('Failed to add new time, rolling back:', addError);
+        try {
+          await this._dataService.addIrrigationTime({
+            growspaceId: this.device.deviceId,
+            time: originalTime,
+            duration: this._editingIrrigationTime.duration,
+          });
+          this._showErrorToast('Failed to save changes. Original time restored.');
+        } catch (rollbackError) {
+          console.error('Rollback failed:', rollbackError);
+          this._showErrorToast('Failed to save changes. Please refresh and try again.');
+        }
+      }
+    } catch (removeError) {
+      console.error('Failed to remove old time:', removeError);
+      this._showErrorToast('Failed to save changes. Please try again.');
+    }
+  }
+
+  private _showErrorToast(message: string) {
+    this._errorToast = message;
+    setTimeout(() => {
+      this._errorToast = undefined;
+    }, 5000); // 5 second timeout
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
   }
