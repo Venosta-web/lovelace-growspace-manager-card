@@ -581,6 +581,22 @@ export class IrrigationDialog extends LitElement {
     };
   }
 
+  private _startEditingIrrigationTime(timeStr: string, duration: number) {
+    this._editingIrrigationTime = {
+      originalTime: timeStr,
+      time: timeStr.substring(0, 5), // HH:MM format for input
+      duration: duration,
+    };
+  }
+
+  private _startEditingDrainTime(timeStr: string, duration: number) {
+    this._editingDrainTime = {
+      originalTime: timeStr,
+      time: timeStr.substring(0, 5), // HH:MM format for input
+      duration: duration,
+    };
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
   }
