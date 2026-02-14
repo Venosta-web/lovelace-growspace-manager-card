@@ -386,6 +386,100 @@ export class IrrigationDialog extends LitElement {
         color: rgba(255, 255, 255, 0.6);
         margin-top: 8px;
       }
+
+      /* Toast Notification */
+      .toast-notification {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(50, 50, 50, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        z-index: 10001; /* Above overlay-backdrop */
+        animation: toast-slide-up 0.3s ease-out;
+      }
+
+      .toast-notification.error {
+        background: rgba(244, 67, 54, 0.15);
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      @keyframes toast-slide-up {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      .toast-message {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.9rem;
+      }
+
+      .toast-undo-button {
+        background: transparent;
+        border: 1px solid var(--stage-color, #2196f3);
+        color: var(--stage-color, #2196f3);
+        padding: 6px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        transition: all 0.2s;
+      }
+
+      .toast-undo-button:hover {
+        background: rgba(33, 150, 243, 0.1);
+        border-color: var(--stage-color, #2196f3);
+      }
+
+      .toast-undo-button:active {
+        transform: scale(0.95);
+      }
+
+      /* Edit Dialog - Delete Button Styling */
+      .md3-button.delete-button {
+        background: rgba(244, 67, 54, 0.2) !important;
+        color: #f44336 !important;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+
+      .md3-button.delete-button:hover {
+        background: rgba(244, 67, 54, 0.3) !important;
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      /* Edit Dialog - Button Layout */
+      .edit-dialog-buttons {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
+      .edit-dialog-buttons .delete-button {
+        flex: 0 0 auto;
+      }
+
+      .edit-dialog-buttons .spacer {
+        flex: 1;
+      }
+
+      .edit-dialog-buttons .action-buttons {
+        display: flex;
+        gap: 8px;
+      }
     `,
   ];
 
