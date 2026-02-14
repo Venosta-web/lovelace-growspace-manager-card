@@ -1105,12 +1105,10 @@ export class IrrigationDialog extends LitElement {
                 class="chart-marker"
                 @click=${(e: Event) => {
             e.stopPropagation();
-            if (confirm(`Remove ${type} time ${displayTime}?`)) {
-              if (type === 'irrigation') {
-                this._removeIrrigationTime(timeStr);
-              } else {
-                this._removeDrainTime(timeStr);
-              }
+            if (type === 'irrigation') {
+              this._startEditingIrrigationTime(timeStr, duration);
+            } else {
+              this._startEditingDrainTime(timeStr, duration);
             }
           }}
                 style="left: ${position}%; background: ${color}; box-shadow: 0 0 8px ${color};"
