@@ -741,11 +741,81 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _deleteIrrigationTimeFromEdit() {
-    console.log('Delete irrigation - to be implemented in Phase 2');
+    if (!this._editingIrrigationTime || !this.device?.deviceId || !this._dataService) {
+      return;
+    }
+
+    const { originalTime, originalDuration } = this._editingIrrigationTime;
+
+    try {
+      // Delete from backend immediately
+      await this._dataService.removeIrrigationTime({
+        growspaceId: this.device.deviceId,
+        time: originalTime,
+      });
+
+      // Optimistic UI update
+      this._irrigationTimes = this._irrigationTimes.filter(t => t.time !== originalTime);
+
+      // Close edit dialog
+      this._editingIrrigationTime = undefined;
+
+      // Show toast with undo (10 second timeout)
+      this._showUndoToast('irrigation', originalTime, originalDuration);
+
+      this._notifyDataChanged();
+    } catch (e) {
+      console.error('Failed to delete irrigation time:', e);
+      this._showErrorToast('Failed to delete. Please try again.');
+    }
   }
 
   private async _deleteDrainTimeFromEdit() {
-    console.log('Delete drain - to be implemented in Phase 2');
+    if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+      return;
+    }
+
+    const { originalTime, originalDuration } = this._editingDrainTime;
+
+    try {
+      // Delete from backend immediately
+      await this._dataService.removeDrainTime({
+        growspaceId: this.device.deviceId,
+        time: originalTime,
+      });
+
+      // Optimistic UI update
+      this._drainTimes = this._drainTimes.filter(t => t.time !== originalTime);
+
+      // Close edit dialog
+      this._editingDrainTime = undefined;
+
+      // Show toast with undo (10 second timeout)
+      this._showUndoToast('drain', originalTime, originalDuration);
+
+      this._notifyDataChanged();
+    } catch (e) {
+      console.error('Failed to delete drain time:', e);
+      this._showErrorToast('Failed to delete. Please try again.');
+    }
+  }
+
+  private _showUndoToast(type: 'irrigation' | 'drain', time: string, duration: number) {
+    // Clear any existing undo timeout
+    if (this._pendingUndo?.timeoutId) {
+      clearTimeout(this._pendingUndo.timeoutId);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      this._pendingUndo = undefined;
+    }, 10000); // 10 second timeout
+
+    this._pendingUndo = {
+      type,
+      time,
+      duration,
+      timeoutId,
+    };
   }
 
   private _close() {
