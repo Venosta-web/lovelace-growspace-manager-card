@@ -607,6 +607,67 @@ export class StrainLibraryDialog extends LitElement {
         inset: 0;
         z-index: 25;
       }
+
+      /* Breeder Dialog */
+      .breeder-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .breeder-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .breeder-card:hover {
+        border-color: var(--accent-green);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .breeder-logo-preview {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        flex-shrink: 0;
+      }
+      .breeder-logo-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        border: 1px dashed var(--divider-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        flex-shrink: 0;
+      }
+      .breeder-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .breeder-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color, #fff);
+        margin: 0 0 4px 0;
+      }
+      .breeder-strain-count {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+      .breeder-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
     `,
   ];
 
@@ -805,6 +866,7 @@ export class StrainLibraryDialog extends LitElement {
         ${this._isImageSelectorOpen ? this.renderImageSelector() : nothing}
         ${this._importDialogOpen ? this.renderImportDialog() : nothing}
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : nothing}
+        ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
       </ha-dialog>
     `;
   }
@@ -1890,5 +1952,109 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private renderBreederDialog(): TemplateResult {
+    const breeders = this._getUniqueBreeders();
+
+    return html`
+      <div class="crop-overlay">
+        <div class="glass-dialog-container" style="width: 600px; max-width: 90vw; height: 80vh; max-height: 80vh;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiAccountGroup}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Breeder Manager</h2>
+            </div>
+            <button
+              class="md3-button text close"
+              @click=${() => { this._breederDialogOpen = false; this._breederEditorState = null; }}
+              style="min-width:auto; padding:8px; margin-left: auto;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sd-content">
+            ${this.renderBreederList(breeders)}
+          </div>
+
+          <div class="sd-footer">
+            <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiPlus}"></path>
+              </svg>
+              Add Breeder
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderBreederList(breeders: Array<{ name: string; logo: string; strainCount: number }>): TemplateResult {
+    if (breeders.length === 0) {
+      return html`
+        <div style="text-align:center; padding:40px; color:var(--secondary-text-color);">
+          <svg style="width:48px;height:48px;fill:currentColor;opacity:0.5;" viewBox="0 0 24 24">
+            <path d="${mdiAccountGroup}"></path>
+          </svg>
+          <p>No breeders found. Add strains with breeder info or create a new breeder.</p>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="breeder-list">
+        ${breeders.map((b) => html`
+          <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
+            ${b.logo
+              ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+              : html`<div class="breeder-logo-placeholder">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiImage}"></path>
+                  </svg>
+                </div>`}
+            <div class="breeder-info">
+              <div class="breeder-name">${b.name}</div>
+              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="breeder-actions">
+              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._startBreederEdit(b.name, b.logo); }}>
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiPencil}"></path>
+                </svg>
+              </button>
+              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._handleDeleteBreeder(b.name); }} style="color:var(--error-color, #f44336);">
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+  }
+
+  private _startBreederEdit(name?: string, logo?: string) {
+    this._breederEditorState = {
+      name: name || '',
+      logo: logo || '',
+      originalName: name || '',
+    };
+  }
+
+  private _handleDeleteBreeder(breederName: string) {
+    this.dispatchEvent(
+      new CustomEvent('delete-breeder', {
+        detail: { name: breederName },
+      })
+    );
   }
 }
