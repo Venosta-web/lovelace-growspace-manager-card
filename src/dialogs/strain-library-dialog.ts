@@ -48,6 +48,9 @@ export class StrainLibraryDialog extends LitElement {
 
   @state() private _importReplace = false;
 
+  @state() private _breederDialogOpen = false;
+  @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
+
   // Pagination State
   @state() private _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
@@ -757,6 +760,29 @@ export class StrainLibraryDialog extends LitElement {
   private getImgStyle(meta?: CropMeta): string {
     if (!meta) return 'width: 100%; height: 100%; object-fit: cover;';
     return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
+  }
+
+  private _getUniqueBreeders(): Array<{ name: string; logo: string; strainCount: number }> {
+    const breederMap = new Map<string, { logo: string; strainCount: number }>();
+    this.strains.forEach((s) => {
+      if (s.breeder && s.breeder.trim()) {
+        const existing = breederMap.get(s.breeder);
+        if (existing) {
+          existing.strainCount++;
+          if (!existing.logo && s.breeder_logo) {
+            existing.logo = s.breeder_logo;
+          }
+        } else {
+          breederMap.set(s.breeder, {
+            logo: s.breeder_logo || '',
+            strainCount: 1,
+          });
+        }
+      }
+    });
+    return [...breederMap.entries()]
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   render() {
