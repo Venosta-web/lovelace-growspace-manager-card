@@ -497,9 +497,10 @@ export class GrowspaceHistoryStore {
       const timestamps = data.timestamps || {};
       this.$lastTimestamps.set(timestamps);
 
-      if (Object.keys(data.history).length > 0) {
-        this.setHistoryLoaded(true);
-      }
+      // Don't mark as fully loaded — localStorage data serves as an
+      // immediate preview while loadHistoryOnDemand() fetches fresh data.
+      // Previously this set historyLoaded=true, which prevented fresh
+      // fetches and left graphs showing stale cached data for hours.
       return true;
     } catch (e) {
       console.error('[HistoryStore] Failed to load from storage', e);

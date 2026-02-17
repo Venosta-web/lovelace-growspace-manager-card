@@ -122,7 +122,13 @@ export class GrowspaceHeader extends LitElement {
 
       // Load history data when header is mounted (important for header-only view mode)
       this.store.history.loadHistoryOnDemand();
+      // Start auto-refresh for hero sparklines even without analytics view
+      this.store.history.startAutoRefresh();
     }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
   }
 
   // Memoization helper to prevent re-calc if inputs haven't changed
@@ -147,6 +153,11 @@ export class GrowspaceHeader extends LitElement {
     // Only update metrics if relevant data changed
     if (changedProps.has('device') || this._shouldUpdateMetrics()) {
       this._updateMetrics();
+    }
+
+    // Re-fetch history when device changes so sparklines show fresh data
+    if (changedProps.has('device') && this.store?.history) {
+      this.store.history.loadHistoryOnDemand();
     }
   }
 

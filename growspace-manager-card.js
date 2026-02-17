@@ -37471,7 +37471,12 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
             // Load history data when header is mounted (important for header-only view mode)
             this.store.history.loadHistoryOnDemand();
+            // Start auto-refresh for hero sparklines even without analytics view
+            this.store.history.startAutoRefresh();
         }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
     }
     _shouldUpdateMetrics() {
         const args = [
@@ -37490,6 +37495,10 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         // Only update metrics if relevant data changed
         if (changedProps.has('device') || this._shouldUpdateMetrics()) {
             this._updateMetrics();
+        }
+        // Re-fetch history when device changes so sparklines show fresh data
+        if (changedProps.has('device') && this.store?.history) {
+            this.store.history.loadHistoryOnDemand();
         }
     }
     _handleDeviceChange(e) {
@@ -99059,9 +99068,10 @@ class GrowspaceHistoryStore {
             // Restore timestamps
             const timestamps = data.timestamps || {};
             this.$lastTimestamps.set(timestamps);
-            if (Object.keys(data.history).length > 0) {
-                this.setHistoryLoaded(true);
-            }
+            // Don't mark as fully loaded — localStorage data serves as an
+            // immediate preview while loadHistoryOnDemand() fetches fresh data.
+            // Previously this set historyLoaded=true, which prevented fresh
+            // fetches and left graphs showing stale cached data for hours.
             return true;
         }
         catch (e) {
