@@ -61,6 +61,7 @@ var TrainingTechnique;
 })(TrainingTechnique || (TrainingTechnique = {}));
 
 // Material Design Icons v7.4.47
+var mdiAccountGroup = "M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z";
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
@@ -5721,6 +5722,36 @@ class StrainAPI extends BaseAPI {
             throw err;
         }
     }
+    async updateBreeder(oldName, newName, logo) {
+        console.log('[StrainAPI:updateBreeder] Updating breeder:', oldName, '->', newName);
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: 'growspace_manager/update_breeder',
+                old_name: oldName,
+                new_name: newName,
+                logo: logo || undefined,
+            });
+            console.log('[StrainAPI:updateBreeder] WebSocket call completed');
+        }
+        catch (err) {
+            console.error('[StrainAPI:updateBreeder] Error:', err);
+            throw err;
+        }
+    }
+    async deleteBreeder(name) {
+        console.log('[StrainAPI:deleteBreeder] Deleting breeder:', name);
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: 'growspace_manager/delete_breeder',
+                name,
+            });
+            console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
+        }
+        catch (err) {
+            console.error('[StrainAPI:deleteBreeder] Error:', err);
+            throw err;
+        }
+    }
 }
 
 /**
@@ -6478,6 +6509,12 @@ let DataService$1 = class DataService {
             this._irrigationAPI,
             this._aiAPI,
         ].forEach((api) => api.updateHass(hass));
+    }
+    /**
+     * Expose StrainAPI for direct access to breeder operations.
+     */
+    get strainAPI() {
+        return this._strainAPI;
     }
     // ========================================
     // Legacy/Generic Service Call Support
@@ -15504,6 +15541,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
         this._importReplace = false;
+        this._breederDialogOpen = false;
+        this._breederEditorState = null;
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
@@ -15645,6 +15684,29 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             return 'width: 100%; height: 100%; object-fit: cover;';
         return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
     }
+    _getUniqueBreeders() {
+        const breederMap = new Map();
+        this.strains.forEach((s) => {
+            if (s.breeder && s.breeder.trim()) {
+                const existing = breederMap.get(s.breeder);
+                if (existing) {
+                    existing.strainCount++;
+                    if (!existing.logo && s.breeder_logo) {
+                        existing.logo = s.breeder_logo;
+                    }
+                }
+                else {
+                    breederMap.set(s.breeder, {
+                        logo: s.breeder_logo || '',
+                        strainCount: 1,
+                    });
+                }
+            }
+        });
+        return [...breederMap.entries()]
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }
     render() {
         if (!this.open)
             return E;
@@ -15664,6 +15726,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
         ${this._importDialogOpen ? this.renderImportDialog() : E}
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
+        ${this._breederDialogOpen ? this.renderBreederDialog() : E}
       </ha-dialog>
     `;
     }
@@ -15830,6 +15893,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
               </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                this._breederDialogOpen = true;
+                this._mobileMenuOpen = false;
+            }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
+              </div>
             </div>
           `
             : E}
@@ -15850,6 +15922,12 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             <path d="${mdiBrain}"></path>
           </svg>
           Get Recommendation
+        </button>
+        <button class="md3-button tonal" @click=${() => (this._breederDialogOpen = true)}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiAccountGroup}"></path>
+          </svg>
+          Manage Breeders
         </button>
         <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -16703,6 +16781,217 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </div>
     `;
     }
+    renderBreederDialog() {
+        const breeders = this._getUniqueBreeders();
+        return x `
+      <div class="crop-overlay">
+        <div class="glass-dialog-container" style="width: 600px; max-width: 90vw; height: 80vh; max-height: 80vh;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiAccountGroup}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Breeder Manager</h2>
+            </div>
+            <button
+              class="md3-button text close"
+              @click=${() => { this._breederDialogOpen = false; this._breederEditorState = null; }}
+              style="min-width:auto; padding:8px; margin-left: auto;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sd-content">
+            ${this._breederEditorState
+            ? this.renderBreederEditor()
+            : this.renderBreederList(breeders)}
+          </div>
+
+          ${!this._breederEditorState ? x `
+            <div class="sd-footer">
+              <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiPlus}"></path>
+                </svg>
+                Add Breeder
+              </button>
+            </div>
+          ` : E}
+        </div>
+      </div>
+    `;
+    }
+    renderBreederList(breeders) {
+        if (breeders.length === 0) {
+            return x `
+        <div style="text-align:center; padding:40px; color:var(--secondary-text-color);">
+          <svg style="width:48px;height:48px;fill:currentColor;opacity:0.5;" viewBox="0 0 24 24">
+            <path d="${mdiAccountGroup}"></path>
+          </svg>
+          <p>No breeders found. Add strains with breeder info or create a new breeder.</p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="breeder-list">
+        ${breeders.map((b) => x `
+          <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
+            ${b.logo
+            ? x `<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+            : x `<div class="breeder-logo-placeholder">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiImage}"></path>
+                  </svg>
+                </div>`}
+            <div class="breeder-info">
+              <div class="breeder-name">${b.name}</div>
+              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="breeder-actions">
+              <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); this._startBreederEdit(b.name, b.logo); }}>
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiPencil}"></path>
+                </svg>
+              </button>
+              <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); this._handleDeleteBreeder(b.name); }} style="color:var(--error-color, #f44336);">
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+    }
+    renderBreederEditor() {
+        const state = this._breederEditorState;
+        const isEdit = !!state.originalName;
+        const affectedStrains = isEdit
+            ? this.strains.filter((s) => s.breeder === state.originalName)
+            : [];
+        const handleLogoUpload = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => {
+                    this._breederEditorState = { ...this._breederEditorState, logo: base64 };
+                })
+                    .catch((err) => console.error('Error compressing logo:', err));
+            }
+        };
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._breederEditorState = null)}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            Back
+          </button>
+          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Name *</label>
+          <input
+            type="text"
+            class="sd-input"
+            placeholder="e.g. Royal Queen Seeds"
+            .value=${state.name}
+            @input=${(e) => {
+            this._breederEditorState = { ...this._breederEditorState, name: e.target.value };
+        }}
+          />
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Logo</label>
+          <div style="display:flex; align-items:center; gap:16px;">
+            ${state.logo
+            ? x `<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
+            : x `<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                </div>`}
+            <div style="display:flex; gap:8px;">
+              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
+                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                ${state.logo ? 'Change Logo' : 'Upload Logo'}
+              </button>
+              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
+              ${state.logo ? x `
+                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._breederEditorState = { ...this._breederEditorState, logo: '' }; }}>
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                </button>
+              ` : E}
+            </div>
+          </div>
+        </div>
+
+        ${isEdit && affectedStrains.length > 0 ? x `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
+            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              ${affectedStrains.map((s) => x `
+                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
+                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
+                </span>
+              `)}
+            </div>
+          </div>
+        ` : E}
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSaveBreeder()} ?disabled=${!state.name.trim()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            ${isEdit ? 'Save Changes' : 'Create Breeder'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _startBreederEdit(name, logo) {
+        this._breederEditorState = {
+            name: name || '',
+            logo: logo || '',
+            originalName: name || '',
+        };
+    }
+    _handleSaveBreeder() {
+        const state = this._breederEditorState;
+        if (!state || !state.name.trim())
+            return;
+        const newName = state.name.trim();
+        const isEdit = !!state.originalName;
+        if (isEdit) {
+            // Dispatch update-breeder event
+            this.dispatchEvent(new CustomEvent('update-breeder', {
+                detail: {
+                    oldName: state.originalName,
+                    newName: newName,
+                    logo: state.logo,
+                },
+            }));
+        }
+        else {
+            // Dispatch save-breeder event for new breeder
+            this.dispatchEvent(new CustomEvent('save-breeder', {
+                detail: { name: newName, logo: state.logo },
+            }));
+        }
+        this._breederEditorState = null;
+    }
+    _handleDeleteBreeder(breederName) {
+        this.dispatchEvent(new CustomEvent('delete-breeder', {
+            detail: { name: breederName },
+        }));
+    }
 };
 StrainLibraryDialog.styles = [
     dialogStyles,
@@ -17247,6 +17536,67 @@ StrainLibraryDialog.styles = [
         inset: 0;
         z-index: 25;
       }
+
+      /* Breeder Dialog */
+      .breeder-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .breeder-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .breeder-card:hover {
+        border-color: var(--accent-green);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .breeder-logo-preview {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        flex-shrink: 0;
+      }
+      .breeder-logo-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        border: 1px dashed var(--divider-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        flex-shrink: 0;
+      }
+      .breeder-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .breeder-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color, #fff);
+        margin: 0 0 4px 0;
+      }
+      .breeder-strain-count {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+      .breeder-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
     `,
 ];
 __decorate([
@@ -17291,6 +17641,12 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_importReplace", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_breederDialogOpen", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_breederEditorState", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
@@ -26160,6 +26516,9 @@ let DialogHost = class DialogHost extends i$3 {
         }}
         @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
         @delete-strain=${(e) => this.store.actions.strain.remove(e.detail.key)}
+        @update-breeder=${(e) => this._handleUpdateBreeder(e.detail)}
+        @save-breeder=${(e) => this._handleSaveBreeder(e.detail)}
+        @delete-breeder=${(e) => this._handleDeleteBreeder(e.detail)}
         @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
         @export-library=${() => this.store.handleExportLibrary()}
         @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
@@ -26182,6 +26541,39 @@ let DialogHost = class DialogHost extends i$3 {
             const errorMessage = err instanceof Error ? err.message : 'Import failed';
             console.error('Import failed:', err);
             this.store.showToast(`Import failed: ${errorMessage}`, 'error');
+        }
+    }
+    async _handleUpdateBreeder(detail) {
+        try {
+            await this.store.dataService.strainAPI.updateBreeder(detail.oldName, detail.newName, detail.logo);
+            this.store.showToast('Breeder updated successfully!', 'success');
+            await this.store.refreshData();
+        }
+        catch (err) {
+            console.error('[DialogHost] Update breeder failed:', err);
+            this.store.showToast('Failed to update breeder', 'error');
+        }
+    }
+    async _handleSaveBreeder(detail) {
+        try {
+            await this.store.dataService.strainAPI.updateBreeder('', detail.name, detail.logo);
+            this.store.showToast('Breeder created successfully!', 'success');
+            await this.store.refreshData();
+        }
+        catch (err) {
+            console.error('[DialogHost] Save breeder failed:', err);
+            this.store.showToast('Failed to create breeder', 'error');
+        }
+    }
+    async _handleDeleteBreeder(detail) {
+        try {
+            await this.store.dataService.strainAPI.deleteBreeder(detail.name);
+            this.store.showToast('Breeder deleted successfully!', 'success');
+            await this.store.refreshData();
+        }
+        catch (err) {
+            console.error('[DialogHost] Delete breeder failed:', err);
+            this.store.showToast('Failed to delete breeder', 'error');
         }
     }
     _renderConfigDialog(active, growspaceOptions, _selectedDeviceData) {

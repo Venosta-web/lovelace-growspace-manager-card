@@ -67,6 +67,13 @@ export class DataService {
     ].forEach((api) => api.updateHass(hass));
   }
 
+  /**
+   * Expose StrainAPI for direct access to breeder operations.
+   */
+  get strainAPI(): StrainAPI {
+    return this._strainAPI;
+  }
+
   // ========================================
   // Growspace API Delegations
   // ========================================

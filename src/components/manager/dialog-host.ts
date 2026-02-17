@@ -478,6 +478,9 @@ export class DialogHost extends LitElement {
       }}
         @save-strain=${(e: CustomEvent) => this.store.actions.strain.add(e.detail)}
         @delete-strain=${(e: CustomEvent) => this.store.actions.strain.remove(e.detail.key)}
+        @update-breeder=${(e: CustomEvent) => this._handleUpdateBreeder(e.detail)}
+        @save-breeder=${(e: CustomEvent) => this._handleSaveBreeder(e.detail)}
+        @delete-breeder=${(e: CustomEvent) => this._handleDeleteBreeder(e.detail)}
         @import-library=${(e: CustomEvent) => this._performImport(e.detail.file, e.detail.replace)}
         @export-library=${() => this.store.handleExportLibrary()}
         @get-recommendation=${() => this.store.openStrainRecommendationDialog()}
@@ -499,6 +502,43 @@ export class DialogHost extends LitElement {
       const errorMessage = err instanceof Error ? err.message : 'Import failed';
       console.error('Import failed:', err);
       this.store.showToast(`Import failed: ${errorMessage}`, 'error');
+    }
+  }
+
+  private async _handleUpdateBreeder(detail: { oldName: string; newName: string; logo?: string }) {
+    try {
+      await this.store.dataService.strainAPI.updateBreeder(
+        detail.oldName,
+        detail.newName,
+        detail.logo
+      );
+      this.store.showToast('Breeder updated successfully!', 'success');
+      await this.store.refreshData();
+    } catch (err) {
+      console.error('[DialogHost] Update breeder failed:', err);
+      this.store.showToast('Failed to update breeder', 'error');
+    }
+  }
+
+  private async _handleSaveBreeder(detail: { name: string; logo?: string }) {
+    try {
+      await this.store.dataService.strainAPI.updateBreeder('', detail.name, detail.logo);
+      this.store.showToast('Breeder created successfully!', 'success');
+      await this.store.refreshData();
+    } catch (err) {
+      console.error('[DialogHost] Save breeder failed:', err);
+      this.store.showToast('Failed to create breeder', 'error');
+    }
+  }
+
+  private async _handleDeleteBreeder(detail: { name: string }) {
+    try {
+      await this.store.dataService.strainAPI.deleteBreeder(detail.name);
+      this.store.showToast('Breeder deleted successfully!', 'success');
+      await this.store.refreshData();
+    } catch (err) {
+      console.error('[DialogHost] Delete breeder failed:', err);
+      this.store.showToast('Failed to delete breeder', 'error');
     }
   }
 

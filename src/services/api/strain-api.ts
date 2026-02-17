@@ -312,4 +312,34 @@ export class StrainAPI extends BaseAPI {
       throw err;
     }
   }
+
+  async updateBreeder(oldName: string, newName: string, logo?: string): Promise<void> {
+    console.log('[StrainAPI:updateBreeder] Updating breeder:', oldName, '->', newName);
+    try {
+      await this.hass.connection.sendMessagePromise({
+        type: 'growspace_manager/update_breeder',
+        old_name: oldName,
+        new_name: newName,
+        logo: logo || undefined,
+      });
+      console.log('[StrainAPI:updateBreeder] WebSocket call completed');
+    } catch (err) {
+      console.error('[StrainAPI:updateBreeder] Error:', err);
+      throw err;
+    }
+  }
+
+  async deleteBreeder(name: string): Promise<void> {
+    console.log('[StrainAPI:deleteBreeder] Deleting breeder:', name);
+    try {
+      await this.hass.connection.sendMessagePromise({
+        type: 'growspace_manager/delete_breeder',
+        name,
+      });
+      console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
+    } catch (err) {
+      console.error('[StrainAPI:deleteBreeder] Error:', err);
+      throw err;
+    }
+  }
 }

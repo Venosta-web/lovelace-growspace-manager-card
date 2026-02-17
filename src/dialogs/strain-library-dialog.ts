@@ -2152,24 +2152,18 @@ export class StrainLibraryDialog extends LitElement {
     const isEdit = !!state.originalName;
 
     if (isEdit) {
-      // Update all strains that have this breeder
-      const affectedStrains = this.strains.filter((s) => s.breeder === state.originalName);
-      for (const strain of affectedStrains) {
-        this.dispatchEvent(
-          new CustomEvent('save-strain', {
-            detail: {
-              ...strain,
-              breeder: newName,
-              breeder_logo: state.logo || strain.breeder_logo || '',
-            },
-          })
-        );
-      }
+      // Dispatch update-breeder event
+      this.dispatchEvent(
+        new CustomEvent('update-breeder', {
+          detail: {
+            oldName: state.originalName,
+            newName: newName,
+            logo: state.logo,
+          },
+        })
+      );
     } else {
-      // For a brand new breeder with no strains yet, we just store it in the editor
-      // The breeder will appear when a strain is assigned to it
-      // If user provided a logo, we can't persist it without a strain
-      // So we'll create a "placeholder" by dispatching a custom event
+      // Dispatch save-breeder event for new breeder
       this.dispatchEvent(
         new CustomEvent('save-breeder', {
           detail: { name: newName, logo: state.logo },
