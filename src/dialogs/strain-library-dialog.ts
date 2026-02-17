@@ -1981,17 +1981,21 @@ export class StrainLibraryDialog extends LitElement {
           </div>
 
           <div class="sd-content">
-            ${this.renderBreederList(breeders)}
+            ${this._breederEditorState
+              ? this.renderBreederEditor()
+              : this.renderBreederList(breeders)}
           </div>
 
-          <div class="sd-footer">
-            <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiPlus}"></path>
-              </svg>
-              Add Breeder
-            </button>
-          </div>
+          ${!this._breederEditorState ? html`
+            <div class="sd-footer">
+              <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiPlus}"></path>
+                </svg>
+                Add Breeder
+              </button>
+            </div>
+          ` : nothing}
         </div>
       </div>
     `;
@@ -2042,12 +2046,138 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
+  private renderBreederEditor(): TemplateResult {
+    const state = this._breederEditorState!;
+    const isEdit = !!state.originalName;
+    const affectedStrains = isEdit
+      ? this.strains.filter((s) => s.breeder === state.originalName)
+      : [];
+
+    const handleLogoUpload = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        PlantUtils.compressImage(file)
+          .then((base64) => {
+            this._breederEditorState = { ...this._breederEditorState!, logo: base64 };
+          })
+          .catch((err) => console.error('Error compressing logo:', err));
+      }
+    };
+
+    return html`
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._breederEditorState = null)}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            Back
+          </button>
+          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Name *</label>
+          <input
+            type="text"
+            class="sd-input"
+            placeholder="e.g. Royal Queen Seeds"
+            .value=${state.name}
+            @input=${(e: InputEvent) => {
+              this._breederEditorState = { ...this._breederEditorState!, name: (e.target as HTMLInputElement).value };
+            }}
+          />
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Logo</label>
+          <div style="display:flex; align-items:center; gap:16px;">
+            ${state.logo
+              ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
+              : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                </div>`}
+            <div style="display:flex; gap:8px;">
+              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
+                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                ${state.logo ? 'Change Logo' : 'Upload Logo'}
+              </button>
+              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
+              ${state.logo ? html`
+                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._breederEditorState = { ...this._breederEditorState!, logo: '' }; }}>
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                </button>
+              ` : nothing}
+            </div>
+          </div>
+        </div>
+
+        ${isEdit && affectedStrains.length > 0 ? html`
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
+            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              ${affectedStrains.map((s) => html`
+                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
+                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
+                </span>
+              `)}
+            </div>
+          </div>
+        ` : nothing}
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSaveBreeder()} ?disabled=${!state.name.trim()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            ${isEdit ? 'Save Changes' : 'Create Breeder'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   private _startBreederEdit(name?: string, logo?: string) {
     this._breederEditorState = {
       name: name || '',
       logo: logo || '',
       originalName: name || '',
     };
+  }
+
+  private _handleSaveBreeder() {
+    const state = this._breederEditorState;
+    if (!state || !state.name.trim()) return;
+
+    const newName = state.name.trim();
+    const isEdit = !!state.originalName;
+
+    if (isEdit) {
+      // Update all strains that have this breeder
+      const affectedStrains = this.strains.filter((s) => s.breeder === state.originalName);
+      for (const strain of affectedStrains) {
+        this.dispatchEvent(
+          new CustomEvent('save-strain', {
+            detail: {
+              ...strain,
+              breeder: newName,
+              breeder_logo: state.logo || strain.breeder_logo || '',
+            },
+          })
+        );
+      }
+    } else {
+      // For a brand new breeder with no strains yet, we just store it in the editor
+      // The breeder will appear when a strain is assigned to it
+      // If user provided a logo, we can't persist it without a strain
+      // So we'll create a "placeholder" by dispatching a custom event
+      this.dispatchEvent(
+        new CustomEvent('save-breeder', {
+          detail: { name: newName, logo: state.logo },
+        })
+      );
+    }
+
+    this._breederEditorState = null;
   }
 
   private _handleDeleteBreeder(breederName: string) {
