@@ -8,6 +8,7 @@ export class VPDHeatmap extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ type: Number }) public temperature!: number;
   @property({ type: Number }) public humidity!: number;
+  @property({ type: Number }) public vpd?: number;
   @property({ type: String }) public stage: 'seedling' | 'vegetative' | 'flower' | 'late_flower' =
     'vegetative';
 
@@ -220,7 +221,12 @@ export class VPDHeatmap extends LitElement {
       if (hasPoint) {
         dotX = ((this.temperature - minTemp) / (maxTemp - minTemp)) * 100;
         dotY = ((maxRH - this.humidity) / (maxRH - minRH)) * 100;
-        currentVpd = parseFloat(this._getVPD(this.temperature, this.humidity).toFixed(2));
+        // Use provided VPD or calculate it
+        if (this.vpd !== undefined) {
+          currentVpd = this.vpd;
+        } else {
+          currentVpd = parseFloat(this._getVPD(this.temperature, this.humidity).toFixed(2));
+        }
       }
     }
 

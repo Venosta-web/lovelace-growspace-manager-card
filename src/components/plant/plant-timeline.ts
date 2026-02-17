@@ -643,9 +643,10 @@ export class PlantTimeline extends LitElement {
             // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
             let temperature = event.metadata?.temperature;
             let humidity = event.metadata?.humidity;
+            let vpd = event.metadata?.vpd;
 
             // Fallback parsing if metadata is missing but reasons exist
-            if ((temperature === undefined || humidity === undefined) && event.reasons) {
+            if ((temperature === undefined || humidity === undefined || vpd === undefined) && event.reasons) {
               const reasons = event.reasons;
 
               if (temperature === undefined) {
@@ -657,6 +658,11 @@ export class PlantTimeline extends LitElement {
                 const humMatch = reasons.find(r => r.includes('Humidity'))?.match(/Humidity:\s*([\d.]+)/);
                 if (humMatch) humidity = parseFloat(humMatch[1]);
               }
+
+              if (vpd === undefined) {
+                const vpdMatch = reasons.find((r) => r.includes('VPD'))?.match(/VPD:\s*([\d.]+)/);
+                if (vpdMatch) vpd = parseFloat(vpdMatch[1]);
+              }
             }
 
             return temperature !== undefined && humidity !== undefined
@@ -667,6 +673,7 @@ export class PlantTimeline extends LitElement {
                     <vpd-heatmap
                       .temperature=${temperature}
                       .humidity=${humidity}
+                      .vpd=${vpd}
                       .stage=${this._getCurrentStage()}
                       .hass=${this.hass}
                     ></vpd-heatmap>

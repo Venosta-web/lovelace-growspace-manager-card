@@ -692,6 +692,27 @@ describe('PlantTimeline', () => {
             expect((heatmap as any).stage).toBe('vegetative');
         });
 
+        it('should pass vpd to vpd-heatmap when present in metadata', async () => {
+            const event: PlantTimelineEvent = {
+                date: '2023-01-01T12:00:00Z',
+                type: 'environmental_report',
+                sensor_type: 'day_report',
+                reasons: [],
+                metadata: {
+                    temperature: 25,
+                    humidity: 60,
+                    vpd: 1.5
+                }
+            } as any;
+
+            const el: PlantTimeline = await fixture(html`<plant-timeline .events=${[event]}></plant-timeline>`);
+            await el.updateComplete;
+
+            const heatmap = el.shadowRoot?.querySelector('vpd-heatmap');
+            expect(heatmap).toBeTruthy();
+            expect((heatmap as any).vpd).toBe(1.5);
+        });
+
         it('should apply correct day/night classes to environmental reports', async () => {
             const dayEvent: PlantTimelineEvent = {
                 date: '2023-01-01T12:00:00Z',
