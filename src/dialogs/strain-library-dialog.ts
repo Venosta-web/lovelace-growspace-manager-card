@@ -51,6 +51,7 @@ export class StrainLibraryDialog extends LitElement {
 
   @state() private _breederDialogOpen = false;
   @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
+  @state() private _pendingDeleteBreeder: string | null = null;
 
   // Pagination State
   @state() private _currentPage = 1;
@@ -867,6 +868,7 @@ export class StrainLibraryDialog extends LitElement {
         ${this._importDialogOpen ? this.renderImportDialog() : nothing}
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : nothing}
         ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
+        ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
       </ha-dialog>
     `;
   }
@@ -2175,10 +2177,46 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _handleDeleteBreeder(breederName: string) {
-    this.dispatchEvent(
-      new CustomEvent('delete-breeder', {
-        detail: { name: breederName },
-      })
-    );
+    this._pendingDeleteBreeder = breederName;
+  }
+
+  private _confirmDeleteBreeder() {
+    if (this._pendingDeleteBreeder) {
+      this.dispatchEvent(
+        new CustomEvent('delete-breeder', {
+          detail: { name: this._pendingDeleteBreeder },
+        })
+      );
+      this._pendingDeleteBreeder = null;
+    }
+  }
+
+  private _cancelDeleteBreeder() {
+    this._pendingDeleteBreeder = null;
+  }
+
+  private renderBreederDeleteConfirmation(): TemplateResult {
+    const breederName = this._pendingDeleteBreeder!;
+    const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
+
+    return html`
+      <div class="crop-overlay" style="z-index:1001;">
+        <div class="glass-dialog-container" style="width:400px; height:auto; padding:24px; display:flex; flex-direction:column;">
+          <h2 class="dialog-title">Remove Breeder?</h2>
+          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
+            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
+          </p>
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
+            <button class="md3-button text" style="color:#f44336;" @click=${this._confirmDeleteBreeder}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
