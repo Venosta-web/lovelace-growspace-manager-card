@@ -22,6 +22,7 @@ import {
   mdiChevronLeft,
   mdiChevronRight,
   mdiDotsVertical,
+  mdiAccountGroup,
 } from '@mdi/js';
 import { StrainEntry, CropMeta } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
@@ -973,6 +974,15 @@ export class StrainLibraryDialog extends LitElement {
               >
                 <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
               </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+            this._breederDialogOpen = true;
+            this._mobileMenuOpen = false;
+          }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
+              </div>
             </div>
           `
         : nothing}
@@ -993,6 +1003,12 @@ export class StrainLibraryDialog extends LitElement {
             <path d="${mdiBrain}"></path>
           </svg>
           Get Recommendation
+        </button>
+        <button class="md3-button tonal" @click=${() => (this._breederDialogOpen = true)}>
+          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiAccountGroup}"></path>
+          </svg>
+          Manage Breeders
         </button>
         <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
