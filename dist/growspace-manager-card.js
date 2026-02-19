@@ -11224,22 +11224,37 @@ let VPDHeatmap = class VPDHeatmap extends i$3 {
                 max = 1.0;
                 break;
             case 'vegetative': // Early/Late veg
+            case 'mother': // Mother plants — VEG-equivalent targets
                 optMin = 0.8;
-                optMax = 1.1; // 0.8-1.1 kPa
+                optMax = 1.1;
                 min = 0.4;
                 max = 1.4;
                 break;
             case 'flower': // Early flower
                 optMin = 1.0;
-                optMax = 1.35; // 1.0-1.35 kPa estimate
+                optMax = 1.35;
                 min = 0.6;
                 max = 1.6;
                 break;
             case 'late_flower':
                 optMin = 1.2;
-                optMax = 1.55; // 1.2-1.55 kPa
+                optMax = 1.55;
                 min = 0.8;
                 max = 1.8;
+                break;
+            case 'dry':
+                // Tight 0.8–1.1 kPa band to control drying rate
+                optMin = 0.8;
+                optMax = 1.1;
+                min = 0.6;
+                max = 1.3;
+                break;
+            case 'cure':
+                // Lower VPD 0.6–0.9 kPa to preserve terpenes in jars
+                optMin = 0.6;
+                optMax = 0.9;
+                min = 0.5;
+                max = 1.0;
                 break;
             default:
                 optMin = 0.8;
@@ -16816,12 +16831,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
 
           ${!this._breederEditorState ? x `
             <div class="sd-footer">
-              <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPlus}"></path>
-                </svg>
-                Add Breeder
-              </button>
+              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
+                Breeders appear automatically when strains with breeder info are saved.
+              </span>
             </div>
           ` : E}
         </div>
@@ -26584,6 +26596,7 @@ let DialogHost = class DialogHost extends i$3 {
         try {
             await this.store.dataService.strainAPI.updateBreeder(detail.oldName, detail.newName, detail.logo);
             this.store.showToast('Breeder updated successfully!', 'success');
+            await this.store.refreshData();
             await this.store.fetchStrainLibrary(true);
         }
         catch (err) {
@@ -26600,6 +26613,7 @@ let DialogHost = class DialogHost extends i$3 {
         try {
             await this.store.dataService.strainAPI.deleteBreeder(detail.name);
             this.store.showToast('Breeder deleted successfully!', 'success');
+            await this.store.refreshData();
             await this.store.fetchStrainLibrary(true);
         }
         catch (err) {

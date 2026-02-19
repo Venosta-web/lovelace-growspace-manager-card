@@ -9,8 +9,14 @@ export class VPDHeatmap extends LitElement {
   @property({ type: Number }) public temperature!: number;
   @property({ type: Number }) public humidity!: number;
   @property({ type: Number }) public vpd?: number;
-  @property({ type: String }) public stage: 'seedling' | 'vegetative' | 'flower' | 'late_flower' =
-    'vegetative';
+  @property({ type: String }) public stage:
+    | 'seedling'
+    | 'vegetative'
+    | 'mother'
+    | 'flower'
+    | 'late_flower'
+    | 'dry'
+    | 'cure' = 'vegetative';
 
   static styles = [
     sharedStyles,
@@ -111,22 +117,37 @@ export class VPDHeatmap extends LitElement {
         max = 1.0;
         break;
       case 'vegetative': // Early/Late veg
+      case 'mother':     // Mother plants — VEG-equivalent targets
         optMin = 0.8;
-        optMax = 1.1; // 0.8-1.1 kPa
+        optMax = 1.1;
         min = 0.4;
         max = 1.4;
         break;
       case 'flower': // Early flower
         optMin = 1.0;
-        optMax = 1.35; // 1.0-1.35 kPa estimate
+        optMax = 1.35;
         min = 0.6;
         max = 1.6;
         break;
       case 'late_flower':
         optMin = 1.2;
-        optMax = 1.55; // 1.2-1.55 kPa
+        optMax = 1.55;
         min = 0.8;
         max = 1.8;
+        break;
+      case 'dry':
+        // Tight 0.8–1.1 kPa band to control drying rate
+        optMin = 0.8;
+        optMax = 1.1;
+        min = 0.6;
+        max = 1.3;
+        break;
+      case 'cure':
+        // Lower VPD 0.6–0.9 kPa to preserve terpenes in jars
+        optMin = 0.6;
+        optMax = 0.9;
+        min = 0.5;
+        max = 1.0;
         break;
       default:
         optMin = 0.8;
