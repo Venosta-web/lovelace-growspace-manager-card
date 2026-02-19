@@ -1990,12 +1990,9 @@ export class StrainLibraryDialog extends LitElement {
 
           ${!this._breederEditorState ? html`
             <div class="sd-footer">
-              <button class="md3-button primary" @click=${() => this._startBreederEdit()}>
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPlus}"></path>
-                </svg>
-                Add Breeder
-              </button>
+              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
+                Breeders appear automatically when strains with breeder info are saved.
+              </span>
             </div>
           ` : nothing}
         </div>

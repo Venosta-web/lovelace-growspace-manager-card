@@ -5727,9 +5727,9 @@ class StrainAPI extends BaseAPI {
         try {
             await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/update_breeder',
-                old_name: oldName,
+                original_name: oldName,
                 new_name: newName,
-                logo: logo || undefined,
+                logo: logo !== undefined ? logo : undefined,
             });
             console.log('[StrainAPI:updateBreeder] WebSocket call completed');
         }
@@ -5743,7 +5743,7 @@ class StrainAPI extends BaseAPI {
         try {
             await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/delete_breeder',
-                name,
+                breeder_name: name,
             });
             console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
         }
@@ -15543,6 +15543,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._importReplace = false;
         this._breederDialogOpen = false;
         this._breederEditorState = null;
+        this._pendingDeleteBreeder = null;
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
@@ -15727,6 +15728,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         ${this._importDialogOpen ? this.renderImportDialog() : E}
         ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
         ${this._breederDialogOpen ? this.renderBreederDialog() : E}
+        ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
       </ha-dialog>
     `;
     }
@@ -16988,9 +16990,41 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._breederEditorState = null;
     }
     _handleDeleteBreeder(breederName) {
-        this.dispatchEvent(new CustomEvent('delete-breeder', {
-            detail: { name: breederName },
-        }));
+        this._pendingDeleteBreeder = breederName;
+    }
+    _confirmDeleteBreeder() {
+        if (this._pendingDeleteBreeder) {
+            this.dispatchEvent(new CustomEvent('delete-breeder', {
+                detail: { name: this._pendingDeleteBreeder },
+            }));
+            this._pendingDeleteBreeder = null;
+        }
+    }
+    _cancelDeleteBreeder() {
+        this._pendingDeleteBreeder = null;
+    }
+    renderBreederDeleteConfirmation() {
+        const breederName = this._pendingDeleteBreeder;
+        const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
+        return x `
+      <div class="crop-overlay" style="z-index:1001;">
+        <div class="glass-dialog-container" style="width:400px; height:auto; padding:24px; display:flex; flex-direction:column;">
+          <h2 class="dialog-title">Remove Breeder?</h2>
+          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
+            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
+          </p>
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
+            <button class="md3-button text" style="color:#f44336;" @click=${this._confirmDeleteBreeder}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
     }
 };
 StrainLibraryDialog.styles = [
@@ -17647,6 +17681,9 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_breederEditorState", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_pendingDeleteBreeder", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
@@ -26547,7 +26584,7 @@ let DialogHost = class DialogHost extends i$3 {
         try {
             await this.store.dataService.strainAPI.updateBreeder(detail.oldName, detail.newName, detail.logo);
             this.store.showToast('Breeder updated successfully!', 'success');
-            await this.store.refreshData();
+            await this.store.fetchStrainLibrary(true);
         }
         catch (err) {
             console.error('[DialogHost] Update breeder failed:', err);
@@ -26555,21 +26592,15 @@ let DialogHost = class DialogHost extends i$3 {
         }
     }
     async _handleSaveBreeder(detail) {
-        try {
-            await this.store.dataService.strainAPI.updateBreeder('', detail.name, detail.logo);
-            this.store.showToast('Breeder created successfully!', 'success');
-            await this.store.refreshData();
-        }
-        catch (err) {
-            console.error('[DialogHost] Save breeder failed:', err);
-            this.store.showToast('Failed to create breeder', 'error');
-        }
+        // Breeders are derived from strains — there is no standalone breeder concept in the backend.
+        // The "save-breeder" event cannot persist without at least one strain using the breeder name.
+        this.store.showToast('Breeders are created automatically when you save a strain with breeder info.', 'info');
     }
     async _handleDeleteBreeder(detail) {
         try {
             await this.store.dataService.strainAPI.deleteBreeder(detail.name);
             this.store.showToast('Breeder deleted successfully!', 'success');
-            await this.store.refreshData();
+            await this.store.fetchStrainLibrary(true);
         }
         catch (err) {
             console.error('[DialogHost] Delete breeder failed:', err);

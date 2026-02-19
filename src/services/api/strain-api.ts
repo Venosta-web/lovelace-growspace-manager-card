@@ -318,9 +318,9 @@ export class StrainAPI extends BaseAPI {
     try {
       await this.hass.connection.sendMessagePromise({
         type: 'growspace_manager/update_breeder',
-        old_name: oldName,
+        original_name: oldName,
         new_name: newName,
-        logo: logo || undefined,
+        logo: logo !== undefined ? logo : undefined,
       });
       console.log('[StrainAPI:updateBreeder] WebSocket call completed');
     } catch (err) {
@@ -334,7 +334,7 @@ export class StrainAPI extends BaseAPI {
     try {
       await this.hass.connection.sendMessagePromise({
         type: 'growspace_manager/delete_breeder',
-        name,
+        breeder_name: name,
       });
       console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
     } catch (err) {

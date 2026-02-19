@@ -514,6 +514,7 @@ export class DialogHost extends LitElement {
       );
       this.store.showToast('Breeder updated successfully!', 'success');
       await this.store.refreshData();
+      await this.store.fetchStrainLibrary(true);
     } catch (err) {
       console.error('[DialogHost] Update breeder failed:', err);
       this.store.showToast('Failed to update breeder', 'error');
@@ -521,14 +522,12 @@ export class DialogHost extends LitElement {
   }
 
   private async _handleSaveBreeder(detail: { name: string; logo?: string }) {
-    try {
-      await this.store.dataService.strainAPI.updateBreeder('', detail.name, detail.logo);
-      this.store.showToast('Breeder created successfully!', 'success');
-      await this.store.refreshData();
-    } catch (err) {
-      console.error('[DialogHost] Save breeder failed:', err);
-      this.store.showToast('Failed to create breeder', 'error');
-    }
+    // Breeders are derived from strains — there is no standalone breeder concept in the backend.
+    // The "save-breeder" event cannot persist without at least one strain using the breeder name.
+    this.store.showToast(
+      'Breeders are created automatically when you save a strain with breeder info.',
+      'info'
+    );
   }
 
   private async _handleDeleteBreeder(detail: { name: string }) {
@@ -536,6 +535,7 @@ export class DialogHost extends LitElement {
       await this.store.dataService.strainAPI.deleteBreeder(detail.name);
       this.store.showToast('Breeder deleted successfully!', 'success');
       await this.store.refreshData();
+      await this.store.fetchStrainLibrary(true);
     } catch (err) {
       console.error('[DialogHost] Delete breeder failed:', err);
       this.store.showToast('Failed to delete breeder', 'error');
