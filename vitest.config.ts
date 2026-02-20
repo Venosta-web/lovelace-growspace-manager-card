@@ -12,7 +12,11 @@ export default defineConfig({
             headless: true,
         },
         setupFiles: ['./tests/setup.ts'],
-        include: ['tests/unit/**/*.{test,spec}.ts', 'src/**/*.{test,spec}.ts'],
+        include: [
+            'tests/unit/**/*.{test,spec}.ts',
+            'tests/cards/**/*.{test,spec}.ts',
+            'src/**/*.{test,spec}.ts'
+        ],
         coverage: {
             provider: 'v8',
             enabled: true,

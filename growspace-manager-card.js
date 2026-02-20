@@ -102242,6 +102242,662 @@ GrowspaceManagerCard = __decorate([
     t$2('growspace-manager-card')
 ], GrowspaceManagerCard);
 
+let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.store = new GrowspaceStore();
+        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
+            if (this.hass) {
+                this.store.updateHass(this.hass);
+            }
+            if (refresh) {
+                this.store.refreshData(true);
+            }
+        });
+        // Consolidated UI Controller
+        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
+        this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+        // Data Store Controllers (for reactivity)
+        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        // Grid derived atoms
+        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
+        this._gridLayoutController = new libExports.StoreController(this, this.store.grid.$gridLayout);
+        this._growspaceOptionsController = new libExports.StoreController(this, this.store.grid.$growspaceOptions);
+        this._handleSelectAll = () => this.store.selectAllPlants();
+        this._handleClearSelection = () => this.store.clearPlantSelection();
+        this._handleWaterSelected = () => this.store.openBatchWateringDialog();
+        this._handleExitEditMode = () => this.store.ui.setEditMode(false);
+        this._handleIPMSelected = () => this.store.openIPMDialog();
+        this._handleTrainingSelected = () => this.store.openBatchTrainingDialog();
+        this._handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+        this._handleDeleteSelected = () => this.store.deleteSelectedPlants();
+        this._handleTransplantMode = () => this.store.ui.toggleTransplantMode();
+        this._handleError = (error, errorInfo) => {
+            console.error('Growspace Grid Card caught error:', error, errorInfo);
+            if (this.hass) {
+                this.hass.callService('system_log', 'write', {
+                    message: `Growspace Grid Card Error: ${error.message}`,
+                    level: 'error',
+                    logger: 'lovelace_growspace_manager_card',
+                });
+            }
+        };
+    }
+    get selectedDevice() {
+        return this._selectedDeviceController.value;
+    }
+    firstUpdated() {
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+        }
+        const forcedConfig = {
+            ...this._config,
+            compact: true,
+            initial_view_mode: ViewMode.STANDARD
+        };
+        this.store.initializeSelectedDevice(forcedConfig);
+        this.store.ui.setViewMode(ViewMode.STANDARD);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.store.destroy();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass') && this.hass) {
+            this.store.updateHass(this.hass);
+            this._subscriptionController.updateHass(this.hass);
+        }
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceGridCardEditor; });
+        return document.createElement('growspace-grid-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-grid-card',
+            default_growspace: '',
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error('Invalid configuration');
+        this._config = config;
+        // Force configuration overrides for the dedicated grid card
+        const forcedConfig = {
+            ...this._config,
+            compact: true,
+            initial_view_mode: ViewMode.STANDARD
+        };
+        this.store.initializeSelectedDevice(forcedConfig);
+        this.store.ui.setViewMode(ViewMode.STANDARD);
+    }
+    getCardSize() {
+        return 3;
+    }
+    // Event handlers
+    _handleKeyboardNav(e) {
+        this.store.handleKeyboardNavigation(e.key);
+    }
+    // We ignore growspace changes and view mode changes as this card is dedicated 
+    // to a specific view. Growspace changes are handled contextually if needed.
+    _handleGrowspaceChanged(e) {
+        this.store.handleDeviceChange(e.detail);
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+        const devices = this._activeDevicesController.value;
+        if (this._cardViewController.value.isLoading) {
+            return x `
+        <ha-card>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+          </div>
+        </ha-card>
+      `;
+        }
+        if (!devices.length) {
+            return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+        }
+        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        if (!selectedDeviceData) {
+            return x `<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
+        }
+        const growspaceOptions = this._growspaceOptionsController.value;
+        const { effectiveRows, grid } = this._gridLayoutController.value;
+        const isWide = selectedDeviceData.plantsPerRow > 7;
+        return x `
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace Grid'}
+        .onError=${this._handleError}
+      >
+        <ha-card class=${isWide ? 'wide-growspace' : ''}>
+          <div
+            class="unified-growspace-card glass-surface glass-panel"
+            role="region"
+            aria-label="Growspace Grid: ${selectedDeviceData.name}"
+            tabindex="0"
+            @keydown=${this._handleKeyboardNav}
+            @growspace-changed=${this._handleGrowspaceChanged}
+            @select-all=${this._handleSelectAll}
+            @clear-selection=${this._handleClearSelection}
+            @water-selected=${this._handleWaterSelected}
+            @training-selected=${this._handleTrainingSelected}
+            @ipm-selected=${this._handleIPMSelected}
+            @batch-add-plants=${this._handleBatchAddPlants}
+            @delete-selected=${this._handleDeleteSelected}
+            @transplant-mode=${this._handleTransplantMode}
+            @exit-edit-mode=${this._handleExitEditMode}
+          >
+            <!-- Render the switcher but essentially lock it to standard grid -->
+            <growspace-view-switcher
+              .viewMode=${ViewMode.STANDARD}
+              .hass=${this.hass}
+              .device=${selectedDeviceData}
+              .growspaceOptions=${growspaceOptions}
+              .grid=${grid}
+              .rows=${effectiveRows}
+              .isEditMode=${this._cardViewController.value.isEditMode}
+              .isCompact=${true}
+              .selectedCount=${this._selectedPlantsController.value.size}
+              .config=${this._config}
+              .isLoading=${this._cardViewController.value.isLoading}
+              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+            ></growspace-view-switcher>
+          </div>
+        </ha-card>
+
+        <growspace-toast></growspace-toast>
+        <growspace-dialog-host .devices=${this._devicesController.value}></growspace-dialog-host>
+      </error-boundary>
+    `;
+    }
+};
+GrowspaceGridCard.styles = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    i$6 `
+      ha-card {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+      .unified-growspace-card {
+        /* Remove default margins/padding to fit nicely in nested cards */
+        margin: 0;
+      }
+    `
+];
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceGridCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: hassContext }),
+    n$5({ attribute: false })
+], GrowspaceGridCard.prototype, "hass", void 0);
+__decorate([
+    e$3({ context: configContext }),
+    n$5({ attribute: false })
+], GrowspaceGridCard.prototype, "_config", void 0);
+GrowspaceGridCard = __decorate([
+    t$2('growspace-grid-card')
+], GrowspaceGridCard);
+
+let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.store = new GrowspaceStore();
+        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
+            if (this.hass) {
+                this.store.updateHass(this.hass);
+            }
+            if (refresh) {
+                this.store.refreshData(true);
+            }
+        });
+        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
+        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
+        this._handleError = (error, errorInfo) => {
+            console.error('Growspace Analytics Card caught error:', error, errorInfo);
+            if (this.hass) {
+                this.hass.callService('system_log', 'write', {
+                    message: `Growspace Analytics Card Error: ${error.message}`,
+                    level: 'error',
+                    logger: 'lovelace_growspace_manager_card',
+                });
+            }
+        };
+    }
+    get selectedDevice() {
+        return this._selectedDeviceController.value;
+    }
+    firstUpdated() {
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+        }
+        this.store.initializeSelectedDevice(this._config);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.store.destroy();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass') && this.hass) {
+            this.store.updateHass(this.hass);
+            this._subscriptionController.updateHass(this.hass);
+        }
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceAnalyticsCardEditor; });
+        return document.createElement('growspace-analytics-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-analytics-card',
+            default_growspace: '',
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error('Invalid configuration');
+        this._config = config;
+        this.store.initializeSelectedDevice(this._config);
+    }
+    getCardSize() {
+        return 4;
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+        const devices = this._activeDevicesController.value;
+        if (this._cardViewController.value.isLoading) {
+            return x `
+        <ha-card>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+          </div>
+        </ha-card>
+      `;
+        }
+        if (!devices.length) {
+            return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+        }
+        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        if (!selectedDeviceData) {
+            return x `<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
+        }
+        return x `
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace Analytics'}
+        .onError=${this._handleError}
+      >
+        <ha-card>
+          <div class="unified-growspace-card glass-surface glass-panel">
+            <growspace-analytics
+                .device=${selectedDeviceData}
+            ></growspace-analytics>
+          </div>
+        </ha-card>
+      </error-boundary>
+    `;
+    }
+};
+GrowspaceAnalyticsCard.styles = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    i$6 `
+      ha-card {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+      .unified-growspace-card {
+        margin: 0;
+      }
+    `
+];
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceAnalyticsCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: hassContext }),
+    n$5({ attribute: false })
+], GrowspaceAnalyticsCard.prototype, "hass", void 0);
+__decorate([
+    e$3({ context: configContext }),
+    n$5({ attribute: false })
+], GrowspaceAnalyticsCard.prototype, "_config", void 0);
+GrowspaceAnalyticsCard = __decorate([
+    t$2('growspace-analytics-card')
+], GrowspaceAnalyticsCard);
+
+let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.store = new GrowspaceStore();
+        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
+            if (this.hass) {
+                this.store.updateHass(this.hass);
+            }
+            if (refresh) {
+                this.store.refreshData(true);
+            }
+        });
+        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
+        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        this._userQuery = '';
+        this._isLoading = false;
+        this._response = null;
+        this._error = null;
+        this._handleError = (error, errorInfo) => {
+            console.error('Growspace AI Insight Card caught error:', error, errorInfo);
+            if (this.hass) {
+                this.hass.callService('system_log', 'write', {
+                    message: `Growspace AI Insight Card Error: ${error.message}`,
+                    level: 'error',
+                    logger: 'lovelace_growspace_manager_card',
+                });
+            }
+        };
+    }
+    get selectedDevice() {
+        return this._selectedDeviceController.value;
+    }
+    firstUpdated() {
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+        }
+        this.store.initializeSelectedDevice(this._config);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.store.destroy();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass') && this.hass) {
+            this.store.updateHass(this.hass);
+            this._subscriptionController.updateHass(this.hass);
+        }
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceAiInsightCardEditor; });
+        return document.createElement('growspace-ai-insight-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-ai-insight-card',
+            default_growspace: '',
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error('Invalid configuration');
+        this._config = config;
+        this.store.initializeSelectedDevice(this._config);
+    }
+    getCardSize() {
+        return 4;
+    }
+    _extractText(res) {
+        if (typeof res === 'string')
+            return res;
+        if (!res.response)
+            return JSON.stringify(res);
+        if (typeof res.response === 'string')
+            return res.response;
+        const nested = res.response;
+        if ('response' in nested && typeof nested.response === 'string') {
+            return nested.response;
+        }
+        return JSON.stringify(res.response);
+    }
+    async _analyze(all) {
+        this._isLoading = true;
+        this._response = null;
+        this._error = null;
+        try {
+            let responseData;
+            if (all) {
+                responseData = await this.store.dataService.analyzeAllGrowspaces();
+            }
+            else {
+                const device = this.selectedDevice;
+                if (!device)
+                    throw new Error('No device selected and "Analyze All" was false.');
+                const deviceObj = this._activeDevicesController.value.find(d => d.deviceId === device);
+                if (!deviceObj)
+                    throw new Error('Selected device not found in devices list.');
+                responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
+            }
+            this._response = this._extractText(responseData);
+        }
+        catch (e) {
+            this._error = e instanceof Error ? e.message : 'Unknown error occurred during analysis.';
+            console.error('AI Analysis failed:', e);
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error-state">Home Assistant not available</div></ha-card>`;
+        }
+        const devices = this._activeDevicesController.value;
+        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
+        return x `
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace AI Insights'}
+        .onError=${this._handleError}
+      >
+        <ha-card>
+          <div class="unified-growspace-card glass-surface glass-panel" style="padding: 24px;">
+            
+            <div class="ai-header">
+                <div class="ai-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="${mdiBrain}"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="ai-title">Grow Master AI</h2>
+                    <p class="ai-subtitle">Target: ${targetName}</p>
+                </div>
+            </div>
+
+            <textarea
+                class="sd-textarea"
+                placeholder="Ask advice about your environment, plants, or VPD history..."
+                .value=${this._userQuery}
+                @input=${(e) => (this._userQuery = e.target.value)}
+            ></textarea>
+
+            <div class="button-group">
+              <button
+                class="md3-button tonal"
+                @click=${() => this._analyze(true)}
+                ?disabled=${this._isLoading}
+                style="opacity: ${this._isLoading ? 0.7 : 1}"
+              >
+                Analyze All
+              </button>
+              <button
+                class="md3-button primary"
+                @click=${() => this._analyze(false)}
+                ?disabled=${this._isLoading}
+                style="opacity: ${this._isLoading ? 0.7 : 1}"
+              >
+                ${this._isLoading ? 'Analyzing...' : 'Analyze Specific'}
+              </button>
+            </div>
+
+            ${this._isLoading ? x `
+              <div class="gm-loading">
+                <svg class="spinner" viewBox="0 0 24 24">
+                  <path d="${mdiLoading}" fill="currentColor"></path>
+                </svg>
+                <span>Consulting the archives...</span>
+              </div>
+            ` : E}
+
+            ${!this._isLoading && this._response ? x `
+              <div class="gm-response-box">
+                ${this._response}
+              </div>
+            ` : E}
+
+            ${this._error ? x `
+              <div class="error-state">
+                Error: ${this._error}
+              </div>
+            ` : E}
+
+          </div>
+        </ha-card>
+      </error-boundary>
+    `;
+    }
+};
+GrowspaceAiInsightCard.styles = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    i$6 `
+      ha-card {
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+      }
+      .unified-growspace-card {
+        margin: 0;
+      }
+      .ai-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        margin-bottom: 20px;
+      }
+      .ai-icon svg {
+        width: 32px;
+        height: 32px;
+        fill: #4CAF50;
+      }
+      .ai-title {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--primary-text-color, #ffffff);
+      }
+      .ai-subtitle {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .gm-response-box {
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid #4CAF50;
+        border-radius: 12px;
+        padding: 20px;
+        line-height: 1.6;
+        font-size: 0.95rem;
+        white-space: pre-wrap;
+        margin-top: 20px;
+        color: var(--primary-text-color, #ffffff);
+      }
+      .gm-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        gap: 12px;
+      }
+      @keyframes spin {
+        100% { transform: rotate(360deg); }
+      }
+      .spinner {
+        animation: spin 1s linear infinite;
+        width: 24px;
+        height: 24px;
+      }
+      .sd-textarea {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--primary-text-color, #ffffff);
+        font-family: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 1rem;
+        min-height: 80px;
+        margin-bottom: 16px;
+      }
+      .sd-textarea:focus {
+        outline: none;
+        background: rgba(255, 255, 255, 0.08);
+        border-color: #4CAF50;
+      }
+      .button-group {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+      .error-state {
+        color: #f44336;
+        padding: 16px;
+        background: rgba(244, 67, 54, 0.1);
+        border-radius: 8px;
+        margin-top: 20px;
+      }
+    `
+];
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceAiInsightCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: hassContext }),
+    n$5({ attribute: false })
+], GrowspaceAiInsightCard.prototype, "hass", void 0);
+__decorate([
+    e$3({ context: configContext }),
+    n$5({ attribute: false })
+], GrowspaceAiInsightCard.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCard.prototype, "_userQuery", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCard.prototype, "_isLoading", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCard.prototype, "_response", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCard.prototype, "_error", void 0);
+GrowspaceAiInsightCard = __decorate([
+    t$2('growspace-ai-insight-card')
+], GrowspaceAiInsightCard);
+
 /**
  * @license
  * Copyright 2021 Google LLC
@@ -103338,5 +103994,384 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceManagerCardEditor () { return GrowspaceManagerCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceManagerCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._growspaceOptions = [];
+        this._subscriptionController = new HassSubscriptionController(this);
+        this._hasSubscription = false;
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._loadGrowspaces();
+            this._subscribeToSensorUpdates();
+        }
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._hasSubscription = false;
+    }
+    async _subscribeToSensorUpdates() {
+        if (!this.hass || this._hasSubscription)
+            return;
+        this._hasSubscription = true;
+        await this._subscriptionController.subscribeEvents(this.hass, (event) => {
+            const customEvent = event;
+            const newState = customEvent.data?.new_state;
+            if (newState?.entity_id === 'sensor.growspaces_list') {
+                const gsObj = newState.attributes?.growspaces;
+                if (gsObj) {
+                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                        id,
+                        name: String(name),
+                    }));
+                }
+                else {
+                    this._growspaceOptions = [];
+                }
+            }
+        }, 'state_changed');
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const entity = this.hass.states['sensor.growspaces_list'];
+        if (entity && entity.attributes?.growspaces) {
+            const gsObj = entity.attributes.growspaces;
+            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+                id,
+                name: String(name),
+            }));
+        }
+        else {
+            this._growspaceOptions = [];
+        }
+    }
+    render() {
+        if (!this._config)
+            return x ``;
+        return x `
+      <div class="card-config">
+        <div class="info-box">
+          The Grid Card is a localized view locked to the Standard tracking interface. Environment headers and charts are removed.
+        </div>
+
+        <div class="form-group">
+          <label>Default Growspace</label>
+          <select
+            .value=${this._config.default_growspace ?? ''}
+            @change=${(e) => this._valueChanged('default_growspace', e.target.value)}
+          >
+            <option value="">Select a growspace</option>
+            ${this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
+          </select>
+        </div>
+      </div>
+    `;
+    }
+    _valueChanged(key, value) {
+        if (!this._config)
+            return;
+        const newConfig = { ...this._config, [key]: value };
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: newConfig },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+GrowspaceGridCardEditor.styles = i$6 `
+    .card-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label {
+      font-weight: 500;
+      color: var(--secondary-text-color);
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 1rem;
+    }
+    .info-box {
+      background: rgba(var(--rgb-primary-color), 0.1);
+      color: var(--primary-text-color);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      border-left: 4px solid var(--primary-color);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceGridCardEditor.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceGridCardEditor.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceGridCardEditor.prototype, "_growspaceOptions", void 0);
+GrowspaceGridCardEditor = __decorate([
+    t$2('growspace-grid-card-editor')
+], GrowspaceGridCardEditor);
+
+var growspaceGridCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceGridCardEditor () { return GrowspaceGridCardEditor; }
+});
+
+let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._sensorGrowspaces = [];
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
+        if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
+            this._sensorGrowspaces = growspaceListSensor.attributes.growspaces.map((g) => ({
+                id: g.id,
+                name: g.name || g.id
+            }));
+        }
+    }
+    firstUpdated() {
+        this._loadGrowspaces();
+    }
+    get _default_growspace() {
+        return this._config?.default_growspace || '';
+    }
+    _valueChanged(ev) {
+        if (!this._config || !this.hass)
+            return;
+        const target = ev.target;
+        const value = target.value;
+        if (this._default_growspace !== value) {
+            this._config = {
+                ...this._config,
+                default_growspace: value,
+            };
+            this.dispatchEvent(new CustomEvent('config-changed', {
+                detail: { config: this._config },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+    }
+    render() {
+        if (!this.hass || !this._config) {
+            return x ``;
+        }
+        return x `
+            <div class="card-config">
+                <div class="select-group">
+                    <label>Target Growspace</label>
+                    <select
+                        .value=${this._default_growspace}
+                        @change=${this._valueChanged}
+                    >
+                        <option value="" disabled selected=${this._default_growspace === ''}>
+                            Select a growspace...
+                        </option>
+                        ${this._sensorGrowspaces.map((gs) => x `
+                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
+                                    ${gs.name}
+                                </option>
+                            `)}
+                    </select>
+                </div>
+
+                <div class="info-text">
+                    This card will permanently display the analytics charts and history for the selected growspace.
+                </div>
+            </div>
+        `;
+    }
+};
+GrowspaceAnalyticsCardEditor.styles = [
+    sharedStyles,
+    i$6 `
+            .card-config {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .select-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            select {
+                padding: 8px;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+            }
+            .info-text {
+                font-size: 0.9em;
+                color: var(--secondary-text-color);
+                margin-top: 8px;
+            }
+        `
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsCardEditor.prototype, "hass", void 0);
+__decorate([
+    r$2()
+], GrowspaceAnalyticsCardEditor.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceAnalyticsCardEditor.prototype, "_sensorGrowspaces", void 0);
+GrowspaceAnalyticsCardEditor = __decorate([
+    t$2('growspace-analytics-card-editor')
+], GrowspaceAnalyticsCardEditor);
+
+var growspaceAnalyticsCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceAnalyticsCardEditor () { return GrowspaceAnalyticsCardEditor; }
+});
+
+let GrowspaceAiInsightCardEditor = class GrowspaceAiInsightCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._sensorGrowspaces = [];
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
+        if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
+            this._sensorGrowspaces = growspaceListSensor.attributes.growspaces.map((g) => ({
+                id: g.id,
+                name: g.name || g.id
+            }));
+        }
+    }
+    firstUpdated() {
+        this._loadGrowspaces();
+    }
+    get _default_growspace() {
+        return this._config?.default_growspace || '';
+    }
+    _valueChanged(ev) {
+        if (!this._config || !this.hass)
+            return;
+        const target = ev.target;
+        const value = target.value;
+        if (this._default_growspace !== value) {
+            this._config = {
+                ...this._config,
+                default_growspace: value,
+            };
+            this.dispatchEvent(new CustomEvent('config-changed', {
+                detail: { config: this._config },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+    }
+    render() {
+        if (!this.hass || !this._config) {
+            return x ``;
+        }
+        return x `
+            <div class="card-config">
+                <div class="select-group">
+                    <label>Target Growspace</label>
+                    <select
+                        .value=${this._default_growspace}
+                        @change=${this._valueChanged}
+                    >
+                        <option value="" disabled selected=${this._default_growspace === ''}>
+                            Select a growspace...
+                        </option>
+                        ${this._sensorGrowspaces.map((gs) => x `
+                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
+                                    ${gs.name}
+                                </option>
+                            `)}
+                    </select>
+                </div>
+
+                <div class="info-text">
+                    This card will provide AI insights and chat functionality targeted toward the selected growspace.
+                </div>
+            </div>
+        `;
+    }
+};
+GrowspaceAiInsightCardEditor.styles = [
+    sharedStyles,
+    i$6 `
+            .card-config {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            .select-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            select {
+                padding: 8px;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+            }
+            .info-text {
+                font-size: 0.9em;
+                color: var(--secondary-text-color);
+                margin-top: 8px;
+            }
+        `
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAiInsightCardEditor.prototype, "hass", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCardEditor.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceAiInsightCardEditor.prototype, "_sensorGrowspaces", void 0);
+GrowspaceAiInsightCardEditor = __decorate([
+    t$2('growspace-ai-insight-card-editor')
+], GrowspaceAiInsightCardEditor);
+
+var growspaceAiInsightCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceAiInsightCardEditor () { return GrowspaceAiInsightCardEditor; }
+});
+
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceManagerCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

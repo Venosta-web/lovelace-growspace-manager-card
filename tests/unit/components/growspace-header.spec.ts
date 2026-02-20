@@ -102,6 +102,8 @@ describe('GrowspaceHeader', () => {
                 loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
                 linkGraphs: vi.fn(),
                 unlinkGraphGroup: vi.fn(),
+                startAutoRefresh: vi.fn(),
+                stopAutoRefresh: vi.fn(),
             },
             handleDeviceChange: vi.fn(),
             toggleEnvGraph: vi.fn(),

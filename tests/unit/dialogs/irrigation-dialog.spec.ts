@@ -25,12 +25,12 @@ vi.mock('../../../src/components/ui/md3-switch', () => ({
 }));
 
 const mocks = vi.hoisted(() => ({
-    setIrrigationSettings: vi.fn(),
-    addIrrigationTime: vi.fn(),
-    removeIrrigationTime: vi.fn(),
-    addDrainTime: vi.fn(),
-    removeDrainTime: vi.fn(),
-    setIrrigationStrategy: vi.fn()
+    setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
+    addIrrigationTime: vi.fn().mockResolvedValue(undefined),
+    removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
+    addDrainTime: vi.fn().mockResolvedValue(undefined),
+    removeDrainTime: vi.fn().mockResolvedValue(undefined),
+    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined)
 }));
 
 vi.mock('../../../src/data-service', () => {
@@ -164,22 +164,32 @@ describe('IrrigationDialog', () => {
             }));
         });
 
-        it('should remove irrigation time', async () => {
-            // Mock window.confirm
-            const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => true);
-
+        it('should remove irrigation time via edit dialog', async () => {
             const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
-            const irrigationMarker = markers?.[0]; // Assuming order or detail checking.
-            // First marker is usually irrigation based on render order (Irrigation Schedule first)
+            const irrigationMarker = markers?.[0];
 
+            // 1. Click marker to open edit dialog
             (irrigationMarker as HTMLElement).click();
             await element.updateComplete;
 
-            expect(confirmSpy).toHaveBeenCalled();
+            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            expect(editOverlay).toBeTruthy();
+
+            // 2. Click Delete button
+            const deleteBtn = editOverlay?.querySelector('.delete-button');
+            (deleteBtn as HTMLElement).click();
+
+            // Wait for microtasks and DOM update
+            await new Promise(r => setTimeout(r, 0));
+            await element.updateComplete;
+
             expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
                 time: '08:00'
             }));
+
+            // Edit dialog should be closed
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
         });
 
         it('should add new drain time', async () => {
@@ -224,26 +234,33 @@ describe('IrrigationDialog', () => {
             }));
         });
 
-        it('should remove drain time', async () => {
-            const confirmSpy = vi.spyOn(window, 'confirm').mockImplementation(() => true);
-
-            // Drain markers are likely in the second time-bar container or just all markers with click handler?
-            // The render loop is: irrigation markers then drain markers?
-            // No, checks which section.
-
-            // Let's target the marker specifically in the drain section.
+        it('should remove drain time via edit dialog', async () => {
             const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1]; // Second card is drain
             const drainMarker = drainSection?.querySelector('.chart-marker');
             expect(drainMarker).toBeTruthy();
 
+            // 1. Click marker to open edit dialog
             (drainMarker as HTMLElement).click();
             await element.updateComplete;
 
-            expect(confirmSpy).toHaveBeenCalled();
+            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            expect(editOverlay).toBeTruthy();
+
+            // 2. Click Delete button
+            const deleteBtn = editOverlay?.querySelector('.delete-button');
+            (deleteBtn as HTMLElement).click();
+
+            // Wait for microtasks and DOM update
+            await new Promise(r => setTimeout(r, 0));
+            await element.updateComplete;
+
             expect(mocks.removeDrainTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
                 time: '08:30'
             }));
+
+            // Edit dialog should be closed
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
         });
     });
 
@@ -343,13 +360,17 @@ describe('IrrigationDialog', () => {
         it('should handle removeIrrigationTime failure', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            vi.spyOn(window, 'confirm').mockImplementation(() => true);
 
             const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
             (markers?.[0] as HTMLElement).click();
             await element.updateComplete;
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove irrigation time:', expect.any(Error));
+            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            const deleteBtn = editOverlay?.querySelector('.delete-button');
+            (deleteBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to delete irrigation time:', expect.any(Error));
         });
 
         it('should handle addDrainTime failure', async () => {
@@ -373,14 +394,18 @@ describe('IrrigationDialog', () => {
         it('should handle removeDrainTime failure', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('API Error'));
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            vi.spyOn(window, 'confirm').mockImplementation(() => true);
 
             const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1];
             const drainMarker = drainSection?.querySelector('.chart-marker');
             (drainMarker as HTMLElement).click();
             await element.updateComplete;
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove drain time:', expect.any(Error));
+            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            const deleteBtn = editOverlay?.querySelector('.delete-button');
+            (deleteBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to delete drain time:', expect.any(Error));
         });
 
         it('should handle saveStrategy failure', async () => {
@@ -444,15 +469,20 @@ describe('IrrigationDialog', () => {
             expect((element as any)._irrigationDuration).toBe(60);
         });
 
-        it('should re-initialize state when device property changes', async () => {
+        it('should NOT overwrite state on subsequent device property changes if already open', async () => {
             document.body.appendChild(element); // Connect to DOM
+            element.open = true;
+            await element.updateComplete;
+
+            expect((element as any)._irrigationDuration).toBe(60);
+
             element.device = {
                 ...mockDevice,
                 irrigationConfig: { ...mockDevice.irrigationConfig, irrigationDuration: 999 }
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._irrigationDuration).toBe(999);
+            expect((element as any)._irrigationDuration).toBe(60);
         });
 
         it('should create DataService if missing when hass changes', async () => {
@@ -819,66 +849,27 @@ describe('IrrigationDialog', () => {
             document.body.removeChild(element);
         });
 
-        it('should remove time when confirmed', async () => {
-            document.body.appendChild(element);
-            element.open = true;
-            await element.updateComplete;
-
-            // Mock confirm
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-            // Find a chart marker
-            const marker = element.shadowRoot?.querySelector('.chart-marker');
-            (marker as HTMLElement).click();
-
-            expect(confirmSpy).toHaveBeenCalled();
-            expect(mocks.removeIrrigationTime).toHaveBeenCalled();
-
-            confirmSpy.mockRestore();
-            document.body.removeChild(element);
-        });
-
-        it('should not remove time when cancelled', async () => {
+        it('should not delete time when edit dialog is cancelled', async () => {
             document.body.appendChild(element);
             element.open = true;
             await element.updateComplete;
 
             mocks.removeIrrigationTime.mockClear();
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
             const marker = element.shadowRoot?.querySelector('.chart-marker');
             (marker as HTMLElement).click();
-
-            expect(confirmSpy).toHaveBeenCalled();
-            expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
-
-            confirmSpy.mockRestore();
-            document.body.removeChild(element);
-        });
-
-        it('should remove drain time when confirmed', async () => {
-            document.body.appendChild(element);
-            element.open = true;
             await element.updateComplete;
 
-            // Mock confirm
-            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
+            const cancelBtn = Array.from(editOverlay?.querySelectorAll('button.tonal') || [])
+                .find(b => b.textContent?.includes('Cancel'));
 
-            // We need a marker in drain section. 
-            // Default mock has drain times 08:30
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
-            // markers are likely all of them. The first set is irrigation, second set is drain?
-            // _renderScheduleSection renders irrigation first.
-            // We can inspect the parent or just try to click one in the drain bar explicitly
+            (cancelBtn as HTMLElement).click();
+            await element.updateComplete;
 
-            const drainBar = element.shadowRoot?.querySelector('.drain-time-bar');
-            const marker = drainBar?.querySelector('.chart-marker');
+            expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
+            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
 
-            (marker as HTMLElement).click();
-
-            expect(mocks.removeDrainTime).toHaveBeenCalled();
-
-            confirmSpy.mockRestore();
             document.body.removeChild(element);
         });
 
@@ -976,21 +967,23 @@ describe('IrrigationDialog', () => {
         it('should handle willUpdate with various property changes', async () => {
             document.body.appendChild(element);
 
-            // 1. open is true, but open prop didn't change (forced call)
-            element.open = true;
-            await element.updateComplete;
-
             const initSpy = vi.spyOn(element as any, '_initializeState');
 
-            // Trigger update by changing a property that is NOT 'open' or 'device'
+            // 1. open becomes true
+            element.open = true;
+            await element.updateComplete;
+            expect(initSpy).toHaveBeenCalledTimes(1);
+            initSpy.mockClear();
+
+            // Trigger update by changing a property that is NOT 'open'
             element.hass = { ...element.hass };
             await element.updateComplete;
             expect(initSpy).not.toHaveBeenCalled();
 
-            // 2. device changes
+            // 2. device changes while already open
             element.device = { ...mockDevice, name: 'New Name' };
             await element.updateComplete;
-            expect(initSpy).toHaveBeenCalled();
+            expect(initSpy).not.toHaveBeenCalled();
         });
 
         it('should fallback to defaults in _initializeState when strategy fields are missing', async () => {

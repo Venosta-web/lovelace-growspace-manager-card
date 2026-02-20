@@ -22,6 +22,7 @@
   "type": "module",
   "devDependencies": {
     "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",
+    "@lit-labs/testing": "^0.2.8",
     "@open-wc/testing-helpers": "^3.0.1",
     "@playwright/test": "^1.57.0",
     "@rollup/plugin-commonjs": "^28.0.9",
