@@ -518,7 +518,7 @@ export class GrowspaceEnvChart extends LitElement {
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
             <div style="display:flex; align-items:center; gap:8px;">
-              ${this.icon ? html`<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              ${this.icon ? html`<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
               <span>${this.title || 'Graph'}</span>
             </div>
             <span style="opacity:0.6; font-size:0.9em">No Data</span>

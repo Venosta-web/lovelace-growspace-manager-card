@@ -875,8 +875,8 @@ PlantUtils.stageColors = {
     [PlantStage.SEEDLING]: '#4CAF50',
     [PlantStage.VEG]: '#8BC34A',
     [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#795548',
-    [PlantStage.CURE]: '#9C27B0',
+    [PlantStage.DRY]: '#9c27b0',
+    [PlantStage.CURE]: '#2196f3',
 };
 PlantUtils.stageIcons = {
     [PlantStage.MOTHER]: mdiSprout,
@@ -8118,7 +8118,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         <div class="gs-env-graph-card">
           <div class="gs-env-graph-header">
             <div style="display:flex; align-items:center; gap:8px;">
-              ${this.icon ? x `<ha-icon .icon=${this.icon}></ha-icon>` : ''}
+              ${this.icon ? x `<ha-svg-icon .path=${this.icon}></ha-svg-icon>` : ''}
               <span>${this.title || 'Graph'}</span>
             </div>
             <span style="opacity:0.6; font-size:0.9em">No Data</span>
@@ -37455,7 +37455,7 @@ let GrowspaceHeaderHero = class GrowspaceHeaderHero extends i$3 {
                 : ''}
 
         <div class="hero-header">
-          <ha-icon class="hero-icon" .icon=${chip.icon}></ha-icon>
+          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
         </div>
 

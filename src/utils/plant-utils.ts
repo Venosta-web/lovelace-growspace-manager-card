@@ -30,8 +30,8 @@ export class PlantUtils {
     [PlantStage.SEEDLING]: '#4CAF50',
     [PlantStage.VEG]: '#8BC34A',
     [PlantStage.FLOWER]: '#FF9800',
-    [PlantStage.DRY]: '#795548',
-    [PlantStage.CURE]: '#9C27B0',
+    [PlantStage.DRY]: '#9c27b0',
+    [PlantStage.CURE]: '#2196f3',
   };
 
   private static readonly stageIcons: Record<PlantStage, string> = {

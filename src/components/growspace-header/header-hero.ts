@@ -383,7 +383,7 @@ export class GrowspaceHeaderHero extends LitElement {
           : ''}
 
         <div class="hero-header">
-          <ha-icon class="hero-icon" .icon=${chip.icon}></ha-icon>
+          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
         </div>
 
