@@ -125,7 +125,7 @@ export class BaseDialogLayout extends LitElement {
       @keyframes slideUpFromBottom {
         from {
           transform: translateY(100%);
-          opacity: 0.8;
+          opacity: 0;
         }
         to {
           transform: translateY(0);
@@ -402,7 +402,7 @@ export class BaseDialogLayout extends LitElement {
             <button
               class="dialog-tab ${tab.id === this.activeTab ? 'active' : ''}"
               role="tab"
-              aria-selected=${tab.id === this.activeTab}
+              aria-selected=${tab.id === this.activeTab ? 'true' : 'false'}
               @click=${() => this._handleTabClick(tab.id)}
             >
               ${tab.icon
