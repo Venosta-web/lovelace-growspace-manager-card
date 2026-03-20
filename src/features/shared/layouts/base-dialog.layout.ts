@@ -276,10 +276,10 @@ export class BaseDialogLayout extends LitElement {
 
   private _handleKeydown(e: KeyboardEvent): void {
     if (this.open && e.key === 'Escape') {
-      // Note: stopPropagation does not prevent document-level listeners on other instances.
-      // If nested dialogs are used simultaneously, all open instances would receive this event.
-      // TODO: Implement topmost-dialog tracking before enabling nested sheet dialogs (Task 5).
-      e.stopPropagation();
+      // Note: e.stopPropagation() does not prevent other document-level listeners (e.g. other
+      // dialog instances) from also handling this event. Only one dialog is open at a time today
+      // (enforced by DialogHost), so this is safe. If nested/layered dialogs are introduced,
+      // add topmost-dialog tracking here before Task 5 (layered sheet dialogs).
       this._handleClose();
     }
   }
