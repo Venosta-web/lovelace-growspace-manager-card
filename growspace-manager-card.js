@@ -40314,12 +40314,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
                 this.store.openECRampDialog(this._selectedDeviceController.value || undefined);
                 break;
             case 'report':
-                if (this._selectedDeviceController.value) {
-                    this.store.ui.setActiveDialog({
-                        type: 'GROW_REPORT',
-                        payload: { growspaceId: this._selectedDeviceController.value },
-                    });
-                }
+                this.store.openGrowReportDialog(this._selectedDeviceController.value || undefined);
                 break;
         }
     }
@@ -104391,6 +104386,14 @@ function openECRampDialog(ctx, growspaceId) {
         },
     });
 }
+function openGrowReportDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_REPORT',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
 
 class ActionDispatcher {
     constructor(store) {
@@ -105426,6 +105429,9 @@ class GrowspaceStore {
     }
     openLogbookDialog() {
         openLogbookDialog(this.context);
+    }
+    openGrowReportDialog(growspaceId) {
+        openGrowReportDialog(this.context, growspaceId);
     }
     async handleExportLibrary() {
         await exportStrainLibrary(this.context);
