@@ -1056,4 +1056,15 @@ export const growspaceCardStyles = css`
     background: rgba(var(--rgb-primary-color), 0.1);
     color: var(--primary-color);
   }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 `;

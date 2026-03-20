@@ -226,4 +226,31 @@ export const plantCardStyles = css`
     z-index: 1000;
     pointer-events: none;
   }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    .plant-card-rich {
+      transition: none;
+    }
+
+    .plant-card-rich:hover {
+      transform: none;
+    }
+
+    .plant-card-rich.dragging {
+      transform: none;
+    }
+
+    .plant-card-rich.dragging-mobile {
+      transform: none;
+    }
+
+    .status-icon {
+      transition: none;
+    }
+
+    .status-icon:hover {
+      transform: none;
+    }
+  }
 `;
