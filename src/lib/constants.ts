@@ -10,6 +10,9 @@ export const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
 export const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
 export const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
 export const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
+export const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
+export const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
+export const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
 
 // Home Assistant events
 export const EVENTS = {
@@ -63,7 +66,19 @@ export const SERVICES = {
   REMOVE_IPM_PRESET: 'remove_ipm_preset',
   APPLY_IPM: 'apply_ipm',
   PRINT_LABEL: 'print_label',
+  SCORE_PLANT: 'score_plant',
+  UPDATE_HARVEST_METRICS: 'update_harvest_metrics',
+  CONFIGURE_DRAIN_MONITORING: 'configure_drain_monitoring',
+  LOG_DRAIN_READING: 'log_drain_reading',
+  BATCH_ACTION: 'batch_action',
+  LOG_TRAINING_EVENT: 'log_training_event',
+  EXPORT_GROW_REPORT: 'export_grow_report',
+  MOVE_PLANT: 'move_plant',
+  REMOVE_ENVIRONMENT: 'remove_environment',
+  RESET_WATER_TRACKING: 'reset_water_tracking',
+  UPDATE_STRAIN_META: 'update_strain_meta',
 };
+
 
 // Storage keys
 export const STORAGE_KEYS = {

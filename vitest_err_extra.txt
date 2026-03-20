@@ -1,0 +1,230 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | unknown test
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+ [31m❯[39m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts [2m([22m[2m12 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[33m 595[2mms[22m[39m
+       [32m✓[39m should open and close breeder manager[32m 15[2mms[22m[39m
+[31m       [31m×[31m should show empty state in breeder list[39m[32m 115[2mms[22m[39m
+[31m       [31m×[31m should enter breeder edit mode and go back[39m[32m 199[2mms[22m[39m
+       [32m✓[39m should handle breeder logo upload[32m 5[2mms[22m[39m
+[31m       [31m×[31m should handle breeder logo removal[39m[32m 80[2mms[22m[39m
+[31m       [31m×[31m should save new breeder[39m[32m 82[2mms[22m[39m
+       [32m✓[39m should update existing breeder[32m 4[2mms[22m[39m
+[31m       [31m×[31m should delete breeder via list button[39m[32m 80[2mms[22m[39m
+       [32m✓[39m should cancel breeder deletion[32m 2[2mms[22m[39m
+       [32m✓[39m should handle label printing[32m 5[2mms[22m[39m
+       [32m✓[39m should support Ruderalis type selection[32m 2[2mms[22m[39m
+       [32m✓[39m should handle breeder logo compression error[32m 4[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 5 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts[2m > [22mStrainLibraryDialog Extra Coverage[2m > [22mBreeder Manager[2m > [22mshould show empty state in breeder list
+[31m[1mAssertionError[22m: expected '\n        \n          \n            \…' to contain 'No breeders found'[39m
+
+Failure screenshot:
+  - [2mtests/unit/dialogs/__screenshots__/strain-library-dialog-extra.spec.ts/StrainLibraryDialog-Extra-Coverage-Breeder-Manager-should-show-empty-state-in-breeder-list-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- No breeders found[39m
+[31m+[39m
+[31m+         [39m
+[31m+           [39m
+[31m+             [39m
+[31m+           [39m
+[31m+         [39m
+[31m+[39m
+[31m+         [39m
+[31m+           [39m
+[31m+         [39m
+[31m+[39m
+[31m+         [39m
+[31m+               [39m
+[31m+                 [39m
+[31m+                   [39m
+[31m+                 [39m
+[31m+                 No strains found matching ""[39m
+[31m+               [39m
+[31m+             [39m
+[31m+         [39m
+[31m+       [39m
+
+[36m [2m❯[22m tests/unit/dialogs/strain-library-dialog-extra.spec.ts:[2m68:41[22m[39m
+    [90m 66| [39m
+    [90m 67| [39m            const content = element.shadowRoot?.querySelector('.sd-con…
+    [90m 68| [39m            expect(content?.textContent).toContain('No breeders found'…
+    [90m   | [39m                                        [31m^[39m
+    [90m 69| [39m        })[33m;[39m
+    [90m 70| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts[2m > [22mStrainLibraryDialog Extra Coverage[2m > [22mBreeder Manager[2m > [22mshould enter breeder edit mode and go back
+[31m[1mAssertionError[22m: expected '\n        \n          \n            \…' to contain 'Edit Breeder'[39m
+
+Failure screenshot:
+  - [2mtests/unit/dialogs/__screenshots__/strain-library-dialog-extra.spec.ts/StrainLibraryDialog-Extra-Coverage-Breeder-Manager-should-enter-breeder-edit-mode-and-go-back-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Edit Breeder[39m
+[31m+[39m
+[31m+         [39m
+[31m+           [39m
+[31m+             [39m
+[31m+           [39m
+[31m+         [39m
+[31m+[39m
+[31m+         [39m
+[31m+           [39m
+[31m+       [39m
+[31m+         [39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+               [39m
+[31m+                 [39m
+[31m+               [39m
+[31m+             [39m
+[31m+           [39m
+[31m+         [39m
+[31m+         [39m
+[31m+           [39m
+[31m+             Blue Dream (Original)[39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+               [39m
+[31m+             [39m
+[31m+             Sativa[39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+             [39m
+[31m+                   [39m
+[31m+                     [39m
+[31m+                     Breeder: HSO[39m
+[31m+                   [39m
+[31m+                 [39m
+[31m+           [39m
+[31m+         [39m
+[31m+       [39m
+[31m+     [39m
+[31m+       [39m
+[31m+         [39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+               [39m
+[31m+                 [39m
+[31m+               [39m
+[31m+             [39m
+[31m+           [39m
+[31m+         [39m
+[31m+         [39m
+[31m+           [39m
+[31m+             OG Kush (#18)[39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+               [39m
+[31m+             [39m
+[31m+             Indica[39m
+[31m+           [39m
+[31m+           [39m
+[31m+             [39m
+[31m+             [39m
+[31m+                   [39m
+[31m+                     [39m
+[31m+                     Breeder: Dinafem[39m
+[31m+                   [39m
+[31m+                 [39m
+[31m+           [39m
+[31m+         [39m
+[31m+       [39m
+[31m+     [39m
+[31m+         [39m
+[31m+[39m
+[31m+         [39m
+[31m+         [39m
+[31m+       [39m
+
+[36m [2m❯[22m tests/unit/dialogs/strain-library-dialog-extra.spec.ts:[2m80:82[22m[39m
+    [90m 78| [39m
+    [90m 79| [39m            [34mexpect[39m((element [35mas[39m any)[33m.[39m_breederEditorState)[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m 80| [39m            expect(element.shadowRoot?.querySelector('.sd-content')?.t…
+    [90m   | [39m                                                                                 [31m^[39m
+    [90m 81| [39m
+    [90m 82| [39m            [90m// Click Back[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts[2m > [22mStrainLibraryDialog Extra Coverage[2m > [22mBreeder Manager[2m > [22mshould handle breeder logo removal
+[31m[1mAssertionError[22m: expected 'logo.jpg' to be '' // Object.is equality[39m
+
+Failure screenshot:
+  - [2mtests/unit/dialogs/__screenshots__/strain-library-dialog-extra.spec.ts/StrainLibraryDialog-Extra-Coverage-Breeder-Manager-should-handle-breeder-logo-removal-1.png[22m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[31m+ logo.jpg[39m
+
+[36m [2m❯[22m tests/unit/dialogs/strain-library-dialog-extra.spec.ts:[2m120:62[22m[39m
+    [90m118| [39m            [35mawait[39m element[33m.[39mupdateComplete[33m;[39m
+    [90m119| [39m
+    [90m120| [39m            [34mexpect[39m((element [35mas[39m any)[33m.[39m_breederEditorState[33m.[39mlogo)[33m.[39m[34mtoBe[39m([32m''[39m)[33m;[39m
+    [90m   | [39m                                                             [31m^[39m
+    [90m121| [39m        })[33m;[39m
+    [90m122| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts[2m > [22mStrainLibraryDialog Extra Coverage[2m > [22mBreeder Manager[2m > [22mshould save new breeder
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+
+Failure screenshot:
+  - [2mtests/unit/dialogs/__screenshots__/strain-library-dialog-extra.spec.ts/StrainLibraryDialog-Extra-Coverage-Breeder-Manager-should-save-new-breeder-1.png[22m
+
+[36m [2m❯[22m tests/unit/dialogs/strain-library-dialog-extra.spec.ts:[2m138:28[22m[39m
+    [90m136| [39m
+    [90m137| [39m            (saveBtn [35mas[39m [33mHTMLElement[39m)[33m.[39m[34mclick[39m()[33m;[39m
+    [90m138| [39m            expect(saveSpy).toHaveBeenCalledWith(expect.objectContaini…
+    [90m   | [39m                           [31m^[39m
+    [90m139| [39m                detail[33m:[39m { name[33m:[39m [32m'New Breeder'[39m[33m,[39m logo[33m:[39m [32m''[39m }
+    [90m140| [39m            }))[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m [30m[43m chromium [49m[39m tests/unit/dialogs/strain-library-dialog-extra.spec.ts[2m > [22mStrainLibraryDialog Extra Coverage[2m > [22mBreeder Manager[2m > [22mshould delete breeder via list button
+[31m[1mAssertionError[22m: expected 'Dinafem' to be 'HSO' // Object.is equality[39m
+
+Failure screenshot:
+  - [2mtests/unit/dialogs/__screenshots__/strain-library-dialog-extra.spec.ts/StrainLibraryDialog-Extra-Coverage-Breeder-Manager-should-delete-breeder-via-list-button-1.png[22m
+
+Expected: [32m"HSO"[39m
+Received: [31m"Dinafem"[39m
+
+[36m [2m❯[22m tests/unit/dialogs/strain-library-dialog-extra.spec.ts:[2m171:59[22m[39m
+    [90m169| [39m            [35mawait[39m element[33m.[39mupdateComplete[33m;[39m
+    [90m170| [39m
+    [90m171| [39m            [34mexpect[39m((element [35mas[39m any)[33m.[39m_pendingDeleteBreeder)[33m.[39m[34mtoBe[39m([32m'HSO'[39m)[33m;[39m
+    [90m   | [39m                                                          [31m^[39m
+    [90m172| [39m
+    [90m173| [39m            [90m// Confirm delete[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m7 passed[39m[22m[90m (12)[39m
+[2m   Start at [22m 11:27:19
+[2m   Duration [22m 1.30s[2m (transform 0ms, setup 5ms, import 108ms, tests 595ms, environment 0ms)[22m
+

@@ -22,6 +22,8 @@ const PlantSlotSchema = z
 
     last_ipm: z.string().nullable().optional().default(null),
     last_ipm_type: z.string().nullable().optional().default(null),
+    phi_clearance_date: z.string().nullable().optional().default(null),
+    phi_days_remaining: z.number().nullable().optional().default(null),
 
     // Start dates
     seedling_start: z.string().nullable().optional().default(null),
@@ -145,6 +147,40 @@ export const GrowspaceAPIResponseSchema = z
       .union([z.string(), z.number().transform(String)])
       .nullable()
       .optional(), // Default handled by optionality
+
+    // Phase 0 Extensions
+    electricity_cost_per_kwh: z.number().nullable().optional(),
+    substrate_temperature_sensors: z.array(z.string()).optional().default([]),
+    camera_entities: z.array(z.string()).optional().default([]),
+    energy_sensors: z.array(z.string()).optional().default([]),
+
+    // New Feature Objects
+    drain_config: z.object({
+      enabled: z.boolean(),
+      max_ec_delta: z.number(),
+      target_runoff_percent: z.number(),
+      readings: z.array(z.object({
+        timestamp: z.string(),
+        feed_ec: z.number(),
+        drain_ec: z.number(),
+        drain_volume_ml: z.number().nullable().optional(),
+        feed_volume_ml: z.number().nullable().optional(),
+      })).optional().default([]),
+    }).nullable().optional(),
+
+
+    energy_tracking: z.object({
+      daily_kwh: z.number().optional(),
+      cost_total: z.number().optional(),
+      cost_per_gram: z.number().optional(),
+      cycle_start_date: z.string().nullable().optional(),
+    }).nullable().optional(),
+
+    water_usage: z.object({
+      liters_per_plant_per_day: z.number().optional(),
+      liters_today: z.number().optional(),
+      water_efficiency: z.number().optional(),
+    }).nullable().optional(),
   })
   .passthrough(); // Allow extra fields at root
 
@@ -217,6 +253,8 @@ export const NutrientPresetsSchema = z.record(
     .passthrough()
 );
 
+export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
+
 export const IPMPresetSchema = z
   .object({
     id: z.string(),
@@ -227,6 +265,7 @@ export const IPMPresetSchema = z
         name: z.string(),
         dose_amount: z.number(),
         dose_unit: z.string(),
+        phi_days: z.number().optional().default(0),
       })
     ),
     stage: z
@@ -242,8 +281,37 @@ export const IPMPresetSchema = z
 
 export const IPMPresetsSchema = z.record(z.string(), IPMPresetSchema);
 
-export type NutrientPresetsResponse = z.infer<typeof NutrientPresetsSchema>;
+export type IPMPreset = z.infer<typeof IPMPresetSchema>;
 export type IPMPresetsResponse = z.infer<typeof IPMPresetsSchema>;
+
+export const ECRampPointSchema = z
+  .object({
+    week: z.number().optional(),
+    ec_min: z.number().optional(),
+    ec_max: z.number().optional(),
+    day: z.number().optional(),
+    target_ec: z.number().optional(),
+  })
+  .transform((data) => ({
+    day: data.day ?? ((data.week ?? 1) - 1) * 7 + 1,
+    target_ec: data.target_ec ?? data.ec_min ?? 0,
+  }));
+
+export const ECRampCurveSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  stage: z.string().optional().default('flower'),
+  points: z.array(ECRampPointSchema),
+});
+
+export const ECRampCurvesSchema = z.union([
+  z.record(z.string(), ECRampCurveSchema),
+  z.array(z.any()).transform(() => ({})), // Backend sometimes defaults to [] if empty
+]);
+
+export type ECRampPoint = z.infer<typeof ECRampPointSchema>;
+export type ECRampCurve = z.infer<typeof ECRampCurveSchema>;
+export type ECRampCurvesResponse = Record<string, ECRampCurve>;
 
 export const NutrientStockSchema = z.object({
   nutrient_id: z.string(),

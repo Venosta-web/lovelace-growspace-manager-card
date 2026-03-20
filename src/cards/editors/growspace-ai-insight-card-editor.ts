@@ -20,10 +20,12 @@ export class GrowspaceAiInsightCardEditor extends LitElement implements Lovelace
 
         const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
         if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
-            this._sensorGrowspaces = growspaceListSensor.attributes.growspaces.map((g: any) => ({
-                id: g.id,
-                name: g.name || g.id
-            }));
+            const raw = growspaceListSensor.attributes.growspaces;
+            if (Array.isArray(raw)) {
+                this._sensorGrowspaces = raw.map((g: any) => ({ id: g.id, name: g.name || g.id }));
+            } else {
+                this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
+            }
         }
     }
 

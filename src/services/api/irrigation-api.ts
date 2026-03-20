@@ -180,4 +180,28 @@ export class IrrigationAPI extends BaseAPI {
       throw err;
     }
   }
+  async configureDrainMonitoring(
+    growspaceId: string,
+    params: { enabled?: boolean; maxEcDelta?: number; targetRunoffPercent?: number }
+  ): Promise<void> {
+    const payload: Record<string, unknown> = { growspace_id: growspaceId };
+    if (params.enabled !== undefined) payload.enabled = params.enabled;
+    if (params.maxEcDelta !== undefined) payload.max_ec_delta = params.maxEcDelta;
+    if (params.targetRunoffPercent !== undefined) payload.target_runoff_percent = params.targetRunoffPercent;
+    await this.callService(DOMAIN, SERVICES.CONFIGURE_DRAIN_MONITORING, payload);
+  }
+
+  async logDrainReading(
+    growspaceId: string,
+    params: { feedEc: number; drainEc: number; feedVolumeMl?: number; drainVolumeMl?: number }
+  ): Promise<void> {
+    const payload: Record<string, unknown> = {
+      growspace_id: growspaceId,
+      feed_ec: params.feedEc,
+      drain_ec: params.drainEc,
+    };
+    if (params.feedVolumeMl !== undefined) payload.feed_volume_ml = params.feedVolumeMl;
+    if (params.drainVolumeMl !== undefined) payload.drain_volume_ml = params.drainVolumeMl;
+    await this.callService(DOMAIN, SERVICES.LOG_DRAIN_READING, payload);
+  }
 }

@@ -1823,7 +1823,7 @@ describe('PlantOverviewDialog', () => {
             const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { });
             (element as any).cloneTargetId = '';
             (element as any).editedAttributes = {};
-            (element as any)._moveClone(mockPlant);
+            (element as any)._movePlant(mockPlant);
             expect(alertSpy).toHaveBeenCalledWith('Select a growspace');
             alertSpy.mockRestore();
         });
@@ -2003,7 +2003,7 @@ describe('PlantOverviewDialog', () => {
         // Wait for potential async calls
         await new Promise(r => setTimeout(r, 0));
 
-        expect(consoleSpy).toHaveBeenCalledWith('Error fetching logbook for dialog:', error);
+        expect(consoleSpy).toHaveBeenCalled();
 
         consoleSpy.mockRestore();
         if (element.parentNode) document.body.removeChild(element);

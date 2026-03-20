@@ -249,6 +249,19 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
                 </div>
               `
         : nothing}
+          ${this.plant.attributes.phi_days_remaining !== undefined && this.plant.attributes.phi_days_remaining !== null && this.plant.attributes.phi_days_remaining > 0
+        ? html`
+                <div
+                  class="status-icon phi"
+                  role="img"
+                  aria-label="PHI Active: ${this.plant.attributes.phi_days_remaining} days remaining"
+                  title="PHI Active: ${this.plant.attributes.phi_days_remaining} days remaining"
+                  style="border-color: #ff9800; background: rgba(255, 152, 0, 0.2);"
+                >
+                  <span style="color: #ff9800; font-size: 11px; font-weight: bold;">${this.plant.attributes.phi_days_remaining}d</span>
+                </div>
+              `
+        : nothing}
           ${this._isRecentlyWatered
         ? html`
                 <div

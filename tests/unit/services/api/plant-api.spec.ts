@@ -280,4 +280,72 @@ describe('DataService - PlantAPI', () => {
                 .rejects.toThrow('Print failed');
         });
     });
+
+    describe('scorePlant', () => {
+        it('should call score_plant service with correct payload', async () => {
+            const scores = { vigor: 5, aroma: 4 };
+            await service.scorePlant({ plant_id: 'p1', ...scores });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
+                plant_id: 'p1',
+                ...scores
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Score fail'));
+            await expect(service.scorePlant({ plant_id: 'p1' })).rejects.toThrow('Score fail');
+        });
+    });
+
+    describe('updateHarvestMetrics', () => {
+        it('should call update_harvest_metrics service with correct payload', async () => {
+            const metrics = { wet_weight: 100, dry_weight: 80 };
+            await service.updateHarvestMetrics({ plant_id: 'p1', ...metrics });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_harvest_metrics', {
+                plant_id: 'p1',
+                ...metrics
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Metrics fail'));
+            await expect(service.updateHarvestMetrics({ plant_id: 'p1' })).rejects.toThrow('Metrics fail');
+        });
+    });
+
+    describe('movePlant', () => {
+        it('should call move_plant service with correct payload', async () => {
+            await service.movePlant('p1', 'g2');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'move_plant', {
+                plant_id: 'p1',
+                target_growspace_id: 'g2'
+            });
+        });
+
+        it('should call move_plant service with transition date', async () => {
+            await service.movePlant('p1', 'g2', '2023-12-01');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'move_plant', {
+                plant_id: 'p1',
+                target_growspace_id: 'g2',
+                transition_date: '2023-12-01'
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Move fail'));
+            await expect(service.movePlant('p1', 'g2')).rejects.toThrow('Move fail');
+        });
+    });
+
+    describe('harvestPlant with metrics', () => {
+        it('should call harvest_plant with metrics', async () => {
+            const metrics = { wet_weight: 150 };
+            await service.harvestPlant('p1', 'dry', metrics);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1',
+                target_growspace_id: 'dry',
+                ...metrics
+            });
+        });
+    });
 });

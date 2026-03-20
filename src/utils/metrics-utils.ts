@@ -13,6 +13,9 @@ import {
   mdiAirHumidifierOff,
   mdiWaterMinus,
   mdiBarrel,
+  mdiWeatherSunny,
+  mdiSprout,
+  mdiFlash,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
@@ -147,8 +150,8 @@ export class MetricsUtils {
             .replace(/\s+/g, '_')
             .replace(/[^\w-]+/g, '')
             .replace(/[_-]+/g, '_')
-            .replace(/^-+/, '')
-            .replace(/-+$/, '');
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
 
         const calcName = `${device.name} Calculated VPD`;
         const calculatedId = `sensor.${slugify(calcName)}`;
@@ -344,6 +347,33 @@ export class MetricsUtils {
     let tankStatus: string | undefined;
     let tankTooltip: string | undefined;
 
+    // New metrics: DLI, Crop Steering, Substrate Temp, Energy, Water
+    const dliEntityId = `sensor.${slug}_dli`;
+    const dliState = hass.states[dliEntityId];
+    const dliValue = dliState && dliState.state !== EntityState.UNKNOWN && dliState.state !== EntityState.UNAVAILABLE
+      ? dliState.state
+      : undefined;
+
+    const cropSteeringEntityId = `sensor.${slug}_crop_steering`;
+    const cropSteeringState = hass.states[cropSteeringEntityId];
+    const cropSteeringValue = cropSteeringState && cropSteeringState.state !== EntityState.UNKNOWN && cropSteeringState.state !== EntityState.UNAVAILABLE
+      ? cropSteeringState.state
+      : undefined;
+
+    const energyValue = device.energyTracking?.dailyKwh != null
+      ? device.energyTracking.dailyKwh.toFixed(2)
+      : undefined;
+
+    const waterValue = device.waterUsage?.litersToday != null
+      ? device.waterUsage.litersToday.toFixed(1)
+      : undefined;
+
+    const substrateTempAgg = getAggregateSensorState(
+      undefined,
+      envAttrs.substrateTemperatureSensors,
+      '°C'
+    );
+
     if (tanks.length > 0) {
       tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
 
@@ -519,6 +549,11 @@ export class MetricsUtils {
           envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
         )
         : null,
+      createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId]),
+      createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId]),
+      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
+      createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
+      createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     // Device Chips

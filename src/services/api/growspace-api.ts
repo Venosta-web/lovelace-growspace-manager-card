@@ -277,4 +277,30 @@ export class GrowspaceAPI extends BaseAPI {
       throw err;
     }
   }
+
+  async removeEnvironment(growspaceId: string): Promise<void> {
+    console.log(`[GrowspaceAPI:removeEnvironment] Removing environment for ${growspaceId}`);
+    try {
+      await this.callService(DOMAIN, SERVICES.REMOVE_ENVIRONMENT, {
+        growspace_id: growspaceId,
+      });
+      console.log('[GrowspaceAPI:removeEnvironment] Service Called');
+    } catch (err) {
+      console.error('[GrowspaceAPI:removeEnvironment] Error:', err);
+      throw err;
+    }
+  }
+
+  async resetWaterTracking(growspaceId: string): Promise<void> {
+    console.log(`[GrowspaceAPI:resetWaterTracking] Resetting water tracking for ${growspaceId}`);
+    try {
+      await this.callService(DOMAIN, SERVICES.RESET_WATER_TRACKING, {
+        growspace_id: growspaceId,
+      });
+      console.log('[GrowspaceAPI:resetWaterTracking] Service Called');
+    } catch (err) {
+      console.error('[GrowspaceAPI:resetWaterTracking] Error:', err);
+      throw err;
+    }
+  }
 }

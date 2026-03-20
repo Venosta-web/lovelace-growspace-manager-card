@@ -390,3 +390,39 @@ export function openTrainingDialog(ctx: ActionContext, plantIds: string[], grows
 export function openNutrientsDialog(ctx: ActionContext) {
   ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
 }
+
+export function openSnapshotsDialog(ctx: ActionContext, growspaceId?: string) {
+  ctx.ui.setActiveDialog({
+    type: 'SNAPSHOTS',
+    payload: {
+      growspaceId: growspaceId || '',
+    },
+  });
+}
+
+export function openCropSteeringDialog(ctx: ActionContext, growspaceId?: string) {
+  ctx.ui.setActiveDialog({
+    type: 'CROP_STEERING',
+    payload: {
+      growspaceId: growspaceId || '',
+    },
+  });
+}
+
+export function openECRampDialog(ctx: ActionContext, growspaceId?: string) {
+  ctx.ui.setActiveDialog({
+    type: 'EC_RAMP_EDITOR',
+    payload: {
+      growspaceId,
+    },
+  });
+}
+
+export function openGrowReportDialog(ctx: ActionContext, growspaceId?: string) {
+  ctx.ui.setActiveDialog({
+    type: 'GROW_REPORT',
+    payload: {
+      growspaceId: growspaceId || '',
+    },
+  });
+}

@@ -436,6 +436,51 @@ export class ConfigDialog extends LitElement {
     this._showDeleteConfirm = false;
   }
 
+  private _generateGrowReport() {
+    if (!this.editSelectedId) return;
+    this.dispatchEvent(
+      new CustomEvent('generate-grow-report', {
+        detail: {
+          growspace_id: this.editSelectedId,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private async _handleRemoveEnvironment() {
+    if (!this.envSelectedId) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to remove the environment configuration for this growspace? This will disconnect all sensors and controllers from this growspace.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      this.dispatchEvent(
+        new CustomEvent('remove-environment-submit', {
+          detail: {
+            growspace_id: this.envSelectedId,
+          },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      // Refresh fields after removal
+      setTimeout(() => {
+        if (this.envSelectedId) {
+          this._handleEnvGrowspaceChange({
+            target: { value: this.envSelectedId },
+          } as any);
+        }
+      }, 1000);
+    } catch (e) {
+      console.error('Failed to remove environment:', e);
+    }
+  }
+
   private _populateEditFields(growspaceId: string) {
     this.editSelectedId = growspaceId;
 
@@ -588,6 +633,19 @@ export class ConfigDialog extends LitElement {
                       <path d="${mdiDelete}"></path>
                     </svg>
                     Delete
+                  </button>
+                  <button
+                    class="md3-button tonal"
+                    @click=${this._generateGrowReport}
+                    ?disabled=${!this.editSelectedId}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19L10.5,16.5L7.5,19V16A1.5,1.5 0 0,1 6,14.5V11A1.5,1.5 0 0,1 7.5,9.5H13.5A1.5,1.5 0 0,1 15,11V14.5A1.5,1.5 0 0,1 13.5,16M13,9V3.5L18.5,9H13Z"></path>
+                    </svg>
+                    Grow Report
                   </button>
                   <button
                     class="md3-button primary"
@@ -1070,16 +1128,25 @@ export class ConfigDialog extends LitElement {
 
           <div
             class="md3-input-group"
-            style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;"
+            style=" display:flex; justify-content:space-between; align-items:center; margin-top:16px;"
           >
-            <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
-            <input
-              type="checkbox"
-              .checked=${this.envDehumidifierControlEnabled}
-              @change=${(e: Event) =>
+            <button
+              class="md3-button tonal error"
+              @click=${this._handleRemoveEnvironment}
+              ?disabled=${!this.envSelectedId}
+            >
+              Remove Environment
+            </button>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input
+                type="checkbox"
+                .checked=${this.envDehumidifierControlEnabled}
+                @change=${(e: Event) =>
         (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
-              style="width:20px; height:20px;"
-            />
+                style="width:20px; height:20px;"
+              />
+              <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
+            </div>
           </div>
         </div>
 

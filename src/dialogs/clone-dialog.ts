@@ -179,8 +179,8 @@ export class CloneDialog extends LitElement {
             <button class="md3-button primary" @click=${this._save} ?disabled=${this._submitting}>
               <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
               ${this._submitting
-                ? 'Creating...'
-                : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
+        ? 'Creating...'
+        : `Take ${this._numClones} Clone${this._numClones > 1 ? 's' : ''}`}
             </button>
           </div>
         </div>

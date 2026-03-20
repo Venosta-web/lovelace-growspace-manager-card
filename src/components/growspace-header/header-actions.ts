@@ -27,6 +27,9 @@ import {
   mdiPlus,
   mdiDna,
   mdiCube,
+  mdiCamera,
+  mdiChartLine,
+  mdiFileChart,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions')
@@ -119,6 +122,9 @@ export class GrowspaceHeaderActions extends LitElement {
       case 'logbook':
         this.store.openLogbookDialog();
         break;
+      case 'snapshots':
+        this.store.openSnapshotsDialog(this._selectedDeviceController.value || undefined);
+        break;
       case 'water': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
         this.store.openWateringDialog({
@@ -149,6 +155,12 @@ export class GrowspaceHeaderActions extends LitElement {
       }
       case 'nutrients':
         this.store.openNutrientsDialog();
+        break;
+      case 'ec_ramp':
+        this.store.openECRampDialog(this._selectedDeviceController.value || undefined);
+        break;
+      case 'report':
+        this.store.openGrowReportDialog(this._selectedDeviceController.value || undefined);
         break;
     }
   }
@@ -484,10 +496,6 @@ export class GrowspaceHeaderActions extends LitElement {
         : 'Log Training'}</span
           >
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-          <span class="menu-item-label">Nutrients</span>
-        </div>
 
         <div class="menu-divider"></div>
 
@@ -504,9 +512,27 @@ export class GrowspaceHeaderActions extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
           <span class="menu-item-label">Logbook</span>
         </div>
+        <div class="menu-item" @click=${() => this._triggerAction('report')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiFileChart}"></path></svg>
+          <span class="menu-item-label">Generate Report</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('snapshots')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+          <span class="menu-item-label">Camera Snapshots</span>
+        </div>
         <div class="menu-item" @click=${() => this._triggerAction('ai')}>
           <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
           <span class="menu-item-label">Ask AI</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-header">Nutrition</div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+          <span class="menu-item-label">Nutrients</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
+          <span class="menu-item-label">EC Ramp Curves</span>
         </div>
       </div>
     `;

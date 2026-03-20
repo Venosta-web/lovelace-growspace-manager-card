@@ -7,6 +7,7 @@ import {
   WS_TYPE_GET_NUTRIENT_INVENTORY,
   WS_TYPE_UPDATE_NUTRIENT_STOCK,
   WS_TYPE_REMOVE_NUTRIENT_STOCK,
+  WS_TYPE_GET_EC_RAMP_CURVES,
 } from '../../constants';
 import {
   NutrientPresetsSchema,
@@ -15,6 +16,8 @@ import {
   NutrientPresetsResponse,
   IPMPresetsResponse,
   NutrientInventoryResponse,
+  ECRampCurvesResponse,
+  ECRampCurvesSchema,
 } from '../../schemas/api-schema';
 
 /**
@@ -184,6 +187,63 @@ export class NutrientAPI extends BaseAPI {
       console.log('[NutrientAPI:applyIPM] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:applyIPM] Error:', err);
+      throw err;
+    }
+  }
+
+  async fetchECRampCurves(): Promise<ECRampCurvesResponse | null> {
+    if (!this.hass) return null;
+    try {
+      const result = await this.hass.connection.sendMessagePromise<unknown>({
+        type: WS_TYPE_GET_EC_RAMP_CURVES,
+      });
+
+      const parsed = ECRampCurvesSchema.safeParse(result);
+      if (!parsed.success) {
+        console.error('[NutrientAPI] EC Ramp Curves Validation Failed:', parsed.error.format());
+        return result as ECRampCurvesResponse;
+      }
+      return parsed.data;
+    } catch (err) {
+      console.error('[NutrientAPI:fetchECRampCurves] Error:', err);
+      return null;
+    }
+  }
+
+  async saveECRampCurve(data: {
+    curve_id?: string;
+    name: string;
+    stage?: string;
+    points: { day: number; target_ec: number }[];
+  }): Promise<void> {
+    console.log('[NutrientAPI:saveECRampCurve] Saving curve:', data);
+
+    // Transform points to backend format
+    const backendData = {
+      curve_id: data.curve_id,
+      name: data.name,
+      stage: data.stage || 'flower',
+      points: data.points.map(p => ({
+        week: Math.floor((p.day - 1) / 7) + 1,
+        ec_min: p.target_ec,
+        ec_max: p.target_ec + 0.4
+      }))
+    };
+
+    try {
+      await this.callService(DOMAIN, 'save_ec_ramp_curve', backendData);
+    } catch (err) {
+      console.error('[NutrientAPI:saveECRampCurve] Error:', err);
+      throw err;
+    }
+  }
+
+  async removeECRampCurve(curveId: string): Promise<void> {
+    console.log('[NutrientAPI:removeECRampCurve] Removing curve:', curveId);
+    try {
+      await this.callService(DOMAIN, 'remove_ec_ramp_curve', { curve_id: curveId });
+    } catch (err) {
+      console.error('[NutrientAPI:removeECRampCurve] Error:', err);
       throw err;
     }
   }

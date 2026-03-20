@@ -169,81 +169,133 @@ describe('DataService - NutrientAPI', () => {
             await expect(service.removeNutrientStock('n1'))
                 .rejects.toThrow('Remove Fail');
         });
-        describe('Validation & Errors', () => {
-            it('fetchNutrientPresets should return null if hass is missing', async () => {
-                service.updateHass(undefined as any);
-                expect(await service.fetchNutrientPresets()).toBeNull();
+    });
+
+    describe('EC Ramp Curves', () => {
+        it('fetchECRampCurves should fetch and return curves on success', async () => {
+            const mockCurves = { 'c1': { name: 'Curve 1', points: [] } };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockCurves);
+
+            const res = await service.fetchECRampCurves();
+            expect(res).toEqual(mockCurves);
+            expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'growspace_manager/get_ec_ramp_curves'
+            }));
+        });
+
+        it('saveECRampCurve should call service with transformed data', async () => {
+            const data = { name: 'New Curve', points: [{ day: 1, target_ec: 1.0 }] };
+            await service.saveECRampCurve(data);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'save_ec_ramp_curve', {
+                curve_id: undefined,
+                name: 'New Curve',
+                stage: 'flower',
+                points: [{ week: 1, ec_min: 1.0, ec_max: 1.4 }]
             });
+        });
 
-            it('fetchNutrientPresets should return raw result and log error on validation failure', async () => {
-                const badData = { p1: { name: 'missing_id' } };
-                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-                const res = await service.fetchNutrientPresets();
-                expect(res).toBe(badData);
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Presets Validation Failed:'), expect.anything());
+        it('removeECRampCurve should call service with id', async () => {
+            await service.removeECRampCurve('c1');
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'remove_ec_ramp_curve', {
+                curve_id: 'c1'
             });
+        });
 
-            it('fetchNutrientPresets should handle websocket error', async () => {
-                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        it('saveECRampCurve should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Save fail'));
+            await expect(service.saveECRampCurve({ name: 'X', points: [] })).rejects.toThrow('Save fail');
+        });
 
-                const res = await service.fetchNutrientPresets();
-                expect(res).toBeNull();
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchNutrientPresets] Error:'), expect.any(Error));
-            });
+        it('removeECRampCurve should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Remove fail'));
+            await expect(service.removeECRampCurve('c1')).rejects.toThrow('Remove fail');
+        });
+    });
 
-            it('fetchIPMPresets should return null if hass is missing', async () => {
-                service.updateHass(undefined as any);
-                expect(await service.fetchIPMPresets()).toBeNull();
-            });
+    describe('Validation & Errors', () => {
+        it('fetchNutrientPresets should return null if hass is missing', async () => {
+            service.updateHass(undefined as any);
+            expect(await service.fetchNutrientPresets()).toBeNull();
+        });
 
-            it('fetchIPMPresets should return raw result and log error on validation failure', async () => {
-                const badData = { p1: { name: 'missing_id' } };
-                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        it('fetchNutrientPresets should return raw result and log error on validation failure', async () => {
+            const badData = { p1: { name: 'missing_id' } };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-                const res = await service.fetchIPMPresets();
-                expect(res).toBe(badData);
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('IPM Presets Validation Failed:'), expect.anything());
-            });
+            const res = await service.fetchNutrientPresets();
+            expect(res).toBe(badData);
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Presets Validation Failed:'), expect.anything());
+        });
 
-            it('fetchIPMPresets should handle websocket error', async () => {
-                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        it('fetchNutrientPresets should handle websocket error', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-                const res = await service.fetchIPMPresets();
-                expect(res).toBeNull();
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchIPMPresets] Error:'), expect.any(Error));
-            });
+            const res = await service.fetchNutrientPresets();
+            expect(res).toBeNull();
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchNutrientPresets] Error:'), expect.any(Error));
+        });
 
-            it('fetchNutrientInventory should return null and log error on WS failure', async () => {
-                (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Inv Fail'));
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        it('fetchIPMPresets should return null if hass is missing', async () => {
+            service.updateHass(undefined as any);
+            expect(await service.fetchIPMPresets()).toBeNull();
+        });
 
-                const res = await service.fetchNutrientInventory();
-                expect(res).toBeNull();
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchNutrientInventory] Error:'), expect.any(Error));
-            });
+        it('fetchIPMPresets should return raw result and log error on validation failure', async () => {
+            const badData = { p1: { name: 'missing_id' } };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-            it('fetchNutrientInventory should return raw result and log error on validation failure', async () => {
-                const badData = { 'stocks': { 'n1': { missing_fields: true } } };
-                (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
-                const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const res = await service.fetchIPMPresets();
+            expect(res).toBe(badData);
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('IPM Presets Validation Failed:'), expect.anything());
+        });
 
-                const res = await service.fetchNutrientInventory();
-                expect(res).toBe(badData);
-                expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Inventory Validation Failed:'), expect.anything());
-            });
+        it('fetchIPMPresets should handle websocket error', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('WS Fail'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-            it('should return null/void if hass is missing for all methods', async () => {
-                service.updateHass(undefined as any);
-                expect(await service.fetchNutrientInventory()).toBeNull();
-                expect(await service.updateNutrientStock('n1', 'n', 1, 1)).toBeUndefined();
-                expect(await service.removeNutrientStock('n1')).toBeUndefined();
-                expect(await service.fetchIPMPresets()).toBeNull();
-            });
+            const res = await service.fetchIPMPresets();
+            expect(res).toBeNull();
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchIPMPresets] Error:'), expect.any(Error));
+        });
+
+        it('fetchNutrientInventory should return null and log error on WS failure', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Inv Fail'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchNutrientInventory();
+            expect(res).toBeNull();
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchNutrientInventory] Error:'), expect.any(Error));
+        });
+
+        it('fetchNutrientInventory should return raw result and log error on validation failure', async () => {
+            const badData = { 'stocks': { 'n1': { missing_fields: true } } };
+            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchNutrientInventory();
+            expect(res).toBe(badData);
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Nutrient Inventory Validation Failed:'), expect.anything());
+        });
+
+        it('fetchECRampCurves should return null and log error on WS failure', async () => {
+            (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Curve Fail'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+
+            const res = await service.fetchECRampCurves();
+            expect(res).toBeNull();
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('[NutrientAPI:fetchECRampCurves] Error:'), expect.any(Error));
+        });
+
+        it('should return null/void if hass is missing for all methods', async () => {
+            service.updateHass(undefined as any);
+            expect(await service.fetchNutrientInventory()).toBeNull();
+            expect(await service.updateNutrientStock('n1', 'n', 1, 1)).toBeUndefined();
+            expect(await service.removeNutrientStock('n1')).toBeUndefined();
+            expect(await service.fetchIPMPresets()).toBeNull();
+            expect(await service.fetchECRampCurves()).toBeNull();
         });
     });
 });

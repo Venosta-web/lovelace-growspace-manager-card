@@ -437,6 +437,61 @@ describe('DataService - StrainAPI', () => {
                         .rejects.toThrow('Failed to import strain library');
                 });
             });
+
+            describe('New Strain Meta Actions', () => {
+                it('updateStrainMeta should call service with data', async () => {
+                    const data = { strain: 'OG Kush', description: 'Updated' };
+                    await service.updateStrainMeta(data);
+                    expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_strain_meta', data);
+                });
+
+                it('updateStrainMeta should handle error', async () => {
+                    callServiceMock.mockRejectedValue(new Error('Update Fail'));
+                    await expect(service.updateStrainMeta({ strain: 'X' })).rejects.toThrow('Update Fail');
+                });
+
+                it('deleteBreeder should call sendMessagePromise with name', async () => {
+                    await service.strainAPI.deleteBreeder('Me');
+                    expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith({
+                        type: 'growspace_manager/delete_breeder',
+                        breeder_name: 'Me'
+                    });
+                });
+
+                it('deleteBreeder should handle error', async () => {
+                    (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Delete Fail'));
+                    await expect(service.strainAPI.deleteBreeder('Me')).rejects.toThrow('Delete Fail');
+                });
+
+                it('updateBreeder should call sendMessagePromise with data', async () => {
+                    await service.strainAPI.updateBreeder('Old', 'New', 'logo.png');
+                    expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith({
+                        type: 'growspace_manager/update_breeder',
+                        original_name: 'Old',
+                        new_name: 'New',
+                        logo: 'logo.png'
+                    });
+                });
+
+                it('updateBreeder should handle error', async () => {
+                    (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Update Fail'));
+                    await expect(service.strainAPI.updateBreeder('Old', 'New')).rejects.toThrow('Update Fail');
+                });
+
+                it('updateStrainMeta should clean undefined keys and handle non-base64 image', async () => {
+                    const data = { strain: 'OG Kush', description: undefined, image: '/local/test.jpg' };
+                    await service.updateStrainMeta(data);
+                    expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_strain_meta', {
+                        strain: 'OG Kush'
+                    });
+                });
+
+                it('fetchStrainLibrary should return empty array when result is null', async () => {
+                    (mockHass.connection.sendMessagePromise as any).mockResolvedValue(null);
+                    const res = await service.fetchStrainLibrary();
+                    expect(res).toEqual([]);
+                });
+            });
         });
     });
 });

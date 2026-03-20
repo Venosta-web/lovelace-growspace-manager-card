@@ -80,6 +80,65 @@ export interface IrrigationTank {
   depletionStatus?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
 }
 
+// --- New Feature Models ---
+
+export interface SerializedDrainECReading {
+  timestamp: string;
+  feed_ec: number;
+  drain_ec: number;
+  drain_volume_ml?: number | null;
+  feed_volume_ml?: number | null;
+}
+
+export interface DrainECReading {
+  timestamp: string;
+  feedEc: number;
+  drainEc: number;
+  drainVolumeMl?: number | null;
+  feedVolumeMl?: number | null;
+}
+
+export interface SerializedDrainConfig {
+  enabled: boolean;
+  max_ec_delta: number;
+  target_runoff_percent: number;
+  readings?: SerializedDrainECReading[];
+}
+
+export interface DrainConfig {
+  enabled: boolean;
+  maxEcDelta: number;
+  targetRunoffPercent: number;
+  readings: DrainECReading[];
+}
+
+
+export interface SerializedEnergyTracking {
+  daily_kwh: number;
+  cost_total: number;
+  cost_per_gram: number;
+  cycle_start_date?: string | null;
+}
+
+export interface EnergyTracking {
+  dailyKwh: number;
+  costTotal: number;
+  costPerGram: number;
+  cycleStartDate?: string | null;
+}
+
+export interface SerializedWaterUsage {
+  liters_per_plant_per_day: number;
+  liters_today: number;
+  water_efficiency: number;
+}
+
+export interface WaterUsage {
+  litersPerPlantPerDay: number;
+  litersToday: number;
+  waterEfficiency: number;
+}
+
 // --- Backend Serialized Models ---
 
 export interface SerializedBiologicalMetrics {
@@ -146,6 +205,12 @@ export interface SerializedEnvironmentAttributes {
 
   // Sensor Groups
   sensor_groups?: SensorGroup[];
+
+  // Phase 0 Extensions
+  electricity_cost_per_kwh?: number | null;
+  substrate_temperature_sensors?: string[];
+  camera_entities?: string[];
+  energy_sensors?: string[];
 }
 
 export interface SerializedStats {
@@ -174,6 +239,11 @@ export interface GrowspaceAPIResponse
   grid: Record<string, RawPlantData | null>;
   irrigation_config: SerializedIrrigationConfig;
   irrigation_strategy?: SerializedIrrigationStrategy | null;
+
+  drain_config?: SerializedDrainConfig | null;
+  energy_tracking?: SerializedEnergyTracking | null;
+  water_usage?: SerializedWaterUsage | null;
+
   _ts?: number; // Backend serialization timestamp for efficient equality checks
 }
 
@@ -228,6 +298,10 @@ export interface EnvironmentAttributes {
   pump_tank_links?: Record<string, string>;
   activeEvents?: Record<string, { start: string; duration: number }>;
   sensorGroups?: SensorGroup[];
+  electricityCostPerKwh?: number | null;
+  substrateTemperatureSensors?: string[];
+  cameraEntities?: string[];
+  energySensors?: string[];
 }
 
 export interface GrowspaceStats {
@@ -261,6 +335,10 @@ export interface GrowspaceDevice {
 
   irrigationConfig: IrrigationConfig;
   irrigationStrategy?: IrrigationStrategy;
+
+  drainConfig?: DrainConfig | null;
+  energyTracking?: EnergyTracking | null;
+  waterUsage?: WaterUsage | null;
 }
 
 // --- Utils ---
@@ -339,6 +417,7 @@ export interface IPMItem {
   name: string;
   dose_amount: number;
   dose_unit: string;
+  phi_days?: number;
 }
 
 export interface IPMPreset {

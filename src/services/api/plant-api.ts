@@ -84,13 +84,34 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async harvestPlant(plantId: string, target: string = 'dry'): Promise<void> {
+  async harvestPlant(
+    plantId: string,
+    target: string = 'dry',
+    metrics?: {
+      wet_weight?: number;
+      dry_weight?: number;
+      trim_weight?: number;
+      thc_percentage?: number;
+      cbd_percentage?: number;
+      terpene_profile?: string;
+    }
+  ): Promise<void> {
     console.log('[PlantAPI:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         plant_id: plantId,
         target_growspace_id: target,
       };
+
+      // Attach optional yield/lab metrics
+      if (metrics) {
+        if (metrics.wet_weight != null) payload.wet_weight = metrics.wet_weight;
+        if (metrics.dry_weight != null) payload.dry_weight = metrics.dry_weight;
+        if (metrics.trim_weight != null) payload.trim_weight = metrics.trim_weight;
+        if (metrics.thc_percentage != null) payload.thc_percentage = metrics.thc_percentage;
+        if (metrics.cbd_percentage != null) payload.cbd_percentage = metrics.cbd_percentage;
+        if (metrics.terpene_profile) payload.terpene_profile = metrics.terpene_profile;
+      }
 
       await this.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
       console.log('[PlantAPI:harvestPlant] Service Called');
@@ -205,6 +226,80 @@ export class PlantAPI extends BaseAPI {
       return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
     } catch (err) {
       console.error('[PlantAPI:printLabel] Error:', err);
+      throw err;
+    }
+  }
+
+  async scorePlant(params: {
+    plant_id: string;
+    vigor?: number | null;
+    structure?: number | null;
+    aroma?: number | null;
+    resin?: number | null;
+    pest_resistance?: number | null;
+  }): Promise<void> {
+    console.log('[PlantAPI:scorePlant] Scoring plant:', params.plant_id);
+    const payload: Record<string, unknown> = { plant_id: params.plant_id };
+
+    // Explicitly include null values to allow clearing fields on the backend
+    if (params.vigor !== undefined) payload.vigor = params.vigor;
+    if (params.structure !== undefined) payload.structure = params.structure;
+    if (params.aroma !== undefined) payload.aroma = params.aroma;
+    if (params.resin !== undefined) payload.resin = params.resin;
+    if (params.pest_resistance !== undefined) payload.pest_resistance = params.pest_resistance;
+
+    try {
+      await this.callService(DOMAIN, SERVICES.SCORE_PLANT, payload);
+      console.log('[PlantAPI:scorePlant] Service Called');
+    } catch (err) {
+      console.error('[PlantAPI:scorePlant] Error:', err);
+      throw err;
+    }
+  }
+
+  async updateHarvestMetrics(params: {
+    plant_id: string;
+    wet_weight?: number | null;
+    dry_weight?: number | null;
+    trim_weight?: number | null;
+    thc_percentage?: number | null;
+    cbd_percentage?: number | null;
+    terpene_profile?: string | null;
+  }): Promise<void> {
+    console.log('[PlantAPI:updateHarvestMetrics] Updating metrics:', params.plant_id);
+    const payload: Record<string, unknown> = { plant_id: params.plant_id };
+
+    // Explicitly include null values to allow clearing fields on the backend
+    if (params.wet_weight !== undefined) payload.wet_weight = params.wet_weight;
+    if (params.dry_weight !== undefined) payload.dry_weight = params.dry_weight;
+    if (params.trim_weight !== undefined) payload.trim_weight = params.trim_weight;
+    if (params.thc_percentage !== undefined) payload.thc_percentage = params.thc_percentage;
+    if (params.cbd_percentage !== undefined) payload.cbd_percentage = params.cbd_percentage;
+    if (params.terpene_profile !== undefined) payload.terpene_profile = params.terpene_profile;
+
+    try {
+      await this.callService(DOMAIN, SERVICES.UPDATE_HARVEST_METRICS, payload);
+      console.log('[PlantAPI:updateHarvestMetrics] Service Called');
+    } catch (err) {
+      console.error('[PlantAPI:updateHarvestMetrics] Error:', err);
+      throw err;
+    }
+  }
+
+  async movePlant(plantId: string, targetGrowspaceId: string, transitionDate?: string): Promise<void> {
+    console.log('[PlantAPI:movePlant] Moving plant:', plantId, 'to', targetGrowspaceId);
+    const payload: Record<string, unknown> = {
+      plant_id: plantId,
+      target_growspace_id: targetGrowspaceId,
+    };
+    if (transitionDate) {
+      payload.transition_date = transitionDate;
+    }
+    try {
+      await this.callService(DOMAIN, SERVICES.MOVE_PLANT, payload);
+      console.log('[PlantAPI:movePlant] Service Called');
+    } catch (err) {
+      console.error('[PlantAPI:movePlant] Error:', err);
       throw err;
     }
   }

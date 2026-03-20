@@ -179,7 +179,7 @@ export class IPMDialog extends LitElement {
     this._editingPreset = {
       name: '',
       type: 'foliar',
-      items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
+      items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L', phi_days: 0 }],
       stage: undefined,
       min_days_in_stage: 0,
     };
@@ -207,7 +207,7 @@ export class IPMDialog extends LitElement {
     if (!this._editingPreset) return;
     const items = [
       ...(this._editingPreset.items || []),
-      { name: '', dose_amount: 0, dose_unit: 'ml/L' },
+      { name: '', dose_amount: 0, dose_unit: 'ml/L', phi_days: 0 },
     ];
     this._editingPreset = { ...this._editingPreset, items };
   }
@@ -531,6 +531,14 @@ export class IPMDialog extends LitElement {
             this._updateProduct(_index, { dose_unit: e.detail })}
                   style="flex: 1;"
                 ></md3-text-input>
+                <md3-number-input
+                  label="PHI (Days)"
+                  .value=${item.phi_days || 0}
+                  @change=${(e: CustomEvent) =>
+            this._updateProduct(_index, { phi_days: parseInt(e.detail) || 0 })}
+                  min="0"
+                  style="flex: 1;"
+                ></md3-number-input>
                 <button
                   class="md3-button icon"
                   @click=${() => this._removeProduct(_index)}

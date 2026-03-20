@@ -13,6 +13,10 @@ import {
   mdiCalculator,
   mdiAirFilter,
   mdiBarrel,
+  mdiFlash,
+  mdiSprout,
+  mdiWeatherSunny,
+  mdiWaterMinus,
 } from '@mdi/js';
 
 export enum MetricKey {
@@ -32,6 +36,11 @@ export enum MetricKey {
   DEHUMIDIFIER = 'dehumidifier',
   CALCULATED_VPD = 'calculated_vpd',
   AIR_EXCHANGE = 'air_exchange',
+  DLI = 'dli',
+  SUBSTRATE_TEMPERATURE = 'substrate_temperature',
+  CROP_STEERING = 'crop_steering',
+  ENERGY = 'energy',
+  WATER = 'water',
 }
 
 export const METRIC_SORT_ORDER = [
@@ -49,6 +58,11 @@ export const METRIC_SORT_ORDER = [
   MetricKey.CIRCULATION_FAN,
   MetricKey.HUMIDIFIER,
   MetricKey.DEHUMIDIFIER,
+  MetricKey.DLI,
+  MetricKey.SUBSTRATE_TEMPERATURE,
+  MetricKey.CROP_STEERING,
+  MetricKey.ENERGY,
+  MetricKey.WATER,
 ];
 
 export enum ChartType {
@@ -146,6 +160,11 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     icon: mdiRadioboxMarked,
     type: ChartType.STEP,
   },
+  [MetricKey.DLI]: { color: '#ffb300', title: 'DLI', unit: 'mol/m²/d', icon: mdiWeatherSunny },
+  [MetricKey.SUBSTRATE_TEMPERATURE]: { color: '#ff5252', title: 'Substrate Temp', unit: '°C', icon: mdiThermometer },
+  [MetricKey.CROP_STEERING]: { color: '#4caf50', title: 'Crop Steering', unit: '', icon: mdiSprout },
+  [MetricKey.ENERGY]: { color: '#fbc02d', title: 'Energy', unit: 'kWh', icon: mdiFlash },
+  [MetricKey.WATER]: { color: '#03a9f4', title: 'Water Usage', unit: 'L/d', icon: mdiWaterMinus },
 };
 
 export enum StatusLevel {
@@ -228,6 +247,8 @@ export const METRIC_ENTITY_KEYS: Record<
   [MetricKey.SOIL_MOISTURE]: { primary: 'soilMoistureSensor' },
   [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
   [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
+  [MetricKey.SUBSTRATE_TEMPERATURE]: { primary: 'substrateTemperatureSensors' },
+  [MetricKey.ENERGY]: { primary: 'energySensors' },
 };
 
 export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
@@ -244,4 +265,9 @@ export type MetricType =
   | MetricKey.DEHUMIDIFIER
   | MetricKey.CIRCULATION_FAN
   | MetricKey.LIGHT
-  | MetricKey.OPTIMAL;
+  | MetricKey.OPTIMAL
+  | MetricKey.DLI
+  | MetricKey.SUBSTRATE_TEMPERATURE
+  | MetricKey.CROP_STEERING
+  | MetricKey.ENERGY
+  | MetricKey.WATER;

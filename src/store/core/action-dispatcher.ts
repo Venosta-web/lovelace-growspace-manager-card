@@ -77,10 +77,13 @@ export class ActionDispatcher {
         detail.plantsPerRow
       ),
     remove: (id: string) => strainActions.removeGrowspace(this.ctx, id),
+    removeEnvironment: (id: string) => this.ctx.dataService.removeEnvironment(id),
+    resetWaterTracking: (id: string) => this.ctx.dataService.resetWaterTracking(id),
   };
 
   public readonly strain = {
     add: (data: Partial<StrainEntry>) => strainActions.addStrain(this.ctx, data),
+    update: (data: Partial<StrainEntry>) => strainActions.updateStrain(this.ctx, data),
     remove: (key: string) => strainActions.removeStrain(this.ctx, key),
   };
 

@@ -440,7 +440,7 @@ describe('GrowspaceStore', () => {
             await store.addStrain({ strain: 'New Strain' });
             expect(store.dataService.addStrain).toHaveBeenCalled();
             expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
-            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('saved'), 'success', undefined);
+            expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('added'), 'success', undefined);
         });
 
         it('should handle add strain error', async () => {

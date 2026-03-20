@@ -108,6 +108,8 @@ export interface RawPlantData {
   last_training_technique?: string | null;
   last_ipm?: string | null;
   last_ipm_type?: string | null;
+  phi_clearance_date?: string | null;
+  phi_days_remaining?: number | null;
   days_since_last_watering: number | null;
   events?: PlantTimelineEvent[];
 }

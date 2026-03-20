@@ -7,16 +7,11 @@ import { ActionContext } from '../core/action-context';
 import { fetchStrainLibrary } from './library-actions';
 
 /**
- * Add a new strain to the library.
+ * Create consistent payload for strain operations.
  */
-export async function addStrain(
-  ctx: ActionContext,
-  strainData: Partial<StrainEntry>
-): Promise<boolean> {
-  if (!strainData.strain) return false;
-
-  const payload = {
-    strain: strainData.strain,
+function _createStrainPayload(strainData: Partial<StrainEntry>) {
+  return {
+    strain: strainData.strain!,
     phenotype: strainData.phenotype,
     breeder: strainData.breeder,
     type: strainData.type,
@@ -35,14 +30,48 @@ export async function addStrain(
     indica_percentage: strainData.indica_percentage,
     breeder_logo: strainData.breeder_logo,
   };
+}
+
+/**
+ * Add a new strain to the library.
+ */
+export async function addStrain(
+  ctx: ActionContext,
+  strainData: Partial<StrainEntry>
+): Promise<boolean> {
+  if (!strainData.strain) return false;
 
   try {
+    const payload = _createStrainPayload(strainData);
     await ctx.dataService.addStrain(payload);
-    ctx.showToast('Strain saved successfully!', 'success');
+    ctx.showToast('Strain added successfully!', 'success');
     await fetchStrainLibrary(ctx, true);
     return true;
   } catch (err) {
     console.error('Error adding strain:', err);
+    ctx.showToast('Failed to add strain', 'error');
+    return false;
+  }
+}
+
+/**
+ * Update an existing strain in the library.
+ */
+export async function updateStrain(
+  ctx: ActionContext,
+  strainData: Partial<StrainEntry>
+): Promise<boolean> {
+  if (!strainData.strain) return false;
+
+  try {
+    const payload = _createStrainPayload(strainData);
+    await ctx.dataService.updateStrainMeta(payload);
+    ctx.showToast('Strain updated successfully!', 'success');
+    await fetchStrainLibrary(ctx, true);
+    return true;
+  } catch (err) {
+    console.error('Error updating strain:', err);
+    ctx.showToast('Failed to update strain', 'error');
     return false;
   }
 }

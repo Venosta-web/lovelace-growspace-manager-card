@@ -203,11 +203,20 @@ export class GrowspaceStore {
   }
 
   toggleEnvGraph(metric: string) {
+    if (metric === 'crop_steering') {
+      const gsId = this.data.$selectedDevice.get();
+      if (gsId) this.openCropSteeringDialog(gsId);
+      return;
+    }
     if (!this.history) return;
     const isNowActive = this.history.toggleEnvGraph(metric);
     if (isNowActive && this.ui.$viewMode.get() === ViewMode.HEADER) {
       this.ui.setViewMode(ViewMode.STANDARD);
     }
+  }
+
+  openECRampDialog(growspaceId?: string) {
+    uiActions.openECRampDialog(this.context, growspaceId);
   }
 
   // Device Actions
@@ -234,6 +243,10 @@ export class GrowspaceStore {
 
   public async fetchNutrientInventory(force = false) {
     await libraryActions.fetchNutrientInventory(this.context, force);
+  }
+
+  public async fetchECRampCurves(force = false) {
+    await libraryActions.fetchECRampCurves(this.context, force);
   }
 
   public async updateNutrientStock(
@@ -546,8 +559,20 @@ export class GrowspaceStore {
     uiActions.openNutrientsDialog(this.context);
   }
 
+  openSnapshotsDialog(growspaceId?: string) {
+    uiActions.openSnapshotsDialog(this.context, growspaceId);
+  }
+
+  openCropSteeringDialog(growspaceId?: string) {
+    uiActions.openCropSteeringDialog(this.context, growspaceId);
+  }
+
   openLogbookDialog() {
     uiActions.openLogbookDialog(this.context);
+  }
+
+  openGrowReportDialog(growspaceId?: string) {
+    uiActions.openGrowReportDialog(this.context, growspaceId);
   }
 
   async handleExportLibrary() {

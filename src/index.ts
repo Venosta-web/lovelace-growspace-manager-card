@@ -12,3 +12,43 @@ export { GrowspaceManagerCard } from './growspace-manager-card';
 export { GrowspaceGridCard } from './cards/growspace-grid-card';
 export { GrowspaceAnalyticsCard } from './cards/growspace-analytics-card';
 export { GrowspaceAiInsightCard } from './cards/growspace-ai-insight-card';
+
+// Register cards in the Home Assistant card picker
+declare global {
+  interface Window {
+    customCards?: Array<{
+      type: string;
+      name: string;
+      description: string;
+      preview?: boolean;
+    }>;
+  }
+}
+
+window.customCards = window.customCards || [];
+window.customCards.push(
+  {
+    type: 'growspace-manager-card',
+    name: 'Growspace Manager',
+    description: 'Full growspace management dashboard with environment monitoring, plant tracking, and irrigation control.',
+    preview: false,
+  },
+  {
+    type: 'growspace-grid-card',
+    name: 'Growspace Grid',
+    description: 'Compact grid view of all plants in a growspace.',
+    preview: false,
+  },
+  {
+    type: 'growspace-analytics-card',
+    name: 'Growspace Analytics',
+    description: 'Environment analytics and historical charts for a growspace.',
+    preview: false,
+  },
+  {
+    type: 'growspace-ai-insight-card',
+    name: 'Growspace AI Insight',
+    description: 'AI-powered cultivation insights and recommendations.',
+    preview: false,
+  },
+);

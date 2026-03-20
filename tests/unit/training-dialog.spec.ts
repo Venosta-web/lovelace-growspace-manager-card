@@ -149,7 +149,11 @@ describe('TrainingDialog', () => {
         );
 
         expect(mockStore.ui.showToast).toHaveBeenCalledWith('Training logged successfully', 'success');
-        expect(mockStore.ui.closeDialog).toHaveBeenCalled();
+        
+        const closeSpy = vi.fn();
+        element.addEventListener('close', closeSpy);
+        await (element as any)._handleClose();
+        expect(closeSpy).toHaveBeenCalled();
     });
 
     it('should handle error during save', async () => {

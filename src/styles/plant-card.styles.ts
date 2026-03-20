@@ -192,6 +192,10 @@ export const plantCardStyles = css`
     color: #9c27b0; /* Purple for IPM */
   }
 
+  .status-icon.phi {
+    color: #ff9800; /* Orange for PHI */
+  }
+
   .status-icon.preset-recommended {
     color: var(--gm-primary-color);
   }

@@ -164,3 +164,31 @@ export interface PrintLabelDialogState {
   breederLogo?: string;
   deviceId?: string;
 }
+
+/** State for the harvest scoring modal shown before actually harvesting a plant. */
+export interface HarvestScoringDialogState {
+  /** The plant being harvested. */
+  plant: PlantEntity;
+  /** Current score values (1–5 or undefined/null for unset). */
+  vigor?: number | null;
+  structure?: number | null;
+  aroma?: number | null;
+  resin?: number | null;
+  pestResistance?: number | null;
+}
+
+export interface SnapshotsDialogState {
+  growspaceId: string;
+}
+
+export interface CropSteeringDialogState {
+  growspaceId: string;
+}
+
+export interface ECRampDialogState {
+  growspaceId?: string;
+}
+
+export interface GrowReportDialogState {
+  growspaceId: string;
+}

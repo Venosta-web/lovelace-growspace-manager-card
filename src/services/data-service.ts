@@ -11,6 +11,8 @@ import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
+import { CameraAPI } from './api/camera-api';
+import { ReportAPI } from './api/report-api';
 
 /**
  * DataService - Thin facade coordinating domain-specific API services.
@@ -35,6 +37,8 @@ export class DataService {
   private _plantAPI: PlantAPI;
   private _irrigationAPI: IrrigationAPI;
   private _aiAPI: AIAPI;
+  private _cameraAPI: CameraAPI;
+  private _reportAPI: ReportAPI;
 
   constructor(hass?: HomeAssistant) {
     // Initialize all API services
@@ -45,6 +49,8 @@ export class DataService {
     this._plantAPI = new PlantAPI(hass);
     this._irrigationAPI = new IrrigationAPI(hass);
     this._aiAPI = new AIAPI(hass);
+    this._cameraAPI = new CameraAPI(hass);
+    this._reportAPI = new ReportAPI(hass);
 
     if (hass) {
       this.hass = hass;
@@ -64,6 +70,8 @@ export class DataService {
       this._plantAPI,
       this._irrigationAPI,
       this._aiAPI,
+      this._cameraAPI,
+      this._reportAPI,
     ].forEach((api) => api.updateHass(hass));
   }
 
@@ -136,6 +144,10 @@ export class DataService {
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
     this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
 
+  removeEnvironment = (growspaceId: string) => this._growspaceAPI.removeEnvironment(growspaceId);
+
+  resetWaterTracking = (growspaceId: string) => this._growspaceAPI.resetWaterTracking(growspaceId);
+
   // ========================================
   // Strain API Delegations
   // ========================================
@@ -170,6 +182,23 @@ export class DataService {
     this._strainAPI.importStrainLibrary(file, replace);
 
   clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
+
+  updateStrainMeta = (data: {
+    strain: string;
+    phenotype?: string;
+    breeder?: string;
+    type?: string;
+    flowering_days_min?: number;
+    flowering_days_max?: number;
+    lineage?: string;
+    sex?: string;
+    description?: string;
+    image?: string;
+    image_crop_meta?: CropMeta;
+    sativa_percentage?: number;
+    indica_percentage?: number;
+    breeder_logo?: string;
+  }) => this._strainAPI.updateStrainMeta(data);
 
   // ========================================
   // Nutrient API Delegations
@@ -213,6 +242,17 @@ export class DataService {
     plant_ids?: string[];
     notes?: string;
   }) => this._nutrientAPI.applyIPM(data);
+
+  fetchECRampCurves = () => this._nutrientAPI.fetchECRampCurves();
+
+  saveECRampCurve = (data: {
+    curve_id?: string;
+    name: string;
+    stage?: string;
+    points: { day: number; target_ec: number }[];
+  }) => this._nutrientAPI.saveECRampCurve(data);
+
+  removeECRampCurve = (curveId: string) => this._nutrientAPI.removeECRampCurve(curveId);
 
   // ========================================
   // History API Delegations
@@ -277,7 +317,18 @@ export class DataService {
 
   removePlant = (plantId: string) => this._plantAPI.removePlant(plantId);
 
-  harvestPlant = (plantId: string, target?: string) => this._plantAPI.harvestPlant(plantId, target);
+  harvestPlant = (
+    plantId: string,
+    target?: string,
+    metrics?: {
+      wet_weight?: number;
+      dry_weight?: number;
+      trim_weight?: number;
+      thc_percentage?: number;
+      cbd_percentage?: number;
+      terpene_profile?: string;
+    }
+  ) => this._plantAPI.harvestPlant(plantId, target, metrics);
 
   takeClone = (params: {
     mother_plant_id: string;
@@ -287,6 +338,9 @@ export class DataService {
 
   moveClone = (plantId: string, targetGrowspaceId: string, transitionDate?: string) =>
     this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
+
+  movePlant = (plantId: string, targetGrowspaceId: string, transitionDate?: string) =>
+    this._plantAPI.movePlant(plantId, targetGrowspaceId, transitionDate);
 
   swapPlants = (plant1Id: string, plant2Id: string) =>
     this._plantAPI.swapPlants(plant1Id, plant2Id);
@@ -309,6 +363,25 @@ export class DataService {
     preview?: boolean;
     base_url?: string;
   }): Promise<any> => this._plantAPI.printLabel(params);
+
+  scorePlant = (params: {
+    plant_id: string;
+    vigor?: number | null;
+    structure?: number | null;
+    aroma?: number | null;
+    resin?: number | null;
+    pest_resistance?: number | null;
+  }) => this._plantAPI.scorePlant(params);
+
+  updateHarvestMetrics = (params: {
+    plant_id: string;
+    wet_weight?: number | null;
+    dry_weight?: number | null;
+    trim_weight?: number | null;
+    thc_percentage?: number | null;
+    cbd_percentage?: number | null;
+    terpene_profile?: string | null;
+  }) => this._plantAPI.updateHarvestMetrics(params);
 
   // ========================================
   // Irrigation API Delegations
@@ -337,6 +410,16 @@ export class DataService {
   setIrrigationStrategy = (growspaceId: string, strategy: Partial<IrrigationStrategy>) =>
     this._irrigationAPI.setIrrigationStrategy(growspaceId, strategy);
 
+  configureDrainMonitoring = (
+    growspaceId: string,
+    params: { enabled?: boolean; maxEcDelta?: number; targetRunoffPercent?: number }
+  ) => this._irrigationAPI.configureDrainMonitoring(growspaceId, params);
+
+  logDrainReading = (
+    growspaceId: string,
+    params: { feedEc: number; drainEc: number; feedVolumeMl?: number; drainVolumeMl?: number }
+  ) => this._irrigationAPI.logDrainReading(growspaceId, params);
+
   waterGrowspace = (
     growspaceId: string,
     amount: number,
@@ -354,6 +437,22 @@ export class DataService {
   analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
 
   getStrainRecommendation = (userQuery: string) => this._aiAPI.getStrainRecommendation(userQuery);
+
+  // ========================================
+  // Camera API Delegations
+  // ========================================
+
+  captureSnapshot = (growspaceId: string) => this._cameraAPI.captureSnapshot(growspaceId);
+
+  getSnapshots = (growspaceId: string, limit?: number, offset?: number) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+
+  // ========================================
+  // Report API Delegations
+  // ========================================
+
+  exportGrowReport = (growspaceId: string, format?: string) => this._reportAPI.exportGrowReport(growspaceId, format);
+
+  fetchGrowReport = (growspaceId: string) => this._reportAPI.fetchGrowReport(growspaceId);
 
   // ========================================
   // Legacy/Generic Service Call Support

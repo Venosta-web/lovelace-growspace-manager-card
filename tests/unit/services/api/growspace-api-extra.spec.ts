@@ -219,5 +219,30 @@ describe('GrowspaceAPI Extra Coverage', () => {
             );
         });
     });
-});
 
+    describe('Environment Management', () => {
+        it('removeEnvironment should call service', async () => {
+            await service.removeEnvironment('gs1');
+            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'remove_environment', {
+                growspace_id: 'gs1'
+            });
+        });
+
+        it('resetWaterTracking should call service', async () => {
+            await service.resetWaterTracking('gs1');
+            expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'reset_water_tracking', {
+                growspace_id: 'gs1'
+            });
+        });
+
+        it('removeEnvironment should handle error', async () => {
+            mockHass.callService = vi.fn().mockRejectedValue(new Error('Fail'));
+            await expect(service.removeEnvironment('gs1')).rejects.toThrow('Fail');
+        });
+
+        it('resetWaterTracking should handle error', async () => {
+            mockHass.callService = vi.fn().mockRejectedValue(new Error('Fail'));
+            await expect(service.resetWaterTracking('gs1')).rejects.toThrow('Fail');
+        });
+    });
+});

@@ -67,8 +67,10 @@ var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 1
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
 var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiAlertCircle = "M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiArrowDown = "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
+var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
@@ -78,7 +80,9 @@ var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
+var mdiChartLine = "M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z";
 var mdiChartTimelineVariant = "M3,14L3.5,14.07L8.07,9.5C7.89,8.85 8.06,8.11 8.59,7.59C9.37,6.8 10.63,6.8 11.41,7.59C11.94,8.11 12.11,8.85 11.93,9.5L14.5,12.07L15,12C15.18,12 15.35,12 15.5,12.07L19.07,8.5C19,8.35 19,8.18 19,8A2,2 0 0,1 21,6A2,2 0 0,1 23,8A2,2 0 0,1 21,10C20.82,10 20.65,10 20.5,9.93L16.93,13.5C17,13.65 17,13.82 17,14A2,2 0 0,1 15,16A2,2 0 0,1 13,14L13.07,13.5L10.5,10.93C10.18,11 9.82,11 9.5,10.93L4.93,15.5L5,16A2,2 0 0,1 3,18A2,2 0 0,1 1,16A2,2 0 0,1 3,14Z";
+var mdiChartTimelineVariantShimmer = "M21 8C19.5 8 18.7 9.4 19.1 10.5L15.5 14.1C15.2 14 14.8 14 14.5 14.1L11.9 11.5C12.3 10.4 11.5 9 10 9C8.6 9 7.7 10.4 8.1 11.5L3.5 16C2.4 15.7 1 16.5 1 18C1 19.1 1.9 20 3 20C4.4 20 5.3 18.6 4.9 17.5L9.4 12.9C9.7 13 10.1 13 10.4 12.9L13 15.5C12.7 16.5 13.5 18 15 18C16.5 18 17.3 16.6 16.9 15.5L20.5 11.9C21.6 12.2 23 11.4 23 10C23 8.9 22.1 8 21 8M15 9L15.9 6.9L18 6L15.9 5.1L15 3L14.1 5.1L12 6L14.1 6.9L15 9M3.5 11L4 9L6 8.5L4 8L3.5 6L3 8L1 8.5L3 9L3.5 11Z";
 var mdiChartTree = "M14,6H22V22H14V6M2,4H22V2H2V4M2,8H12V6H2V8M9,22H12V10H9V22M2,22H7V10H2V22Z";
 var mdiCheck = "M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z";
 var mdiCheckboxBlankOutline = "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z";
@@ -104,6 +108,7 @@ var mdiDotsVertical = "M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,
 var mdiDownload = "M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z";
 var mdiDumbbell = "M20.57,14.86L22,13.43L20.57,12L17,15.57L8.43,7L12,3.43L10.57,2L9.14,3.43L7.71,2L5.57,4.14L4.14,2.71L2.71,4.14L4.14,5.57L2,7.71L3.43,9.14L2,10.57L3.43,12L7,8.43L15.57,17L12,20.57L13.43,22L14.86,20.57L16.29,22L18.43,19.86L19.86,21.29L21.29,19.86L19.86,18.43L22,16.29L20.57,14.86Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
+var mdiFileChart = "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M7,20H9V14H7V20M11,20H13V12H11V20M15,20H17V16H15V20Z";
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
@@ -120,6 +125,7 @@ var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
+var mdiMinus = "M19,13H5V11H19V13Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
@@ -182,6 +188,11 @@ var MetricKey;
     MetricKey["DEHUMIDIFIER"] = "dehumidifier";
     MetricKey["CALCULATED_VPD"] = "calculated_vpd";
     MetricKey["AIR_EXCHANGE"] = "air_exchange";
+    MetricKey["DLI"] = "dli";
+    MetricKey["SUBSTRATE_TEMPERATURE"] = "substrate_temperature";
+    MetricKey["CROP_STEERING"] = "crop_steering";
+    MetricKey["ENERGY"] = "energy";
+    MetricKey["WATER"] = "water";
 })(MetricKey || (MetricKey = {}));
 const METRIC_SORT_ORDER = [
     MetricKey.TEMPERATURE,
@@ -198,6 +209,11 @@ const METRIC_SORT_ORDER = [
     MetricKey.CIRCULATION_FAN,
     MetricKey.HUMIDIFIER,
     MetricKey.DEHUMIDIFIER,
+    MetricKey.DLI,
+    MetricKey.SUBSTRATE_TEMPERATURE,
+    MetricKey.CROP_STEERING,
+    MetricKey.ENERGY,
+    MetricKey.WATER,
 ];
 var ChartType;
 (function (ChartType) {
@@ -286,6 +302,11 @@ const METRIC_CONFIG = {
         icon: mdiRadioboxMarked,
         type: ChartType.STEP,
     },
+    [MetricKey.DLI]: { color: '#ffb300', title: 'DLI', unit: 'mol/m²/d', icon: mdiWeatherSunny },
+    [MetricKey.SUBSTRATE_TEMPERATURE]: { color: '#ff5252', title: 'Substrate Temp', unit: '°C', icon: mdiThermometer },
+    [MetricKey.CROP_STEERING]: { color: '#4caf50', title: 'Crop Steering', unit: '', icon: mdiSprout },
+    [MetricKey.ENERGY]: { color: '#fbc02d', title: 'Energy', unit: 'kWh', icon: mdiFlash },
+    [MetricKey.WATER]: { color: '#03a9f4', title: 'Water Usage', unit: 'L/d', icon: mdiWaterMinus },
 };
 var StatusLevel;
 (function (StatusLevel) {
@@ -358,6 +379,8 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.SOIL_MOISTURE]: { primary: 'soilMoistureSensor' },
     [MetricKey.IRRIGATION]: { primary: 'irrigationPumpEntity', source: 'irrigation' },
     [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
+    [MetricKey.SUBSTRATE_TEMPERATURE]: { primary: 'substrateTemperatureSensors' },
+    [MetricKey.ENERGY]: { primary: 'energySensors' },
 };
 
 // --- Utils ---
@@ -4773,6 +4796,7 @@ var ZodFirstPartyTypeKind;
 const stringType = ZodString.create;
 const numberType = ZodNumber.create;
 const booleanType = ZodBoolean.create;
+const anyType = ZodAny.create;
 const unknownType = ZodUnknown.create;
 ZodNever.create;
 const arrayType = ZodArray.create;
@@ -4805,6 +4829,8 @@ const PlantSlotSchema = objectType({
     cure_days: numberType().optional().default(0),
     last_ipm: stringType().nullable().optional().default(null),
     last_ipm_type: stringType().nullable().optional().default(null),
+    phi_clearance_date: stringType().nullable().optional().default(null),
+    phi_days_remaining: numberType().nullable().optional().default(null),
     // Start dates
     seedling_start: stringType().nullable().optional().default(null),
     mother_start: stringType().nullable().optional().default(null),
@@ -4911,6 +4937,35 @@ const GrowspaceAPIResponseSchema = objectType({
     air_exchange: unionType([stringType(), numberType().transform(String)])
         .nullable()
         .optional(), // Default handled by optionality
+    // Phase 0 Extensions
+    electricity_cost_per_kwh: numberType().nullable().optional(),
+    substrate_temperature_sensors: arrayType(stringType()).optional().default([]),
+    camera_entities: arrayType(stringType()).optional().default([]),
+    energy_sensors: arrayType(stringType()).optional().default([]),
+    // New Feature Objects
+    drain_config: objectType({
+        enabled: booleanType(),
+        max_ec_delta: numberType(),
+        target_runoff_percent: numberType(),
+        readings: arrayType(objectType({
+            timestamp: stringType(),
+            feed_ec: numberType(),
+            drain_ec: numberType(),
+            drain_volume_ml: numberType().nullable().optional(),
+            feed_volume_ml: numberType().nullable().optional(),
+        })).optional().default([]),
+    }).nullable().optional(),
+    energy_tracking: objectType({
+        daily_kwh: numberType().optional(),
+        cost_total: numberType().optional(),
+        cost_per_gram: numberType().optional(),
+        cycle_start_date: stringType().nullable().optional(),
+    }).nullable().optional(),
+    water_usage: objectType({
+        liters_per_plant_per_day: numberType().optional(),
+        liters_today: numberType().optional(),
+        water_efficiency: numberType().optional(),
+    }).nullable().optional(),
 })
     .passthrough(); // Allow extra fields at root
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
@@ -4967,6 +5022,7 @@ const IPMPresetSchema = objectType({
         name: stringType(),
         dose_amount: numberType(),
         dose_unit: stringType(),
+        phi_days: numberType().optional().default(0),
     })),
     stage: stringType()
         .nullish()
@@ -4977,6 +5033,27 @@ const IPMPresetSchema = objectType({
 })
     .passthrough();
 const IPMPresetsSchema = recordType(stringType(), IPMPresetSchema);
+const ECRampPointSchema = objectType({
+    week: numberType().optional(),
+    ec_min: numberType().optional(),
+    ec_max: numberType().optional(),
+    day: numberType().optional(),
+    target_ec: numberType().optional(),
+})
+    .transform((data) => ({
+    day: data.day ?? ((data.week ?? 1) - 1) * 7 + 1,
+    target_ec: data.target_ec ?? data.ec_min ?? 0,
+}));
+const ECRampCurveSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    stage: stringType().optional().default('flower'),
+    points: arrayType(ECRampPointSchema),
+});
+const ECRampCurvesSchema = unionType([
+    recordType(stringType(), ECRampCurveSchema),
+    arrayType(anyType()).transform(() => ({})), // Backend sometimes defaults to [] if empty
+]);
 const NutrientStockSchema = objectType({
     nutrient_id: stringType(),
     name: stringType(),
@@ -5103,6 +5180,10 @@ class GrowspaceAdapter {
             sensorCoordinates,
             sensorTypes: wsData.sensor_types,
             sensorGroups: wsData.sensor_groups,
+            electricityCostPerKwh: wsData.electricity_cost_per_kwh,
+            substrateTemperatureSensors: wsData.substrate_temperature_sensors,
+            cameraEntities: wsData.camera_entities,
+            energySensors: wsData.energy_sensors,
         };
         const stats = {
             maxVegDays: wsData.max_veg_days,
@@ -5158,6 +5239,35 @@ class GrowspaceAdapter {
                 shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
             }
             : undefined;
+        const drainConfig = wsData.drain_config
+            ? {
+                enabled: wsData.drain_config.enabled,
+                maxEcDelta: wsData.drain_config.max_ec_delta,
+                targetRunoffPercent: wsData.drain_config.target_runoff_percent,
+                readings: (wsData.drain_config.readings || []).map((r) => ({
+                    timestamp: r.timestamp,
+                    feedEc: r.feed_ec,
+                    drainEc: r.drain_ec,
+                    drainVolumeMl: r.drain_volume_ml,
+                    feedVolumeMl: r.feed_volume_ml,
+                })),
+            }
+            : null;
+        const energyTracking = wsData.energy_tracking
+            ? {
+                dailyKwh: wsData.energy_tracking.daily_kwh,
+                costTotal: wsData.energy_tracking.cost_total,
+                costPerGram: wsData.energy_tracking.cost_per_gram,
+                cycleStartDate: wsData.energy_tracking.cycle_start_date,
+            }
+            : null;
+        const waterUsage = wsData.water_usage
+            ? {
+                litersPerPlantPerDay: wsData.water_usage.liters_per_plant_per_day,
+                litersToday: wsData.water_usage.liters_today,
+                waterEfficiency: wsData.water_usage.water_efficiency,
+            }
+            : null;
         // 5. Construct Device
         return createGrowspaceDevice({
             deviceId: growspaceId,
@@ -5184,6 +5294,9 @@ class GrowspaceAdapter {
             // Configs
             irrigationConfig,
             irrigationStrategy,
+            drainConfig,
+            energyTracking,
+            waterUsage,
         });
     }
     /** @deprecated */
@@ -5203,6 +5316,9 @@ const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
 const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory';
 const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
 const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
+const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
+const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
+const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
 // Home Assistant services
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
@@ -5240,6 +5356,17 @@ const SERVICES = {
     REMOVE_IPM_PRESET: 'remove_ipm_preset',
     APPLY_IPM: 'apply_ipm',
     PRINT_LABEL: 'print_label',
+    SCORE_PLANT: 'score_plant',
+    UPDATE_HARVEST_METRICS: 'update_harvest_metrics',
+    CONFIGURE_DRAIN_MONITORING: 'configure_drain_monitoring',
+    LOG_DRAIN_READING: 'log_drain_reading',
+    BATCH_ACTION: 'batch_action',
+    LOG_TRAINING_EVENT: 'log_training_event',
+    EXPORT_GROW_REPORT: 'export_grow_report',
+    MOVE_PLANT: 'move_plant',
+    REMOVE_ENVIRONMENT: 'remove_environment',
+    RESET_WATER_TRACKING: 'reset_water_tracking',
+    UPDATE_STRAIN_META: 'update_strain_meta',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -5485,6 +5612,32 @@ class GrowspaceAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[GrowspaceAPI:setDehumidifierControl] Error:', err);
+            throw err;
+        }
+    }
+    async removeEnvironment(growspaceId) {
+        console.log(`[GrowspaceAPI:removeEnvironment] Removing environment for ${growspaceId}`);
+        try {
+            await this.callService(DOMAIN, SERVICES.REMOVE_ENVIRONMENT, {
+                growspace_id: growspaceId,
+            });
+            console.log('[GrowspaceAPI:removeEnvironment] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:removeEnvironment] Error:', err);
+            throw err;
+        }
+    }
+    async resetWaterTracking(growspaceId) {
+        console.log(`[GrowspaceAPI:resetWaterTracking] Resetting water tracking for ${growspaceId}`);
+        try {
+            await this.callService(DOMAIN, SERVICES.RESET_WATER_TRACKING, {
+                growspace_id: growspaceId,
+            });
+            console.log('[GrowspaceAPI:resetWaterTracking] Service Called');
+        }
+        catch (err) {
+            console.error('[GrowspaceAPI:resetWaterTracking] Error:', err);
             throw err;
         }
     }
@@ -5752,6 +5905,33 @@ class StrainAPI extends BaseAPI {
             throw err;
         }
     }
+    async updateStrainMeta(data) {
+        console.log('[StrainAPI:updateStrainMeta] Updating strain:', data);
+        try {
+            const payload = { ...data };
+            // Clean undefined keys
+            Object.keys(payload).forEach((key) => {
+                if (payload[key] === undefined) {
+                    delete payload[key];
+                }
+            });
+            if (data.image) {
+                if (data.image.startsWith('data:')) {
+                    payload.image_base64 = data.image;
+                    delete payload.image;
+                }
+                else {
+                    delete payload.image; // Assume unchanged file path
+                }
+            }
+            await this.callService(DOMAIN, SERVICES.UPDATE_STRAIN_META, payload);
+            console.log('[StrainAPI:updateStrainMeta] Service Called');
+        }
+        catch (err) {
+            console.error('[StrainAPI:updateStrainMeta] Error:', err);
+            throw err;
+        }
+    }
 }
 
 /**
@@ -5901,6 +6081,56 @@ class NutrientAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[NutrientAPI:applyIPM] Error:', err);
+            throw err;
+        }
+    }
+    async fetchECRampCurves() {
+        if (!this.hass)
+            return null;
+        try {
+            const result = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_EC_RAMP_CURVES,
+            });
+            const parsed = ECRampCurvesSchema.safeParse(result);
+            if (!parsed.success) {
+                console.error('[NutrientAPI] EC Ramp Curves Validation Failed:', parsed.error.format());
+                return result;
+            }
+            return parsed.data;
+        }
+        catch (err) {
+            console.error('[NutrientAPI:fetchECRampCurves] Error:', err);
+            return null;
+        }
+    }
+    async saveECRampCurve(data) {
+        console.log('[NutrientAPI:saveECRampCurve] Saving curve:', data);
+        // Transform points to backend format
+        const backendData = {
+            curve_id: data.curve_id,
+            name: data.name,
+            stage: data.stage || 'flower',
+            points: data.points.map(p => ({
+                week: Math.floor((p.day - 1) / 7) + 1,
+                ec_min: p.target_ec,
+                ec_max: p.target_ec + 0.4
+            }))
+        };
+        try {
+            await this.callService(DOMAIN, 'save_ec_ramp_curve', backendData);
+        }
+        catch (err) {
+            console.error('[NutrientAPI:saveECRampCurve] Error:', err);
+            throw err;
+        }
+    }
+    async removeECRampCurve(curveId) {
+        console.log('[NutrientAPI:removeECRampCurve] Removing curve:', curveId);
+        try {
+            await this.callService(DOMAIN, 'remove_ec_ramp_curve', { curve_id: curveId });
+        }
+        catch (err) {
+            console.error('[NutrientAPI:removeECRampCurve] Error:', err);
             throw err;
         }
     }
@@ -6081,13 +6311,28 @@ class PlantAPI extends BaseAPI {
             throw err;
         }
     }
-    async harvestPlant(plantId, target = 'dry') {
+    async harvestPlant(plantId, target = 'dry', metrics) {
         console.log('[PlantAPI:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
         try {
             const payload = {
                 plant_id: plantId,
                 target_growspace_id: target,
             };
+            // Attach optional yield/lab metrics
+            if (metrics) {
+                if (metrics.wet_weight != null)
+                    payload.wet_weight = metrics.wet_weight;
+                if (metrics.dry_weight != null)
+                    payload.dry_weight = metrics.dry_weight;
+                if (metrics.trim_weight != null)
+                    payload.trim_weight = metrics.trim_weight;
+                if (metrics.thc_percentage != null)
+                    payload.thc_percentage = metrics.thc_percentage;
+                if (metrics.cbd_percentage != null)
+                    payload.cbd_percentage = metrics.cbd_percentage;
+                if (metrics.terpene_profile)
+                    payload.terpene_profile = metrics.terpene_profile;
+            }
             await this.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
             console.log('[PlantAPI:harvestPlant] Service Called');
         }
@@ -6171,6 +6416,72 @@ class PlantAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[PlantAPI:printLabel] Error:', err);
+            throw err;
+        }
+    }
+    async scorePlant(params) {
+        console.log('[PlantAPI:scorePlant] Scoring plant:', params.plant_id);
+        const payload = { plant_id: params.plant_id };
+        // Explicitly include null values to allow clearing fields on the backend
+        if (params.vigor !== undefined)
+            payload.vigor = params.vigor;
+        if (params.structure !== undefined)
+            payload.structure = params.structure;
+        if (params.aroma !== undefined)
+            payload.aroma = params.aroma;
+        if (params.resin !== undefined)
+            payload.resin = params.resin;
+        if (params.pest_resistance !== undefined)
+            payload.pest_resistance = params.pest_resistance;
+        try {
+            await this.callService(DOMAIN, SERVICES.SCORE_PLANT, payload);
+            console.log('[PlantAPI:scorePlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:scorePlant] Error:', err);
+            throw err;
+        }
+    }
+    async updateHarvestMetrics(params) {
+        console.log('[PlantAPI:updateHarvestMetrics] Updating metrics:', params.plant_id);
+        const payload = { plant_id: params.plant_id };
+        // Explicitly include null values to allow clearing fields on the backend
+        if (params.wet_weight !== undefined)
+            payload.wet_weight = params.wet_weight;
+        if (params.dry_weight !== undefined)
+            payload.dry_weight = params.dry_weight;
+        if (params.trim_weight !== undefined)
+            payload.trim_weight = params.trim_weight;
+        if (params.thc_percentage !== undefined)
+            payload.thc_percentage = params.thc_percentage;
+        if (params.cbd_percentage !== undefined)
+            payload.cbd_percentage = params.cbd_percentage;
+        if (params.terpene_profile !== undefined)
+            payload.terpene_profile = params.terpene_profile;
+        try {
+            await this.callService(DOMAIN, SERVICES.UPDATE_HARVEST_METRICS, payload);
+            console.log('[PlantAPI:updateHarvestMetrics] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:updateHarvestMetrics] Error:', err);
+            throw err;
+        }
+    }
+    async movePlant(plantId, targetGrowspaceId, transitionDate) {
+        console.log('[PlantAPI:movePlant] Moving plant:', plantId, 'to', targetGrowspaceId);
+        const payload = {
+            plant_id: plantId,
+            target_growspace_id: targetGrowspaceId,
+        };
+        if (transitionDate) {
+            payload.transition_date = transitionDate;
+        }
+        try {
+            await this.callService(DOMAIN, SERVICES.MOVE_PLANT, payload);
+            console.log('[PlantAPI:movePlant] Service Called');
+        }
+        catch (err) {
+            console.error('[PlantAPI:movePlant] Error:', err);
             throw err;
         }
     }
@@ -6320,6 +6631,28 @@ class IrrigationAPI extends BaseAPI {
             throw err;
         }
     }
+    async configureDrainMonitoring(growspaceId, params) {
+        const payload = { growspace_id: growspaceId };
+        if (params.enabled !== undefined)
+            payload.enabled = params.enabled;
+        if (params.maxEcDelta !== undefined)
+            payload.max_ec_delta = params.maxEcDelta;
+        if (params.targetRunoffPercent !== undefined)
+            payload.target_runoff_percent = params.targetRunoffPercent;
+        await this.callService(DOMAIN, SERVICES.CONFIGURE_DRAIN_MONITORING, payload);
+    }
+    async logDrainReading(growspaceId, params) {
+        const payload = {
+            growspace_id: growspaceId,
+            feed_ec: params.feedEc,
+            drain_ec: params.drainEc,
+        };
+        if (params.feedVolumeMl !== undefined)
+            payload.feed_volume_ml = params.feedVolumeMl;
+        if (params.drainVolumeMl !== undefined)
+            payload.drain_volume_ml = params.drainVolumeMl;
+        await this.callService(DOMAIN, SERVICES.LOG_DRAIN_READING, payload);
+    }
 }
 
 /**
@@ -6399,6 +6732,90 @@ class AIAPI extends BaseAPI {
     }
 }
 
+class CameraAPI extends BaseAPI {
+    /**
+     * Captures snapshots from all configured cameras for a growspace.
+     * @param growspaceId The ID of the growspace
+     * @returns A promise that resolves to the capture response
+     */
+    async captureSnapshot(growspaceId) {
+        if (!this.hass)
+            return null;
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_CAPTURE_SNAPSHOT,
+                growspace_id: growspaceId,
+            });
+            return response;
+        }
+        catch (error) {
+            console.error(`[CameraAPI] Failed to capture snapshot for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Retrieves paginated snapshots for a growspace.
+     * @param growspaceId The ID of the growspace
+     * @param limit Maximum number of snapshots to return (default: 50)
+     * @param offset Offset to start from (default: 0)
+     * @returns A promise that resolves to the get snapshots response
+     */
+    async getSnapshots(growspaceId, limit = 50, offset = 0) {
+        if (!this.hass)
+            return null;
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_SNAPSHOTS,
+                growspace_id: growspaceId,
+                limit,
+                offset,
+            });
+            return response;
+        }
+        catch (error) {
+            console.error(`[CameraAPI] Failed to get snapshots for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+}
+
+class ReportAPI extends BaseAPI {
+    /**
+     * Generates and triggers export of a grow report for a specific growspace.
+     * Based on format (json or pdf), the backend handles file generation.
+     */
+    async exportGrowReport(growspaceId, format = 'json') {
+        try {
+            await this.callService(DOMAIN, SERVICES.EXPORT_GROW_REPORT, {
+                growspace_id: growspaceId,
+                format,
+            });
+        }
+        catch (err) {
+            console.error('[ReportAPI:exportGrowReport] Error:', err);
+            throw err;
+        }
+    }
+    /**
+     * Fetches JSON grow report data over WebSocket if supported.
+     */
+    async fetchGrowReport(growspaceId) {
+        console.log(`[ReportAPI:fetchGrowReport] Fetching report for ${growspaceId}`);
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: 'growspace_manager/get_grow_report',
+                growspace_id: growspaceId,
+            });
+            console.log('[ReportAPI:fetchGrowReport] WS call completed', response);
+            return response;
+        }
+        catch (err) {
+            console.error('[ReportAPI:fetchGrowReport] Error:', err);
+            throw err;
+        }
+    }
+}
+
 // Import all API services
 /**
  * DataService - Thin facade coordinating domain-specific API services.
@@ -6425,6 +6842,8 @@ let DataService$1 = class DataService {
         this.removeGrowspace = (growspaceId) => this._growspaceAPI.removeGrowspace(growspaceId);
         this.configureEnvironment = (data) => this._growspaceAPI.configureEnvironment(data);
         this.setDehumidifierControl = (growspaceId, enabled) => this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
+        this.removeEnvironment = (growspaceId) => this._growspaceAPI.removeEnvironment(growspaceId);
+        this.resetWaterTracking = (growspaceId) => this._growspaceAPI.resetWaterTracking(growspaceId);
         // ========================================
         // Strain API Delegations
         // ========================================
@@ -6435,6 +6854,7 @@ let DataService$1 = class DataService {
         this.exportStrainLibrary = () => this._strainAPI.exportStrainLibrary();
         this.importStrainLibrary = (file, replace) => this._strainAPI.importStrainLibrary(file, replace);
         this.clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
+        this.updateStrainMeta = (data) => this._strainAPI.updateStrainMeta(data);
         // ========================================
         // Nutrient API Delegations
         // ========================================
@@ -6448,6 +6868,9 @@ let DataService$1 = class DataService {
         this.saveNutrientPreset = (data) => this._nutrientAPI.saveNutrientPreset(data);
         this.removeNutrientPreset = (presetId) => this._nutrientAPI.removeNutrientPreset(presetId);
         this.applyIPM = (data) => this._nutrientAPI.applyIPM(data);
+        this.fetchECRampCurves = () => this._nutrientAPI.fetchECRampCurves();
+        this.saveECRampCurve = (data) => this._nutrientAPI.saveECRampCurve(data);
+        this.removeECRampCurve = (curveId) => this._nutrientAPI.removeECRampCurve(curveId);
         // ========================================
         // History API Delegations
         // ========================================
@@ -6461,12 +6884,15 @@ let DataService$1 = class DataService {
         this.addPlants = (params) => this._plantAPI.addPlants(params);
         this.updatePlant = (params) => this._plantAPI.updatePlant(params);
         this.removePlant = (plantId) => this._plantAPI.removePlant(plantId);
-        this.harvestPlant = (plantId, target) => this._plantAPI.harvestPlant(plantId, target);
+        this.harvestPlant = (plantId, target, metrics) => this._plantAPI.harvestPlant(plantId, target, metrics);
         this.takeClone = (params) => this._plantAPI.takeClone(params);
         this.moveClone = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
+        this.movePlant = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.movePlant(plantId, targetGrowspaceId, transitionDate);
         this.swapPlants = (plant1Id, plant2Id) => this._plantAPI.swapPlants(plant1Id, plant2Id);
         this.waterPlant = (plantId, amount, nutrients, presetId) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
         this.printLabel = (params) => this._plantAPI.printLabel(params);
+        this.scorePlant = (params) => this._plantAPI.scorePlant(params);
+        this.updateHarvestMetrics = (params) => this._plantAPI.updateHarvestMetrics(params);
         // ========================================
         // Irrigation API Delegations
         // ========================================
@@ -6476,6 +6902,8 @@ let DataService$1 = class DataService {
         this.addDrainTime = (params) => this._irrigationAPI.addDrainTime(params);
         this.removeDrainTime = (params) => this._irrigationAPI.removeDrainTime(params);
         this.setIrrigationStrategy = (growspaceId, strategy) => this._irrigationAPI.setIrrigationStrategy(growspaceId, strategy);
+        this.configureDrainMonitoring = (growspaceId, params) => this._irrigationAPI.configureDrainMonitoring(growspaceId, params);
+        this.logDrainReading = (growspaceId, params) => this._irrigationAPI.logDrainReading(growspaceId, params);
         this.waterGrowspace = (growspaceId, amount, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
         // ========================================
         // AI API Delegations
@@ -6483,6 +6911,16 @@ let DataService$1 = class DataService {
         this.askGrowAdvice = (growspaceId, userQuery) => this._aiAPI.askGrowAdvice(growspaceId, userQuery);
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
         this.getStrainRecommendation = (userQuery) => this._aiAPI.getStrainRecommendation(userQuery);
+        // ========================================
+        // Camera API Delegations
+        // ========================================
+        this.captureSnapshot = (growspaceId) => this._cameraAPI.captureSnapshot(growspaceId);
+        this.getSnapshots = (growspaceId, limit, offset) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+        // ========================================
+        // Report API Delegations
+        // ========================================
+        this.exportGrowReport = (growspaceId, format) => this._reportAPI.exportGrowReport(growspaceId, format);
+        this.fetchGrowReport = (growspaceId) => this._reportAPI.fetchGrowReport(growspaceId);
         // Initialize all API services
         this._growspaceAPI = new GrowspaceAPI(hass);
         this._strainAPI = new StrainAPI(hass);
@@ -6491,6 +6929,8 @@ let DataService$1 = class DataService {
         this._plantAPI = new PlantAPI(hass);
         this._irrigationAPI = new IrrigationAPI(hass);
         this._aiAPI = new AIAPI(hass);
+        this._cameraAPI = new CameraAPI(hass);
+        this._reportAPI = new ReportAPI(hass);
         if (hass) {
             this.hass = hass;
         }
@@ -6508,6 +6948,8 @@ let DataService$1 = class DataService {
             this._plantAPI,
             this._irrigationAPI,
             this._aiAPI,
+            this._cameraAPI,
+            this._reportAPI,
         ].forEach((api) => api.updateHass(hass));
     }
     /**
@@ -10729,6 +11171,43 @@ class TimelineService {
         }
     }
     /**
+     * Fetch all events for a specific plant across all growspaces it has been in.
+     * Use this in the plant overview dialog so history is not lost after stage moves.
+     * @param plantId - The plant ID to fetch events for
+     * @param growspaceId - The plant's current growspace (for shared/irrigation events)
+     * @param limit - Maximum number of events to fetch (default: 50)
+     */
+    async fetchPlantEvents(plantId, growspaceId, limit = 50) {
+        try {
+            const [logsResponse, alertsResponse] = await Promise.all([
+                this.hass.callWS({
+                    type: WS_TYPE_GET_LOG,
+                    plant_id: plantId,
+                    growspace_id: growspaceId,
+                    limit,
+                }),
+                this.hass.callWS({
+                    type: WS_TYPE_GET_ALERTS,
+                    plant_id: plantId,
+                    growspace_id: growspaceId,
+                    limit: 300,
+                }),
+            ]);
+            const logs = logsResponse?.[plantId] || [];
+            const alerts = alertsResponse?.[plantId] || [];
+            const combined = [...logs, ...alerts].sort((a, b) => {
+                const tA = new Date(a.timestamp || a.start_time).getTime();
+                const tB = new Date(b.timestamp || b.start_time).getTime();
+                return tB - tA;
+            });
+            return combined;
+        }
+        catch (e) {
+            console.error('Error fetching plant events:', e);
+            throw e;
+        }
+    }
+    /**
      * Add a note to a plant timeline
      * @param plantId - The plant ID to add the note to
      * @param payload - Note data including text, images, and tags
@@ -12503,6 +12982,13 @@ class LibraryExportReadyEvent extends CustomEvent {
 }
 LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
+const SCORE_DIMENSIONS$1 = [
+    { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+    { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+    { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+    { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+    { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+];
 let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -12514,6 +13000,11 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this._showDeleteConfirmation = false;
         this._activeTab = 'dashboard';
         this._logbookEvents = [];
+        this._harvestMetricsEdit = {};
+        // Star scores: key → 1-5 or null
+        this._scoresEdit = {};
+        this._starPreview = {};
+        this._savingHarvest = false;
     }
     connectedCallback() {
         super.connectedCallback();
@@ -12577,6 +13068,18 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         // Fetch logbook when plant changes (direct prop usage)
         if (changedProps.has('plant') && this.plant) {
             this._fetchLogbook();
+            const hm = this.plant.attributes?.harvest_metrics || {};
+            this._harvestMetricsEdit = { ...hm };
+            // Map scores dict: backend uses pest_resistance key
+            const rawScores = this.plant.attributes?.scores || {};
+            this._scoresEdit = {
+                vigor: rawScores.vigor ?? null,
+                structure: rawScores.structure ?? null,
+                aroma: rawScores.aroma ?? null,
+                resin: rawScores.resin ?? null,
+                pest_resistance: rawScores.pest_resistance ?? null,
+            };
+            this._starPreview = {};
         }
     }
     async _fetchLogbook() {
@@ -12584,7 +13087,12 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             return;
         try {
             const service = getTimelineService(this.hass);
-            const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
+            const plantId = this.plant.attributes.plant_id;
+            const growspaceId = this.plant.attributes.growspace_id;
+            // Fetch by plant_id so history from previous growspaces is included after stage moves
+            const fetchedEvents = plantId
+                ? await service.fetchPlantEvents(plantId, growspaceId)
+                : await service.fetchGrowspaceEvents(growspaceId);
             // Identify optimistic events (no event_id, recent timestamp) to preserve
             // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
             const now = new Date().getTime();
@@ -12632,6 +13140,10 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         if (!this.editedAttributes)
             return;
         this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
+        const stage = (this.plant?.state || '').toLowerCase();
+        if (this._activeTab === 'harvest' && (stage === 'dry' || stage === 'cure')) {
+            this._saveHarvestMetrics();
+        }
     }
     _delete(_plantId) {
         this._showDeleteConfirmation = true;
@@ -12656,7 +13168,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     _takeClone(plant, numClones) {
         this.dispatchEvent(new TakeCloneEvent(plant, numClones));
     }
-    _moveClone(plant) {
+    _movePlant(plant) {
         if (!this.cloneTargetId) {
             // alert is not ideal but keeping for now as per previous logic
             alert('Select a growspace');
@@ -12929,6 +13441,19 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
               <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
               Timeline
             </button>
+            ${['drying', 'curing', 'dry', 'cure'].includes((this.plant?.state || '').toLowerCase()) ? x `
+              <button
+                class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
+                @click=${() => {
+            this._activeTab = 'harvest';
+            this._harvestMetricsEdit = { ...(this.plant?.attributes?.harvest_metrics || {}) };
+            this._scoresEdit = { ...(this.plant?.attributes?.scores || {}) };
+        }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                Scoring & Harvest
+              </button>
+            ` : E}
           </div>
 
           <div class="overview-grid">
@@ -12936,7 +13461,9 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             ? this._renderDashboard(attributes)
             : this._activeTab === 'actions'
                 ? this._renderActions()
-                : this._renderTimeline()}
+                : this._activeTab === 'harvest'
+                    ? this._renderHarvestTab()
+                    : this._renderTimeline()}
           </div>
 
           <!-- ACTIONS -->
@@ -13026,11 +13553,11 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                           </button>
                         `
                 : E}
-                    ${(this.plant.state || '').toLowerCase() === 'clone'
+                    ${(this.plant.state || '').toLowerCase() !== ''
                 ? x `
                           <div style="display:flex; align-items:center; gap:8px;">
                             <md3-select
-                              label="Target Growspace"
+                              label="Move to Growspace"
                               .value=${this.cloneTargetId}
                               .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
                               style="width: 200px;"
@@ -13038,7 +13565,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                             ></md3-select>
                             <button
                               class="md3-button primary"
-                              @click=${() => this._moveClone(this.plant)}
+                              @click=${() => this._movePlant(this.plant)}
                               style="margin-top: 24px;"
                             >
                               <svg
@@ -13421,6 +13948,206 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
       </div>
     `;
     }
+    _setScore(key, value) {
+        const current = this._scoresEdit[key];
+        this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+    }
+    /** Skip scoring and immediately advance the plant to the next stage */
+    _skipAndAdvance() {
+        if (!this.plant || this._savingHarvest)
+            return;
+        const stage = (this.plant.state || '').toLowerCase();
+        if (stage === 'dry' || stage === 'drying') {
+            this._finishDrying(this.plant);
+        }
+        else {
+            // cure → whatever comes next (treated as a harvest/advance)
+            this._harvest(this.plant);
+        }
+    }
+    _renderScoreRow(dim) {
+        const current = this._scoresEdit[dim.key];
+        const preview = this._starPreview[dim.key];
+        return x `
+      <div class="score-row">
+        <div class="score-header">
+          <span class="score-label">
+            <span class="score-emoji">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span class="score-value">
+            ${current !== null ? `${current} / 5` : '—'}
+          </span>
+        </div>
+        <p class="score-description">${dim.description}</p>
+        <div class="star-row">
+          ${[1, 2, 3, 4, 5].map(star => x `
+            <button
+              class="star-btn
+                ${current !== null && star <= current ? 'active' : ''}
+                ${preview !== null && star <= preview ? 'preview' : ''}"
+              aria-label="Set ${dim.label} score to ${star}"
+              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
+              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
+              @click=${() => this._setScore(dim.key, star)}
+              ?disabled=${this._savingHarvest}
+            >⭐</button>
+          `)}
+        </div>
+      </div>
+    `;
+    }
+    _renderHarvestTab() {
+        const isSaving = this._savingHarvest;
+        const hm = this._harvestMetricsEdit;
+        const stage = (this.plant?.state || '').toLowerCase();
+        const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
+        return x `
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Score Grid -->
+        <div class="score-grid">
+          ${SCORE_DIMENSIONS$1.map(dim => this._renderScoreRow(dim))}
+        </div>
+        <p class="skip-hint">All fields are optional — you can advance without scoring.</p>
+
+        <hr class="harvest-divider" />
+
+        <!-- Yield Metrics -->
+        <div class="metrics-section">
+          <p class="metrics-section-title">Yield metrics</p>
+          <div class="metrics-grid">
+            <div class="metric-field">
+              <label for="hm-wet">Wet weight (g)</label>
+              <input id="hm-wet" type="number" min="0" step="0.1" placeholder="e.g. 120"
+                .value=${String(hm.wet_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-dry">Dry weight (g)</label>
+              <input id="hm-dry" type="number" min="0" step="0.1" placeholder="e.g. 28"
+                .value=${String(hm.dry_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-trim">Trim weight (g)</label>
+              <input id="hm-trim" type="number" min="0" step="0.1" placeholder="e.g. 5"
+                .value=${String(hm.trim_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr class="harvest-divider" />
+
+        <!-- Lab Results -->
+        <div class="metrics-section">
+          <p class="metrics-section-title">Lab results</p>
+          <div class="metrics-grid">
+            <div class="metric-field">
+              <label for="hm-thc">THC (%)</label>
+              <input id="hm-thc" type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
+                .value=${String(hm.thc_percentage ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-cbd">CBD (%)</label>
+              <input id="hm-cbd" type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
+                .value=${String(hm.cbd_percentage ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field terpene-field">
+              <label for="hm-terp">Terpene profile</label>
+              <textarea id="hm-terp" rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
+                .value=${String(hm.terpene_profile ?? '')}
+                @input=${(e) => {
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: e.target.value };
+        }}
+                ?disabled=${isSaving}
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <hr class="harvest-divider" />
+
+        <!-- Action Buttons (hidden in dry/cure stage — Save Changes handles saving) -->
+        ${(stage !== 'dry' && stage !== 'cure') ? x `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button
+            class="md3-button outlined"
+            @click=${() => this._skipAndAdvance()}
+            ?disabled=${isSaving}
+          >${advanceLabel}</button>
+          <button
+            class="md3-button filled"
+            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+            @click=${() => this._saveHarvestMetrics()}
+            ?disabled=${isSaving}
+          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
+        </div>
+        ` : E}
+      </div>
+    `;
+    }
+    async _saveHarvestMetrics() {
+        if (!this.plant?.attributes?.plant_id)
+            return;
+        this._savingHarvest = true;
+        try {
+            const plantId = this.plant.attributes.plant_id;
+            const m = this._harvestMetricsEdit;
+            if (Object.keys(m).length > 0) {
+                await this.store.dataService.updateHarvestMetrics({
+                    plant_id: plantId,
+                    ...m
+                });
+            }
+            const s = this._scoresEdit;
+            if (Object.keys(s).length > 0) {
+                await this.store.dataService.scorePlant({
+                    plant_id: plantId,
+                    ...s
+                });
+            }
+            // Small delay to allow backend to process before refresh
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await this.store.refreshData();
+            this._activeTab = 'dashboard';
+        }
+        catch (e) {
+            console.error('Failed to save harvest metrics', e);
+            alert('Failed to save harvest metrics. Check controls/network.');
+        }
+        finally {
+            this._savingHarvest = false;
+        }
+    }
 };
 PlantOverviewDialog.styles = [
     dialogStyles,
@@ -13692,11 +14419,136 @@ PlantOverviewDialog.styles = [
           justify-content: flex-start;
         }
       }
+
+      /* ── Star Scoring (mirrors harvest-scoring-dialog) ── */
+      .score-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 8px 0;
+      }
+      .score-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .score-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .score-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+      .score-emoji {
+        font-size: 1.2rem;
+      }
+      .score-value {
+        font-size: 0.95rem;
+        opacity: 0.7;
+        min-width: 30px;
+        text-align: right;
+      }
+      .score-description {
+        font-size: 0.8rem;
+        opacity: 0.5;
+        margin: 0;
+      }
+      .star-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .star-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: 1.6rem;
+        line-height: 1;
+        transition: transform 0.1s, filter 0.15s;
+        filter: grayscale(0.6) opacity(0.5);
+      }
+      .star-btn.active {
+        filter: grayscale(0) opacity(1);
+      }
+      .star-btn:hover,
+      .star-btn.preview {
+        transform: scale(1.2);
+        filter: grayscale(0) opacity(1);
+      }
+      .skip-hint {
+        font-size: 0.8rem;
+        opacity: 0.45;
+        margin-top: 8px;
+        text-align: center;
+      }
+      .metrics-section {
+        padding: 0;
+      }
+      .metrics-section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.6;
+        margin: 0 0 12px;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 12px;
+      }
+      .metric-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .metric-field label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      .metric-field input,
+      .metric-field textarea {
+        background: var(--card-background-color, rgba(255,255,255,0.06));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+        padding: 6px 10px;
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.15s;
+      }
+      .metric-field input:focus,
+      .metric-field textarea:focus {
+        outline: none;
+        border-color: var(--primary-color, #4caf50);
+      }
+      .terpene-field {
+        grid-column: 1 / -1;
+      }
+      .terpene-field textarea {
+        resize: vertical;
+        min-height: 48px;
+      }
+      .harvest-divider {
+        border: none;
+        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        margin: 0;
+      }
     `,
 ];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
 ], PlantOverviewDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], PlantOverviewDialog.prototype, "store", void 0);
 __decorate([
     n$5({ type: Boolean, reflect: true })
 ], PlantOverviewDialog.prototype, "open", void 0);
@@ -13730,6 +14582,18 @@ __decorate([
 __decorate([
     r$2()
 ], PlantOverviewDialog.prototype, "_logbookEvents", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_harvestMetricsEdit", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_scoresEdit", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_starPreview", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_savingHarvest", void 0);
 PlantOverviewDialog = __decorate([
     t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
@@ -18152,6 +19016,44 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _cancelDeleteGrowspace() {
         this._showDeleteConfirm = false;
     }
+    _generateGrowReport() {
+        if (!this.editSelectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('generate-grow-report', {
+            detail: {
+                growspace_id: this.editSelectedId,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    async _handleRemoveEnvironment() {
+        if (!this.envSelectedId)
+            return;
+        const confirmed = window.confirm('Are you sure you want to remove the environment configuration for this growspace? This will disconnect all sensors and controllers from this growspace.');
+        if (!confirmed)
+            return;
+        try {
+            this.dispatchEvent(new CustomEvent('remove-environment-submit', {
+                detail: {
+                    growspace_id: this.envSelectedId,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+            // Refresh fields after removal
+            setTimeout(() => {
+                if (this.envSelectedId) {
+                    this._handleEnvGrowspaceChange({
+                        target: { value: this.envSelectedId },
+                    });
+                }
+            }, 1000);
+        }
+        catch (e) {
+            console.error('Failed to remove environment:', e);
+        }
+    }
     _populateEditFields(growspaceId) {
         this.editSelectedId = growspaceId;
         if (growspaceId && this.devices) {
@@ -18297,6 +19199,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                       <path d="${mdiDelete}"></path>
                     </svg>
                     Delete
+                  </button>
+                  <button
+                    class="md3-button tonal"
+                    @click=${this._generateGrowReport}
+                    ?disabled=${!this.editSelectedId}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:8px"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19L10.5,16.5L7.5,19V16A1.5,1.5 0 0,1 6,14.5V11A1.5,1.5 0 0,1 7.5,9.5H13.5A1.5,1.5 0 0,1 15,11V14.5A1.5,1.5 0 0,1 13.5,16M13,9V3.5L18.5,9H13Z"></path>
+                    </svg>
+                    Grow Report
                   </button>
                   <button
                     class="md3-button primary"
@@ -18677,15 +19592,24 @@ let ConfigDialog = class ConfigDialog extends i$3 {
 
           <div
             class="md3-input-group"
-            style=" display:flex; justify-content:flex-end; align-items:center; margin-top:16px;"
+            style=" display:flex; justify-content:space-between; align-items:center; margin-top:16px;"
           >
-            <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
-            <input
-              type="checkbox"
-              .checked=${this.envDehumidifierControlEnabled}
-              @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
-              style="width:20px; height:20px;"
-            />
+            <button
+              class="md3-button tonal error"
+              @click=${this._handleRemoveEnvironment}
+              ?disabled=${!this.envSelectedId}
+            >
+              Remove Environment
+            </button>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input
+                type="checkbox"
+                .checked=${this.envDehumidifierControlEnabled}
+                @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
+                style="width:20px; height:20px;"
+              />
+              <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
+            </div>
           </div>
         </div>
 
@@ -19627,6 +20551,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainTimes = [];
         this._activeTab = 'schedules';
         this._strategy = {};
+        // Drain EC state
+        this._drainEcEnabled = false;
+        this._drainEcMaxDelta = 1.0;
+        this._drainEcTargetRunoffPercent = 20;
+        this._drainLogFeedEc = 2.0;
+        this._drainLogDrainEc = 2.0;
+        this._drainLogFeedVolume = 0;
+        this._drainLogDrainVolume = 0;
+        this._drainSaving = false;
+        this._drainLogging = false;
     }
     willUpdate(changedProps) {
         // Only initialize state when dialog first opens, not on subsequent device updates
@@ -19666,6 +20600,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             shotDurationSeconds: strat?.shotDurationSeconds || 15,
             shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
         };
+        // Initialize Drain EC config
+        const dc = this.device.drainConfig;
+        if (dc) {
+            this._drainEcEnabled = dc.enabled;
+            this._drainEcMaxDelta = dc.maxEcDelta;
+            this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
+        }
     }
     // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
     _parseScheduleString(scheduleString) {
@@ -19783,7 +20724,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
     }
     _startAddingIrrigationTime(x, width) {
-        const percentage = x / width;
+        const percentage = Math.max(0, Math.min(1, x / width));
         const totalMinutes = Math.round(percentage * 24 * 60);
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
@@ -19794,7 +20735,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         };
     }
     _startAddingDrainTime(x, width) {
-        const percentage = x / width;
+        const percentage = Math.max(0, Math.min(1, x / width));
         const totalMinutes = Math.round(percentage * 24 * 60);
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
@@ -19879,6 +20820,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         catch (removeError) {
             console.error('Failed to remove old time:', removeError);
             this._showErrorToast('Failed to save changes. Please try again.');
+        }
+    }
+    async _handleResetWaterTracking() {
+        if (!this.device?.deviceId || !this._dataService)
+            return;
+        const confirmed = window.confirm('Are you sure you want to reset all water tracking data for this growspace? This includes today\'s usage counters and volume history.');
+        if (!confirmed)
+            return;
+        try {
+            await this._dataService.resetWaterTracking(this.device.deviceId);
+            this._showErrorToast('Water tracking data reset successfully');
+            this._notifyDataChanged();
+        }
+        catch (e) {
+            console.error('Failed to reset water tracking:', e);
+            this._showErrorToast('Failed to reset water tracking data');
         }
     }
     _showErrorToast(message) {
@@ -20058,6 +21015,47 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             console.error('Failed to save strategy:', e);
         }
     }
+    async _saveDrainConfig() {
+        if (!this.device?.deviceId || !this._dataService)
+            return;
+        this._drainSaving = true;
+        try {
+            await this._dataService.configureDrainMonitoring(this.device.deviceId, {
+                enabled: this._drainEcEnabled,
+                maxEcDelta: this._drainEcMaxDelta,
+                targetRunoffPercent: this._drainEcTargetRunoffPercent,
+            });
+        }
+        catch (e) {
+            this._showErrorToast('Failed to save drain config');
+        }
+        finally {
+            this._drainSaving = false;
+        }
+    }
+    async _logDrainReadingNow() {
+        if (!this.device?.deviceId || !this._dataService)
+            return;
+        if (this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0) {
+            this._showErrorToast('Feed EC and Drain EC must be > 0');
+            return;
+        }
+        this._drainLogging = true;
+        try {
+            await this._dataService.logDrainReading(this.device.deviceId, {
+                feedEc: this._drainLogFeedEc,
+                drainEc: this._drainLogDrainEc,
+                feedVolumeMl: this._drainLogFeedVolume || undefined,
+                drainVolumeMl: this._drainLogDrainVolume || undefined,
+            });
+        }
+        catch (e) {
+            this._showErrorToast('Failed to log drain reading');
+        }
+        finally {
+            this._drainLogging = false;
+        }
+    }
     _updateStrategyField(field, value) {
         this._strategy = { ...this._strategy, [field]: value };
     }
@@ -20123,6 +21121,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             >
               Tanks
             </div>
+            <div
+              class="tab-item ${this._activeTab === 'water_analytics' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'water_analytics')}
+            >
+              Water Analytics
+            </div>
+            <div
+              class="tab-item ${this._activeTab === 'drain_ec' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'drain_ec')}
+            >
+              Drain EC
+            </div>
           </div>
 
           <div class="dialog-body">
@@ -20132,7 +21142,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 ? this._renderSteeringTab(dialogColor)
                 : this._activeTab === 'tanks'
                     ? this._renderTanksTab()
-                    : this._renderConfigSection()}
+                    : this._activeTab === 'water_analytics'
+                        ? this._renderWaterAnalyticsTab()
+                        : this._activeTab === 'drain_ec'
+                            ? this._renderDrainECTab()
+                            : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
@@ -20156,6 +21170,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @click=${this._saveSettings}
                   >
                     Save Configuration
+                  </button>
+                `
+            : ''}
+            ${this._activeTab === 'drain_ec'
+            ? x `
+                  <button
+                    class="md3-button primary"
+                    style="background: #FF9800;"
+                    @click=${this._saveDrainConfig}
+                    ?disabled=${this._drainSaving}
+                  >
+                    ${this._drainSaving ? 'Saving…' : 'Save Drain Config'}
                   </button>
                 `
             : ''}
@@ -20589,6 +21615,482 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return x `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
         ${tanks.map(tank => this._renderTankCard(tank))}
+      </div>
+    `;
+    }
+    _renderWaterAnalyticsTab() {
+        const wu = this.device?.waterUsage;
+        const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
+        const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
+        const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
+        const readings = this.device?.drainConfig?.readings || [];
+        // Compute volume totals from logged EC readings (last 30)
+        const recentReadings = readings.slice(-30).reverse();
+        const readingsWithVolumes = recentReadings.filter(r => r.feedVolumeMl && r.drainVolumeMl);
+        const totalFeedMl = readingsWithVolumes.reduce((s, r) => s + (r.feedVolumeMl || 0), 0);
+        const totalDrainMl = readingsWithVolumes.reduce((s, r) => s + (r.drainVolumeMl || 0), 0);
+        const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
+        // Tank aggregate
+        const tanksWithData = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
+        const avgTankLevel = tanksWithData.length > 0
+            ? tanksWithData.reduce((s, t) => s + (t.fillLevel ?? 0), 0) / tanksWithData.length
+            : null;
+        const warningTanks = tanks.filter(t => t.isWarning);
+        // Schedule analysis
+        const totalIrrig = irrigTimes.length;
+        const totalDrain = drainTimes.length;
+        const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
+        const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
+        // --- KPI helper ---
+        const kpiCard = (label, value, unit, color = 'rgba(255,255,255,0.7)', sub) => x `
+      <div style="
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      ">
+        <div style="font-size: 0.78rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em;">${label}</div>
+        <div style="display: flex; align-items: baseline; gap: 4px;">
+          <span style="font-size: 1.6rem; font-weight: 700; color: ${color};">${value}</span>
+          <span style="font-size: 0.82rem; opacity: 0.6;">${unit}</span>
+        </div>
+        ${sub ? x `<div style="font-size: 0.75rem; opacity: 0.5;">${sub}</div>` : E}
+      </div>
+    `;
+        return x `
+      <!-- Today's Usage -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">Today's Usage</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+          ${wu?.litersToday != null
+            ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
+            : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${wu?.litersPerPlantPerDay != null
+            ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
+            : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${wu?.waterEfficiency != null
+            ? kpiCard('Water efficiency', (wu.waterEfficiency * 100).toFixed(0), '%', wu.waterEfficiency >= 0.85 ? '#4caf50' : wu.waterEfficiency >= 0.65 ? '#FF9800' : '#f44336', wu.waterEfficiency >= 0.85 ? 'Excellent' : wu.waterEfficiency >= 0.65 ? 'Good' : 'Review schedule')
+            : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${avgRunoff !== null
+            ? kpiCard('Avg runoff', avgRunoff.toFixed(1), '%', '#ce93d8', `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`)
+            : kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
+        </div>
+      </div>
+
+      <!-- Tank Overview -->
+      ${tanks.length > 0 ? x `
+        <div class="detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0;">Tank Levels</h3>
+            ${warningTanks.length > 0 ? x `
+              <span style="
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+                border: 1px solid rgba(244,67,54,0.4);
+                border-radius: 20px;
+                padding: 3px 10px;
+                font-size: 0.78rem;
+                font-weight: 600;
+              ">⚠ ${warningTanks.length} tank${warningTanks.length > 1 ? 's' : ''} low</span>
+            ` : avgTankLevel !== null ? x `
+              <span style="font-size: 0.82rem; opacity: 0.5;">Avg ${avgTankLevel.toFixed(0)}%</span>
+            ` : E}
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${tanks.map(tank => {
+            const pct = tank.fillLevel ?? 0;
+            const color = tank.isWarning ? '#f44336'
+                : (tank.hoursRemaining ?? 999) < 24 ? '#FF9800'
+                    : '#4caf50';
+            const depletionLabel = tank.depletionStatus === 'depleting' ? '↓ Depleting'
+                : tank.depletionStatus === 'refilling' ? '↑ Refilling'
+                    : tank.depletionStatus === 'static' ? '— Stable'
+                        : '';
+            return x `
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px;">
+                    <span style="font-weight: 500;">${tank.name}</span>
+                    <span style="opacity: 0.7; display: flex; gap: 8px;">
+                      ${depletionLabel ? x `<span style="opacity: 0.6; font-size: 0.75rem;">${depletionLabel}</span>` : E}
+                      ${tank.hoursRemaining != null ? x `<span style="opacity: 0.6;">${tank.hoursRemaining >= 48 ? Math.floor(tank.hoursRemaining / 24) + 'd' : Math.round(tank.hoursRemaining) + 'h'} left</span>` : E}
+                      <span style="color: ${color}; font-weight: 600;">${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span>
+                    </span>
+                  </div>
+                  <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                    <div style="
+                      height: 100%;
+                      width: ${Math.max(0, Math.min(100, pct))}%;
+                      background: ${color};
+                      border-radius: 3px;
+                      transition: width 0.4s ease;
+                    "></div>
+                  </div>
+                </div>
+              `;
+        })}
+          </div>
+        </div>
+      ` : E}
+
+      <!-- Irrigation Schedule Summary -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">Schedule Summary</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Irrigation side -->
+          <div>
+            <div style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Irrigation</div>
+            ${totalIrrig === 0 ? x `<p style="opacity: 0.5; font-size: 0.85rem; margin: 0;">No events scheduled</p>` : x `
+              <div style="font-size: 1.3rem; font-weight: 700; color: #4fc3f7;">${totalIrrig} <span style="font-size: 0.85rem; font-weight: 400; opacity: 0.7;">events/day</span></div>
+              ${irrigDuration ? x `<div style="font-size: 0.82rem; opacity: 0.6; margin-top: 2px;">${irrigDuration}s per event</div>` : E}
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                ${irrigTimes.slice(0, 5).map(t => {
+            const time = t.time ?? t.start_time ?? '';
+            const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
+            return x `
+                    <div style="
+                      display: flex; justify-content: space-between;
+                      background: rgba(79,195,247,0.08); border-radius: 6px;
+                      padding: 4px 10px; font-size: 0.8rem;
+                    ">
+                      <span style="font-weight: 500;">${time.substring(0, 5)}</span>
+                      <span style="opacity: 0.5;">${dur}s</span>
+                    </div>
+                  `;
+        })}
+                ${totalIrrig > 5 ? x `<div style="font-size: 0.75rem; opacity: 0.4; text-align: center;">+${totalIrrig - 5} more</div>` : E}
+              </div>
+            `}
+          </div>
+
+          <!-- Drain side -->
+          <div>
+            <div style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Drain</div>
+            ${totalDrain === 0 ? x `<p style="opacity: 0.5; font-size: 0.85rem; margin: 0;">No events scheduled</p>` : x `
+              <div style="font-size: 1.3rem; font-weight: 700; color: #a5d6a7;">${totalDrain} <span style="font-size: 0.85rem; font-weight: 400; opacity: 0.7;">events/day</span></div>
+              ${drainDuration ? x `<div style="font-size: 0.82rem; opacity: 0.6; margin-top: 2px;">${drainDuration}s per event</div>` : E}
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                ${drainTimes.slice(0, 5).map(t => {
+            const time = t.time ?? t.start_time ?? '';
+            const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+            return x `
+                    <div style="
+                      display: flex; justify-content: space-between;
+                      background: rgba(165,214,167,0.08); border-radius: 6px;
+                      padding: 4px 10px; font-size: 0.8rem;
+                    ">
+                      <span style="font-weight: 500;">${time.substring(0, 5)}</span>
+                      <span style="opacity: 0.5;">${dur}s</span>
+                    </div>
+                  `;
+        })}
+                ${totalDrain > 5 ? x `<div style="font-size: 0.75rem; opacity: 0.4; text-align: center;">+${totalDrain - 5} more</div>` : E}
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+
+      <!-- Volume History from EC readings -->
+      <div class="detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0;">Volume History</h3>
+          <span style="font-size: 0.8rem; opacity: 0.5;">from drain EC readings</span>
+        </div>
+
+        ${readingsWithVolumes.length === 0 ? x `
+          <p style="opacity: 0.6; text-align: center; padding: 20px 0; font-size: 0.9rem;">
+            No volume data logged yet.<br>
+            <span style="font-size: 0.8rem; opacity: 0.7;">Log feed and drain volumes in the
+            <strong>Drain EC</strong> tab to track runoff efficiency over time.</span>
+          </p>
+        ` : x `
+          <!-- Totals bar -->
+          <div style="
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px; margin-bottom: 16px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 12px 16px;
+            font-size: 0.88rem;
+          ">
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Total feed</div>
+              <div style="font-weight: 700; color: #4fc3f7;">${(totalFeedMl / 1000).toFixed(1)} L</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Total drain</div>
+              <div style="font-weight: 700; color: #a5d6a7;">${(totalDrainMl / 1000).toFixed(1)} L</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Avg runoff</div>
+              <div style="font-weight: 700; color: ${avgRunoff !== null && avgRunoff >= 15 && avgRunoff <= 35 ? '#4caf50' : '#FF9800'};">
+                ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
+              </div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); opacity: 0.7;">
+                  <th style="text-align: left; padding: 5px 8px; font-weight: 500;">Time</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Feed (mL)</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Drain (mL)</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Runoff</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Δ EC</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${readingsWithVolumes.map(r => {
+            const runoff = r.feedVolumeMl ? ((r.drainVolumeMl / r.feedVolumeMl) * 100) : null;
+            const delta = r.drainEc - r.feedEc;
+            const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
+            return x `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 5px 8px; opacity: 0.65;">
+                        ${new Date(r.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td style="text-align: right; padding: 5px 8px;">${r.feedVolumeMl}</td>
+                      <td style="text-align: right; padding: 5px 8px;">${r.drainVolumeMl}</td>
+                      <td style="text-align: right; padding: 5px 8px; font-weight: 600; color: ${runoffOk ? '#4caf50' : '#FF9800'};">
+                        ${runoff !== null ? runoff.toFixed(1) + '%' : '—'}
+                      </td>
+                      <td style="text-align: right; padding: 5px 8px; opacity: 0.7;">
+                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                      </td>
+                    </tr>
+                  `;
+        })}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+
+      <!-- Maintenance -->
+      <div class="detail-card" style="border: 1px dashed rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0; color: #f44336; border: none; padding: 0; font-size: 1.1rem;">Maintenance</h3>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.7; line-height: 1.4;">
+              Reset irrigation counters, today's water usage, and recent volume history for this growspace.
+            </p>
+          </div>
+          <button 
+            class="md3-button tonal error" 
+            @click=${this._handleResetWaterTracking}
+            style="white-space: nowrap;"
+          >
+            Reset All Data
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderDrainECTab() {
+        const dc = this.device?.drainConfig;
+        const readings = dc?.readings || [];
+        const recent = readings.slice(-20).reverse();
+        const lastReading = recent[0];
+        const lastDelta = lastReading ? (lastReading.drainEc - lastReading.feedEc) : null;
+        const isOverThreshold = lastDelta !== null && this._drainEcEnabled && lastDelta > this._drainEcMaxDelta;
+        const statusColor = !this._drainEcEnabled
+            ? 'rgba(255,255,255,0.3)'
+            : isOverThreshold
+                ? '#f44336'
+                : lastDelta !== null && lastDelta > this._drainEcMaxDelta * 0.7
+                    ? '#FF9800'
+                    : '#4caf50';
+        const statusText = !this._drainEcEnabled
+            ? 'Monitoring disabled'
+            : lastDelta === null
+                ? 'No readings yet'
+                : isOverThreshold
+                    ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
+                    : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
+        return x `
+      <!-- Status Banner -->
+      <div class="detail-card" style="border-left: 4px solid ${statusColor}; padding: 16px 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="
+            width: 14px; height: 14px; border-radius: 50%;
+            background: ${statusColor};
+            box-shadow: 0 0 8px ${statusColor};
+            flex-shrink: 0;
+          "></div>
+          <div>
+            <div style="font-weight: 600; font-size: 1rem;">${statusText}</div>
+            ${lastReading ? x `
+              <div style="font-size: 0.8rem; opacity: 0.6; margin-top: 2px;">
+                Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain ${lastReading.drainEc.toFixed(2)} mS/cm
+                at ${new Date(lastReading.timestamp).toLocaleString()}
+              </div>
+            ` : E}
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Monitoring Configuration</h3>
+        <p style="font-size: 0.82rem; opacity: 0.7; margin-bottom: 20px;">
+          Alert when drain EC exceeds feed EC by more than the max delta. Target runoff percentage
+          helps calculate how much drain water to collect per irrigation event.
+        </p>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;
+          background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <span>Enable EC drain monitoring</span>
+          <md3-switch
+            .checked=${this._drainEcEnabled}
+            @change=${(e) => { this._drainEcEnabled = e.target.checked; }}
+          ></md3-switch>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <md3-number-input
+            label="Max EC Delta (mS/cm)"
+            .value=${this._drainEcMaxDelta}
+            step="0.1"
+            min="0.1"
+            ?disabled=${!this._drainEcEnabled}
+            @change=${(e) => { this._drainEcMaxDelta = parseFloat(e.detail) || 1.0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Target Runoff (%)"
+            .value=${this._drainEcTargetRunoffPercent}
+            min="5"
+            max="50"
+            step="5"
+            ?disabled=${!this._drainEcEnabled}
+            @change=${(e) => { this._drainEcTargetRunoffPercent = parseInt(e.detail) || 20; }}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- Manual Reading Log -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Log Drain Reading</h3>
+        <p style="font-size: 0.82rem; opacity: 0.7; margin-bottom: 20px;">
+          Manually log feed EC and drain EC values. This is used when you measure manually
+          with a handheld meter. Volumes are optional.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <md3-number-input
+            label="Feed EC (mS/cm)"
+            .value=${this._drainLogFeedEc}
+            step="0.1"
+            min="0"
+            @change=${(e) => { this._drainLogFeedEc = parseFloat(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Drain EC (mS/cm)"
+            .value=${this._drainLogDrainEc}
+            step="0.1"
+            min="0"
+            @change=${(e) => { this._drainLogDrainEc = parseFloat(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Feed Volume (mL) — optional"
+            .value=${this._drainLogFeedVolume}
+            step="100"
+            min="0"
+            @change=${(e) => { this._drainLogFeedVolume = parseInt(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Drain Volume (mL) — optional"
+            .value=${this._drainLogDrainVolume}
+            step="100"
+            min="0"
+            @change=${(e) => { this._drainLogDrainVolume = parseInt(e.detail) || 0; }}
+          ></md3-number-input>
+        </div>
+
+        ${this._drainLogFeedEc > 0 && this._drainLogDrainEc > 0 ? x `
+          <div style="
+            background: rgba(255,255,255,0.05); border-radius: 8px;
+            padding: 10px 16px; margin-bottom: 16px;
+            display: flex; gap: 24px; align-items: center; font-size: 0.9rem;
+          ">
+            <span>EC Delta: <strong style="color: ${(this._drainLogDrainEc - this._drainLogFeedEc) > this._drainEcMaxDelta ? '#f44336' : '#4caf50'}">
+              Δ${(this._drainLogDrainEc - this._drainLogFeedEc).toFixed(2)} mS/cm
+            </strong></span>
+            ${this._drainLogFeedVolume > 0 && this._drainLogDrainVolume > 0 ? x `
+              <span>Runoff: <strong>
+                ${((this._drainLogDrainVolume / this._drainLogFeedVolume) * 100).toFixed(1)}%
+              </strong></span>
+            ` : E}
+          </div>
+        ` : E}
+
+        <button
+          class="md3-button primary"
+          style="background: #FF9800;"
+          @click=${this._logDrainReadingNow}
+          ?disabled=${this._drainLogging || this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0}
+        >
+          ${this._drainLogging ? 'Logging…' : 'Log Reading'}
+        </button>
+      </div>
+
+      <!-- Readings History -->
+      <div class="detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0;">Recent Readings</h3>
+          <span style="font-size: 0.8rem; opacity: 0.5;">${readings.length} total</span>
+        </div>
+
+        ${recent.length === 0 ? x `
+          <p style="opacity: 0.6; text-align: center; padding: 20px 0;">
+            No readings logged yet. Use the form above or configure an automated EC sensor.
+          </p>
+        ` : x `
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); opacity: 0.7;">
+                  <th style="text-align: left; padding: 6px 8px; font-weight: 500;">Time</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Feed EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Drain EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Δ EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Runoff</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${recent.map((r) => {
+            const delta = r.drainEc - r.feedEc;
+            const overThreshold = this._drainEcEnabled && delta > this._drainEcMaxDelta;
+            const runoffPct = r.feedVolumeMl && r.drainVolumeMl
+                ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
+                : '—';
+            return x `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 8px; opacity: 0.7;">
+                        ${new Date(r.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td style="text-align: right; padding: 6px 8px;">${r.feedEc.toFixed(2)}</td>
+                      <td style="text-align: right; padding: 6px 8px;">${r.drainEc.toFixed(2)}</td>
+                      <td style="text-align: right; padding: 6px 8px; color: ${overThreshold ? '#f44336' : delta > this._drainEcMaxDelta * 0.7 ? '#FF9800' : '#4caf50'}; font-weight: 500;">
+                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                      </td>
+                      <td style="text-align: right; padding: 6px 8px; opacity: 0.6;">${runoffPct}</td>
+                    </tr>
+                  `;
+        })}
+              </tbody>
+            </table>
+          </div>
+        `}
       </div>
     `;
     }
@@ -21116,6 +22618,33 @@ __decorate([
 __decorate([
     r$2()
 ], IrrigationDialog.prototype, "_strategy", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainEcEnabled", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainEcMaxDelta", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainEcTargetRunoffPercent", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainLogFeedEc", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainLogDrainEc", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainLogFeedVolume", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainLogDrainVolume", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainSaving", void 0);
+__decorate([
+    r$2()
+], IrrigationDialog.prototype, "_drainLogging", void 0);
 IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
@@ -23658,6 +25187,9 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Logic for recommendations
         let currentStage;
         let daysInStage = 0;
+        // PHI Warning Logic
+        let hasPhiWarning = false;
+        let phiWarningText = '';
         if (this.store &&
             this.store.data &&
             this.dialogState?.mode === 'plant' &&
@@ -23677,6 +25209,12 @@ let WateringDialog = class WateringDialog extends i$3 {
                         currentStage = firstStage;
                         // Use minimum days in stage to be safe
                         daysInStage = Math.min(...selectedPlants.map((p) => p.attributes.days_in_stage || 0));
+                    }
+                    // Check for PHI on selected plants
+                    const phiPlants = selectedPlants.filter((p) => p.attributes.phi_days_remaining && p.attributes.phi_days_remaining > 0);
+                    if (phiPlants.length > 0) {
+                        hasPhiWarning = true;
+                        phiWarningText = `Warning: ${phiPlants.length} plant(s) are currently under a Pre-Harvest Interval (PHI). Do not harvest.`;
                     }
                 }
             }
@@ -23701,6 +25239,14 @@ let WateringDialog = class WateringDialog extends i$3 {
           </div>
 
           <div class="dialog-content-grid">
+            ${hasPhiWarning
+            ? x `
+                  <div class="error-bar" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;">
+                    <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
+                    ${phiWarningText}
+                  </div>
+                `
+            : E}
             <!-- Settings Section -->
             <div class="form-section">
               <h3>Watering Settings</h3>
@@ -23977,7 +25523,7 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         }));
     }
     _handleClose() {
-        this.store.ui.closeDialog();
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     async _save() {
         if (!this._technique)
@@ -24848,7 +26394,7 @@ let IPMDialog = class IPMDialog extends i$3 {
         this._editingPreset = {
             name: '',
             type: 'foliar',
-            items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L' }],
+            items: [{ name: '', dose_amount: 0, dose_unit: 'ml/L', phi_days: 0 }],
             stage: undefined,
             min_days_in_stage: 0,
         };
@@ -24876,7 +26422,7 @@ let IPMDialog = class IPMDialog extends i$3 {
             return;
         const items = [
             ...(this._editingPreset.items || []),
-            { name: '', dose_amount: 0, dose_unit: 'ml/L' },
+            { name: '', dose_amount: 0, dose_unit: 'ml/L', phi_days: 0 },
         ];
         this._editingPreset = { ...this._editingPreset, items };
     }
@@ -25186,6 +26732,13 @@ let IPMDialog = class IPMDialog extends i$3 {
                   @change=${(e) => this._updateProduct(_index, { dose_unit: e.detail })}
                   style="flex: 1;"
                 ></md3-text-input>
+                <md3-number-input
+                  label="PHI (Days)"
+                  .value=${item.phi_days || 0}
+                  @change=${(e) => this._updateProduct(_index, { phi_days: parseInt(e.detail) || 0 })}
+                  min="0"
+                  style="flex: 1;"
+                ></md3-number-input>
                 <button
                   class="md3-button icon"
                   @click=${() => this._removeProduct(_index)}
@@ -26211,6 +27764,1697 @@ PrintLabelDialog = __decorate([
     t$2('print-label-dialog')
 ], PrintLabelDialog);
 
+const SCORE_DIMENSIONS = [
+    {
+        key: 'vigor',
+        label: 'Vigor',
+        description: 'Overall plant health, growth rate, and robustness',
+        emoji: '💪',
+    },
+    {
+        key: 'structure',
+        label: 'Structure',
+        description: 'Branch spacing, internodal distance, and bud site density',
+        emoji: '🌿',
+    },
+    {
+        key: 'aroma',
+        label: 'Aroma',
+        description: 'Terpene expression — potency and complexity of smell',
+        emoji: '👃',
+    },
+    {
+        key: 'resin',
+        label: 'Resin',
+        description: 'Trichome coverage and density',
+        emoji: '💎',
+    },
+    {
+        key: 'pestResistance',
+        label: 'Pest resistance',
+        description: 'Resilience against pests and disease during the run',
+        emoji: '🛡️',
+    },
+];
+let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._scores = {
+            vigor: null,
+            structure: null,
+            aroma: null,
+            resin: null,
+            pestResistance: null,
+        };
+        this._isSubmitting = false;
+        // Yield metrics
+        this._wetWeight = '';
+        this._dryWeight = '';
+        this._trimWeight = '';
+        // Lab results
+        this._thcPercentage = '';
+        this._cbdPercentage = '';
+        this._terpeneProfile = '';
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._resetScores();
+        }
+    }
+    _resetScores() {
+        const ds = this.dialogState;
+        this._scores = {
+            vigor: ds?.vigor ?? null,
+            structure: ds?.structure ?? null,
+            aroma: ds?.aroma ?? null,
+            resin: ds?.resin ?? null,
+            pestResistance: ds?.pestResistance ?? null,
+        };
+        // Reset yield/lab fields
+        this._wetWeight = '';
+        this._dryWeight = '';
+        this._trimWeight = '';
+        this._thcPercentage = '';
+        this._cbdPercentage = '';
+        this._terpeneProfile = '';
+    }
+    _setScore(key, value) {
+        // Clicking the same star a second time clears the score
+        const current = this._scores[key];
+        this._scores = { ...this._scores, [key]: current === value ? null : value };
+    }
+    /** Saves scores to the backend (optional step – harvest always proceeds). */
+    async _submitAndHarvest() {
+        if (!this.dialogState || this._isSubmitting)
+            return;
+        this._isSubmitting = true;
+        const plant = this.dialogState.plant;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        try {
+            // 1. Save scores if any are set
+            const hasAnyScore = Object.values(this._scores).some((v) => v !== null);
+            if (hasAnyScore) {
+                await this.store.dataService.scorePlant({
+                    plant_id: plantId,
+                    vigor: this._scores.vigor,
+                    structure: this._scores.structure,
+                    aroma: this._scores.aroma,
+                    resin: this._scores.resin,
+                    pest_resistance: this._scores.pestResistance,
+                });
+            }
+            // 2. Build yield/lab metrics (only include non-empty values)
+            const metrics = {};
+            const parseF = (v) => (v.trim() !== '' ? parseFloat(v) : undefined);
+            const ww = parseF(this._wetWeight);
+            const dw = parseF(this._dryWeight);
+            const tw = parseF(this._trimWeight);
+            const thc = parseF(this._thcPercentage);
+            const cbd = parseF(this._cbdPercentage);
+            if (ww != null && !isNaN(ww))
+                metrics.wet_weight = ww;
+            if (dw != null && !isNaN(dw))
+                metrics.dry_weight = dw;
+            if (tw != null && !isNaN(tw))
+                metrics.trim_weight = tw;
+            if (thc != null && !isNaN(thc))
+                metrics.thc_percentage = thc;
+            if (cbd != null && !isNaN(cbd))
+                metrics.cbd_percentage = cbd;
+            if (this._terpeneProfile.trim())
+                metrics.terpene_profile = this._terpeneProfile.trim();
+            // 3. Harvest the plant, passing metrics directly to the service
+            const stage = plant.attributes?.stage || 'flower';
+            const targetMap = {
+                flower: 'dry',
+                dry: 'cure',
+                mother: 'clone',
+            };
+            const targetGrowspace = targetMap[stage] ?? 'dry';
+            const plantIdResolved = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            const hasMetrics = Object.keys(metrics).length > 0;
+            await this.store.dataService.harvestPlant(plantIdResolved, targetGrowspace, hasMetrics ? metrics : undefined);
+            // Small delay to allow backend commit before refresh
+            await new Promise((r) => setTimeout(r, 500));
+            await this.store.refreshData();
+            this._dispatchClose();
+        }
+        catch (e) {
+            const error = e instanceof Error ? e.message : 'Unknown error';
+            console.error('[HarvestScoringDialog] Error:', e);
+            this.store?.showToast(`Harvest failed: ${error}`, 'error');
+        }
+        finally {
+            this._isSubmitting = false;
+        }
+    }
+    _skipAndHarvest() {
+        if (!this.dialogState || this._isSubmitting || !this.store)
+            return;
+        // No scoring – just harvest
+        this.store.harvestPlant(this.dialogState.plant).catch((e) => {
+            const error = e instanceof Error ? e.message : 'Unknown error';
+            this.store?.showToast(`Harvest failed: ${error}`, 'error');
+        });
+        this._dispatchClose();
+    }
+    _dispatchClose() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    render() {
+        if (!this.open)
+            return x `${E}`;
+        const plant = this.dialogState?.plant;
+        const strainName = plant?.attributes?.strain || 'Unknown';
+        const phenotype = plant?.attributes?.phenotype;
+        const stage = plant?.attributes?.stage || 'flower';
+        const subtitle = [strainName, phenotype].filter(Boolean).join(' — ');
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._dispatchClose}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: #4caf50;">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiLeaf}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Phenotype scoring</h2>
+              <div class="dialog-subtitle">${subtitle}</div>
+              <div class="header-stage">${stage}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._dispatchClose}
+              style="min-width: auto; padding: 8px;"
+              aria-label="Close"
+              ?disabled=${this._isSubmitting}
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- SCORE GRID -->
+          <div class="dialog-content-grid" style="display:block; padding: 24px;">
+            <div class="score-grid">
+              ${SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim))}
+            </div>
+            <p class="skip-hint">
+              All fields are optional — you can harvest without scoring.
+            </p>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- YIELD METRICS -->
+          <div class="metrics-section">
+            <p class="metrics-section-title">Yield metrics</p>
+            <div class="metrics-grid">
+              <div class="metric-field">
+                <label for="wet-weight">Wet weight (g)</label>
+                <input
+                  id="wet-weight"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="e.g. 120"
+                  .value=${this._wetWeight}
+                  @input=${(e) => { this._wetWeight = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                />
+              </div>
+              <div class="metric-field">
+                <label for="dry-weight">Dry weight (g)</label>
+                <input
+                  id="dry-weight"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="e.g. 28"
+                  .value=${this._dryWeight}
+                  @input=${(e) => { this._dryWeight = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                />
+              </div>
+              <div class="metric-field">
+                <label for="trim-weight">Trim weight (g)</label>
+                <input
+                  id="trim-weight"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="e.g. 5"
+                  .value=${this._trimWeight}
+                  @input=${(e) => { this._trimWeight = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                />
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- LAB RESULTS -->
+          <div class="metrics-section">
+            <p class="metrics-section-title">Lab results</p>
+            <div class="metrics-grid">
+              <div class="metric-field">
+                <label for="thc-pct">THC (%)</label>
+                <input
+                  id="thc-pct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="e.g. 24.5"
+                  .value=${this._thcPercentage}
+                  @input=${(e) => { this._thcPercentage = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                />
+              </div>
+              <div class="metric-field">
+                <label for="cbd-pct">CBD (%)</label>
+                <input
+                  id="cbd-pct"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  placeholder="e.g. 0.3"
+                  .value=${this._cbdPercentage}
+                  @input=${(e) => { this._cbdPercentage = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                />
+              </div>
+              <div class="metric-field terpene-field">
+                <label for="terpene-profile">Terpene profile</label>
+                <textarea
+                  id="terpene-profile"
+                  rows="2"
+                  placeholder="e.g. myrcene, limonene, caryophyllene"
+                  .value=${this._terpeneProfile}
+                  @input=${(e) => { this._terpeneProfile = e.target.value; }}
+                  ?disabled=${this._isSubmitting}
+                ></textarea>
+              </div>
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- ACTIONS -->
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; flex-wrap:wrap;"
+          >
+            <button
+              class="md3-button outlined"
+              @click=${this._skipAndHarvest}
+              ?disabled=${this._isSubmitting}
+            >
+              Skip scoring & harvest
+            </button>
+            <button
+              class="md3-button filled"
+              style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+              @click=${this._submitAndHarvest}
+              ?disabled=${this._isSubmitting}
+            >
+              ${this._isSubmitting ? 'Harvesting…' : '🌾 Save & harvest'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderScoreRow(dim) {
+        const currentScore = this._scores[dim.key];
+        return x `
+      <div class="score-row">
+        <div class="score-header">
+          <span class="score-label">
+            <span class="score-emoji">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span class="score-value">
+            ${currentScore !== null ? `${currentScore} / 5` : '—'}
+          </span>
+        </div>
+        <p class="score-description">${dim.description}</p>
+        <div class="star-row">
+          ${[1, 2, 3, 4, 5].map((star) => x `
+              <button
+                class="star-btn ${currentScore !== null && star <= currentScore ? 'active' : ''}"
+                aria-label="Set ${dim.label} score to ${star}"
+                @click=${() => this._setScore(dim.key, star)}
+                ?disabled=${this._isSubmitting}
+              >
+                ⭐
+              </button>
+            `)}
+        </div>
+      </div>
+    `;
+    }
+};
+HarvestScoringDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      .score-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 8px 0;
+      }
+
+      .score-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .score-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .score-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+
+      .score-emoji {
+        font-size: 1.2rem;
+      }
+
+      .score-value {
+        font-size: 0.95rem;
+        opacity: 0.7;
+        min-width: 30px;
+        text-align: right;
+      }
+
+      .score-description {
+        font-size: 0.8rem;
+        opacity: 0.5;
+        margin: 0;
+      }
+
+      .star-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+      }
+
+      .star-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: 1.6rem;
+        line-height: 1;
+        transition: transform 0.1s, filter 0.15s;
+        filter: grayscale(0.6) opacity(0.5);
+      }
+
+      .star-btn.active {
+        filter: grayscale(0) opacity(1);
+      }
+
+      .star-btn:hover,
+      .star-btn.preview {
+        transform: scale(1.2);
+        filter: grayscale(0) opacity(1);
+      }
+
+      .skip-hint {
+        font-size: 0.8rem;
+        opacity: 0.45;
+        margin-top: 8px;
+        text-align: center;
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        margin: 0;
+      }
+
+      .header-stage {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: rgba(76, 175, 80, 0.25);
+        color: var(--primary-color, #4caf50);
+        margin-top: 4px;
+      }
+
+      .metrics-section {
+        padding: 16px 24px;
+      }
+
+      .metrics-section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.6;
+        margin: 0 0 12px;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 12px;
+      }
+
+      .metric-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .metric-field label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+
+      .metric-field input,
+      .metric-field textarea {
+        background: var(--card-background-color, rgba(255,255,255,0.06));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+        padding: 6px 10px;
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.15s;
+      }
+
+      .metric-field input:focus,
+      .metric-field textarea:focus {
+        outline: none;
+        border-color: var(--primary-color, #4caf50);
+      }
+
+      .terpene-field {
+        grid-column: 1 / -1;
+      }
+
+      .terpene-field textarea {
+        resize: vertical;
+        min-height: 48px;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], HarvestScoringDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], HarvestScoringDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], HarvestScoringDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], HarvestScoringDialog.prototype, "dialogState", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_scores", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_isSubmitting", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_wetWeight", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_dryWeight", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_trimWeight", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_thcPercentage", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_cbdPercentage", void 0);
+__decorate([
+    r$2()
+], HarvestScoringDialog.prototype, "_terpeneProfile", void 0);
+HarvestScoringDialog = __decorate([
+    t$2('harvest-scoring-dialog')
+], HarvestScoringDialog);
+
+let SnapshotsDialog = class SnapshotsDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+        this._snapshots = [];
+        this._isLoading = false;
+        this._isCapturing = false;
+    }
+    willUpdate(changedProperties) {
+        const opened = changedProperties.has('open') && this.open;
+        const growspaceChanged = changedProperties.has('dialogState') && this.dialogState?.growspaceId && this.open;
+        if (opened || growspaceChanged) {
+            this._fetchSnapshots();
+        }
+    }
+    async _fetchSnapshots() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isLoading = true;
+        try {
+            const response = await this.store.dataService.getSnapshots(this.dialogState.growspaceId);
+            if (response) {
+                this._snapshots = response.snapshots || [];
+            }
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to fetch snapshots:', err);
+            this.store.ui.showToast('Failed to load snapshots', 'error');
+        }
+        finally {
+            this._isLoading = false;
+        }
+    }
+    async _captureSnapshot() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isCapturing = true;
+        try {
+            await this.store.dataService.captureSnapshot(this.dialogState.growspaceId);
+            this.store.ui.showToast('Snapshot captured successfully', 'success');
+            // Refresh the list immediately
+            await this._fetchSnapshots();
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to capture snapshot:', err);
+            // Backend might return "no_cameras" error
+            if (err?.code === 'no_cameras') {
+                this.store.ui.showToast('No cameras configured for this growspace.', 'error');
+            }
+            else {
+                this.store.ui.showToast('Failed to capture snapshot', 'error');
+            }
+        }
+        finally {
+            this._isCapturing = false;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _formatDate(timestampStr) {
+        // Expected format from backend: YYYYMMDD_HHmmss
+        if (timestampStr.length >= 15) {
+            const year = timestampStr.substring(0, 4);
+            const month = timestampStr.substring(4, 6);
+            const day = timestampStr.substring(6, 8);
+            const hh = timestampStr.substring(9, 11);
+            const mm = timestampStr.substring(11, 13);
+            return `${year}-${month}-${day} ${hh}:${mm}`;
+        }
+        return timestampStr;
+    }
+    render() {
+        return x `
+            <ha-dialog
+                .open=${this.open}
+                @closed=${this._close}
+                heading="Camera Snapshots"
+                hideActions
+            >
+                <!-- Custom Header -->
+                <div slot="heading" class="dialog-header">
+                    <div style="display: flex; flex-direction: column;">
+                        <h2 class="dialog-title">Camera Snapshots</h2>
+                        <div class="dialog-subtitle">${this.growspaceName}</div>
+                    </div>
+                    <div class="header-actions">
+                        <ha-icon-button
+                            .path=${mdiRefresh}
+                            @click=${this._fetchSnapshots}
+                            ?disabled=${this._isLoading}
+                            title="Refresh"
+                        ></ha-icon-button>
+                        <ha-icon-button
+                            .path=${mdiClose}
+                            @click=${this._close}
+                            title="Close"
+                        ></ha-icon-button>
+                    </div>
+                </div>
+
+                <div class="dialog-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <p style="opacity: 0.7; margin: 0;">View recent camera captures from your growspace.</p>
+                        <md3-button
+                            @click=${this._captureSnapshot}
+                            ?disabled=${this._isCapturing}
+                            style="--md-sys-color-primary: var(--primary-color);"
+                        >
+                            <ha-svg-icon .path=${mdiCamera} slot="icon"></ha-svg-icon>
+                            ${this._isCapturing ? 'Capturing...' : 'Capture Now'}
+                        </md3-button>
+                    </div>
+
+                    ${this._isLoading && this._snapshots.length === 0
+            ? x `<div style="text-align: center; padding: 40px;">
+                                <ha-circular-progress active></ha-circular-progress>
+                            </div>`
+            : this._snapshots.length > 0
+                ? x `
+                                <div class="snapshots-grid">
+                                    ${this._snapshots.map((snapshot) => x `
+                                            <div class="snapshot-card">
+                                                <img
+                                                    src="${snapshot.path}"
+                                                    class="snapshot-image"
+                                                    alt="Camera Snapshot"
+                                                    loading="lazy"
+                                                    onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
+                                                />
+                                                <div class="snapshot-info">
+                                                    <span>${this._formatDate(snapshot.timestamp)}</span>
+                                                </div>
+                                            </div>
+                                        `)}
+                                </div>
+                            `
+                : x `
+                                <div class="empty-state">
+                                    <ha-svg-icon
+                                        .path=${mdiCamera}
+                                        style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+                                    ></ha-svg-icon>
+                                    <h3>No Snapshots Found</h3>
+                                    <p>Click "Capture Now" to take a picture using your configured cameras.</p>
+                                </div>
+                            `}
+                </div>
+            </ha-dialog>
+        `;
+    }
+};
+SnapshotsDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: clamp(350px, 800px, 90vw);
+      }
+      .snapshots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .snapshot-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+      }
+      .snapshot-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      .snapshot-info {
+        padding: 12px;
+        font-size: 0.85rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 48px 24px;
+        opacity: 0.6;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        margin-top: 16px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], SnapshotsDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], SnapshotsDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], SnapshotsDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SnapshotsDialog.prototype, "dialogState", void 0);
+__decorate([
+    n$5({ type: String })
+], SnapshotsDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_snapshots", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isLoading", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isCapturing", void 0);
+SnapshotsDialog = __decorate([
+    t$2('snapshots-dialog')
+], SnapshotsDialog);
+
+let CropSteeringDialog = class CropSteeringDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _getEntityId() {
+        if (!this.dialogState?.growspaceId)
+            return undefined;
+        const gs = this.store.data.$devices.get().find(d => d.deviceId === this.dialogState?.growspaceId);
+        if (!gs)
+            return undefined;
+        // Slugify exactly like metrics-utils
+        const slug = gs.name
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/[_-]+/g, '_')
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
+        return `sensor.${slug}_crop_steering`;
+    }
+    _renderMetricCard(title, value, icon, color) {
+        return x `
+      <div class="metric-card">
+        <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
+        <div class="metric-value">${value}</div>
+        <div class="metric-label">${title}</div>
+      </div>
+    `;
+    }
+    render() {
+        if (!this.open || !this.dialogState)
+            return E;
+        const entityId = this._getEntityId();
+        const stateObj = entityId ? this.hass.states[entityId] : undefined;
+        const score = stateObj ? parseFloat(stateObj.state) : NaN;
+        const attrs = stateObj?.attributes || {};
+        const mode = attrs.steering_mode || 'unknown';
+        let trendIcon = mdiMinus;
+        let trendColor = 'var(--secondary-text-color)';
+        if (attrs.ec_trend === 'rising') {
+            trendIcon = mdiArrowUp;
+            trendColor = 'var(--error-color, #F44336)';
+        }
+        else if (attrs.ec_trend === 'falling') {
+            trendIcon = mdiArrowDown;
+            trendColor = 'var(--success-color, #4CAF50)';
+        }
+        return x `
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._close}
+        heading="Crop Steering"
+        hideActions
+      >
+        <!-- Custom Header -->
+        <div slot="heading" class="dialog-header">
+          <div style="display: flex; flex-direction: column;">
+            <h2 class="dialog-title">Crop Steering Diagnostics</h2>
+            <div class="dialog-subtitle">${this.growspaceName}</div>
+          </div>
+          <div class="header-actions">
+            <ha-icon-button
+              .path=${mdiClose}
+              @click=${this._close}
+              title="Close"
+            ></ha-icon-button>
+          </div>
+        </div>
+
+        <div class="dialog-content">
+          ${stateObj === undefined || isNaN(score)
+            ? x `
+                <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                  <ha-svg-icon .path=${mdiChartTimelineVariantShimmer} style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"></ha-svg-icon>
+                  <p>Crop steering data is currently unavailable.</p>
+                  <p style="font-size: 0.85rem;">Ensure irrigation strategy is enabled and sensors are reporting data.</p>
+                </div>
+              `
+            : x `
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <div style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">
+                    ${score > 0 ? '+' : ''}${score.toFixed(2)}
+                  </div>
+                  <div class="mode-badge mode-${mode}">
+                    ${mode.toUpperCase()} MODE
+                  </div>
+                </div>
+
+                <div class="metric-grid">
+                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)')}
+                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)')}
+                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)')}
+                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor)}
+                </div>
+                
+                <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
+                  Vegetative steering drives growth with smaller, more frequent irrigations. 
+                  Generative steering promotes flowering and ripening through larger dry-backs.
+                </p>
+              `}
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+CropSteeringDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --mdc-dialog-min-width: clamp(350px, 600px, 90vw);
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .metric-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+        margin: 8px 0;
+      }
+      .metric-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .mode-badge {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: capitalize;
+        margin-top: 8px;
+        display: inline-block;
+      }
+      .mode-vegetative {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+      }
+      .mode-generative {
+        background: rgba(244, 67, 54, 0.2);
+        color: #F44336;
+      }
+      .mode-balanced {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196F3;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], CropSteeringDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], CropSteeringDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], CropSteeringDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], CropSteeringDialog.prototype, "dialogState", void 0);
+__decorate([
+    n$5({ type: String })
+], CropSteeringDialog.prototype, "growspaceName", void 0);
+CropSteeringDialog = __decorate([
+    t$2('crop-steering-dialog')
+], CropSteeringDialog);
+
+let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceName = '';
+        this._view = 'LIST';
+        this._editingCurve = null;
+        this._error = null;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.store) {
+            this._curvesController = new libExports.StoreController(this, this.store.data.$ecRampCurves);
+            // Fetch curves when dialog opens
+            this.store.fetchECRampCurves();
+        }
+    }
+    updated(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._view = 'LIST';
+            this._editingCurve = null;
+            this._error = null;
+            if (this.store) {
+                this.store.fetchECRampCurves();
+            }
+        }
+    }
+    _close() {
+        this.open = false;
+        this._editingCurve = null;
+        this._view = 'LIST';
+        this._error = null;
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    // --- LIST VIEW ---
+    _startNew() {
+        this._editingCurve = {
+            name: '',
+            stage: 'flower',
+            points: [{ day: 1, target_ec: 1.0 }],
+        };
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    _editCurve(curve) {
+        this._editingCurve = JSON.parse(JSON.stringify(curve));
+        this._view = 'EDIT';
+        this._error = null;
+    }
+    async _deleteCurve(curveId) {
+        if (!confirm('Are you sure you want to delete this EC ramp curve?'))
+            return;
+        try {
+            await this.store.dataService.removeECRampCurve(curveId);
+            await this.store.fetchECRampCurves(true);
+        }
+        catch (err) {
+            this._error = err instanceof Error ? err.message : 'Unknown error';
+        }
+    }
+    // --- EDIT VIEW ---
+    _addPoint() {
+        if (!this._editingCurve)
+            return;
+        const points = [...(this._editingCurve.points || [])];
+        const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
+        const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
+        points.push({ day: lastDay + 7, target_ec: lastEc + 0.2 });
+        this._editingCurve = { ...this._editingCurve, points };
+    }
+    _removePoint(index) {
+        if (!this._editingCurve)
+            return;
+        const points = [...(this._editingCurve.points || [])];
+        points.splice(index, 1);
+        this._editingCurve = { ...this._editingCurve, points };
+    }
+    _updatePoint(index, updates) {
+        if (!this._editingCurve)
+            return;
+        const points = [...(this._editingCurve.points || [])];
+        points[index] = { ...points[index], ...updates };
+        this._editingCurve = { ...this._editingCurve, points };
+    }
+    async _saveCurve() {
+        if (!this._editingCurve || !this._editingCurve.name?.trim()) {
+            this._error = 'Curve name is required';
+            return;
+        }
+        const points = (this._editingCurve.points || []).filter((p) => p.day >= 0 && p.target_ec > 0);
+        if (points.length === 0) {
+            this._error = 'At least one valid EC point is required';
+            return;
+        }
+        // Sort points by day
+        const sortedPoints = [...points].sort((a, b) => a.day - b.day);
+        try {
+            await this.store.dataService.saveECRampCurve({
+                curve_id: this._editingCurve.id,
+                name: this._editingCurve.name.trim(),
+                stage: this._editingCurve.stage || 'flower',
+                points: sortedPoints,
+            });
+            await this.store.fetchECRampCurves(true);
+            this._view = 'LIST';
+            this._editingCurve = null;
+        }
+        catch (err) {
+            this._error = err instanceof Error ? err.message : 'Unknown error';
+        }
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const title = this._view === 'LIST' ? 'EC Ramp Curves' : (this._editingCurve?.id ? 'Edit EC Ramp' : 'New EC Ramp');
+        const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
+        return x `
+      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+        <div class="glass-dialog-container">
+          <div class="dialog-header">
+            <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
+              <ha-svg-icon .path=${mdiChartLine}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${title}</h2>
+              <div class="dialog-subtitle">${subtitle}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid">
+            ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
+            ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
+          </div>
+
+          <div class="button-group">${this._renderFooterButtons()}</div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderFooterButtons() {
+        if (this._view === 'LIST') {
+            return x `
+        <button class="md3-button tonal" @click=${this._close}>
+          Close
+        </button>
+        <button class="md3-button primary" @click=${this._startNew}>
+          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+          New Curve
+        </button>
+      `;
+        }
+        else {
+            return x `
+        <button class="md3-button tonal" @click=${() => { this._view = 'LIST'; this._editingCurve = null; this._error = null; }}>
+          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
+          Back
+        </button>
+        <button class="md3-button primary" @click=${this._saveCurve}>
+          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+          Save Curve
+        </button>
+      `;
+        }
+    }
+    _renderList() {
+        const curves = this._curvesController?.value || {};
+        const curveList = Object.values(curves);
+        if (curveList.length === 0) {
+            return x `
+        <div class="empty-state">
+          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
+          <p>No EC ramp curves defined yet.</p>
+          <p style="font-size: 0.9rem;">
+            Create curves to schedule EC targets across your grow cycle.
+          </p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="curves-list">
+        ${curveList.map((curve) => x `
+            <div class="curve-item" @click=${() => this._editCurve(curve)}>
+              <div class="curve-info">
+                <div class="curve-name">${curve.name}</div>
+                <div class="curve-details">
+                  ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''}
+                  • Day ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(...curve.points.map((p) => p.day))}
+                </div>
+                <div class="curve-preview">
+                  ${curve.points.slice(0, 6).map((p) => x `<span class="point-badge">D${p.day}: ${p.target_ec.toFixed(1)}</span>`)}
+                  ${curve.points.length > 6
+            ? x `<span class="point-badge" style="opacity: 0.5;">+${curve.points.length - 6} more</span>`
+            : E}
+                </div>
+              </div>
+              <div class="curve-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${(e) => { e.stopPropagation(); this._editCurve(curve); }}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${(e) => { e.stopPropagation(); this._deleteCurve(curve.id); }}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
+              </div>
+            </div>
+          `)}
+      </div>
+    `;
+    }
+    _updateCurveInfo(updates) {
+        if (!this._editingCurve)
+            return;
+        this._editingCurve = { ...this._editingCurve, ...updates };
+    }
+    _renderEdit() {
+        if (!this._editingCurve)
+            return E;
+        const points = this._editingCurve.points || [];
+        return x `
+      <div class="preset-form">
+        <div class="form-section">
+          <h3>Curve Info</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <md3-text-input
+              label="Curve Name"
+              .value=${this._editingCurve.name || ''}
+              @change=${(e) => this._updateCurveInfo({ name: e.detail })}
+              placeholder="e.g. Veg Ramp, Bloom Progression"
+            ></md3-text-input>
+            <md3-select
+              label="Growth Stage"
+              .value=${this._editingCurve.stage || 'flower'}
+              .options=${[
+            { label: 'Seedling', value: 'seedling' },
+            { label: 'Mother', value: 'mother' },
+            { label: 'Vegetative', value: 'veg' },
+            { label: 'Flower', value: 'flower' },
+            { label: 'Cure', value: 'cure' },
+        ]}
+              @change=${(e) => this._updateCurveInfo({ stage: e.detail })}
+            ></md3-select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="points-header">
+            <h3>EC Targets by Day</h3>
+            <button
+              class="md3-button text"
+              @click=${this._addPoint}
+              style="--mdc-button-horizontal-padding: 8px;"
+            >
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add Point
+            </button>
+          </div>
+          <div class="points-list">
+            ${points.map((point, index) => x `
+                <div class="point-row">
+                  <md3-number-input
+                    label="Day"
+                    .value=${point.day}
+                    @change=${(e) => this._updatePoint(index, { day: parseInt(e.detail) || 0 })}
+                    min="0"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Target EC (mS/cm)"
+                    .value=${point.target_ec}
+                    @change=${(e) => this._updatePoint(index, { target_ec: parseFloat(e.detail) || 0 })}
+                    min="0"
+                    step="0.1"
+                  ></md3-number-input>
+                  <button
+                    class="md3-button icon"
+                    @click=${() => this._removePoint(index)}
+                    style="color: var(--error-color);"
+                    ?disabled=${points.length <= 1}
+                  >
+                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                  </button>
+                </div>
+              `)}
+          </div>
+          ${points.length === 0
+            ? x `<p style="opacity: 0.6; font-size: 0.9rem;">Add at least one EC point to define the ramp.</p>`
+            : E}
+        </div>
+      </div>
+    `;
+    }
+};
+ECRampEditorDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .curve-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .curve-item:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+      }
+      .curve-info {
+        flex: 1;
+      }
+      .curve-name {
+        font-weight: 500;
+        font-size: 1rem;
+      }
+      .curve-details {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        margin-top: 2px;
+      }
+      .curve-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        opacity: 0.6;
+      }
+      .empty-state ha-svg-icon {
+        --mdc-icon-size: 48px;
+        opacity: 0.5;
+        margin-bottom: 16px;
+        display: block;
+      }
+      .error-bar {
+        background: var(--error-color, #ff5252);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+      }
+      .form-section {
+        margin-bottom: 24px;
+      }
+      .form-section h3 {
+        margin: 0 0 12px;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        opacity: 0.6;
+        letter-spacing: 1px;
+      }
+      .points-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .points-header h3 {
+        margin: 0;
+      }
+      .point-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .points-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .curve-preview {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .point-badge {
+        background: var(--primary-color, #4caf50);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        opacity: 0.8;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], ECRampEditorDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], ECRampEditorDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], ECRampEditorDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ECRampEditorDialog.prototype, "dialogState", void 0);
+__decorate([
+    n$5({ type: String })
+], ECRampEditorDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$2()
+], ECRampEditorDialog.prototype, "_view", void 0);
+__decorate([
+    r$2()
+], ECRampEditorDialog.prototype, "_editingCurve", void 0);
+__decorate([
+    r$2()
+], ECRampEditorDialog.prototype, "_error", void 0);
+ECRampEditorDialog = __decorate([
+    t$2('ec-ramp-editor-dialog')
+], ECRampEditorDialog);
+
+let GrowReportDialog = class GrowReportDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._loading = true;
+        this._error = null;
+        this._reportData = null;
+        this._exporting = false;
+    }
+    willUpdate(changedProperties) {
+        const opened = changedProperties.has('open') && this.open;
+        const growspaceChanged = changedProperties.has('state') && this.state?.growspaceId && this.open;
+        if (opened || growspaceChanged) {
+            this._loadReport();
+        }
+    }
+    async _loadReport() {
+        this._loading = true;
+        this._error = null;
+        try {
+            this._reportData = await this.store.dataService.fetchGrowReport(this.state.growspaceId);
+        }
+        catch (err) {
+            this._error = err?.message || 'Failed to load grow report';
+            this.store.ui.showToast(this._error, 'error');
+        }
+        finally {
+            this._loading = false;
+        }
+    }
+    async _exportReport(format) {
+        if (this._exporting)
+            return;
+        this._exporting = true;
+        try {
+            await this.store.dataService.exportGrowReport(this.state.growspaceId, format);
+            this.store.ui.showToast(`Grow report export triggered (${format.toUpperCase()})`, 'success');
+        }
+        catch (err) {
+            this.store.ui.showToast(err?.message || 'Failed to export grow report', 'error');
+        }
+        finally {
+            this._exporting = false;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._close}
+        hideActions
+      >
+        <div slot="heading" class="dialog-header">
+          <div style="display: flex; flex-direction: column;">
+            <h2 class="dialog-title">Grow Report</h2>
+            <div class="dialog-subtitle">${this.state?.growspaceId ? this.store.data.$devices.get().find(d => d.deviceId === this.state.growspaceId)?.name : ''}</div>
+          </div>
+          <ha-icon-button
+            .path=${mdiClose}
+            @click=${this._close}
+            title="Close"
+          ></ha-icon-button>
+        </div>
+        <div class="content">
+
+          ${this._loading
+            ? x `<div class="loading-state">
+                <ha-circular-progress active></ha-circular-progress>
+                <span>Generating report data...</span>
+              </div>`
+            : this._renderReportContent()}
+          
+        </div>
+        
+        <div slot="primaryAction" class="actions">
+          <mwc-button
+            label="Close"
+            @click=${this._close}
+          ></mwc-button>
+          ${this._reportData ? x `
+            <mwc-button
+              outlined
+              label="Export JSON"
+              icon="mdi:code-json"
+              ?disabled=${this._exporting}
+              @click=${() => this._exportReport('json')}
+            ></mwc-button>
+            <mwc-button
+              raised
+              label="Export PDF"
+              icon="mdi:file-pdf-box"
+              ?disabled=${this._exporting}
+              @click=${() => this._exportReport('pdf')}
+            ></mwc-button>
+          ` : ''}
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderReportContent() {
+        if (this._error) {
+            return x `
+        <ha-alert alert-type="error">
+          ${this._error}
+        </ha-alert>
+        <mwc-button label="Retry" @click=${() => this._loadReport()}></mwc-button>
+      `;
+        }
+        if (!this._reportData) {
+            return x `<p>No report data available.</p>`;
+        }
+        return x `
+      ${this._renderSummarySection()}
+      ${this._renderEnvironmentSection()}
+      ${this._renderHarvestSection()}
+    `;
+    }
+    _renderSummarySection() {
+        const summary = this._reportData?.summary;
+        if (!summary)
+            return '';
+        return x `
+      <div class="summary-section">
+        <h3>Overview</h3>
+        <div class="grid-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Plants</span>
+            <span class="stat-value">${summary.plant_count || 0}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Strains</span>
+            <span class="stat-value">${summary.strains?.length || 0}</span>
+          </div>
+        </div>
+        ${summary.strains?.length ? x `
+          <div style="margin-top: 12px;">
+            <span class="stat-label">Cultivated Strains:</span>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+              ${summary.strains.map((s) => x `<ha-chip>${s}</ha-chip>`)}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    }
+    _renderEnvironmentSection() {
+        const env = this._reportData?.environment;
+        if (!env)
+            return '';
+        return x `
+      <div class="summary-section">
+        <h3>Environment Averages</h3>
+        <div class="grid-stats">
+          <div class="stat-item">
+            <span class="stat-label">Temperature</span>
+            <span class="stat-value">${env.temperature_avg ? `${env.temperature_avg.toFixed(1)}°C` : 'N/A'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Humidity</span>
+            <span class="stat-value">${env.humidity_avg ? `${env.humidity_avg.toFixed(1)}%` : 'N/A'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">VPD</span>
+            <span class="stat-value">${env.vpd_avg ? `${env.vpd_avg.toFixed(2)} kPa` : 'N/A'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderHarvestSection() {
+        const harvest = this._reportData?.harvest;
+        if (!harvest)
+            return '';
+        return x `
+      <div class="summary-section">
+        <h3>Harvest Metrics</h3>
+        <div class="grid-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Wet Weight</span>
+            <span class="stat-value">${harvest.total_wet_weight ? `${harvest.total_wet_weight}g` : '0g'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Dry Weight</span>
+            <span class="stat-value">${harvest.total_dry_weight ? `${harvest.total_dry_weight}g` : '0g'}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Trim</span>
+            <span class="stat-value">${harvest.total_trim_weight ? `${harvest.total_trim_weight}g` : '0g'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowReportDialog.styles = [
+    sharedStyles,
+    i$6 `
+      .content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .summary-section {
+        background: var(--card-background-color);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--divider-color);
+      }
+      .summary-section h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        color: var(--primary-text-color);
+        font-size: 1.1em;
+      }
+      .grid-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+      }
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .stat-label {
+        font-size: 0.85em;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .stat-value {
+        font-size: 1.25em;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
+      pre {
+        background: var(--secondary-background-color);
+        padding: 12px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 0.9em;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean })
+], GrowReportDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowReportDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowReportDialog.prototype, "state", void 0);
+__decorate([
+    r$2()
+], GrowReportDialog.prototype, "_loading", void 0);
+__decorate([
+    r$2()
+], GrowReportDialog.prototype, "_error", void 0);
+__decorate([
+    r$2()
+], GrowReportDialog.prototype, "_reportData", void 0);
+__decorate([
+    r$2()
+], GrowReportDialog.prototype, "_exporting", void 0);
+GrowReportDialog = __decorate([
+    t$2('grow-report-dialog')
+], GrowReportDialog);
+
 let DialogHost = class DialogHost extends i$3 {
     constructor() {
         super(...arguments);
@@ -26282,12 +29526,27 @@ let DialogHost = class DialogHost extends i$3 {
                     return this._renderNutrientDialog(active, effectiveDeviceData);
                 case 'PRINT_LABEL':
                     return this._renderPrintLabelDialog(active, effectiveDeviceData);
+                case 'HARVEST_SCORING':
+                    return this._renderHarvestScoringDialog(active);
+                case 'SNAPSHOTS':
+                    return this._renderSnapshotsDialog(active, effectiveDeviceData);
+                case 'CROP_STEERING':
+                    return this._renderCropSteeringDialog(active, effectiveDeviceData);
+                case 'EC_RAMP_EDITOR':
+                    return this._renderECRampEditorDialog(active, effectiveDeviceData);
+                case 'GROW_REPORT':
+                    return this._renderGrowReportDialog(active, effectiveDeviceData);
                 default:
                     return x ``;
             }
         })()}
       </error-boundary>
     `;
+    }
+    _closeDialogIfActive(type) {
+        if (this._activeDialogController.value.type === type) {
+            this.store.ui.closeDialog();
+        }
     }
     async _handleDataChanged() {
         // Add a small delay to ensure backend has persisted changes
@@ -26457,7 +29716,13 @@ let DialogHost = class DialogHost extends i$3 {
             selectedPlantIds: dialogState.selectedPlantIds,
         })}
         @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
-        @harvest-plant=${(e) => this.store.actions.plant.nextStage(e.detail.plant)}
+        @harvest-plant=${(e) => {
+            const plant = e.detail.plant;
+            this.store.ui.setActiveDialog({
+                type: 'HARVEST_SCORING',
+                payload: { plant },
+            });
+        }}
         @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
         @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
         @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
@@ -26563,7 +29828,14 @@ let DialogHost = class DialogHost extends i$3 {
                 });
             }
         }}
-        @save-strain=${(e) => this.store.actions.strain.add(e.detail)}
+        @save-strain=${(e) => {
+            if (e.detail.key) {
+                this.store.actions.strain.update(e.detail);
+            }
+            else {
+                this.store.actions.strain.add(e.detail);
+            }
+        }}
         @delete-strain=${(e) => this.store.actions.strain.remove(e.detail.key)}
         @update-breeder=${(e) => this._handleUpdateBreeder(e.detail)}
         @save-breeder=${(e) => this._handleSaveBreeder(e.detail)}
@@ -26633,10 +29905,16 @@ let DialogHost = class DialogHost extends i$3 {
         .currentTab=${dialogState.currentTab}
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${(e) => this.store.actions.growspace.add(e.detail)}
         @edit-growspace-submit=${(e) => this.store.actions.growspace.update(e.detail)}
+        @delete-growspace-submit=${(e) => this.store.actions.growspace.remove(e.detail.growspace_id)}
+        @remove-environment-submit=${(e) => this.store.actions.growspace.removeEnvironment(e.detail.growspace_id)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        @generate-grow-report=${(e) => this.store.ui.setActiveDialog({
+            type: 'GROW_REPORT',
+            payload: { growspaceId: e.detail.growspace_id }
+        })}
       ></config-dialog>
     `;
     }
@@ -26717,7 +29995,7 @@ let DialogHost = class DialogHost extends i$3 {
         .personality=${personality}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('GROW_MASTER')}
         @analyze-growspace=${(e) => this.store.analyzeGrowspace(e.detail.query, false)}
         @analyze-all-growspaces=${(e) => this.store.analyzeGrowspace(e.detail.query, true)}
       ></grow-master-dialog>
@@ -26732,7 +30010,7 @@ let DialogHost = class DialogHost extends i$3 {
         .open=${true}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('STRAIN_RECOMMENDATION')}
         @get-recommendation=${(e) => this.store.getStrainRecommendation(e.detail.query)}
       >
       </strain-recommendation-dialog>
@@ -26746,8 +30024,8 @@ let DialogHost = class DialogHost extends i$3 {
         .open=${true}
         .device=${selectedDeviceData}
         .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.ui.closeDialog()}
-        @closed=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('IRRIGATION')}
+        @closed=${() => this._closeDialogIfActive('IRRIGATION')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </irrigation-dialog>
@@ -26761,7 +30039,7 @@ let DialogHost = class DialogHost extends i$3 {
       <logbook-dialog
         .open=${true}
         .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('LOGBOOK')}
       ></logbook-dialog>
     `;
     }
@@ -26774,7 +30052,7 @@ let DialogHost = class DialogHost extends i$3 {
         .open=${true}
         .dialogState=${dialogState}
         .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('WATERING')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </watering-dialog>
@@ -26789,7 +30067,7 @@ let DialogHost = class DialogHost extends i$3 {
         .store=${this.store}
         .hass=${this.hass}
         .growspaceId=${selectedDeviceData?.deviceId}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENT_PRESETS')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-presets-editor>
     `;
@@ -26801,7 +30079,7 @@ let DialogHost = class DialogHost extends i$3 {
       <training-dialog
         .open=${true}
         .store=${this.store}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('TRAINING')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </training-dialog>
@@ -26810,17 +30088,39 @@ let DialogHost = class DialogHost extends i$3 {
     _renderIPMDialog(active, selectedDeviceData) {
         if (active.type !== 'IPM')
             return x ``;
-        const dialogState = active.payload;
         return x `
       <ipm-dialog
         .open=${true}
         .store=${this.store}
-        .hass=${this.hass}
-        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
-        .plantIds=${dialogState.plantIds || []}
-        @close=${() => this.store.ui.closeDialog()}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('IPM')}
         @data-changed=${() => this._handleDataChanged()}
       ></ipm-dialog>
+    `;
+    }
+    _renderSnapshotsDialog(active, selectedDeviceData) {
+        if (active.type !== 'SNAPSHOTS')
+            return x ``;
+        return x `
+      <snapshots-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('SNAPSHOTS')}
+      ></snapshots-dialog>
+    `;
+    }
+    _renderCropSteeringDialog(active, selectedDeviceData) {
+        if (active.type !== 'CROP_STEERING')
+            return x ``;
+        return x `
+      <crop-steering-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('CROP_STEERING')}
+      ></crop-steering-dialog>
     `;
     }
     _renderNutrientInventoryDialog(active, _selectedDeviceData) {
@@ -26829,7 +30129,7 @@ let DialogHost = class DialogHost extends i$3 {
         return x `
       <nutrient-inventory-dialog
         .open=${true}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENT_INVENTORY')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-inventory-dialog>
     `;
@@ -26851,6 +30151,7 @@ let DialogHost = class DialogHost extends i$3 {
             await this._handleDataChanged();
             this.store.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
         }}
+        @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
       ></clone-dialog>
     `;
     }
@@ -26860,7 +30161,7 @@ let DialogHost = class DialogHost extends i$3 {
         return x `
       <nutrient-dialog
         .open=${true}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENTS')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-dialog>
     `;
@@ -26872,8 +30173,44 @@ let DialogHost = class DialogHost extends i$3 {
       <print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
       ></print-label-dialog>
+    `;
+    }
+    _renderHarvestScoringDialog(active) {
+        if (active.type !== 'HARVEST_SCORING')
+            return x ``;
+        return x `
+      <harvest-scoring-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this._closeDialogIfActive('HARVEST_SCORING')}
+      ></harvest-scoring-dialog>
+    `;
+    }
+    _renderECRampEditorDialog(active, selectedDeviceData) {
+        if (active.type !== 'EC_RAMP_EDITOR')
+            return x ``;
+        return x `
+      <ec-ramp-editor-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('EC_RAMP_EDITOR')}
+        @data-changed=${() => this._handleDataChanged()}
+      ></ec-ramp-editor-dialog>
+    `;
+    }
+    _renderGrowReportDialog(active, _selectedDeviceData) {
+        if (active.type !== 'GROW_REPORT')
+            return x ``;
+        return x `
+      <grow-report-dialog
+        .open=${true}
+        .store=${this.store}
+        .state=${active.payload}
+        @close=${() => this._closeDialogIfActive('GROW_REPORT')}
+      ></grow-report-dialog>
     `;
     }
 };
@@ -27715,6 +31052,10 @@ const plantCardStyles = i$6 `
     color: #9c27b0; /* Purple for IPM */
   }
 
+  .status-icon.phi {
+    color: #ff9800; /* Orange for PHI */
+  }
+
   .status-icon.preset-recommended {
     color: var(--gm-primary-color);
   }
@@ -27921,6 +31262,19 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
                   title="Last IPM: ${this.plant.attributes.last_ipm_type || 'Unknown'}"
                 >
                   <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
+                </div>
+              `
+            : E}
+          ${this.plant.attributes.phi_days_remaining !== undefined && this.plant.attributes.phi_days_remaining !== null && this.plant.attributes.phi_days_remaining > 0
+            ? x `
+                <div
+                  class="status-icon phi"
+                  role="img"
+                  aria-label="PHI Active: ${this.plant.attributes.phi_days_remaining} days remaining"
+                  title="PHI Active: ${this.plant.attributes.phi_days_remaining} days remaining"
+                  style="border-color: #ff9800; background: rgba(255, 152, 0, 0.2);"
+                >
+                  <span style="color: #ff9800; font-size: 11px; font-weight: bold;">${this.plant.attributes.phi_days_remaining}d</span>
                 </div>
               `
             : E}
@@ -36228,8 +39582,8 @@ class MetricsUtils {
                     .replace(/\s+/g, '_')
                     .replace(/[^\w-]+/g, '')
                     .replace(/[_-]+/g, '_')
-                    .replace(/^-+/, '')
-                    .replace(/-+$/, '');
+                    .replace(/^[_-]+/, '')
+                    .replace(/[_-]+$/, '');
                 const calcName = `${device.name} Calculated VPD`;
                 const calculatedId = `sensor.${slugify(calcName)}`;
                 let vpdState = hass.states[calculatedId];
@@ -36369,6 +39723,24 @@ class MetricsUtils {
         let tankMultiValues;
         let tankStatus;
         let tankTooltip;
+        // New metrics: DLI, Crop Steering, Substrate Temp, Energy, Water
+        const dliEntityId = `sensor.${slug}_dli`;
+        const dliState = hass.states[dliEntityId];
+        const dliValue = dliState && dliState.state !== EntityState.UNKNOWN && dliState.state !== EntityState.UNAVAILABLE
+            ? dliState.state
+            : undefined;
+        const cropSteeringEntityId = `sensor.${slug}_crop_steering`;
+        const cropSteeringState = hass.states[cropSteeringEntityId];
+        const cropSteeringValue = cropSteeringState && cropSteeringState.state !== EntityState.UNKNOWN && cropSteeringState.state !== EntityState.UNAVAILABLE
+            ? cropSteeringState.state
+            : undefined;
+        const energyValue = device.energyTracking?.dailyKwh != null
+            ? device.energyTracking.dailyKwh.toFixed(2)
+            : undefined;
+        const waterValue = device.waterUsage?.litersToday != null
+            ? device.waterUsage.litersToday.toFixed(1)
+            : undefined;
+        const substrateTempAgg = getAggregateSensorState(undefined, envAttrs.substrateTemperatureSensors, '°C');
         if (tanks.length > 0) {
             tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
             // Helper: Format hours remaining as "Xh" or "Xd"
@@ -36485,6 +39857,11 @@ class MetricsUtils {
             envEntity
                 ? createChipData(MetricKey.OPTIMAL, envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, undefined, undefined, undefined, envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING)
                 : null,
+            createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId]),
+            createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId]),
+            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
+            createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
+            createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
         ].filter((c) => c !== null);
         // Device Chips
         const getAggregateState = (single, multi, sensor) => {
@@ -36903,6 +40280,9 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             case 'logbook':
                 this.store.openLogbookDialog();
                 break;
+            case 'snapshots':
+                this.store.openSnapshotsDialog(this._selectedDeviceController.value || undefined);
+                break;
             case 'water': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openWateringDialog({
@@ -36929,6 +40309,17 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             }
             case 'nutrients':
                 this.store.openNutrientsDialog();
+                break;
+            case 'ec_ramp':
+                this.store.openECRampDialog(this._selectedDeviceController.value || undefined);
+                break;
+            case 'report':
+                if (this._selectedDeviceController.value) {
+                    this.store.ui.setActiveDialog({
+                        type: 'GROW_REPORT',
+                        payload: { growspaceId: this._selectedDeviceController.value },
+                    });
+                }
                 break;
         }
     }
@@ -37074,10 +40465,6 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             : 'Log Training'}</span
           >
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-          <span class="menu-item-label">Nutrients</span>
-        </div>
 
         <div class="menu-divider"></div>
 
@@ -37094,9 +40481,27 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
           <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
           <span class="menu-item-label">Logbook</span>
         </div>
+        <div class="menu-item" @click=${() => this._triggerAction('report')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiFileChart}"></path></svg>
+          <span class="menu-item-label">Generate Report</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('snapshots')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+          <span class="menu-item-label">Camera Snapshots</span>
+        </div>
         <div class="menu-item" @click=${() => this._triggerAction('ai')}>
           <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
           <span class="menu-item-label">Ask AI</span>
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-header">Nutrition</div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+          <span class="menu-item-label">Nutrients</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
+          <span class="menu-item-label">EC Ramp Curves</span>
         </div>
       </div>
     `;
@@ -98844,6 +102249,7 @@ class GrowspaceDataStore {
         this.$nutrientPresets = atom({});
         this.$ipmPresets = atom({});
         this.$nutrientInventory = atom(null);
+        this.$ecRampCurves = atom({});
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
             this._isActive = true;
@@ -98887,6 +102293,9 @@ class GrowspaceDataStore {
     }
     setIPMPresets(presets) {
         this.$ipmPresets.set(presets);
+    }
+    setECRampCurves(curves) {
+        this.$ecRampCurves.set(curves);
     }
     setOptimisticDeletedPlantIds(ids) {
         this.$optimisticDeletedPlantIds.set(ids);
@@ -99867,6 +103276,42 @@ async function removeNutrientStock(ctx, nutrientId) {
         ctx.showToast(`Failed to remove stock: ${error}`, 'error');
     }
 }
+async function fetchECRampCurves(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ec_ramp_curves';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
+                ctx.data.setECRampCurves(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchECRampCurves();
+        if (result) {
+            ctx.data.setECRampCurves(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch EC ramp curves:', e);
+    }
+}
 
 /**
  * Plant Actions - Unified business logic for plant operations.
@@ -100031,14 +103476,14 @@ async function movePlantToNextStage(ctx, plant) {
 /**
  * Internal API move clone wrapper
  */
-async function _movePlantApi(ctx, plant, targetGrowspace) {
+async function _movePlantApi(ctx, plant, targetGrowspaceId) {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    const currentStage = plant.attributes?.stage || 'unknown';
-    if (currentStage === 'clone') {
-        await ctx.dataService.moveClone(plantId, targetGrowspace);
+    if (plant.attributes.stage === 'clone') {
+        await ctx.dataService.moveClone(plantId, targetGrowspaceId);
     }
     else {
-        await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+        // Note: historically this integration used harvestPlant for general room moves
+        await ctx.dataService.harvestPlant(plantId, targetGrowspaceId);
     }
 }
 /**
@@ -100429,12 +103874,10 @@ async function printLabel(ctx, params) {
  * Strain & Growspace Actions - Unified CRUD logic.
  */
 /**
- * Add a new strain to the library.
+ * Create consistent payload for strain operations.
  */
-async function addStrain(ctx, strainData) {
-    if (!strainData.strain)
-        return false;
-    const payload = {
+function _createStrainPayload(strainData) {
+    return {
         strain: strainData.strain,
         phenotype: strainData.phenotype,
         breeder: strainData.breeder,
@@ -100454,14 +103897,42 @@ async function addStrain(ctx, strainData) {
         indica_percentage: strainData.indica_percentage,
         breeder_logo: strainData.breeder_logo,
     };
+}
+/**
+ * Add a new strain to the library.
+ */
+async function addStrain(ctx, strainData) {
+    if (!strainData.strain)
+        return false;
     try {
+        const payload = _createStrainPayload(strainData);
         await ctx.dataService.addStrain(payload);
-        ctx.showToast('Strain saved successfully!', 'success');
+        ctx.showToast('Strain added successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
     }
     catch (err) {
         console.error('Error adding strain:', err);
+        ctx.showToast('Failed to add strain', 'error');
+        return false;
+    }
+}
+/**
+ * Update an existing strain in the library.
+ */
+async function updateStrain(ctx, strainData) {
+    if (!strainData.strain)
+        return false;
+    try {
+        const payload = _createStrainPayload(strainData);
+        await ctx.dataService.updateStrainMeta(payload);
+        ctx.showToast('Strain updated successfully!', 'success');
+        await fetchStrainLibrary(ctx, true);
+        return true;
+    }
+    catch (err) {
+        console.error('Error updating strain:', err);
+        ctx.showToast('Failed to update strain', 'error');
         return false;
     }
 }
@@ -100896,6 +104367,30 @@ function openTrainingDialog(ctx, plantIds, growspaceId) {
 function openNutrientsDialog(ctx) {
     ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
 }
+function openSnapshotsDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'SNAPSHOTS',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openCropSteeringDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'CROP_STEERING',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openECRampDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'EC_RAMP_EDITOR',
+        payload: {
+            growspaceId,
+        },
+    });
+}
 
 class ActionDispatcher {
     constructor(store) {
@@ -100920,9 +104415,12 @@ class ActionDispatcher {
             add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
             update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
             remove: (id) => removeGrowspace(this.ctx, id),
+            removeEnvironment: (id) => this.ctx.dataService.removeEnvironment(id),
+            resetWaterTracking: (id) => this.ctx.dataService.resetWaterTracking(id),
         };
         this.strain = {
             add: (data) => addStrain(this.ctx, data),
+            update: (data) => updateStrain(this.ctx, data),
             remove: (key) => removeStrain(this.ctx, key),
         };
         this.history = {
@@ -101695,12 +105193,21 @@ class GrowspaceStore {
         handleDeepLink(this.context, plantId);
     }
     toggleEnvGraph(metric) {
+        if (metric === 'crop_steering') {
+            const gsId = this.data.$selectedDevice.get();
+            if (gsId)
+                this.openCropSteeringDialog(gsId);
+            return;
+        }
         if (!this.history)
             return;
         const isNowActive = this.history.toggleEnvGraph(metric);
         if (isNowActive && this.ui.$viewMode.get() === ViewMode.HEADER) {
             this.ui.setViewMode(ViewMode.STANDARD);
         }
+    }
+    openECRampDialog(growspaceId) {
+        openECRampDialog(this.context, growspaceId);
     }
     // Device Actions
     initializeSelectedDevice(config) {
@@ -101721,6 +105228,9 @@ class GrowspaceStore {
     }
     async fetchNutrientInventory(force = false) {
         await fetchNutrientInventory(this.context, force);
+    }
+    async fetchECRampCurves(force = false) {
+        await fetchECRampCurves(this.context, force);
     }
     async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
         await updateNutrientStock(this.context, nutrientId, name, currentMl, initialMl);
@@ -101907,6 +105417,12 @@ class GrowspaceStore {
     }
     openNutrientsDialog() {
         openNutrientsDialog(this.context);
+    }
+    openSnapshotsDialog(growspaceId) {
+        openSnapshotsDialog(this.context, growspaceId);
+    }
+    openCropSteeringDialog(growspaceId) {
+        openCropSteeringDialog(this.context, growspaceId);
     }
     openLogbookDialog() {
         openLogbookDialog(this.context);
@@ -102897,6 +106413,30 @@ __decorate([
 GrowspaceAiInsightCard = __decorate([
     t$2('growspace-ai-insight-card')
 ], GrowspaceAiInsightCard);
+
+// Export all types
+window.customCards = window.customCards || [];
+window.customCards.push({
+    type: 'growspace-manager-card',
+    name: 'Growspace Manager',
+    description: 'Full growspace management dashboard with environment monitoring, plant tracking, and irrigation control.',
+    preview: false,
+}, {
+    type: 'growspace-grid-card',
+    name: 'Growspace Grid',
+    description: 'Compact grid view of all plants in a growspace.',
+    preview: false,
+}, {
+    type: 'growspace-analytics-card',
+    name: 'Growspace Analytics',
+    description: 'Environment analytics and historical charts for a growspace.',
+    preview: false,
+}, {
+    type: 'growspace-ai-insight-card',
+    name: 'Growspace AI Insight',
+    description: 'AI-powered cultivation insights and recommendations.',
+    preview: false,
+});
 
 /**
  * @license
@@ -104149,10 +107689,13 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
             return;
         const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
         if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
-            this._sensorGrowspaces = growspaceListSensor.attributes.growspaces.map((g) => ({
-                id: g.id,
-                name: g.name || g.id
-            }));
+            const raw = growspaceListSensor.attributes.growspaces;
+            if (Array.isArray(raw)) {
+                this._sensorGrowspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
+            }
+            else {
+                this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
+            }
         }
     }
     firstUpdated() {
@@ -104268,10 +107811,13 @@ let GrowspaceAiInsightCardEditor = class GrowspaceAiInsightCardEditor extends i$
             return;
         const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
         if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
-            this._sensorGrowspaces = growspaceListSensor.attributes.growspaces.map((g) => ({
-                id: g.id,
-                name: g.name || g.id
-            }));
+            const raw = growspaceListSensor.attributes.growspaces;
+            if (Array.isArray(raw)) {
+                this._sensorGrowspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
+            }
+            else {
+                this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
+            }
         }
     }
     firstUpdated() {

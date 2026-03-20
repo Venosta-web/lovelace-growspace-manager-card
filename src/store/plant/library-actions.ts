@@ -196,3 +196,69 @@ export async function removeNutrientStock(ctx: ActionContext, nutrientId: string
     ctx.showToast(`Failed to remove stock: ${error}`, 'error');
   }
 }
+
+export async function fetchECRampCurves(ctx: ActionContext, force: boolean = false) {
+  const CACHE_KEY = 'growspace_ec_ramp_curves';
+  const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+
+  if (!ctx.hass) return;
+
+  const cachedRaw = localStorage.getItem(CACHE_KEY);
+  if (!force && cachedRaw) {
+    try {
+      const cache = JSON.parse(cachedRaw);
+      const age = Date.now() - (cache.timestamp || 0);
+      if (age < CACHE_VALIDITY_MS) {
+        console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
+        ctx.data.setECRampCurves(cache.data);
+        return;
+      }
+    } catch (e) {
+      console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
+      localStorage.removeItem(CACHE_KEY);
+    }
+  }
+
+  console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
+
+  try {
+    const result = await ctx.dataService.fetchECRampCurves();
+    if (result) {
+      ctx.data.setECRampCurves(result);
+      localStorage.setItem(
+        CACHE_KEY,
+        JSON.stringify({
+          timestamp: Date.now(),
+          data: result,
+        })
+      );
+    }
+  } catch (e) {
+    console.error('Failed to fetch EC ramp curves:', e);
+  }
+}
+
+export async function saveECRampCurve(
+  ctx: ActionContext,
+  data: { curve_id?: string; name: string; stage?: string; points: { day: number; target_ec: number }[] }
+) {
+  try {
+    await ctx.dataService.saveECRampCurve(data);
+    await fetchECRampCurves(ctx, true);
+    ctx.showToast(`Saved EC ramp: ${data.name}`, 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to save EC ramp: ${error}`, 'error');
+  }
+}
+
+export async function removeECRampCurve(ctx: ActionContext, curveId: string) {
+  try {
+    await ctx.dataService.removeECRampCurve(curveId);
+    await fetchECRampCurves(ctx, true);
+    ctx.showToast('Removed EC ramp curve', 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to remove EC ramp: ${error}`, 'error');
+  }
+}

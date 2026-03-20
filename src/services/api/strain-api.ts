@@ -342,4 +342,48 @@ export class StrainAPI extends BaseAPI {
       throw err;
     }
   }
+
+  async updateStrainMeta(data: {
+    strain: string;
+    phenotype?: string;
+    breeder?: string;
+    type?: string;
+    flowering_days_min?: number;
+    flowering_days_max?: number;
+    lineage?: string;
+    sex?: string;
+    description?: string;
+    image?: string;
+    image_crop_meta?: CropMeta;
+    sativa_percentage?: number;
+    indica_percentage?: number;
+    breeder_logo?: string;
+  }): Promise<void> {
+    console.log('[StrainAPI:updateStrainMeta] Updating strain:', data);
+    try {
+      const payload: Record<string, unknown> = { ...data };
+
+      // Clean undefined keys
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
+      if (data.image) {
+        if (data.image.startsWith('data:')) {
+          payload.image_base64 = data.image;
+          delete payload.image;
+        } else {
+          delete payload.image; // Assume unchanged file path
+        }
+      }
+
+      await this.callService(DOMAIN, SERVICES.UPDATE_STRAIN_META, payload);
+      console.log('[StrainAPI:updateStrainMeta] Service Called');
+    } catch (err) {
+      console.error('[StrainAPI:updateStrainMeta] Error:', err);
+      throw err;
+    }
+  }
 }

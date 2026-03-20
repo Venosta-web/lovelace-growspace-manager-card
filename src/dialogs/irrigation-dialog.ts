@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
-import { IrrigationTime, IrrigationStrategy, GrowspaceDevice } from '../types';
+import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -483,8 +483,19 @@ export class IrrigationDialog extends LitElement {
     `,
   ];
 
-  @state() private _activeTab: 'schedules' | 'steering' | 'config' | 'tanks' = 'schedules';
+  @state() private _activeTab: 'schedules' | 'steering' | 'config' | 'tanks' | 'water_analytics' | 'drain_ec' = 'schedules';
   @state() private _strategy: Partial<IrrigationStrategy> = {};
+
+  // Drain EC state
+  @state() private _drainEcEnabled = false;
+  @state() private _drainEcMaxDelta = 1.0;
+  @state() private _drainEcTargetRunoffPercent = 20;
+  @state() private _drainLogFeedEc = 2.0;
+  @state() private _drainLogDrainEc = 2.0;
+  @state() private _drainLogFeedVolume = 0;
+  @state() private _drainLogDrainVolume = 0;
+  @state() private _drainSaving = false;
+  @state() private _drainLogging = false;
 
   protected willUpdate(changedProps: PropertyValues): void {
     // Only initialize state when dialog first opens, not on subsequent device updates
@@ -529,6 +540,14 @@ export class IrrigationDialog extends LitElement {
       shotDurationSeconds: strat?.shotDurationSeconds || 15,
       shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
     };
+
+    // Initialize Drain EC config
+    const dc = this.device.drainConfig;
+    if (dc) {
+      this._drainEcEnabled = dc.enabled;
+      this._drainEcMaxDelta = dc.maxEcDelta;
+      this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
+    }
   }
 
   // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
@@ -654,7 +673,7 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _startAddingIrrigationTime(x: number, width: number) {
-    const percentage = x / width;
+    const percentage = Math.max(0, Math.min(1, x / width));
     const totalMinutes = Math.round(percentage * 24 * 60);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -667,7 +686,7 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _startAddingDrainTime(x: number, width: number) {
-    const percentage = x / width;
+    const percentage = Math.max(0, Math.min(1, x / width));
     const totalMinutes = Math.round(percentage * 24 * 60);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -760,6 +779,25 @@ export class IrrigationDialog extends LitElement {
     } catch (removeError) {
       console.error('Failed to remove old time:', removeError);
       this._showErrorToast('Failed to save changes. Please try again.');
+    }
+  }
+
+  private async _handleResetWaterTracking() {
+    if (!this.device?.deviceId || !this._dataService) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to reset all water tracking data for this growspace? This includes today\'s usage counters and volume history.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await this._dataService.resetWaterTracking(this.device.deviceId);
+      this._showErrorToast('Water tracking data reset successfully');
+      this._notifyDataChanged();
+    } catch (e) {
+      console.error('Failed to reset water tracking:', e);
+      this._showErrorToast('Failed to reset water tracking data');
     }
   }
 
@@ -967,6 +1005,43 @@ export class IrrigationDialog extends LitElement {
     }
   }
 
+  private async _saveDrainConfig() {
+    if (!this.device?.deviceId || !this._dataService) return;
+    this._drainSaving = true;
+    try {
+      await this._dataService.configureDrainMonitoring(this.device.deviceId, {
+        enabled: this._drainEcEnabled,
+        maxEcDelta: this._drainEcMaxDelta,
+        targetRunoffPercent: this._drainEcTargetRunoffPercent,
+      });
+    } catch (e) {
+      this._showErrorToast('Failed to save drain config');
+    } finally {
+      this._drainSaving = false;
+    }
+  }
+
+  private async _logDrainReadingNow() {
+    if (!this.device?.deviceId || !this._dataService) return;
+    if (this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0) {
+      this._showErrorToast('Feed EC and Drain EC must be > 0');
+      return;
+    }
+    this._drainLogging = true;
+    try {
+      await this._dataService.logDrainReading(this.device.deviceId, {
+        feedEc: this._drainLogFeedEc,
+        drainEc: this._drainLogDrainEc,
+        feedVolumeMl: this._drainLogFeedVolume || undefined,
+        drainVolumeMl: this._drainLogDrainVolume || undefined,
+      });
+    } catch (e) {
+      this._showErrorToast('Failed to log drain reading');
+    } finally {
+      this._drainLogging = false;
+    }
+  }
+
   private _updateStrategyField(field: keyof IrrigationStrategy, value: string | number | boolean) {
     this._strategy = { ...this._strategy, [field]: value };
   }
@@ -1034,6 +1109,18 @@ export class IrrigationDialog extends LitElement {
             >
               Tanks
             </div>
+            <div
+              class="tab-item ${this._activeTab === 'water_analytics' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'water_analytics')}
+            >
+              Water Analytics
+            </div>
+            <div
+              class="tab-item ${this._activeTab === 'drain_ec' ? 'active' : ''}"
+              @click=${() => (this._activeTab = 'drain_ec')}
+            >
+              Drain EC
+            </div>
           </div>
 
           <div class="dialog-body">
@@ -1043,7 +1130,11 @@ export class IrrigationDialog extends LitElement {
           ? this._renderSteeringTab(dialogColor)
           : this._activeTab === 'tanks'
             ? this._renderTanksTab()
-            : this._renderConfigSection()}
+            : this._activeTab === 'water_analytics'
+              ? this._renderWaterAnalyticsTab()
+              : this._activeTab === 'drain_ec'
+                ? this._renderDrainECTab()
+                : this._renderConfigSection()}
           </div>
 
           <div class="button-group">
@@ -1070,10 +1161,22 @@ export class IrrigationDialog extends LitElement {
                   </button>
                 `
         : ''}
+            ${this._activeTab === 'drain_ec'
+        ? html`
+                  <button
+                    class="md3-button primary"
+                    style="background: #FF9800;"
+                    @click=${this._saveDrainConfig}
+                    ?disabled=${this._drainSaving}
+                  >
+                    ${this._drainSaving ? 'Saving…' : 'Save Drain Config'}
+                  </button>
+                `
+        : ''}
           </div>
 
           ${this._pendingUndo
-            ? html`
+        ? html`
                 <div class="toast-notification">
                   <span class="toast-message">
                     Deleted ${this._pendingUndo.type} time ${this._pendingUndo.time.substring(0, 5)}
@@ -1083,15 +1186,15 @@ export class IrrigationDialog extends LitElement {
                   </button>
                 </div>
               `
-            : ''}
+        : ''}
 
           ${this._errorToast
-            ? html`
+        ? html`
                 <div class="toast-notification error">
                   <span class="toast-message">${this._errorToast}</span>
                 </div>
               `
-            : ''}
+        : ''}
         </div>
       </ha-dialog>
     `;
@@ -1443,9 +1546,9 @@ export class IrrigationDialog extends LitElement {
             <div
               class="overlay-backdrop"
               @click=${() =>
-                type === 'irrigation'
-                  ? (this._editingIrrigationTime = undefined)
-                  : (this._editingDrainTime = undefined)}
+            type === 'irrigation'
+              ? (this._editingIrrigationTime = undefined)
+              : (this._editingDrainTime = undefined)}
             >
               <div
                 class="detail-card"
@@ -1459,20 +1562,20 @@ export class IrrigationDialog extends LitElement {
                   type="time"
                   .value=${editingTime.time}
                   @change=${(e: CustomEvent) => {
-                    const val = (e.target as HTMLInputElement).value || e.detail;
-                    if (type === 'irrigation' && this._editingIrrigationTime) {
-                      this._editingIrrigationTime = {
-                        ...this._editingIrrigationTime,
-                        time: val,
-                      };
-                    }
-                    if (type === 'drain' && this._editingDrainTime) {
-                      this._editingDrainTime = {
-                        ...this._editingDrainTime,
-                        time: val,
-                      };
-                    }
-                  }}
+            const val = (e.target as HTMLInputElement).value || e.detail;
+            if (type === 'irrigation' && this._editingIrrigationTime) {
+              this._editingIrrigationTime = {
+                ...this._editingIrrigationTime,
+                time: val,
+              };
+            }
+            if (type === 'drain' && this._editingDrainTime) {
+              this._editingDrainTime = {
+                ...this._editingDrainTime,
+                time: val,
+              };
+            }
+          }}
                 ></md3-text-input>
 
                 <md3-number-input
@@ -1480,31 +1583,31 @@ export class IrrigationDialog extends LitElement {
                   .value=${editingTime.duration}
                   .min=${1}
                   @change=${(e: CustomEvent) => {
-                    const val = parseInt(e.detail);
-                    if (!isNaN(val)) {
-                      if (type === 'irrigation' && this._editingIrrigationTime) {
-                        this._editingIrrigationTime = {
-                          ...this._editingIrrigationTime,
-                          duration: val,
-                        };
-                      }
-                      if (type === 'drain' && this._editingDrainTime) {
-                        this._editingDrainTime = {
-                          ...this._editingDrainTime,
-                          duration: val,
-                        };
-                      }
-                    }
-                  }}
+            const val = parseInt(e.detail);
+            if (!isNaN(val)) {
+              if (type === 'irrigation' && this._editingIrrigationTime) {
+                this._editingIrrigationTime = {
+                  ...this._editingIrrigationTime,
+                  duration: val,
+                };
+              }
+              if (type === 'drain' && this._editingDrainTime) {
+                this._editingDrainTime = {
+                  ...this._editingDrainTime,
+                  duration: val,
+                };
+              }
+            }
+          }}
                 ></md3-number-input>
 
                 <div class="edit-dialog-buttons">
                   <button
                     class="md3-button delete-button"
                     @click=${() =>
-                      type === 'irrigation'
-                        ? this._deleteIrrigationTimeFromEdit()
-                        : this._deleteDrainTimeFromEdit()}
+            type === 'irrigation'
+              ? this._deleteIrrigationTimeFromEdit()
+              : this._deleteDrainTimeFromEdit()}
                   >
                     Delete
                   </button>
@@ -1515,21 +1618,21 @@ export class IrrigationDialog extends LitElement {
                     <button
                       class="md3-button tonal"
                       @click=${() =>
-                        type === 'irrigation'
-                          ? (this._editingIrrigationTime = undefined)
-                          : (this._editingDrainTime = undefined)}
+            type === 'irrigation'
+              ? (this._editingIrrigationTime = undefined)
+              : (this._editingDrainTime = undefined)}
                     >
                       Cancel
                     </button>
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                        if (type === 'irrigation') {
-                          this._saveEditedIrrigationTime();
-                        } else {
-                          this._saveEditedDrainTime();
-                        }
-                      }}
+            if (type === 'irrigation') {
+              this._saveEditedIrrigationTime();
+            } else {
+              this._saveEditedDrainTime();
+            }
+          }}
                       style="background: ${color};"
                     >
                       Save Changes
@@ -1561,6 +1664,498 @@ export class IrrigationDialog extends LitElement {
     return html`
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
         ${tanks.map(tank => this._renderTankCard(tank))}
+      </div>
+    `;
+  }
+
+  private _renderWaterAnalyticsTab() {
+    const wu = this.device?.waterUsage;
+    const tanks = this.device?.environmentAttributes?.irrigationTanks || [];
+    const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
+    const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
+    const readings = this.device?.drainConfig?.readings || [];
+
+    // Compute volume totals from logged EC readings (last 30)
+    const recentReadings = readings.slice(-30).reverse();
+    const readingsWithVolumes = recentReadings.filter(r => r.feedVolumeMl && r.drainVolumeMl);
+    const totalFeedMl = readingsWithVolumes.reduce((s, r) => s + (r.feedVolumeMl || 0), 0);
+    const totalDrainMl = readingsWithVolumes.reduce((s, r) => s + (r.drainVolumeMl || 0), 0);
+    const avgRunoff = totalFeedMl > 0 ? (totalDrainMl / totalFeedMl) * 100 : null;
+
+    // Tank aggregate
+    const tanksWithData = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
+    const avgTankLevel = tanksWithData.length > 0
+      ? tanksWithData.reduce((s, t) => s + (t.fillLevel ?? 0), 0) / tanksWithData.length
+      : null;
+    const warningTanks = tanks.filter(t => t.isWarning);
+
+    // Schedule analysis
+    const totalIrrig = irrigTimes.length;
+    const totalDrain = drainTimes.length;
+    const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
+    const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
+
+    // --- KPI helper ---
+    const kpiCard = (label: string, value: string, unit: string, color = 'rgba(255,255,255,0.7)', sub?: string) => html`
+      <div style="
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      ">
+        <div style="font-size: 0.78rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em;">${label}</div>
+        <div style="display: flex; align-items: baseline; gap: 4px;">
+          <span style="font-size: 1.6rem; font-weight: 700; color: ${color};">${value}</span>
+          <span style="font-size: 0.82rem; opacity: 0.6;">${unit}</span>
+        </div>
+        ${sub ? html`<div style="font-size: 0.75rem; opacity: 0.5;">${sub}</div>` : nothing}
+      </div>
+    `;
+
+    return html`
+      <!-- Today's Usage -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">Today's Usage</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+          ${wu?.litersToday != null
+        ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
+        : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${wu?.litersPerPlantPerDay != null
+        ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
+        : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${wu?.waterEfficiency != null
+        ? kpiCard(
+          'Water efficiency',
+          (wu.waterEfficiency * 100).toFixed(0),
+          '%',
+          wu.waterEfficiency >= 0.85 ? '#4caf50' : wu.waterEfficiency >= 0.65 ? '#FF9800' : '#f44336',
+          wu.waterEfficiency >= 0.85 ? 'Excellent' : wu.waterEfficiency >= 0.65 ? 'Good' : 'Review schedule'
+        )
+        : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
+
+          ${avgRunoff !== null
+        ? kpiCard('Avg runoff', avgRunoff.toFixed(1), '%', '#ce93d8', `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`)
+        : kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
+        </div>
+      </div>
+
+      <!-- Tank Overview -->
+      ${tanks.length > 0 ? html`
+        <div class="detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0;">Tank Levels</h3>
+            ${warningTanks.length > 0 ? html`
+              <span style="
+                background: rgba(244, 67, 54, 0.2);
+                color: #f44336;
+                border: 1px solid rgba(244,67,54,0.4);
+                border-radius: 20px;
+                padding: 3px 10px;
+                font-size: 0.78rem;
+                font-weight: 600;
+              ">⚠ ${warningTanks.length} tank${warningTanks.length > 1 ? 's' : ''} low</span>
+            ` : avgTankLevel !== null ? html`
+              <span style="font-size: 0.82rem; opacity: 0.5;">Avg ${avgTankLevel.toFixed(0)}%</span>
+            ` : nothing}
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            ${tanks.map(tank => {
+          const pct = tank.fillLevel ?? 0;
+          const color = tank.isWarning ? '#f44336'
+            : (tank.hoursRemaining ?? 999) < 24 ? '#FF9800'
+              : '#4caf50';
+          const depletionLabel = tank.depletionStatus === 'depleting' ? '↓ Depleting'
+            : tank.depletionStatus === 'refilling' ? '↑ Refilling'
+              : tank.depletionStatus === 'static' ? '— Stable'
+                : '';
+          return html`
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px;">
+                    <span style="font-weight: 500;">${tank.name}</span>
+                    <span style="opacity: 0.7; display: flex; gap: 8px;">
+                      ${depletionLabel ? html`<span style="opacity: 0.6; font-size: 0.75rem;">${depletionLabel}</span>` : nothing}
+                      ${tank.hoursRemaining != null ? html`<span style="opacity: 0.6;">${tank.hoursRemaining >= 48 ? Math.floor(tank.hoursRemaining / 24) + 'd' : Math.round(tank.hoursRemaining) + 'h'} left</span>` : nothing}
+                      <span style="color: ${color}; font-weight: 600;">${tank.fillLevel !== null ? pct.toFixed(0) + '%' : '—'}</span>
+                    </span>
+                  </div>
+                  <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                    <div style="
+                      height: 100%;
+                      width: ${Math.max(0, Math.min(100, pct))}%;
+                      background: ${color};
+                      border-radius: 3px;
+                      transition: width 0.4s ease;
+                    "></div>
+                  </div>
+                </div>
+              `;
+        })}
+          </div>
+        </div>
+      ` : nothing}
+
+      <!-- Irrigation Schedule Summary -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0; margin-bottom: 16px;">Schedule Summary</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <!-- Irrigation side -->
+          <div>
+            <div style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Irrigation</div>
+            ${totalIrrig === 0 ? html`<p style="opacity: 0.5; font-size: 0.85rem; margin: 0;">No events scheduled</p>` : html`
+              <div style="font-size: 1.3rem; font-weight: 700; color: #4fc3f7;">${totalIrrig} <span style="font-size: 0.85rem; font-weight: 400; opacity: 0.7;">events/day</span></div>
+              ${irrigDuration ? html`<div style="font-size: 0.82rem; opacity: 0.6; margin-top: 2px;">${irrigDuration}s per event</div>` : nothing}
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                ${irrigTimes.slice(0, 5).map(t => {
+          const time = t.time ?? t.start_time ?? '';
+          const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
+          return html`
+                    <div style="
+                      display: flex; justify-content: space-between;
+                      background: rgba(79,195,247,0.08); border-radius: 6px;
+                      padding: 4px 10px; font-size: 0.8rem;
+                    ">
+                      <span style="font-weight: 500;">${time.substring(0, 5)}</span>
+                      <span style="opacity: 0.5;">${dur}s</span>
+                    </div>
+                  `;
+        })}
+                ${totalIrrig > 5 ? html`<div style="font-size: 0.75rem; opacity: 0.4; text-align: center;">+${totalIrrig - 5} more</div>` : nothing}
+              </div>
+            `}
+          </div>
+
+          <!-- Drain side -->
+          <div>
+            <div style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Drain</div>
+            ${totalDrain === 0 ? html`<p style="opacity: 0.5; font-size: 0.85rem; margin: 0;">No events scheduled</p>` : html`
+              <div style="font-size: 1.3rem; font-weight: 700; color: #a5d6a7;">${totalDrain} <span style="font-size: 0.85rem; font-weight: 400; opacity: 0.7;">events/day</span></div>
+              ${drainDuration ? html`<div style="font-size: 0.82rem; opacity: 0.6; margin-top: 2px;">${drainDuration}s per event</div>` : nothing}
+              <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+                ${drainTimes.slice(0, 5).map(t => {
+          const time = t.time ?? t.start_time ?? '';
+          const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+          return html`
+                    <div style="
+                      display: flex; justify-content: space-between;
+                      background: rgba(165,214,167,0.08); border-radius: 6px;
+                      padding: 4px 10px; font-size: 0.8rem;
+                    ">
+                      <span style="font-weight: 500;">${time.substring(0, 5)}</span>
+                      <span style="opacity: 0.5;">${dur}s</span>
+                    </div>
+                  `;
+        })}
+                ${totalDrain > 5 ? html`<div style="font-size: 0.75rem; opacity: 0.4; text-align: center;">+${totalDrain - 5} more</div>` : nothing}
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+
+      <!-- Volume History from EC readings -->
+      <div class="detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0;">Volume History</h3>
+          <span style="font-size: 0.8rem; opacity: 0.5;">from drain EC readings</span>
+        </div>
+
+        ${readingsWithVolumes.length === 0 ? html`
+          <p style="opacity: 0.6; text-align: center; padding: 20px 0; font-size: 0.9rem;">
+            No volume data logged yet.<br>
+            <span style="font-size: 0.8rem; opacity: 0.7;">Log feed and drain volumes in the
+            <strong>Drain EC</strong> tab to track runoff efficiency over time.</span>
+          </p>
+        ` : html`
+          <!-- Totals bar -->
+          <div style="
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px; margin-bottom: 16px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 12px 16px;
+            font-size: 0.88rem;
+          ">
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Total feed</div>
+              <div style="font-weight: 700; color: #4fc3f7;">${(totalFeedMl / 1000).toFixed(1)} L</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Total drain</div>
+              <div style="font-weight: 700; color: #a5d6a7;">${(totalDrainMl / 1000).toFixed(1)} L</div>
+            </div>
+            <div style="text-align: center;">
+              <div style="opacity: 0.5; font-size: 0.75rem;">Avg runoff</div>
+              <div style="font-weight: 700; color: ${avgRunoff !== null && avgRunoff >= 15 && avgRunoff <= 35 ? '#4caf50' : '#FF9800'};">
+                ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
+              </div>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); opacity: 0.7;">
+                  <th style="text-align: left; padding: 5px 8px; font-weight: 500;">Time</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Feed (mL)</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Drain (mL)</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Runoff</th>
+                  <th style="text-align: right; padding: 5px 8px; font-weight: 500;">Δ EC</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${readingsWithVolumes.map(r => {
+          const runoff = r.feedVolumeMl ? ((r.drainVolumeMl! / r.feedVolumeMl!) * 100) : null;
+          const delta = r.drainEc - r.feedEc;
+          const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
+          return html`
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 5px 8px; opacity: 0.65;">
+                        ${new Date(r.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td style="text-align: right; padding: 5px 8px;">${r.feedVolumeMl}</td>
+                      <td style="text-align: right; padding: 5px 8px;">${r.drainVolumeMl}</td>
+                      <td style="text-align: right; padding: 5px 8px; font-weight: 600; color: ${runoffOk ? '#4caf50' : '#FF9800'};">
+                        ${runoff !== null ? runoff.toFixed(1) + '%' : '—'}
+                      </td>
+                      <td style="text-align: right; padding: 5px 8px; opacity: 0.7;">
+                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                      </td>
+                    </tr>
+                  `;
+        })}
+              </tbody>
+            </table>
+          </div>
+        `}
+      </div>
+
+      <!-- Maintenance -->
+      <div class="detail-card" style="border: 1px dashed rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+          <div style="flex: 1;">
+            <h3 style="margin: 0; color: #f44336; border: none; padding: 0; font-size: 1.1rem;">Maintenance</h3>
+            <p style="margin: 4px 0 0 0; font-size: 0.85rem; opacity: 0.7; line-height: 1.4;">
+              Reset irrigation counters, today's water usage, and recent volume history for this growspace.
+            </p>
+          </div>
+          <button 
+            class="md3-button tonal error" 
+            @click=${this._handleResetWaterTracking}
+            style="white-space: nowrap;"
+          >
+            Reset All Data
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderDrainECTab() {
+    const dc = this.device?.drainConfig;
+    const readings: DrainECReading[] = dc?.readings || [];
+    const recent = readings.slice(-20).reverse();
+    const lastReading = recent[0];
+    const lastDelta = lastReading ? (lastReading.drainEc - lastReading.feedEc) : null;
+    const isOverThreshold = lastDelta !== null && this._drainEcEnabled && lastDelta > this._drainEcMaxDelta;
+
+    const statusColor = !this._drainEcEnabled
+      ? 'rgba(255,255,255,0.3)'
+      : isOverThreshold
+        ? '#f44336'
+        : lastDelta !== null && lastDelta > this._drainEcMaxDelta * 0.7
+          ? '#FF9800'
+          : '#4caf50';
+
+    const statusText = !this._drainEcEnabled
+      ? 'Monitoring disabled'
+      : lastDelta === null
+        ? 'No readings yet'
+        : isOverThreshold
+          ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
+          : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
+
+    return html`
+      <!-- Status Banner -->
+      <div class="detail-card" style="border-left: 4px solid ${statusColor}; padding: 16px 20px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="
+            width: 14px; height: 14px; border-radius: 50%;
+            background: ${statusColor};
+            box-shadow: 0 0 8px ${statusColor};
+            flex-shrink: 0;
+          "></div>
+          <div>
+            <div style="font-weight: 600; font-size: 1rem;">${statusText}</div>
+            ${lastReading ? html`
+              <div style="font-size: 0.8rem; opacity: 0.6; margin-top: 2px;">
+                Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain ${lastReading.drainEc.toFixed(2)} mS/cm
+                at ${new Date(lastReading.timestamp).toLocaleString()}
+              </div>
+            ` : nothing}
+          </div>
+        </div>
+      </div>
+
+      <!-- Configuration -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Monitoring Configuration</h3>
+        <p style="font-size: 0.82rem; opacity: 0.7; margin-bottom: 20px;">
+          Alert when drain EC exceeds feed EC by more than the max delta. Target runoff percentage
+          helps calculate how much drain water to collect per irrigation event.
+        </p>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;
+          background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <span>Enable EC drain monitoring</span>
+          <md3-switch
+            .checked=${this._drainEcEnabled}
+            @change=${(e: Event) => { this._drainEcEnabled = (e.target as HTMLInputElement).checked; }}
+          ></md3-switch>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <md3-number-input
+            label="Max EC Delta (mS/cm)"
+            .value=${this._drainEcMaxDelta}
+            step="0.1"
+            min="0.1"
+            ?disabled=${!this._drainEcEnabled}
+            @change=${(e: CustomEvent) => { this._drainEcMaxDelta = parseFloat(e.detail) || 1.0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Target Runoff (%)"
+            .value=${this._drainEcTargetRunoffPercent}
+            min="5"
+            max="50"
+            step="5"
+            ?disabled=${!this._drainEcEnabled}
+            @change=${(e: CustomEvent) => { this._drainEcTargetRunoffPercent = parseInt(e.detail) || 20; }}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- Manual Reading Log -->
+      <div class="detail-card">
+        <h3 style="margin-top: 0;">Log Drain Reading</h3>
+        <p style="font-size: 0.82rem; opacity: 0.7; margin-bottom: 20px;">
+          Manually log feed EC and drain EC values. This is used when you measure manually
+          with a handheld meter. Volumes are optional.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <md3-number-input
+            label="Feed EC (mS/cm)"
+            .value=${this._drainLogFeedEc}
+            step="0.1"
+            min="0"
+            @change=${(e: CustomEvent) => { this._drainLogFeedEc = parseFloat(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Drain EC (mS/cm)"
+            .value=${this._drainLogDrainEc}
+            step="0.1"
+            min="0"
+            @change=${(e: CustomEvent) => { this._drainLogDrainEc = parseFloat(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Feed Volume (mL) — optional"
+            .value=${this._drainLogFeedVolume}
+            step="100"
+            min="0"
+            @change=${(e: CustomEvent) => { this._drainLogFeedVolume = parseInt(e.detail) || 0; }}
+          ></md3-number-input>
+
+          <md3-number-input
+            label="Drain Volume (mL) — optional"
+            .value=${this._drainLogDrainVolume}
+            step="100"
+            min="0"
+            @change=${(e: CustomEvent) => { this._drainLogDrainVolume = parseInt(e.detail) || 0; }}
+          ></md3-number-input>
+        </div>
+
+        ${this._drainLogFeedEc > 0 && this._drainLogDrainEc > 0 ? html`
+          <div style="
+            background: rgba(255,255,255,0.05); border-radius: 8px;
+            padding: 10px 16px; margin-bottom: 16px;
+            display: flex; gap: 24px; align-items: center; font-size: 0.9rem;
+          ">
+            <span>EC Delta: <strong style="color: ${(this._drainLogDrainEc - this._drainLogFeedEc) > this._drainEcMaxDelta ? '#f44336' : '#4caf50'}">
+              Δ${(this._drainLogDrainEc - this._drainLogFeedEc).toFixed(2)} mS/cm
+            </strong></span>
+            ${this._drainLogFeedVolume > 0 && this._drainLogDrainVolume > 0 ? html`
+              <span>Runoff: <strong>
+                ${((this._drainLogDrainVolume / this._drainLogFeedVolume) * 100).toFixed(1)}%
+              </strong></span>
+            ` : nothing}
+          </div>
+        ` : nothing}
+
+        <button
+          class="md3-button primary"
+          style="background: #FF9800;"
+          @click=${this._logDrainReadingNow}
+          ?disabled=${this._drainLogging || this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0}
+        >
+          ${this._drainLogging ? 'Logging…' : 'Log Reading'}
+        </button>
+      </div>
+
+      <!-- Readings History -->
+      <div class="detail-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="margin: 0;">Recent Readings</h3>
+          <span style="font-size: 0.8rem; opacity: 0.5;">${readings.length} total</span>
+        </div>
+
+        ${recent.length === 0 ? html`
+          <p style="opacity: 0.6; text-align: center; padding: 20px 0;">
+            No readings logged yet. Use the form above or configure an automated EC sensor.
+          </p>
+        ` : html`
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); opacity: 0.7;">
+                  <th style="text-align: left; padding: 6px 8px; font-weight: 500;">Time</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Feed EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Drain EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Δ EC</th>
+                  <th style="text-align: right; padding: 6px 8px; font-weight: 500;">Runoff</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${recent.map((r: DrainECReading) => {
+      const delta = r.drainEc - r.feedEc;
+      const overThreshold = this._drainEcEnabled && delta > this._drainEcMaxDelta;
+      const runoffPct = r.feedVolumeMl && r.drainVolumeMl
+        ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
+        : '—';
+      return html`
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                      <td style="padding: 6px 8px; opacity: 0.7;">
+                        ${new Date(r.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                      <td style="text-align: right; padding: 6px 8px;">${r.feedEc.toFixed(2)}</td>
+                      <td style="text-align: right; padding: 6px 8px;">${r.drainEc.toFixed(2)}</td>
+                      <td style="text-align: right; padding: 6px 8px; color: ${overThreshold ? '#f44336' : delta > this._drainEcMaxDelta * 0.7 ? '#FF9800' : '#4caf50'}; font-weight: 500;">
+                        ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
+                      </td>
+                      <td style="text-align: right; padding: 6px 8px; opacity: 0.6;">${runoffPct}</td>
+                    </tr>
+                  `;
+    })}
+              </tbody>
+            </table>
+          </div>
+        `}
       </div>
     `;
   }

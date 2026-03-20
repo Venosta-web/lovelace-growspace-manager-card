@@ -21,6 +21,7 @@ export class GrowspaceDataStore {
   public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
   public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
   public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
+  public readonly $ecRampCurves: WritableAtom<Record<string, import('../../schemas/api-schema').ECRampCurve>>;
 
   /** Indicates if store has active subscribers (for lazy loading) */
   private _isActive = false;
@@ -36,6 +37,7 @@ export class GrowspaceDataStore {
     this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
     this.$ipmPresets = atom<Record<string, IPMPreset>>({});
     this.$nutrientInventory = atom<import('../../types').NutrientInventory | null>(null);
+    this.$ecRampCurves = atom<Record<string, import('../../schemas/api-schema').ECRampCurve>>({});
 
     // Lazy initialization: only log activity when store has subscribers
     onMount(this.$devices, () => {
@@ -87,6 +89,10 @@ export class GrowspaceDataStore {
 
   public setIPMPresets(presets: Record<string, IPMPreset>) {
     this.$ipmPresets.set(presets);
+  }
+
+  public setECRampCurves(curves: Record<string, import('../../schemas/api-schema').ECRampCurve>) {
+    this.$ecRampCurves.set(curves);
   }
 
   public setOptimisticDeletedPlantIds(ids: Set<string>) {

@@ -12,6 +12,11 @@ import type {
   IPMDialogState,
   CloneDialogState,
   PrintLabelDialogState,
+  HarvestScoringDialogState,
+  SnapshotsDialogState,
+  CropSteeringDialogState,
+  ECRampDialogState,
+  GrowReportDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -33,4 +38,9 @@ export type ActiveDialogState =
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
   | { type: 'PRINT_LABEL'; payload: PrintLabelDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
-  | { type: 'NUTRIENTS'; payload: Record<string, never> };
+  | { type: 'NUTRIENTS'; payload: Record<string, never> }
+  | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
+  | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
+  | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
+  | { type: 'EC_RAMP_EDITOR'; payload: ECRampDialogState }
+  | { type: 'GROW_REPORT'; payload: GrowReportDialogState };

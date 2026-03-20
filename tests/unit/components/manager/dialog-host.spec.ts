@@ -590,7 +590,11 @@ describe('DialogHost', () => {
         const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
         dialog?.dispatchEvent(new CustomEvent('harvest-plant', { detail: { plant: mockPlant } }));
 
-        expect(mockStore.actions.plant.nextStage).toHaveBeenCalledWith(mockPlant);
+        // harvest-plant now opens HARVEST_SCORING dialog instead of calling nextStage directly
+        expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+            type: 'HARVEST_SCORING',
+            payload: { plant: mockPlant },
+        });
     });
 
     it('should handle finish-drying event on PLANT_OVERVIEW dialog', async () => {
@@ -899,7 +903,8 @@ describe('DialogHost', () => {
 
         const dialog = element.shadowRoot?.querySelector('ipm-dialog');
         expect(dialog).toBeTruthy();
-        expect((dialog as any).plantIds).toEqual(['p1']);
+        // ipm-dialog receives the full payload as dialogState; plantIds lives in dialogState
+        expect((dialog as any).dialogState?.plantIds).toEqual(['p1']);
 
         dialog?.dispatchEvent(new CustomEvent('close'));
         expect(mockStore.ui.closeDialog).toHaveBeenCalled();

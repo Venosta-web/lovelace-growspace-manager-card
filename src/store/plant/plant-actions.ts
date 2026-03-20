@@ -197,14 +197,14 @@ export async function movePlantToNextStage(
 /**
  * Internal API move clone wrapper
  */
-async function _movePlantApi(ctx: ActionContext, plant: PlantEntity, targetGrowspace: string) {
+async function _movePlantApi(ctx: ActionContext, plant: PlantEntity, targetGrowspaceId: string) {
   const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-  const currentStage = plant.attributes?.stage || 'unknown';
 
-  if (currentStage === 'clone') {
-    await ctx.dataService.moveClone(plantId, targetGrowspace);
+  if (plant.attributes.stage === 'clone') {
+    await ctx.dataService.moveClone(plantId, targetGrowspaceId);
   } else {
-    await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+    // Note: historically this integration used harvestPlant for general room moves
+    await ctx.dataService.harvestPlant(plantId, targetGrowspaceId);
   }
 }
 

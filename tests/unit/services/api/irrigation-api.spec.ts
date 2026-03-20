@@ -215,5 +215,28 @@ describe('DataService - IrrigationAPI', () => {
                 await expect(service.setIrrigationStrategy('g1', {})).rejects.toThrow('Fail');
             });
         });
+
+        describe('Drain Monitoring & Readings', () => {
+            it('should configure drain monitoring', async () => {
+                const params = { enabled: true, maxEcDelta: 0.5, targetRunoffPercent: 15 };
+                await service.configureDrainMonitoring('g1', params);
+                expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'configure_drain_monitoring', {
+                    growspace_id: 'g1',
+                    enabled: true,
+                    max_ec_delta: 0.5,
+                    target_runoff_percent: 15
+                });
+            });
+
+            it('should log drain reading', async () => {
+                const params = { feedEc: 2.0, drainEc: 2.2 };
+                await service.logDrainReading('g1', params);
+                expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'log_drain_reading', {
+                    growspace_id: 'g1',
+                    feed_ec: 2.0,
+                    drain_ec: 2.2
+                });
+            });
+        });
     });
 });

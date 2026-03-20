@@ -18,6 +18,7 @@ import {
   mdiPencil,
   mdiFlash,
   mdiPrinter,
+  mdiLeaf,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -39,7 +40,8 @@ import '../components/ui/md3-date-input';
 import '../components/plant/plant-timeline';
 
 import { consume } from '@lit/context';
-import { hassContext } from '../context';
+import { hassContext, storeContext } from '../lib/context';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 import {
   UpdatePlantEvent,
   DeletePlantEvent,
@@ -51,10 +53,29 @@ import {
 } from '../events';
 import { getTimelineService } from '../services/timeline-service';
 
+/** Score dimension descriptor — mirrors harvest-scoring-dialog */
+interface ScoreDimension {
+  key: string;
+  label: string;
+  description: string;
+  emoji: string;
+}
+
+const SCORE_DIMENSIONS: ScoreDimension[] = [
+  { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+  { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+  { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+  { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+  { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+];
+
 @customElement('plant-overview-dialog')
 export class PlantOverviewDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
   hass!: HomeAssistant;
+
+  @consume({ context: storeContext, subscribe: true })
+  store!: GrowspaceStore;
 
   private _unsubEvents?: Promise<() => Promise<void>>;
 
@@ -68,8 +89,14 @@ export class PlantOverviewDialog extends LitElement {
   @state() private showAllDates = false;
   @state() private cloneTargetId = '';
   @state() private _showDeleteConfirmation = false;
-  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' = 'dashboard';
+  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' = 'dashboard';
   @state() private _logbookEvents: GrowspaceEvent[] = [];
+
+  @state() private _harvestMetricsEdit: Record<string, unknown> = {};
+  // Star scores: key → 1-5 or null
+  @state() private _scoresEdit: Record<string, number | null> = {};
+  @state() private _starPreview: Record<string, number | null> = {};
+  @state() private _savingHarvest = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -148,6 +175,18 @@ export class PlantOverviewDialog extends LitElement {
     // Fetch logbook when plant changes (direct prop usage)
     if (changedProps.has('plant') && this.plant) {
       this._fetchLogbook();
+      const hm = this.plant.attributes?.harvest_metrics || {};
+      this._harvestMetricsEdit = { ...hm };
+      // Map scores dict: backend uses pest_resistance key
+      const rawScores = this.plant.attributes?.scores || {};
+      this._scoresEdit = {
+        vigor: rawScores.vigor ?? null,
+        structure: rawScores.structure ?? null,
+        aroma: rawScores.aroma ?? null,
+        resin: rawScores.resin ?? null,
+        pest_resistance: rawScores.pest_resistance ?? null,
+      };
+      this._starPreview = {};
     }
   }
 
@@ -156,7 +195,12 @@ export class PlantOverviewDialog extends LitElement {
 
     try {
       const service = getTimelineService(this.hass);
-      const fetchedEvents = await service.fetchGrowspaceEvents(this.plant.attributes.growspace_id);
+      const plantId = this.plant.attributes.plant_id;
+      const growspaceId = this.plant.attributes.growspace_id;
+      // Fetch by plant_id so history from previous growspaces is included after stage moves
+      const fetchedEvents = plantId
+        ? await service.fetchPlantEvents(plantId, growspaceId)
+        : await service.fetchGrowspaceEvents(growspaceId);
 
       // Identify optimistic events (no event_id, recent timestamp) to preserve
       // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
@@ -468,6 +512,128 @@ export class PlantOverviewDialog extends LitElement {
           justify-content: flex-start;
         }
       }
+
+      /* ── Star Scoring (mirrors harvest-scoring-dialog) ── */
+      .score-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 8px 0;
+      }
+      .score-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .score-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .score-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        font-size: 0.95rem;
+      }
+      .score-emoji {
+        font-size: 1.2rem;
+      }
+      .score-value {
+        font-size: 0.95rem;
+        opacity: 0.7;
+        min-width: 30px;
+        text-align: right;
+      }
+      .score-description {
+        font-size: 0.8rem;
+        opacity: 0.5;
+        margin: 0;
+      }
+      .star-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .star-btn {
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        font-size: 1.6rem;
+        line-height: 1;
+        transition: transform 0.1s, filter 0.15s;
+        filter: grayscale(0.6) opacity(0.5);
+      }
+      .star-btn.active {
+        filter: grayscale(0) opacity(1);
+      }
+      .star-btn:hover,
+      .star-btn.preview {
+        transform: scale(1.2);
+        filter: grayscale(0) opacity(1);
+      }
+      .skip-hint {
+        font-size: 0.8rem;
+        opacity: 0.45;
+        margin-top: 8px;
+        text-align: center;
+      }
+      .metrics-section {
+        padding: 0;
+      }
+      .metrics-section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.6;
+        margin: 0 0 12px;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 12px;
+      }
+      .metric-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .metric-field label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      .metric-field input,
+      .metric-field textarea {
+        background: var(--card-background-color, rgba(255,255,255,0.06));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+        padding: 6px 10px;
+        width: 100%;
+        box-sizing: border-box;
+        transition: border-color 0.15s;
+      }
+      .metric-field input:focus,
+      .metric-field textarea:focus {
+        outline: none;
+        border-color: var(--primary-color, #4caf50);
+      }
+      .terpene-field {
+        grid-column: 1 / -1;
+      }
+      .terpene-field textarea {
+        resize: vertical;
+        min-height: 48px;
+      }
+      .harvest-divider {
+        border: none;
+        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        margin: 0;
+      }
     `,
   ];
 
@@ -478,6 +644,11 @@ export class PlantOverviewDialog extends LitElement {
   private _update() {
     if (!this.editedAttributes) return;
     this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
+
+    const stage = (this.plant?.state || '').toLowerCase();
+    if (this._activeTab === 'harvest' && (stage === 'dry' || stage === 'cure')) {
+      this._saveHarvestMetrics();
+    }
   }
 
   private _delete(_plantId: string) {
@@ -510,7 +681,7 @@ export class PlantOverviewDialog extends LitElement {
     this.dispatchEvent(new TakeCloneEvent(plant, numClones));
   }
 
-  private _moveClone(plant: PlantEntity) {
+  private _movePlant(plant: PlantEntity) {
     if (!this.cloneTargetId) {
       // alert is not ideal but keeping for now as per previous logic
       alert('Select a growspace');
@@ -596,6 +767,7 @@ export class PlantOverviewDialog extends LitElement {
       })
     );
   }
+
   private _openLabelPrinter() {
     if (!this.plant) return;
     this.dispatchEvent(new PrintLabelEvent(this.plant));
@@ -801,6 +973,19 @@ export class PlantOverviewDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
               Timeline
             </button>
+            ${['drying', 'curing', 'dry', 'cure'].includes((this.plant?.state || '').toLowerCase()) ? html`
+              <button
+                class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
+                @click=${() => {
+          this._activeTab = 'harvest';
+          this._harvestMetricsEdit = { ...(this.plant?.attributes?.harvest_metrics || {}) };
+          this._scoresEdit = { ...(this.plant?.attributes?.scores || {}) };
+        }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
+                Scoring & Harvest
+              </button>
+            ` : nothing}
           </div>
 
           <div class="overview-grid">
@@ -808,7 +993,9 @@ export class PlantOverviewDialog extends LitElement {
         ? this._renderDashboard(attributes)
         : this._activeTab === 'actions'
           ? this._renderActions()
-          : this._renderTimeline()}
+          : this._activeTab === 'harvest'
+            ? this._renderHarvestTab()
+            : this._renderTimeline()}
           </div>
 
           <!-- ACTIONS -->
@@ -900,11 +1087,11 @@ export class PlantOverviewDialog extends LitElement {
                           </button>
                         `
             : nothing}
-                    ${(this.plant.state || '').toLowerCase() === 'clone'
+                    ${(this.plant.state || '').toLowerCase() !== ''
             ? html`
                           <div style="display:flex; align-items:center; gap:8px;">
                             <md3-select
-                              label="Target Growspace"
+                              label="Move to Growspace"
                               .value=${this.cloneTargetId}
                               .options=${Object.entries(this.growspaceOptions).map(
               ([id, name]) => ({ label: name, value: id })
@@ -914,7 +1101,7 @@ export class PlantOverviewDialog extends LitElement {
                             ></md3-select>
                             <button
                               class="md3-button primary"
-                              @click=${() => this._moveClone(this.plant!)}
+                              @click=${() => this._movePlant(this.plant!)}
                               style="margin-top: 24px;"
                             >
                               <svg
@@ -1324,4 +1511,211 @@ export class PlantOverviewDialog extends LitElement {
       </div>
     `;
   }
+
+  private _setScore(key: string, value: number): void {
+    const current = this._scoresEdit[key];
+    this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+  }
+
+  /** Skip scoring and immediately advance the plant to the next stage */
+  private _skipAndAdvance(): void {
+    if (!this.plant || this._savingHarvest) return;
+    const stage = (this.plant.state || '').toLowerCase();
+    if (stage === 'dry' || stage === 'drying') {
+      this._finishDrying(this.plant);
+    } else {
+      // cure → whatever comes next (treated as a harvest/advance)
+      this._harvest(this.plant);
+    }
+  }
+
+  private _renderScoreRow(dim: ScoreDimension) {
+    const current = this._scoresEdit[dim.key] as number | null;
+    const preview = this._starPreview[dim.key] as number | null;
+    return html`
+      <div class="score-row">
+        <div class="score-header">
+          <span class="score-label">
+            <span class="score-emoji">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span class="score-value">
+            ${current !== null ? `${current} / 5` : '—'}
+          </span>
+        </div>
+        <p class="score-description">${dim.description}</p>
+        <div class="star-row">
+          ${[1, 2, 3, 4, 5].map(star => html`
+            <button
+              class="star-btn
+                ${current !== null && star <= current ? 'active' : ''}
+                ${preview !== null && star <= preview ? 'preview' : ''}"
+              aria-label="Set ${dim.label} score to ${star}"
+              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
+              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
+              @click=${() => this._setScore(dim.key, star)}
+              ?disabled=${this._savingHarvest}
+            >⭐</button>
+          `)}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderHarvestTab(): TemplateResult {
+    const isSaving = this._savingHarvest;
+    const hm = this._harvestMetricsEdit as Record<string, number | string | null>;
+    const stage = (this.plant?.state || '').toLowerCase();
+    const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
+
+    return html`
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Score Grid -->
+        <div class="score-grid">
+          ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+        </div>
+        <p class="skip-hint">All fields are optional — you can advance without scoring.</p>
+
+        <hr class="harvest-divider" />
+
+        <!-- Yield Metrics -->
+        <div class="metrics-section">
+          <p class="metrics-section-title">Yield metrics</p>
+          <div class="metrics-grid">
+            <div class="metric-field">
+              <label for="hm-wet">Wet weight (g)</label>
+              <input id="hm-wet" type="number" min="0" step="0.1" placeholder="e.g. 120"
+                .value=${String(hm.wet_weight ?? '')}
+                @input=${(e: InputEvent) => {
+        const v = (e.target as HTMLInputElement).value;
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
+      }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-dry">Dry weight (g)</label>
+              <input id="hm-dry" type="number" min="0" step="0.1" placeholder="e.g. 28"
+                .value=${String(hm.dry_weight ?? '')}
+                @input=${(e: InputEvent) => {
+        const v = (e.target as HTMLInputElement).value;
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
+      }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-trim">Trim weight (g)</label>
+              <input id="hm-trim" type="number" min="0" step="0.1" placeholder="e.g. 5"
+                .value=${String(hm.trim_weight ?? '')}
+                @input=${(e: InputEvent) => {
+        const v = (e.target as HTMLInputElement).value;
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
+      }}
+                ?disabled=${isSaving}
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr class="harvest-divider" />
+
+        <!-- Lab Results -->
+        <div class="metrics-section">
+          <p class="metrics-section-title">Lab results</p>
+          <div class="metrics-grid">
+            <div class="metric-field">
+              <label for="hm-thc">THC (%)</label>
+              <input id="hm-thc" type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
+                .value=${String(hm.thc_percentage ?? '')}
+                @input=${(e: InputEvent) => {
+        const v = (e.target as HTMLInputElement).value;
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
+      }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field">
+              <label for="hm-cbd">CBD (%)</label>
+              <input id="hm-cbd" type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
+                .value=${String(hm.cbd_percentage ?? '')}
+                @input=${(e: InputEvent) => {
+        const v = (e.target as HTMLInputElement).value;
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
+      }}
+                ?disabled=${isSaving}
+              />
+            </div>
+            <div class="metric-field terpene-field">
+              <label for="hm-terp">Terpene profile</label>
+              <textarea id="hm-terp" rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
+                .value=${String(hm.terpene_profile ?? '')}
+                @input=${(e: InputEvent) => {
+        this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: (e.target as HTMLTextAreaElement).value };
+      }}
+                ?disabled=${isSaving}
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <hr class="harvest-divider" />
+
+        <!-- Action Buttons (hidden in dry/cure stage — Save Changes handles saving) -->
+        ${(stage !== 'dry' && stage !== 'cure') ? html`
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button
+            class="md3-button outlined"
+            @click=${() => this._skipAndAdvance()}
+            ?disabled=${isSaving}
+          >${advanceLabel}</button>
+          <button
+            class="md3-button filled"
+            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+            @click=${() => this._saveHarvestMetrics()}
+            ?disabled=${isSaving}
+          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
+        </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  private async _saveHarvestMetrics() {
+    if (!this.plant?.attributes?.plant_id) return;
+
+    this._savingHarvest = true;
+    try {
+      const plantId = this.plant.attributes.plant_id;
+
+      const m = this._harvestMetricsEdit;
+      if (Object.keys(m).length > 0) {
+        await this.store.dataService.updateHarvestMetrics({
+          plant_id: plantId,
+          ...m
+        });
+      }
+
+      const s = this._scoresEdit;
+      if (Object.keys(s).length > 0) {
+        await this.store.dataService.scorePlant({
+          plant_id: plantId,
+          ...s
+        });
+      }
+
+      // Small delay to allow backend to process before refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await this.store.refreshData();
+
+      this._activeTab = 'dashboard';
+    } catch (e) {
+      console.error('Failed to save harvest metrics', e);
+      alert('Failed to save harvest metrics. Check controls/network.');
+    } finally {
+      this._savingHarvest = false;
+    }
+  }
 }
+

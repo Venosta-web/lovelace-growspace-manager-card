@@ -61,7 +61,7 @@ export class TrainingDialog extends LitElement {
   }
 
   private _handleClose() {
-    this.store.ui.closeDialog();
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   private async _save() {

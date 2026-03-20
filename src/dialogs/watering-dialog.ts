@@ -257,6 +257,10 @@ export class WateringDialog extends LitElement {
     let currentStage: string | undefined;
     let daysInStage = 0;
 
+    // PHI Warning Logic
+    let hasPhiWarning = false;
+    let phiWarningText = '';
+
     if (
       this.store &&
       this.store.data &&
@@ -289,6 +293,15 @@ export class WateringDialog extends LitElement {
               )
             );
           }
+
+          // Check for PHI on selected plants
+          const phiPlants = selectedPlants.filter(
+            (p) => p.attributes.phi_days_remaining && p.attributes.phi_days_remaining > 0
+          );
+          if (phiPlants.length > 0) {
+            hasPhiWarning = true;
+            phiWarningText = `Warning: ${phiPlants.length} plant(s) are currently under a Pre-Harvest Interval (PHI). Do not harvest.`;
+          }
         }
       }
     }
@@ -315,6 +328,14 @@ export class WateringDialog extends LitElement {
           </div>
 
           <div class="dialog-content-grid">
+            ${hasPhiWarning
+        ? html`
+                  <div class="error-bar" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;">
+                    <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
+                    ${phiWarningText}
+                  </div>
+                `
+        : nothing}
             <!-- Settings Section -->
             <div class="form-section">
               <h3>Watering Settings</h3>

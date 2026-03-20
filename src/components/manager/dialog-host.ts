@@ -32,6 +32,11 @@ import './ipm-dialog';
 import '../../dialogs/nutrient-inventory-dialog';
 import '../../dialogs/nutrient-dialog';
 import '../../dialogs/print-label-dialog';
+import '../../dialogs/harvest-scoring-dialog';
+import '../../dialogs/snapshots-dialog';
+import '../../dialogs/crop-steering-dialog';
+import '../../dialogs/ec-ramp-editor-dialog';
+import '../../dialogs/grow-report-dialog';
 import '../error-boundary';
 
 import { HomeAssistant } from 'custom-card-helpers';
@@ -124,12 +129,28 @@ export class DialogHost extends LitElement {
             return this._renderNutrientDialog(active, effectiveDeviceData);
           case 'PRINT_LABEL':
             return this._renderPrintLabelDialog(active, effectiveDeviceData);
+          case 'HARVEST_SCORING':
+            return this._renderHarvestScoringDialog(active);
+          case 'SNAPSHOTS':
+            return this._renderSnapshotsDialog(active, effectiveDeviceData);
+          case 'CROP_STEERING':
+            return this._renderCropSteeringDialog(active, effectiveDeviceData);
+          case 'EC_RAMP_EDITOR':
+            return this._renderECRampEditorDialog(active, effectiveDeviceData);
+          case 'GROW_REPORT':
+            return this._renderGrowReportDialog(active, effectiveDeviceData);
           default:
             return html``;
         }
       })()}
       </error-boundary>
     `;
+  }
+
+  private _closeDialogIfActive(type: ActiveDialogState['type']) {
+    if (this._activeDialogController.value.type === type) {
+      this.store.ui.closeDialog();
+    }
   }
 
   private async _handleDataChanged() {
@@ -327,7 +348,13 @@ export class DialogHost extends LitElement {
             selectedPlantIds: dialogState.selectedPlantIds,
           })}
           @delete-plant=${(e: CustomEvent) => this.store.actions.plant.delete(e.detail.plantId)}
-          @harvest-plant=${(e: CustomEvent) => this.store.actions.plant.nextStage(e.detail.plant)}
+          @harvest-plant=${(e: CustomEvent) => {
+          const plant = e.detail.plant;
+          this.store.ui.setActiveDialog({
+            type: 'HARVEST_SCORING',
+            payload: { plant },
+          });
+        }}
           @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
           @take-clone=${(e: CustomEvent) =>
           this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
@@ -358,7 +385,13 @@ export class DialogHost extends LitElement {
           selectedPlantIds: dialogState.selectedPlantIds,
         })}
         @delete-plant=${(e: CustomEvent) => this.store.actions.plant.delete(e.detail.plantId)}
-        @harvest-plant=${(e: CustomEvent) => this.store.actions.plant.nextStage(e.detail.plant)}
+        @harvest-plant=${(e: CustomEvent) => {
+        const plant = e.detail.plant;
+        this.store.ui.setActiveDialog({
+          type: 'HARVEST_SCORING',
+          payload: { plant },
+        });
+      }}
         @finish-drying=${(e: CustomEvent) => this.store.finishDryingPlant(e.detail.plant)}
         @take-clone=${(e: CustomEvent) =>
         this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
@@ -476,7 +509,13 @@ export class DialogHost extends LitElement {
           });
         }
       }}
-        @save-strain=${(e: CustomEvent) => this.store.actions.strain.add(e.detail)}
+        @save-strain=${(e: CustomEvent) => {
+        if (e.detail.key) {
+          this.store.actions.strain.update(e.detail);
+        } else {
+          this.store.actions.strain.add(e.detail);
+        }
+      }}
         @delete-strain=${(e: CustomEvent) => this.store.actions.strain.remove(e.detail.key)}
         @update-breeder=${(e: CustomEvent) => this._handleUpdateBreeder(e.detail)}
         @save-breeder=${(e: CustomEvent) => this._handleSaveBreeder(e.detail)}
@@ -557,10 +596,16 @@ export class DialogHost extends LitElement {
         .currentTab=${dialogState.currentTab}
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.add(e.detail)}
         @edit-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.update(e.detail)}
+        @delete-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.remove(e.detail.growspace_id)}
+        @remove-environment-submit=${(e: CustomEvent) => this.store.actions.growspace.removeEnvironment(e.detail.growspace_id)}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
+        @generate-grow-report=${(e: CustomEvent) => this.store.ui.setActiveDialog({
+          type: 'GROW_REPORT',
+          payload: { growspaceId: e.detail.growspace_id }
+        })}
       ></config-dialog>
     `;
   }
@@ -667,7 +712,7 @@ export class DialogHost extends LitElement {
         .personality=${personality}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('GROW_MASTER')}
         @analyze-growspace=${(e: CustomEvent) => this.store.analyzeGrowspace(e.detail.query, false)}
         @analyze-all-growspaces=${(e: CustomEvent) =>
         this.store.analyzeGrowspace(e.detail.query, true)}
@@ -686,7 +731,7 @@ export class DialogHost extends LitElement {
         .open=${true}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('STRAIN_RECOMMENDATION')}
         @get-recommendation=${(e: CustomEvent) =>
         this.store.getStrainRecommendation(e.detail.query)}
       >
@@ -704,8 +749,8 @@ export class DialogHost extends LitElement {
         .open=${true}
         .device=${selectedDeviceData}
         .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.ui.closeDialog()}
-        @closed=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('IRRIGATION')}
+        @closed=${() => this._closeDialogIfActive('IRRIGATION')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </irrigation-dialog>
@@ -722,7 +767,7 @@ export class DialogHost extends LitElement {
       <logbook-dialog
         .open=${true}
         .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('LOGBOOK')}
       ></logbook-dialog>
     `;
   }
@@ -738,7 +783,7 @@ export class DialogHost extends LitElement {
         .open=${true}
         .dialogState=${dialogState}
         .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('WATERING')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </watering-dialog>
@@ -756,7 +801,7 @@ export class DialogHost extends LitElement {
         .store=${this.store}
         .hass=${this.hass}
         .growspaceId=${selectedDeviceData?.deviceId}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENT_PRESETS')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-presets-editor>
     `;
@@ -771,7 +816,7 @@ export class DialogHost extends LitElement {
       <training-dialog
         .open=${true}
         .store=${this.store}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('TRAINING')}
         @data-changed=${() => this._handleDataChanged()}
       >
       </training-dialog>
@@ -783,17 +828,46 @@ export class DialogHost extends LitElement {
     selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'IPM') return html``;
-    const dialogState = active.payload;
+
     return html`
       <ipm-dialog
         .open=${true}
         .store=${this.store}
-        .hass=${this.hass}
-        .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
-        .plantIds=${dialogState.plantIds || []}
-        @close=${() => this.store.ui.closeDialog()}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('IPM')}
         @data-changed=${() => this._handleDataChanged()}
       ></ipm-dialog>
+    `;
+  }
+
+  private _renderSnapshotsDialog(
+    active: ActiveDialogState,
+    selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
+    if (active.type !== 'SNAPSHOTS') return html``;
+    return html`
+      <snapshots-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('SNAPSHOTS')}
+      ></snapshots-dialog>
+    `;
+  }
+
+  private _renderCropSteeringDialog(
+    active: ActiveDialogState,
+    selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
+    if (active.type !== 'CROP_STEERING') return html``;
+    return html`
+      <crop-steering-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('CROP_STEERING')}
+      ></crop-steering-dialog>
     `;
   }
 
@@ -805,7 +879,7 @@ export class DialogHost extends LitElement {
     return html`
       <nutrient-inventory-dialog
         .open=${true}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENT_INVENTORY')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-inventory-dialog>
     `;
@@ -838,6 +912,7 @@ export class DialogHost extends LitElement {
           'success'
         );
       }}
+        @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
       ></clone-dialog>
     `;
   }
@@ -850,7 +925,7 @@ export class DialogHost extends LitElement {
     return html`
       <nutrient-dialog
         .open=${true}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('NUTRIENTS')}
         @data-changed=${() => this._handleDataChanged()}
       ></nutrient-dialog>
     `;
@@ -865,8 +940,50 @@ export class DialogHost extends LitElement {
       <print-label-dialog
         .open=${true}
         .dialogState=${active.payload}
-        @close=${() => this.store.ui.closeDialog()}
+        @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
       ></print-label-dialog>
+    `;
+  }
+
+  private _renderHarvestScoringDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'HARVEST_SCORING') return html``;
+    return html`
+      <harvest-scoring-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this._closeDialogIfActive('HARVEST_SCORING')}
+      ></harvest-scoring-dialog>
+    `;
+  }
+
+  private _renderECRampEditorDialog(
+    active: ActiveDialogState,
+    selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
+    if (active.type !== 'EC_RAMP_EDITOR') return html``;
+    return html`
+      <ec-ramp-editor-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceName=${selectedDeviceData?.name || ''}
+        @close=${() => this._closeDialogIfActive('EC_RAMP_EDITOR')}
+        @data-changed=${() => this._handleDataChanged()}
+      ></ec-ramp-editor-dialog>
+    `;
+  }
+
+  private _renderGrowReportDialog(
+    active: ActiveDialogState,
+    _selectedDeviceData?: GrowspaceDevice
+  ): TemplateResult {
+    if (active.type !== 'GROW_REPORT') return html``;
+    return html`
+      <grow-report-dialog
+        .open=${true}
+        .store=${this.store}
+        .state=${active.payload}
+        @close=${() => this._closeDialogIfActive('GROW_REPORT')}
+      ></grow-report-dialog>
     `;
   }
 }

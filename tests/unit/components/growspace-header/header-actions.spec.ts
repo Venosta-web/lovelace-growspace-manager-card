@@ -38,6 +38,9 @@ describe('GrowspaceHeaderActions', () => {
             openConfigDialog: vi.fn(),
             openAddPlantDialog: vi.fn(),
             openTrainingDialog: vi.fn(),
+            openSnapshotsDialog: vi.fn(),
+            openGrowReportDialog: vi.fn(),
+            openECRampDialog: vi.fn(),
             ui: {
                 $viewMode,
                 $isEditMode,
@@ -357,15 +360,19 @@ describe('GrowspaceHeaderActions', () => {
             // Click each item once to cover the inline arrow functions
             (menuItems?.[0] as HTMLElement).click(); // Settings
             (menuItems?.[1] as HTMLElement).click(); // Edit
-            (menuItems?.[2] as HTMLElement).click(); // Water
-            (menuItems?.[3] as HTMLElement).click(); // Irrigation
-            (menuItems?.[4] as HTMLElement).click(); // IPM
-            (menuItems?.[5] as HTMLElement).click(); // Training
-            (menuItems?.[6] as HTMLElement).click(); // Nutrients
-            (menuItems?.[8] as HTMLElement).click(); // Add Plant
-            (menuItems?.[9] as HTMLElement).click(); // Strains
-            (menuItems?.[10] as HTMLElement).click(); // Logbook
-            (menuItems?.[11] as HTMLElement).click(); // Ask AI
+            (menuItems?.[2] as HTMLElement).click(); // Heatmap
+            (menuItems?.[3] as HTMLElement).click(); // Water
+            (menuItems?.[4] as HTMLElement).click(); // Irrigation
+            (menuItems?.[5] as HTMLElement).click(); // IPM
+            (menuItems?.[6] as HTMLElement).click(); // Training
+            (menuItems?.[7] as HTMLElement).click(); // Add Plant
+            (menuItems?.[8] as HTMLElement).click(); // Strains
+            (menuItems?.[9] as HTMLElement).click(); // Logbook
+            (menuItems?.[10] as HTMLElement).click(); // Generate Report
+            (menuItems?.[11] as HTMLElement).click(); // Camera Snapshots
+            (menuItems?.[12] as HTMLElement).click(); // Ask AI
+            (menuItems?.[13] as HTMLElement).click(); // Nutrients
+            (menuItems?.[14] as HTMLElement).click(); // EC Ramp
 
             expect(mockStore.openGrowMasterDialog).toHaveBeenCalled();
         });

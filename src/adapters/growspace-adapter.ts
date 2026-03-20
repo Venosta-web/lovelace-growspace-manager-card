@@ -133,6 +133,10 @@ export class GrowspaceAdapter {
       sensorCoordinates,
       sensorTypes: wsData.sensor_types,
       sensorGroups: wsData.sensor_groups,
+      electricityCostPerKwh: wsData.electricity_cost_per_kwh,
+      substrateTemperatureSensors: wsData.substrate_temperature_sensors,
+      cameraEntities: wsData.camera_entities,
+      energySensors: wsData.energy_sensors,
     };
 
     const stats: GrowspaceStats = {
@@ -194,6 +198,39 @@ export class GrowspaceAdapter {
       }
       : undefined;
 
+    const drainConfig = wsData.drain_config
+      ? {
+        enabled: wsData.drain_config.enabled,
+        maxEcDelta: wsData.drain_config.max_ec_delta,
+        targetRunoffPercent: wsData.drain_config.target_runoff_percent,
+        readings: (wsData.drain_config.readings || []).map((r) => ({
+          timestamp: r.timestamp,
+          feedEc: r.feed_ec,
+          drainEc: r.drain_ec,
+          drainVolumeMl: r.drain_volume_ml,
+          feedVolumeMl: r.feed_volume_ml,
+        })),
+      }
+      : null;
+
+
+    const energyTracking = wsData.energy_tracking
+      ? {
+        dailyKwh: wsData.energy_tracking.daily_kwh,
+        costTotal: wsData.energy_tracking.cost_total,
+        costPerGram: wsData.energy_tracking.cost_per_gram,
+        cycleStartDate: wsData.energy_tracking.cycle_start_date,
+      }
+      : null;
+
+    const waterUsage = wsData.water_usage
+      ? {
+        litersPerPlantPerDay: wsData.water_usage.liters_per_plant_per_day,
+        litersToday: wsData.water_usage.liters_today,
+        waterEfficiency: wsData.water_usage.water_efficiency,
+      }
+      : null;
+
     // 5. Construct Device
     return createGrowspaceDevice({
       deviceId: growspaceId,
@@ -223,6 +260,9 @@ export class GrowspaceAdapter {
       // Configs
       irrigationConfig,
       irrigationStrategy,
+      drainConfig,
+      energyTracking,
+      waterUsage,
     });
   }
 

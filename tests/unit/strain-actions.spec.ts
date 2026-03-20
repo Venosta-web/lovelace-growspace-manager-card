@@ -72,7 +72,7 @@ describe('strain-actions', () => {
                     flowering_days_min: 60,
                     flowering_days_max: 70,
                 }));
-                expect(ctx.showToast).toHaveBeenCalledWith('Strain saved successfully!', 'success');
+                expect(ctx.showToast).toHaveBeenCalledWith('Strain added successfully!', 'success');
                 expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
