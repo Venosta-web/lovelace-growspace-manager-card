@@ -22,7 +22,7 @@ export const themeVariables = css`
     --gm-info-color: var(--info-color, #2196f3);
 
     /* IPM and PHI specific semantic colors */
-    --gm-ipm-color: var(--gm-primary-color, #9c27b0);
+    --gm-ipm-color: #9c27b0; /* Override via --gm-ipm-color in theme or card config */
     --gm-phi-color: var(--gm-warning-color, #ff9800);
 
     /* Text colors */
