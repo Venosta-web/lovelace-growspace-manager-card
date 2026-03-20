@@ -182,6 +182,9 @@ export const plantCardStyles = css`
     position: absolute;
     inset: -10px;
     border-radius: 50%;
+    /* Must be explicit: .status-icons has pointer-events: none, so pseudo-elements
+       inherit none by default. Setting auto here enables the extended tap area. */
+    pointer-events: auto;
   }
 
   .status-icon:hover {
