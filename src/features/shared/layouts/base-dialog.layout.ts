@@ -107,6 +107,65 @@ export class BaseDialogLayout extends LitElement {
       }
     }
 
+    /* Mobile: bottom sheet slide-up */
+    @media (max-width: 600px) {
+      .dialog-container {
+        align-items: flex-end;
+        padding: 0;
+      }
+
+      .dialog {
+        width: 100%;
+        max-width: 100%;
+        max-height: 92vh;
+        border-radius: 20px 20px 0 0;
+        animation: slideUpFromBottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      @keyframes slideUpFromBottom {
+        from {
+          transform: translateY(100%);
+          opacity: 0.8;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      /* Visual drag handle indicator */
+      .dialog::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.3));
+        border-radius: 2px;
+        margin: 8px auto 0;
+      }
+
+      .dialog-header {
+        padding: 12px 16px 8px;
+      }
+
+      .dialog-content {
+        padding: 16px;
+      }
+
+      .dialog-actions {
+        padding: 12px 16px;
+        /* Safe area for iOS home indicator */
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Disable bottom sheet animation when user prefers reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .dialog {
+        animation: none;
+      }
+    }
+
     .dialog-header {
       padding: 24px 24px 16px;
       border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
