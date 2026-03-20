@@ -21,6 +21,10 @@ export const themeVariables = css`
     --gm-error-color: var(--error-color, #f44336);
     --gm-info-color: var(--info-color, #2196f3);
 
+    /* IPM and PHI specific semantic colors */
+    --gm-ipm-color: var(--gm-primary-color, #9c27b0);
+    --gm-phi-color: var(--gm-warning-color, #ff9800);
+
     /* Text colors */
     --gm-text-primary: var(--primary-text-color, #212121);
     --gm-text-secondary: var(--secondary-text-color, #727272);

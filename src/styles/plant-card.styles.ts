@@ -198,11 +198,11 @@ export const plantCardStyles = css`
   }
 
   .status-icon.ipm {
-    color: #9c27b0; /* Purple for IPM */
+    color: var(--gm-ipm-color, #9c27b0);
   }
 
   .status-icon.phi {
-    color: #ff9800; /* Orange for PHI */
+    color: var(--gm-phi-color, #ff9800);
   }
 
   .status-icon.preset-recommended {
