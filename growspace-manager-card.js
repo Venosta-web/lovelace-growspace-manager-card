@@ -9719,6 +9719,17 @@ const uiStyles = i$6 `
       transform: rotate(360deg);
     }
   }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 `;
 
 const dialogStyles = [
@@ -30933,7 +30944,7 @@ const plantCardStyles = i$6 `
     z-index: 10;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
-    padding: 4px;
+    padding: 10px;  /* Increased from 4px — 24px icon + 20px padding = 44px touch target */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -31014,6 +31025,10 @@ const plantCardStyles = i$6 `
     pointer-events: none;
     justify-content: flex-start;
     flex-wrap: wrap;
+    /* Allow ::before touch-area extensions to render outside container bounds.
+       The parent overflow: hidden still clips at the card edge, but the 12px
+       inset means extensions stay within the card in all common layouts. */
+    overflow: visible;
   }
 
   .status-icon {
@@ -31028,6 +31043,18 @@ const plantCardStyles = i$6 `
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.2s ease;
+    pointer-events: auto;
+    /* Extend touch area to ~44×44px without changing visual size (WCAG 2.5.8) */
+    position: relative;
+  }
+
+  .status-icon::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    /* Must be explicit: .status-icons has pointer-events: none, so pseudo-elements
+       inherit none by default. Setting auto here enables the extended tap area. */
     pointer-events: auto;
   }
 
@@ -31049,11 +31076,11 @@ const plantCardStyles = i$6 `
   }
 
   .status-icon.ipm {
-    color: #9c27b0; /* Purple for IPM */
+    color: var(--gm-ipm-color, #9c27b0); /* Purple for IPM */
   }
 
   .status-icon.phi {
-    color: #ff9800; /* Orange for PHI */
+    color: var(--gm-phi-color, #ff9800); /* Orange for PHI */
   }
 
   .status-icon.preset-recommended {
@@ -31076,6 +31103,33 @@ const plantCardStyles = i$6 `
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     pointer-events: none;
+  }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    .plant-card-rich {
+      transition: none;
+    }
+
+    .plant-card-rich:hover {
+      transform: none;
+    }
+
+    .plant-card-rich.dragging {
+      transform: none;
+    }
+
+    .plant-card-rich.dragging-mobile {
+      transform: none;
+    }
+
+    .status-icon {
+      transition: none;
+    }
+
+    .status-icon:hover {
+      transform: none;
+    }
   }
 `;
 
@@ -44670,6 +44724,17 @@ const growspaceCardStyles = i$6 `
   .collapse-handle:hover {
     background: rgba(var(--rgb-primary-color), 0.1);
     color: var(--primary-color);
+  }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 `;
 
