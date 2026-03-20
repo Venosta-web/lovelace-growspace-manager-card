@@ -73,7 +73,7 @@ export const plantCardStyles = css`
     z-index: 10;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
-    padding: 4px;
+    padding: 10px;  /* Increased from 4px — 24px icon + 20px padding = 44px touch target */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -169,6 +169,15 @@ export const plantCardStyles = css`
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.2s ease;
     pointer-events: auto;
+    /* Extend touch area to ~44×44px without changing visual size (WCAG 2.5.8) */
+    position: relative;
+  }
+
+  .status-icon::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
   }
 
   .status-icon:hover {

@@ -138,7 +138,7 @@ export class BaseDialogLayout extends LitElement {
       border: none;
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       cursor: pointer;
-      padding: 8px;
+      padding: 12px;  /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
       border-radius: 8px;
       display: flex;
       align-items: center;
