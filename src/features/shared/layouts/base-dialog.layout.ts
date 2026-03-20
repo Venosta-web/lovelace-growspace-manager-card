@@ -102,8 +102,8 @@ export class BaseDialogLayout extends LitElement {
     @media (max-width: 768px) {
       .dialog {
         max-width: 100%;
-        max-height: 100vh;
-        border-radius: 0;
+        max-height: 92vh;
+        /* border-radius intentionally omitted — 600px mobile block sets bottom-sheet corners */
       }
     }
 
@@ -133,10 +133,11 @@ export class BaseDialogLayout extends LitElement {
         }
       }
 
-      /* Visual drag handle indicator */
+      /* Visual drag handle indicator — flex-shrink: 0 prevents compression on short viewports */
       .dialog::before {
         content: '';
         display: block;
+        flex-shrink: 0;
         width: 36px;
         height: 4px;
         background: var(--divider-color, rgba(255, 255, 255, 0.3));
