@@ -154,6 +154,10 @@ export const plantCardStyles = css`
     pointer-events: none;
     justify-content: flex-start;
     flex-wrap: wrap;
+    /* Allow ::before touch-area extensions to render outside container bounds.
+       The parent overflow: hidden still clips at the card edge, but the 12px
+       inset means extensions stay within the card in all common layouts. */
+    overflow: visible;
   }
 
   .status-icon {
@@ -198,11 +202,11 @@ export const plantCardStyles = css`
   }
 
   .status-icon.ipm {
-    color: var(--gm-ipm-color, #9c27b0);
+    color: var(--gm-ipm-color, #9c27b0); /* Purple for IPM */
   }
 
   .status-icon.phi {
-    color: var(--gm-phi-color, #ff9800);
+    color: var(--gm-phi-color, #ff9800); /* Orange for PHI */
   }
 
   .status-icon.preset-recommended {
