@@ -12,6 +12,7 @@
 import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiClose } from '@mdi/js';
+import { FocusTrapController } from '../controllers/focus-trap.controller.js';
 
 export interface TabConfig {
   id: string;
@@ -50,6 +51,9 @@ export class BaseDialogLayout extends LitElement {
   @property({ type: Array }) tabs?: TabConfig[];
   @property() activeTab?: string;
   @property({ type: Boolean }) hideCloseButton = false;
+
+  private _focusTrap?: FocusTrapController;
+  private _boundHandleKeydown!: (e: KeyboardEvent) => void;
 
   static styles = css`
     :host {
@@ -147,6 +151,11 @@ export class BaseDialogLayout extends LitElement {
       color: var(--primary-text-color, #fff);
     }
 
+    .dialog-close-button:focus-visible {
+      outline: 2px solid var(--primary-color, #4caf50);
+      outline-offset: 2px;
+    }
+
     .dialog-tabs {
       display: flex;
       gap: 4px;
@@ -232,11 +241,51 @@ export class BaseDialogLayout extends LitElement {
     }
   `;
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._boundHandleKeydown = this._handleKeydown.bind(this);
+    document.addEventListener('keydown', this._boundHandleKeydown);
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    document.removeEventListener('keydown', this._boundHandleKeydown);
+  }
+
+  updated(changedProps: Map<string, unknown>): void {
+    super.updated(changedProps);
+    if (changedProps.has('open')) {
+      if (this.open) {
+        // Initialize focus trap when dialog opens
+        if (!this._focusTrap) {
+          this._focusTrap = new FocusTrapController(this, {
+            selector: '.dialog-close-button',
+            restoreFocus: true,
+            delay: 50,
+          });
+        }
+      }
+    }
+  }
+
+  private _handleKeydown(e: KeyboardEvent): void {
+    if (this.open && e.key === 'Escape') {
+      e.stopPropagation();
+      this._handleClose();
+    }
+  }
+
   render(): TemplateResult {
     return html`
       <div class="dialog-backdrop" @click=${this._handleBackdropClick}></div>
       <div class="dialog-container">
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+        <div
+          class="dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="base-dialog-title"
+          @click=${(e: Event) => e.stopPropagation()}
+        >
           ${this._renderHeader()}
           ${this.tabs ? this._renderTabs() : nothing}
           ${this._renderContent()}
@@ -250,7 +299,7 @@ export class BaseDialogLayout extends LitElement {
     return html`
       <div class="dialog-header">
         <div class="dialog-header-text">
-          <h2 class="dialog-title">${this.title}</h2>
+          <h2 class="dialog-title" id="base-dialog-title">${this.title}</h2>
           ${this.subtitle
             ? html`<div class="dialog-subtitle">${this.subtitle}</div>`
             : nothing}
@@ -278,11 +327,13 @@ export class BaseDialogLayout extends LitElement {
     }
 
     return html`
-      <div class="dialog-tabs">
+      <div class="dialog-tabs" role="tablist">
         ${this.tabs.map(
           (tab) => html`
             <button
               class="dialog-tab ${tab.id === this.activeTab ? 'active' : ''}"
+              role="tab"
+              aria-selected=${tab.id === this.activeTab}
               @click=${() => this._handleTabClick(tab.id)}
             >
               ${tab.icon
