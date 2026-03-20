@@ -214,6 +214,21 @@ describe('BaseDialogLayout', () => {
         });
     });
 
+    // ── Keyboard ──────────────────────────────────────────────────────────
+
+    describe('keyboard', () => {
+        it('dispatches "closed" event when Escape is pressed and dialog is open', async () => {
+            const el = await createElement({ title: 'T', open: true });
+            const handler = vi.fn();
+            el.addEventListener('closed', handler);
+
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+            expect(handler).toHaveBeenCalledTimes(1);
+            cleanup(el);
+        });
+    });
+
     // ── Dialog click stop propagation ─────────────────────────────────────
 
     describe('dialog inner click', () => {

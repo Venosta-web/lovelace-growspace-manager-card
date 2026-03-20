@@ -263,13 +263,22 @@ export class BaseDialogLayout extends LitElement {
             restoreFocus: true,
             delay: 50,
           });
+        } else {
+          // Re-activate on subsequent opens
+          this._focusTrap.hostConnected();
         }
+      } else {
+        // Restore focus when dialog closes
+        this._focusTrap?.hostDisconnected();
       }
     }
   }
 
   private _handleKeydown(e: KeyboardEvent): void {
     if (this.open && e.key === 'Escape') {
+      // Note: stopPropagation does not prevent document-level listeners on other instances.
+      // If nested dialogs are used simultaneously, all open instances would receive this event.
+      // TODO: Implement topmost-dialog tracking before enabling nested sheet dialogs (Task 5).
       e.stopPropagation();
       this._handleClose();
     }
