@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ActionContext } from '../../src/store/core/action-context';
 import {
     addStrain,
+    updateStrain,
     removeStrain,
     addGrowspace,
     updateGrowspace,
@@ -23,6 +24,7 @@ describe('strain-actions', () => {
 
             mockDataService = {
                 addStrain: vi.fn().mockResolvedValue({}),
+                updateStrainMeta: vi.fn().mockResolvedValue({}),
                 removeStrain: vi.fn().mockResolvedValue({}),
                 fetchStrainLibrary: vi.fn().mockResolvedValue([
                     { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
@@ -139,6 +141,43 @@ describe('strain-actions', () => {
                 const result = await removeStrain(ctx, 'Test|default');
 
                 expect(result).toBe(false);
+            });
+        });
+
+        describe('updateStrain', () => {
+            it('should update strain with full data', async () => {
+                const strainData: Partial<StrainEntry> = {
+                    strain: 'Existing Strain',
+                    phenotype: 'Pheno1',
+                    breeder: 'Updated Breeder',
+                };
+
+                const result = await updateStrain(ctx, strainData);
+
+                expect(result).toBe(true);
+                expect(mockDataService.updateStrainMeta).toHaveBeenCalledWith(expect.objectContaining({
+                    strain: 'Existing Strain',
+                    phenotype: 'Pheno1',
+                    breeder: 'Updated Breeder',
+                }));
+                expect(ctx.showToast).toHaveBeenCalledWith('Strain updated successfully!', 'success');
+                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
+            });
+
+            it('should return false when strain name missing', async () => {
+                const result = await updateStrain(ctx, { phenotype: 'Test' });
+
+                expect(result).toBe(false);
+                expect(mockDataService.updateStrainMeta).not.toHaveBeenCalled();
+            });
+
+            it('should return false on service error', async () => {
+                mockDataService.updateStrainMeta.mockRejectedValue(new Error('Update failed'));
+
+                const result = await updateStrain(ctx, { strain: 'Test' });
+
+                expect(result).toBe(false);
+                expect(ctx.showToast).toHaveBeenCalledWith('Failed to update strain', 'error');
             });
         });
     });

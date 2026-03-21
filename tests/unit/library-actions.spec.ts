@@ -139,6 +139,17 @@ describe('LibraryActions', () => {
             expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch EC ramp curves:', error);
             consoleSpy.mockRestore();
         });
+
+        it('should handle missing timestamp in cache (line 210)', async () => {
+             const cacheData = {
+                 data: mockCurves
+             };
+             localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+             // Should fallback to 0 and likely be expired (Age = Date.now())
+             mockDataService.fetchECRampCurves.mockResolvedValue(mockCurves);
+             await fetchECRampCurves(ctx);
+             expect(mockDataService.fetchECRampCurves).toHaveBeenCalled();
+        });
     });
 
     describe('saveECRampCurve', () => {
@@ -188,6 +199,12 @@ describe('LibraryActions', () => {
             await removeECRampCurve(ctx, 'c1');
 
             expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove EC ramp: Remove error', 'error');
+        });
+
+        it('should handle non-Error catch in removeECRampCurve (line 261)', async () => {
+            mockDataService.removeECRampCurve.mockRejectedValue('string error');
+            await removeECRampCurve(ctx, 'c1');
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
         });
     });
 
@@ -334,6 +351,14 @@ describe('LibraryActions', () => {
             expect(spy).toHaveBeenCalled(); // Line 168
             spy.mockRestore();
         });
+
+        it('should fetch from server and cache on success', async () => {
+            const data = [{ id: 'n1', name: 'N1' }];
+            mockDataService.fetchNutrientInventory.mockResolvedValue(data);
+            await fetchNutrientInventory(ctx, true);
+            expect(mockData.setNutrientInventory).toHaveBeenCalledWith(data);
+            expect(localStorage.getItem(CACHE_KEY)).toContain('"data":[{"id":"n1","name":"N1"}]');
+        });
     });
 
     describe('updateNutrientStock', () => {
@@ -361,11 +386,16 @@ describe('LibraryActions', () => {
             await removeNutrientStock(ctx, 'n1');
             expect(mockDataService.removeNutrientStock).toHaveBeenCalled();
         });
+        it('should handle removal errors', async () => {
+             mockDataService.removeNutrientStock.mockRejectedValue(new Error('delete fail'));
+             await removeNutrientStock(ctx, 'n1');
+             expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove stock: delete fail', 'error');
+        });
 
-        it('should handle error (lines 195-196)', async () => {
-            mockDataService.removeNutrientStock.mockRejectedValue(new Error('delete fail'));
+        it('should handle non-Error catch in removeNutrientStock (line 195)', async () => {
+            mockDataService.removeNutrientStock.mockRejectedValue('string error');
             await removeNutrientStock(ctx, 'n1');
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove stock: delete fail', 'error');
+            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
         });
     });
 });

@@ -12,7 +12,9 @@ if (!customElements.get('growspace-grid-card-editor')) {
 describe('GrowspaceGridCardEditor', () => {
     let element: GrowspaceGridCardEditor;
 
+    let capturedCallback: any;
     beforeEach(() => {
+        capturedCallback = null;
         element = new GrowspaceGridCardEditor();
         element.hass = {
             states: {
@@ -29,7 +31,10 @@ describe('GrowspaceGridCardEditor', () => {
             },
             callService: vi.fn(),
             connection: {
-                subscribeEvents: vi.fn().mockResolvedValue(vi.fn()),
+                subscribeEvents: vi.fn().mockImplementation((callback) => {
+                    capturedCallback = callback;
+                    return Promise.resolve(vi.fn());
+                }),
             }
         } as any;
     });
@@ -96,5 +101,108 @@ describe('GrowspaceGridCardEditor', () => {
         const eventArg = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
         expect(eventArg.type).toBe('config-changed');
         expect(eventArg.detail.config.default_growspace).toBe('gs2');
+    });
+
+    test('handles disconnectedCallback (Line 30-31)', () => {
+        (element as any)._hasSubscription = true;
+        element.disconnectedCallback();
+        expect((element as any)._hasSubscription).toBe(false);
+    });
+
+    test('handles missing growspace sensor attribute (Line 70)', () => {
+        element.hass.states['sensor.growspaces_list'].attributes.growspaces = undefined;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._growspaceOptions).toEqual([]);
+    });
+
+    test('handles sensor update events (Lines 41-49)', async () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-grid-card',
+            default_growspace: 'gs1',
+        };
+        element.setConfig(config);
+        element.updated(new Map([['hass', null]]));
+
+        expect(capturedCallback).toBeDefined();
+
+        // Matching entity_id
+        capturedCallback({
+            data: {
+                new_state: {
+                    entity_id: 'sensor.growspaces_list',
+                    attributes: {
+                        growspaces: { 'gs3': 'Update' }
+                    }
+                }
+            }
+        });
+        expect((element as any)._growspaceOptions).toEqual([{ id: 'gs3', name: 'Update' }]);
+    });
+
+    test('handles sensor update events with missing growspaces (Line 51)', async () => {
+        element.setConfig({ type: 'custom:growspace-grid-card' });
+        element.updated(new Map([['hass', null]]));
+
+        // Missing attributes.growspaces
+        capturedCallback({
+            data: {
+                new_state: {
+                    entity_id: 'sensor.growspaces_list',
+                    attributes: {}
+                }
+            }
+        });
+        expect((element as any)._growspaceOptions).toEqual([]);
+    });
+
+    test('ignores events for other entities', async () => {
+        element.setConfig({ type: 'custom:growspace-grid-card' });
+        element.updated(new Map([['hass', null]]));
+        
+        const initialCount = (element as any)._growspaceOptions.length;
+
+        capturedCallback({
+            data: {
+                new_state: {
+                    entity_id: 'sensor.other_sensor',
+                    attributes: { growspaces: { 'fail': 'fail' } }
+                }
+            }
+        });
+        expect((element as any)._growspaceOptions.length).toBe(initialCount);
+    });
+
+    test('subscription guard (Line 35)', async () => {
+        // Test already subscribed
+        (element as any)._hasSubscription = true;
+        const spy = vi.spyOn((element as any)._subscriptionController, 'subscribeEvents');
+        await (element as any)._subscribeToSensorUpdates();
+        expect(spy).not.toHaveBeenCalled();
+
+        // Test no hass
+        (element as any)._hasSubscription = false;
+        element.hass = undefined as any;
+        await (element as any)._subscribeToSensorUpdates();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('valueChanged guard (Line 135)', () => {
+        (element as any)._config = undefined;
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        (element as any)._valueChanged('key', 'val');
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('template default value (Line 120)', async () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-grid-card',
+        }; // default_growspace is missing
+        const el = await fixture<GrowspaceGridCardEditor>(html`<growspace-grid-card-editor></growspace-grid-card-editor>`);
+        el.hass = element.hass;
+        el.setConfig(config);
+        await el.updateComplete;
+        
+        const select = el.shadowRoot?.querySelector('select');
+        expect(select?.value).toBe('');
     });
 });

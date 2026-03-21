@@ -100,6 +100,18 @@ describe('VPDHeatmap', () => {
             expect((element as any)._getZoneColor(1.0, 'unknown')).toBe('#4caf50');
         });
 
+        it('should return correct colors for dry stage', () => {
+            const stage = 'dry';
+            // OptMin 0.8, OptMax 1.1
+            expect((element as any)._getZoneColor(0.9, stage)).toBe('#4caf50');
+        });
+
+        it('should return correct colors for cure stage', () => {
+            const stage = 'cure';
+            // OptMin 0.6, OptMax 0.9
+            expect((element as any)._getZoneColor(0.7, stage)).toBe('#4caf50');
+        });
+
         it('should return fallback color for NaN', () => {
             expect((element as any)._getZoneColor(NaN, 'flower')).toBe('#ff9800');
         });
@@ -112,17 +124,24 @@ describe('VPDHeatmap', () => {
         expect(mockContext.clearRect).toHaveBeenCalled();
         expect(mockContext.fillRect).toHaveBeenCalled(); // Should draw many pixels
     });
-
     it('should redraw when stage changes', async () => {
-        // Initial draw happened
         mockContext.fillRect.mockClear();
-
         element.stage = 'flower';
         await element.updateComplete;
+        expect(mockContext.fillRect).toHaveBeenCalled();
+    });
 
-        // Changing property triggers 'updated'
-        // element.updated is protected, Lit handles it.
-        // We verify effect:
+    it('should redraw when temperature changes', async () => {
+        mockContext.fillRect.mockClear();
+        element.temperature = 30;
+        await element.updateComplete;
+        expect(mockContext.fillRect).toHaveBeenCalled();
+    });
+
+    it('should redraw when humidity changes', async () => {
+        mockContext.fillRect.mockClear();
+        element.humidity = 50;
+        await element.updateComplete;
         expect(mockContext.fillRect).toHaveBeenCalled();
     });
 
@@ -178,6 +197,16 @@ describe('VPDHeatmap', () => {
         expect(point).toBeTruthy();
         expect(tooltip).toBeTruthy();
         expect(tooltip?.textContent).toContain('1.27 kPa'); // 25C, 60RH is ~1.27
+    });
+
+    it('should use provided vpd property if available', async () => {
+        element.temperature = 25;
+        element.humidity = 60;
+        element.vpd = 1.5;
+        await element.updateComplete;
+
+        const tooltip = element.shadowRoot?.querySelector('.current-tooltip');
+        expect(tooltip?.textContent).toContain('1.5 kPa');
     });
 
     it('should NOT render DOM point and tooltip when out of bounds', async () => {

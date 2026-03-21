@@ -1030,5 +1030,183 @@ describe('ConfigDialog', () => {
             expect((element as any).envDehumidifierEntities).toEqual(['switch.legacy_dehumidifier']);
         });
     });
+
+    describe('Sensor Groups (3D Heatmap) Tab', () => {
+        beforeEach(async () => {
+            element.currentTab = ConfigTab.SENSOR_GROUPS;
+            (element as any).envSensorGroups = [
+                { id: 'g1', name: 'Group 1', x: 1, y: 1, z: 1, temperature_sensors: ['sensor.temp'], humidity_sensors: [], vpd_sensors: [] }
+            ];
+            await element.updateComplete;
+        });
+
+        it('should render sensor groups list', () => {
+            const groupName = element.shadowRoot?.querySelector('div[style*="font-weight:500"]');
+            expect(groupName?.textContent).toBe('Group 1');
+        });
+
+        it('should open add group dialog', async () => {
+            const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+                .find(b => b.textContent?.includes('Add Group'));
+            (addBtn as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any)._showGroupDialog).toBe(true);
+            expect((element as any)._editingGroup).toBeUndefined();
+        });
+
+        it('should open edit group dialog', async () => {
+            const editBtn = element.shadowRoot?.querySelector('button[style*="padding:8px"]:first-of-type');
+            (editBtn as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any)._showGroupDialog).toBe(true);
+            expect((element as any)._editingGroup?.id).toBe('g1');
+        });
+
+        it('should delete a group', async () => {
+            const deleteBtn = element.shadowRoot?.querySelector('button.error');
+            (deleteBtn as HTMLElement)?.click();
+            await element.updateComplete;
+
+            expect((element as any).envSensorGroups.length).toBe(0);
+        });
+
+        it('should handle save-sensor-group event (add new)', async () => {
+            const newGroup = { id: 'g2', name: 'Group 2', x: 2, y: 2, z: 2, temperature_sensors: [], humidity_sensors: [], vpd_sensors: [] };
+            (element as any)._handleSaveGroup(new CustomEvent('save-sensor-group', {
+                detail: { group: newGroup }
+            }));
+
+            expect((element as any).envSensorGroups.length).toBe(2);
+            expect((element as any).envSensorGroups[1].id).toBe('g2');
+            expect((element as any)._showGroupDialog).toBe(false);
+        });
+
+        it('should handle save-sensor-group event (update existing)', async () => {
+            const updatedGroup = { id: 'g1', name: 'Updated Group 1', x: 1, y: 1, z: 1, temperature_sensors: ['sensor.temp'], humidity_sensors: [], vpd_sensors: [] };
+            (element as any)._handleSaveGroup(new CustomEvent('save-sensor-group', {
+                detail: { group: updatedGroup }
+            }));
+
+            expect((element as any).envSensorGroups.length).toBe(1);
+            expect((element as any).envSensorGroups[0].name).toBe('Updated Group 1');
+        });
+
+        it('should close group dialog on @close event', async () => {
+            (element as any)._showGroupDialog = true;
+            await element.updateComplete;
+            
+            const groupDialog = element.shadowRoot?.querySelector('sensor-group-dialog');
+            groupDialog?.dispatchEvent(new Event('close'));
+            await element.updateComplete;
+            
+            expect((element as any)._showGroupDialog).toBe(false);
+        });
+
+        it('should switch to sensor groups tab via click', async () => {
+            element.currentTab = ConfigTab.ADD_GROWSPACE;
+            await element.updateComplete;
+            
+            const tab = element.shadowRoot?.querySelector('.sensor-groups-tab');
+            (tab as HTMLElement)?.click();
+            await element.updateComplete;
+            
+            expect(element.currentTab).toBe(ConfigTab.SENSOR_GROUPS);
+        });
+    });
+
+    describe('Environment Management', () => {
+        it('should dispatch generate-grow-report event', () => {
+            const spy = vi.fn();
+            element.addEventListener('generate-grow-report', spy);
+            (element as any).editSelectedId = 'gs1';
+            (element as any)._generateGrowReport();
+            
+            expect(spy).toHaveBeenCalled();
+            expect(spy.mock.calls[0][0].detail).toEqual({ growspace_id: 'gs1' });
+        });
+
+        it('should return early in _generateGrowReport if no id selected', () => {
+            const spy = vi.fn();
+            element.addEventListener('generate-grow-report', spy);
+            (element as any).editSelectedId = '';
+            (element as any)._generateGrowReport();
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('should handle environment removal with confirmation', () => {
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+            const dispatchSpy = vi.fn();
+            element.addEventListener('remove-environment-submit', dispatchSpy);
+            
+            (element as any).envSelectedId = 'gs1';
+            (element as any)._handleRemoveEnvironment();
+            
+            expect(confirmSpy).toHaveBeenCalled();
+            expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+                detail: { growspace_id: 'gs1' }
+            }));
+            confirmSpy.mockRestore();
+        });
+
+        it('should abort environment removal if not confirmed', () => {
+            const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+            const dispatchSpy = vi.fn();
+            element.addEventListener('remove-environment-submit', dispatchSpy);
+            
+            (element as any).envSelectedId = 'gs1';
+            (element as any)._handleRemoveEnvironment();
+            
+            expect(confirmSpy).toHaveBeenCalled();
+            expect(dispatchSpy).not.toHaveBeenCalled();
+            confirmSpy.mockRestore();
+        });
+
+        it('should return early in _handleRemoveEnvironment if no id selected', () => {
+            const confirmSpy = vi.spyOn(window, 'confirm');
+            (element as any).envSelectedId = '';
+            (element as any)._handleRemoveEnvironment();
+            expect(confirmSpy).not.toHaveBeenCalled();
+        });
+
+        it('should handle timeout in _handleRemoveEnvironment (line 472)', async () => {
+             vi.useFakeTimers();
+             const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+             const envChangeSpy = vi.spyOn(element as any, '_handleEnvGrowspaceChange');
+             
+             (element as any).envSelectedId = 'env1';
+             (element as any)._handleRemoveEnvironment();
+             
+             expect(envChangeSpy).not.toHaveBeenCalled();
+             
+             vi.runAllTimers();
+             
+             expect(envChangeSpy).toHaveBeenCalledWith(expect.objectContaining({
+                 target: { value: 'env1' }
+             }));
+             
+             confirmSpy.mockRestore();
+             envChangeSpy.mockRestore();
+             vi.useRealTimers();
+        });
+
+        it('should handle errors in _handleRemoveEnvironment (line 479)', async () => {
+             vi.spyOn(window, 'confirm').mockReturnValue(true);
+             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+             const dispatchSpy = vi.spyOn(element, 'dispatchEvent').mockImplementation(() => {
+                 throw new Error('Dispatch failed');
+             });
+             
+             (element as any).envSelectedId = 'env1';
+             (element as any)._handleRemoveEnvironment();
+             
+             expect(consoleSpy).toHaveBeenCalledWith('Failed to remove environment:', expect.any(Error));
+             
+             consoleSpy.mockRestore();
+             dispatchSpy.mockRestore();
+             vi.restoreAllMocks();
+        });
+    });
 });
 
