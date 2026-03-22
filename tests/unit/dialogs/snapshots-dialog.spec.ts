@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SnapshotsDialog } from '../../../src/dialogs/snapshots-dialog';
 import type { VisionCheckupResult } from '../../../src/lib/types/dialog';
 import '../../../src/dialogs/snapshots-dialog';
-import { atom } from 'nanostores';
 
 // Mock ha-dialog if not already defined
 if (!customElements.get('ha-dialog')) {
