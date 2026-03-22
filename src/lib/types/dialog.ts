@@ -83,6 +83,24 @@ export interface EnvironmentConfigData {
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
+  visionCheckupConfig?: VisionCheckupConfig;
+}
+
+export interface VisionCheckupConfig {
+  enabled: boolean;
+  early_check_offset_minutes: number;
+  mid_check_hours: number;
+  late_check_offset_minutes: number;
+}
+
+export interface VisionCheckupResult {
+  timestamp: string;
+  check_type: 'early' | 'mid' | 'late' | 'manual';
+  analysis: string;
+  issues_detected: string[];
+  severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  recommendations: string[];
+  snapshot_paths: string[];
 }
 
 export interface EnvironmentConfigEventDetail {

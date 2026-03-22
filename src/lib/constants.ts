@@ -13,6 +13,8 @@ export const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_
 export const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
 export const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
 export const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
+export const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
+export const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
 
 // Home Assistant events
 export const EVENTS = {
@@ -77,6 +79,7 @@ export const SERVICES = {
   REMOVE_ENVIRONMENT: 'remove_environment',
   RESET_WATER_TRACKING: 'reset_water_tracking',
   UPDATE_STRAIN_META: 'update_strain_meta',
+  TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
 };
 
 
