@@ -12,7 +12,9 @@ import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
 import { CameraAPI } from './api/camera-api';
+import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
+import type { VisionCheckupConfig } from '../lib/types/dialog';
 
 /**
  * DataService - Thin facade coordinating domain-specific API services.
@@ -38,6 +40,7 @@ export class DataService {
   private _irrigationAPI: IrrigationAPI;
   private _aiAPI: AIAPI;
   private _cameraAPI: CameraAPI;
+  private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
 
   constructor(hass?: HomeAssistant) {
@@ -50,6 +53,7 @@ export class DataService {
     this._irrigationAPI = new IrrigationAPI(hass);
     this._aiAPI = new AIAPI(hass);
     this._cameraAPI = new CameraAPI(hass);
+    this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
 
     if (hass) {
@@ -71,6 +75,7 @@ export class DataService {
       this._irrigationAPI,
       this._aiAPI,
       this._cameraAPI,
+      this._visionAPI,
       this._reportAPI,
     ].forEach((api) => api.updateHass(hass));
   }
@@ -445,6 +450,19 @@ export class DataService {
   captureSnapshot = (growspaceId: string) => this._cameraAPI.captureSnapshot(growspaceId);
 
   getSnapshots = (growspaceId: string, limit?: number, offset?: number) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+
+  // ========================================
+  // Vision API Delegations
+  // ========================================
+
+  getVisionHistory = (growspaceId: string, limit?: number) =>
+    this._visionAPI.getVisionHistory(growspaceId, limit);
+
+  triggerVisionCheckup = (growspaceId: string) =>
+    this._visionAPI.triggerVisionCheckup(growspaceId);
+
+  updateVisionCheckupConfig = (growspaceId: string, config: VisionCheckupConfig) =>
+    this._visionAPI.updateVisionCheckupConfig(growspaceId, config);
 
   // ========================================
   // Report API Delegations
