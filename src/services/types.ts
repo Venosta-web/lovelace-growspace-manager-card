@@ -302,6 +302,7 @@ export interface EnvironmentAttributes {
   substrateTemperatureSensors?: string[];
   cameraEntities?: string[];
   energySensors?: string[];
+  visionCheckupConfig?: import('../lib/types/dialog').VisionCheckupConfig;
 }
 
 export interface GrowspaceStats {
