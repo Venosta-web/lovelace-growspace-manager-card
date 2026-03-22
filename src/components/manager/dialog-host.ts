@@ -679,6 +679,8 @@ export class DialogHost extends LitElement {
         detail.visionCheckupConfig
       );
       this.store.showToast('Vision checkup config saved', 'success');
+      await this.store.refreshData();
+      this.store.ui.closeDialog();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Save failed';
       this.store.showToast(`Error: ${msg}`, 'error');

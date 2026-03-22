@@ -337,6 +337,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         sensorGroups: device?.environmentAttributes?.sensorGroups || [],
         sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
         irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
+        cameraEntities: device?.environmentAttributes?.cameraEntities || [],
       } as EnvironmentConfigData,
     },
   });

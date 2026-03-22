@@ -83,6 +83,7 @@ export interface EnvironmentConfigData {
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
+  cameraEntities?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
 }
 

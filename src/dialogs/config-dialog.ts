@@ -323,13 +323,16 @@ export class ConfigDialog extends LitElement {
       this.envSensorGroups = environmentData.sensorGroups || [];
       this.envSensorCoordinates = environmentData.sensorCoordinates || {};
       this.envIrrigationTanks = environmentData.irrigationTanks || [];
+      this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+      if (environmentData.visionCheckupConfig) {
+        this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
+        this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
+        this.envVisionMidHours = environmentData.visionCheckupConfig.mid_check_hours;
+        this.envVisionLateOffset = environmentData.visionCheckupConfig.late_check_offset_minutes;
+      }
 
       // Also pre-select for Edit/Delete actions
       if (environmentData.selectedGrowspaceId) {
-        console.log(
-          'DEBUG: Pre-selecting growspace for edit:',
-          environmentData.selectedGrowspaceId
-        );
         this._populateEditFields(environmentData.selectedGrowspaceId);
       }
     }
