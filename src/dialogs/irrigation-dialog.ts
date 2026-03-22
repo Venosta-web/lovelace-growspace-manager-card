@@ -4,7 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
-import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading } from '../types';
+import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading, TankWaterEvent } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -604,6 +604,7 @@ export class IrrigationDialog extends LitElement {
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add irrigation time:', e);
+      throw e;
     }
   }
 
@@ -621,6 +622,7 @@ export class IrrigationDialog extends LitElement {
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove irrigation time:', e);
+      throw e;
     }
   }
 
@@ -648,6 +650,7 @@ export class IrrigationDialog extends LitElement {
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to add drain time:', e);
+      throw e;
     }
   }
 
@@ -665,6 +668,7 @@ export class IrrigationDialog extends LitElement {
       this._notifyDataChanged();
     } catch (e) {
       console.error('Failed to remove drain time:', e);
+      throw e;
     }
   }
 
@@ -1526,9 +1530,9 @@ export class IrrigationDialog extends LitElement {
                       class="md3-button primary"
                       @click=${() => {
             if (type === 'irrigation') {
-              this._addIrrigationTime(addingTime.time, addingTime.duration);
+              this._addIrrigationTime(addingTime.time, addingTime.duration).catch(() => {});
             } else {
-              this._addDrainTime(addingTime.time, addingTime.duration);
+              this._addDrainTime(addingTime.time, addingTime.duration).catch(() => {});
             }
           }}
                       style="background: ${color};"
@@ -1695,6 +1699,41 @@ export class IrrigationDialog extends LitElement {
     const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
     const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
 
+    // Tank-derived water analysis (when no flow/drain sensors configured)
+    const tanksWithHistory = tanks.filter(t => t.volumeLiters != null && t.waterHistory?.events?.length);
+    const allTankEvents: TankWaterEvent[] = tanksWithHistory.flatMap(t => t.waterHistory!.events);
+    const now = new Date();
+    const dayStart = new Date(now);
+    dayStart.setUTCHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const tankLitersToday = allTankEvents
+      .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= dayStart)
+      .reduce((s, e) => s + e.liters, 0);
+    const tankLiters7d = allTankEvents
+      .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= sevenDaysAgo)
+      .reduce((s, e) => s + e.liters, 0);
+    // Build 24h consumption buckets (96 × 15 min) for bar chart
+    const bucket15Min = 15 * 60 * 1000;
+    const bucketCount24h = 96;
+    const chartEnd = Math.ceil(now.getTime() / bucket15Min) * bucket15Min;
+    const chartStart = chartEnd - bucketCount24h * bucket15Min;
+    const consumptionBuckets24h = Array.from({ length: bucketCount24h }, (_, i) => ({
+      start: chartStart + i * bucket15Min,
+      liters: 0,
+    }));
+    for (const ev of allTankEvents) {
+      if (ev.event_type !== 'consumption') continue;
+      const ts = new Date(ev.timestamp).getTime();
+      if (ts < chartStart || ts >= chartEnd) continue;
+      const idx = Math.floor((ts - chartStart) / bucket15Min);
+      if (idx >= 0 && idx < bucketCount24h) consumptionBuckets24h[idx].liters += ev.liters;
+    }
+    const maxBucketLiters = Math.max(...consumptionBuckets24h.map(b => b.liters), 0.01);
+    const recentRefills = allTankEvents
+      .filter(e => e.event_type === 'refill')
+      .slice(-10)
+      .reverse();
+
     // --- KPI helper ---
     const kpiCard = (label: string, value: string, unit: string, color = 'rgba(255,255,255,0.7)', sub?: string) => html`
       <div style="
@@ -1796,6 +1835,73 @@ export class IrrigationDialog extends LitElement {
               `;
         })}
           </div>
+        </div>
+      ` : nothing}
+
+      <!-- Tank-Derived Water Analysis -->
+      ${tanksWithHistory.length > 0 ? html`
+        <div class="detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0;">Tank-Derived Water Usage</h3>
+            <span style="font-size: 0.78rem; opacity: 0.5; background: rgba(79,195,247,0.1); border: 1px solid rgba(79,195,247,0.25); border-radius: 20px; padding: 2px 10px;">inferred from tank level</span>
+          </div>
+
+          <!-- KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            ${kpiCard('Consumed today', tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—', tankLitersToday > 0 ? 'L' : '', '#4fc3f7')}
+            ${kpiCard('Last 7 days', tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—', tankLiters7d > 0 ? 'L' : '', '#81c784')}
+            ${kpiCard('Avg per day', tankLiters7d > 0 ? (tankLiters7d / 7).toFixed(1) : '—', tankLiters7d > 0 ? 'L/day' : '', '#ce93d8')}
+          </div>
+
+          <!-- 24h bar chart -->
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 0.78rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">Consumption — last 24 hours (15 min buckets)</div>
+            <div style="display: flex; align-items: flex-end; gap: 1px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 4px 0;">
+              ${consumptionBuckets24h.map(b => {
+                const heightPct = (b.liters / maxBucketLiters) * 100;
+                const label = new Date(b.start).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+                return html`
+                  <div
+                    title="${label} — ${b.liters.toFixed(2)} L"
+                    style="
+                      flex: 1;
+                      height: ${Math.max(2, heightPct)}%;
+                      background: ${b.liters > 0 ? '#4fc3f7' : 'rgba(255,255,255,0.06)'};
+                      border-radius: 2px 2px 0 0;
+                      min-width: 0;
+                      transition: background 0.2s;
+                    "
+                  ></div>
+                `;
+              })}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.68rem; opacity: 0.45; margin-top: 4px; padding: 0 2px;">
+              <span>24h ago</span>
+              <span>12h ago</span>
+              <span>now</span>
+            </div>
+          </div>
+
+          <!-- Recent refill events -->
+          ${recentRefills.length > 0 ? html`
+            <div style="margin-top: 16px;">
+              <div style="font-size: 0.78rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Recent refills</div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                ${recentRefills.map(ev => html`
+                  <div style="
+                    display: flex; justify-content: space-between; align-items: center;
+                    background: rgba(129,199,132,0.08); border-radius: 6px;
+                    padding: 5px 10px; font-size: 0.82rem;
+                  ">
+                    <span style="opacity: 0.65;">
+                      ${new Date(ev.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span style="color: #81c784; font-weight: 600;">+${ev.liters.toFixed(1)} L</span>
+                  </div>
+                `)}
+              </div>
+            </div>
+          ` : nothing}
         </div>
       ` : nothing}
 
@@ -2198,6 +2304,7 @@ export class IrrigationDialog extends LitElement {
 
         <div class="tank-footer">
           Warning Level: ${tank.warningLevel}%
+          ${tank.volumeLiters != null ? html`<span style="margin-left: 8px; opacity: 0.55;">· ${tank.volumeLiters} L</span>` : nothing}
         </div>
       </div>
     `;

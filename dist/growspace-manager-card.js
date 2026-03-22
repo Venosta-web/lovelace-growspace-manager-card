@@ -5175,6 +5175,8 @@ class GrowspaceAdapter {
                 isWarning: t.is_warning,
                 hoursRemaining: t.hours_remaining ?? null,
                 depletionStatus: t.depletion_status ?? null,
+                volumeLiters: t.volume_liters ?? null,
+                waterHistory: t.water_history ?? undefined,
             })),
             activeEvents: wsData.active_events,
             sensorCoordinates,
@@ -18936,6 +18938,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envDehumidifierThresholds = {};
         this.envSensorCoordinates = {};
         this.envIrrigationTanks = [];
+        // Vision Checkup Config
+        this.envVisionEnabled = false;
+        this.envVisionEarlyOffset = 60;
+        this.envVisionMidHours = 6;
+        this.envVisionLateOffset = 60;
+        this.envVisionCameraEntities = [];
         this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
         // Sensor Groups
         this.envSensorGroups = [];
@@ -18989,9 +18997,15 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSensorGroups = environmentData.sensorGroups || [];
             this.envSensorCoordinates = environmentData.sensorCoordinates || {};
             this.envIrrigationTanks = environmentData.irrigationTanks || [];
+            this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+            if (environmentData.visionCheckupConfig) {
+                this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
+                this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
+                this.envVisionMidHours = environmentData.visionCheckupConfig.mid_check_hours;
+                this.envVisionLateOffset = environmentData.visionCheckupConfig.late_check_offset_minutes;
+            }
             // Also pre-select for Edit/Delete actions
             if (environmentData.selectedGrowspaceId) {
-                console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
                 this._populateEditFields(environmentData.selectedGrowspaceId);
             }
         }
@@ -19044,6 +19058,23 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 sensorGroups: this.envSensorGroups,
                 sensorCoordinates: this.envSensorCoordinates,
                 irrigationTanks: this.envIrrigationTanks,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitVisionCheckupConfig() {
+        if (!this.envSelectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('vision-checkup-config-submit', {
+            detail: {
+                growspaceId: this.envSelectedId,
+                visionCheckupConfig: {
+                    enabled: this.envVisionEnabled,
+                    early_check_offset_minutes: this.envVisionEarlyOffset,
+                    mid_check_hours: this.envVisionMidHours,
+                    late_check_offset_minutes: this.envVisionLateOffset,
+                },
             },
             bubbles: true,
             composed: true,
@@ -19713,6 +19744,44 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             </md3-number-input>
           </div>
         </div>
+
+        <!--Vision Checkup Section-->
+        <div class="detail-card vision-checkup-section">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Vision Checkup</h3>
+          ${this.envVisionCameraEntities.length === 0
+            ? x `<p class="vision-no-cameras-info" style="opacity:0.6;font-size:0.85rem;margin:0;">Configure camera entities first to enable vision checkups.</p>`
+            : x `
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <label style="font-size:0.9rem;">Enable automatic vision checkups</label>
+                <input type="checkbox" class="vision-enabled-toggle"
+                  .checked=${this.envVisionEnabled}
+                  @change=${(e) => { this.envVisionEnabled = e.target.checked; }}>
+              </div>
+              <md3-number-input
+                label="Early check offset (min after lights on)"
+                .value=${this.envVisionEarlyOffset}
+                @value-changed=${(e) => { this.envVisionEarlyOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Mid check (hours into light cycle)"
+                .value=${this.envVisionMidHours}
+                @value-changed=${(e) => { this.envVisionMidHours = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Late check offset (min before lights off)"
+                .value=${this.envVisionLateOffset}
+                @value-changed=${(e) => { this.envVisionLateOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                <button class="md3-button primary vision-save-btn" @click=${this._submitVisionCheckupConfig}>
+                  Save Vision Config
+                </button>
+              </div>
+            `}
+        </div>
       </div>
     `;
     }
@@ -19770,6 +19839,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
             this.envStressThreshold = 0.8;
             this.envMoldThreshold = 0.8;
+            this.envVisionCameraEntities = attrs.cameraEntities ?? [];
+            if (attrs.visionCheckupConfig) {
+                this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
+                this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
+                this.envVisionMidHours = attrs.visionCheckupConfig.mid_check_hours;
+                this.envVisionLateOffset = attrs.visionCheckupConfig.late_check_offset_minutes;
+            }
+            else {
+                this.envVisionEnabled = false;
+                this.envVisionEarlyOffset = 60;
+                this.envVisionMidHours = 6;
+                this.envVisionLateOffset = 60;
+            }
         }
         else {
             // Reset if no device or no attributes
@@ -19790,6 +19872,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = '';
             this.envDehumidifierControlEnabled = false;
             this.envDehumidifierThresholds = {};
+            this.envVisionEnabled = false;
+            this.envVisionEarlyOffset = 60;
+            this.envVisionMidHours = 6;
+            this.envVisionLateOffset = 60;
+            this.envVisionCameraEntities = [];
         }
     }
     renderDehumidifierTab() {
@@ -20216,6 +20303,21 @@ __decorate([
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envIrrigationTanks", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionEnabled", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionEarlyOffset", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionMidHours", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionLateOffset", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionCameraEntities", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
@@ -20733,6 +20835,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to add irrigation time:', e);
+            throw e;
         }
     }
     async _removeIrrigationTime(time) {
@@ -20749,6 +20852,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to remove irrigation time:', e);
+            throw e;
         }
     }
     async _addDrainTime(time, duration) {
@@ -20774,6 +20878,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to add drain time:', e);
+            throw e;
         }
     }
     async _removeDrainTime(time) {
@@ -20790,6 +20895,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to remove drain time:', e);
+            throw e;
         }
     }
     _notifyDataChanged() {
@@ -21553,10 +21659,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       class="md3-button primary"
                       @click=${() => {
                 if (type === 'irrigation') {
-                    this._addIrrigationTime(addingTime.time, addingTime.duration);
+                    this._addIrrigationTime(addingTime.time, addingTime.duration).catch(() => { });
                 }
                 else {
-                    this._addDrainTime(addingTime.time, addingTime.duration);
+                    this._addDrainTime(addingTime.time, addingTime.duration).catch(() => { });
                 }
             }}
                       style="background: ${color};"
@@ -21713,6 +21819,43 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalDrain = drainTimes.length;
         const irrigDuration = this.device?.irrigationConfig?.irrigationDuration ?? 0;
         const drainDuration = this.device?.irrigationConfig?.drainDuration ?? 0;
+        // Tank-derived water analysis (when no flow/drain sensors configured)
+        const tanksWithHistory = tanks.filter(t => t.volumeLiters != null && t.waterHistory?.events?.length);
+        const allTankEvents = tanksWithHistory.flatMap(t => t.waterHistory.events);
+        const now = new Date();
+        const dayStart = new Date(now);
+        dayStart.setUTCHours(0, 0, 0, 0);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const tankLitersToday = allTankEvents
+            .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= dayStart)
+            .reduce((s, e) => s + e.liters, 0);
+        const tankLiters7d = allTankEvents
+            .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= sevenDaysAgo)
+            .reduce((s, e) => s + e.liters, 0);
+        // Build 24h consumption buckets (96 × 15 min) for bar chart
+        const bucket15Min = 15 * 60 * 1000;
+        const bucketCount24h = 96;
+        const chartEnd = Math.ceil(now.getTime() / bucket15Min) * bucket15Min;
+        const chartStart = chartEnd - bucketCount24h * bucket15Min;
+        const consumptionBuckets24h = Array.from({ length: bucketCount24h }, (_, i) => ({
+            start: chartStart + i * bucket15Min,
+            liters: 0,
+        }));
+        for (const ev of allTankEvents) {
+            if (ev.event_type !== 'consumption')
+                continue;
+            const ts = new Date(ev.timestamp).getTime();
+            if (ts < chartStart || ts >= chartEnd)
+                continue;
+            const idx = Math.floor((ts - chartStart) / bucket15Min);
+            if (idx >= 0 && idx < bucketCount24h)
+                consumptionBuckets24h[idx].liters += ev.liters;
+        }
+        const maxBucketLiters = Math.max(...consumptionBuckets24h.map(b => b.liters), 0.01);
+        const recentRefills = allTankEvents
+            .filter(e => e.event_type === 'refill')
+            .slice(-10)
+            .reverse();
         // --- KPI helper ---
         const kpiCard = (label, value, unit, color = 'rgba(255,255,255,0.7)', sub) => x `
       <div style="
@@ -21807,6 +21950,73 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               `;
         })}
           </div>
+        </div>
+      ` : E}
+
+      <!-- Tank-Derived Water Analysis -->
+      ${tanksWithHistory.length > 0 ? x `
+        <div class="detail-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="margin: 0;">Tank-Derived Water Usage</h3>
+            <span style="font-size: 0.78rem; opacity: 0.5; background: rgba(79,195,247,0.1); border: 1px solid rgba(79,195,247,0.25); border-radius: 20px; padding: 2px 10px;">inferred from tank level</span>
+          </div>
+
+          <!-- KPIs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            ${kpiCard('Consumed today', tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—', tankLitersToday > 0 ? 'L' : '', '#4fc3f7')}
+            ${kpiCard('Last 7 days', tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—', tankLiters7d > 0 ? 'L' : '', '#81c784')}
+            ${kpiCard('Avg per day', tankLiters7d > 0 ? (tankLiters7d / 7).toFixed(1) : '—', tankLiters7d > 0 ? 'L/day' : '', '#ce93d8')}
+          </div>
+
+          <!-- 24h bar chart -->
+          <div style="margin-bottom: 6px;">
+            <div style="font-size: 0.78rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">Consumption — last 24 hours (15 min buckets)</div>
+            <div style="display: flex; align-items: flex-end; gap: 1px; height: 60px; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 4px 0;">
+              ${consumptionBuckets24h.map(b => {
+            const heightPct = (b.liters / maxBucketLiters) * 100;
+            const label = new Date(b.start).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+            return x `
+                  <div
+                    title="${label} — ${b.liters.toFixed(2)} L"
+                    style="
+                      flex: 1;
+                      height: ${Math.max(2, heightPct)}%;
+                      background: ${b.liters > 0 ? '#4fc3f7' : 'rgba(255,255,255,0.06)'};
+                      border-radius: 2px 2px 0 0;
+                      min-width: 0;
+                      transition: background 0.2s;
+                    "
+                  ></div>
+                `;
+        })}
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.68rem; opacity: 0.45; margin-top: 4px; padding: 0 2px;">
+              <span>24h ago</span>
+              <span>12h ago</span>
+              <span>now</span>
+            </div>
+          </div>
+
+          <!-- Recent refill events -->
+          ${recentRefills.length > 0 ? x `
+            <div style="margin-top: 16px;">
+              <div style="font-size: 0.78rem; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Recent refills</div>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                ${recentRefills.map(ev => x `
+                  <div style="
+                    display: flex; justify-content: space-between; align-items: center;
+                    background: rgba(129,199,132,0.08); border-radius: 6px;
+                    padding: 5px 10px; font-size: 0.82rem;
+                  ">
+                    <span style="opacity: 0.65;">
+                      ${new Date(ev.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span style="color: #81c784; font-weight: 600;">+${ev.liters.toFixed(1)} L</span>
+                  </div>
+                `)}
+              </div>
+            </div>
+          ` : E}
         </div>
       ` : E}
 
@@ -22203,6 +22413,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
         <div class="tank-footer">
           Warning Level: ${tank.warningLevel}%
+          ${tank.volumeLiters != null ? x `<span style="margin-left: 8px; opacity: 0.55;">· ${tank.volumeLiters} L</span>` : E}
         </div>
       </div>
     `;
@@ -30106,7 +30317,7 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.showToast('Failed to update breeder', 'error');
         }
     }
-    async _handleSaveBreeder(detail) {
+    async _handleSaveBreeder(_detail) {
         // Breeders are derived from strains — there is no standalone breeder concept in the backend.
         // The "save-breeder" event cannot persist without at least one strain using the breeder name.
         this.store.showToast('Breeders are created automatically when you save a strain with breeder info.', 'info');
@@ -30141,6 +30352,7 @@ let DialogHost = class DialogHost extends i$3 {
         @delete-growspace-submit=${(e) => this.store.actions.growspace.remove(e.detail.growspace_id)}
         @remove-environment-submit=${(e) => this.store.actions.growspace.removeEnvironment(e.detail.growspace_id)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        @vision-checkup-config-submit=${(e) => this._handleVisionCheckupConfig(e.detail)}
         @generate-grow-report=${(e) => this.store.ui.setActiveDialog({
             type: 'GROW_REPORT',
             payload: { growspaceId: e.detail.growspace_id }
@@ -30188,6 +30400,18 @@ let DialogHost = class DialogHost extends i$3 {
         catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'Configuration failed';
             this.store.showToast(`Error: ${errorMessage}`, 'error');
+        }
+    }
+    async _handleVisionCheckupConfig(detail) {
+        try {
+            await this.store.dataService.updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+            this.store.showToast('Vision checkup config saved', 'success');
+            await this.store.refreshData();
+            this.store.ui.closeDialog();
+        }
+        catch (e) {
+            const msg = e instanceof Error ? e.message : 'Save failed';
+            this.store.showToast(`Error: ${msg}`, 'error');
         }
     }
     _renderGrowMasterDialog(active, selectedDeviceData) {
@@ -42482,7 +42706,8 @@ __decorate([
     n$5({ type: Boolean })
 ], PlantCardContainer.prototype, "forceDraggable", void 0);
 __decorate([
-    c$2({ context: storeContext })
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
 ], PlantCardContainer.prototype, "store", void 0);
 PlantCardContainer = __decorate([
     t$2('plant-card-container')
@@ -43873,7 +44098,8 @@ let GrowspaceGridContainer = class GrowspaceGridContainer extends i$3 {
     }
 };
 __decorate([
-    c$2({ context: storeContext })
+    c$2({ context: storeContext, subscribe: true }),
+    n$5({ attribute: false })
 ], GrowspaceGridContainer.prototype, "store", void 0);
 __decorate([
     n$5({ type: Array })
@@ -104602,6 +104828,8 @@ function openConfigDialog(ctx, device) {
                 sensorGroups: device?.environmentAttributes?.sensorGroups || [],
                 sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
                 irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
+                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
+                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
             },
         },
     });
