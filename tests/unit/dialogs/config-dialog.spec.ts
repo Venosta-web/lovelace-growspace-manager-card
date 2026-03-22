@@ -1208,5 +1208,81 @@ describe('ConfigDialog', () => {
              vi.restoreAllMocks();
         });
     });
+
+    describe('Vision Checkup config section', () => {
+      it('renders vision checkup section in environment tab', async () => {
+        (element as any).currentTab = 'environment';
+        (element as any).envSelectedId = 'tent1';
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        await element.updateComplete;
+
+        const section = element.shadowRoot?.querySelector('.vision-checkup-section');
+        expect(section).toBeTruthy();
+      });
+
+      it('shows no-cameras info when camera entities empty', async () => {
+        (element as any).currentTab = 'environment';
+        (element as any).envSelectedId = 'tent1';
+        (element as any).envVisionCameraEntities = [];
+        await element.updateComplete;
+
+        const info = element.shadowRoot?.querySelector('.vision-no-cameras-info');
+        expect(info).toBeTruthy();
+        const toggle = element.shadowRoot?.querySelector('.vision-enabled-toggle');
+        expect(toggle).toBeFalsy();
+      });
+
+      it('shows controls when camera entities are configured', async () => {
+        (element as any).currentTab = 'environment';
+        (element as any).envSelectedId = 'tent1';
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        await element.updateComplete;
+
+        const toggle = element.shadowRoot?.querySelector('.vision-enabled-toggle');
+        expect(toggle).toBeTruthy();
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        expect(saveBtn).toBeTruthy();
+      });
+
+      it('dispatches vision-checkup-config-submit event on save', async () => {
+        const submitSpy = vi.fn();
+        element.addEventListener('vision-checkup-config-submit', submitSpy);
+
+        (element as any).currentTab = 'environment';
+        (element as any).envSelectedId = 'tent1';
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        (element as any).envVisionEnabled = true;
+        (element as any).envVisionEarlyOffset = 90;
+        (element as any).envVisionMidHours = 8;
+        (element as any).envVisionLateOffset = 45;
+        await element.updateComplete;
+
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        saveBtn?.click();
+
+        expect(submitSpy).toHaveBeenCalledOnce();
+        const detail = (submitSpy.mock.calls[0][0] as CustomEvent).detail;
+        expect(detail.growspaceId).toBe('tent1');
+        expect(detail.visionCheckupConfig.enabled).toBe(true);
+        expect(detail.visionCheckupConfig.early_check_offset_minutes).toBe(90);
+        expect(detail.visionCheckupConfig.mid_check_hours).toBe(8);
+        expect(detail.visionCheckupConfig.late_check_offset_minutes).toBe(45);
+      });
+
+      it('does not dispatch event when no growspace selected', async () => {
+        const submitSpy = vi.fn();
+        element.addEventListener('vision-checkup-config-submit', submitSpy);
+
+        (element as any).currentTab = 'environment';
+        (element as any).envSelectedId = '';
+        (element as any).envVisionCameraEntities = ['camera.tent1'];
+        await element.updateComplete;
+
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        saveBtn?.click();
+
+        expect(submitSpy).not.toHaveBeenCalled();
+      });
+    });
 });
 

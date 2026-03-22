@@ -103,6 +103,11 @@ export interface VisionCheckupResult {
   snapshot_paths: string[];
 }
 
+export interface VisionCheckupConfigEventDetail {
+  growspaceId: string;
+  visionCheckupConfig: VisionCheckupConfig;
+}
+
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
   temperatureSensor: string;

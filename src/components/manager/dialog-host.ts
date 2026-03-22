@@ -13,6 +13,7 @@ import {
   StrainEntry,
   EnvironmentConfigEventDetail,
 } from '../../types';
+import type { VisionCheckupConfigEventDetail } from '../../lib/types/dialog';
 
 import '../../dialogs/add-plant-dialog';
 import '../../dialogs/add-plants-dialog';
@@ -602,6 +603,7 @@ export class DialogHost extends LitElement {
         @delete-growspace-submit=${(e: CustomEvent) => this.store.actions.growspace.remove(e.detail.growspace_id)}
         @remove-environment-submit=${(e: CustomEvent) => this.store.actions.growspace.removeEnvironment(e.detail.growspace_id)}
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
+        @vision-checkup-config-submit=${(e: CustomEvent) => this._handleVisionCheckupConfig(e.detail as VisionCheckupConfigEventDetail)}
         @generate-grow-report=${(e: CustomEvent) => this.store.ui.setActiveDialog({
           type: 'GROW_REPORT',
           payload: { growspaceId: e.detail.growspace_id }
@@ -667,6 +669,19 @@ export class DialogHost extends LitElement {
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : 'Configuration failed';
       this.store.showToast(`Error: ${errorMessage}`, 'error');
+    }
+  }
+
+  private async _handleVisionCheckupConfig(detail: VisionCheckupConfigEventDetail) {
+    try {
+      await this.store.dataService.updateVisionCheckupConfig(
+        detail.growspaceId,
+        detail.visionCheckupConfig
+      );
+      this.store.showToast('Vision checkup config saved', 'success');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Save failed';
+      this.store.showToast(`Error: ${msg}`, 'error');
     }
   }
 

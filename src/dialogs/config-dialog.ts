@@ -28,6 +28,7 @@ import {
   EnvironmentConfigData,
   EnvironmentConfigEventDetail,
 } from '../types';
+import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
 
 @customElement('config-dialog')
@@ -95,6 +96,13 @@ export class ConfigDialog extends LitElement {
     { x: number; y: number; z: number; rotation?: number }
   > = {};
   @state() private envIrrigationTanks: any[] = [];
+
+  // Vision Checkup Config
+  @state() private envVisionEnabled = false;
+  @state() private envVisionEarlyOffset = 60;
+  @state() private envVisionMidHours = 6;
+  @state() private envVisionLateOffset = 60;
+  @state() private envVisionCameraEntities: string[] = [];
 
   @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
 
@@ -382,6 +390,25 @@ export class ConfigDialog extends LitElement {
           sensorCoordinates: this.envSensorCoordinates,
           irrigationTanks: this.envIrrigationTanks,
         } as EnvironmentConfigEventDetail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _submitVisionCheckupConfig() {
+    if (!this.envSelectedId) return;
+    this.dispatchEvent(
+      new CustomEvent('vision-checkup-config-submit', {
+        detail: {
+          growspaceId: this.envSelectedId,
+          visionCheckupConfig: {
+            enabled: this.envVisionEnabled,
+            early_check_offset_minutes: this.envVisionEarlyOffset,
+            mid_check_hours: this.envVisionMidHours,
+            late_check_offset_minutes: this.envVisionLateOffset,
+          },
+        } as VisionCheckupConfigEventDetail,
         bubbles: true,
         composed: true,
       })
@@ -1177,6 +1204,45 @@ export class ConfigDialog extends LitElement {
             >
             </md3-number-input>
           </div>
+        </div>
+
+        <!--Vision Checkup Section-->
+        <div class="detail-card vision-checkup-section">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Vision Checkup</h3>
+          ${this.envVisionCameraEntities.length === 0
+            ? html`<p class="vision-no-cameras-info" style="opacity:0.6;font-size:0.85rem;margin:0;">Configure camera entities first to enable vision checkups.</p>`
+            : html`
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <label style="font-size:0.9rem;">Enable automatic vision checkups</label>
+                <input type="checkbox" class="vision-enabled-toggle"
+                  .checked=${this.envVisionEnabled}
+                  @change=${(e: Event) => { this.envVisionEnabled = (e.target as HTMLInputElement).checked; }}>
+              </div>
+              <md3-number-input
+                label="Early check offset (min after lights on)"
+                .value=${this.envVisionEarlyOffset}
+                @value-changed=${(e: CustomEvent) => { this.envVisionEarlyOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Mid check (hours into light cycle)"
+                .value=${this.envVisionMidHours}
+                @value-changed=${(e: CustomEvent) => { this.envVisionMidHours = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Late check offset (min before lights off)"
+                .value=${this.envVisionLateOffset}
+                @value-changed=${(e: CustomEvent) => { this.envVisionLateOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                <button class="md3-button primary vision-save-btn" @click=${this._submitVisionCheckupConfig}>
+                  Save Vision Config
+                </button>
+              </div>
+            `
+          }
         </div>
       </div>
     `;
