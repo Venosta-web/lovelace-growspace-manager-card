@@ -5,6 +5,7 @@ import type {
   GrowspaceType,
 } from '../features/plants/types';
 import type { SensorGroup } from '../features/environment/types';
+import type { VisionCheckupConfig } from '../lib/types/dialog';
 
 // --- Irrigation ---
 
@@ -302,7 +303,7 @@ export interface EnvironmentAttributes {
   substrateTemperatureSensors?: string[];
   cameraEntities?: string[];
   energySensors?: string[];
-  visionCheckupConfig?: import('../lib/types/dialog').VisionCheckupConfig;
+  visionCheckupConfig?: VisionCheckupConfig;
 }
 
 export interface GrowspaceStats {

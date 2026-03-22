@@ -1312,6 +1312,19 @@ export class ConfigDialog extends LitElement {
       // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
       this.envStressThreshold = 0.8;
       this.envMoldThreshold = 0.8;
+
+      this.envVisionCameraEntities = attrs.cameraEntities ?? [];
+      if (attrs.visionCheckupConfig) {
+        this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
+        this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
+        this.envVisionMidHours = attrs.visionCheckupConfig.mid_check_hours;
+        this.envVisionLateOffset = attrs.visionCheckupConfig.late_check_offset_minutes;
+      } else {
+        this.envVisionEnabled = false;
+        this.envVisionEarlyOffset = 60;
+        this.envVisionMidHours = 6;
+        this.envVisionLateOffset = 60;
+      }
     } else {
       // Reset if no device or no attributes
       this.envTemperatureSensor = '';
@@ -1331,6 +1344,11 @@ export class ConfigDialog extends LitElement {
       this.envSoilMoistureSensor = '';
       this.envDehumidifierControlEnabled = false;
       this.envDehumidifierThresholds = {};
+      this.envVisionEnabled = false;
+      this.envVisionEarlyOffset = 60;
+      this.envVisionMidHours = 6;
+      this.envVisionLateOffset = 60;
+      this.envVisionCameraEntities = [];
     }
   }
 
