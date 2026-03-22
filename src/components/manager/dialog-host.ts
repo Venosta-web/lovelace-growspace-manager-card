@@ -561,7 +561,7 @@ export class DialogHost extends LitElement {
     }
   }
 
-  private async _handleSaveBreeder(detail: { name: string; logo?: string }) {
+  private async _handleSaveBreeder(_detail: { name: string; logo?: string }) {
     // Breeders are derived from strains — there is no standalone breeder concept in the backend.
     // The "save-breeder" event cannot persist without at least one strain using the breeder name.
     this.store.showToast(
