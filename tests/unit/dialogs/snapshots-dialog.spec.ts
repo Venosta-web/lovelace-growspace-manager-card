@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SnapshotsDialog } from '../../../src/dialogs/snapshots-dialog';
+import type { VisionCheckupResult } from '../../../src/lib/types/dialog';
 import '../../../src/dialogs/snapshots-dialog';
 import { atom } from 'nanostores';
 
@@ -255,4 +256,229 @@ describe('SnapshotsDialog', () => {
         const result = (element as any)._formatDate('short');
         expect(result).toBe('short');
     });
+});
+
+describe('Vision Checkup tab', () => {
+  let element: SnapshotsDialog;
+  let mockStore: any;
+  let mockDataService: any;
+  let mockUi: any;
+  let mockVisionHistory: VisionCheckupResult[];
+
+  beforeEach(async () => {
+    mockDataService = {
+      getSnapshots: vi.fn().mockResolvedValue({ snapshots: [] }),
+      captureSnapshot: vi.fn(),
+    };
+
+    mockUi = {
+      closeDialog: vi.fn(),
+      showToast: vi.fn(),
+    };
+
+    mockStore = {
+      dataService: mockDataService,
+      ui: mockUi,
+    };
+
+    mockVisionHistory = [
+      {
+        timestamp: '20240101_120000',
+        check_type: 'manual',
+        analysis: 'Plants look healthy overall.',
+        issues_detected: ['slight_nitrogen_deficiency'],
+        severity: 'low',
+        recommendations: ['Increase nitrogen by 10%', 'Monitor for 48h'],
+        snapshot_paths: [],
+      },
+      {
+        timestamp: '20240101_060000',
+        check_type: 'early',
+        analysis: 'Good canopy coverage.',
+        issues_detected: [],
+        severity: 'none',
+        recommendations: [],
+        snapshot_paths: [],
+      },
+    ];
+    mockDataService.getVisionHistory = vi.fn().mockResolvedValue({ history: mockVisionHistory, total: 2 });
+    mockDataService.triggerVisionCheckup = vi.fn();
+
+    element = new SnapshotsDialog();
+    (element as any).store = mockStore;
+    (element as any).hass = {
+      states: {},
+      connection: {
+        sendMessagePromise: vi.fn(),
+      },
+    } as any;
+
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    if (element && element.isConnected) {
+      document.body.removeChild(element);
+    }
+  });
+
+  it('renders tab bar with Snapshots and Vision Checkup tabs', async () => {
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    expect(tabs?.length).toBe(2);
+    expect(tabs?.[0].textContent?.trim()).toContain('Snapshots');
+    expect(tabs?.[1].textContent?.trim()).toContain('Vision Checkup');
+  });
+
+  it('shows Vision Checkup tab content when clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    const visionTab = element.shadowRoot?.querySelector('.vision-tab');
+    expect(visionTab).toBeTruthy();
+  });
+
+  it('fetches vision history when Vision tab is opened', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(mockDataService.getVisionHistory).toHaveBeenCalledWith('gs1');
+  });
+
+  it('renders latest result panel with severity chip and analysis', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const chip = element.shadowRoot?.querySelector('.severity-chip');
+    expect(chip?.textContent?.trim().toLowerCase()).toContain('low');
+    const analysis = element.shadowRoot?.querySelector('.analysis-text');
+    expect(analysis?.textContent).toContain('Plants look healthy');
+  });
+
+  it('renders issues as chips', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const chips = element.shadowRoot?.querySelectorAll('.issue-chip');
+    expect(chips?.length).toBe(1);
+    expect(chips?.[0].textContent?.trim()).toBe('slight_nitrogen_deficiency');
+  });
+
+  it('renders recommendations as numbered list', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const recs = element.shadowRoot?.querySelectorAll('.recommendation-item');
+    expect(recs?.length).toBe(2);
+  });
+
+  it('renders history list with compact rows', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const rows = element.shadowRoot?.querySelectorAll('.history-row');
+    expect(rows?.length).toBe(2);
+  });
+
+  it('clicking history row updates the result panel', async () => {
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const rows = element.shadowRoot?.querySelectorAll('.history-row');
+    (rows?.[1] as HTMLElement).click();
+    await element.updateComplete;
+
+    const analysis = element.shadowRoot?.querySelector('.analysis-text');
+    expect(analysis?.textContent).toContain('Good canopy coverage');
+  });
+
+  it('shows empty state when no vision history', async () => {
+    mockDataService.getVisionHistory = vi.fn().mockResolvedValue({ history: [], total: 0 });
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const empty = element.shadowRoot?.querySelector('.vision-empty-state');
+    expect(empty).toBeTruthy();
+  });
+
+  it('Run Checkup Now button calls triggerVisionCheckup and refreshes', async () => {
+    const mockResult = { ...mockVisionHistory[0] };
+    mockDataService.triggerVisionCheckup = vi.fn().mockResolvedValue(mockResult);
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+
+    const runBtn = element.shadowRoot?.querySelector('.run-checkup-btn');
+    (runBtn as HTMLElement).click();
+    await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(mockDataService.triggerVisionCheckup).toHaveBeenCalledWith('gs1');
+    expect(mockDataService.getVisionHistory).toHaveBeenCalled();
+  });
+
+  it('handles error from triggerVisionCheckup', async () => {
+    mockDataService.triggerVisionCheckup = vi.fn().mockRejectedValue(new Error('No cameras'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    element.dialogState = { growspaceId: 'gs1' };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    (tabs?.[1] as HTMLElement).click();
+    await element.updateComplete;
+
+    const runBtn = element.shadowRoot?.querySelector('.run-checkup-btn');
+    (runBtn as HTMLElement).click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(mockUi.showToast).toHaveBeenCalledWith('Failed to run vision checkup', 'error');
+    consoleSpy.mockRestore();
+  });
 });
