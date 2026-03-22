@@ -5319,6 +5319,8 @@ const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
 const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
 const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
+const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
+const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
 // Home Assistant services
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
@@ -5367,6 +5369,7 @@ const SERVICES = {
     REMOVE_ENVIRONMENT: 'remove_environment',
     RESET_WATER_TRACKING: 'reset_water_tracking',
     UPDATE_STRAIN_META: 'update_strain_meta',
+    TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -6779,6 +6782,56 @@ class CameraAPI extends BaseAPI {
     }
 }
 
+class VisionAPI extends BaseAPI {
+    async getVisionHistory(growspaceId, limit = 10) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_VISION_HISTORY,
+                growspace_id: growspaceId,
+                limit,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to get vision history for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    async triggerVisionCheckup(growspaceId) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: SERVICES.TRIGGER_VISION_CHECKUP,
+                service_data: { growspace_id: growspaceId },
+                return_response: true,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to trigger vision checkup for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    async updateVisionCheckupConfig(growspaceId, config) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG,
+                growspace_id: growspaceId,
+                ...config,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to update vision config for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+}
+
 class ReportAPI extends BaseAPI {
     /**
      * Generates and triggers export of a grow report for a specific growspace.
@@ -6917,6 +6970,12 @@ let DataService$1 = class DataService {
         this.captureSnapshot = (growspaceId) => this._cameraAPI.captureSnapshot(growspaceId);
         this.getSnapshots = (growspaceId, limit, offset) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
         // ========================================
+        // Vision API Delegations
+        // ========================================
+        this.getVisionHistory = (growspaceId, limit) => this._visionAPI.getVisionHistory(growspaceId, limit);
+        this.triggerVisionCheckup = (growspaceId) => this._visionAPI.triggerVisionCheckup(growspaceId);
+        this.updateVisionCheckupConfig = (growspaceId, config) => this._visionAPI.updateVisionCheckupConfig(growspaceId, config);
+        // ========================================
         // Report API Delegations
         // ========================================
         this.exportGrowReport = (growspaceId, format) => this._reportAPI.exportGrowReport(growspaceId, format);
@@ -6930,6 +6989,7 @@ let DataService$1 = class DataService {
         this._irrigationAPI = new IrrigationAPI(hass);
         this._aiAPI = new AIAPI(hass);
         this._cameraAPI = new CameraAPI(hass);
+        this._visionAPI = new VisionAPI(hass);
         this._reportAPI = new ReportAPI(hass);
         if (hass) {
             this.hass = hass;
@@ -6949,6 +7009,7 @@ let DataService$1 = class DataService {
             this._irrigationAPI,
             this._aiAPI,
             this._cameraAPI,
+            this._visionAPI,
             this._reportAPI,
         ].forEach((api) => api.updateHass(hass));
     }
@@ -28350,6 +28411,11 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         this._snapshots = [];
         this._isLoading = false;
         this._isCapturing = false;
+        this._activeTab = 'snapshots';
+        this._visionHistory = [];
+        this._selectedResult = null;
+        this._isLoadingVision = false;
+        this._isRunningCheckup = false;
     }
     willUpdate(changedProperties) {
         const opened = changedProperties.has('open') && this.open;
@@ -28400,6 +28466,42 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             this._isCapturing = false;
         }
     }
+    async _fetchVisionHistory() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isLoadingVision = true;
+        try {
+            const response = await this.store.dataService.getVisionHistory(this.dialogState.growspaceId);
+            if (response) {
+                this._visionHistory = response.history || [];
+                this._selectedResult = this._visionHistory[0] ?? null;
+            }
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to fetch vision history:', err);
+            this.store.ui.showToast('Failed to load vision history', 'error');
+        }
+        finally {
+            this._isLoadingVision = false;
+        }
+    }
+    async _runVisionCheckup() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isRunningCheckup = true;
+        try {
+            await this.store.dataService.triggerVisionCheckup(this.dialogState.growspaceId);
+            this.store.ui.showToast('Vision checkup complete', 'success');
+            await this._fetchVisionHistory();
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
+            this.store.ui.showToast('Failed to run vision checkup', 'error');
+        }
+        finally {
+            this._isRunningCheckup = false;
+        }
+    }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
@@ -28414,6 +28516,81 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             return `${year}-${month}-${day} ${hh}:${mm}`;
         }
         return timestampStr;
+    }
+    _renderTabBar() {
+        return x `
+            <div class="tab-bar">
+                <button class="tab-btn ${this._activeTab === 'snapshots' ? 'active' : ''}"
+                    @click=${() => { this._activeTab = 'snapshots'; }}>Snapshots</button>
+                <button class="tab-btn ${this._activeTab === 'vision' ? 'active' : ''}"
+                    @click=${() => { this._activeTab = 'vision'; this._fetchVisionHistory(); }}>Vision Checkup</button>
+            </div>
+        `;
+    }
+    _renderVisionTab() {
+        const SEVERITY_COLORS = {
+            none: 'var(--secondary-text-color)',
+            low: 'var(--success-color, #4caf50)',
+            medium: 'var(--warning-color, #ff9800)',
+            high: 'var(--error-color, #f44336)',
+            critical: '#b71c1c',
+        };
+        const r = this._selectedResult;
+        return x `
+            <div class="vision-tab">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+                    <md3-button class="run-checkup-btn"
+                        @click=${this._runVisionCheckup}
+                        ?disabled=${this._isRunningCheckup}>
+                        ${this._isRunningCheckup ? 'Running...' : 'Run Checkup Now'}
+                    </md3-button>
+                </div>
+                ${this._isLoadingVision
+            ? x `<div style="text-align:center;padding:32px;"><ha-circular-progress active></ha-circular-progress></div>`
+            : !r
+                ? x `<div class="vision-empty-state"><p>No vision checkups yet. Click "Run Checkup Now" to start.</p></div>`
+                : x `
+                            <div class="latest-result">
+                                <div class="result-header" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                                    <span class="severity-chip" style="background:${SEVERITY_COLORS[r.severity] ?? 'gray'};color:#fff;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${r.severity}</span>
+                                    <span style="text-transform:capitalize;opacity:0.7;">${r.check_type} check</span>
+                                    <span style="opacity:0.5;font-size:0.8rem;">${this._formatDate(r.timestamp)}</span>
+                                </div>
+                                <p class="analysis-text" style="margin:0 0 12px;line-height:1.6;">${r.analysis}</p>
+                                ${r.issues_detected.length > 0 ? x `
+                                    <div style="margin-bottom:12px;">
+                                        <strong style="font-size:0.85rem;">Issues detected</strong>
+                                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                                            ${r.issues_detected.map(i => x `<span class="issue-chip" style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius:10px;padding:2px 10px;font-size:0.8rem;">${i}</span>`)}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${r.recommendations.length > 0 ? x `
+                                    <div>
+                                        <strong style="font-size:0.85rem;">Recommendations</strong>
+                                        <ol style="margin:8px 0 0 16px;padding:0;">
+                                            ${r.recommendations.map(rec => x `<li class="recommendation-item" style="margin-bottom:4px;font-size:0.9rem;">${rec}</li>`)}
+                                        </ol>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${this._visionHistory.length > 1 ? x `
+                                <div style="margin-top:24px;border-top:1px solid var(--divider-color);padding-top:12px;">
+                                    <strong style="font-size:0.85rem;opacity:0.7;">History</strong>
+                                    ${this._visionHistory.map(entry => x `
+                                        <div class="history-row"
+                                            style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius:8px;background:${this._selectedResult === entry ? 'rgba(255,255,255,0.05)' : 'transparent'};"
+                                            @click=${() => { this._selectedResult = entry; }}>
+                                            <span style="font-size:0.8rem;opacity:0.6;">${this._formatDate(entry.timestamp)}</span>
+                                            <span style="text-transform:capitalize;font-size:0.8rem;opacity:0.7;">${entry.check_type}</span>
+                                            <span style="background:${SEVERITY_COLORS[entry.severity]};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;">${entry.severity}</span>
+                                        </div>
+                                    `)}
+                                </div>
+                            ` : ''}
+                        `}
+            </div>
+        `;
     }
     render() {
         return x `
@@ -28445,51 +28622,57 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                 </div>
 
                 <div class="dialog-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <p style="opacity: 0.7; margin: 0;">View recent camera captures from your growspace.</p>
-                        <md3-button
-                            @click=${this._captureSnapshot}
-                            ?disabled=${this._isCapturing}
-                            style="--md-sys-color-primary: var(--primary-color);"
-                        >
-                            <ha-svg-icon .path=${mdiCamera} slot="icon"></ha-svg-icon>
-                            ${this._isCapturing ? 'Capturing...' : 'Capture Now'}
-                        </md3-button>
-                    </div>
+                    ${this._renderTabBar()}
 
-                    ${this._isLoading && this._snapshots.length === 0
+                    ${this._activeTab === 'snapshots' ? x `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <p style="opacity: 0.7; margin: 0;">View recent camera captures from your growspace.</p>
+                                <md3-button
+                                    @click=${this._captureSnapshot}
+                                    ?disabled=${this._isCapturing}
+                                    style="--md-sys-color-primary: var(--primary-color);"
+                                >
+                                    <ha-svg-icon .path=${mdiCamera} slot="icon"></ha-svg-icon>
+                                    ${this._isCapturing ? 'Capturing...' : 'Capture Now'}
+                                </md3-button>
+                            </div>
+
+                            ${this._isLoading && this._snapshots.length === 0
             ? x `<div style="text-align: center; padding: 40px;">
-                                <ha-circular-progress active></ha-circular-progress>
-                            </div>`
+                                    <ha-circular-progress active></ha-circular-progress>
+                                </div>`
             : this._snapshots.length > 0
                 ? x `
-                                <div class="snapshots-grid">
-                                    ${this._snapshots.map((snapshot) => x `
-                                            <div class="snapshot-card">
-                                                <img
-                                                    src="${snapshot.path}"
-                                                    class="snapshot-image"
-                                                    alt="Camera Snapshot"
-                                                    loading="lazy"
-                                                    onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
-                                                />
-                                                <div class="snapshot-info">
-                                                    <span>${this._formatDate(snapshot.timestamp)}</span>
+                                    <div class="snapshots-grid">
+                                        ${this._snapshots.map((snapshot) => x `
+                                                <div class="snapshot-card">
+                                                    <img
+                                                        src="${snapshot.path}"
+                                                        class="snapshot-image"
+                                                        alt="Camera Snapshot"
+                                                        loading="lazy"
+                                                        onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
+                                                    />
+                                                    <div class="snapshot-info">
+                                                        <span>${this._formatDate(snapshot.timestamp)}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        `)}
-                                </div>
-                            `
+                                            `)}
+                                    </div>
+                                `
                 : x `
-                                <div class="empty-state">
-                                    <ha-svg-icon
-                                        .path=${mdiCamera}
-                                        style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
-                                    ></ha-svg-icon>
-                                    <h3>No Snapshots Found</h3>
-                                    <p>Click "Capture Now" to take a picture using your configured cameras.</p>
-                                </div>
-                            `}
+                                    <div class="empty-state">
+                                        <ha-svg-icon
+                                            .path=${mdiCamera}
+                                            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+                                        ></ha-svg-icon>
+                                        <h3>No Snapshots Found</h3>
+                                        <p>Click "Capture Now" to take a picture using your configured cameras.</p>
+                                    </div>
+                                `}
+                        </div>
+                    ` : this._renderVisionTab()}
                 </div>
             </ha-dialog>
         `;
@@ -28542,6 +28725,27 @@ SnapshotsDialog.styles = [
         gap: 8px;
         align-items: center;
       }
+      .tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        margin-bottom: 16px;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      .tab-btn.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+      }
     `,
 ];
 __decorate([
@@ -28568,6 +28772,21 @@ __decorate([
 __decorate([
     r$2()
 ], SnapshotsDialog.prototype, "_isCapturing", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_visionHistory", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_selectedResult", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isLoadingVision", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isRunningCheckup", void 0);
 SnapshotsDialog = __decorate([
     t$2('snapshots-dialog')
 ], SnapshotsDialog);
