@@ -354,27 +354,69 @@ describe('GrowspaceHeaderActions', () => {
             await elementUpdated(element);
             const menuItems = element.shadowRoot?.querySelectorAll('.menu-item');
 
-            // Re-render to ensure we have all items
-            expect(menuItems?.length).toBeGreaterThan(5);
+            // Plant Actions (0-3), Setup (4-7), Insights (8-11) = 12 items
+            expect(menuItems?.length).toBe(12);
 
-            // Click each item once to cover the inline arrow functions
-            (menuItems?.[0] as HTMLElement).click(); // Settings
-            (menuItems?.[1] as HTMLElement).click(); // Edit
-            (menuItems?.[2] as HTMLElement).click(); // Heatmap
-            (menuItems?.[3] as HTMLElement).click(); // Water
-            (menuItems?.[4] as HTMLElement).click(); // Irrigation
-            (menuItems?.[5] as HTMLElement).click(); // IPM
-            (menuItems?.[6] as HTMLElement).click(); // Training
-            (menuItems?.[7] as HTMLElement).click(); // Add Plant
-            (menuItems?.[8] as HTMLElement).click(); // Strains
-            (menuItems?.[9] as HTMLElement).click(); // Logbook
-            (menuItems?.[10] as HTMLElement).click(); // Generate Report
-            (menuItems?.[11] as HTMLElement).click(); // Camera Snapshots
-            (menuItems?.[12] as HTMLElement).click(); // Ask AI
-            (menuItems?.[13] as HTMLElement).click(); // Nutrients
-            (menuItems?.[14] as HTMLElement).click(); // EC Ramp
+            (menuItems?.[0] as HTMLElement).click();  // Add Plant
+            (menuItems?.[1] as HTMLElement).click();  // Water
+            (menuItems?.[2] as HTMLElement).click();  // IPM
+            (menuItems?.[3] as HTMLElement).click();  // Training
+            (menuItems?.[4] as HTMLElement).click();  // Irrigation
+            (menuItems?.[5] as HTMLElement).click();  // Nutrients
+            (menuItems?.[6] as HTMLElement).click();  // EC Ramp Curves
+            (menuItems?.[7] as HTMLElement).click();  // Strains
+            (menuItems?.[8] as HTMLElement).click();  // Logbook
+            (menuItems?.[9] as HTMLElement).click();  // Generate Report
+            (menuItems?.[10] as HTMLElement).click(); // Camera Snapshots
+            (menuItems?.[11] as HTMLElement).click(); // Ask AI
 
             expect(mockStore.openGrowMasterDialog).toHaveBeenCalled();
+        });
+
+        it('should render header icon buttons for edit, heatmap, and settings', async () => {
+            await elementUpdated(element);
+            const editBtn = element.shadowRoot?.querySelector('[title="Edit Mode"]') as HTMLElement;
+            const heatmapBtn = element.shadowRoot?.querySelector('[title="3D Heatmap"]') as HTMLElement;
+            const settingsBtn = element.shadowRoot?.querySelector('[title="Settings"]') as HTMLElement;
+
+            expect(editBtn).toBeTruthy();
+            expect(heatmapBtn).toBeTruthy();
+            expect(settingsBtn).toBeTruthy();
+        });
+
+        it('should click header edit button to toggle edit mode', async () => {
+            await elementUpdated(element);
+            const editBtn = element.shadowRoot?.querySelector('[title="Edit Mode"]') as HTMLElement;
+            editBtn.click();
+            expect(mockStore.ui.setEditMode).toHaveBeenCalledWith(true);
+        });
+
+        it('should click header heatmap button to toggle heatmap mode', async () => {
+            await elementUpdated(element);
+            const heatmapBtn = element.shadowRoot?.querySelector('[title="3D Heatmap"]') as HTMLElement;
+            heatmapBtn.click();
+            expect(mockStore.ui.setViewMode).toHaveBeenCalledWith('heatmap');
+        });
+
+        it('should click header settings button to open config dialog', async () => {
+            await elementUpdated(element);
+            const settingsBtn = element.shadowRoot?.querySelector('[title="Settings"]') as HTMLElement;
+            settingsBtn.click();
+            expect(mockStore.openConfigDialog).toHaveBeenCalled();
+        });
+
+        it('should apply active class to edit button when edit mode is on', async () => {
+            mockStore.ui.$isEditMode.set(true);
+            await elementUpdated(element);
+            const editBtn = element.shadowRoot?.querySelector('[title="Edit Mode"]') as HTMLElement;
+            expect(editBtn.classList.contains('active')).toBe(true);
+        });
+
+        it('should apply active class to heatmap button when heatmap mode is active', async () => {
+            mockStore.ui.$viewMode.set('heatmap');
+            await elementUpdated(element);
+            const heatmapBtn = element.shadowRoot?.querySelector('[title="3D Heatmap"]') as HTMLElement;
+            expect(heatmapBtn.classList.contains('active')).toBe(true);
         });
 
         it('should cover inline drag handlers', async () => {
