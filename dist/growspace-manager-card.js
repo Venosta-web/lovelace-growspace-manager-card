@@ -40936,6 +40936,30 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
           `
             : ''}
 
+      <div
+        class="icon-button ${this._isEditModeController?.value ? 'active' : ''}"
+        @click=${() => this._triggerAction('edit')}
+        title="Edit Mode"
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+      </div>
+
+      <div
+        class="icon-button ${this._viewModeController?.value === ViewMode.HEATMAP ? 'active' : ''}"
+        @click=${() => this._triggerAction('heatmap')}
+        title="3D Heatmap"
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
+      </div>
+
+      <div
+        class="icon-button"
+        @click=${() => this._triggerAction('config')}
+        title="Settings"
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+      </div>
+
       <div class="menu-container">
         <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
@@ -40945,78 +40969,56 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
     `;
     }
     _renderMenu() {
+        const selectedCount = this._selectedPlantsController?.value?.size || 0;
         return x `
       <div id="header-menu" popover="auto" class="menu-dropdown">
-        <div class="menu-header">Configuration</div>
-        <div class="menu-item" @click=${() => this._triggerAction('config')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-          <span class="menu-item-label">Settings</span>
+        <div class="menu-header">Plant Actions</div>
+        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+          <span class="menu-item-label">Add Plant</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('edit')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-          <span class="menu-item-label">Edit Mode</span>
-          <div
-            class=${e({
-            'menu-toggle-switch': true,
-            active: this._isEditModeController?.value || false,
-        })}
-          ></div>
-        </div>
-
-        <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-          <span class="menu-item-label">3D Heatmap</span>
-          <div
-            class=${e({
-            'menu-toggle-switch': true,
-            active: this._viewModeController?.value === ViewMode.HEATMAP,
-        })}
-          ></div>
-        </div>
-
-        <div class="menu-divider"></div>
-
-        <div class="menu-header">Plant Care</div>
         <div class="menu-item" @click=${() => this._triggerAction('water')}>
           <svg viewBox="0 0 24 24"><path d="${mdiWaterPlus}"></path></svg>
           <span class="menu-item-label"
-            >${(this._selectedPlantsController?.value?.size || 0) > 0
-            ? 'Water Selected'
-            : 'Water Growspace'}</span
+            >${selectedCount > 0 ? 'Water Selected' : 'Water Growspace'}</span
           >
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-          <span class="menu-item-label">Irrigation</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('ipm')}>
           <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
           <span class="menu-item-label"
-            >${(this._selectedPlantsController?.value?.size || 0) > 0
-            ? 'Apply IPM to Selected'
-            : 'Log / Manage IPM'}</span
+            >${selectedCount > 0 ? 'Apply IPM to Selected' : 'Log / Manage IPM'}</span
           >
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('training')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
           <span class="menu-item-label"
-            >${(this._selectedPlantsController?.value?.size || 0) > 0
-            ? 'Train Selected'
-            : 'Log Training'}</span
+            >${selectedCount > 0 ? 'Train Selected' : 'Log Training'}</span
           >
         </div>
 
         <div class="menu-divider"></div>
 
-        <div class="menu-header">Tools</div>
-        <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-          <span class="menu-item-label">Add Plant</span>
+        <div class="menu-header">Setup</div>
+        <div class="menu-item" @click=${() => this._triggerAction('irrigation')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+          <span class="menu-item-label">Irrigation</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
+          <span class="menu-item-label">Nutrients</span>
+        </div>
+        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
+          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
+          <span class="menu-item-label">EC Ramp Curves</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
           <span class="menu-item-label">Strains</span>
         </div>
+
+        <div class="menu-divider"></div>
+
+        <div class="menu-header">Insights</div>
         <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
           <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
           <span class="menu-item-label">Logbook</span>
@@ -41032,16 +41034,6 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
         <div class="menu-item" @click=${() => this._triggerAction('ai')}>
           <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg>
           <span class="menu-item-label">Ask AI</span>
-        </div>
-        <div class="menu-divider"></div>
-        <div class="menu-header">Nutrition</div>
-        <div class="menu-item" @click=${() => this._triggerAction('nutrients')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
-          <span class="menu-item-label">Nutrients</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-          <span class="menu-item-label">EC Ramp Curves</span>
         </div>
       </div>
     `;
@@ -41091,7 +41083,8 @@ GrowspaceHeaderActions.styles = i$6 `
       fill: currentColor;
     }
 
-    .icon-button.mobile-link.active {
+    .icon-button.mobile-link.active,
+    .icon-button.active {
       background: var(--primary-color, #2196f3);
       border-color: var(--primary-color, #2196f3);
     }
@@ -41163,33 +41156,6 @@ GrowspaceHeaderActions.styles = i$6 `
       height: 1px;
       background: var(--divider-color, rgba(255, 255, 255, 0.1));
       margin: 4px 0;
-    }
-
-    .menu-toggle-switch {
-      width: 40px;
-      height: 20px;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
-      border-radius: 10px;
-      position: relative;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-    .menu-toggle-switch::after {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: transform 0.2s;
-    }
-    .menu-toggle-switch.active {
-      background: var(--primary-color, #03a9f4);
-    }
-    .menu-toggle-switch.active::after {
-      transform: translateX(20px);
     }
 
     @media (max-width: 600px) {
