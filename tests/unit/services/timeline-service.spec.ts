@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TimelineService, getTimelineService, type NotePayload } from '../../../src/services/timeline-service';
-import type { HomeAssistant } from 'custom-card-helpers';
+
 
 describe('TimelineService', () => {
     let mockHass: any;
@@ -169,6 +169,112 @@ describe('TimelineService', () => {
                 type: 'growspace_manager/remove_timeline_event',
                 event_id: 456,
             });
+        });
+    });
+
+    describe('fetchPlantEvents', () => {
+        it('should fetch plant events successfully', async () => {
+            const mockLogs = [
+                { event_id: '1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
+            ];
+            const mockAlerts = [
+                { event_id: '2', timestamp: '2026-01-15T11:00:00Z', category: 'alert' },
+            ];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') {
+                    return { plant_123: mockLogs };
+                }
+                return { plant_123: mockAlerts };
+            });
+
+            const result = await service.fetchPlantEvents('plant_123', 'gs_abc');
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/get_log',
+                plant_id: 'plant_123',
+                growspace_id: 'gs_abc',
+                limit: 50,
+            });
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/get_alerts',
+                plant_id: 'plant_123',
+                growspace_id: 'gs_abc',
+                limit: 300,
+            });
+            // Should be sorted newest first: alert (11:00) before log (10:00)
+            expect(result[0].event_id).toBe('2');
+            expect(result[1].event_id).toBe('1');
+        });
+
+        it('should use custom limit when provided', async () => {
+            mockHass.callWS.mockResolvedValue({ plant_123: [] });
+
+            await service.fetchPlantEvents('plant_123', 'gs_abc', 100);
+
+            expect(mockHass.callWS).toHaveBeenCalledWith(
+                expect.objectContaining({ limit: 100 }),
+            );
+        });
+
+        it('should return empty array when response is null', async () => {
+            mockHass.callWS.mockResolvedValue(null);
+
+            const result = await service.fetchPlantEvents('plant_123', 'gs_abc');
+
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array when plant_id not in response', async () => {
+            mockHass.callWS.mockResolvedValue({ other_plant: [] });
+
+            const result = await service.fetchPlantEvents('plant_123', 'gs_abc');
+
+            expect(result).toEqual([]);
+        });
+
+        it('should sort combined events by timestamp descending', async () => {
+            const logs = [
+                { event_id: 'a', timestamp: '2026-01-15T08:00:00Z', category: 'note' },
+                { event_id: 'c', timestamp: '2026-01-15T12:00:00Z', category: 'note' },
+            ];
+            const alerts = [
+                { event_id: 'b', timestamp: '2026-01-15T10:00:00Z', category: 'alert' },
+            ];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') return { p1: logs };
+                return { p1: alerts };
+            });
+
+            const result = await service.fetchPlantEvents('p1', 'gs1');
+
+            expect(result.map((e: any) => e.event_id)).toEqual(['c', 'b', 'a']);
+        });
+
+        it('should sort using start_time when timestamp is absent', async () => {
+            const logs = [{ event_id: 'x', start_time: '2026-01-15T09:00:00Z', category: 'note' }];
+            const alerts = [{ event_id: 'y', start_time: '2026-01-15T11:00:00Z', category: 'alert' }];
+
+            mockHass.callWS.mockImplementation(async (msg: any) => {
+                if (msg.type === 'growspace_manager/get_log') return { p2: logs };
+                return { p2: alerts };
+            });
+
+            const result = await service.fetchPlantEvents('p2', 'gs1');
+
+            expect(result[0].event_id).toBe('y');
+            expect(result[1].event_id).toBe('x');
+        });
+
+        it('should rethrow errors', async () => {
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            mockHass.callWS.mockRejectedValue(new Error('WS plant error'));
+
+            await expect(service.fetchPlantEvents('plant_123', 'gs_abc')).rejects.toThrow('WS plant error');
+
+            expect(consoleErrorSpy).toHaveBeenCalled();
+            consoleErrorSpy.mockRestore();
         });
     });
 

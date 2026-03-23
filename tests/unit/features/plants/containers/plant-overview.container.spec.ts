@@ -148,7 +148,7 @@ describe('PlantOverviewContainer', () => {
 
     const actionsTab = element.shadowRoot!.querySelector('plant-actions-tab');
     expect(actionsTab).toBeTruthy();
-    
+
     actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'water' } }));
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'WATERING',
@@ -160,6 +160,90 @@ describe('PlantOverviewContainer', () => {
       type: 'TAKE_CLONE',
       payload: { sourcePlant: mockPlant, defaultGrowspaceId: 'space_1' }
     });
+  });
+
+  it('should handle training, ipm, and print_label action clicks', async () => {
+    element['_activeTab'] = 'actions';
+    await element.updateComplete;
+
+    const actionsTab = element.shadowRoot!.querySelector('plant-actions-tab');
+    expect(actionsTab).toBeTruthy();
+
+    actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'training' } }));
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'TRAINING',
+      payload: { isOpen: true, plantIds: ['plant_1'], growspaceId: 'space_1' },
+    });
+
+    actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'ipm' } }));
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'IPM',
+      payload: { plantIds: ['plant_1'], growspaceId: 'space_1' },
+    });
+
+    actionsTab!.dispatchEvent(new CustomEvent('action-click', { detail: { actionId: 'print_label' } }));
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'PRINT_LABEL',
+      payload: { plantId: 'plant_1' },
+    });
+  });
+
+  it('should toggle showAllDates when toggle-dates event is dispatched', async () => {
+    const dashboardTab = element.shadowRoot!.querySelector('plant-dashboard-tab');
+    expect(dashboardTab).toBeTruthy();
+
+    expect(element['_showAllDates']).toBe(false);
+
+    dashboardTab!.dispatchEvent(new CustomEvent('toggle-dates'));
+    await element.updateComplete;
+
+    expect(element['_showAllDates']).toBe(true);
+
+    dashboardTab!.dispatchEvent(new CustomEvent('toggle-dates'));
+    await element.updateComplete;
+
+    expect(element['_showAllDates']).toBe(false);
+  });
+
+  it('should switch back to dashboard tab from another tab', async () => {
+    const tabs = element.shadowRoot!.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+
+    // Navigate away from dashboard first
+    tabs[1].click();
+    await element.updateComplete;
+    expect(tabs[1].classList.contains('active')).toBe(true);
+
+    // Click dashboard tab to return
+    tabs[0].click();
+    await element.updateComplete;
+
+    expect(tabs[0].classList.contains('active')).toBe(true);
+    expect(element.shadowRoot!.querySelector('plant-dashboard-tab')).toBeTruthy();
+  });
+
+  it('should create viewmodel in connectedCallback when plant is pre-set before DOM insertion', async () => {
+    const WrapperPreset = class extends HTMLElement {
+      private hassProvider = new ContextProvider(this, { context: hassContext, initialValue: mockHass });
+      private storeProvider = new ContextProvider(this, { context: storeContext, initialValue: mockStore });
+
+      connectedCallback() {
+        const el = document.createElement('plant-overview-container') as PlantOverviewContainer;
+        el.plant = mockPlant;
+        el.editedAttributes = {};
+        this.appendChild(el);
+      }
+    };
+    if (!customElements.get('test-wrapper-preset')) {
+      customElements.define('test-wrapper-preset', WrapperPreset);
+    }
+
+    const wrapper = await fixture(html`<test-wrapper-preset></test-wrapper-preset>`);
+    const el = wrapper.querySelector('plant-overview-container') as PlantOverviewContainer;
+    await el.updateComplete;
+
+    // ViewModel was created in connectedCallback, so dialog should render
+    const dialog = el.shadowRoot!.querySelector('ha-dialog');
+    expect(dialog).toBeTruthy();
   });
 
   it('should open Strain Editor from header button', async () => {
