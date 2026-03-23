@@ -14,6 +14,7 @@ import {
   mdiGauge,
   mdiFan,
   mdiAlert,
+  mdiEye,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -267,6 +268,43 @@ export class ConfigDialog extends LitElement {
         position: relative;
         z-index: 5;
         margin-bottom: 20px;
+      }
+
+      /* Vertical stack of row-col-grids with consistent gap */
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      /* Remove bottom margins when gap handles spacing */
+      .form-section .entity-select-container,
+      .form-section .multi-select-container {
+        margin-bottom: 0;
+      }
+
+      /* Remove inner md3-input-group margin to prevent double spacing */
+      .entity-select-container .md3-input-group {
+        margin-bottom: 0;
+      }
+
+      /* Checkbox row in detail cards */
+      .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.875rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
       }
     `,
   ];
@@ -1057,54 +1095,55 @@ export class ConfigDialog extends LitElement {
             <h3 style="margin:0; border:none; padding:0;">Monitoring</h3>
           </div>
 
-          <div class="row-col-grid">
-            ${this._renderEntitySelect(
+          <div class="form-section">
+            <div class="row-col-grid">
+              ${this._renderEntitySelect(
       'Temperature Sensor',
       this.envTemperatureSensor,
       ['sensor', 'input_number'],
       'temperature',
       (e: CustomEvent) => (this.envTemperatureSensor = e.detail.value)
     )}
-            ${this._renderEntitySelect(
+              ${this._renderEntitySelect(
       'Humidity Sensor',
       this.envHumiditySensor,
       ['sensor', 'input_number'],
       'humidity',
       (e: CustomEvent) => (this.envHumiditySensor = e.detail.value)
     )}
-          </div>
-          <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderEntitySelect(
+            </div>
+            <div class="row-col-grid">
+              ${this._renderEntitySelect(
       'VPD Sensor (Optional)',
       this.envVpdSensor,
       ['sensor', 'input_number'],
       'pressure',
       (e: CustomEvent) => (this.envVpdSensor = e.detail.value)
     )}
-            ${this._renderEntitySelect(
+              ${this._renderEntitySelect(
       'Soil Moisture Sensor',
       this.envSoilMoistureSensor,
       ['sensor', 'input_number'],
       'moisture',
       (e: CustomEvent) => (this.envSoilMoistureSensor = e.detail.value)
     )}
-          </div>
-
-          <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderEntitySelect(
+            </div>
+            <div class="row-col-grid">
+              ${this._renderEntitySelect(
       'CO2 Sensor',
       this.envCo2Sensor,
       ['sensor', 'input_number'],
       'carbon_dioxide',
       (e: CustomEvent) => (this.envCo2Sensor = e.detail.value)
     )}
-            ${this._renderMultiEntitySelect(
+              ${this._renderMultiEntitySelect(
       'Light Source / Sensor',
       this.envLightSensors,
       ['switch', 'light', 'input_boolean', 'sensor'],
       null,
       (values: string[]) => (this.envLightSensors = values)
     )}
+            </div>
           </div>
         </div>
 
@@ -1122,60 +1161,56 @@ export class ConfigDialog extends LitElement {
             <h3 style="margin:0; border:none; padding:0;">Climate Control</h3>
           </div>
 
-          <div class="row-col-grid">
-            ${this._renderMultiEntitySelect(
+          <div class="form-section">
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
       'Exhaust Fan / Switch',
       this.envExhaustFanEntities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (values: string[]) => (this.envExhaustFanEntities = values)
     )}
-            ${this._renderMultiEntitySelect(
+              ${this._renderMultiEntitySelect(
       'Circulation Fan / Switch',
       this.envCirculationFanEntities,
       ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
       null,
       (values: string[]) => (this.envCirculationFanEntities = values)
     )}
-          </div>
-
-          <div class="row-col-grid" style="margin-top:16px;">
-            ${this._renderMultiEntitySelect(
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
       'Humidifier',
       this.envHumidifierEntities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
       null,
       (values: string[]) => (this.envHumidifierEntities = values)
     )}
-            ${this._renderMultiEntitySelect(
+              ${this._renderMultiEntitySelect(
       'Dehumidifier',
       this.envDehumidifierEntities,
       ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
       null,
       (values: string[]) => (this.envDehumidifierEntities = values)
     )}
-          </div>
-
-          <div
-            class="md3-input-group"
-            style=" display:flex; justify-content:space-between; align-items:center; margin-top:16px;"
-          >
-            <button
-              class="md3-button tonal error"
-              @click=${this._handleRemoveEnvironment}
-              ?disabled=${!this.envSelectedId}
-            >
-              Remove Environment
-            </button>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <input
-                type="checkbox"
-                .checked=${this.envDehumidifierControlEnabled}
-                @change=${(e: Event) =>
+            </div>
+            <div class="control-row">
+              <button
+                class="md3-button tonal error"
+                @click=${this._handleRemoveEnvironment}
+                ?disabled=${!this.envSelectedId}
+              >
+                Remove Environment
+              </button>
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  .checked=${this.envDehumidifierControlEnabled}
+                  @change=${(e: Event) =>
         (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
-                style="width:20px; height:20px;"
-              />
-              <label class="md3-label" style="margin:0"> Control Dehumidifier </label>
+                />
+                Control Dehumidifier
+              </label>
             </div>
           </div>
         </div>
@@ -1211,38 +1246,50 @@ export class ConfigDialog extends LitElement {
 
         <!--Vision Checkup Section-->
         <div class="detail-card vision-checkup-section">
-          <h3 style="margin:0 0 12px;font-size:1rem;">Vision Checkup</h3>
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24">
+              <path d="${mdiEye}"></path>
+            </svg>
+            <h3 style="margin:0; border:none; padding:0;">Vision Checkup</h3>
+          </div>
           ${this.envVisionCameraEntities.length === 0
             ? html`<p class="vision-no-cameras-info" style="opacity:0.6;font-size:0.85rem;margin:0;">Configure camera entities first to enable vision checkups.</p>`
             : html`
-              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-                <label style="font-size:0.9rem;">Enable automatic vision checkups</label>
-                <input type="checkbox" class="vision-enabled-toggle"
-                  .checked=${this.envVisionEnabled}
-                  @change=${(e: Event) => { this.envVisionEnabled = (e.target as HTMLInputElement).checked; }}>
-              </div>
-              <md3-number-input
-                label="Early check offset (min after lights on)"
-                .value=${this.envVisionEarlyOffset}
-                @value-changed=${(e: CustomEvent) => { this.envVisionEarlyOffset = e.detail.value; }}
-                min="1">
-              </md3-number-input>
-              <md3-number-input
-                label="Mid check (hours into light cycle)"
-                .value=${this.envVisionMidHours}
-                @value-changed=${(e: CustomEvent) => { this.envVisionMidHours = e.detail.value; }}
-                min="1">
-              </md3-number-input>
-              <md3-number-input
-                label="Late check offset (min before lights off)"
-                .value=${this.envVisionLateOffset}
-                @value-changed=${(e: CustomEvent) => { this.envVisionLateOffset = e.detail.value; }}
-                min="1">
-              </md3-number-input>
-              <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-                <button class="md3-button primary vision-save-btn" @click=${this._submitVisionCheckupConfig}>
-                  Save Vision Config
-                </button>
+              <div class="form-section">
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    class="vision-enabled-toggle"
+                    .checked=${this.envVisionEnabled}
+                    @change=${(e: Event) => { this.envVisionEnabled = (e.target as HTMLInputElement).checked; }}
+                  />
+                  Enable automatic vision checkups
+                </label>
+                <md3-number-input
+                  label="Early check offset (min after lights on)"
+                  .value=${this.envVisionEarlyOffset}
+                  @change=${(e: CustomEvent) => { this.envVisionEarlyOffset = Number(e.detail); }}
+                  min="1">
+                </md3-number-input>
+                <md3-number-input
+                  label="Mid check (hours into light cycle)"
+                  .value=${this.envVisionMidHours}
+                  @change=${(e: CustomEvent) => { this.envVisionMidHours = Number(e.detail); }}
+                  min="1">
+                </md3-number-input>
+                <md3-number-input
+                  label="Late check offset (min before lights off)"
+                  .value=${this.envVisionLateOffset}
+                  @change=${(e: CustomEvent) => { this.envVisionLateOffset = Number(e.detail); }}
+                  min="1">
+                </md3-number-input>
+                <div style="display:flex;justify-content:flex-end;">
+                  <button class="md3-button primary vision-save-btn" @click=${this._submitVisionCheckupConfig}>
+                    Save Vision Config
+                  </button>
+                </div>
               </div>
             `
           }

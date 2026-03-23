@@ -86,6 +86,7 @@ export const dialogStyles = [
       display: flex;
       gap: 16px;
       flex-wrap: wrap;
+      align-items: flex-start;
     }
     .row-col-grid > * {
       flex: 1;
