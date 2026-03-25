@@ -14,6 +14,7 @@ import { AIAPI } from './api/ai-api';
 import { CameraAPI } from './api/camera-api';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
+import { GeneticsAPI } from './api/genetics-api';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
 
 /**
@@ -42,6 +43,7 @@ export class DataService {
   private _cameraAPI: CameraAPI;
   private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
+  private _geneticsAPI: GeneticsAPI;
 
   constructor(hass?: HomeAssistant) {
     // Initialize all API services
@@ -55,6 +57,7 @@ export class DataService {
     this._cameraAPI = new CameraAPI(hass);
     this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
+    this._geneticsAPI = new GeneticsAPI(hass);
 
     if (hass) {
       this.hass = hass;
@@ -77,6 +80,7 @@ export class DataService {
       this._cameraAPI,
       this._visionAPI,
       this._reportAPI,
+      this._geneticsAPI,
     ].forEach((api) => api.updateHass(hass));
   }
 
@@ -85,6 +89,13 @@ export class DataService {
    */
   get strainAPI(): StrainAPI {
     return this._strainAPI;
+  }
+
+  /**
+   * Expose GeneticsAPI for direct access to genetics operations.
+   */
+  get geneticsAPI(): GeneticsAPI {
+    return this._geneticsAPI;
   }
 
   // ========================================
@@ -471,6 +482,21 @@ export class DataService {
   exportGrowReport = (growspaceId: string, format?: string) => this._reportAPI.exportGrowReport(growspaceId, format);
 
   fetchGrowReport = (growspaceId: string) => this._reportAPI.fetchGrowReport(growspaceId);
+
+  // ========================================
+  // Genetics API Delegations
+  // ========================================
+
+  fetchGeneticsData = () => this._geneticsAPI.fetchGeneticsData();
+
+  addSeedBatch = (data: Parameters<GeneticsAPI['addSeedBatch']>[0]) =>
+    this._geneticsAPI.addSeedBatch(data);
+
+  logPollination = (data: Parameters<GeneticsAPI['logPollination']>[0]) =>
+    this._geneticsAPI.logPollination(data);
+
+  harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
+    this._geneticsAPI.harvestSeeds(data);
 
   // ========================================
   // Legacy/Generic Service Call Support
