@@ -24,7 +24,7 @@ import {
   mdiDotsVertical,
   mdiAccountGroup,
 } from '@mdi/js';
-import { StrainEntry, CropMeta } from '../types';
+import { StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -53,6 +53,24 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
   @state() private _pendingDeleteBreeder: string | null = null;
 
+  // Seeds & Genetics tab state
+  @property({ type: Array }) seedBatches: SeedBatch[] = [];
+  @property({ type: Array }) pollinationEvents: PollinationEvent[] = [];
+  @property({ type: String }) initialTab: 'strains' | 'seeds' = 'strains';
+  @property({ type: Function }) onSeedDataChanged?: () => void;
+
+  @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
+  @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
+  @state() private _selectedEventId: string | null = null;
+  @state() private _batchForm = {
+    strain_name: '', breeder: '', quantity: 1,
+    acquisition_date: '', generation: 'F1', lineage: '', notes: ''
+  };
+  @state() private _pollinationForm = {
+    date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
+  };
+  @state() private _harvestForm = { quantity: 1, notes: '' };
+
   // Pagination State
   @state() private _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
@@ -62,6 +80,12 @@ export class StrainLibraryDialog extends LitElement {
     // Auto-open editor if editingStrain is provided
     if (changedProps.has('editingStrain') && this.editingStrain) {
       this._startEdit(this.editingStrain);
+    }
+  }
+
+  updated(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('initialTab')) {
+      this._activeMainTab = this.initialTab;
     }
   }
 
@@ -669,6 +693,177 @@ export class StrainLibraryDialog extends LitElement {
         gap: 8px;
         flex-shrink: 0;
       }
+
+      /* Main tab bar */
+      .main-tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        background: var(--secondary-background-color, rgba(0,0,0,0.2));
+        flex-shrink: 0;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 14px 16px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.2s, border-color 0.2s;
+        font-family: inherit;
+      }
+      .tab-btn.active {
+        color: var(--accent-green, #4caf50);
+        border-bottom-color: var(--accent-green, #4caf50);
+      }
+      .tab-btn:hover:not(.active) {
+        color: var(--primary-text-color);
+      }
+
+      /* Seeds section */
+      .seeds-section {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .seeds-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 16px 0 12px 0;
+      }
+      .seeds-header:first-child {
+        margin-top: 0;
+      }
+      .seeds-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .seed-batch-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+      }
+      .seed-batch-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--primary-text-color);
+        margin-bottom: 4px;
+      }
+      .seed-batch-meta {
+        font-size: 0.82rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+      }
+      .seed-batch-lineage {
+        font-size: 0.8rem;
+        color: var(--accent-green, #4caf50);
+        margin-bottom: 4px;
+      }
+      .seed-batch-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .pollination-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pollination-date {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--primary-text-color);
+      }
+      .pollination-plants {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+      }
+      .pollination-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .badge.success {
+        background: rgba(76, 175, 80, 0.15);
+        color: var(--accent-green, #4caf50);
+      }
+      .empty-state {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        margin: 8px 0 16px 0;
+      }
+
+      /* Form view */
+      .form-view {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+      .form-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .form-view label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+      .form-view input {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.95rem;
+        outline: none;
+        font-family: inherit;
+      }
+      .form-view input:focus {
+        border-color: var(--accent-green, #4caf50);
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+      }
     `,
   ];
 
@@ -860,7 +1055,11 @@ export class StrainLibraryDialog extends LitElement {
         .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
-          ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
+          ${this._renderTabBar()}
+          ${this._activeMainTab === 'seeds'
+            ? this._renderSeedsTab()
+            : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())
+          }
         </div>
 
         ${this._isCropping ? this.renderCropOverlay() : nothing}
@@ -2191,6 +2390,235 @@ export class StrainLibraryDialog extends LitElement {
   private _cancelDeleteBreeder() {
     this._pendingDeleteBreeder = null;
   }
+
+  // ── Seeds & Genetics tab ──────────────────────────────────────────────────
+
+  private _renderTabBar(): TemplateResult {
+    return html`
+      <div class="main-tab-bar">
+        <button
+          class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'strains'; }}
+        >Strains</button>
+        <button
+          class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'seeds'; }}
+        >Seeds &amp; Genetics</button>
+      </div>
+    `;
+  }
+
+  private _renderSeedsTab(): TemplateResult {
+    if (this._seedSubView === 'add-batch') return this._renderAddBatchForm();
+    if (this._seedSubView === 'log-pollination') return this._renderLogPollinationForm();
+    if (this._seedSubView === 'harvest') return this._renderHarvestForm();
+    return this._renderSeedList();
+  }
+
+  private _renderSeedList(): TemplateResult {
+    return html`
+      <div class="seeds-section">
+        <div class="seeds-header">
+          <h3>Seed inventory</h3>
+          <button class="md3-button filled" @click=${() => { this._seedSubView = 'add-batch'; }}>
+            Add batch
+          </button>
+        </div>
+        ${this.seedBatches.length === 0
+          ? html`<p class="empty-state">No seed batches yet.</p>`
+          : this.seedBatches.map(b => html`
+              <div class="seed-batch-card">
+                <div class="seed-batch-name">${b.strain_name}</div>
+                <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
+                ${b.lineage ? html`<div class="seed-batch-lineage">${b.lineage}</div>` : nothing}
+                ${b.notes ? html`<div class="seed-batch-notes">${b.notes}</div>` : nothing}
+              </div>
+            `)
+        }
+
+        <div class="seeds-header">
+          <h3>Pollination log</h3>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'log-pollination'; }}>
+            Log pollination
+          </button>
+        </div>
+        ${this.pollinationEvents.length === 0
+          ? html`<p class="empty-state">No pollination events yet.</p>`
+          : this.pollinationEvents.map(e => html`
+              <div class="pollination-card">
+                <div class="pollination-date">${e.date}</div>
+                <div class="pollination-plants">Donor: ${e.donor_plant_id} × Receiver: ${e.receiver_plant_id}</div>
+                ${e.notes ? html`<div class="pollination-notes">${e.notes}</div>` : nothing}
+                ${e.result_seed_batch_id
+                  ? html`<span class="badge success">Seeds harvested</span>`
+                  : html`
+                      <button class="md3-button tonal" @click=${() => {
+                        this._selectedEventId = e.event_id;
+                        this._seedSubView = 'harvest';
+                      }}>Harvest seeds</button>
+                    `
+                }
+              </div>
+            `)
+        }
+      </div>
+    `;
+  }
+
+  private _renderAddBatchForm(): TemplateResult {
+    return html`
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
+          <h3>Add seed batch</h3>
+        </div>
+        <label>Strain name
+          <input type="text" .value=${this._batchForm.strain_name}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, strain_name: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Breeder
+          <input type="text" .value=${this._batchForm.breeder}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, breeder: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._batchForm.quantity)}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, quantity: parseInt((e.target as HTMLInputElement).value) || 1 }; }} />
+        </label>
+        <label>Acquisition date
+          <input type="date" .value=${this._batchForm.acquisition_date}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, acquisition_date: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Generation
+          <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, generation: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Lineage
+          <input type="text" placeholder="Strain A x Strain B" .value=${this._batchForm.lineage}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, lineage: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._batchForm.notes}
+            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, notes: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderLogPollinationForm(): TemplateResult {
+    return html`
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
+          <h3>Log pollination</h3>
+        </div>
+        <label>Date
+          <input type="date" .value=${this._pollinationForm.date}
+            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, date: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Donor plant ID
+          <input type="text" placeholder="Plant ID of donor" .value=${this._pollinationForm.donor_plant_id}
+            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Receiver plant ID
+          <input type="text" placeholder="Plant ID of receiver" .value=${this._pollinationForm.receiver_plant_id}
+            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._pollinationForm.notes}
+            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, notes: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderHarvestForm(): TemplateResult {
+    return html`
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>← Back</button>
+          <h3>Harvest seeds</h3>
+        </div>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._harvestForm.quantity)}
+            @input=${(e: Event) => { this._harvestForm = { ...this._harvestForm, quantity: parseInt((e.target as HTMLInputElement).value) || 1 }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._harvestForm.notes}
+            @input=${(e: Event) => { this._harvestForm = { ...this._harvestForm, notes: (e.target as HTMLInputElement).value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _submitAddBatch = async () => {
+    const f = this._batchForm;
+    if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) return;
+    try {
+      this.dispatchEvent(new CustomEvent('add-seed-batch', {
+        detail: {
+          strain_name: f.strain_name, breeder: f.breeder, quantity: f.quantity,
+          acquisition_date: f.acquisition_date, generation: f.generation,
+          lineage: f.lineage, notes: f.notes,
+        },
+        bubbles: true, composed: true,
+      }));
+      this._seedSubView = 'list';
+      this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', lineage: '', notes: '' };
+      this.onSeedDataChanged?.();
+    } catch (e) {
+      console.error('Failed to add seed batch', e);
+    }
+  };
+
+  private _submitLogPollination = async () => {
+    const f = this._pollinationForm;
+    if (!f.date || !f.donor_plant_id || !f.receiver_plant_id) return;
+    try {
+      this.dispatchEvent(new CustomEvent('log-pollination', {
+        detail: {
+          date: f.date, donor_plant_id: f.donor_plant_id,
+          receiver_plant_id: f.receiver_plant_id, notes: f.notes,
+        },
+        bubbles: true, composed: true,
+      }));
+      this._seedSubView = 'list';
+      this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
+      this.onSeedDataChanged?.();
+    } catch (e) {
+      console.error('Failed to log pollination', e);
+    }
+  };
+
+  private _submitHarvestSeeds = async () => {
+    if (!this._selectedEventId) return;
+    try {
+      this.dispatchEvent(new CustomEvent('harvest-seeds', {
+        detail: {
+          event_id: this._selectedEventId, quantity: this._harvestForm.quantity,
+          notes: this._harvestForm.notes,
+        },
+        bubbles: true, composed: true,
+      }));
+      this._seedSubView = 'list';
+      this._selectedEventId = null;
+      this._harvestForm = { quantity: 1, notes: '' };
+      this.onSeedDataChanged?.();
+    } catch (e) {
+      console.error('Failed to harvest seeds', e);
+    }
+  };
 
   private renderBreederDeleteConfirmation(): TemplateResult {
     const breederName = this._pendingDeleteBreeder!;
