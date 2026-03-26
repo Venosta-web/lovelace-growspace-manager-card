@@ -2435,6 +2435,27 @@ export class StrainLibraryDialog extends LitElement {
 
   private _renderSeedList(): TemplateResult {
     return html`
+      <div class="dialog-header">
+        <div class="dialog-icon">
+          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiLeaf}"></path>
+          </svg>
+        </div>
+        <div class="dialog-title-group">
+          <h2 class="dialog-title">Seeds &amp; Genetics</h2>
+        </div>
+        <div class="header-actions" style="display:flex; gap:8px;">
+          <button
+            class="md3-button text close"
+            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+            style="min-width:auto; padding:8px; margin-left: auto;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="seeds-section">
         <div class="seeds-header">
           <h3>Seed inventory</h3>
