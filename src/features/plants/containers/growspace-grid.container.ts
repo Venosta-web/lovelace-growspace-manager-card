@@ -23,8 +23,9 @@ import '../containers/plant-card.container';
 
 @customElement('growspace-grid-container')
 export class GrowspaceGridContainer extends LitElement {
-  @consume({ context: storeContext })
-  private store!: GrowspaceStore;
+  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
+  public store!: GrowspaceStore;
 
   /** 2D array of plants in grid layout */
   @property({ type: Array }) plants: (PlantEntity | null)[][] = [];

@@ -128,6 +128,8 @@ export class GrowspaceAdapter {
         isWarning: t.is_warning,
         hoursRemaining: t.hours_remaining ?? null,
         depletionStatus: t.depletion_status ?? null,
+        volumeLiters: t.volume_liters ?? null,
+        waterHistory: t.water_history ?? undefined,
       })),
       activeEvents: wsData.active_events,
       sensorCoordinates,

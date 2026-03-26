@@ -7,7 +7,6 @@ import { storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
-import type { GrowspaceDevice } from '../services/types';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
 import '../components/growspace-analytics';
@@ -78,6 +77,14 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
             this.store.updateHass(this.hass);
         }
         this.store.initializeSelectedDevice(this._config);
+
+        // The standalone analytics card has no header chips to toggle graphs,
+        // so default to the primary env metrics if none are active yet.
+        if (this.store.history.$activeEnvGraphs.get().size === 0) {
+            ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) =>
+                this.store.toggleEnvGraph(m)
+            );
+        }
     }
 
     disconnectedCallback() {

@@ -32,8 +32,9 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
   @property({ type: Boolean }) forceDraggable = false;
 
   // Store access
-  @consume({ context: storeContext })
-  private store!: GrowspaceStore;
+  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
+  public store!: GrowspaceStore;
 
   // ViewModel
   private viewModel!: ReadableAtom<PlantCardViewModel>;

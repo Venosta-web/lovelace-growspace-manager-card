@@ -61,6 +61,18 @@ export interface SerializedIrrigationConfig {
   veg_day_hours?: number;
 }
 
+export interface TankWaterEvent {
+  timestamp: string;
+  event_type: 'consumption' | 'refill';
+  pct_delta: number;
+  liters: number;
+}
+
+export interface TankWaterHistory {
+  snapshots: Array<{ timestamp: string; level_pct: number }>;
+  events: TankWaterEvent[];
+}
+
 export interface SerializedIrrigationTank {
   sensor_entity: string;
   name: string;
@@ -69,6 +81,8 @@ export interface SerializedIrrigationTank {
   is_warning: boolean;
   hours_remaining?: number | null;
   depletion_status?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
+  volume_liters?: number | null;
+  water_history?: TankWaterHistory;
 }
 
 export interface IrrigationTank {
@@ -79,6 +93,8 @@ export interface IrrigationTank {
   isWarning: boolean;
   hoursRemaining?: number | null;
   depletionStatus?: 'depleting' | 'refilling' | 'static' | 'insufficient_data' | null;
+  volumeLiters?: number | null;
+  waterHistory?: TankWaterHistory;
 }
 
 // --- New Feature Models ---

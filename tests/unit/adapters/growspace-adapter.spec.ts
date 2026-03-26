@@ -434,7 +434,9 @@ describe('GrowspaceAdapter', () => {
             fillLevel: 80,
             isWarning: false,
             hoursRemaining: null,
-            depletionStatus: null
+            depletionStatus: null,
+            volumeLiters: null,
+            waterHistory: undefined,
         });
     });
 
