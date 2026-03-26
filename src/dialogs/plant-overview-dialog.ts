@@ -581,6 +581,30 @@ export class PlantOverviewDialog extends LitElement {
         margin-top: 8px;
         text-align: center;
       }
+      .phenotype-card {
+        grid-column: 1 / -1;
+      }
+      .phenotype-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .phenotype-card-header h3 {
+        margin: 0;
+      }
+      .phenotype-form {
+        margin-top: 16px;
+      }
+      .phenotype-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
+      .score-grid--readonly {
+        margin-top: 12px;
+        pointer-events: none;
+        opacity: 0.7;
+      }
       .metrics-section {
         padding: 0;
       }
@@ -1357,20 +1381,20 @@ export class PlantOverviewDialog extends LitElement {
       </div>
 
       <!-- Score Phenotype section -->
-      <div class="detail-card" style="grid-column: 1 / -1;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin: 0;">Score Phenotype</h3>
+      <div class="detail-card phenotype-card">
+        <div class="phenotype-card-header">
+          <h3>Score Phenotype</h3>
           <button
             class="md3-button outlined"
             @click=${() => { this._showScoringForm = !this._showScoringForm; }}
           >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
         </div>
         ${this._showScoringForm ? html`
-          <div style="margin-top: 16px;">
+          <div class="phenotype-form">
             <div class="score-grid">
               ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
             </div>
-            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+            <div class="phenotype-form-actions">
               <button
                 class="md3-button filled"
                 @click=${() => this._savePhenotypeScore()}
@@ -1380,7 +1404,7 @@ export class PlantOverviewDialog extends LitElement {
           </div>
         ` : nothing}
         ${!this._showScoringForm ? html`
-          <div class="score-grid" style="margin-top: 12px; pointer-events: none; opacity: 0.7;">
+          <div class="score-grid score-grid--readonly">
             ${SCORE_DIMENSIONS.map(dim => {
               const val = this._scoresEdit[dim.key];
               return html`
@@ -1410,7 +1434,6 @@ export class PlantOverviewDialog extends LitElement {
         plant_id: plantId,
         ...this._scoresEdit,
       });
-      await new Promise(resolve => setTimeout(resolve, 300));
       await this.store.refreshData();
       this._showScoringForm = false;
     } catch (e) {

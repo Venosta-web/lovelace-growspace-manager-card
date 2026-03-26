@@ -14505,20 +14505,20 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
       </div>
 
       <!-- Score Phenotype section -->
-      <div class="detail-card" style="grid-column: 1 / -1;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3 style="margin: 0;">Score Phenotype</h3>
+      <div class="detail-card phenotype-card">
+        <div class="phenotype-card-header">
+          <h3>Score Phenotype</h3>
           <button
             class="md3-button outlined"
             @click=${() => { this._showScoringForm = !this._showScoringForm; }}
           >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
         </div>
         ${this._showScoringForm ? x `
-          <div style="margin-top: 16px;">
+          <div class="phenotype-form">
             <div class="score-grid">
               ${SCORE_DIMENSIONS$1.map(dim => this._renderScoreRow(dim))}
             </div>
-            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+            <div class="phenotype-form-actions">
               <button
                 class="md3-button filled"
                 @click=${() => this._savePhenotypeScore()}
@@ -14528,7 +14528,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
           </div>
         ` : E}
         ${!this._showScoringForm ? x `
-          <div class="score-grid" style="margin-top: 12px; pointer-events: none; opacity: 0.7;">
+          <div class="score-grid score-grid--readonly">
             ${SCORE_DIMENSIONS$1.map(dim => {
             const val = this._scoresEdit[dim.key];
             return x `
@@ -14558,13 +14558,12 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
                 plant_id: plantId,
                 ...this._scoresEdit,
             });
-            await new Promise(resolve => setTimeout(resolve, 300));
             await this.store.refreshData();
             this._showScoringForm = false;
         }
         catch (e) {
             console.error('Failed to save phenotype scores', e);
-            alert('Failed to save scores. Check your connection and try again.');
+            this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
         }
         finally {
             this._savingScore = false;
@@ -15253,6 +15252,30 @@ PlantOverviewDialog.styles = [
         opacity: 0.45;
         margin-top: 8px;
         text-align: center;
+      }
+      .phenotype-card {
+        grid-column: 1 / -1;
+      }
+      .phenotype-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .phenotype-card-header h3 {
+        margin: 0;
+      }
+      .phenotype-form {
+        margin-top: 16px;
+      }
+      .phenotype-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
+      .score-grid--readonly {
+        margin-top: 12px;
+        pointer-events: none;
+        opacity: 0.7;
       }
       .metrics-section {
         padding: 0;
@@ -17202,6 +17225,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this.initialTab = 'strains';
         this._activeMainTab = 'strains';
         this._seedSubView = 'list';
+        this._submitError = null;
         this._selectedEventId = null;
         this._batchForm = {
             strain_name: '', breeder: '', quantity: 1,
@@ -18780,8 +18804,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <input type="text" .value=${this._batchForm.notes}
             @input=${(e) => { this._batchForm = { ...this._batchForm, notes: e.target.value }; }} />
         </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
         </div>
       </div>
@@ -18810,8 +18835,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <input type="text" .value=${this._pollinationForm.notes}
             @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, notes: e.target.value }; }} />
         </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
         </div>
       </div>
@@ -18832,8 +18858,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <input type="text" .value=${this._harvestForm.notes}
             @input=${(e) => { this._harvestForm = { ...this._harvestForm, notes: e.target.value }; }} />
         </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
         </div>
       </div>
@@ -18841,10 +18868,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     async _submitAddBatch() {
         const f = this._batchForm;
-        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage)
+        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) {
+            this._submitError = 'Please fill in all required fields.';
             return;
+        }
+        this._submitError = null;
         try {
-            await this.hass.callService('growspace_manager', 'add_seed_batch', {
+            await this.onAddSeedBatch?.({
                 strain_name: f.strain_name,
                 breeder: f.breeder,
                 quantity: f.quantity,
@@ -18859,14 +18889,18 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to add seed batch', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
         }
     }
     async _submitLogPollination() {
         const f = this._pollinationForm;
-        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date)
+        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) {
+            this._submitError = 'Please fill in all required fields.';
             return;
+        }
+        this._submitError = null;
         try {
-            await this.hass.callService('growspace_manager', 'log_pollination', {
+            await this.onLogPollination?.({
                 date: f.date,
                 donor_plant_id: f.donor_plant_id,
                 receiver_plant_id: f.receiver_plant_id,
@@ -18878,14 +18912,18 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to log pollination', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
         }
     }
     async _submitHarvestSeeds() {
         const f = this._harvestForm;
-        if (!this._selectedEventId || !f.quantity)
+        if (!this._selectedEventId || !f.quantity) {
+            this._submitError = 'Please fill in all required fields.';
             return;
+        }
+        this._submitError = null;
         try {
-            await this.hass.callService('growspace_manager', 'harvest_seeds', {
+            await this.onHarvestSeeds?.({
                 event_id: this._selectedEventId,
                 quantity: f.quantity,
                 notes: f.notes,
@@ -18897,6 +18935,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         catch (e) {
             console.error('Failed to harvest seeds', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
         }
     }
     renderBreederDeleteConfirmation() {
@@ -19698,6 +19737,11 @@ StrainLibraryDialog.styles = [
         gap: 12px;
         margin-top: 8px;
       }
+      .form-error {
+        color: var(--error-color, #f44336);
+        font-size: 0.85rem;
+        margin: 4px 0 0;
+      }
     `,
 ];
 __decorate([
@@ -19767,11 +19811,23 @@ __decorate([
     n$5({ type: Function })
 ], StrainLibraryDialog.prototype, "onSeedDataChanged", void 0);
 __decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onAddSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onLogPollination", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onHarvestSeeds", void 0);
+__decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_seedSubView", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_submitError", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_selectedEventId", void 0);
@@ -31039,13 +31095,17 @@ let DialogHost = class DialogHost extends i$3 {
         await new Promise((resolve) => setTimeout(resolve, 500));
         await this.store.refreshData();
     }
-    _refreshGeneticsData() {
-        this.store.dataService.fetchGeneticsData().then((data) => {
+    async _refreshGeneticsData() {
+        try {
+            const data = await this.store.dataService.fetchGeneticsData();
             if (data) {
                 this._seedBatches = data.seed_batches;
                 this._pollinationEvents = data.pollination_events;
             }
-        });
+        }
+        catch (e) {
+            console.error('Failed to refresh genetics data', e);
+        }
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'ADD_PLANT')
@@ -31305,6 +31365,9 @@ let DialogHost = class DialogHost extends i$3 {
         .pollinationEvents=${Object.values(this._pollinationEvents)}
         .initialTab=${active.payload.initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
+        .onAddSeedBatch=${(data) => this.store.dataService.addSeedBatch(data)}
+        .onLogPollination=${(data) => this.store.dataService.logPollination(data)}
+        .onHarvestSeeds=${(data) => this.store.dataService.harvestSeeds(data)}
         @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {

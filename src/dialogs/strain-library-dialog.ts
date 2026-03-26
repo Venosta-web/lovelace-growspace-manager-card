@@ -60,9 +60,20 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Array }) pollinationEvents: PollinationEvent[] = [];
   @property({ type: String }) initialTab: 'strains' | 'seeds' = 'strains';
   @property({ type: Function }) onSeedDataChanged?: () => void;
+  @property({ attribute: false }) onAddSeedBatch?: (data: {
+    strain_name: string; breeder: string; quantity: number;
+    acquisition_date: string; generation: string; lineage: string; notes?: string;
+  }) => Promise<void>;
+  @property({ attribute: false }) onLogPollination?: (data: {
+    date: string; donor_plant_id: string; receiver_plant_id: string; notes?: string;
+  }) => Promise<void>;
+  @property({ attribute: false }) onHarvestSeeds?: (data: {
+    event_id: string; quantity: number; notes?: string;
+  }) => Promise<void>;
 
   @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
+  @state() private _submitError: string | null = null;
   @state() private _selectedEventId: string | null = null;
   @state() private _batchForm = {
     strain_name: '', breeder: '', quantity: 1,
@@ -865,6 +876,11 @@ export class StrainLibraryDialog extends LitElement {
         justify-content: flex-end;
         gap: 12px;
         margin-top: 8px;
+      }
+      .form-error {
+        color: var(--error-color, #f44336);
+        font-size: 0.85rem;
+        margin: 4px 0 0;
       }
     `,
   ];
@@ -2502,8 +2518,9 @@ export class StrainLibraryDialog extends LitElement {
           <input type="text" .value=${this._batchForm.notes}
             @input=${(e: Event) => { this._batchForm = { ...this._batchForm, notes: (e.target as HTMLInputElement).value }; }} />
         </label>
+        ${this._submitError ? html`<p class="form-error">${this._submitError}</p>` : nothing}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
         </div>
       </div>
@@ -2533,8 +2550,9 @@ export class StrainLibraryDialog extends LitElement {
           <input type="text" .value=${this._pollinationForm.notes}
             @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, notes: (e.target as HTMLInputElement).value }; }} />
         </label>
+        ${this._submitError ? html`<p class="form-error">${this._submitError}</p>` : nothing}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
         </div>
       </div>
@@ -2556,8 +2574,9 @@ export class StrainLibraryDialog extends LitElement {
           <input type="text" .value=${this._harvestForm.notes}
             @input=${(e: Event) => { this._harvestForm = { ...this._harvestForm, notes: (e.target as HTMLInputElement).value }; }} />
         </label>
+        ${this._submitError ? html`<p class="form-error">${this._submitError}</p>` : nothing}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
         </div>
       </div>
@@ -2566,9 +2585,13 @@ export class StrainLibraryDialog extends LitElement {
 
   private async _submitAddBatch(): Promise<void> {
     const f = this._batchForm;
-    if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) return;
+    if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) {
+      this._submitError = 'Please fill in all required fields.';
+      return;
+    }
+    this._submitError = null;
     try {
-      await this.hass.callService('growspace_manager', 'add_seed_batch', {
+      await this.onAddSeedBatch?.({
         strain_name: f.strain_name,
         breeder: f.breeder,
         quantity: f.quantity,
@@ -2582,14 +2605,19 @@ export class StrainLibraryDialog extends LitElement {
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to add seed batch', e);
+      this._submitError = 'Failed to save. Please check your connection and try again.';
     }
   }
 
   private async _submitLogPollination(): Promise<void> {
     const f = this._pollinationForm;
-    if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) return;
+    if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) {
+      this._submitError = 'Please fill in all required fields.';
+      return;
+    }
+    this._submitError = null;
     try {
-      await this.hass.callService('growspace_manager', 'log_pollination', {
+      await this.onLogPollination?.({
         date: f.date,
         donor_plant_id: f.donor_plant_id,
         receiver_plant_id: f.receiver_plant_id,
@@ -2600,14 +2628,19 @@ export class StrainLibraryDialog extends LitElement {
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to log pollination', e);
+      this._submitError = 'Failed to save. Please check your connection and try again.';
     }
   }
 
   private async _submitHarvestSeeds(): Promise<void> {
     const f = this._harvestForm;
-    if (!this._selectedEventId || !f.quantity) return;
+    if (!this._selectedEventId || !f.quantity) {
+      this._submitError = 'Please fill in all required fields.';
+      return;
+    }
+    this._submitError = null;
     try {
-      await this.hass.callService('growspace_manager', 'harvest_seeds', {
+      await this.onHarvestSeeds?.({
         event_id: this._selectedEventId,
         quantity: f.quantity,
         notes: f.notes,
@@ -2618,6 +2651,7 @@ export class StrainLibraryDialog extends LitElement {
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to harvest seeds', e);
+      this._submitError = 'Failed to save. Please check your connection and try again.';
     }
   }
 

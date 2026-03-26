@@ -168,13 +168,16 @@ export class DialogHost extends LitElement {
     await this.store.refreshData();
   }
 
-  private _refreshGeneticsData(): void {
-    this.store.dataService.fetchGeneticsData().then((data) => {
+  private async _refreshGeneticsData(): Promise<void> {
+    try {
+      const data = await this.store.dataService.fetchGeneticsData();
       if (data) {
         this._seedBatches = data.seed_batches;
         this._pollinationEvents = data.pollination_events;
       }
-    });
+    } catch (e) {
+      console.error('Failed to refresh genetics data', e);
+    }
   }
 
   private _renderAddPlantDialog(
@@ -513,6 +516,9 @@ export class DialogHost extends LitElement {
         .pollinationEvents=${Object.values(this._pollinationEvents)}
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
+        .onAddSeedBatch=${(data: Parameters<typeof this.store.dataService.addSeedBatch>[0]) => this.store.dataService.addSeedBatch(data)}
+        .onLogPollination=${(data: Parameters<typeof this.store.dataService.logPollination>[0]) => this.store.dataService.logPollination(data)}
+        .onHarvestSeeds=${(data: Parameters<typeof this.store.dataService.harvestSeeds>[0]) => this.store.dataService.harvestSeeds(data)}
         @close=${() => {
         // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
         if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
