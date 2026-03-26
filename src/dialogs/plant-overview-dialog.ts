@@ -1415,7 +1415,7 @@ export class PlantOverviewDialog extends LitElement {
       this._showScoringForm = false;
     } catch (e) {
       console.error('Failed to save phenotype scores', e);
-      alert('Failed to save scores. Check your connection and try again.');
+      this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
     } finally {
       this._savingScore = false;
     }
