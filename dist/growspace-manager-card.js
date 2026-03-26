@@ -5305,7 +5305,7 @@ class GrowspaceAdapter {
     }
 }
 
-const DOMAIN = 'growspace_manager';
+const DOMAIN$1 = 'growspace_manager';
 // WebSocket message types
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
 const WS_TYPE_GET_LOG = 'growspace_manager/get_log';
@@ -5319,6 +5319,8 @@ const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
 const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
 const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
+const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
+const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
 // Home Assistant services
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
@@ -5367,6 +5369,7 @@ const SERVICES = {
     REMOVE_ENVIRONMENT: 'remove_environment',
     RESET_WATER_TRACKING: 'reset_water_tracking',
     UPDATE_STRAIN_META: 'update_strain_meta',
+    TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -5491,7 +5494,7 @@ class GrowspaceAPI extends BaseAPI {
                 plants_per_row: data.plantsPerRow,
                 notification_target: data.notificationService, // Map to backend field
             };
-            await this.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
+            await this.callService(DOMAIN$1, SERVICES.ADD_GROWSPACE, payload);
             console.log('[GrowspaceAPI:addGrowspace] Service Called');
         }
         catch (err) {
@@ -5513,7 +5516,7 @@ class GrowspaceAPI extends BaseAPI {
                 payload.plants_per_row = data.plantsPerRow;
             if (data.notificationService)
                 payload.notification_target = data.notificationService;
-            await this.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
+            await this.callService(DOMAIN$1, SERVICES.UPDATE_GROWSPACE, payload);
             console.log('[GrowspaceAPI:updateGrowspace] Service Called');
         }
         catch (err) {
@@ -5524,7 +5527,7 @@ class GrowspaceAPI extends BaseAPI {
     async removeGrowspace(growspaceId) {
         console.log('[GrowspaceAPI:removeGrowspace] Removing growspace:', growspaceId);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_GROWSPACE, {
                 growspace_id: growspaceId,
             });
             console.log('[GrowspaceAPI:removeGrowspace] Service Called');
@@ -5593,7 +5596,7 @@ class GrowspaceAPI extends BaseAPI {
                 payload.sensor_coordinates = data.sensorCoordinates;
             if (data.irrigationTanks)
                 payload.irrigation_tanks = data.irrigationTanks;
-            await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
+            await this.callService(DOMAIN$1, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
         catch (err) {
@@ -5604,7 +5607,7 @@ class GrowspaceAPI extends BaseAPI {
     async setDehumidifierControl(growspaceId, enabled) {
         console.log(`[GrowspaceAPI:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
         try {
-            await this.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
+            await this.callService(DOMAIN$1, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
                 growspace_id: growspaceId,
                 enabled,
             });
@@ -5618,7 +5621,7 @@ class GrowspaceAPI extends BaseAPI {
     async removeEnvironment(growspaceId) {
         console.log(`[GrowspaceAPI:removeEnvironment] Removing environment for ${growspaceId}`);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_ENVIRONMENT, {
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_ENVIRONMENT, {
                 growspace_id: growspaceId,
             });
             console.log('[GrowspaceAPI:removeEnvironment] Service Called');
@@ -5631,7 +5634,7 @@ class GrowspaceAPI extends BaseAPI {
     async resetWaterTracking(growspaceId) {
         console.log(`[GrowspaceAPI:resetWaterTracking] Resetting water tracking for ${growspaceId}`);
         try {
-            await this.callService(DOMAIN, SERVICES.RESET_WATER_TRACKING, {
+            await this.callService(DOMAIN$1, SERVICES.RESET_WATER_TRACKING, {
                 growspace_id: growspaceId,
             });
             console.log('[GrowspaceAPI:resetWaterTracking] Service Called');
@@ -5802,7 +5805,7 @@ class StrainAPI extends BaseAPI {
                     delete payload.image;
                 }
             }
-            await this.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
+            await this.callService(DOMAIN$1, SERVICES.ADD_STRAIN, payload);
             console.log('[StrainAPI:addStrain] Service Called');
         }
         catch (err) {
@@ -5813,7 +5816,7 @@ class StrainAPI extends BaseAPI {
     async removeStrain(strain, phenotype) {
         console.log('[StrainAPI:removeStrain] Removing strain:', strain, phenotype);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_STRAIN, {
                 strain,
                 phenotype,
             });
@@ -5827,7 +5830,7 @@ class StrainAPI extends BaseAPI {
     async exportStrainLibrary() {
         console.log('[StrainAPI:exportStrainLibrary] Exporting strain library');
         try {
-            await this.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY, {});
+            await this.callService(DOMAIN$1, SERVICES.EXPORT_STRAIN_LIBRARY, {});
             console.log('[StrainAPI:exportStrainLibrary] Service Called');
         }
         catch (err) {
@@ -5867,7 +5870,7 @@ class StrainAPI extends BaseAPI {
     async clearStrainLibrary() {
         console.log('[StrainAPI:clearStrainLibrary] Clearing library');
         try {
-            await this.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY, {});
+            await this.callService(DOMAIN$1, SERVICES.CLEAR_STRAIN_LIBRARY, {});
             console.log('[StrainAPI:clearStrainLibrary] Service Called');
         }
         catch (err) {
@@ -5924,7 +5927,7 @@ class StrainAPI extends BaseAPI {
                     delete payload.image; // Assume unchanged file path
                 }
             }
-            await this.callService(DOMAIN, SERVICES.UPDATE_STRAIN_META, payload);
+            await this.callService(DOMAIN$1, SERVICES.UPDATE_STRAIN_META, payload);
             console.log('[StrainAPI:updateStrainMeta] Service Called');
         }
         catch (err) {
@@ -6032,7 +6035,7 @@ class NutrientAPI extends BaseAPI {
     async saveNutrientPreset(data) {
         console.log('[NutrientAPI:saveNutrientPreset] Saving nutrient preset:', data);
         try {
-            await this.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, data);
+            await this.callService(DOMAIN$1, SERVICES.SAVE_NUTRIENT_PRESET, data);
             console.log('[NutrientAPI:saveNutrientPreset] Service Called');
         }
         catch (err) {
@@ -6043,7 +6046,7 @@ class NutrientAPI extends BaseAPI {
     async removeNutrientPreset(presetId) {
         console.log('[NutrientAPI:removeNutrientPreset] Removing nutrient preset:', presetId);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, { preset_id: presetId });
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_NUTRIENT_PRESET, { preset_id: presetId });
             console.log('[NutrientAPI:removeNutrientPreset] Service Called');
         }
         catch (err) {
@@ -6054,7 +6057,7 @@ class NutrientAPI extends BaseAPI {
     async saveIPMPreset(data) {
         console.log('[NutrientAPI:saveIPMPreset] Saving IPM preset:', data);
         try {
-            await this.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
+            await this.callService(DOMAIN$1, SERVICES.SAVE_IPM_PRESET, data);
             console.log('[NutrientAPI:saveIPMPreset] Service Called');
         }
         catch (err) {
@@ -6065,7 +6068,7 @@ class NutrientAPI extends BaseAPI {
     async removeIPMPreset(presetId) {
         console.log('[NutrientAPI:removeIPMPreset] Removing IPM preset:', presetId);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
             console.log('[NutrientAPI:removeIPMPreset] Service Called');
         }
         catch (err) {
@@ -6076,7 +6079,7 @@ class NutrientAPI extends BaseAPI {
     async applyIPM(data) {
         console.log('[NutrientAPI:applyIPM] Applying IPM:', data);
         try {
-            await this.callService(DOMAIN, SERVICES.APPLY_IPM, data);
+            await this.callService(DOMAIN$1, SERVICES.APPLY_IPM, data);
             console.log('[NutrientAPI:applyIPM] Service Called');
         }
         catch (err) {
@@ -6117,7 +6120,7 @@ class NutrientAPI extends BaseAPI {
             }))
         };
         try {
-            await this.callService(DOMAIN, 'save_ec_ramp_curve', backendData);
+            await this.callService(DOMAIN$1, 'save_ec_ramp_curve', backendData);
         }
         catch (err) {
             console.error('[NutrientAPI:saveECRampCurve] Error:', err);
@@ -6127,7 +6130,7 @@ class NutrientAPI extends BaseAPI {
     async removeECRampCurve(curveId) {
         console.log('[NutrientAPI:removeECRampCurve] Removing curve:', curveId);
         try {
-            await this.callService(DOMAIN, 'remove_ec_ramp_curve', { curve_id: curveId });
+            await this.callService(DOMAIN$1, 'remove_ec_ramp_curve', { curve_id: curveId });
         }
         catch (err) {
             console.error('[NutrientAPI:removeECRampCurve] Error:', err);
@@ -6268,7 +6271,7 @@ class PlantAPI extends BaseAPI {
             if (params.growspace_id === 'clone' || params.growspace_id === 'clone_overview') {
                 params.clone_start = new Date().toISOString().split('T')[0];
             }
-            await this.callService(DOMAIN, SERVICES.ADD_PLANT, params);
+            await this.callService(DOMAIN$1, SERVICES.ADD_PLANT, params);
             console.log('[PlantAPI:addPlant] Service Called');
         }
         catch (err) {
@@ -6280,7 +6283,7 @@ class PlantAPI extends BaseAPI {
     async addPlants(params) {
         console.log('[PlantAPI:addPlants] Sending payload:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
+            await this.callService(DOMAIN$1, SERVICES.ADD_PLANTS, params);
             console.log('[PlantAPI:addPlants] Service Called');
         }
         catch (err) {
@@ -6292,7 +6295,7 @@ class PlantAPI extends BaseAPI {
     async updatePlant(params) {
         console.log('[PlantAPI:updatePlant] Sending payload:', params);
         try {
-            await this.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
+            await this.callService(DOMAIN$1, SERVICES.UPDATE_PLANT, params);
             console.log('[PlantAPI:updatePlant] Service Called');
         }
         catch (err) {
@@ -6303,7 +6306,7 @@ class PlantAPI extends BaseAPI {
     async removePlant(plantId) {
         console.log('[PlantAPI:removePlant] Removing plant_id:', plantId);
         try {
-            await this.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_PLANT, { plant_id: plantId });
             console.log('[PlantAPI:removePlant] Service Called');
         }
         catch (err) {
@@ -6333,7 +6336,7 @@ class PlantAPI extends BaseAPI {
                 if (metrics.terpene_profile)
                     payload.terpene_profile = metrics.terpene_profile;
             }
-            await this.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
+            await this.callService(DOMAIN$1, SERVICES.HARVEST_PLANT, payload);
             console.log('[PlantAPI:harvestPlant] Service Called');
         }
         catch (err) {
@@ -6348,7 +6351,7 @@ class PlantAPI extends BaseAPI {
             const payload = { ...params };
             if (!payload.target_growspace_id)
                 delete payload.target_growspace_id;
-            await this.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
+            await this.callService(DOMAIN$1, SERVICES.TAKE_CLONE, payload);
             console.log('[PlantAPI:takeClone] Service Called');
         }
         catch (err) {
@@ -6366,7 +6369,7 @@ class PlantAPI extends BaseAPI {
             if (transitionDate) {
                 payload.transition_date = transitionDate;
             }
-            await this.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
+            await this.callService(DOMAIN$1, SERVICES.MOVE_CLONE, payload);
             console.log('[PlantAPI:moveClone] Service Called');
         }
         catch (err) {
@@ -6377,7 +6380,7 @@ class PlantAPI extends BaseAPI {
     async swapPlants(plant1Id, plant2Id) {
         console.log(`[PlantAPI:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
         try {
-            await this.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
+            await this.callService(DOMAIN$1, SERVICES.SWITCH_PLANTS, {
                 plant1_id: plant1Id,
                 plant2_id: plant2Id,
             });
@@ -6401,7 +6404,7 @@ class PlantAPI extends BaseAPI {
             if (presetId) {
                 payload.preset_id = presetId;
             }
-            await this.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
+            await this.callService(DOMAIN$1, SERVICES.WATER_PLANT, payload);
             console.log('[PlantAPI:waterPlant] Service Called');
         }
         catch (err) {
@@ -6412,7 +6415,7 @@ class PlantAPI extends BaseAPI {
     async printLabel(params) {
         console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
         try {
-            return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
+            return await this.callService(DOMAIN$1, SERVICES.PRINT_LABEL, params);
         }
         catch (err) {
             console.error('[PlantAPI:printLabel] Error:', err);
@@ -6434,7 +6437,7 @@ class PlantAPI extends BaseAPI {
         if (params.pest_resistance !== undefined)
             payload.pest_resistance = params.pest_resistance;
         try {
-            await this.callService(DOMAIN, SERVICES.SCORE_PLANT, payload);
+            await this.callService(DOMAIN$1, SERVICES.SCORE_PLANT, payload);
             console.log('[PlantAPI:scorePlant] Service Called');
         }
         catch (err) {
@@ -6459,7 +6462,7 @@ class PlantAPI extends BaseAPI {
         if (params.terpene_profile !== undefined)
             payload.terpene_profile = params.terpene_profile;
         try {
-            await this.callService(DOMAIN, SERVICES.UPDATE_HARVEST_METRICS, payload);
+            await this.callService(DOMAIN$1, SERVICES.UPDATE_HARVEST_METRICS, payload);
             console.log('[PlantAPI:updateHarvestMetrics] Service Called');
         }
         catch (err) {
@@ -6477,7 +6480,7 @@ class PlantAPI extends BaseAPI {
             payload.transition_date = transitionDate;
         }
         try {
-            await this.callService(DOMAIN, SERVICES.MOVE_PLANT, payload);
+            await this.callService(DOMAIN$1, SERVICES.MOVE_PLANT, payload);
             console.log('[PlantAPI:movePlant] Service Called');
         }
         catch (err) {
@@ -6496,7 +6499,7 @@ class IrrigationAPI extends BaseAPI {
         console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
         try {
             const payload = this._serializeSettings(params);
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, payload);
+            await this.callService(DOMAIN$1, SERVICES.SET_IRRIGATION_SETTINGS, payload);
             console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
         }
         catch (err) {
@@ -6512,7 +6515,7 @@ class IrrigationAPI extends BaseAPI {
                 time: params.time,
                 duration: params.duration,
             };
-            await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, payload);
+            await this.callService(DOMAIN$1, SERVICES.ADD_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:addIrrigationTime] Service Called');
         }
         catch (err) {
@@ -6527,7 +6530,7 @@ class IrrigationAPI extends BaseAPI {
                 growspace_id: params.growspaceId,
                 time: params.time,
             };
-            await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, payload);
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_IRRIGATION_TIME, payload);
             console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
         }
         catch (err) {
@@ -6543,7 +6546,7 @@ class IrrigationAPI extends BaseAPI {
                 time: params.time,
                 duration: params.duration,
             };
-            await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, payload);
+            await this.callService(DOMAIN$1, SERVICES.ADD_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:addDrainTime] Service Called');
         }
         catch (err) {
@@ -6558,7 +6561,7 @@ class IrrigationAPI extends BaseAPI {
                 growspace_id: params.growspaceId,
                 time: params.time,
             };
-            await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, payload);
+            await this.callService(DOMAIN$1, SERVICES.REMOVE_DRAIN_TIME, payload);
             console.log('[IrrigationAPI:removeDrainTime] Service Called');
         }
         catch (err) {
@@ -6573,7 +6576,7 @@ class IrrigationAPI extends BaseAPI {
                 growspace_id: growspaceId,
                 ...this._serializeStrategy(strategy),
             };
-            await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, payload);
+            await this.callService(DOMAIN$1, SERVICES.SET_IRRIGATION_STRATEGY, payload);
             console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
         }
         catch (err) {
@@ -6623,7 +6626,7 @@ class IrrigationAPI extends BaseAPI {
             if (presetId) {
                 payload.preset_id = presetId;
             }
-            await this.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
+            await this.callService(DOMAIN$1, SERVICES.WATER_GROWSPACE, payload);
             console.log('[IrrigationAPI:waterGrowspace] Service Called');
         }
         catch (err) {
@@ -6639,7 +6642,7 @@ class IrrigationAPI extends BaseAPI {
             payload.max_ec_delta = params.maxEcDelta;
         if (params.targetRunoffPercent !== undefined)
             payload.target_runoff_percent = params.targetRunoffPercent;
-        await this.callService(DOMAIN, SERVICES.CONFIGURE_DRAIN_MONITORING, payload);
+        await this.callService(DOMAIN$1, SERVICES.CONFIGURE_DRAIN_MONITORING, payload);
     }
     async logDrainReading(growspaceId, params) {
         const payload = {
@@ -6651,7 +6654,7 @@ class IrrigationAPI extends BaseAPI {
             payload.feed_volume_ml = params.feedVolumeMl;
         if (params.drainVolumeMl !== undefined)
             payload.drain_volume_ml = params.drainVolumeMl;
-        await this.callService(DOMAIN, SERVICES.LOG_DRAIN_READING, payload);
+        await this.callService(DOMAIN$1, SERVICES.LOG_DRAIN_READING, payload);
     }
 }
 
@@ -6672,7 +6675,7 @@ class AIAPI extends BaseAPI {
             // Use sendMessagePromise with return_response=true
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: DOMAIN,
+                domain: DOMAIN$1,
                 service: SERVICES.ASK_GROW_ADVICE,
                 service_data: {
                     growspace_id: growspaceId,
@@ -6696,7 +6699,7 @@ class AIAPI extends BaseAPI {
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: DOMAIN,
+                domain: DOMAIN$1,
                 service: SERVICES.ANALYZE_ALL_GROWSPACES,
                 service_data: {},
                 return_response: true,
@@ -6717,7 +6720,7 @@ class AIAPI extends BaseAPI {
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
-                domain: DOMAIN,
+                domain: DOMAIN$1,
                 service: SERVICES.STRAIN_RECOMMENDATION,
                 service_data: {
                     user_query: userQuery,
@@ -6779,6 +6782,56 @@ class CameraAPI extends BaseAPI {
     }
 }
 
+class VisionAPI extends BaseAPI {
+    async getVisionHistory(growspaceId, limit = 10) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_VISION_HISTORY,
+                growspace_id: growspaceId,
+                limit,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to get vision history for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    async triggerVisionCheckup(growspaceId) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: 'call_service',
+                domain: 'growspace_manager',
+                service: SERVICES.TRIGGER_VISION_CHECKUP,
+                service_data: { growspace_id: growspaceId },
+                return_response: true,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to trigger vision checkup for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    async updateVisionCheckupConfig(growspaceId, config) {
+        if (!this.hass)
+            return null;
+        try {
+            return await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG,
+                growspace_id: growspaceId,
+                ...config,
+            });
+        }
+        catch (error) {
+            console.error(`[VisionAPI] Failed to update vision config for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+}
+
 class ReportAPI extends BaseAPI {
     /**
      * Generates and triggers export of a grow report for a specific growspace.
@@ -6786,7 +6839,7 @@ class ReportAPI extends BaseAPI {
      */
     async exportGrowReport(growspaceId, format = 'json') {
         try {
-            await this.callService(DOMAIN, SERVICES.EXPORT_GROW_REPORT, {
+            await this.callService(DOMAIN$1, SERVICES.EXPORT_GROW_REPORT, {
                 growspace_id: growspaceId,
                 format,
             });
@@ -6813,6 +6866,30 @@ class ReportAPI extends BaseAPI {
             console.error('[ReportAPI:fetchGrowReport] Error:', err);
             throw err;
         }
+    }
+}
+
+const DOMAIN = 'growspace_manager';
+class GeneticsAPI extends BaseAPI {
+    constructor(hass) {
+        super(hass);
+    }
+    async fetchGeneticsData() {
+        const result = await this.sendWebSocket(`${DOMAIN}/get_genetics_data`);
+        return result ?? { seed_batches: {}, pollination_events: {} };
+    }
+    async addSeedBatch(data) {
+        await this.callService(DOMAIN, 'add_seed_batch', data);
+    }
+    async logPollination(data) {
+        await this.callService(DOMAIN, 'log_pollination', data);
+    }
+    async harvestSeeds(data) {
+        await this.callService(DOMAIN, 'harvest_seeds', data);
+    }
+    async scorePlant(data) {
+        const payload = Object.fromEntries(Object.entries(data).filter(([, v]) => v != null));
+        await this.callService(DOMAIN, 'score_plant', payload);
     }
 }
 
@@ -6917,10 +6994,23 @@ let DataService$1 = class DataService {
         this.captureSnapshot = (growspaceId) => this._cameraAPI.captureSnapshot(growspaceId);
         this.getSnapshots = (growspaceId, limit, offset) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
         // ========================================
+        // Vision API Delegations
+        // ========================================
+        this.getVisionHistory = (growspaceId, limit) => this._visionAPI.getVisionHistory(growspaceId, limit);
+        this.triggerVisionCheckup = (growspaceId) => this._visionAPI.triggerVisionCheckup(growspaceId);
+        this.updateVisionCheckupConfig = (growspaceId, config) => this._visionAPI.updateVisionCheckupConfig(growspaceId, config);
+        // ========================================
         // Report API Delegations
         // ========================================
         this.exportGrowReport = (growspaceId, format) => this._reportAPI.exportGrowReport(growspaceId, format);
         this.fetchGrowReport = (growspaceId) => this._reportAPI.fetchGrowReport(growspaceId);
+        // ========================================
+        // Genetics API Delegations
+        // ========================================
+        this.fetchGeneticsData = () => this._geneticsAPI.fetchGeneticsData();
+        this.addSeedBatch = (data) => this._geneticsAPI.addSeedBatch(data);
+        this.logPollination = (data) => this._geneticsAPI.logPollination(data);
+        this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
         // Initialize all API services
         this._growspaceAPI = new GrowspaceAPI(hass);
         this._strainAPI = new StrainAPI(hass);
@@ -6930,7 +7020,9 @@ let DataService$1 = class DataService {
         this._irrigationAPI = new IrrigationAPI(hass);
         this._aiAPI = new AIAPI(hass);
         this._cameraAPI = new CameraAPI(hass);
+        this._visionAPI = new VisionAPI(hass);
         this._reportAPI = new ReportAPI(hass);
+        this._geneticsAPI = new GeneticsAPI(hass);
         if (hass) {
             this.hass = hass;
         }
@@ -6949,7 +7041,9 @@ let DataService$1 = class DataService {
             this._irrigationAPI,
             this._aiAPI,
             this._cameraAPI,
+            this._visionAPI,
             this._reportAPI,
+            this._geneticsAPI,
         ].forEach((api) => api.updateHass(hass));
     }
     /**
@@ -6957,6 +7051,12 @@ let DataService$1 = class DataService {
      */
     get strainAPI() {
         return this._strainAPI;
+    }
+    /**
+     * Expose GeneticsAPI for direct access to genetics operations.
+     */
+    get geneticsAPI() {
+        return this._geneticsAPI;
     }
     // ========================================
     // Legacy/Generic Service Call Support
@@ -9357,6 +9457,580 @@ function requireLib () {
 }
 
 var libExports = requireLib();
+
+async function fetchStrainLibrary(ctx, force = false) {
+    // Requires hass to be present in store (usually via dataService or just check store)
+    // The original code checks this.hass.
+    // We assume dataService has valid connection or we check it.
+    // Original code checked `if (!this.hass) return;`
+    // We can check if dataService is initialized or catch errors.
+    const CACHE_KEY = 'growspace_strain_library_v2';
+    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    let usedCache = false;
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                ctx.data.setStrainLibrary(cache.data);
+                usedCache = true;
+            }
+        }
+        catch (e) {
+            console.warn('Failed to parse cached strain library', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    if (!usedCache) {
+        try {
+            const currentStrains = await ctx.dataService.fetchStrainLibrary();
+            if (Array.isArray(currentStrains)) {
+                ctx.data.setStrainLibrary(currentStrains);
+                const cacheData = {
+                    version: 2,
+                    timestamp: Date.now(),
+                    data: currentStrains,
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library:', e);
+        }
+    }
+}
+async function fetchNutrientPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
+                ctx.data.setNutrientPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchNutrientPresets();
+        if (result) {
+            ctx.data.setNutrientPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient presets:', e);
+    }
+}
+async function fetchIPMPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ipm_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
+                ctx.data.setIPMPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchIPMPresets();
+        if (result) {
+            ctx.data.setIPMPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch IPM presets:', e);
+    }
+}
+async function fetchNutrientInventory(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_inventory';
+    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setNutrientInventory(cache.data);
+                return;
+            }
+        }
+        catch (_) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchNutrientInventory();
+        if (result) {
+            ctx.data.setNutrientInventory(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient inventory:', e);
+    }
+}
+async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
+    try {
+        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast(`Updated stock: ${name}`, 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update stock: ${error}`, 'error');
+    }
+}
+async function removeNutrientStock(ctx, nutrientId) {
+    try {
+        await ctx.dataService.removeNutrientStock(nutrientId);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('Removed nutrient stock', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
+    }
+}
+async function fetchECRampCurves(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ec_ramp_curves';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
+                ctx.data.setECRampCurves(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchECRampCurves();
+        if (result) {
+            ctx.data.setECRampCurves(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch EC ramp curves:', e);
+    }
+}
+
+function setIsCompactView(ctx, value) {
+    if (value) {
+        ctx.ui.setViewMode(ViewMode.COMPACT);
+    }
+    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+}
+function toggleHeaderExpansion(ctx) {
+    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+    else {
+        ctx.ui.setViewMode(ViewMode.HEADER);
+    }
+}
+function togglePlantSelection(ctx, plantOrId) {
+    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+    if (!plantId)
+        return;
+    ctx.ui.togglePlantSelection(plantId);
+}
+function selectAllPlants(ctx) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
+    if (!selectedDevice)
+        return;
+    const devices = ctx.data.$devices.get();
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
+    const allIds = [];
+    if (selectedDeviceData && selectedDeviceData.plants) {
+        selectedDeviceData.plants.forEach((plant) => {
+            const pId = plant.attributes.plant_id;
+            if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
+                allIds.push(pId);
+            }
+        });
+        ctx.ui.selectAllPlants(allIds);
+    }
+}
+function clearPlantSelection(ctx) {
+    ctx.ui.clearPlantSelection();
+}
+function exitEditMode(ctx) {
+    ctx.ui.setEditMode(false);
+    ctx.ui.clearPlantSelection();
+}
+function handlePlantClick(ctx, plant) {
+    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
+        const plantId = plant.attributes.plant_id;
+        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
+            togglePlantSelection(ctx, plantId);
+        }
+        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
+    }
+    else {
+        openPlantOverviewDialog(ctx, plant);
+    }
+}
+function openPlantOverviewDialog(ctx, plant, selectedIds) {
+    ctx.ui.setActiveDialog({
+        type: 'PLANT_OVERVIEW',
+        payload: {
+            plant,
+            editedAttributes: { ...plant.attributes },
+            activeTab: 'dashboard',
+            selectedPlantIds: selectedIds,
+        },
+    });
+}
+function handleDeepLink(ctx, plantId) {
+    // 1. Wait for data to be ready if needed - for now we check devices
+    const devices = ctx.data.$devices.get();
+    if (!devices || devices.length === 0) {
+        console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
+        ctx.ui.setPendingDeepLink(plantId);
+        return;
+    }
+    // 2. Find the plant across all devices
+    let foundPlant;
+    for (const device of devices) {
+        if (!device.plants)
+            continue;
+        foundPlant = device.plants.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
+        if (foundPlant)
+            break;
+    }
+    if (foundPlant) {
+        console.log('[DeepLink] Plant found, opening dialog:', plantId);
+        openPlantOverviewDialog(ctx, foundPlant);
+        // 3. Clear pending state
+        ctx.ui.setPendingDeepLink(null);
+        // 4. Cleanup URL to prevent re-opening on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('plantId');
+        window.history.replaceState({}, '', url.toString());
+    }
+    else {
+        // Not found - could be stale or restricted access
+        console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+        // Still clear pending state to avoid infinite retries if the ID is just wrong
+        ctx.ui.setPendingDeepLink(null);
+    }
+}
+function openBatchWateringDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            mode: 'plant',
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openBatchTrainingDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openAddPlantDialog(ctx, row, col) {
+    if (row !== undefined && col !== undefined) {
+        fetchStrainLibrary(ctx);
+        ctx.ui.setActiveDialog({
+            type: 'ADD_PLANT',
+            payload: { row, col },
+        });
+        return;
+    }
+    const selectedDeviceId = ctx.data.$selectedDevice.get();
+    if (!selectedDeviceId) {
+        return;
+    }
+    const devices = ctx.data.$devices.get();
+    const device = devices.find((d) => d.deviceId === selectedDeviceId);
+    let targetRow = 0;
+    let targetCol = 0;
+    if (device) {
+        const occupied = new Set();
+        const deleted = ctx.data.$optimisticDeletedPlantIds.get();
+        device.plants.forEach((p) => {
+            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+            if (deleted.has(pId))
+                return;
+            const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
+            const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
+            occupied.add(`${r},${c}`);
+        });
+        let found = false;
+        const rows = device.rows || 4;
+        const cols = device.plantsPerRow || 4;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!occupied.has(`${r},${c}`)) {
+                    targetRow = r;
+                    targetCol = c;
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                break;
+        }
+    }
+    fetchStrainLibrary(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'ADD_PLANT',
+        payload: { row: targetRow, col: targetCol },
+    });
+}
+function openStrainRecommendationDialog(ctx) {
+    ctx.ui.setActiveDialog({
+        type: 'STRAIN_RECOMMENDATION',
+        payload: { isLoading: false, response: null },
+    });
+}
+function openNutrientPresetsDialog(ctx) {
+    fetchNutrientPresets(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'NUTRIENT_PRESETS',
+        payload: {},
+    });
+}
+function openIPMDialog(ctx, context) {
+    fetchIPMPresets(ctx);
+    const growspaceId = context?.growspaceId ||
+        (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
+    ctx.ui.setActiveDialog({
+        type: 'IPM',
+        payload: {
+            growspaceId,
+            plantIds: context?.plantIds,
+        },
+    });
+}
+function openLogbookDialog(ctx) {
+    const growspaceId = ctx.data.$selectedDevice.get();
+    if (growspaceId) {
+        ctx.ui.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: { growspaceId },
+        });
+    }
+}
+async function exportStrainLibrary(ctx) {
+    try {
+        const library = await ctx.dataService.fetchStrainLibrary();
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', dataStr);
+        downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+    catch (e) {
+        console.error(e);
+        ctx.showToast('Failed to export library', 'error');
+    }
+}
+/** HELPER: Get common growspace ID for multiple plants */
+function getCommonGrowspaceId(ctx, plantIds) {
+    const plantToDevice = ctx.data.$plantToDeviceMap.get();
+    let commonGrowspaceId;
+    for (const plantId of plantIds) {
+        const plantGrowspaceId = plantToDevice.get(plantId);
+        if (!plantGrowspaceId)
+            continue;
+        if (commonGrowspaceId === undefined) {
+            commonGrowspaceId = plantGrowspaceId;
+        }
+        else if (commonGrowspaceId !== plantGrowspaceId) {
+            return undefined; // Mixed growspaces
+        }
+    }
+    return commonGrowspaceId;
+}
+// ===== Standardized Dialog Opening Functions =====
+function openConfigDialog(ctx, device) {
+    ctx.ui.setActiveDialog({
+        type: 'CONFIG',
+        payload: {
+            currentTab: ConfigTab.ENVIRONMENT,
+            environmentData: {
+                selectedGrowspaceId: device?.deviceId || '',
+                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
+                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
+                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
+                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
+                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
+                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
+                stressThreshold: 0.8,
+                moldThreshold: 0.8,
+                lightSensor: device?.environmentAttributes?.lightSensor || '',
+                lightSensors: device?.environmentAttributes?.lightSensors || [],
+                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
+                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
+                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
+                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
+                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
+                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
+                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
+                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
+                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+            },
+        },
+    });
+}
+function openStrainLibraryDialog(ctx, initialTab) {
+    ctx.ui.setActiveDialog({
+        type: 'STRAIN_LIBRARY',
+        payload: { initialTab },
+    });
+}
+function openIrrigationDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+}
+function openGrowMasterDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_MASTER',
+        payload: {
+            growspaceId,
+            isLoading: false,
+            response: '',
+            mode: 'single',
+        },
+    });
+}
+function openWateringDialog(ctx, options) {
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            plantIds: options.plantIds,
+            growspaceId: options.growspaceId,
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+        },
+    });
+}
+function openTrainingDialog(ctx, plantIds, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds,
+            growspaceId,
+        },
+    });
+}
+function openNutrientsDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+}
+function openSnapshotsDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'SNAPSHOTS',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openCropSteeringDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'CROP_STEERING',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openECRampDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'EC_RAMP_EDITOR',
+        payload: {
+            growspaceId,
+        },
+    });
+}
+function openGrowReportDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_REPORT',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
 
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
@@ -13016,6 +13690,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         this._scoresEdit = {};
         this._starPreview = {};
         this._savingHarvest = false;
+        this._showScoringForm = false;
+        this._savingScore = false;
     }
     connectedCallback() {
         super.connectedCallback();
@@ -13793,6 +14469,8 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
     `;
     }
     _renderActions() {
+        const stage = (this.plant?.state || '').toLowerCase();
+        const isFlower = stage === PlantStage.FLOWER || stage === 'flowering';
         return x `
       <div class="detail-card" style="grid-column: 1 / -1;">
         <h3>Quick Actions</h3>
@@ -13817,9 +14495,87 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
             <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
             <span>Print Label</span>
           </div>
+          ${isFlower ? x `
+          <div class="action-card" @click=${() => this._openLogPollination()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+            <span>Log Pollination</span>
+          </div>
+          ` : E}
         </div>
       </div>
+
+      <!-- Score Phenotype section -->
+      <div class="detail-card" style="grid-column: 1 / -1;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0;">Score Phenotype</h3>
+          <button
+            class="md3-button outlined"
+            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
+          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
+        </div>
+        ${this._showScoringForm ? x `
+          <div style="margin-top: 16px;">
+            <div class="score-grid">
+              ${SCORE_DIMENSIONS$1.map(dim => this._renderScoreRow(dim))}
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+              <button
+                class="md3-button filled"
+                @click=${() => this._savePhenotypeScore()}
+                ?disabled=${this._savingScore}
+              >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
+            </div>
+          </div>
+        ` : E}
+        ${!this._showScoringForm ? x `
+          <div class="score-grid" style="margin-top: 12px; pointer-events: none; opacity: 0.7;">
+            ${SCORE_DIMENSIONS$1.map(dim => {
+            const val = this._scoresEdit[dim.key];
+            return x `
+                <div class="score-row">
+                  <div class="score-header">
+                    <span class="score-label">
+                      <span class="score-emoji">${dim.emoji}</span>
+                      ${dim.label}
+                    </span>
+                    <span class="score-value">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
+                  </div>
+                </div>
+              `;
+        })}
+          </div>
+        ` : E}
+      </div>
     `;
+    }
+    async _savePhenotypeScore() {
+        if (!this.plant?.attributes?.plant_id)
+            return;
+        this._savingScore = true;
+        try {
+            const plantId = this.plant.attributes.plant_id;
+            await this.store.dataService.scorePlant({
+                plant_id: plantId,
+                ...this._scoresEdit,
+            });
+            await new Promise(resolve => setTimeout(resolve, 300));
+            await this.store.refreshData();
+            this._showScoringForm = false;
+        }
+        catch (e) {
+            console.error('Failed to save phenotype scores', e);
+            alert('Failed to save scores. Check your connection and try again.');
+        }
+        finally {
+            this._savingScore = false;
+        }
+    }
+    _openLogPollination() {
+        this.dispatchEvent(new CustomEvent('open-log-pollination', {
+            detail: { plantId: this.plant?.attributes?.plant_id },
+            bubbles: true,
+            composed: true,
+        }));
     }
     _renderTimeline() {
         if (!this.plant)
@@ -14605,6 +15361,12 @@ __decorate([
 __decorate([
     r$2()
 ], PlantOverviewDialog.prototype, "_savingHarvest", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_showScoringForm", void 0);
+__decorate([
+    r$2()
+], PlantOverviewDialog.prototype, "_savingScore", void 0);
 PlantOverviewDialog = __decorate([
     t$2('plant-overview-dialog')
 ], PlantOverviewDialog);
@@ -16434,6 +17196,21 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._breederDialogOpen = false;
         this._breederEditorState = null;
         this._pendingDeleteBreeder = null;
+        // Seeds & Genetics tab state
+        this.seedBatches = [];
+        this.pollinationEvents = [];
+        this.initialTab = 'strains';
+        this._activeMainTab = 'strains';
+        this._seedSubView = 'list';
+        this._selectedEventId = null;
+        this._batchForm = {
+            strain_name: '', breeder: '', quantity: 1,
+            acquisition_date: '', generation: 'F1', lineage: '', notes: ''
+        };
+        this._pollinationForm = {
+            date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
+        };
+        this._harvestForm = { quantity: 1, notes: '' };
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
@@ -16443,6 +17220,11 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Auto-open editor if editingStrain is provided
         if (changedProps.has('editingStrain') && this.editingStrain) {
             this._startEdit(this.editingStrain);
+        }
+    }
+    updated(changedProperties) {
+        if (changedProperties.has('initialTab')) {
+            this._activeMainTab = this.initialTab;
         }
     }
     _startEdit(strain) {
@@ -16610,7 +17392,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
-          ${this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView()}
+          ${this._renderTabBar()}
+          ${this._activeMainTab === 'seeds'
+            ? this._renderSeedsTab()
+            : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())}
         </div>
 
         ${this._isCropping ? this.renderCropOverlay() : E}
@@ -17890,6 +18675,230 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     _cancelDeleteBreeder() {
         this._pendingDeleteBreeder = null;
     }
+    // ── Seeds & Genetics tab ──────────────────────────────────────────────────
+    _renderTabBar() {
+        return x `
+      <div class="main-tab-bar">
+        <button
+          class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'strains'; }}
+        >Strains</button>
+        <button
+          class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'seeds'; }}
+        >Seeds &amp; Genetics</button>
+      </div>
+    `;
+    }
+    _renderSeedsTab() {
+        if (this._seedSubView === 'add-batch')
+            return this._renderAddBatchForm();
+        if (this._seedSubView === 'log-pollination')
+            return this._renderLogPollinationForm();
+        if (this._seedSubView === 'harvest')
+            return this._renderHarvestForm();
+        return this._renderSeedList();
+    }
+    _renderSeedList() {
+        return x `
+      <div class="seeds-section">
+        <div class="seeds-header">
+          <h3>Seed inventory</h3>
+          <button class="md3-button filled" @click=${() => { this._seedSubView = 'add-batch'; }}>
+            Add batch
+          </button>
+        </div>
+        ${this.seedBatches.length === 0
+            ? x `<p class="empty-state">No seed batches yet.</p>`
+            : this.seedBatches.map(b => x `
+              <div class="seed-batch-card">
+                <div class="seed-batch-name">${b.strain_name}</div>
+                <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
+                ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
+                ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
+              </div>
+            `)}
+
+        <div class="seeds-header">
+          <h3>Pollination log</h3>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'log-pollination'; }}>
+            Log pollination
+          </button>
+        </div>
+        ${this.pollinationEvents.length === 0
+            ? x `<p class="empty-state">No pollination events yet.</p>`
+            : this.pollinationEvents.map(e => x `
+              <div class="pollination-card">
+                <div class="pollination-date">${e.date}</div>
+                <div class="pollination-plants">Donor: ${e.donor_plant_id} × Receiver: ${e.receiver_plant_id}</div>
+                ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
+                ${e.result_seed_batch_id
+                ? x `<span class="badge success">Seeds harvested</span>`
+                : x `
+                      <button class="md3-button tonal" @click=${() => {
+                    this._selectedEventId = e.event_id;
+                    this._seedSubView = 'harvest';
+                }}>Harvest seeds</button>
+                    `}
+              </div>
+            `)}
+      </div>
+    `;
+    }
+    _renderAddBatchForm() {
+        return x `
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
+          <h3>Add seed batch</h3>
+        </div>
+        <label>Strain name
+          <input type="text" .value=${this._batchForm.strain_name}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, strain_name: e.target.value }; }} />
+        </label>
+        <label>Breeder
+          <input type="text" .value=${this._batchForm.breeder}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, breeder: e.target.value }; }} />
+        </label>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._batchForm.quantity)}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, quantity: parseInt(e.target.value) || 1 }; }} />
+        </label>
+        <label>Acquisition date
+          <input type="date" .value=${this._batchForm.acquisition_date}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, acquisition_date: e.target.value }; }} />
+        </label>
+        <label>Generation
+          <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, generation: e.target.value }; }} />
+        </label>
+        <label>Lineage
+          <input type="text" placeholder="Strain A x Strain B" .value=${this._batchForm.lineage}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, lineage: e.target.value }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._batchForm.notes}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, notes: e.target.value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    _renderLogPollinationForm() {
+        return x `
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
+          <h3>Log pollination</h3>
+        </div>
+        <label>Date
+          <input type="date" .value=${this._pollinationForm.date}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, date: e.target.value }; }} />
+        </label>
+        <label>Donor plant ID
+          <input type="text" placeholder="Plant ID of donor" .value=${this._pollinationForm.donor_plant_id}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: e.target.value }; }} />
+        </label>
+        <label>Receiver plant ID
+          <input type="text" placeholder="Plant ID of receiver" .value=${this._pollinationForm.receiver_plant_id}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: e.target.value }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._pollinationForm.notes}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, notes: e.target.value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    _renderHarvestForm() {
+        return x `
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>← Back</button>
+          <h3>Harvest seeds</h3>
+        </div>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._harvestForm.quantity)}
+            @input=${(e) => { this._harvestForm = { ...this._harvestForm, quantity: parseInt(e.target.value) || 1 }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._harvestForm.notes}
+            @input=${(e) => { this._harvestForm = { ...this._harvestForm, notes: e.target.value }; }} />
+        </label>
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    async _submitAddBatch() {
+        const f = this._batchForm;
+        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'add_seed_batch', {
+                strain_name: f.strain_name,
+                breeder: f.breeder,
+                quantity: f.quantity,
+                acquisition_date: f.acquisition_date,
+                generation: f.generation,
+                lineage: f.lineage,
+                notes: f.notes,
+            });
+            this._seedSubView = 'list';
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', lineage: '', notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to add seed batch', e);
+        }
+    }
+    async _submitLogPollination() {
+        const f = this._pollinationForm;
+        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'log_pollination', {
+                date: f.date,
+                donor_plant_id: f.donor_plant_id,
+                receiver_plant_id: f.receiver_plant_id,
+                notes: f.notes,
+            });
+            this._seedSubView = 'list';
+            this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to log pollination', e);
+        }
+    }
+    async _submitHarvestSeeds() {
+        const f = this._harvestForm;
+        if (!this._selectedEventId || !f.quantity)
+            return;
+        try {
+            await this.hass.callService('growspace_manager', 'harvest_seeds', {
+                event_id: this._selectedEventId,
+                quantity: f.quantity,
+                notes: f.notes,
+            });
+            this._seedSubView = 'list';
+            this._selectedEventId = null;
+            this._harvestForm = { quantity: 1, notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to harvest seeds', e);
+        }
+    }
     renderBreederDeleteConfirmation() {
         const breederName = this._pendingDeleteBreeder;
         const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
@@ -18518,8 +19527,182 @@ StrainLibraryDialog.styles = [
         gap: 8px;
         flex-shrink: 0;
       }
+
+      /* Main tab bar */
+      .main-tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        background: var(--secondary-background-color, rgba(0,0,0,0.2));
+        flex-shrink: 0;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 14px 16px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.2s, border-color 0.2s;
+        font-family: inherit;
+      }
+      .tab-btn.active {
+        color: var(--accent-green, #4caf50);
+        border-bottom-color: var(--accent-green, #4caf50);
+      }
+      .tab-btn:hover:not(.active) {
+        color: var(--primary-text-color);
+      }
+
+      /* Seeds section */
+      .seeds-section {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .seeds-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 16px 0 12px 0;
+      }
+      .seeds-header:first-child {
+        margin-top: 0;
+      }
+      .seeds-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .seed-batch-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+      }
+      .seed-batch-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--primary-text-color);
+        margin-bottom: 4px;
+      }
+      .seed-batch-meta {
+        font-size: 0.82rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+      }
+      .seed-batch-lineage {
+        font-size: 0.8rem;
+        color: var(--accent-green, #4caf50);
+        margin-bottom: 4px;
+      }
+      .seed-batch-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .pollination-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pollination-date {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--primary-text-color);
+      }
+      .pollination-plants {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+      }
+      .pollination-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .badge.success {
+        background: rgba(76, 175, 80, 0.15);
+        color: var(--accent-green, #4caf50);
+      }
+      .empty-state {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        margin: 8px 0 16px 0;
+      }
+
+      /* Form view */
+      .form-view {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+      .form-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .form-view label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+      .form-view input {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.95rem;
+        outline: none;
+        font-family: inherit;
+      }
+      .form-view input:focus {
+        border-color: var(--accent-green, #4caf50);
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+      }
     `,
 ];
+__decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "hass", void 0);
 __decorate([
     n$5({ type: Boolean })
 ], StrainLibraryDialog.prototype, "open", void 0);
@@ -18571,6 +19754,36 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_pendingDeleteBreeder", void 0);
+__decorate([
+    n$5({ type: Array })
+], StrainLibraryDialog.prototype, "seedBatches", void 0);
+__decorate([
+    n$5({ type: Array })
+], StrainLibraryDialog.prototype, "pollinationEvents", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainLibraryDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ type: Function })
+], StrainLibraryDialog.prototype, "onSeedDataChanged", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_seedSubView", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_selectedEventId", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_batchForm", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_pollinationForm", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_harvestForm", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
@@ -18875,6 +20088,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envDehumidifierThresholds = {};
         this.envSensorCoordinates = {};
         this.envIrrigationTanks = [];
+        // Vision Checkup Config
+        this.envVisionEnabled = false;
+        this.envVisionEarlyOffset = 60;
+        this.envVisionMidHours = 6;
+        this.envVisionLateOffset = 60;
+        this.envVisionCameraEntities = [];
         this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
         // Sensor Groups
         this.envSensorGroups = [];
@@ -18928,9 +20147,15 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSensorGroups = environmentData.sensorGroups || [];
             this.envSensorCoordinates = environmentData.sensorCoordinates || {};
             this.envIrrigationTanks = environmentData.irrigationTanks || [];
+            this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+            if (environmentData.visionCheckupConfig) {
+                this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
+                this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
+                this.envVisionMidHours = environmentData.visionCheckupConfig.mid_check_hours;
+                this.envVisionLateOffset = environmentData.visionCheckupConfig.late_check_offset_minutes;
+            }
             // Also pre-select for Edit/Delete actions
             if (environmentData.selectedGrowspaceId) {
-                console.log('DEBUG: Pre-selecting growspace for edit:', environmentData.selectedGrowspaceId);
                 this._populateEditFields(environmentData.selectedGrowspaceId);
             }
         }
@@ -18983,6 +20208,23 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 sensorGroups: this.envSensorGroups,
                 sensorCoordinates: this.envSensorCoordinates,
                 irrigationTanks: this.envIrrigationTanks,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _submitVisionCheckupConfig() {
+        if (!this.envSelectedId)
+            return;
+        this.dispatchEvent(new CustomEvent('vision-checkup-config-submit', {
+            detail: {
+                growspaceId: this.envSelectedId,
+                visionCheckupConfig: {
+                    enabled: this.envVisionEnabled,
+                    early_check_offset_minutes: this.envVisionEarlyOffset,
+                    mid_check_hours: this.envVisionMidHours,
+                    late_check_offset_minutes: this.envVisionLateOffset,
+                },
             },
             bubbles: true,
             composed: true,
@@ -19652,6 +20894,44 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             </md3-number-input>
           </div>
         </div>
+
+        <!--Vision Checkup Section-->
+        <div class="detail-card vision-checkup-section">
+          <h3 style="margin:0 0 12px;font-size:1rem;">Vision Checkup</h3>
+          ${this.envVisionCameraEntities.length === 0
+            ? x `<p class="vision-no-cameras-info" style="opacity:0.6;font-size:0.85rem;margin:0;">Configure camera entities first to enable vision checkups.</p>`
+            : x `
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                <label style="font-size:0.9rem;">Enable automatic vision checkups</label>
+                <input type="checkbox" class="vision-enabled-toggle"
+                  .checked=${this.envVisionEnabled}
+                  @change=${(e) => { this.envVisionEnabled = e.target.checked; }}>
+              </div>
+              <md3-number-input
+                label="Early check offset (min after lights on)"
+                .value=${this.envVisionEarlyOffset}
+                @value-changed=${(e) => { this.envVisionEarlyOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Mid check (hours into light cycle)"
+                .value=${this.envVisionMidHours}
+                @value-changed=${(e) => { this.envVisionMidHours = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <md3-number-input
+                label="Late check offset (min before lights off)"
+                .value=${this.envVisionLateOffset}
+                @value-changed=${(e) => { this.envVisionLateOffset = e.detail.value; }}
+                min="1">
+              </md3-number-input>
+              <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+                <button class="md3-button primary vision-save-btn" @click=${this._submitVisionCheckupConfig}>
+                  Save Vision Config
+                </button>
+              </div>
+            `}
+        </div>
       </div>
     `;
     }
@@ -19709,6 +20989,19 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
             this.envStressThreshold = 0.8;
             this.envMoldThreshold = 0.8;
+            this.envVisionCameraEntities = attrs.cameraEntities ?? [];
+            if (attrs.visionCheckupConfig) {
+                this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
+                this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
+                this.envVisionMidHours = attrs.visionCheckupConfig.mid_check_hours;
+                this.envVisionLateOffset = attrs.visionCheckupConfig.late_check_offset_minutes;
+            }
+            else {
+                this.envVisionEnabled = false;
+                this.envVisionEarlyOffset = 60;
+                this.envVisionMidHours = 6;
+                this.envVisionLateOffset = 60;
+            }
         }
         else {
             // Reset if no device or no attributes
@@ -19729,6 +21022,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = '';
             this.envDehumidifierControlEnabled = false;
             this.envDehumidifierThresholds = {};
+            this.envVisionEnabled = false;
+            this.envVisionEarlyOffset = 60;
+            this.envVisionMidHours = 6;
+            this.envVisionLateOffset = 60;
+            this.envVisionCameraEntities = [];
         }
     }
     renderDehumidifierTab() {
@@ -20155,6 +21453,21 @@ __decorate([
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envIrrigationTanks", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionEnabled", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionEarlyOffset", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionMidHours", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionLateOffset", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVisionCameraEntities", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
@@ -28350,6 +29663,11 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         this._snapshots = [];
         this._isLoading = false;
         this._isCapturing = false;
+        this._activeTab = 'snapshots';
+        this._visionHistory = [];
+        this._selectedResult = null;
+        this._isLoadingVision = false;
+        this._isRunningCheckup = false;
     }
     willUpdate(changedProperties) {
         const opened = changedProperties.has('open') && this.open;
@@ -28400,6 +29718,42 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             this._isCapturing = false;
         }
     }
+    async _fetchVisionHistory() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isLoadingVision = true;
+        try {
+            const response = await this.store.dataService.getVisionHistory(this.dialogState.growspaceId);
+            if (response) {
+                this._visionHistory = response.history || [];
+                this._selectedResult = this._visionHistory[0] ?? null;
+            }
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to fetch vision history:', err);
+            this.store.ui.showToast('Failed to load vision history', 'error');
+        }
+        finally {
+            this._isLoadingVision = false;
+        }
+    }
+    async _runVisionCheckup() {
+        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+            return;
+        this._isRunningCheckup = true;
+        try {
+            await this.store.dataService.triggerVisionCheckup(this.dialogState.growspaceId);
+            this.store.ui.showToast('Vision checkup complete', 'success');
+            await this._fetchVisionHistory();
+        }
+        catch (err) {
+            console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
+            this.store.ui.showToast('Failed to run vision checkup', 'error');
+        }
+        finally {
+            this._isRunningCheckup = false;
+        }
+    }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
@@ -28414,6 +29768,81 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             return `${year}-${month}-${day} ${hh}:${mm}`;
         }
         return timestampStr;
+    }
+    _renderTabBar() {
+        return x `
+            <div class="tab-bar">
+                <button class="tab-btn ${this._activeTab === 'snapshots' ? 'active' : ''}"
+                    @click=${() => { this._activeTab = 'snapshots'; }}>Snapshots</button>
+                <button class="tab-btn ${this._activeTab === 'vision' ? 'active' : ''}"
+                    @click=${() => { this._activeTab = 'vision'; this._fetchVisionHistory(); }}>Vision Checkup</button>
+            </div>
+        `;
+    }
+    _renderVisionTab() {
+        const SEVERITY_COLORS = {
+            none: 'var(--secondary-text-color)',
+            low: 'var(--success-color, #4caf50)',
+            medium: 'var(--warning-color, #ff9800)',
+            high: 'var(--error-color, #f44336)',
+            critical: '#b71c1c',
+        };
+        const r = this._selectedResult;
+        return x `
+            <div class="vision-tab">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+                    <md3-button class="run-checkup-btn"
+                        @click=${this._runVisionCheckup}
+                        ?disabled=${this._isRunningCheckup}>
+                        ${this._isRunningCheckup ? 'Running...' : 'Run Checkup Now'}
+                    </md3-button>
+                </div>
+                ${this._isLoadingVision
+            ? x `<div style="text-align:center;padding:32px;"><ha-circular-progress active></ha-circular-progress></div>`
+            : !r
+                ? x `<div class="vision-empty-state"><p>No vision checkups yet. Click "Run Checkup Now" to start.</p></div>`
+                : x `
+                            <div class="latest-result">
+                                <div class="result-header" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                                    <span class="severity-chip" style="background:${SEVERITY_COLORS[r.severity] ?? 'gray'};color:#fff;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${r.severity}</span>
+                                    <span style="text-transform:capitalize;opacity:0.7;">${r.check_type} check</span>
+                                    <span style="opacity:0.5;font-size:0.8rem;">${this._formatDate(r.timestamp)}</span>
+                                </div>
+                                <p class="analysis-text" style="margin:0 0 12px;line-height:1.6;">${r.analysis}</p>
+                                ${r.issues_detected.length > 0 ? x `
+                                    <div style="margin-bottom:12px;">
+                                        <strong style="font-size:0.85rem;">Issues detected</strong>
+                                        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                                            ${r.issues_detected.map(i => x `<span class="issue-chip" style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius:10px;padding:2px 10px;font-size:0.8rem;">${i}</span>`)}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${r.recommendations.length > 0 ? x `
+                                    <div>
+                                        <strong style="font-size:0.85rem;">Recommendations</strong>
+                                        <ol style="margin:8px 0 0 16px;padding:0;">
+                                            ${r.recommendations.map(rec => x `<li class="recommendation-item" style="margin-bottom:4px;font-size:0.9rem;">${rec}</li>`)}
+                                        </ol>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${this._visionHistory.length > 1 ? x `
+                                <div style="margin-top:24px;border-top:1px solid var(--divider-color);padding-top:12px;">
+                                    <strong style="font-size:0.85rem;opacity:0.7;">History</strong>
+                                    ${this._visionHistory.map(entry => x `
+                                        <div class="history-row"
+                                            style="display:flex;align-items:center;gap:12px;padding:8px 4px;cursor:pointer;border-radius:8px;background:${this._selectedResult === entry ? 'rgba(255,255,255,0.05)' : 'transparent'};"
+                                            @click=${() => { this._selectedResult = entry; }}>
+                                            <span style="font-size:0.8rem;opacity:0.6;">${this._formatDate(entry.timestamp)}</span>
+                                            <span style="text-transform:capitalize;font-size:0.8rem;opacity:0.7;">${entry.check_type}</span>
+                                            <span style="background:${SEVERITY_COLORS[entry.severity]};color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;">${entry.severity}</span>
+                                        </div>
+                                    `)}
+                                </div>
+                            ` : ''}
+                        `}
+            </div>
+        `;
     }
     render() {
         return x `
@@ -28445,51 +29874,57 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                 </div>
 
                 <div class="dialog-content">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <p style="opacity: 0.7; margin: 0;">View recent camera captures from your growspace.</p>
-                        <md3-button
-                            @click=${this._captureSnapshot}
-                            ?disabled=${this._isCapturing}
-                            style="--md-sys-color-primary: var(--primary-color);"
-                        >
-                            <ha-svg-icon .path=${mdiCamera} slot="icon"></ha-svg-icon>
-                            ${this._isCapturing ? 'Capturing...' : 'Capture Now'}
-                        </md3-button>
-                    </div>
+                    ${this._renderTabBar()}
 
-                    ${this._isLoading && this._snapshots.length === 0
+                    ${this._activeTab === 'snapshots' ? x `
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <p style="opacity: 0.7; margin: 0;">View recent camera captures from your growspace.</p>
+                                <md3-button
+                                    @click=${this._captureSnapshot}
+                                    ?disabled=${this._isCapturing}
+                                    style="--md-sys-color-primary: var(--primary-color);"
+                                >
+                                    <ha-svg-icon .path=${mdiCamera} slot="icon"></ha-svg-icon>
+                                    ${this._isCapturing ? 'Capturing...' : 'Capture Now'}
+                                </md3-button>
+                            </div>
+
+                            ${this._isLoading && this._snapshots.length === 0
             ? x `<div style="text-align: center; padding: 40px;">
-                                <ha-circular-progress active></ha-circular-progress>
-                            </div>`
+                                    <ha-circular-progress active></ha-circular-progress>
+                                </div>`
             : this._snapshots.length > 0
                 ? x `
-                                <div class="snapshots-grid">
-                                    ${this._snapshots.map((snapshot) => x `
-                                            <div class="snapshot-card">
-                                                <img
-                                                    src="${snapshot.path}"
-                                                    class="snapshot-image"
-                                                    alt="Camera Snapshot"
-                                                    loading="lazy"
-                                                    onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
-                                                />
-                                                <div class="snapshot-info">
-                                                    <span>${this._formatDate(snapshot.timestamp)}</span>
+                                    <div class="snapshots-grid">
+                                        ${this._snapshots.map((snapshot) => x `
+                                                <div class="snapshot-card">
+                                                    <img
+                                                        src="${snapshot.path}"
+                                                        class="snapshot-image"
+                                                        alt="Camera Snapshot"
+                                                        loading="lazy"
+                                                        onerror="this.src='data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 24 24\\'%3E%3Cpath fill=\\'%23666\\' d=\\'M21,17H7V3H21M21,1H7A2,2 0 0,0 5,3V17A2,2 0 0,0 7,19H21A2,2 0 0,0 23,17V3A2,2 0 0,0 21,1M3,5H1V21A2,2 0 0,0 3,23H19V21H3V5M15.96,10.29L13.21,13.83L11.25,11.47L8.5,15H19.5L15.96,10.29Z\\'/%3E%3C/svg%3E'"
+                                                    />
+                                                    <div class="snapshot-info">
+                                                        <span>${this._formatDate(snapshot.timestamp)}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        `)}
-                                </div>
-                            `
+                                            `)}
+                                    </div>
+                                `
                 : x `
-                                <div class="empty-state">
-                                    <ha-svg-icon
-                                        .path=${mdiCamera}
-                                        style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
-                                    ></ha-svg-icon>
-                                    <h3>No Snapshots Found</h3>
-                                    <p>Click "Capture Now" to take a picture using your configured cameras.</p>
-                                </div>
-                            `}
+                                    <div class="empty-state">
+                                        <ha-svg-icon
+                                            .path=${mdiCamera}
+                                            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+                                        ></ha-svg-icon>
+                                        <h3>No Snapshots Found</h3>
+                                        <p>Click "Capture Now" to take a picture using your configured cameras.</p>
+                                    </div>
+                                `}
+                        </div>
+                    ` : this._renderVisionTab()}
                 </div>
             </ha-dialog>
         `;
@@ -28542,6 +29977,27 @@ SnapshotsDialog.styles = [
         gap: 8px;
         align-items: center;
       }
+      .tab-bar {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+        margin-bottom: 16px;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s;
+      }
+      .tab-btn.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+      }
     `,
 ];
 __decorate([
@@ -28568,6 +30024,21 @@ __decorate([
 __decorate([
     r$2()
 ], SnapshotsDialog.prototype, "_isCapturing", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_activeTab", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_visionHistory", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_selectedResult", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isLoadingVision", void 0);
+__decorate([
+    r$2()
+], SnapshotsDialog.prototype, "_isRunningCheckup", void 0);
 SnapshotsDialog = __decorate([
     t$2('snapshots-dialog')
 ], SnapshotsDialog);
@@ -29469,6 +30940,10 @@ GrowReportDialog = __decorate([
 let DialogHost = class DialogHost extends i$3 {
     constructor() {
         super(...arguments);
+        // Genetics state
+        this._seedBatches = {};
+        this._pollinationEvents = {};
+        this._geneticsLoaded = false;
         this.strainLibrary = [];
     }
     connectedCallback() {
@@ -29563,6 +31038,14 @@ let DialogHost = class DialogHost extends i$3 {
         // Add a small delay to ensure backend has persisted changes
         await new Promise((resolve) => setTimeout(resolve, 500));
         await this.store.refreshData();
+    }
+    _refreshGeneticsData() {
+        this.store.dataService.fetchGeneticsData().then((data) => {
+            if (data) {
+                this._seedBatches = data.seed_batches;
+                this._pollinationEvents = data.pollination_events;
+            }
+        });
     }
     _renderAddPlantDialog(active, strainLibrary, selectedDeviceData) {
         if (active.type !== 'ADD_PLANT')
@@ -29796,6 +31279,9 @@ let DialogHost = class DialogHost extends i$3 {
                 },
             });
         }}
+        @open-log-pollination=${() => {
+            openStrainLibraryDialog(this.store.context, 'seeds');
+        }}
       ></plant-overview-dialog>
     `;
     }
@@ -29803,6 +31289,11 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'STRAIN_LIBRARY')
             return x ``;
         const payload = active.payload;
+        // Lazily load genetics data on first open
+        if (!this._geneticsLoaded) {
+            this._geneticsLoaded = true;
+            this._refreshGeneticsData();
+        }
         return x `
       <strain-library-dialog
         .open=${true}
@@ -29810,6 +31301,10 @@ let DialogHost = class DialogHost extends i$3 {
         .editingStrain=${payload?.editingStrain}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
+        .seedBatches=${Object.values(this._seedBatches)}
+        .pollinationEvents=${Object.values(this._pollinationEvents)}
+        .initialTab=${active.payload.initialTab ?? 'strains'}
+        .onSeedDataChanged=${() => this._refreshGeneticsData()}
         @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
@@ -29887,7 +31382,7 @@ let DialogHost = class DialogHost extends i$3 {
             this.store.showToast('Failed to update breeder', 'error');
         }
     }
-    async _handleSaveBreeder(detail) {
+    async _handleSaveBreeder(_detail) {
         // Breeders are derived from strains — there is no standalone breeder concept in the backend.
         // The "save-breeder" event cannot persist without at least one strain using the breeder name.
         this.store.showToast('Breeders are created automatically when you save a strain with breeder info.', 'info');
@@ -29922,6 +31417,7 @@ let DialogHost = class DialogHost extends i$3 {
         @delete-growspace-submit=${(e) => this.store.actions.growspace.remove(e.detail.growspace_id)}
         @remove-environment-submit=${(e) => this.store.actions.growspace.removeEnvironment(e.detail.growspace_id)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
+        @vision-checkup-config-submit=${(e) => this._handleVisionCheckupConfig(e.detail)}
         @generate-grow-report=${(e) => this.store.ui.setActiveDialog({
             type: 'GROW_REPORT',
             payload: { growspaceId: e.detail.growspace_id }
@@ -29969,6 +31465,18 @@ let DialogHost = class DialogHost extends i$3 {
         catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'Configuration failed';
             this.store.showToast(`Error: ${errorMessage}`, 'error');
+        }
+    }
+    async _handleVisionCheckupConfig(detail) {
+        try {
+            await this.store.dataService.updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+            this.store.showToast('Vision checkup config saved', 'success');
+            await this.store.refreshData();
+            this.store.ui.closeDialog();
+        }
+        catch (e) {
+            const msg = e instanceof Error ? e.message : 'Save failed';
+            this.store.showToast(`Error: ${msg}`, 'error');
         }
     }
     _renderGrowMasterDialog(active, selectedDeviceData) {
@@ -30231,6 +31739,12 @@ __decorate([
 __decorate([
     c$2({ context: storeContext, subscribe: true })
 ], DialogHost.prototype, "store", void 0);
+__decorate([
+    r$2()
+], DialogHost.prototype, "_seedBatches", void 0);
+__decorate([
+    r$2()
+], DialogHost.prototype, "_pollinationEvents", void 0);
 __decorate([
     c$2({ context: strainLibraryContext, subscribe: true })
 ], DialogHost.prototype, "strainLibrary", void 0);
@@ -103165,214 +104679,6 @@ class GrowspaceGridStore {
     }
 }
 
-async function fetchStrainLibrary(ctx, force = false) {
-    // Requires hass to be present in store (usually via dataService or just check store)
-    // The original code checks this.hass.
-    // We assume dataService has valid connection or we check it.
-    // Original code checked `if (!this.hass) return;`
-    // We can check if dataService is initialized or catch errors.
-    const CACHE_KEY = 'growspace_strain_library_v2';
-    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    let usedCache = false;
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                ctx.data.setStrainLibrary(cache.data);
-                usedCache = true;
-            }
-        }
-        catch (e) {
-            console.warn('Failed to parse cached strain library', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    if (!usedCache) {
-        try {
-            const currentStrains = await ctx.dataService.fetchStrainLibrary();
-            if (Array.isArray(currentStrains)) {
-                ctx.data.setStrainLibrary(currentStrains);
-                const cacheData = {
-                    version: 2,
-                    timestamp: Date.now(),
-                    data: currentStrains,
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library:', e);
-        }
-    }
-}
-async function fetchNutrientPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_presets';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
-                ctx.data.setNutrientPresets(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchNutrientPresets();
-        if (result) {
-            ctx.data.setNutrientPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch nutrient presets:', e);
-    }
-}
-async function fetchIPMPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_ipm_presets';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
-                ctx.data.setIPMPresets(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchIPMPresets();
-        if (result) {
-            ctx.data.setIPMPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch IPM presets:', e);
-    }
-}
-async function fetchNutrientInventory(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_inventory';
-    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                ctx.data.setNutrientInventory(cache.data);
-                return;
-            }
-        }
-        catch (_) {
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    try {
-        const result = await ctx.dataService.fetchNutrientInventory();
-        if (result) {
-            ctx.data.setNutrientInventory(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch nutrient inventory:', e);
-    }
-}
-async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
-    try {
-        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast(`Updated stock: ${name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update stock: ${error}`, 'error');
-    }
-}
-async function removeNutrientStock(ctx, nutrientId) {
-    try {
-        await ctx.dataService.removeNutrientStock(nutrientId);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast('Removed nutrient stock', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
-    }
-}
-async function fetchECRampCurves(ctx, force = false) {
-    const CACHE_KEY = 'growspace_ec_ramp_curves';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
-                ctx.data.setECRampCurves(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchECRampCurves();
-        if (result) {
-            ctx.data.setECRampCurves(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch EC ramp curves:', e);
-    }
-}
-
 /**
  * Plant Actions - Unified business logic for plant operations.
  */
@@ -104097,367 +105403,6 @@ async function removeGrowspace(ctx, growspaceId) {
         ctx.showToast(`Failed to remove growspace: ${error}`, 'error');
         return false;
     }
-}
-
-function setIsCompactView(ctx, value) {
-    if (value) {
-        ctx.ui.setViewMode(ViewMode.COMPACT);
-    }
-    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-}
-function toggleHeaderExpansion(ctx) {
-    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-    else {
-        ctx.ui.setViewMode(ViewMode.HEADER);
-    }
-}
-function togglePlantSelection(ctx, plantOrId) {
-    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-    if (!plantId)
-        return;
-    ctx.ui.togglePlantSelection(plantId);
-}
-function selectAllPlants(ctx) {
-    const selectedDevice = ctx.data.$selectedDevice.get();
-    if (!selectedDevice)
-        return;
-    const devices = ctx.data.$devices.get();
-    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
-    const allIds = [];
-    if (selectedDeviceData && selectedDeviceData.plants) {
-        selectedDeviceData.plants.forEach((plant) => {
-            const pId = plant.attributes.plant_id;
-            if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
-                allIds.push(pId);
-            }
-        });
-        ctx.ui.selectAllPlants(allIds);
-    }
-}
-function clearPlantSelection(ctx) {
-    ctx.ui.clearPlantSelection();
-}
-function exitEditMode(ctx) {
-    ctx.ui.setEditMode(false);
-    ctx.ui.clearPlantSelection();
-}
-function handlePlantClick(ctx, plant) {
-    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
-        const plantId = plant.attributes.plant_id;
-        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
-            togglePlantSelection(ctx, plantId);
-        }
-        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
-    }
-    else {
-        openPlantOverviewDialog(ctx, plant);
-    }
-}
-function openPlantOverviewDialog(ctx, plant, selectedIds) {
-    ctx.ui.setActiveDialog({
-        type: 'PLANT_OVERVIEW',
-        payload: {
-            plant,
-            editedAttributes: { ...plant.attributes },
-            activeTab: 'dashboard',
-            selectedPlantIds: selectedIds,
-        },
-    });
-}
-function handleDeepLink(ctx, plantId) {
-    // 1. Wait for data to be ready if needed - for now we check devices
-    const devices = ctx.data.$devices.get();
-    if (!devices || devices.length === 0) {
-        console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
-        ctx.ui.setPendingDeepLink(plantId);
-        return;
-    }
-    // 2. Find the plant across all devices
-    let foundPlant;
-    for (const device of devices) {
-        if (!device.plants)
-            continue;
-        foundPlant = device.plants.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
-        if (foundPlant)
-            break;
-    }
-    if (foundPlant) {
-        console.log('[DeepLink] Plant found, opening dialog:', plantId);
-        openPlantOverviewDialog(ctx, foundPlant);
-        // 3. Clear pending state
-        ctx.ui.setPendingDeepLink(null);
-        // 4. Cleanup URL to prevent re-opening on refresh
-        const url = new URL(window.location.href);
-        url.searchParams.delete('plantId');
-        window.history.replaceState({}, '', url.toString());
-    }
-    else {
-        // Not found - could be stale or restricted access
-        console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
-        // Still clear pending state to avoid infinite retries if the ID is just wrong
-        ctx.ui.setPendingDeepLink(null);
-    }
-}
-function openBatchWateringDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            mode: 'plant',
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
-}
-function openBatchTrainingDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
-}
-function openAddPlantDialog(ctx, row, col) {
-    if (row !== undefined && col !== undefined) {
-        fetchStrainLibrary(ctx);
-        ctx.ui.setActiveDialog({
-            type: 'ADD_PLANT',
-            payload: { row, col },
-        });
-        return;
-    }
-    const selectedDeviceId = ctx.data.$selectedDevice.get();
-    if (!selectedDeviceId) {
-        return;
-    }
-    const devices = ctx.data.$devices.get();
-    const device = devices.find((d) => d.deviceId === selectedDeviceId);
-    let targetRow = 0;
-    let targetCol = 0;
-    if (device) {
-        const occupied = new Set();
-        const deleted = ctx.data.$optimisticDeletedPlantIds.get();
-        device.plants.forEach((p) => {
-            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-            if (deleted.has(pId))
-                return;
-            const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
-            const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
-            occupied.add(`${r},${c}`);
-        });
-        let found = false;
-        const rows = device.rows || 4;
-        const cols = device.plantsPerRow || 4;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (!occupied.has(`${r},${c}`)) {
-                    targetRow = r;
-                    targetCol = c;
-                    found = true;
-                    break;
-                }
-            }
-            if (found)
-                break;
-        }
-    }
-    fetchStrainLibrary(ctx);
-    ctx.ui.setActiveDialog({
-        type: 'ADD_PLANT',
-        payload: { row: targetRow, col: targetCol },
-    });
-}
-function openStrainRecommendationDialog(ctx) {
-    ctx.ui.setActiveDialog({
-        type: 'STRAIN_RECOMMENDATION',
-        payload: { isLoading: false, response: null },
-    });
-}
-function openNutrientPresetsDialog(ctx) {
-    fetchNutrientPresets(ctx);
-    ctx.ui.setActiveDialog({
-        type: 'NUTRIENT_PRESETS',
-        payload: {},
-    });
-}
-function openIPMDialog(ctx, context) {
-    fetchIPMPresets(ctx);
-    const growspaceId = context?.growspaceId ||
-        (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
-    ctx.ui.setActiveDialog({
-        type: 'IPM',
-        payload: {
-            growspaceId,
-            plantIds: context?.plantIds,
-        },
-    });
-}
-function openLogbookDialog(ctx) {
-    const growspaceId = ctx.data.$selectedDevice.get();
-    if (growspaceId) {
-        ctx.ui.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: { growspaceId },
-        });
-    }
-}
-async function exportStrainLibrary(ctx) {
-    try {
-        const library = await ctx.dataService.fetchStrainLibrary();
-        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute('href', dataStr);
-        downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    }
-    catch (e) {
-        console.error(e);
-        ctx.showToast('Failed to export library', 'error');
-    }
-}
-/** HELPER: Get common growspace ID for multiple plants */
-function getCommonGrowspaceId(ctx, plantIds) {
-    const plantToDevice = ctx.data.$plantToDeviceMap.get();
-    let commonGrowspaceId;
-    for (const plantId of plantIds) {
-        const plantGrowspaceId = plantToDevice.get(plantId);
-        if (!plantGrowspaceId)
-            continue;
-        if (commonGrowspaceId === undefined) {
-            commonGrowspaceId = plantGrowspaceId;
-        }
-        else if (commonGrowspaceId !== plantGrowspaceId) {
-            return undefined; // Mixed growspaces
-        }
-    }
-    return commonGrowspaceId;
-}
-// ===== Standardized Dialog Opening Functions =====
-function openConfigDialog(ctx, device) {
-    ctx.ui.setActiveDialog({
-        type: 'CONFIG',
-        payload: {
-            currentTab: ConfigTab.ENVIRONMENT,
-            environmentData: {
-                selectedGrowspaceId: device?.deviceId || '',
-                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
-                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
-                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
-                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
-                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
-                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
-                stressThreshold: 0.8,
-                moldThreshold: 0.8,
-                lightSensor: device?.environmentAttributes?.lightSensor || '',
-                lightSensors: device?.environmentAttributes?.lightSensors || [],
-                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
-                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
-                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
-                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
-                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
-                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
-                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
-                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
-                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
-                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
-                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
-                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
-            },
-        },
-    });
-}
-function openStrainLibraryDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
-}
-function openIrrigationDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
-}
-function openGrowMasterDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'GROW_MASTER',
-        payload: {
-            growspaceId,
-            isLoading: false,
-            response: '',
-            mode: 'single',
-        },
-    });
-}
-function openWateringDialog(ctx, options) {
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            plantIds: options.plantIds,
-            growspaceId: options.growspaceId,
-            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
-        },
-    });
-}
-function openTrainingDialog(ctx, plantIds, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds,
-            growspaceId,
-        },
-    });
-}
-function openNutrientsDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
-}
-function openSnapshotsDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'SNAPSHOTS',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
-function openCropSteeringDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'CROP_STEERING',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
-function openECRampDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'EC_RAMP_EDITOR',
-        payload: {
-            growspaceId,
-        },
-    });
-}
-function openGrowReportDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'GROW_REPORT',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
 }
 
 class ActionDispatcher {
