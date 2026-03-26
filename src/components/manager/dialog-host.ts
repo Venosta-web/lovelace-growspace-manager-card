@@ -1,5 +1,5 @@
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext, strainLibraryContext } from '../../context';
 import { GrowspaceStore } from '../../store/core/growspace-store';
@@ -12,8 +12,11 @@ import {
   PlantEntity,
   StrainEntry,
   EnvironmentConfigEventDetail,
+  SeedBatch,
+  PollinationEvent,
 } from '../../types';
-import type { VisionCheckupConfigEventDetail } from '../../lib/types/dialog';
+import type { VisionCheckupConfigEventDetail, StrainLibraryDialogState } from '../../lib/types/dialog';
+import { openStrainLibraryDialog } from '../../store/ui/ui-actions';
 
 import '../../dialogs/add-plant-dialog';
 import '../../dialogs/add-plants-dialog';
@@ -54,6 +57,11 @@ export class DialogHost extends LitElement {
   private _activeDialogController!: StoreController<ActiveDialogState>;
   private _devicesController!: StoreController<GrowspaceDevice[]>;
   private _selectedDeviceController!: StoreController<string | null>;
+
+  // Genetics state
+  @state() private _seedBatches: Record<string, SeedBatch> = {};
+  @state() private _pollinationEvents: Record<string, PollinationEvent> = {};
+  private _geneticsLoaded = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -158,6 +166,18 @@ export class DialogHost extends LitElement {
     // Add a small delay to ensure backend has persisted changes
     await new Promise((resolve) => setTimeout(resolve, 500));
     await this.store.refreshData();
+  }
+
+  private async _refreshGeneticsData(): Promise<void> {
+    try {
+      const data = await this.store.dataService.fetchGeneticsData();
+      if (data) {
+        this._seedBatches = data.seed_batches;
+        this._pollinationEvents = data.pollination_events;
+      }
+    } catch (e) {
+      console.error('Failed to refresh genetics data', e);
+    }
   }
 
   private _renderAddPlantDialog(
@@ -464,6 +484,9 @@ export class DialogHost extends LitElement {
           },
         });
       }}
+        @open-log-pollination=${() => {
+        openStrainLibraryDialog(this.store.context, 'seeds');
+      }}
       ></plant-overview-dialog>
     `;
   }
@@ -475,6 +498,13 @@ export class DialogHost extends LitElement {
   ): TemplateResult {
     if (active.type !== 'STRAIN_LIBRARY') return html``;
     const payload = active.payload as Record<string, unknown>;
+
+    // Lazily load genetics data on first open
+    if (!this._geneticsLoaded) {
+      this._geneticsLoaded = true;
+      this._refreshGeneticsData();
+    }
+
     return html`
       <strain-library-dialog
         .open=${true}
@@ -482,6 +512,13 @@ export class DialogHost extends LitElement {
         .editingStrain=${payload?.editingStrain}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
+        .seedBatches=${Object.values(this._seedBatches)}
+        .pollinationEvents=${Object.values(this._pollinationEvents)}
+        .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
+        .onSeedDataChanged=${() => this._refreshGeneticsData()}
+        .onAddSeedBatch=${(data: Parameters<typeof this.store.dataService.addSeedBatch>[0]) => this.store.dataService.addSeedBatch(data)}
+        .onLogPollination=${(data: Parameters<typeof this.store.dataService.logPollination>[0]) => this.store.dataService.logPollination(data)}
+        .onHarvestSeeds=${(data: Parameters<typeof this.store.dataService.harvestSeeds>[0]) => this.store.dataService.harvestSeeds(data)}
         @close=${() => {
         // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
         if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {

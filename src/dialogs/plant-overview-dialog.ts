@@ -18,7 +18,6 @@ import {
   mdiPencil,
   mdiFlash,
   mdiPrinter,
-  mdiLeaf,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -97,6 +96,8 @@ export class PlantOverviewDialog extends LitElement {
   @state() private _scoresEdit: Record<string, number | null> = {};
   @state() private _starPreview: Record<string, number | null> = {};
   @state() private _savingHarvest = false;
+  @state() private _showScoringForm = false;
+  @state() private _savingScore = false;
 
   connectedCallback() {
     super.connectedCallback();
@@ -579,6 +580,30 @@ export class PlantOverviewDialog extends LitElement {
         opacity: 0.45;
         margin-top: 8px;
         text-align: center;
+      }
+      .phenotype-card {
+        grid-column: 1 / -1;
+      }
+      .phenotype-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .phenotype-card-header h3 {
+        margin: 0;
+      }
+      .phenotype-form {
+        margin-top: 16px;
+      }
+      .phenotype-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 16px;
+      }
+      .score-grid--readonly {
+        margin-top: 12px;
+        pointer-events: none;
+        opacity: 0.7;
       }
       .metrics-section {
         padding: 0;
@@ -1320,6 +1345,8 @@ export class PlantOverviewDialog extends LitElement {
   }
 
   private _renderActions(): TemplateResult {
+    const stage = (this.plant?.state || '').toLowerCase();
+    const isFlower = stage === PlantStage.FLOWER || stage === 'flowering';
     return html`
       <div class="detail-card" style="grid-column: 1 / -1;">
         <h3>Quick Actions</h3>
@@ -1344,9 +1371,87 @@ export class PlantOverviewDialog extends LitElement {
             <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
             <span>Print Label</span>
           </div>
+          ${isFlower ? html`
+          <div class="action-card" @click=${() => this._openLogPollination()}>
+            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
+            <span>Log Pollination</span>
+          </div>
+          ` : nothing}
         </div>
       </div>
+
+      <!-- Score Phenotype section -->
+      <div class="detail-card phenotype-card">
+        <div class="phenotype-card-header">
+          <h3>Score Phenotype</h3>
+          <button
+            class="md3-button outlined"
+            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
+          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
+        </div>
+        ${this._showScoringForm ? html`
+          <div class="phenotype-form">
+            <div class="score-grid">
+              ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+            </div>
+            <div class="phenotype-form-actions">
+              <button
+                class="md3-button filled"
+                @click=${() => this._savePhenotypeScore()}
+                ?disabled=${this._savingScore}
+              >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
+            </div>
+          </div>
+        ` : nothing}
+        ${!this._showScoringForm ? html`
+          <div class="score-grid score-grid--readonly">
+            ${SCORE_DIMENSIONS.map(dim => {
+              const val = this._scoresEdit[dim.key];
+              return html`
+                <div class="score-row">
+                  <div class="score-header">
+                    <span class="score-label">
+                      <span class="score-emoji">${dim.emoji}</span>
+                      ${dim.label}
+                    </span>
+                    <span class="score-value">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
+                  </div>
+                </div>
+              `;
+            })}
+          </div>
+        ` : nothing}
+      </div>
     `;
+  }
+
+  private async _savePhenotypeScore(): Promise<void> {
+    if (!this.plant?.attributes?.plant_id) return;
+    this._savingScore = true;
+    try {
+      const plantId = this.plant.attributes.plant_id;
+      await this.store.dataService.scorePlant({
+        plant_id: plantId,
+        ...this._scoresEdit,
+      });
+      await this.store.refreshData();
+      this._showScoringForm = false;
+    } catch (e) {
+      console.error('Failed to save phenotype scores', e);
+      this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
+    } finally {
+      this._savingScore = false;
+    }
+  }
+
+  private _openLogPollination(): void {
+    this.dispatchEvent(
+      new CustomEvent('open-log-pollination', {
+        detail: { plantId: this.plant?.attributes?.plant_id },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _renderTimeline(): TemplateResult | typeof nothing {

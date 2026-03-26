@@ -344,8 +344,14 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
   });
 }
 
-export function openStrainLibraryDialog(ctx: ActionContext) {
-  ctx.ui.setActiveDialog({ type: 'STRAIN_LIBRARY', payload: {} });
+export function openStrainLibraryDialog(
+  ctx: ActionContext,
+  initialTab?: 'strains' | 'seeds'
+) {
+  ctx.ui.setActiveDialog({
+    type: 'STRAIN_LIBRARY',
+    payload: { initialTab },
+  });
 }
 
 export function openIrrigationDialog(ctx: ActionContext) {

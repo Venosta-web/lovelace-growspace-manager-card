@@ -47,6 +47,7 @@ export interface StrainLibraryDialogState {
   editingStrain?: StrainEntry;
   source?: 'add-plant' | 'add-plants' | 'plant-overview';
   returnPayload?: unknown;
+  initialTab?: 'strains' | 'seeds';
 }
 
 export interface EnvironmentConfigData {
