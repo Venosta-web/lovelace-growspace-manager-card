@@ -24,6 +24,7 @@ import {
   mdiDotsVertical,
   mdiAccountGroup,
 } from '@mdi/js';
+import { HomeAssistant } from 'custom-card-helpers';
 import { StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -32,6 +33,7 @@ import '../components/ui/md3-number-input';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
@@ -2562,55 +2564,54 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
-  private _submitAddBatch = async () => {
+  private async _submitAddBatch(): Promise<void> {
     const f = this._batchForm;
     if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) return;
     try {
-      this.dispatchEvent(new CustomEvent('add-seed-batch', {
-        detail: {
-          strain_name: f.strain_name, breeder: f.breeder, quantity: f.quantity,
-          acquisition_date: f.acquisition_date, generation: f.generation,
-          lineage: f.lineage, notes: f.notes,
-        },
-        bubbles: true, composed: true,
-      }));
+      await this.hass.callService('growspace_manager', 'add_seed_batch', {
+        strain_name: f.strain_name,
+        breeder: f.breeder,
+        quantity: f.quantity,
+        acquisition_date: f.acquisition_date,
+        generation: f.generation,
+        lineage: f.lineage,
+        notes: f.notes,
+      });
       this._seedSubView = 'list';
       this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', lineage: '', notes: '' };
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to add seed batch', e);
     }
-  };
+  }
 
-  private _submitLogPollination = async () => {
+  private async _submitLogPollination(): Promise<void> {
     const f = this._pollinationForm;
-    if (!f.date || !f.donor_plant_id || !f.receiver_plant_id) return;
+    if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) return;
     try {
-      this.dispatchEvent(new CustomEvent('log-pollination', {
-        detail: {
-          date: f.date, donor_plant_id: f.donor_plant_id,
-          receiver_plant_id: f.receiver_plant_id, notes: f.notes,
-        },
-        bubbles: true, composed: true,
-      }));
+      await this.hass.callService('growspace_manager', 'log_pollination', {
+        date: f.date,
+        donor_plant_id: f.donor_plant_id,
+        receiver_plant_id: f.receiver_plant_id,
+        notes: f.notes,
+      });
       this._seedSubView = 'list';
       this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to log pollination', e);
     }
-  };
+  }
 
-  private _submitHarvestSeeds = async () => {
-    if (!this._selectedEventId) return;
+  private async _submitHarvestSeeds(): Promise<void> {
+    const f = this._harvestForm;
+    if (!this._selectedEventId || !f.quantity) return;
     try {
-      this.dispatchEvent(new CustomEvent('harvest-seeds', {
-        detail: {
-          event_id: this._selectedEventId, quantity: this._harvestForm.quantity,
-          notes: this._harvestForm.notes,
-        },
-        bubbles: true, composed: true,
-      }));
+      await this.hass.callService('growspace_manager', 'harvest_seeds', {
+        event_id: this._selectedEventId,
+        quantity: f.quantity,
+        notes: f.notes,
+      });
       this._seedSubView = 'list';
       this._selectedEventId = null;
       this._harvestForm = { quantity: 1, notes: '' };
@@ -2618,7 +2619,7 @@ export class StrainLibraryDialog extends LitElement {
     } catch (e) {
       console.error('Failed to harvest seeds', e);
     }
-  };
+  }
 
   private renderBreederDeleteConfirmation(): TemplateResult {
     const breederName = this._pendingDeleteBreeder!;
