@@ -79,13 +79,67 @@ describe('plant-identity-card', () => {
         .isEditing=${true}
       ></plant-identity-card>
     `);
-    
+
     let payload: any = null;
     el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
-    
+
     const textInput = el.shadowRoot?.querySelector('md3-text-input') as HTMLElement;
     textInput.dispatchEvent(new CustomEvent('change', { detail: 'New Strain Name' }));
-    
+
     expect(payload).to.deep.equal({ key: 'strain', value: 'New Strain Name' });
+  });
+
+  it('emits attribute-change for phenotype input', async () => {
+    const el = await fixture<PlantIdentityCard>(html`
+      <plant-identity-card
+        .plant=${mockPlant}
+        .editedAttributes=${mockEditedAttributes}
+        .isEditing=${true}
+      ></plant-identity-card>
+    `);
+
+    let payload: any = null;
+    el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
+
+    const textInputs = el.shadowRoot?.querySelectorAll('md3-text-input') as NodeListOf<HTMLElement>;
+    textInputs[1].dispatchEvent(new CustomEvent('change', { detail: 'New Pheno' }));
+
+    expect(payload).to.deep.equal({ key: 'phenotype', value: 'New Pheno' });
+  });
+
+  it('emits attribute-change for row number input', async () => {
+    const el = await fixture<PlantIdentityCard>(html`
+      <plant-identity-card
+        .plant=${mockPlant}
+        .editedAttributes=${mockEditedAttributes}
+        .isEditing=${true}
+      ></plant-identity-card>
+    `);
+
+    let payload: any = null;
+    el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
+
+    const numInputs = el.shadowRoot?.querySelectorAll('md3-number-input') as NodeListOf<HTMLElement>;
+    numInputs[0].dispatchEvent(new CustomEvent('change', { detail: 3 }));
+
+    expect(payload).to.deep.equal({ key: 'row', value: 3 });
+  });
+
+  it('emits attribute-change for col number input', async () => {
+    const el = await fixture<PlantIdentityCard>(html`
+      <plant-identity-card
+        .plant=${mockPlant}
+        .editedAttributes=${mockEditedAttributes}
+        .isEditing=${true}
+      ></plant-identity-card>
+    `);
+
+    let payload: any = null;
+    el.addEventListener('attribute-change', (e: any) => { payload = e.detail; });
+
+    const numInputs = el.shadowRoot?.querySelectorAll('md3-number-input') as NodeListOf<HTMLElement>;
+    numInputs[1].dispatchEvent(new CustomEvent('change', { detail: 4 }));
+
+    expect(payload).to.deep.equal({ key: 'col', value: 4 });
   });
 });

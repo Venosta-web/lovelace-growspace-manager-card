@@ -519,6 +519,35 @@ describe('PlantOverviewViewModel', () => {
       expect(note.description).toBe('Plant looking healthy');
     });
 
+    it('should process milestone-type events from plant.attributes.events', () => {
+      const plantWithMilestoneEvent = {
+        ...mockPlant,
+        attributes: {
+          ...mockPlant.attributes,
+          events: [
+            {
+              type: 'milestone' as const,
+              date: '2024-03-01T00:00:00Z',
+              label: 'Custom Milestone',
+            },
+          ],
+        },
+      };
+
+      const viewModel = createPlantOverviewViewModel(
+        plantWithMilestoneEvent,
+        mockEditedAttributes,
+        mockUIState,
+        mockStore as GrowspaceStore
+      );
+      const value = viewModel.get();
+
+      const milestoneEvents = value.timelineEvents.filter(
+        (e) => e.type === 'milestone' && e.label === 'Custom Milestone'
+      );
+      expect(milestoneEvents.length).toBe(1);
+    });
+
     it('should sort timeline events by date descending', () => {
       const plantWithMultipleEvents = {
         ...mockPlant,

@@ -10875,6 +10875,144 @@ Md3Switch = __decorate([
     t$2('md3-switch')
 ], Md3Switch);
 
+let GsHelpTooltip = class GsHelpTooltip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.content = '';
+        this.placement = 'top';
+        this.label = 'Help';
+        this._popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
+    }
+    render() {
+        if (!this.content)
+            return E;
+        return x `
+      <button
+        class="help-trigger"
+        style="anchor-name: --${this._popoverId};"
+        popovertarget="${this._popoverId}"
+        aria-label="Help: ${this.label}"
+        title="${this.label}"
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
+      </button>
+      <div
+        id="${this._popoverId}"
+        class="help-popover"
+        popover="auto"
+        style="position-anchor: --${this._popoverId};"
+      >
+        <div class="help-popover-inner">${this.content}</div>
+      </div>
+    `;
+    }
+};
+GsHelpTooltip.styles = i$6 `
+    :host {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .help-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+      border-radius: 50%;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .help-trigger:hover,
+    .help-trigger:focus-visible {
+      color: var(--primary-color, #2196f3);
+      outline: none;
+    }
+
+    .help-trigger svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      pointer-events: none;
+    }
+
+    .help-popover {
+      position: fixed;
+      inset: auto;
+      position-try-fallbacks: flip-block, flip-inline;
+      margin: 0;
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+
+    .help-popover[popover]:popover-open {
+      display: block;
+    }
+
+    .help-popover-inner {
+      background: var(--card-background-color, #2a2a2a);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      padding: 8px 12px;
+      max-width: 240px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      animation: tooltip-fade-in 0.15s ease-out;
+      white-space: normal;
+    }
+
+    @keyframes tooltip-fade-in {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    :host([placement='top']) .help-popover {
+      bottom: anchor(top);
+      left: anchor(center);
+      translate: -50% -6px;
+    }
+
+    :host([placement='bottom']) .help-popover {
+      top: anchor(bottom);
+      left: anchor(center);
+      translate: -50% 6px;
+    }
+
+    :host([placement='left']) .help-popover {
+      right: anchor(left);
+      top: anchor(center);
+      translate: -6px -50%;
+    }
+
+    :host([placement='right']) .help-popover {
+      left: anchor(right);
+      top: anchor(center);
+      translate: 6px -50%;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GsHelpTooltip.prototype, "content", void 0);
+__decorate([
+    n$5({ type: String, reflect: true })
+], GsHelpTooltip.prototype, "placement", void 0);
+__decorate([
+    n$5({ type: String })
+], GsHelpTooltip.prototype, "label", void 0);
+GsHelpTooltip = __decorate([
+    t$2('gs-help-tooltip')
+], GsHelpTooltip);
+
 let AddPlantDialog = class AddPlantDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -11027,7 +11165,14 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${dialogTitle}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${dialogTitle}</h2>
+                <gs-help-tooltip
+                  content="Add a new plant to this growspace — enter strain, breeder, and start date."
+                  placement="bottom"
+                  label="Add Plant"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${dialogSubtitle}</div>
             </div>
             <button
@@ -17463,7 +17608,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           </svg>
         </div>
         <div class="dialog-title-group">
-          <h2 class="dialog-title">Strain Library</h2>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h2 class="dialog-title">Strain Library</h2>
+            <gs-help-tooltip
+              content="Browse and manage your strain database. Assign genetics to plants for tracking lineage and expected traits."
+              placement="bottom"
+              label="Strain Library"
+            ></gs-help-tooltip>
+          </div>
         </div>
 
         <div class="header-actions" style="display:flex; gap:8px;">
@@ -18729,6 +18881,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     _renderSeedList() {
         return x `
+      <div class="dialog-header">
+        <div class="dialog-icon">
+          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiLeaf}"></path>
+          </svg>
+        </div>
+        <div class="dialog-title-group">
+          <h2 class="dialog-title">Seeds &amp; Genetics</h2>
+        </div>
+        <div class="header-actions" style="display:flex; gap:8px;">
+          <button
+            class="md3-button text close"
+            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
+            style="min-width:auto; padding:8px; margin-left: auto;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="seeds-section">
         <div class="seeds-header">
           <h3>Seed inventory</h3>
@@ -19928,7 +20101,14 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChartTree}"></path></svg>
             </div>
             <div class="dialog-title-group">
-                <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                  <gs-help-tooltip
+                    content="Group sensors together so their readings are averaged or compared as a unit."
+                    placement="bottom"
+                    label="Sensor Group"
+                  ></gs-help-tooltip>
+                </div>
                 <div class="dialog-subtitle">Configure 3D heatmap coordinates & sensors</div>
             </div>
             <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
@@ -20417,7 +20597,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Configuration</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Configuration</h2>
+                <gs-help-tooltip
+                  content="Configure this growspace — sensor assignments, name, and integration settings."
+                  placement="bottom"
+                  label="Configuration"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Manage growspaces & settings</div>
             </div>
             <button
@@ -22012,12 +22199,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainDuration = config.drainDuration || 60;
         this._irrigationTimes = this.device.irrigationConfig?.irrigationTimes || [];
         this._drainTimes = this.device.irrigationConfig?.drainTimes || [];
-        console.log('[IrrigationDialog] Initializing State', {
-            device: this.device,
-            irrigationTimes: this._irrigationTimes,
-            drainTimes: this._drainTimes,
-            rawConfig: config,
-        });
         // Initialize Strategy
         const strat = this.device.irrigationStrategy;
         this._strategy = {
@@ -22771,7 +22952,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div
           style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
         >
-          <h3 style="margin: 0;">${title}</h3>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h3 style="margin: 0;">${title}</h3>
+            <gs-help-tooltip
+              content=${type === 'irrigation'
+            ? 'Each marker is a scheduled irrigation event. The first irrigation of the day (P1) wakes up the substrate. Subsequent shots (P2) maintain moisture. The last shot (P3) ends 1–2 hours before lights off to allow a night dry-back.'
+            : 'Each marker is a scheduled drain event. Run drain after irrigation to remove excess runoff from the tray or slab. Align drain events with your irrigation schedule to prevent waterlogging.'}
+              placement="top"
+              label=${type === 'irrigation' ? 'Irrigation Schedule' : 'Drain Schedule'}
+            ></gs-help-tooltip>
+          </div>
           <button
             @click=${(e) => {
             const container = e.target
@@ -22883,12 +23073,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             }}
                   ></md3-text-input>
 
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                    <span>${type === 'irrigation' ? 'Shot Duration (seconds)' : 'Drain Duration (seconds)'}</span>
+                    <gs-help-tooltip
+                      content=${type === 'irrigation'
+                ? 'How long the irrigation pump runs per shot. Shorter shots = smaller volume delivered. Adjust until your substrate reaches your target VWC peak. Typical: 15–120 seconds per shot.'
+                : 'How long the drain pump runs after irrigation. Ensures excess runoff is removed from the tray/slab. Too short = waterlogging. Too long = excessive runoff.'}
+                      placement="right"
+                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                    ></gs-help-tooltip>
+                  </div>
                   <md3-number-input
                     label="Duration (seconds)"
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e) => {
-                console.log('DEBUG: Duration Change', e.detail);
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation' && this._addingIrrigationTime)
@@ -22967,6 +23166,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             }}
                 ></md3-text-input>
 
+                <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                  <span>${type === 'irrigation' ? 'Shot Duration (seconds)' : 'Drain Duration (seconds)'}</span>
+                  <gs-help-tooltip
+                    content=${type === 'irrigation'
+                ? 'How long the irrigation pump runs per shot. Shorter shots = smaller volume delivered. Adjust until your substrate reaches your target VWC peak. Typical: 15–120 seconds per shot.'
+                : 'How long the drain pump runs after irrigation. Ensures excess runoff is removed from the tray/slab. Too short = waterlogging. Too long = excessive runoff.'}
+                    placement="right"
+                    label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                  ></gs-help-tooltip>
+                </div>
                 <md3-number-input
                   label="Duration (seconds)"
                   .value=${editingTime.duration}
@@ -26174,7 +26383,14 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         return x `
       <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
-          <h2 class="dialog-title">Events Logbook</h2>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h2 class="dialog-title">Events Logbook</h2>
+            <gs-help-tooltip
+              content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+              placement="bottom"
+              label="Events Logbook"
+            ></gs-help-tooltip>
+          </div>
           <button
             class="md3-button text"
             @click=${this._close}
@@ -26769,7 +26985,14 @@ let WateringDialog = class WateringDialog extends i$3 {
               <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Record Watering</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Record Watering</h2>
+                <gs-help-tooltip
+                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants."
+                  placement="bottom"
+                  label="Record Watering"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
@@ -27114,7 +27337,14 @@ let TrainingDialog = class TrainingDialog extends i$3 {
               <ha-svg-icon .path=${mdiDumbbell}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Record plant training events such as LST, topping, defoliation, or SCROG weaving."
+                  placement="bottom"
+                  label="Plant Training"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._handleClose}>
@@ -27289,7 +27519,14 @@ let CloneDialog = class CloneDialog extends i$3 {
               <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Clone an existing plant entry to quickly duplicate its strain and metadata."
+                  placement="bottom"
+                  label="Clone Plant"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._handleClose}>
@@ -27685,6 +27922,16 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
                 <option value="cure">Cure</option>
               </select>
             </div>
+            <div class="md3-input-group">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                <span>Min Days in Stage</span>
+                <gs-help-tooltip
+                  content="Only suggest this preset after a plant has been in the selected growth stage for at least this many days. Use 0 to show the preset from the first day of the stage."
+                  placement="right"
+                  label="Min Days in Stage"
+                ></gs-help-tooltip>
+              </div>
+            </div>
             <md3-number-input
               label="Min Days in Stage"
               .value=${this._editingPreset.min_days_in_stage || 0}
@@ -27703,7 +27950,14 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
           <div
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
           >
-            <h3 style="margin: 0;">Nutrient Items</h3>
+            <div style="display:flex;align-items:center;gap:4px;margin:0;">
+              <h3 style="margin: 0;">Nutrient Items</h3>
+              <gs-help-tooltip
+                content="Add each nutrient product and the dose in ml per litre of water. The watering dialog multiplies these doses by the water volume to give you exact amounts to add."
+                placement="right"
+                label="Nutrient Items"
+              ></gs-help-tooltip>
+            </div>
             <button
               class="md3-button text"
               @click=${this._addNutrient}
@@ -28022,7 +28276,14 @@ let IPMDialog = class IPMDialog extends i$3 {
               <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Integrated Pest Management — log pest/disease treatments, track application dates and products used."
+                  placement="bottom"
+                  label="IPM"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
@@ -28844,6 +29105,11 @@ let NutrientDialog = class NutrientDialog extends i$3 {
                 <path d="${mdiClipboardList}"></path>
               </svg>
               Inventory
+              <gs-help-tooltip
+                content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
+                placement="bottom"
+                label="Inventory"
+              ></gs-help-tooltip>
             </div>
             <div
               class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
@@ -28853,6 +29119,11 @@ let NutrientDialog = class NutrientDialog extends i$3 {
                 <path d="${mdiFormatListBulleted}"></path>
               </svg>
               Presets
+              <gs-help-tooltip
+                content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
+                placement="bottom"
+                label="Presets"
+              ></gs-help-tooltip>
             </div>
           </div>
 
@@ -29486,7 +29757,14 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Phenotype scoring</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Phenotype scoring</h2>
+                <gs-help-tooltip
+                  content="Score your harvest for quality attributes like aroma, density, trichome coverage, and overall yield."
+                  placement="bottom"
+                  label="Phenotype scoring"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
               <div class="header-stage">${stage}</div>
             </div>
@@ -30070,7 +30348,14 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                 <!-- Custom Header -->
                 <div slot="heading" class="dialog-header">
                     <div style="display: flex; flex-direction: column;">
-                        <h2 class="dialog-title">Camera Snapshots</h2>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <h2 class="dialog-title">Camera Snapshots</h2>
+                          <gs-help-tooltip
+                            content="View and compare time-lapse camera snapshots from your grow space."
+                            placement="bottom"
+                            label="Camera Snapshots"
+                          ></gs-help-tooltip>
+                        </div>
                         <div class="dialog-subtitle">${this.growspaceName}</div>
                     </div>
                     <div class="header-actions">
@@ -30283,12 +30568,15 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
             .replace(/[_-]+$/, '');
         return `sensor.${slug}_crop_steering`;
     }
-    _renderMetricCard(title, value, icon, color) {
+    _renderMetricCard(title, value, icon, color, help = '') {
         return x `
       <div class="metric-card">
         <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
         <div class="metric-value">${value}</div>
-        <div class="metric-label">${title}</div>
+        <div class="metric-label" style="display:flex;align-items:center;gap:4px;justify-content:center;">
+          ${title}
+          ${help ? x `<gs-help-tooltip .content=${help} placement="bottom" .label=${title}></gs-help-tooltip>` : ''}
+        </div>
       </div>
     `;
     }
@@ -30343,19 +30631,33 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
               `
             : x `
                 <div style="text-align: center; margin-bottom: 24px;">
-                  <div style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">
-                    ${score > 0 ? '+' : ''}${score.toFixed(2)}
+                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">
+                    <div style="font-size: 36px; font-weight: bold;">
+                      ${score > 0 ? '+' : ''}${score.toFixed(2)}
+                    </div>
+                    <gs-help-tooltip
+                      content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+                      placement="right"
+                      label="Crop Steering Score"
+                    ></gs-help-tooltip>
                   </div>
-                  <div class="mode-badge mode-${mode}">
-                    ${mode.toUpperCase()} MODE
+                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <div class="mode-badge mode-${mode}">
+                      ${mode.toUpperCase()} MODE
+                    </div>
+                    <gs-help-tooltip
+                      content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
+                      placement="right"
+                      label="Steering Mode"
+                    ></gs-help-tooltip>
                   </div>
                 </div>
 
                 <div class="metric-grid">
-                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)')}
-                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)')}
-                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)')}
-                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor)}
+                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
+                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
+                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
+                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
                 </div>
                 
                 <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
@@ -30570,7 +30872,14 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
               <ha-svg-icon .path=${mdiChartLine}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                ${this._view === 'EDIT' ? x `<gs-help-tooltip
+                  content="An EC Ramp Curve defines target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Plants need progressively stronger nutrients as they mature. Start low (0.8–1.2 in seedling), ramp up through veg (1.5–2.0), peak in flower (2.0–2.8), then flush low at harvest."
+                  placement="bottom"
+                  label="EC Ramp Curve"
+                ></gs-help-tooltip>` : E}
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
@@ -30686,6 +30995,15 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
               @change=${(e) => this._updateCurveInfo({ name: e.detail })}
               placeholder="e.g. Veg Ramp, Bloom Progression"
             ></md3-text-input>
+            <div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                <span>Growth Stage</span>
+                <gs-help-tooltip
+                  content="Which growth phase this curve applies to. The correct curve is automatically applied when a plant enters that stage."
+                  placement="right"
+                  label="Growth Stage"
+                ></gs-help-tooltip>
+              </div>
             <md3-select
               label="Growth Stage"
               .value=${this._editingCurve.stage || 'flower'}
@@ -30698,12 +31016,20 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         ]}
               @change=${(e) => this._updateCurveInfo({ stage: e.detail })}
             ></md3-select>
+            </div>
           </div>
         </div>
 
         <div class="form-section">
           <div class="points-header">
-            <h3>EC Targets by Day</h3>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <h3>Ramp Points</h3>
+              <gs-help-tooltip
+                content="Each point sets a target EC (mS/cm) for a specific day of the stage. The system interpolates between points. Add at least 2 points — a start and an end."
+                placement="top"
+                label="Ramp Points"
+              ></gs-help-tooltip>
+            </div>
             <button
               class="md3-button text"
               @click=${this._addPoint}
@@ -30712,6 +31038,14 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
               <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
               Add Point
             </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.875rem;color:var(--secondary-text-color);margin-bottom:4px;">
+            <span>Target EC (mS/cm)</span>
+            <gs-help-tooltip
+              content="Electrical Conductivity measures total dissolved nutrients. 1 mS/cm ≈ 700 ppm. Too high causes nutrient burn; too low causes deficiency. Adjust based on plant response."
+              placement="top"
+              label="Target EC"
+            ></gs-help-tooltip>
           </div>
           <div class="points-list">
             ${points.map((point, index) => x `
@@ -30931,7 +31265,14 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">
-            <h2 class="dialog-title">Grow Report</h2>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <h2 class="dialog-title">Grow Report</h2>
+              <gs-help-tooltip
+                content="Generate a summary report of this grow cycle including environment averages, yield, and key events."
+                placement="bottom"
+                label="Grow Report"
+              ></gs-help-tooltip>
+            </div>
             <div class="dialog-subtitle">${this.state?.growspaceId ? this.store.data.$devices.get().find(d => d.deviceId === this.state.growspaceId)?.name : ''}</div>
           </div>
           <ha-icon-button
@@ -41634,12 +41975,12 @@ class MetricsUtils {
             }
         }
         const mainChips = [
-            createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds),
-            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds),
+            createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, undefined, undefined, 'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.'),
+            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, undefined, undefined, 'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.'),
             createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined
                 ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
-                : ''),
-            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds),
+                : 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.'),
+            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, undefined, undefined, 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.'),
             createChipData(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, tankLevelValue, tankMultiValues, tankEntityIds, 'Tank', tankStatus, tankTooltip),
             createChipData(MetricKey.SOIL_MOISTURE, mdiWaterPercent, soilAgg.value, soilAgg.multiValues, soilAgg.entityIds, 'Moisture'),
             createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
@@ -41647,8 +41988,8 @@ class MetricsUtils {
             envEntity
                 ? createChipData(MetricKey.OPTIMAL, envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, undefined, undefined, undefined, envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING)
                 : null,
-            createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId]),
-            createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId]),
+            createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId], undefined, undefined, 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'),
+            createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId], undefined, undefined, 'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'),
             createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
             createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
             createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
@@ -42142,6 +42483,25 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
     _toggleEnvGraph(metric) {
         this.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true }));
     }
+    _iconButton(icon, action, label, help, active = false) {
+        return x `
+      <div style="position:relative;display:inline-flex;align-items:center;">
+        <div
+          class="icon-button ${active ? 'active' : ''}"
+          @click=${() => this._triggerAction(action)}
+          title="${label}"
+        >
+          <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+        </div>
+        <gs-help-tooltip
+          .content=${help}
+          placement="bottom"
+          .label=${label}
+          style="position:absolute;top:-4px;right:-4px;"
+        ></gs-help-tooltip>
+      </div>
+    `;
+    }
     render() {
         return x `
       <div class="gs-device-chips-container">
@@ -42181,29 +42541,11 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
           `
             : ''}
 
-      <div
-        class="icon-button ${this._isEditModeController?.value ? 'active' : ''}"
-        @click=${() => this._triggerAction('edit')}
-        title="Edit Mode"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-      </div>
+      ${this._iconButton(mdiPencil, 'edit', 'Edit Mode', 'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.', this._isEditModeController?.value)}
 
-      <div
-        class="icon-button ${this._viewModeController?.value === ViewMode.HEATMAP ? 'active' : ''}"
-        @click=${() => this._triggerAction('heatmap')}
-        title="3D Heatmap"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-      </div>
+      ${this._iconButton(mdiCube, 'heatmap', '3D Heatmap', 'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.', this._viewModeController?.value === ViewMode.HEATMAP)}
 
-      <div
-        class="icon-button"
-        @click=${() => this._triggerAction('config')}
-        title="Settings"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-      </div>
+      ${this._iconButton(mdiCog, 'config', 'Settings', 'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.')}
 
       <div class="menu-container">
         <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
