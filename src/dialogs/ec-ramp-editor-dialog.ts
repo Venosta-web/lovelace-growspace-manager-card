@@ -20,6 +20,7 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import type { ECRampCurve, ECRampPoint } from '../schemas/api-schema';
 import '../components/ui';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('ec-ramp-editor-dialog')
 export class ECRampEditorDialog extends LitElement {
@@ -263,7 +264,14 @@ export class ECRampEditorDialog extends LitElement {
               <ha-svg-icon .path=${mdiChartLine}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                ${this._view === 'EDIT' ? html`<gs-help-tooltip
+                  content="An EC Ramp Curve defines target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Plants need progressively stronger nutrients as they mature. Start low (0.8–1.2 in seedling), ramp up through veg (1.5–2.0), peak in flower (2.0–2.8), then flush low at harvest."
+                  placement="bottom"
+                  label="EC Ramp Curve"
+                ></gs-help-tooltip>` : nothing}
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>
@@ -388,6 +396,15 @@ export class ECRampEditorDialog extends LitElement {
               @change=${(e: CustomEvent) => this._updateCurveInfo({ name: e.detail })}
               placeholder="e.g. Veg Ramp, Bloom Progression"
             ></md3-text-input>
+            <div>
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                <span>Growth Stage</span>
+                <gs-help-tooltip
+                  content="Which growth phase this curve applies to. The correct curve is automatically applied when a plant enters that stage."
+                  placement="right"
+                  label="Growth Stage"
+                ></gs-help-tooltip>
+              </div>
             <md3-select
               label="Growth Stage"
               .value=${this._editingCurve.stage || 'flower'}
@@ -400,12 +417,20 @@ export class ECRampEditorDialog extends LitElement {
             ]}
               @change=${(e: CustomEvent) => this._updateCurveInfo({ stage: e.detail })}
             ></md3-select>
+            </div>
           </div>
         </div>
 
         <div class="form-section">
           <div class="points-header">
-            <h3>EC Targets by Day</h3>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <h3>Ramp Points</h3>
+              <gs-help-tooltip
+                content="Each point sets a target EC (mS/cm) for a specific day of the stage. The system interpolates between points. Add at least 2 points — a start and an end."
+                placement="top"
+                label="Ramp Points"
+              ></gs-help-tooltip>
+            </div>
             <button
               class="md3-button text"
               @click=${this._addPoint}
@@ -414,6 +439,14 @@ export class ECRampEditorDialog extends LitElement {
               <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
               Add Point
             </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:0.875rem;color:var(--secondary-text-color);margin-bottom:4px;">
+            <span>Target EC (mS/cm)</span>
+            <gs-help-tooltip
+              content="Electrical Conductivity measures total dissolved nutrients. 1 mS/cm ≈ 700 ppm. Too high causes nutrient burn; too low causes deficiency. Adjust based on plant response."
+              placement="top"
+              label="Target EC"
+            ></gs-help-tooltip>
           </div>
           <div class="points-list">
             ${points.map(
