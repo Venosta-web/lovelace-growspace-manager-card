@@ -16,6 +16,7 @@ import { dialogStyles } from '../../styles/dialog.styles';
 import { GrowspaceStore } from '../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import { NutrientPreset, NutrientItem } from '../../types';
+import '../ui/gs-help-tooltip';
 
 @customElement('nutrient-presets-editor')
 export class NutrientPresetsEditor extends LitElement {
@@ -375,6 +376,16 @@ export class NutrientPresetsEditor extends LitElement {
                 <option value="cure">Cure</option>
               </select>
             </div>
+            <div class="md3-input-group">
+              <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                <span>Min Days in Stage</span>
+                <gs-help-tooltip
+                  content="Only suggest this preset after a plant has been in the selected growth stage for at least this many days. Use 0 to show the preset from the first day of the stage."
+                  placement="right"
+                  label="Min Days in Stage"
+                ></gs-help-tooltip>
+              </div>
+            </div>
             <md3-number-input
               label="Min Days in Stage"
               .value=${this._editingPreset.min_days_in_stage || 0}
@@ -393,7 +404,14 @@ export class NutrientPresetsEditor extends LitElement {
           <div
             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
           >
-            <h3 style="margin: 0;">Nutrient Items</h3>
+            <div style="display:flex;align-items:center;gap:4px;margin:0;">
+              <h3 style="margin: 0;">Nutrient Items</h3>
+              <gs-help-tooltip
+                content="Add each nutrient product and the dose in ml per litre of water. The watering dialog multiplies these doses by the water volume to give you exact amounts to add."
+                placement="right"
+                label="Nutrient Items"
+              ></gs-help-tooltip>
+            </div>
             <button
               class="md3-button text"
               @click=${this._addNutrient}

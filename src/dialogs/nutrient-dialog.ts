@@ -8,6 +8,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import './nutrient-inventory-dialog';
 import '../components/manager/nutrient-presets-editor';
+import '../components/ui/gs-help-tooltip';
 
 type Tab = 'inventory' | 'presets';
 
@@ -142,6 +143,11 @@ export class NutrientDialog extends LitElement {
                 <path d="${mdiClipboardList}"></path>
               </svg>
               Inventory
+              <gs-help-tooltip
+                content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
+                placement="bottom"
+                label="Inventory"
+              ></gs-help-tooltip>
             </div>
             <div
               class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
@@ -151,6 +157,11 @@ export class NutrientDialog extends LitElement {
                 <path d="${mdiFormatListBulleted}"></path>
               </svg>
               Presets
+              <gs-help-tooltip
+                content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
+                placement="bottom"
+                label="Presets"
+              ></gs-help-tooltip>
             </div>
           </div>
 
