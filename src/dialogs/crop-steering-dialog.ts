@@ -7,6 +7,7 @@ import { CropSteeringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import { mdiChartTimelineVariantShimmer, mdiClose, mdiWaterPercent, mdiSprout, mdiArrowUp, mdiArrowDown, mdiMinus } from '@mdi/js';
 import '../components/ui';
+import '../components/ui/gs-help-tooltip';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 
 @customElement('crop-steering-dialog')
@@ -102,12 +103,15 @@ export class CropSteeringDialog extends LitElement {
         return `sensor.${slug}_crop_steering`;
     }
 
-    private _renderMetricCard(title: string, value: string, icon: string, color: string) {
+    private _renderMetricCard(title: string, value: string, icon: string, color: string, help = '') {
         return html`
       <div class="metric-card">
         <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
         <div class="metric-value">${value}</div>
-        <div class="metric-label">${title}</div>
+        <div class="metric-label" style="display:flex;align-items:center;gap:4px;justify-content:center;">
+          ${title}
+          ${help ? html`<gs-help-tooltip .content=${help} placement="bottom" .label=${title}></gs-help-tooltip>` : ''}
+        </div>
       </div>
     `;
     }
@@ -165,19 +169,33 @@ export class CropSteeringDialog extends LitElement {
               `
                 : html`
                 <div style="text-align: center; margin-bottom: 24px;">
-                  <div style="font-size: 36px; font-weight: bold; margin-bottom: 8px;">
-                    ${score > 0 ? '+' : ''}${score.toFixed(2)}
+                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;">
+                    <div style="font-size: 36px; font-weight: bold;">
+                      ${score > 0 ? '+' : ''}${score.toFixed(2)}
+                    </div>
+                    <gs-help-tooltip
+                      content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+                      placement="right"
+                      label="Crop Steering Score"
+                    ></gs-help-tooltip>
                   </div>
-                  <div class="mode-badge mode-${mode}">
-                    ${mode.toUpperCase()} MODE
+                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <div class="mode-badge mode-${mode}">
+                      ${mode.toUpperCase()} MODE
+                    </div>
+                    <gs-help-tooltip
+                      content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
+                      placement="right"
+                      label="Steering Mode"
+                    ></gs-help-tooltip>
                   </div>
                 </div>
 
                 <div class="metric-grid">
-                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)')}
-                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)')}
-                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)')}
-                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor)}
+                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
+                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
+                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
+                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
                 </div>
                 
                 <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">

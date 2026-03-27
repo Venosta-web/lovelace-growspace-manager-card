@@ -134,7 +134,7 @@ describe('CropSteeringDialog', () => {
         mockHass.states['sensor.flower_tent_1_crop_steering'].attributes.ec_trend = 'falling';
         element.requestUpdate();
         await element.updateComplete;
-        const trendCard = Array.from(element.shadowRoot?.querySelectorAll('.metric-card')!).find(c => c.querySelector('.metric-label')?.textContent === 'EC Trend');
+        const trendCard = Array.from(element.shadowRoot?.querySelectorAll('.metric-card')!).find(c => c.querySelector('.metric-label')?.textContent?.trim().startsWith('EC Trend'));
         expect(trendCard?.querySelector('.metric-value')?.textContent?.trim()).toBe('FALLING');
 
         // Stable/Unknown
