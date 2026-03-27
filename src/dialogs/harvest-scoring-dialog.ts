@@ -7,6 +7,7 @@ import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
+import '../components/ui/gs-help-tooltip';
 
 /** Score dimension descriptor */
 interface ScoreDimension {
@@ -386,7 +387,14 @@ export class HarvestScoringDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Phenotype scoring</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Phenotype scoring</h2>
+                <gs-help-tooltip
+                  content="Score your harvest for quality attributes like aroma, density, trichome coverage, and overall yield."
+                  placement="bottom"
+                  label="Phenotype scoring"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
               <div class="header-stage">${stage}</div>
             </div>

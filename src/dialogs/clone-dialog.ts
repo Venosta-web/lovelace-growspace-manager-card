@@ -129,7 +129,14 @@ export class CloneDialog extends LitElement {
               <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Clone an existing plant entry to quickly duplicate its strain and metadata."
+                  placement="bottom"
+                  label="Clone Plant"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._handleClose}>

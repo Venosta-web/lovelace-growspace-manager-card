@@ -30,6 +30,7 @@ import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
@@ -1120,7 +1121,14 @@ export class StrainLibraryDialog extends LitElement {
           </svg>
         </div>
         <div class="dialog-title-group">
-          <h2 class="dialog-title">Strain Library</h2>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h2 class="dialog-title">Strain Library</h2>
+            <gs-help-tooltip
+              content="Browse and manage your strain database. Assign genetics to plants for tracking lineage and expected traits."
+              placement="bottom"
+              label="Strain Library"
+            ></gs-help-tooltip>
+          </div>
         </div>
 
         <div class="header-actions" style="display:flex; gap:8px;">

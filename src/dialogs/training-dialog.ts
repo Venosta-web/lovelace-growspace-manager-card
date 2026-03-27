@@ -119,7 +119,14 @@ export class TrainingDialog extends LitElement {
               <ha-svg-icon .path=${mdiDumbbell}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Record plant training events such as LST, topping, defoliation, or SCROG weaving."
+                  placement="bottom"
+                  label="Plant Training"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._handleClose}>

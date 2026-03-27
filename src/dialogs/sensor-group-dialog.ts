@@ -4,6 +4,7 @@ import { mdiClose, mdiPencil, mdiDelete, mdiChartTree } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { SensorGroup } from '../types';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('sensor-group-dialog')
 export class SensorGroupDialog extends LitElement {
@@ -147,7 +148,14 @@ export class SensorGroupDialog extends LitElement {
                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChartTree}"></path></svg>
             </div>
             <div class="dialog-title-group">
-                <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                  <gs-help-tooltip
+                    content="Group sensors together so their readings are averaged or compared as a unit."
+                    placement="bottom"
+                    label="Sensor Group"
+                  ></gs-help-tooltip>
+                </div>
                 <div class="dialog-subtitle">Configure 3D heatmap coordinates & sensors</div>
             </div>
             <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">

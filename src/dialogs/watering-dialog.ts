@@ -319,7 +319,14 @@ export class WateringDialog extends LitElement {
               <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Record Watering</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Record Watering</h2>
+                <gs-help-tooltip
+                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants."
+                  placement="bottom"
+                  label="Record Watering"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>

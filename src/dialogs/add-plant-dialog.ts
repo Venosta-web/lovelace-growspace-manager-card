@@ -11,6 +11,7 @@ import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/md3-date-input';
 import '../components/ui/md3-switch';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {
@@ -279,7 +280,14 @@ export class AddPlantDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${dialogTitle}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${dialogTitle}</h2>
+                <gs-help-tooltip
+                  content="Add a new plant to this growspace — enter strain, breeder, and start date."
+                  placement="bottom"
+                  label="Add Plant"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${dialogSubtitle}</div>
             </div>
             <button

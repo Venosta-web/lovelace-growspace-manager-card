@@ -22,6 +22,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
+import '../components/ui/gs-help-tooltip';
 import './sensor-group-dialog';
 import {
   GrowspaceDevice,
@@ -603,7 +604,14 @@ export class ConfigDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Configuration</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Configuration</h2>
+                <gs-help-tooltip
+                  content="Configure this growspace — sensor assignments, name, and integration settings."
+                  placement="bottom"
+                  label="Configuration"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Manage growspaces & settings</div>
             </div>
             <button

@@ -271,7 +271,14 @@ export class IPMDialog extends LitElement {
               <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${title}</h2>
+                <gs-help-tooltip
+                  content="Integrated Pest Management — log pest/disease treatments, track application dates and products used."
+                  placement="bottom"
+                  label="IPM"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
             <button class="md3-button text" @click=${this._close}>

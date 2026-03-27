@@ -5,6 +5,7 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { GrowReportDialogState } from '../lib/types/dialog';
 import { GrowReportData } from '../services/api/report-api';
 import { mdiClose, mdiFilePdfBox, mdiCodeJson } from '@mdi/js';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('grow-report-dialog')
 export class GrowReportDialog extends LitElement {
@@ -122,7 +123,14 @@ export class GrowReportDialog extends LitElement {
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">
-            <h2 class="dialog-title">Grow Report</h2>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <h2 class="dialog-title">Grow Report</h2>
+              <gs-help-tooltip
+                content="Generate a summary report of this grow cycle including environment averages, yield, and key events."
+                placement="bottom"
+                label="Grow Report"
+              ></gs-help-tooltip>
+            </div>
             <div class="dialog-subtitle">${this.state?.growspaceId ? this.store.data.$devices.get().find(d => d.deviceId === this.state.growspaceId)?.name : ''}</div>
           </div>
           <ha-icon-button

@@ -289,7 +289,14 @@ export class SnapshotsDialog extends LitElement {
                 <!-- Custom Header -->
                 <div slot="heading" class="dialog-header">
                     <div style="display: flex; flex-direction: column;">
-                        <h2 class="dialog-title">Camera Snapshots</h2>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <h2 class="dialog-title">Camera Snapshots</h2>
+                          <gs-help-tooltip
+                            content="View and compare time-lapse camera snapshots from your grow space."
+                            placement="bottom"
+                            label="Camera Snapshots"
+                          ></gs-help-tooltip>
+                        </div>
                         <div class="dialog-subtitle">${this.growspaceName}</div>
                     </div>
                     <div class="header-actions">

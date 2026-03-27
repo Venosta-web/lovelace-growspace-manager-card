@@ -6,6 +6,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/growspace-logbook';
 import '../components/ui/growspace-timeline';
 import '../components/ui/vpd-heatmap';
+import '../components/ui/gs-help-tooltip';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -119,7 +120,14 @@ export class LogbookDialog extends LitElement {
     return html`
       <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
         <div slot="heading" class="dialog-header">
-          <h2 class="dialog-title">Events Logbook</h2>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h2 class="dialog-title">Events Logbook</h2>
+            <gs-help-tooltip
+              content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+              placement="bottom"
+              label="Events Logbook"
+            ></gs-help-tooltip>
+          </div>
           <button
             class="md3-button text"
             @click=${this._close}
