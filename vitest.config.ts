@@ -15,6 +15,7 @@ export default defineConfig({
         include: [
             'tests/unit/**/*.{test,spec}.ts',
             'tests/cards/**/*.{test,spec}.ts',
+            'tests/components/**/*.{test,spec}.ts',
             'src/**/*.{test,spec}.ts'
         ],
         coverage: {
