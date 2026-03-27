@@ -496,14 +496,20 @@ export class MetricsUtils {
         mdiThermometer,
         tempAgg.value,
         tempAgg.multiValues,
-        tempAgg.entityIds
+        tempAgg.entityIds,
+        undefined,
+        undefined,
+        'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.'
       ),
       createChipData(
         MetricKey.HUMIDITY,
         mdiWaterPercent,
         humAgg.value,
         humAgg.multiValues,
-        humAgg.entityIds
+        humAgg.entityIds,
+        undefined,
+        undefined,
+        'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.'
       ),
       createChipData(
         MetricKey.VPD,
@@ -515,9 +521,18 @@ export class MetricsUtils {
         vpdStatus,
         vpdTargetMin !== undefined && vpdTargetMax !== undefined
           ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
-          : ''
+          : 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.'
       ),
-      createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds),
+      createChipData(
+        MetricKey.CO2,
+        mdiWeatherCloudy,
+        co2Agg.value,
+        co2Agg.multiValues,
+        co2Agg.entityIds,
+        undefined,
+        undefined,
+        'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.'
+      ),
       createChipData(
         MetricKey.IRRIGATION_TANK_LEVEL,
         mdiBarrel,
@@ -549,8 +564,26 @@ export class MetricsUtils {
           envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
         )
         : null,
-      createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId]),
-      createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId]),
+      createChipData(
+        MetricKey.DLI,
+        mdiWeatherSunny,
+        dliValue,
+        undefined,
+        [dliEntityId],
+        undefined,
+        undefined,
+        'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'
+      ),
+      createChipData(
+        MetricKey.CROP_STEERING,
+        mdiSprout,
+        cropSteeringValue,
+        undefined,
+        [cropSteeringEntityId],
+        undefined,
+        undefined,
+        'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'
+      ),
       createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
       createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
       createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),

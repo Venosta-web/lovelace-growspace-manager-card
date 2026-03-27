@@ -9,6 +9,7 @@ import { HeaderChip } from '../../utils/metrics-utils';
 import { ViewMode } from '../../constants';
 import '../ui/scroll-container';
 import '../growspace-chip';
+import '../ui/gs-help-tooltip';
 
 // Icons
 import {
@@ -209,6 +210,32 @@ export class GrowspaceHeaderActions extends LitElement {
     );
   }
 
+  private _iconButton(
+    icon: string,
+    action: string,
+    label: string,
+    help: string,
+    active = false
+  ) {
+    return html`
+      <div style="position:relative;display:inline-flex;align-items:center;">
+        <div
+          class="icon-button ${active ? 'active' : ''}"
+          @click=${() => this._triggerAction(action)}
+          title="${label}"
+        >
+          <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+        </div>
+        <gs-help-tooltip
+          .content=${help}
+          placement="bottom"
+          .label=${label}
+          style="position:absolute;top:-4px;right:-4px;"
+        ></gs-help-tooltip>
+      </div>
+    `;
+  }
+
   static styles = css`
     :host {
       display: flex;
@@ -399,29 +426,22 @@ export class GrowspaceHeaderActions extends LitElement {
           `
         : ''}
 
-      <div
-        class="icon-button ${this._isEditModeController?.value ? 'active' : ''}"
-        @click=${() => this._triggerAction('edit')}
-        title="Edit Mode"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
-      </div>
+      ${this._iconButton(
+        mdiPencil, 'edit', 'Edit Mode',
+        'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.',
+        this._isEditModeController?.value
+      )}
 
-      <div
-        class="icon-button ${this._viewModeController?.value === ViewMode.HEATMAP ? 'active' : ''}"
-        @click=${() => this._triggerAction('heatmap')}
-        title="3D Heatmap"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-      </div>
+      ${this._iconButton(
+        mdiCube, 'heatmap', '3D Heatmap',
+        'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.',
+        this._viewModeController?.value === ViewMode.HEATMAP
+      )}
 
-      <div
-        class="icon-button"
-        @click=${() => this._triggerAction('config')}
-        title="Settings"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-      </div>
+      ${this._iconButton(
+        mdiCog, 'config', 'Settings',
+        'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.'
+      )}
 
       <div class="menu-container">
         <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
