@@ -35,4 +35,20 @@ describe('GsHelpTooltip', () => {
     const btn = el.shadowRoot!.querySelector('.help-trigger');
     expect(btn).toBeNull();
   });
+
+  it('wires popovertarget on button to id on popover', async () => {
+    const el = await fixture<GsHelpTooltip>(html`
+      <gs-help-tooltip content="Test"></gs-help-tooltip>
+    `);
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.help-trigger')!;
+    const popover = el.shadowRoot!.querySelector('.help-popover')!;
+    expect(btn.getAttribute('popovertarget')).toBe(popover.id);
+  });
+
+  it('reflects placement as DOM attribute', async () => {
+    const el = await fixture<GsHelpTooltip>(html`
+      <gs-help-tooltip content="Test" placement="bottom"></gs-help-tooltip>
+    `);
+    expect(el.getAttribute('placement')).toBe('bottom');
+  });
 });

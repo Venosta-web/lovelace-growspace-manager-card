@@ -5,7 +5,8 @@ import { mdiInformationOutline } from '@mdi/js';
 @customElement('gs-help-tooltip')
 export class GsHelpTooltip extends LitElement {
   @property({ type: String }) content = '';
-  @property({ type: String }) placement: 'top' | 'bottom' | 'left' | 'right' = 'top';
+  @property({ type: String, reflect: true }) placement: 'top' | 'bottom' | 'left' | 'right' = 'top';
+  @property({ type: String }) label = 'Help';
 
   static styles = css`
     :host {
@@ -27,7 +28,6 @@ export class GsHelpTooltip extends LitElement {
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
       border-radius: 50%;
       transition: color 0.2s;
-      anchor-name: --help-anchor;
       flex-shrink: 0;
     }
 
@@ -47,7 +47,7 @@ export class GsHelpTooltip extends LitElement {
     .help-popover {
       position: fixed;
       inset: auto;
-      position-anchor: --help-anchor;
+      position-try-fallbacks: flip-block, flip-inline;
       margin: 0;
       border: none;
       padding: 0;
@@ -110,9 +110,10 @@ export class GsHelpTooltip extends LitElement {
     return html`
       <button
         class="help-trigger"
+        style="anchor-name: --${this._popoverId};"
         popovertarget="${this._popoverId}"
-        aria-label="Help"
-        title="Help"
+        aria-label="Help: ${this.label}"
+        title="${this.label}"
       >
         <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
       </button>
@@ -120,6 +121,7 @@ export class GsHelpTooltip extends LitElement {
         id="${this._popoverId}"
         class="help-popover"
         popover="auto"
+        style="position-anchor: --${this._popoverId};"
       >
         <div class="help-popover-inner">${this.content}</div>
       </div>
