@@ -522,12 +522,7 @@ export class IrrigationDialog extends LitElement {
     this._irrigationTimes = this.device.irrigationConfig?.irrigationTimes || [];
     this._drainTimes = this.device.irrigationConfig?.drainTimes || [];
 
-    console.log('[IrrigationDialog] Initializing State', {
-      device: this.device,
-      irrigationTimes: this._irrigationTimes,
-      drainTimes: this._drainTimes,
-      rawConfig: config,
-    });
+
 
     // Initialize Strategy
     const strat = this.device.irrigationStrategy;
@@ -1522,7 +1517,7 @@ export class IrrigationDialog extends LitElement {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e: CustomEvent) => {
-            console.log('DEBUG: Duration Change', e.detail);
+
             const val = parseInt(e.detail);
             if (!isNaN(val)) {
               if (type === 'irrigation' && this._addingIrrigationTime)
