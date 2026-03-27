@@ -10,6 +10,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
 import '../components/ui/md3-number-input';
 import '../components/ui/md3-switch';
+import '../components/ui/gs-help-tooltip';
 
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {
@@ -1385,7 +1386,16 @@ export class IrrigationDialog extends LitElement {
         <div
           style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;"
         >
-          <h3 style="margin: 0;">${title}</h3>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h3 style="margin: 0;">${title}</h3>
+            <gs-help-tooltip
+              content=${type === 'irrigation'
+                ? 'Each marker is a scheduled irrigation event. The first irrigation of the day (P1) wakes up the substrate. Subsequent shots (P2) maintain moisture. The last shot (P3) ends 1–2 hours before lights off to allow a night dry-back.'
+                : 'Each marker is a scheduled drain event. Run drain after irrigation to remove excess runoff from the tray or slab. Align drain events with your irrigation schedule to prevent waterlogging.'}
+              placement="top"
+              label=${type === 'irrigation' ? 'Irrigation Schedule' : 'Drain Schedule'}
+            ></gs-help-tooltip>
+          </div>
           <button
             @click=${(e: Event) => {
         const container = (e.target as HTMLElement)
@@ -1497,6 +1507,16 @@ export class IrrigationDialog extends LitElement {
           }}
                   ></md3-text-input>
 
+                  <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                    <span>${type === 'irrigation' ? 'Shot Duration (seconds)' : 'Drain Duration (seconds)'}</span>
+                    <gs-help-tooltip
+                      content=${type === 'irrigation'
+                        ? 'How long the irrigation pump runs per shot. Shorter shots = smaller volume delivered. Adjust until your substrate reaches your target VWC peak. Typical: 15–120 seconds per shot.'
+                        : 'How long the drain pump runs after irrigation. Ensures excess runoff is removed from the tray/slab. Too short = waterlogging. Too long = excessive runoff.'}
+                      placement="right"
+                      label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                    ></gs-help-tooltip>
+                  </div>
                   <md3-number-input
                     label="Duration (seconds)"
                     .value=${addingTime.duration}
@@ -1582,6 +1602,16 @@ export class IrrigationDialog extends LitElement {
           }}
                 ></md3-text-input>
 
+                <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
+                  <span>${type === 'irrigation' ? 'Shot Duration (seconds)' : 'Drain Duration (seconds)'}</span>
+                  <gs-help-tooltip
+                    content=${type === 'irrigation'
+                      ? 'How long the irrigation pump runs per shot. Shorter shots = smaller volume delivered. Adjust until your substrate reaches your target VWC peak. Typical: 15–120 seconds per shot.'
+                      : 'How long the drain pump runs after irrigation. Ensures excess runoff is removed from the tray/slab. Too short = waterlogging. Too long = excessive runoff.'}
+                    placement="right"
+                    label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
+                  ></gs-help-tooltip>
+                </div>
                 <md3-number-input
                   label="Duration (seconds)"
                   .value=${editingTime.duration}
