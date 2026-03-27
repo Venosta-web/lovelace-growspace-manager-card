@@ -1,0 +1,20 @@
+services:
+  homeassistant:
+    container_name: homeassistant_e2e
+    image: ghcr.io/home-assistant/home-assistant:stable
+    ports:
+      - "8123:8123"
+    volumes:
+      # Backend Code
+      - ../../../growspace_manager/custom_components/growspace_manager:/config/custom_components/growspace_manager
+      
+      # Frontend Build
+      - ../../dist:/config/www/community/lovelace-growspace-manager-card
+      
+      # Fixtures (Configuration)
+      - ./ha-config/configuration.yaml:/config/configuration.yaml
+      - ./ha-config/ui-lovelace.yaml:/config/ui-lovelace.yaml
+      
+    environment:
+      - TZ=UTC
+    restart: unless-stopped

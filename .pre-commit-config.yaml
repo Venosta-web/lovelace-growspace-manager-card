@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: unit-tests
+        name: unit tests
+        entry: npm run test:unit
+        language: system
+        types: [javascript, ts, json]
+        pass_filenames: false

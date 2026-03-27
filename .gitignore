@@ -23,3 +23,38 @@ growspace_manager/
 # Ignore test results
 test-results/
 server.log
+
+# Ignore test output
+test_*.txt
+test-*.txt
+
+# Playwright
+playwright-report/
+coverage/tmp
+
+# Logs and Debug output
+*_log.txt
+debug_output.txt
+
+# Debug images
+debug_*.png
+verification_*.png
+
+# Ignore coverage
+coverage/
+
+
+playwright/.auth/user.json
+playwright-report/index.html
+playwright-report/.auth/*
+
+# Verification scratchpad
+verification/
+# Ignore test images
+tests/**/*.png
+
+
+# Git worktrees
+.worktrees/
+
+

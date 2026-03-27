@@ -1,0 +1,478 @@
+# Default Config
+default_config:
+
+# Frontend & API
+frontend:
+api:
+
+homeassistant:
+  time_zone: UTC
+  elevation: 0
+  unit_system: metric
+  currency: EUR
+
+# Lovelace (Test Dashboard)
+lovelace:
+  mode: yaml
+  resources:
+    - url: /local/community/lovelace-growspace-manager-card/growspace-manager-card.js?v=2
+      type: module
+
+# Fake Hardware Controls (for manual override if needed)
+input_number:
+  sim_temp:
+    name: 'Simulated Temp'
+    min: 10
+    max: 40
+    step: 0.5
+    unit_of_measurement: '°C'
+    icon: mdi:thermometer
+
+  sim_humidity:
+    name: 'Simulated Humidity'
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: '%'
+    icon: mdi:water-percent
+
+  sim_vpd:
+    name: 'Simulated VPD'
+    min: 0
+    max: 3.0
+    step: 0.1
+    unit_of_measurement: 'kPa'
+    icon: mdi:weather-cloudy
+
+  sim_co2:
+    name: 'Simulated CO2'
+    min: 400
+    max: 2000
+    step: 10
+    unit_of_measurement: 'ppm'
+    icon: mdi:molecule-co2
+
+# Dynamic Test Sensors - oscillate using sine wave based on time
+# These create realistic varying values with history over time
+template:
+  - sensor:
+      # Temperature oscillates 20-25°C using sine wave (period ~5 minutes)
+      - name: 'Test Temperature'
+        unique_id: test_temperature
+        unit_of_measurement: '°C'
+        device_class: temperature
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 22.5 %}
+          {% set amplitude = 2.5 %}
+          {{ (base + amplitude * sin(minutes / 2.5 * 3.14159)) | round(1) }}
+
+      # Humidity oscillates 55-65% (inverse of temperature for realism)
+      - name: 'Test Humidity'
+        unique_id: test_humidity
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 60 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+
+      # VPD oscillates 1.2-1.8 kPa (period ~10 minutes)
+      - name: 'Test VPD'
+        unique_id: test_vpd
+        unit_of_measurement: 'kPa'
+        device_class: pressure
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1.5 %}
+          {% set amplitude = 0.3 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(1) }}
+
+      # CO2 oscillates 800-1200 ppm (period ~10 minutes)
+      - name: 'Test CO2'
+        unique_id: test_co2
+        unit_of_measurement: 'ppm'
+        device_class: carbon_dioxide
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1000 %}
+          {% set amplitude = 200 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(0) | int }}
+
+      # Soil Moisture oscillates 40-60% (period ~15 minutes)
+      - name: 'Test Soil Moisture'
+        unique_id: test_soil_moisture
+        unit_of_measurement: '%'
+        device_class: moisture
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 50 %}
+          {% set amplitude = 10 %}
+          {{ (base + amplitude * sin(minutes / 7.5 * 3.14159)) | round(0) | int }}
+
+      # Exhaust fan speed oscillates 0-10 (period ~3 minutes)
+      # Domain: sensor (allowed for exhaust_entity)
+      - name: 'Test Exhaust'
+        unique_id: test_exhaust
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 1.5 * 3.14159)) | round(0) | int }}
+
+      # Humidifier oscillates 0-10 (period ~4 minutes, offset phase)
+      # Domain: sensor (allowed for humidifier_entity)
+      - name: 'Test Humidifier'
+        unique_id: test_humidifier
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin((minutes + 2) / 2 * 3.14159)) | round(0) | int }}
+
+      # Circulation Fan speed oscillates 0-10 (period ~6 minutes)
+      # Domain: sensor (allowed for circulation_fan)
+      - name: 'Test Circulation Fan'
+        unique_id: test_circulation_fan
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 3 * 3.14159)) | round(0) | int }}
+
+      # Light sensor - oscillates 0-100% based on 12h cycle
+      # Domain: sensor (allowed for light_sensor)
+      # Full brightness during day (6:00-18:00), 0 at night
+      - name: 'Test Light'
+        unique_id: test_light
+        unit_of_measurement: '%'
+        state_class: measurement
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            100.0
+          {% else %}
+            0.0
+          {% endif %}
+
+      # --- DUPLICATE SENSORS FOR MULTI-DEVICE TESTING ---
+
+      # Temperature 2
+      - name: 'Test Temperature 2'
+        unique_id: test_temperature_2
+        unit_of_measurement: '°C'
+        device_class: temperature
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 24 %}
+          {% set amplitude = 2.5 %}
+          {{ (base + amplitude * sin(minutes / 2.5 * 3.14159)) | round(1) }}
+      # Temperature 3
+      - name: 'Test Temperature 3'
+        unique_id: test_temperature_3
+        unit_of_measurement: '°C'
+        device_class: temperature
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 30 %}
+          {% set amplitude = 2.5 %}
+          {{ (base + amplitude * sin(minutes / 2.5 * 3.14159)) | round(1) }}
+        # Humidity 2
+      - name: 'Test Humidity 2'
+        unique_id: test_humidity_2
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 55 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+      # Humidity 3
+      - name: 'Test Humidity 3'
+        unique_id: test_humidity_3
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 80 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+      # Humidity 4
+      - name: 'Test Humidity 4'
+        unique_id: test_humidity_4
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 65 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+      # Humidity 5
+      - name: 'Test Humidity 5'
+        unique_id: test_humidity_5
+        unit_of_measurement: '%'
+        device_class: humidity
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 40 %}
+          {% set amplitude = 5 %}
+          {{ (base - amplitude * sin(minutes / 2.5 * 3.14159)) | round(0) | int }}
+      # VPD 2
+      - name: 'Test VPD 2'
+        unique_id: test_vpd_2
+        unit_of_measurement: 'kPa'
+        device_class: pressure
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1.7 %}
+          {% set amplitude = 0.3 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(1) }}
+
+      # CO2 2
+      - name: 'Test CO2 2'
+        unique_id: test_co2_2
+        unit_of_measurement: 'ppm'
+        device_class: carbon_dioxide
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 1000 %}
+          {% set amplitude = 200 %}
+          {{ (base + amplitude * sin(minutes / 5 * 3.14159)) | round(0) | int }}
+
+      # Soil Moisture 2
+      - name: 'Test Soil Moisture 2'
+        unique_id: test_soil_moisture_2
+        unit_of_measurement: '%'
+        device_class: moisture
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 60 %}
+          {% set amplitude = 10 %}
+          {{ (base + amplitude * sin(minutes / 7.5 * 3.14159)) | round(0) | int }}
+
+      # Exhaust 2
+      - name: 'Test Exhaust 2'
+        unique_id: test_exhaust_2
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 1.5 * 3.14159)) | round(0) | int }}
+
+      # Humidifier 2
+      - name: 'Test Humidifier 2'
+        unique_id: test_humidifier_2
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin((minutes + 2) / 2 * 3.14159)) | round(0) | int }}
+
+      # Circulation Fan 2
+      - name: 'Test Circulation Fan 2'
+        unique_id: test_circulation_fan_2
+        state_class: measurement
+        device_class: power_factor
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 5 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 3 * 3.14159)) | round(0) | int }}
+
+      # Light 2
+      - name: 'Test Light 2'
+        unique_id: test_light_2
+        unit_of_measurement: '%'
+        state_class: measurement
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            100.0
+          {% else %}
+            0.0
+          {% endif %}
+      # Light 3
+      - name: 'Test Light 3'
+        unique_id: test_light_3
+        unit_of_measurement: '%'
+        state_class: measurement
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            100.0
+          {% else %}
+            0.0
+          {% endif %}
+      # Light 4
+      - name: 'Test Light 4'
+        unique_id: test_light_4
+        unit_of_measurement: '%'
+        state_class: measurement
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            100.0
+          {% else %}
+            0.0
+          {% endif %}
+      # Light 5
+      - name: 'Test Light 5'
+        unique_id: test_light_5
+        unit_of_measurement: '%'
+        state_class: measurement
+        device_class: power_factor
+        icon: mdi:lightbulb-on-outline
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 6 and hour < 18 %}
+            100.0
+          {% else %}
+            0.0
+          {% endif %}
+
+      # --- IRRIGATION TANK SENSORS ---
+
+      # Main Irrigation Tank - 75% (above warning level)
+      - name: 'Irrigation Tank 1'
+        unique_id: irrigation_tank_1
+        unit_of_measurement: '%'
+        icon: mdi:water-percent
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 75 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 8 * 3.14159)) | round(0) | int }}
+
+      # Backup Irrigation Tank - 25% (at/below warning level)
+      - name: 'Irrigation Tank 2'
+        unique_id: irrigation_tank_2
+        unit_of_measurement: '%'
+        icon: mdi:water-percent-alert
+        state: >
+          {% set minutes = now().minute + (now().second / 60) %}
+          {% set base = 25 %}
+          {% set amplitude = 5 %}
+          {{ (base + amplitude * sin(minutes / 8 * 3.14159)) | round(0) | int }}
+
+input_boolean:
+  test_irrigation_state:
+    name: 'Test Irrigation State'
+    icon: mdi:water-pump
+  test_drain_state:
+    name: 'Test Drain State'
+    icon: mdi:water-pump
+  test_dehumidifier_state:
+    name: 'Test Dehumidifier State'
+    icon: mdi:air-humidifier-off
+
+  # --- DUPLICATE BOOLEANS ---
+  test_irrigation_state_2:
+    name: 'Test Irrigation State 2'
+    icon: mdi:water-pump
+  test_drain_state_2:
+    name: 'Test Drain State 2'
+    icon: mdi:water-pump
+  test_dehumidifier_state_2:
+    name: 'Test Dehumidifier State 2'
+    icon: mdi:air-humidifier-off
+
+switch:
+  - platform: template
+    switches:
+      test_irrigation_pump:
+        friendly_name: 'Test Irrigation Pump'
+        unique_id: test_irrigation_pump
+        value_template: "{{ is_state('input_boolean.test_irrigation_state', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_irrigation_state
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_irrigation_state
+
+      test_drain_pump:
+        friendly_name: 'Test Drain Pump'
+        unique_id: test_drain_pump
+        value_template: "{{ is_state('input_boolean.test_drain_state', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_drain_state
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_drain_state
+
+      test_dehumidifier:
+        friendly_name: 'Test Dehumidifier'
+        unique_id: test_dehumidifier
+        value_template: "{{ is_state('input_boolean.test_dehumidifier_state', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_dehumidifier_state
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_dehumidifier_state
+
+      # --- DUPLICATE SWITCHES ---
+      test_irrigation_pump_2:
+        friendly_name: 'Test Irrigation Pump 2'
+        unique_id: test_irrigation_pump_2
+        value_template: "{{ is_state('input_boolean.test_irrigation_state_2', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_irrigation_state_2
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_irrigation_state_2
+
+      test_drain_pump_2:
+        friendly_name: 'Test Drain Pump 2'
+        unique_id: test_drain_pump_2
+        value_template: "{{ is_state('input_boolean.test_drain_state_2', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_drain_state_2
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_drain_state_2
+
+      test_dehumidifier_2:
+        friendly_name: 'Test Dehumidifier 2'
+        unique_id: test_dehumidifier_2
+        value_template: "{{ is_state('input_boolean.test_dehumidifier_state_2', 'on') }}"
+        turn_on:
+          service: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.test_dehumidifier_state_2
+        turn_off:
+          service: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.test_dehumidifier_state_2

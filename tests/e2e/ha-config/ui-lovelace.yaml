@@ -1,0 +1,9 @@
+
+title: E2E Test Dashboard
+
+views:
+  - title: Smoke Test
+    path: default_view
+    panel: true
+    cards:
+      - type: custom:growspace-manager-card

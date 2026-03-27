@@ -1,0 +1,28 @@
+{
+  "name": "growspace-manager-walkthrough",
+  "version": "1.0.0",
+  "description": "Video walkthrough for Growspace Manager Card",
+  "scripts": {
+    "start": "remotion preview",
+    "build": "remotion render",
+    "upgrade": "remotion upgrade",
+    "test": "eslint src --ext ts,tsx && tsc"
+  },
+  "dependencies": {
+    "remotion": "4.0.125",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "@remotion/transitions": "4.0.125",
+    "@remotion/animated-emoji": "4.0.125",
+    "@remotion/layout-utils": "4.0.125",
+    "@remotion/shapes": "4.0.125"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "@types/web": "^0.0.86",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "@remotion/eslint-config": "4.0.125"
+  }
+}

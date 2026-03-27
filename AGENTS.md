@@ -19,20 +19,20 @@ Before running the tests, you must build the project to generate the distributio
 
 ## Running Tests
 
-The tests run against a standalone HTML mockup (`verification_mockup.html`) served locally. You do not need a running Home Assistant instance.
+The tests are located in the `tests/` directory and run against a local dev server (serving `index.html` by default, but tests may target other files).
 
-To run the tests:
+To run the full test suite:
 
 ```bash
-npm run test
+npx playwright test
 ```
 
 This command will:
-1.  Start a local Python HTTP server on port 8123.
-2.  Launch Playwright (headless mode by default).
-3.  Run the tests defined in `tests/mockup.spec.ts`.
+1.  Start a local HTTP server on port 8080 (configured in `playwright.config.ts`).
+2.  Launch Playwright (headless mode is enabled by default in config).
+3.  Run all `.spec.ts` files found in the `tests/` directory.
 
 ## Troubleshooting
 
 *   **Missing Card**: If tests fail saying elements are not visible, ensure `npm run build` completed successfully and `dist/growspace-manager-card.js` exists.
-*   **Port Conflicts**: The test config uses port 8123. If this port is in use, verify if another process is running or edit `playwright.config.ts`.
+*   **Port Conflicts**: The test config uses port 8080. If this port is in use, verify if another process is running or edit `playwright.config.ts`.

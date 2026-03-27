@@ -1,15 +1,18 @@
-import { LitElement, html, css } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
-import type { LovelaceCardEditor } from "custom-card-helpers";
-import type { GrowspaceManagerCardConfig } from "./types";
+import { LitElement, html, css } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import type { LovelaceCardEditor, HomeAssistant } from 'custom-card-helpers';
+import type { GrowspaceManagerCardConfig } from './lib/types/config';
 
-@customElement("growspace-manager-card-editor")
+import { HassSubscriptionController } from './controllers/hass-subscription-controller';
+
+@customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
-  @property({ attribute: false }) public hass?: any;
-  @property({ attribute: false }) private _config?: GrowspaceManagerCardConfig;
-  @state() private _growspaceOptions: string[] = [];
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) private _config: GrowspaceManagerCardConfig | undefined;
+  @state() private _growspaceOptions: { id: string; name: string }[] = [];
 
-  private _unsubStateChanged?: () => void;
+  private _subscriptionController = new HassSubscriptionController(this);
+  private _hasSubscription = false;
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
     this._config = config;
@@ -17,7 +20,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   }
 
   updated(changedProps: Map<string, any>) {
-    if (changedProps.has("hass") && this.hass) {
+    if (changedProps.has('hass') && this.hass) {
       this._loadGrowspaces();
       this._subscribeToSensorUpdates();
     }
@@ -25,59 +28,72 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._unsubStateChanged) {
-      this._unsubStateChanged();
-      this._unsubStateChanged = undefined;
-    }
+    this._hasSubscription = false;
   }
 
-  private _subscribeToSensorUpdates() {
-  if (!this.hass || this._unsubStateChanged) return;
+  private async _subscribeToSensorUpdates() {
+    if (!this.hass || this._hasSubscription) return;
 
-  this._unsubStateChanged = this.hass.connection.subscribeEvents(
-    (event: any) => {
-      const newState = event.data.new_state;
-      if (newState?.entity_id === "sensor.growspaces_list") {
-        if (Array.isArray(newState.attributes?.growspaces)) {
-          this._growspaceOptions = newState.attributes.growspaces;
-        } else {
-          this._growspaceOptions = [];
+    this._hasSubscription = true;
+    await this._subscriptionController.subscribeEvents(
+      this.hass,
+      (event: unknown) => {
+        const customEvent = event as { data?: { new_state?: { entity_id?: string; attributes?: { growspaces?: Record<string, unknown> } } } };
+        const newState = customEvent.data?.new_state;
+        if (newState?.entity_id === 'sensor.growspaces_list') {
+          const gsObj = newState.attributes?.growspaces;
+          if (gsObj) {
+            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+              id,
+              name: String(name),
+            }));
+          } else {
+            this._growspaceOptions = [];
+          }
         }
-      }
-    },
-    "state_changed"
-  );
-}
+      },
+      'state_changed'
+    );
+  }
 
   private _loadGrowspaces() {
     if (!this.hass) return;
 
-    const entity = this.hass.states["sensor.growspaces_list"];
+    const entity = this.hass.states['sensor.growspaces_list'];
     if (entity && entity.attributes?.growspaces) {
       const gsObj = entity.attributes.growspaces;
-      // Option 1: just values (friendly names)
-      this._growspaceOptions = Object.values(gsObj);
-
-      // Option 2: key/value pairs if you want IDs as the value
-      // this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({ id, name }));
+      this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+        id,
+        name: String(name),
+      }));
     } else {
       this._growspaceOptions = [];
     }
   }
 
   static styles = css`
+    .card-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
     .form-group {
-      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 4px;
+      font-weight: 500;
+      color: var(--secondary-text-color);
     }
     select {
       width: 100%;
-      padding: 4px;
-      box-sizing: border-box;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color, white);
+      color: var(--primary-text-color);
+      font-size: 1rem;
     }
   `;
 
@@ -85,32 +101,62 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
     if (!this._config) return html``;
 
     return html`
-      <div class="form-group">
-        <label>Default Growspace</label>
-        <select
-          .value=${this._config.default_growspace ?? ""}
-          @change=${(e: Event) =>
-            this._valueChanged(
-              "default_growspace",
-              (e.target as HTMLSelectElement).value
-            )}
-        >
-          <option value="">Select a growspace</option>
-          ${this._growspaceOptions.length === 0
-            ? html`<option disabled>No growspaces found</option>`
-            : this._growspaceOptions.map(
-                (gs) => html`<option value="${gs}">${gs}</option>`
-              )}
-        </select>
+      <div class="card-config">
+        <div class="form-group">
+          <label>Initial View Mode</label>
+          <select
+            .value=${this._config.initial_view_mode || 'standard'}
+            @change=${(e: Event) =>
+        this._valueChanged('initial_view_mode', (e.target as HTMLSelectElement).value)}
+          >
+            <option value="standard">Standard</option>
+            <option value="compact">Compact (Grid Only)</option>
+            <option value="header">Header Only (Collapsed)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Default Growspace</label>
+          <select
+            .value=${this._config.default_growspace ?? ''}
+            @change=${(e: Event) =>
+        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
+          >
+            <option value="">Select a growspace</option>
+            ${this._growspaceOptions.map(
+          (gs) => html`<option value="${gs.id}">${gs.name}</option>`
+        )}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Keyboard Rotation (3D View)</label>
+          <ha-form-switch
+            .checked=${this._config.keyboard_rotate_enabled || false}
+            @change=${(e: any) => this._valueChanged('keyboard_rotate_enabled', e.target.checked)}
+          ></ha-form-switch>
+        </div>
+
+        <div class="form-group">
+          <label>Rotation Speed (${(this._config.keyboard_rotate_speed || 1.0).toFixed(1)}x)</label>
+          <input
+            type="range"
+            min="0.1"
+            max="5.0"
+            step="0.1"
+            .value=${this._config.keyboard_rotate_speed || 1.0}
+            @change=${(e: any) => this._valueChanged('keyboard_rotate_speed', parseFloat(e.target.value))}
+          />
+        </div>
       </div>
     `;
   }
 
-  private _valueChanged(key: string, value: any) {
+  private _valueChanged(key: string, value: unknown) {
     if (!this._config) return;
     const newConfig = { ...this._config, [key]: value };
     this.dispatchEvent(
-      new CustomEvent("config-changed", {
+      new CustomEvent('config-changed', {
         detail: { config: newConfig },
         bubbles: true,
         composed: true,

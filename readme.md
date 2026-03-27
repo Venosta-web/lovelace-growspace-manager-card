@@ -33,6 +33,7 @@ https://Venosta-web.github.io/lovelace-growspace-manager-card/mockup.html
   - **Light Cycle History:** Visual timeline of light ON/OFF states with 24h history.
   - **Environmental Chips:** Toggleable stats for Temperature, Humidity, VPD, and CO2 with historical graphs.
 - **Mobile Responsiveness:** Adaptive layout that switches to a list view on mobile devices for better usability.
+- **AI Assistant Integration:** Seamlessly integrated with the backend AI service to provide instant grow advice directly from the card.
 - **Configuration UI:** robust built-in configuration for managing growspaces, sensors, and global settings.
 
 ---
