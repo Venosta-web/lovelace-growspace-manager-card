@@ -37,12 +37,12 @@ describe('PlantOverviewViewModel', () => {
     // Mock plant
     mockPlant = {
       entity_id: 'sensor.test_plant',
-      state: 'vegetative',
+      state: 'veg',
       attributes: {
         plant_id: 'test-plant-1',
         strain: 'Test Strain',
         phenotype: 'Pheno A',
-        stage: 'vegetative',
+        stage: 'veg',
         growspace_id: 'test-growspace',
         days_in_stage: 15,
         total_days: 45,
@@ -162,7 +162,7 @@ describe('PlantOverviewViewModel', () => {
     );
     const value = viewModel.get();
 
-    expect(value.displaySubtitle).toBe('vegetative Stage • Pheno A');
+    expect(value.displaySubtitle).toBe('veg Stage • Pheno A');
   });
 
   it('should reflect UI state correctly', () => {
@@ -332,7 +332,7 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should enable training action for flowering plants', () => {
-      const floweringPlant = { ...mockPlant, state: 'flowering' };
+      const floweringPlant = { ...mockPlant, state: 'flower' };
       const viewModel = createPlantOverviewViewModel(
         floweringPlant,
         mockEditedAttributes,
@@ -391,7 +391,7 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should disable clone action for flowering plants', () => {
-      const floweringPlant = { ...mockPlant, state: 'flowering' };
+      const floweringPlant = { ...mockPlant, state: 'flower' };
       const viewModel = createPlantOverviewViewModel(
         floweringPlant,
         mockEditedAttributes,

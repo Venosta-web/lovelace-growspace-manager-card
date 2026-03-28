@@ -782,6 +782,50 @@ describe('GrowspaceStore Branch Coverage', () => {
             store.openLogbookDialog();
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith({ type: 'LOGBOOK', payload: { growspaceId: 'd1' } });
         });
+
+        it('should cover openSnapshotsDialog', () => {
+            store.openSnapshotsDialog('gs1');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'SNAPSHOTS' }));
+        });
+
+        it('should cover openCropSteeringDialog', () => {
+            store.openCropSteeringDialog('gs1');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'CROP_STEERING' }));
+        });
+
+        it('should cover openGrowReportDialog', () => {
+            store.openGrowReportDialog('gs1');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'GROW_REPORT' }));
+        });
+
+        it('should cover openECRampDialog', () => {
+            store.openECRampDialog('gs1');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'EC_RAMP_EDITOR' }));
+        });
+
+        it('should open crop steering dialog when toggleEnvGraph is called with crop_steering', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue('gs1');
+            store.toggleEnvGraph('crop_steering');
+            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'CROP_STEERING' }));
+        });
+
+        it('should not open crop steering dialog when toggleEnvGraph is called with crop_steering but no device', () => {
+            (dataStore.$selectedDevice.get as any).mockReturnValue(undefined);
+            store.toggleEnvGraph('crop_steering');
+            expect(uiStore.setActiveDialog).not.toHaveBeenCalled();
+        });
+
+        it('should cover fetchECRampCurves', async () => {
+            mockDataServiceInstance.fetchECRampCurves = vi.fn().mockResolvedValue({});
+            await store.fetchECRampCurves();
+            // Should not throw
+        });
+
+        it('should cover printLabel', async () => {
+            mockDataServiceInstance.printLabel = vi.fn().mockResolvedValue({});
+            await store.printLabel({ plant_id: 'p1' });
+            // Should not throw
+        });
         it('should handle handleDeletePlant with non-existent plant', async () => {
             (dataStore.$devices.get as any).mockReturnValue([
                 { deviceId: 'd1', plants: [] }

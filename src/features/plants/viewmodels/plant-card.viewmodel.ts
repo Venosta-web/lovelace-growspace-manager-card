@@ -130,7 +130,7 @@ export function createPlantCardViewModel(
         displayData,
         isSelected: selectedPlants.has(plantId),
         isEditMode,
-        isDraggable: isEditMode,
+        isDraggable: !isEditMode,
         growthDeviation,
         statusIndicators,
         ariaLabel,

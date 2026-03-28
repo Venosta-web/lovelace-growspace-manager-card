@@ -362,6 +362,11 @@ export class DialogHost extends LitElement {
           .open=${true}
           .plant=${dialogState.plant}
           .editedAttributes=${dialogState.editedAttributes}
+          @close=${() => {
+          if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+            this.store.ui.closeDialog();
+          }
+        }}
           @update-plant=${(e: CustomEvent) =>
           this.store.updatePlantFromDialog({
             plant: dialogState.plant,
@@ -381,6 +386,57 @@ export class DialogHost extends LitElement {
           this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
           @move-clone=${(e: CustomEvent) =>
           this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+          @open-watering=${(e: CustomEvent) =>
+          this.store.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: e.detail,
+          })}
+          @open-training=${(e: CustomEvent) =>
+          this.store.ui.setActiveDialog({
+            type: 'TRAINING',
+            payload: e.detail,
+          })}
+          @open-ipm=${(e: CustomEvent) =>
+          this.store.ui.setActiveDialog({
+            type: 'IPM',
+            payload: e.detail,
+          })}
+          @open-clone=${(e: CustomEvent) =>
+          this.store.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: e.detail,
+          })}
+          @open-strain-editor=${(e: CustomEvent) => {
+          const { strain, phenotype } = e.detail;
+          const strainLibrary = this.store.data.$strainLibrary.get();
+          const normalizedPhenotype = phenotype || '';
+          let strainEntry = strainLibrary.find((s) => {
+            const entryPhenotype = s.phenotype || '';
+            return s.strain === strain && entryPhenotype === normalizedPhenotype;
+          });
+          if (!strainEntry && strain) {
+            const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
+            strainEntry = {
+              strain,
+              phenotype: normalizedPhenotype,
+              key,
+              breeder: '',
+              type: 'Hybrid',
+              flowering_days_min: 60,
+              flowering_days_max: 70,
+              lineage: '',
+              sex: 'Feminized',
+              description: '',
+              image: '',
+              sativa_percentage: 50,
+              indica_percentage: 50,
+            };
+          }
+          this.store.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: { editingStrain: strainEntry },
+          });
+        }}
         ></plant-overview-container>
       `;
     }
@@ -883,11 +939,16 @@ export class DialogHost extends LitElement {
   ): TemplateResult {
     if (active.type !== 'IPM') return html``;
 
+    const payload = active.payload as { plantIds?: string[]; growspaceId?: string };
+    const plantIds = payload.plantIds ?? [];
+    const growspaceId = payload.growspaceId ?? selectedDeviceData?.deviceId;
+
     return html`
       <ipm-dialog
         .open=${true}
         .store=${this.store}
-        .dialogState=${active.payload}
+        .plantIds=${plantIds}
+        .growspaceId=${growspaceId}
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this._closeDialogIfActive('IPM')}
         @data-changed=${() => this._handleDataChanged()}

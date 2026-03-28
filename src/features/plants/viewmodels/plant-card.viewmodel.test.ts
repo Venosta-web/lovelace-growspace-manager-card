@@ -90,7 +90,7 @@ describe('PlantCardViewModel', () => {
     // Enter edit mode
     mockStore.ui!.$isEditMode.set(true);
     expect(viewModel.get().isEditMode).toBe(true);
-    expect(viewModel.get().isDraggable).toBe(true); // Should be draggable in edit mode
+    expect(viewModel.get().isDraggable).toBe(false); // Drag is disabled in edit mode
   });
 
   it('should compute status indicators correctly', () => {

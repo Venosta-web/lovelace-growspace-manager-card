@@ -271,6 +271,27 @@ describe('GrowspaceViewStandard', () => {
         expect(mockStore.hass.callService).not.toHaveBeenCalled();
     });
 
+    it('should render growspace-grid-container when USE_NEW_GROWSPACE_GRID flag is true', async () => {
+        const original = FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID;
+        try {
+            (FEATURE_FLAGS as any).USE_NEW_GROWSPACE_GRID = true;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const container = element.shadowRoot?.querySelector('growspace-grid-container');
+            expect(container).toBeTruthy();
+
+            // Verify the transplant-drop event handler is wired up in the new container
+            mockStore.hass.callService.mockReturnValue(Promise.resolve({}));
+            container?.dispatchEvent(new CustomEvent('transplant-drop', {
+                detail: { plant_id: 'p1', target_row: 1, target_col: 1 },
+            }));
+            await new Promise((r) => setTimeout(r, 0));
+        } finally {
+            (FEATURE_FLAGS as any).USE_NEW_GROWSPACE_GRID = original;
+        }
+    });
+
     it('should use value fallback in redispatch', async () => {
         // We need to trigger _redispatch. It is used in listeners.
         // We can call it directly or trigger event on header/banner.

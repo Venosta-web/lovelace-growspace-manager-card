@@ -71,6 +71,28 @@ describe('GrowspaceAnalyticsCardEditor', () => {
         }
     });
 
+    test('loads growspaces from object (record) format', () => {
+        const el = new GrowspaceAnalyticsCardEditor();
+        el.hass = {
+            states: {
+                'sensor.growspaces_list': {
+                    state: '2',
+                    attributes: {
+                        growspaces: {
+                            gs1: 'Tent 1',
+                            gs2: 'Tent 2',
+                        },
+                    },
+                },
+            },
+        } as any;
+        (el as any)._loadGrowspaces();
+        const opts = (el as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
+        expect(opts.length).toBe(2);
+        expect(opts[0].id).toBe('gs1');
+        expect(opts[0].name).toBe('Tent 1');
+    });
+
     test('dispatches config-changed event when selection changes', async () => {
         const config: GrowspaceManagerCardConfig = {
             type: 'custom:growspace-analytics-card',

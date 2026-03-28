@@ -352,4 +352,29 @@ describe('GrowspaceManagerCardEditor', () => {
             expect(eventDetail.config.keyboard_rotate_speed).toBe(2.5);
         });
     });
+
+    describe('updated() branches', () => {
+        it('does not call _loadGrowspaces when hass key is absent from changedProps', () => {
+            const spy = vi.spyOn(element as any, '_loadGrowspaces');
+            element.updated(new Map([['config', null]]));
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('does not call _loadGrowspaces when hass is falsy even if key is present', () => {
+            const spy = vi.spyOn(element as any, '_loadGrowspaces');
+            element.hass = undefined as any;
+            element.updated(new Map([['hass', null]]));
+            expect(spy).not.toHaveBeenCalled();
+        });
+
+        it('calls _loadGrowspaces when hass is present and key is in changedProps', () => {
+            const spy = vi.spyOn(element as any, '_loadGrowspaces');
+            element.hass = {
+                states: { 'sensor.growspaces_list': { state: 'OK', attributes: { growspaces: {} } } },
+                connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
+            } as any;
+            element.updated(new Map([['hass', null]]));
+            expect(spy).toHaveBeenCalled();
+        });
+    });
 });

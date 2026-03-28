@@ -61,7 +61,8 @@ export class GrowspaceGrid extends LitElement {
   private _gridRef = createRef<HTMLDivElement>();
 
   public focusPlant(index: number) {
-    const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
+    const selector = FEATURE_FLAGS.USE_NEW_PLANT_CARD ? 'plant-card-container' : 'growspace-plant-card';
+    const cards = this.shadowRoot?.querySelectorAll(selector);
     if (cards && cards[index]) {
       (cards[index] as HTMLElement).focus();
     }

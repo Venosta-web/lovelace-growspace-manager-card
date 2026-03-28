@@ -295,6 +295,16 @@ describe('DataService - PlantAPI', () => {
             callServiceMock.mockRejectedValue(new Error('Score fail'));
             await expect(service.scorePlant({ plant_id: 'p1' })).rejects.toThrow('Score fail');
         });
+
+        it('should include structure, resin, and pest_resistance when provided', async () => {
+            await service.scorePlant({ plant_id: 'p1', structure: 3, resin: 4, pest_resistance: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
+                plant_id: 'p1',
+                structure: 3,
+                resin: 4,
+                pest_resistance: 5,
+            });
+        });
     });
 
     describe('updateHarvestMetrics', () => {
@@ -310,6 +320,23 @@ describe('DataService - PlantAPI', () => {
         it('should handle error', async () => {
             callServiceMock.mockRejectedValue(new Error('Metrics fail'));
             await expect(service.updateHarvestMetrics({ plant_id: 'p1' })).rejects.toThrow('Metrics fail');
+        });
+
+        it('should include trim_weight, thc_percentage, cbd_percentage, terpene_profile when provided', async () => {
+            await service.updateHarvestMetrics({
+                plant_id: 'p1',
+                trim_weight: 10,
+                thc_percentage: 20,
+                cbd_percentage: 1,
+                terpene_profile: 'citrus',
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_harvest_metrics', {
+                plant_id: 'p1',
+                trim_weight: 10,
+                thc_percentage: 20,
+                cbd_percentage: 1,
+                terpene_profile: 'citrus',
+            });
         });
     });
 

@@ -15936,8 +15936,8 @@ function getAvailableActions(plant) {
             id: 'training',
             label: 'Log Training',
             icon: 'mdiDumbbell',
-            enabled: stage === 'vegetative' || stage === 'flowering',
-            tooltip: stage !== 'vegetative' && stage !== 'flowering' ? 'Training only in veg/flower' : undefined,
+            enabled: stage === 'veg' || stage === 'flower',
+            tooltip: stage !== 'veg' && stage !== 'flower' ? 'Training only in veg/flower' : undefined,
         },
         {
             id: 'ipm',
@@ -15950,8 +15950,8 @@ function getAvailableActions(plant) {
             id: 'clone',
             label: 'Take Clone',
             icon: 'mdiContentCopy',
-            enabled: stage === 'mother' || stage === 'vegetative',
-            tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
+            enabled: stage === 'mother' || stage === 'veg',
+            tooltip: stage !== 'mother' && stage !== 'veg' ? 'Clone from mother or veg plants' : undefined,
         },
         {
             id: 'print_label',
@@ -16001,7 +16001,7 @@ function canSaveAttributes(editedAttributes) {
 /**
  * Create ViewModel for plant overview dialog
  */
-function createPlantOverviewViewModel(plant, editedAttributes, uiState, store) {
+function createPlantOverviewViewModel(plant, editedAttributes, uiState, store, logbookEvents = []) {
     return computed([
         // We don't need many store subscriptions for this dialog
         // Most data comes from props (plant, editedAttributes)
@@ -16016,8 +16016,7 @@ function createPlantOverviewViewModel(plant, editedAttributes, uiState, store) {
         const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
         const phenoValue = editedAttributes.phenotype;
         const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
-        // Process timeline events (we'll need to pass logbook events as prop)
-        const timelineEvents = processTimelineEvents(plant, []);
+        const timelineEvents = processTimelineEvents(plant, logbookEvents);
         // Calculate stats
         const plantStats = calculatePlantStats(plant);
         // Available actions
@@ -16522,7 +16521,6 @@ let PlantDashboardTab = class PlantDashboardTab extends i$3 {
           .editedAttributes=${this.editedAttributes}
           .showAllDates=${this.showAllDates}
           @attribute-change=${this._handleAttributeChange}
-          @toggle-dates=${this._handleToggleDates}
         ></plant-lifecycle-dates-card>
       </div>
     `;
@@ -16531,13 +16529,6 @@ let PlantDashboardTab = class PlantDashboardTab extends i$3 {
         // Bubble up to container
         this.dispatchEvent(new CustomEvent('attribute-change', {
             detail: e.detail,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _handleToggleDates() {
-        // Bubble up to container
-        this.dispatchEvent(new CustomEvent('toggle-dates', {
             bubbles: true,
             composed: true,
         }));
@@ -16704,179 +16695,37 @@ PlantActionsTab = __decorate([
 /**
  * Plant Timeline Tab - Presentational Component
  *
- * Displays plant timeline with milestones and events.
- * Pure component: props in, no events out (read-only display).
+ * Thin wrapper around plant-timeline that passes events through.
+ * Pure component: props in, events out (delete/refresh from plant-timeline).
  */
 let PlantTimelineTab = class PlantTimelineTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.events = [];
+    }
     render() {
-        if (!this.timelineEvents || this.timelineEvents.length === 0) {
-            return this._renderEmptyState();
-        }
         return x `
-      <div class="timeline">
-        ${this.timelineEvents.map((event) => this._renderTimelineEvent(event))}
-      </div>
+      <plant-timeline
+        .hass=${this.hass}
+        .plant_id=${this.plantId}
+        .events=${this.events}
+        @growspace-refresh=${this._handleRefresh}
+      ></plant-timeline>
     `;
     }
-    _renderTimelineEvent(event) {
-        const formattedDate = this._formatDate(event.date);
-        return x `
-      <div class="timeline-event ${event.type}">
-        <div class="timeline-date">${formattedDate}</div>
-        <div class="timeline-content">
-          <div class="timeline-label">${event.label}</div>
-          ${event.description
-            ? x `<div class="timeline-description">${event.description}</div>`
-            : E}
-          ${event.category
-            ? x `<span class="timeline-category">${event.category}</span>`
-            : E}
-        </div>
-      </div>
-    `;
-    }
-    _renderEmptyState() {
-        return x `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16Z"
-          />
-        </svg>
-        <div>No timeline events yet</div>
-        <div style="font-size: 0.9rem; margin-top: 8px;">
-          Events will appear here as you interact with your plant
-        </div>
-      </div>
-    `;
-    }
-    _formatDate(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diffMs = now.getTime() - date.getTime();
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            // Relative time for recent events
-            if (diffMins < 1) {
-                return 'Just now';
-            }
-            else if (diffMins < 60) {
-                return `${diffMins}m ago`;
-            }
-            else if (diffHours < 24) {
-                return `${diffHours}h ago`;
-            }
-            else if (diffDays < 7) {
-                return `${diffDays}d ago`;
-            }
-            // Absolute date for older events
-            return date.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-        }
-        catch (e) {
-            return dateStr;
-        }
+    _handleRefresh() {
+        this.dispatchEvent(new CustomEvent('timeline-refresh', { bubbles: true, composed: true }));
     }
 };
-PlantTimelineTab.styles = [
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-
-      .timeline {
-        position: relative;
-        padding-left: 24px;
-        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        margin-top: 16px;
-      }
-
-      .timeline-event {
-        margin-bottom: 24px;
-        position: relative;
-      }
-
-      .timeline-event::before {
-        content: '';
-        position: absolute;
-        left: -31px;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--event-color, #4caf50);
-        border: 2px solid var(--card-background-color, #2c2c2c);
-      }
-
-      .timeline-event.milestone::before {
-        background: var(--primary-color, #4caf50);
-      }
-
-      .timeline-event.action::before {
-        background: var(--accent-color, #2196f3);
-      }
-
-      .timeline-event.note::before {
-        background: var(--warning-color, #ff9800);
-      }
-
-      .timeline-date {
-        font-size: 0.8rem;
-        opacity: 0.6;
-        margin-bottom: 4px;
-      }
-
-      .timeline-content {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      .timeline-label {
-        font-weight: 500;
-        margin-bottom: 4px;
-      }
-
-      .timeline-description {
-        font-size: 0.9rem;
-        opacity: 0.8;
-      }
-
-      .timeline-category {
-        display: inline-block;
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        border-radius: 4px;
-        background: var(--card-background-color, rgba(0, 0, 0, 0.2));
-        margin-top: 8px;
-        opacity: 0.7;
-      }
-
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.6;
-      }
-
-      .empty-state svg {
-        width: 48px;
-        height: 48px;
-        fill: currentColor;
-        margin-bottom: 16px;
-      }
-    `,
-];
 __decorate([
     n$5({ attribute: false })
-], PlantTimelineTab.prototype, "timelineEvents", void 0);
+], PlantTimelineTab.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], PlantTimelineTab.prototype, "plantId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantTimelineTab.prototype, "events", void 0);
 PlantTimelineTab = __decorate([
     t$2('plant-timeline-tab')
 ], PlantTimelineTab);
@@ -16899,18 +16748,36 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._isEditing = true;
         this._showAllDates = false;
         this._showDeleteConfirmation = false;
+        this._logbookEvents = [];
     }
     connectedCallback() {
         super.connectedCallback();
         if (this.plant && this.store) {
-            // Create ViewModel for this dialog
             this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
                 activeTab: this._activeTab,
                 isEditing: this._isEditing,
                 showAllDates: this._showAllDates,
                 showDeleteConfirmation: this._showDeleteConfirmation,
-            }, this.store);
+            }, this.store, this._logbookEvents);
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+        // Fetch logbook events asynchronously; the @state update will trigger a re-render
+        this._fetchLogbookEvents();
+    }
+    async _fetchLogbookEvents() {
+        const growspaceId = this.plant?.attributes?.growspace_id;
+        if (!growspaceId || !this.hass)
+            return;
+        try {
+            const service = getTimelineService(this.hass);
+            const plantId = this.plant.attributes?.plant_id;
+            // Fetch by plantId so events from previous growspaces are included
+            this._logbookEvents = plantId
+                ? await service.fetchPlantEvents(plantId, growspaceId)
+                : await service.fetchGrowspaceEvents(growspaceId);
+        }
+        catch (_e) {
+            // Non-critical — timeline still shows plant attribute events
         }
     }
     willUpdate(changedProps) {
@@ -16920,7 +16787,8 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             changedProps.has('_activeTab') ||
             changedProps.has('_isEditing') ||
             changedProps.has('_showAllDates') ||
-            changedProps.has('_showDeleteConfirmation')) &&
+            changedProps.has('_showDeleteConfirmation') ||
+            changedProps.has('_logbookEvents')) &&
             this.plant &&
             this.store) {
             this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
@@ -16928,8 +16796,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
                 isEditing: this._isEditing,
                 showAllDates: this._showAllDates,
                 showDeleteConfirmation: this._showDeleteConfirmation,
-            }, this.store);
-            // Recreate controller with new ViewModel
+            }, this.store, this._logbookEvents);
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
         }
     }
@@ -17050,7 +16917,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         .editedAttributes=${vm.editedAttributes}
         .plantStats=${vm.plantStats}
         .isEditing=${vm.isEditing}
-        .showAllDates=${vm.showAllDates}
+        .showAllDates=${this._showAllDates}
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
       ></plant-dashboard-tab>
@@ -17064,10 +16931,105 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
       ></plant-actions-tab>
     `;
     }
-    _renderTimeline(vm) {
+    _renderTimeline(_vm) {
+        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+        const events = this._buildTimelineEvents(plantId);
         return x `
-      <plant-timeline-tab .timelineEvents=${vm.timelineEvents}></plant-timeline-tab>
+      <plant-timeline-tab
+        .hass=${this.hass}
+        .plantId=${plantId}
+        .events=${events}
+        @timeline-refresh=${this._fetchLogbookEvents}
+      ></plant-timeline-tab>
     `;
+    }
+    _buildTimelineEvents(plantId) {
+        const recordedEvents = this.plant.attributes?.events || [];
+        // Milestones from plant attribute dates
+        const milestoneFields = [
+            { key: 'planted_date', label: 'Planted' },
+            { key: 'seedling_start', label: 'Seedling' },
+            { key: 'mother_start', label: 'Mother' },
+            { key: 'clone_start', label: 'Clone' },
+            { key: 'veg_start', label: 'Vegetative' },
+            { key: 'flower_start', label: 'Flowering' },
+            { key: 'dry_start', label: 'Drying' },
+            { key: 'cure_start', label: 'Curing' },
+            { key: 'harvest_date', label: 'Harvested' },
+        ];
+        const milestones = [];
+        milestoneFields.forEach((field) => {
+            const date = this.plant.attributes?.[field.key];
+            if (date) {
+                milestones.push({ type: 'milestone', date: String(date), label: field.label });
+            }
+        });
+        // Logbook events — same filtering logic as plant-overview-dialog
+        const normalize = (s) => s?.toLowerCase().trim() || '';
+        const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+        const logbookEvents = this._logbookEvents
+            .filter((e) => {
+            const cat = normalize(e.category);
+            const type = normalize(e.sensor_type);
+            const reasons = e.reasons || [];
+            const isWatering = cat === 'irrigation' ||
+                (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+                ['irrigation', 'drain', 'water'].includes(type) ||
+                type.includes('water');
+            const isTraining = cat === 'training' || trainingTechniques.some((t) => type.includes(t));
+            const isIPM = cat === 'ipm' || type.startsWith('ipm_');
+            const isNote = cat === 'note';
+            const isEnvReport = cat === 'environmental_report';
+            if (!isWatering && !isTraining && !isIPM && !isNote && !isEnvReport)
+                return false;
+            if (isNote) {
+                return e.plant_id === plantId;
+            }
+            if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
+                return true;
+            }
+            if (isEnvReport)
+                return true;
+            return reasons.some((r) => {
+                const rLower = r.toLowerCase();
+                return rLower.startsWith('plant_id:') && rLower.replace('plant_id:', '').trim() === plantId.toLowerCase();
+            });
+        })
+            .map((e) => {
+            const cat = normalize(e.category);
+            if (cat === 'note') {
+                return {
+                    type: 'note',
+                    date: e.timestamp || e.start_time,
+                    text: e.notes || '',
+                    images: e.images,
+                    tags: e.tags,
+                    event_id: e.event_id,
+                };
+            }
+            if (cat === 'environmental_report') {
+                return {
+                    type: 'environmental_report',
+                    date: e.start_time,
+                    sensor_type: e.sensor_type,
+                    reasons: e.reasons,
+                    event_id: e.event_id,
+                };
+            }
+            return {
+                type: 'action',
+                date: e.start_time,
+                action: e.category === 'watering' || e.category === 'irrigation' ? 'water' : e.category || e.sensor_type,
+                details: (e.reasons || [])
+                    .filter((r) => {
+                    const rLower = r.toLowerCase();
+                    return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+                })
+                    .join(', '),
+                event_id: e.event_id,
+            };
+        });
+        return [...recordedEvents, ...milestones, ...logbookEvents];
     }
     _renderFooter(vm) {
         return x `
@@ -17124,7 +17086,15 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     // Event handlers
     _handleClose() {
-        this.store.ui.closeDialog();
+        // Guard: only close if this dialog is still the active one.
+        // When an action (e.g. water, train) changes $activeDialog to a sub-dialog,
+        // ha-dialog fires 'closed' on DOM removal — without this check that would
+        // immediately close the just-opened sub-dialog.
+        // If $activeDialog is unavailable (e.g. in tests), fall through and close.
+        const activeType = this.store?.ui?.$activeDialog?.get()?.type;
+        if (!activeType || activeType === 'PLANT_OVERVIEW') {
+            this.store.ui.closeDialog();
+        }
     }
     _handleAttributeChange(e) {
         const { key, value } = e.detail;
@@ -17146,7 +17116,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         });
         this._handleClose();
     }
-    _handleDelete(plantId) {
+    _handleDelete(_plantId) {
         this._showDeleteConfirmation = true;
     }
     _confirmDelete() {
@@ -17347,6 +17317,9 @@ __decorate([
 __decorate([
     r$2()
 ], PlantOverviewContainer.prototype, "_showDeleteConfirmation", void 0);
+__decorate([
+    r$2()
+], PlantOverviewContainer.prototype, "_logbookEvents", void 0);
 PlantOverviewContainer = __decorate([
     t$2('plant-overview-container')
 ], PlantOverviewContainer);
@@ -31750,100 +31723,84 @@ let DialogHost = class DialogHost extends i$3 {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
-        // Old dialog implementation
-        return x `
-      <plant-overview-dialog
-        .open=${true}
-        .plant=${dialogState.plant}
-        .editedAttributes=${dialogState.editedAttributes}
-        .activeTab=${dialogState.activeTab}
-        .selectedPlantIds=${dialogState.selectedPlantIds}
-        .growspaceOptions=${growspaceOptions}
-        @close=${() => {
-            if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
-                this.store.ui.closeDialog();
-            }
-        }}
-        @update-plant=${(e) => this.store.updatePlantFromDialog({
-            plant: dialogState.plant,
-            editedAttributes: e.detail,
-            selectedPlantIds: dialogState.selectedPlantIds,
-        })}
-        @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
-        @harvest-plant=${(e) => {
-            const plant = e.detail.plant;
-            this.store.ui.setActiveDialog({
-                type: 'HARVEST_SCORING',
-                payload: { plant },
-            });
-        }}
-        @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
-        @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
-        @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-        @open-watering=${(e) => this.store.ui.setActiveDialog({
-            type: 'WATERING',
-            payload: e.detail,
-        })}
-        @open-training=${(e) => this.store.ui.setActiveDialog({
-            type: 'TRAINING',
-            payload: e.detail,
-        })}
-        @open-ipm=${(e) => this.store.ui.setActiveDialog({
-            type: 'IPM',
-            payload: e.detail,
-        })}
-        @open-clone=${(e) => this.store.ui.setActiveDialog({
-            type: 'TAKE_CLONE',
-            payload: e.detail,
-        })}
-        @open-strain-editor=${(e) => {
-            const { strain, phenotype } = e.detail;
-            const strainLibrary = this.store.data.$strainLibrary.get();
-            // Normalize empty strings, null, and undefined to compare properly
-            const normalizedPhenotype = phenotype || '';
-            let strainEntry = strainLibrary.find((s) => {
-                const entryPhenotype = s.phenotype || '';
-                return s.strain === strain && entryPhenotype === normalizedPhenotype;
-            });
-            // If no match found, create a new entry for the user to complete
-            if (!strainEntry && strain) {
-                const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
-                strainEntry = {
-                    strain,
-                    phenotype: normalizedPhenotype,
-                    key,
-                    breeder: '',
-                    type: 'Hybrid',
-                    flowering_days_min: 60,
-                    flowering_days_max: 70,
-                    lineage: '',
-                    sex: 'Feminized',
-                    description: '',
-                    image: '',
-                    sativa_percentage: 50,
-                    indica_percentage: 50,
-                };
-            }
-            this.store.ui.setActiveDialog({
-                type: 'STRAIN_LIBRARY',
-                payload: { editingStrain: strainEntry },
-            });
-        }}
-        @print-label=${(e) => {
-            const { plant } = e.detail;
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            this.store.ui.setActiveDialog({
-                type: 'PRINT_LABEL',
-                payload: {
-                    plantId,
-                },
-            });
-        }}
-        @open-log-pollination=${() => {
-            openStrainLibraryDialog(this.store.context, 'seeds');
-        }}
-      ></plant-overview-dialog>
-    `;
+        {
+            // New refactored dialog with ViewModel pattern
+            return x `
+        <plant-overview-container
+          .open=${true}
+          .plant=${dialogState.plant}
+          .editedAttributes=${dialogState.editedAttributes}
+          @close=${() => {
+                if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                    this.store.ui.closeDialog();
+                }
+            }}
+          @update-plant=${(e) => this.store.updatePlantFromDialog({
+                plant: dialogState.plant,
+                editedAttributes: e.detail,
+                selectedPlantIds: dialogState.selectedPlantIds,
+            })}
+          @delete-plant=${(e) => this.store.actions.plant.delete(e.detail.plantId)}
+          @harvest-plant=${(e) => {
+                const plant = e.detail.plant;
+                this.store.ui.setActiveDialog({
+                    type: 'HARVEST_SCORING',
+                    payload: { plant },
+                });
+            }}
+          @finish-drying=${(e) => this.store.finishDryingPlant(e.detail.plant)}
+          @take-clone=${(e) => this.store.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+          @move-clone=${(e) => this.store.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+          @open-watering=${(e) => this.store.ui.setActiveDialog({
+                type: 'WATERING',
+                payload: e.detail,
+            })}
+          @open-training=${(e) => this.store.ui.setActiveDialog({
+                type: 'TRAINING',
+                payload: e.detail,
+            })}
+          @open-ipm=${(e) => this.store.ui.setActiveDialog({
+                type: 'IPM',
+                payload: e.detail,
+            })}
+          @open-clone=${(e) => this.store.ui.setActiveDialog({
+                type: 'TAKE_CLONE',
+                payload: e.detail,
+            })}
+          @open-strain-editor=${(e) => {
+                const { strain, phenotype } = e.detail;
+                const strainLibrary = this.store.data.$strainLibrary.get();
+                const normalizedPhenotype = phenotype || '';
+                let strainEntry = strainLibrary.find((s) => {
+                    const entryPhenotype = s.phenotype || '';
+                    return s.strain === strain && entryPhenotype === normalizedPhenotype;
+                });
+                if (!strainEntry && strain) {
+                    const key = normalizedPhenotype ? `${strain}_${normalizedPhenotype}` : strain;
+                    strainEntry = {
+                        strain,
+                        phenotype: normalizedPhenotype,
+                        key,
+                        breeder: '',
+                        type: 'Hybrid',
+                        flowering_days_min: 60,
+                        flowering_days_max: 70,
+                        lineage: '',
+                        sex: 'Feminized',
+                        description: '',
+                        image: '',
+                        sativa_percentage: 50,
+                        indica_percentage: 50,
+                    };
+                }
+                this.store.ui.setActiveDialog({
+                    type: 'STRAIN_LIBRARY',
+                    payload: { editingStrain: strainEntry },
+                });
+            }}
+        ></plant-overview-container>
+      `;
+        }
     }
     _renderStrainLibraryDialog(active, strainLibrary, _selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
@@ -32170,11 +32127,15 @@ let DialogHost = class DialogHost extends i$3 {
     _renderIPMDialog(active, selectedDeviceData) {
         if (active.type !== 'IPM')
             return x ``;
+        const payload = active.payload;
+        const plantIds = payload.plantIds ?? [];
+        const growspaceId = payload.growspaceId ?? selectedDeviceData?.deviceId;
         return x `
       <ipm-dialog
         .open=${true}
         .store=${this.store}
-        .dialogState=${active.payload}
+        .plantIds=${plantIds}
+        .growspaceId=${growspaceId}
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this._closeDialogIfActive('IPM')}
         @data-changed=${() => this._handleDataChanged()}
@@ -43909,7 +43870,7 @@ function createPlantCardViewModel(plant, store) {
             displayData,
             isSelected: selectedPlants.has(plantId),
             isEditMode,
-            isDraggable: isEditMode,
+            isDraggable: !isEditMode,
             growthDeviation,
             statusIndicators,
             ariaLabel,
@@ -44344,7 +44305,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         }
     }
     focusPlant(index) {
-        const cards = this.shadowRoot?.querySelectorAll('growspace-plant-card');
+        const selector = 'plant-card-container' ;
+        const cards = this.shadowRoot?.querySelectorAll(selector);
         if (cards && cards[index]) {
             cards[index].focus();
         }
@@ -44507,7 +44469,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         return x `
       <div class="grid-item-wrapper">
         ${x `
-              <growspace-plant-card
+              <plant-card-container
                 .plant=${plant}
                 .row=${row}
                 .col=${col}
@@ -44515,8 +44477,9 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
                 @plant-drag-start=${() => this._handleDragStart(plant)}
                 @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, row, col, plant)}
                 @plant-toggle-selection=${() => this._togglePlantSelection(plant)}
-              ></growspace-plant-card>
-            `}
+              ></plant-card-container>
+            `
+            }
         ${overlayMode !== GridOverlayMode.NONE
             ? x `<div class="grid-overlay" style="background-color: ${overlayColor}"></div>`
             : E}

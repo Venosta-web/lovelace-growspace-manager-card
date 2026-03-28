@@ -246,6 +246,186 @@ describe('PlantOverviewContainer', () => {
     expect(dialog).toBeTruthy();
   });
 
+  describe('_buildTimelineEvents', () => {
+    it('includes milestones when plant has date attributes', () => {
+      element.plant = {
+        ...mockPlant,
+        attributes: {
+          ...mockPlant.attributes,
+          planted_date: '2024-01-01',
+          veg_start: '2024-02-01',
+        },
+      } as any;
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const milestones = events.filter((e: any) => e.type === 'milestone');
+      expect(milestones.length).toBe(2);
+      expect(milestones[0].label).toBe('Planted');
+      expect(milestones[1].label).toBe('Vegetative');
+    });
+
+    it('maps note logbook events to type=note', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'note',
+          sensor_type: '',
+          start_time: '2024-01-01T00:00:00',
+          timestamp: '2024-01-01T00:00:00',
+          notes: 'Test note',
+          plant_id: 'plant_1',
+          reasons: [],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const notes = events.filter((e: any) => e.type === 'note');
+      expect(notes.length).toBe(1);
+      expect(notes[0].text).toBe('Test note');
+    });
+
+    it('excludes note events for other plant_ids', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'note',
+          sensor_type: '',
+          start_time: '2024-01-01T00:00:00',
+          plant_id: 'other_plant',
+          reasons: [],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const notes = events.filter((e: any) => e.type === 'note');
+      expect(notes.length).toBe(0);
+    });
+
+    it('maps environmental_report logbook events to type=environmental_report', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'environmental_report',
+          sensor_type: 'temp',
+          start_time: '2024-01-02T00:00:00',
+          reasons: ['plant_id:plant_1'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const reports = events.filter((e: any) => e.type === 'environmental_report');
+      expect(reports.length).toBe(1);
+      expect(reports[0].sensor_type).toBe('temp');
+    });
+
+    it('includes irrigation events without plant_id reason (broadcast)', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'irrigation',
+          sensor_type: 'irrigation',
+          start_time: '2024-01-03T00:00:00',
+          reasons: ['volume:1L'], // no plant_id: prefix
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const actions = events.filter((e: any) => e.type === 'action');
+      expect(actions.length).toBe(1);
+      expect(actions[0].action).toBe('water');
+    });
+
+    it('maps watering events to action=water and filters plant_id from details', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'watering',
+          sensor_type: 'watering',
+          start_time: '2024-01-04T00:00:00',
+          reasons: ['plant_id:plant_1', 'volume:500ml'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const actions = events.filter((e: any) => e.type === 'action');
+      expect(actions.length).toBe(1);
+      expect(actions[0].action).toBe('water');
+      expect(actions[0].details).toBe('volume:500ml');
+    });
+
+    it('maps ipm events correctly', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'ipm',
+          sensor_type: 'ipm_spray',
+          start_time: '2024-01-05T00:00:00',
+          reasons: ['plant_id:plant_1'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const actions = events.filter((e: any) => e.type === 'action');
+      expect(actions.length).toBe(1);
+    });
+
+    it('maps training events correctly', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'training',
+          sensor_type: 'topping',
+          start_time: '2024-01-06T00:00:00',
+          reasons: ['plant_id:plant_1'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const actions = events.filter((e: any) => e.type === 'action');
+      expect(actions.length).toBe(1);
+    });
+
+    it('filters out unrelated event categories', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'unknown_category',
+          sensor_type: 'something',
+          start_time: '2024-01-07T00:00:00',
+          reasons: ['plant_id:plant_1'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      // Should not include this event
+      expect(events.filter((e: any) => e.type === 'action').length).toBe(0);
+    });
+
+    it('handles isWatering via sensor_type containing "water"', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'environmental',
+          sensor_type: 'water_pump',
+          start_time: '2024-01-08T00:00:00',
+          reasons: ['plant_id:plant_1'],
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const actions = events.filter((e: any) => e.type === 'action');
+      expect(actions.length).toBe(1);
+    });
+
+    it('uses start_time for note date when no timestamp', () => {
+      (element as any)['_logbookEvents'] = [
+        {
+          category: 'note',
+          sensor_type: '',
+          start_time: '2024-03-01T00:00:00',
+          plant_id: 'plant_1',
+          reasons: [],
+          // no timestamp property
+        },
+      ];
+
+      const events = (element as any)['_buildTimelineEvents']('plant_1');
+      const notes = events.filter((e: any) => e.type === 'note');
+      expect(notes[0].date).toBe('2024-03-01T00:00:00');
+    });
+  });
+
   it('should open Strain Editor from header button', async () => {
     const editStrainBtn = element.shadowRoot!.querySelector('button[title="Edit Strain Library Entry"]') as HTMLButtonElement;
     expect(editStrainBtn).toBeTruthy();

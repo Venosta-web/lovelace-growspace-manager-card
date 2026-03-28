@@ -181,7 +181,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        expect(element.shadowRoot?.querySelector('plant-overview-dialog')).not.toBeNull();
+        expect(element.shadowRoot?.querySelector('plant-overview-container')).not.toBeNull();
     });
 
     it('should handle environment config submission', async () => {
@@ -433,7 +433,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         const detail = { plantId: 'p1' };
         dialog?.dispatchEvent(new CustomEvent('delete-plant', { detail }));
 
@@ -538,7 +538,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         dialog?.dispatchEvent(new CustomEvent('close'));
 
         expect(mockStore.ui.closeDialog).toHaveBeenCalled();
@@ -560,7 +560,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         const updatedAttrs = { strain: 'Updated Strain' };
         dialog?.dispatchEvent(new CustomEvent('update-plant', { detail: updatedAttrs }));
 
@@ -587,7 +587,7 @@ describe('DialogHost', () => {
         await element.updateComplete;
 
         const mockPlant = { entity_id: 'sensor.p1' } as any;
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         dialog?.dispatchEvent(new CustomEvent('harvest-plant', { detail: { plant: mockPlant } }));
 
         // harvest-plant now opens HARVEST_SCORING dialog instead of calling nextStage directly
@@ -614,7 +614,7 @@ describe('DialogHost', () => {
         await element.updateComplete;
 
         const mockPlant = { entity_id: 'sensor.p1' } as any;
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         dialog?.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant: mockPlant } }));
 
         expect(mockStore.finishDryingPlant).toHaveBeenCalledWith(mockPlant);
@@ -637,7 +637,7 @@ describe('DialogHost', () => {
         await element.updateComplete;
 
         const mockPlant = { entity_id: 'sensor.p1' } as any;
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         dialog?.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: mockPlant, numClones: 3 } }));
 
         expect(mockStore.actions.plant.takeClone).toHaveBeenCalledWith(mockPlant, 3);
@@ -658,7 +658,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         const mockPlant = { entity_id: 'sensor.p1' } as any;
         dialog?.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: mockPlant, targetGrowspace: 'g2' } }));
 
@@ -686,7 +686,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         // Dispatch with existing strain
         dialog?.dispatchEvent(new CustomEvent('open-strain-editor', {
             detail: { strain: 'Blueberry', phenotype: 'Original' }
@@ -903,8 +903,7 @@ describe('DialogHost', () => {
 
         const dialog = element.shadowRoot?.querySelector('ipm-dialog');
         expect(dialog).toBeTruthy();
-        // ipm-dialog receives the full payload as dialogState; plantIds lives in dialogState
-        expect((dialog as any).dialogState?.plantIds).toEqual(['p1']);
+        expect((dialog as any).plantIds).toEqual(['p1']);
 
         dialog?.dispatchEvent(new CustomEvent('close'));
         expect(mockStore.ui.closeDialog).toHaveBeenCalled();
@@ -1040,7 +1039,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
         const payload = { plantId: 'p1' };
         dialog?.dispatchEvent(new CustomEvent('open-watering', { detail: payload }));
 
@@ -1063,9 +1062,9 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const container = element.shadowRoot?.querySelector('plant-overview-container');
         const payload = { plantId: 'p1' };
-        dialog?.dispatchEvent(new CustomEvent('open-training', { detail: payload }));
+        container?.dispatchEvent(new CustomEvent('open-training', { detail: payload }));
 
         expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
             type: 'TRAINING',
@@ -1086,9 +1085,9 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const container = element.shadowRoot?.querySelector('plant-overview-container');
         const payload = { plantId: 'p1' };
-        dialog?.dispatchEvent(new CustomEvent('open-ipm', { detail: payload }));
+        container?.dispatchEvent(new CustomEvent('open-ipm', { detail: payload }));
 
         expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
             type: 'IPM',
@@ -1121,7 +1120,7 @@ describe('DialogHost', () => {
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
+        const dialog = element.shadowRoot?.querySelector('plant-overview-container');
 
         // Change active dialog type
         $activeDialog.set({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });

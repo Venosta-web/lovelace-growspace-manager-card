@@ -249,8 +249,8 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       id: 'training',
       label: 'Log Training',
       icon: 'mdiDumbbell',
-      enabled: stage === 'vegetative' || stage === 'flowering',
-      tooltip: stage !== 'vegetative' && stage !== 'flowering' ? 'Training only in veg/flower' : undefined,
+      enabled: stage === 'veg' || stage === 'flower',
+      tooltip: stage !== 'veg' && stage !== 'flower' ? 'Training only in veg/flower' : undefined,
     },
     {
       id: 'ipm',
@@ -263,8 +263,8 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       id: 'clone',
       label: 'Take Clone',
       icon: 'mdiContentCopy',
-      enabled: stage === 'mother' || stage === 'vegetative',
-      tooltip: stage !== 'mother' && stage !== 'vegetative' ? 'Clone from mother or veg plants' : undefined,
+      enabled: stage === 'mother' || stage === 'veg',
+      tooltip: stage !== 'mother' && stage !== 'veg' ? 'Clone from mother or veg plants' : undefined,
     },
     {
       id: 'print_label',
@@ -335,7 +335,8 @@ export function createPlantOverviewViewModel(
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
   },
-  store: GrowspaceStore
+  store: GrowspaceStore,
+  logbookEvents: GrowspaceEvent[] = []
 ): ReadableAtom<PlantOverviewViewModel> {
   return computed(
     [
@@ -356,8 +357,7 @@ export function createPlantOverviewViewModel(
       const phenoValue = editedAttributes.phenotype;
       const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
 
-      // Process timeline events (we'll need to pass logbook events as prop)
-      const timelineEvents = processTimelineEvents(plant, []);
+      const timelineEvents = processTimelineEvents(plant, logbookEvents);
 
       // Calculate stats
       const plantStats = calculatePlantStats(plant);

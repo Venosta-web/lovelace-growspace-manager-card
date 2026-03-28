@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -254,6 +254,54 @@ describe('API Schemas', () => {
 
             expect(result.s).toBe('25.5');
             expect(typeof result.s).toBe('string');
+        });
+    });
+
+    describe('ECRampPointSchema', () => {
+        it('uses provided day and target_ec directly', () => {
+            const result = ECRampPointSchema.parse({ day: 5, target_ec: 1.8 });
+            expect(result.day).toBe(5);
+            expect(result.target_ec).toBe(1.8);
+        });
+
+        it('derives day from week when day is missing', () => {
+            // week=2 → day = (2-1)*7 + 1 = 8
+            const result = ECRampPointSchema.parse({ week: 2, target_ec: 2.0 });
+            expect(result.day).toBe(8);
+        });
+
+        it('defaults to day=1 when both day and week are missing', () => {
+            const result = ECRampPointSchema.parse({ target_ec: 1.5 });
+            expect(result.day).toBe(1);
+        });
+
+        it('uses ec_min as target_ec when target_ec is missing', () => {
+            const result = ECRampPointSchema.parse({ day: 3, ec_min: 1.2 });
+            expect(result.target_ec).toBe(1.2);
+        });
+
+        it('defaults target_ec to 0 when both target_ec and ec_min are missing', () => {
+            const result = ECRampPointSchema.parse({ day: 3 });
+            expect(result.target_ec).toBe(0);
+        });
+    });
+
+    describe('ECRampCurvesSchema', () => {
+        it('parses a record of curves', () => {
+            const input = {
+                curve1: {
+                    id: 'curve1',
+                    name: 'Test Curve',
+                    points: [{ day: 1, target_ec: 1.0 }],
+                },
+            };
+            const result = ECRampCurvesSchema.parse(input);
+            expect(result).toHaveProperty('curve1');
+        });
+
+        it('transforms an empty array to an empty object (backend default)', () => {
+            const result = ECRampCurvesSchema.parse([]);
+            expect(result).toEqual({});
         });
     });
 });

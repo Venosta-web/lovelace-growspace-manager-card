@@ -13,22 +13,14 @@ import type { ReadableAtom } from 'nanostores';
 import { mdiClose, mdiDna, mdiDelete, mdiCheck } from '@mdi/js';
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import type { PlantEntity, PlantOverviewEditedAttributes, PlantAttributeValue } from '../../../types';
-import { PlantUtils } from '../../../utils/plant-utils';
+import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent, PlantTimelineEvent } from '../../../types';
+import { getTimelineService } from '../../../services/timeline-service';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createPlantOverviewViewModel,
   type PlantOverviewViewModel,
 } from '../viewmodels/plant-overview.viewmodel';
 import type { HomeAssistant } from 'custom-card-helpers';
-import {
-  UpdatePlantEvent,
-  DeletePlantEvent,
-  HarvestPlantEvent,
-  FinishDryingEvent,
-  TakeCloneEvent,
-  MoveCloneEvent,
-} from '../../../events';
 
 // Import UI components
 import '../components/plant-dashboard-tab';
@@ -57,6 +49,7 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _isEditing = true;
   @state() private _showAllDates = false;
   @state() private _showDeleteConfirmation = false;
+  @state() private _logbookEvents: GrowspaceEvent[] = [];
 
   // ViewModel
   private viewModel!: ReadableAtom<PlantOverviewViewModel>;
@@ -152,7 +145,6 @@ export class PlantOverviewContainer extends LitElement {
     super.connectedCallback();
 
     if (this.plant && this.store) {
-      // Create ViewModel for this dialog
       this.viewModel = createPlantOverviewViewModel(
         this.plant,
         this.editedAttributes,
@@ -162,9 +154,28 @@ export class PlantOverviewContainer extends LitElement {
           showAllDates: this._showAllDates,
           showDeleteConfirmation: this._showDeleteConfirmation,
         },
-        this.store
+        this.store,
+        this._logbookEvents
       );
       this.viewModelController = new StoreController(this, this.viewModel);
+    }
+
+    // Fetch logbook events asynchronously; the @state update will trigger a re-render
+    this._fetchLogbookEvents();
+  }
+
+  private async _fetchLogbookEvents(): Promise<void> {
+    const growspaceId = this.plant?.attributes?.growspace_id;
+    if (!growspaceId || !this.hass) return;
+    try {
+      const service = getTimelineService(this.hass);
+      const plantId = this.plant.attributes?.plant_id;
+      // Fetch by plantId so events from previous growspaces are included
+      this._logbookEvents = plantId
+        ? await service.fetchPlantEvents(plantId, growspaceId)
+        : await service.fetchGrowspaceEvents(growspaceId);
+    } catch (_e) {
+      // Non-critical — timeline still shows plant attribute events
     }
   }
 
@@ -176,7 +187,8 @@ export class PlantOverviewContainer extends LitElement {
         changedProps.has('_activeTab') ||
         changedProps.has('_isEditing') ||
         changedProps.has('_showAllDates') ||
-        changedProps.has('_showDeleteConfirmation')) &&
+        changedProps.has('_showDeleteConfirmation') ||
+        changedProps.has('_logbookEvents')) &&
       this.plant &&
       this.store
     ) {
@@ -189,9 +201,9 @@ export class PlantOverviewContainer extends LitElement {
           showAllDates: this._showAllDates,
           showDeleteConfirmation: this._showDeleteConfirmation,
         },
-        this.store
+        this.store,
+        this._logbookEvents
       );
-      // Recreate controller with new ViewModel
       this.viewModelController = new StoreController(this, this.viewModel);
     }
   }
@@ -318,7 +330,7 @@ export class PlantOverviewContainer extends LitElement {
         .editedAttributes=${vm.editedAttributes}
         .plantStats=${vm.plantStats}
         .isEditing=${vm.isEditing}
-        .showAllDates=${vm.showAllDates}
+        .showAllDates=${this._showAllDates}
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
       ></plant-dashboard-tab>
@@ -334,10 +346,114 @@ export class PlantOverviewContainer extends LitElement {
     `;
   }
 
-  private _renderTimeline(vm: PlantOverviewViewModel): TemplateResult {
+  private _renderTimeline(_vm: PlantOverviewViewModel): TemplateResult {
+    const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+    const events = this._buildTimelineEvents(plantId);
     return html`
-      <plant-timeline-tab .timelineEvents=${vm.timelineEvents}></plant-timeline-tab>
+      <plant-timeline-tab
+        .hass=${this.hass}
+        .plantId=${plantId}
+        .events=${events}
+        @timeline-refresh=${this._fetchLogbookEvents}
+      ></plant-timeline-tab>
     `;
+  }
+
+  private _buildTimelineEvents(plantId: string): PlantTimelineEvent[] {
+    const recordedEvents: PlantTimelineEvent[] = this.plant.attributes?.events || [];
+
+    // Milestones from plant attribute dates
+    const milestoneFields = [
+      { key: 'planted_date', label: 'Planted' },
+      { key: 'seedling_start', label: 'Seedling' },
+      { key: 'mother_start', label: 'Mother' },
+      { key: 'clone_start', label: 'Clone' },
+      { key: 'veg_start', label: 'Vegetative' },
+      { key: 'flower_start', label: 'Flowering' },
+      { key: 'dry_start', label: 'Drying' },
+      { key: 'cure_start', label: 'Curing' },
+      { key: 'harvest_date', label: 'Harvested' },
+    ];
+    const milestones: PlantTimelineEvent[] = [];
+    milestoneFields.forEach((field) => {
+      const date = (this.plant.attributes as Record<string, unknown>)?.[field.key];
+      if (date) {
+        milestones.push({ type: 'milestone', date: String(date), label: field.label });
+      }
+    });
+
+    // Logbook events — same filtering logic as plant-overview-dialog
+    const normalize = (s?: string) => s?.toLowerCase().trim() || '';
+    const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+
+    const logbookEvents: PlantTimelineEvent[] = this._logbookEvents
+      .filter((e) => {
+        const cat = normalize(e.category);
+        const type = normalize(e.sensor_type);
+        const reasons = e.reasons || [];
+
+        const isWatering =
+          cat === 'irrigation' ||
+          (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
+          ['irrigation', 'drain', 'water'].includes(type) ||
+          type.includes('water');
+        const isTraining = cat === 'training' || trainingTechniques.some((t) => type.includes(t));
+        const isIPM = cat === 'ipm' || type.startsWith('ipm_');
+        const isNote = cat === 'note';
+        const isEnvReport = cat === 'environmental_report';
+
+        if (!isWatering && !isTraining && !isIPM && !isNote && !isEnvReport) return false;
+
+        if (isNote) {
+          return e.plant_id === plantId;
+        }
+        if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
+          return true;
+        }
+        if (isEnvReport) return true;
+
+        return reasons.some((r) => {
+          const rLower = r.toLowerCase();
+          return rLower.startsWith('plant_id:') && rLower.replace('plant_id:', '').trim() === plantId.toLowerCase();
+        });
+      })
+      .map((e) => {
+        const cat = normalize(e.category);
+        if (cat === 'note') {
+          return {
+            type: 'note',
+            date: (e as GrowspaceEvent & { timestamp?: string }).timestamp || e.start_time,
+            text: (e as GrowspaceEvent & { notes?: string }).notes || '',
+            images: (e as GrowspaceEvent & { images?: string[] }).images,
+            tags: (e as GrowspaceEvent & { tags?: string[] }).tags,
+            event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
+          } as PlantTimelineEvent;
+        }
+        if (cat === 'environmental_report') {
+          return {
+            type: 'environmental_report',
+            date: e.start_time,
+            sensor_type: e.sensor_type,
+            reasons: e.reasons,
+            event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
+          } as PlantTimelineEvent;
+        }
+        return {
+          type: 'action',
+          date: e.start_time,
+          action:
+            e.category === 'watering' || e.category === 'irrigation' ? 'water' : e.category || e.sensor_type,
+          details: (e.reasons || [])
+            .filter((r) => {
+              const rLower = r.toLowerCase();
+              return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+            })
+            .join(', '),
+          event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
+        } as PlantTimelineEvent;
+      });
+
+    return [...recordedEvents, ...milestones, ...logbookEvents];
   }
 
   private _renderFooter(vm: PlantOverviewViewModel): TemplateResult {
@@ -398,7 +514,15 @@ export class PlantOverviewContainer extends LitElement {
   // Event handlers
 
   private _handleClose(): void {
-    this.store.ui.closeDialog();
+    // Guard: only close if this dialog is still the active one.
+    // When an action (e.g. water, train) changes $activeDialog to a sub-dialog,
+    // ha-dialog fires 'closed' on DOM removal — without this check that would
+    // immediately close the just-opened sub-dialog.
+    // If $activeDialog is unavailable (e.g. in tests), fall through and close.
+    const activeType = this.store?.ui?.$activeDialog?.get()?.type;
+    if (!activeType || activeType === 'PLANT_OVERVIEW') {
+      this.store.ui.closeDialog();
+    }
   }
 
   private _handleAttributeChange(e: CustomEvent): void {
@@ -424,7 +548,7 @@ export class PlantOverviewContainer extends LitElement {
     this._handleClose();
   }
 
-  private _handleDelete(plantId: string): void {
+  private _handleDelete(_plantId: string): void {
     this._showDeleteConfirmation = true;
   }
 

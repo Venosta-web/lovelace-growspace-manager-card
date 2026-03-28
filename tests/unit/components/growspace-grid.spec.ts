@@ -139,7 +139,7 @@ describe('GrowspaceGrid', () => {
             element.plants = plants as any;
             await waitForUpdates(element);
 
-            const plantCards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
+            const plantCards = element.shadowRoot?.querySelectorAll('plant-card-container');
             expect(plantCards?.length).toBe(1);
         });
     });
@@ -159,7 +159,7 @@ describe('GrowspaceGrid', () => {
             element.plants = [[plant]];
             await waitForUpdates(element);
 
-            const card = element.shadowRoot?.querySelector('growspace-plant-card');
+            const card = element.shadowRoot?.querySelector('plant-card-container');
             card?.dispatchEvent(new CustomEvent('plant-click'));
 
             expect(mockStore.handlePlantClick).toHaveBeenCalledWith(plant);
@@ -255,7 +255,7 @@ describe('GrowspaceGrid', () => {
             element.plants = plants as any;
             await waitForUpdates(element);
 
-            const card = element.shadowRoot?.querySelector('growspace-plant-card');
+            const card = element.shadowRoot?.querySelector('plant-card-container');
             if (card) {
                 (card as any).focus = vi.fn();
             }
@@ -355,7 +355,7 @@ describe('GrowspaceGrid', () => {
             element.plants = [[plant]];
             await waitForUpdates(element);
 
-            const card = element.shadowRoot?.querySelector('growspace-plant-card');
+            const card = element.shadowRoot?.querySelector('plant-card-container');
 
             // Test plant-drag-start
             card?.dispatchEvent(new CustomEvent('plant-drag-start'));
@@ -558,7 +558,7 @@ describe('GrowspaceGrid', () => {
             await waitForUpdates(element);
 
             // The list should render without error using plant_id as key
-            const cards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
+            const cards = element.shadowRoot?.querySelectorAll('plant-card-container');
             expect(cards?.length).toBe(1);
         });
 
@@ -571,7 +571,7 @@ describe('GrowspaceGrid', () => {
             element.plants = [[plant]];
             await waitForUpdates(element);
 
-            const cards = element.shadowRoot?.querySelectorAll('growspace-plant-card');
+            const cards = element.shadowRoot?.querySelectorAll('plant-card-container');
             expect(cards?.length).toBe(1);
         });
     });

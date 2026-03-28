@@ -205,4 +205,37 @@ describe('GrowspaceGridCardEditor', () => {
         const select = el.shadowRoot?.querySelector('select');
         expect(select?.value).toBe('');
     });
+
+    test('updated() does not call _loadGrowspaces when hass not in changedProps', () => {
+        const spy = vi.spyOn(element as any, '_loadGrowspaces');
+        element.updated(new Map([['config', null]])); // 'hass' key absent
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('updated() does not call _loadGrowspaces when hass is falsy', () => {
+        const spy = vi.spyOn(element as any, '_loadGrowspaces');
+        element.hass = undefined as any;
+        element.updated(new Map([['hass', null]])); // hass key present but this.hass is falsy
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('_loadGrowspaces sets empty options when sensor has no growspaces', () => {
+        element.hass = {
+            states: {
+                'sensor.growspaces_list': {
+                    entity_id: 'sensor.growspaces_list',
+                    state: 'OK',
+                    attributes: {}, // no growspaces attribute
+                },
+            },
+        } as any;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._growspaceOptions).toEqual([]);
+    });
+
+    test('_loadGrowspaces sets empty options when sensor not found', () => {
+        element.hass = { states: {} } as any;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._growspaceOptions).toEqual([]);
+    });
 });

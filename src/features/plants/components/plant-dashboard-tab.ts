@@ -53,7 +53,6 @@ export class PlantDashboardTab extends LitElement {
           .editedAttributes=${this.editedAttributes}
           .showAllDates=${this.showAllDates}
           @attribute-change=${this._handleAttributeChange}
-          @toggle-dates=${this._handleToggleDates}
         ></plant-lifecycle-dates-card>
       </div>
     `;
@@ -70,15 +69,6 @@ export class PlantDashboardTab extends LitElement {
     );
   }
 
-  private _handleToggleDates(): void {
-    // Bubble up to container
-    this.dispatchEvent(
-      new CustomEvent('toggle-dates', {
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
 }
 
 declare global {

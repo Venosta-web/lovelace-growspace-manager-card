@@ -137,16 +137,16 @@ describe('createPlantCardViewModel', () => {
       expect(vm$.get().isSelected).toBe(true);
     });
 
-    it('isDraggable is true when isEditMode is true', () => {
+    it('isDraggable is false when isEditMode is true', () => {
       const store = makeStore({ isEditMode: true });
       const vm$ = createPlantCardViewModel(makePlant(), store as any);
-      expect(vm$.get().isDraggable).toBe(true);
+      expect(vm$.get().isDraggable).toBe(false);
     });
 
-    it('isDraggable is false when isEditMode is false', () => {
+    it('isDraggable is true when isEditMode is false', () => {
       const store = makeStore({ isEditMode: false });
       const vm$ = createPlantCardViewModel(makePlant(), store as any);
-      expect(vm$.get().isDraggable).toBe(false);
+      expect(vm$.get().isDraggable).toBe(true);
     });
   });
 
