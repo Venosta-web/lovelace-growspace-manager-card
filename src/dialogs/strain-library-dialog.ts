@@ -62,8 +62,16 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: String }) initialTab: 'strains' | 'seeds' = 'strains';
   @property({ type: Function }) onSeedDataChanged?: () => void;
   @property({ attribute: false }) onAddSeedBatch?: (data: {
-    strain_name: string; breeder: string; quantity: number;
-    acquisition_date: string; generation: string; lineage: string; notes?: string;
+    strain_name: string;
+    breeder: string;
+    quantity: number;
+    acquisition_date: string;
+    generation: string;
+    parent_1_strain?: string | null;
+    parent_1_phenotype?: string | null;
+    parent_2_strain?: string | null;
+    parent_2_phenotype?: string | null;
+    notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onLogPollination?: (data: {
     date: string; donor_plant_id: string; receiver_plant_id: string; notes?: string;
@@ -77,8 +85,14 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _submitError: string | null = null;
   @state() private _selectedEventId: string | null = null;
   @state() private _batchForm = {
-    strain_name: '', breeder: '', quantity: 1,
-    acquisition_date: '', generation: 'F1', lineage: '', notes: ''
+    strain_name: '',
+    breeder: '',
+    quantity: 1,
+    acquisition_date: '',
+    generation: 'F1',
+    parent_1_key: '',
+    parent_2_key: '',
+    notes: '',
   };
   @state() private _pollinationForm = {
     date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
@@ -2513,7 +2527,20 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _renderAddBatchForm(): TemplateResult {
+    const uniqueBreeders = [...new Set(this.strains.map((s) => s.breeder).filter(Boolean))].sort() as string[];
+
+    const strainOptions = this.strains
+      .slice()
+      .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+      .map((s) => ({
+        key: `${s.strain}||${s.phenotype}`,
+        label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+      }));
+
     return html`
+      <datalist id="batch-breeder-suggestions">
+        ${uniqueBreeders.map((name) => html`<option value="${name}"></option>`)}
+      </datalist>
       <div class="form-view">
         <div class="form-header">
           <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
@@ -2524,7 +2551,7 @@ export class StrainLibraryDialog extends LitElement {
             @input=${(e: Event) => { this._batchForm = { ...this._batchForm, strain_name: (e.target as HTMLInputElement).value }; }} />
         </label>
         <label>Breeder
-          <input type="text" .value=${this._batchForm.breeder}
+          <input type="text" list="batch-breeder-suggestions" .value=${this._batchForm.breeder}
             @input=${(e: Event) => { this._batchForm = { ...this._batchForm, breeder: (e.target as HTMLInputElement).value }; }} />
         </label>
         <label>Quantity
@@ -2539,9 +2566,17 @@ export class StrainLibraryDialog extends LitElement {
           <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
             @input=${(e: Event) => { this._batchForm = { ...this._batchForm, generation: (e.target as HTMLInputElement).value }; }} />
         </label>
-        <label>Lineage
-          <input type="text" placeholder="Strain A x Strain B" .value=${this._batchForm.lineage}
-            @input=${(e: Event) => { this._batchForm = { ...this._batchForm, lineage: (e.target as HTMLInputElement).value }; }} />
+        <label>Parent 1
+          <select @change=${(e: Event) => { this._batchForm = { ...this._batchForm, parent_1_key: (e.target as HTMLSelectElement).value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => html`<option value="${o.key}" ?selected=${this._batchForm.parent_1_key === o.key}>${o.label}</option>`)}
+          </select>
+        </label>
+        <label>Parent 2
+          <select @change=${(e: Event) => { this._batchForm = { ...this._batchForm, parent_2_key: (e.target as HTMLSelectElement).value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => html`<option value="${o.key}" ?selected=${this._batchForm.parent_2_key === o.key}>${o.label}</option>`)}
+          </select>
         </label>
         <label>Notes
           <input type="text" .value=${this._batchForm.notes}
@@ -2614,11 +2649,20 @@ export class StrainLibraryDialog extends LitElement {
 
   private async _submitAddBatch(): Promise<void> {
     const f = this._batchForm;
-    if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) {
+    if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation) {
       this._submitError = 'Please fill in all required fields.';
       return;
     }
     this._submitError = null;
+
+    const resolveKey = (key: string): { strain: string | null; phenotype: string | null } => {
+      if (!key) return { strain: null, phenotype: null };
+      const [strain, phenotype] = key.split('||');
+      return { strain: strain || null, phenotype: phenotype || null };
+    };
+    const p1 = resolveKey(f.parent_1_key);
+    const p2 = resolveKey(f.parent_2_key);
+
     try {
       await this.onAddSeedBatch?.({
         strain_name: f.strain_name,
@@ -2626,11 +2670,14 @@ export class StrainLibraryDialog extends LitElement {
         quantity: f.quantity,
         acquisition_date: f.acquisition_date,
         generation: f.generation,
-        lineage: f.lineage,
+        parent_1_strain: p1.strain,
+        parent_1_phenotype: p1.phenotype,
+        parent_2_strain: p2.strain,
+        parent_2_phenotype: p2.phenotype,
         notes: f.notes,
       });
       this._seedSubView = 'list';
-      this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', lineage: '', notes: '' };
+      this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
       this.onSeedDataChanged?.();
     } catch (e) {
       console.error('Failed to add seed batch', e);
