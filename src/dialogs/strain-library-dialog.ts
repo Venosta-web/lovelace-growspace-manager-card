@@ -2690,7 +2690,7 @@ export class StrainLibraryDialog extends LitElement {
 
     const resolveKey = (key: string): { strain: string | null; phenotype: string | null } => {
       if (!key) return { strain: null, phenotype: null };
-      const [strain, phenotype] = key.split('||');
+      const [strain, phenotype] = key.split('||', 2);
       return { strain: strain || null, phenotype: phenotype || null };
     };
     const p1 = resolveKey(f.parent_1_key);
