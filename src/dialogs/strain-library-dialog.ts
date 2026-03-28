@@ -25,7 +25,7 @@ import {
   mdiAccountGroup,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
+import { GrowspaceDevice, StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/md3-text-input';
@@ -59,6 +59,7 @@ export class StrainLibraryDialog extends LitElement {
   // Seeds & Genetics tab state
   @property({ type: Array }) seedBatches: SeedBatch[] = [];
   @property({ type: Array }) pollinationEvents: PollinationEvent[] = [];
+  @property({ type: Array }) plants: GrowspaceDevice[] = [];
   @property({ type: String }) initialTab: 'strains' | 'seeds' = 'strains';
   @property({ type: Function }) onSeedDataChanged?: () => void;
   @property({ attribute: false }) onAddSeedBatch?: (data: {
@@ -102,6 +103,24 @@ export class StrainLibraryDialog extends LitElement {
   // Pagination State
   @state() private _currentPage = 1;
   private readonly ITEMS_PER_PAGE = 15;
+
+  private get _flowerVegPlants(): Array<{ plant_id: string; label: string }> {
+    const ELIGIBLE_STAGES = ['flower', 'veg'];
+    return this.plants.flatMap((device) =>
+      device.plants
+        .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
+        .map((p) => {
+          const stage = p.attributes.stage;
+          const stageDays = p.attributes[`${stage}_days` as keyof typeof p.attributes] as number | null | undefined;
+          const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
+          const strain = p.attributes.strain ?? '';
+          const phenotype = p.attributes.phenotype;
+          const phenoStr = phenotype ? ` (${phenotype})` : '';
+          const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
+          return { plant_id: p.attributes.plant_id, label };
+        })
+    );
+  }
 
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
@@ -2592,6 +2611,8 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _renderLogPollinationForm(): TemplateResult {
+    const eligiblePlants = this._flowerVegPlants;
+
     return html`
       <div class="form-view">
         <div class="form-header">
@@ -2602,13 +2623,25 @@ export class StrainLibraryDialog extends LitElement {
           <input type="date" .value=${this._pollinationForm.date}
             @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, date: (e.target as HTMLInputElement).value }; }} />
         </label>
-        <label>Donor plant ID
-          <input type="text" placeholder="Plant ID of donor" .value=${this._pollinationForm.donor_plant_id}
-            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: (e.target as HTMLInputElement).value }; }} />
+        <label>Donor plant (male / pollen donor)
+          <select @change=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: (e.target as HTMLSelectElement).value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => html`
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
         </label>
-        <label>Receiver plant ID
-          <input type="text" placeholder="Plant ID of receiver" .value=${this._pollinationForm.receiver_plant_id}
-            @input=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: (e.target as HTMLInputElement).value }; }} />
+        <label>Receiver plant (female / seed bearer)
+          <select @change=${(e: Event) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: (e.target as HTMLSelectElement).value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => html`
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.receiver_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
         </label>
         <label>Notes
           <input type="text" .value=${this._pollinationForm.notes}

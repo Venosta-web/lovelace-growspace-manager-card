@@ -570,6 +570,7 @@ export class DialogHost extends LitElement {
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}
         .pollinationEvents=${Object.values(this._pollinationEvents)}
+        .plants=${this._devicesController.value ?? []}
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data: Parameters<typeof this.store.dataService.addSeedBatch>[0]) => this.store.dataService.addSeedBatch(data)}
