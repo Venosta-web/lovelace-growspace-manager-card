@@ -137,6 +137,19 @@ export class StrainLibraryDialog extends LitElement {
     );
   }
 
+  private _getPlantLabel(plant_id: string): string {
+    for (const device of this.plants) {
+      for (const p of device.plants) {
+        if (p.attributes.plant_id === plant_id) {
+          const strain = p.attributes.strain ?? '';
+          const phenotype = p.attributes.phenotype;
+          return phenotype ? `${strain} (${phenotype})` : (strain || plant_id);
+        }
+      }
+    }
+    return plant_id;
+  }
+
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
     // Auto-open editor if editingStrain is provided
@@ -2628,7 +2641,7 @@ export class StrainLibraryDialog extends LitElement {
           : this.pollinationEvents.map(e => html`
               <div class="pollination-card">
                 <div class="pollination-date">${e.date}</div>
-                <div class="pollination-plants">Donor: ${e.donor_plant_id} × Receiver: ${e.receiver_plant_id}</div>
+                <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>
                 ${e.notes ? html`<div class="pollination-notes">${e.notes}</div>` : nothing}
                 ${e.result_seed_batch_id
                   ? html`<span class="badge success">Seeds harvested</span>`
