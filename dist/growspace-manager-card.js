@@ -6890,6 +6890,9 @@ class GeneticsAPI extends BaseAPI {
     async logPollination(data) {
         await this.callService(DOMAIN, 'log_pollination', data);
     }
+    async updatePollination(data) {
+        await this.callService(DOMAIN, 'update_pollination', data);
+    }
     async harvestSeeds(data) {
         await this.callService(DOMAIN, 'harvest_seeds', data);
     }
@@ -7017,6 +7020,7 @@ let DataService$1 = class DataService {
         this.addSeedBatch = (data) => this._geneticsAPI.addSeedBatch(data);
         this.updateSeedBatch = (data) => this._geneticsAPI.updateSeedBatch(data);
         this.logPollination = (data) => this._geneticsAPI.logPollination(data);
+        this.updatePollination = (data) => this._geneticsAPI.updatePollination(data);
         this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
         // Initialize all API services
         this._growspaceAPI = new GrowspaceAPI(hass);
@@ -17353,6 +17357,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._activeMainTab = 'strains';
         this._seedSubView = 'list';
         this._editingBatchId = null;
+        this._editingEventId = null;
         this._submitError = null;
         this._selectedEventId = null;
         this._batchForm = {
@@ -17387,6 +17392,18 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
             return { plant_id: p.attributes.plant_id, label };
         }));
+    }
+    _getPlantLabel(plant_id) {
+        for (const device of this.plants) {
+            for (const p of device.plants) {
+                if (p.attributes.plant_id === plant_id) {
+                    const strain = p.attributes.strain ?? '';
+                    const phenotype = p.attributes.phenotype;
+                    return phenotype ? `${strain} (${phenotype})` : (strain || plant_id);
+                }
+            }
+        }
+        return plant_id;
     }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
@@ -18969,8 +18986,24 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             ? x `<p class="empty-state">No pollination events yet.</p>`
             : this.pollinationEvents.map(e => x `
               <div class="pollination-card">
-                <div class="pollination-date">${e.date}</div>
-                <div class="pollination-plants">Donor: ${e.donor_plant_id} × Receiver: ${e.receiver_plant_id}</div>
+                <div class="pollination-card-header">
+                  <div class="pollination-date">${e.date}</div>
+                  <div class="pollination-card-actions">
+                    <button class="icon-btn" title="Edit" @click=${() => {
+                this._editingEventId = e.event_id;
+                this._pollinationForm = {
+                    date: e.date,
+                    donor_plant_id: e.donor_plant_id,
+                    receiver_plant_id: e.receiver_plant_id,
+                    notes: e.notes ?? '',
+                };
+                this._seedSubView = 'log-pollination';
+            }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiPencil}"></path></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>
                 ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
                 ${e.result_seed_batch_id
                 ? x `<span class="badge success">Seeds harvested</span>`
@@ -19053,8 +19086,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         return x `
       <div class="form-view">
         <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
-          <h3>Log pollination</h3>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingEventId = null; this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' }; }}>← Back</button>
+          <h3>${this._editingEventId ? 'Edit pollination' : 'Log pollination'}</h3>
         </div>
         <label>Date
           <input type="date" .value=${this._pollinationForm.date}
@@ -19178,12 +19211,24 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         this._submitError = null;
         try {
-            await this.onLogPollination?.({
-                date: f.date,
-                donor_plant_id: f.donor_plant_id,
-                receiver_plant_id: f.receiver_plant_id,
-                notes: f.notes,
-            });
+            if (this._editingEventId) {
+                await this.onUpdatePollination?.({
+                    event_id: this._editingEventId,
+                    date: f.date,
+                    donor_plant_id: f.donor_plant_id,
+                    receiver_plant_id: f.receiver_plant_id,
+                    notes: f.notes,
+                });
+                this._editingEventId = null;
+            }
+            else {
+                await this.onLogPollination?.({
+                    date: f.date,
+                    donor_plant_id: f.donor_plant_id,
+                    receiver_plant_id: f.receiver_plant_id,
+                    notes: f.notes,
+                });
+            }
             this._seedSubView = 'list';
             this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
             this.onSeedDataChanged?.();
@@ -19996,6 +20041,32 @@ StrainLibraryDialog.styles = [
         color: var(--secondary-text-color);
         font-style: italic;
       }
+      .pollination-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pollination-card-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 2px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .icon-btn:hover {
+        color: var(--primary-text-color);
+        background: var(--divider-color, rgba(255,255,255,0.08));
+      }
+      .icon-btn.danger:hover {
+        color: var(--error-color, #f44336);
+      }
       .badge {
         display: inline-block;
         padding: 2px 10px;
@@ -20151,6 +20222,9 @@ __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "onHarvestSeeds", void 0);
 __decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onUpdatePollination", void 0);
+__decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
 __decorate([
@@ -20159,6 +20233,9 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_editingBatchId", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_editingEventId", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_submitError", void 0);
@@ -32011,6 +32088,7 @@ let DialogHost = class DialogHost extends i$3 {
         .onUpdateSeedBatch=${(data) => this.store.dataService.updateSeedBatch(data)}
         .onLogPollination=${(data) => this.store.dataService.logPollination(data)}
         .onHarvestSeeds=${(data) => this.store.dataService.harvestSeeds(data)}
+        .onUpdatePollination=${(data) => this.store.dataService.updatePollination(data)}
         @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {

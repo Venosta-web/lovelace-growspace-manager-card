@@ -498,6 +498,9 @@ export class DataService {
   logPollination = (data: Parameters<GeneticsAPI['logPollination']>[0]) =>
     this._geneticsAPI.logPollination(data);
 
+  updatePollination = (data: Parameters<GeneticsAPI['updatePollination']>[0]) =>
+    this._geneticsAPI.updatePollination(data);
+
   harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
     this._geneticsAPI.harvestSeeds(data);
 
