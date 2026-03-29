@@ -73,6 +73,10 @@ export class GeneticsAPI extends BaseAPI {
     await this.callService(DOMAIN, 'update_pollination', data as Record<string, unknown>);
   }
 
+  async deletePollination(event_id: string): Promise<void> {
+    await this.callService(DOMAIN, 'delete_pollination', { event_id });
+  }
+
   async harvestSeeds(data: {
     event_id: string;
     quantity: number;

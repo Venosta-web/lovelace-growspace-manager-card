@@ -97,11 +97,13 @@ export class StrainLibraryDialog extends LitElement {
   @property({ attribute: false }) onUpdatePollination?: (data: {
     event_id: string; date?: string; donor_plant_id?: string; receiver_plant_id?: string; notes?: string;
   }) => Promise<void>;
+  @property({ attribute: false }) onDeletePollination?: (event_id: string) => Promise<void>;
 
   @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
   @state() private _editingBatchId: string | null = null;
   @state() private _editingEventId: string | null = null;
+  @state() private _confirmDeleteEventId: string | null = null;
   @state() private _submitError: string | null = null;
   @state() private _selectedEventId: string | null = null;
   @state() private _batchForm = {
@@ -949,6 +951,11 @@ export class StrainLibraryDialog extends LitElement {
       }
       .icon-btn.danger:hover {
         color: var(--error-color, #f44336);
+      }
+      .delete-confirm-text {
+        font-size: 0.75rem;
+        color: var(--error-color, #f44336);
+        align-self: center;
       }
       .badge {
         display: inline-block;
@@ -2685,6 +2692,26 @@ export class StrainLibraryDialog extends LitElement {
                     }}>
                       <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiPencil}"></path></svg>
                     </button>
+                    ${this._confirmDeleteEventId === e.event_id
+                      ? html`
+                          <span class="delete-confirm-text">Delete?</span>
+                          <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                            await this.onDeletePollination?.(e.event_id);
+                            this._confirmDeleteEventId = null;
+                            this.onSeedDataChanged?.();
+                          }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                          </button>
+                          <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteEventId = null; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                          </button>
+                        `
+                      : html`
+                          <button class="icon-btn danger" title="Delete" @click=${() => { this._confirmDeleteEventId = e.event_id; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                          </button>
+                        `
+                    }
                   </div>
                 </div>
                 <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>

@@ -578,6 +578,7 @@ export class DialogHost extends LitElement {
         .onLogPollination=${(data: Parameters<typeof this.store.dataService.logPollination>[0]) => this.store.dataService.logPollination(data)}
         .onHarvestSeeds=${(data: Parameters<typeof this.store.dataService.harvestSeeds>[0]) => this.store.dataService.harvestSeeds(data)}
         .onUpdatePollination=${(data: Parameters<typeof this.store.dataService.updatePollination>[0]) => this.store.dataService.updatePollination(data)}
+        .onDeletePollination=${(event_id: string) => this.store.dataService.deletePollination(event_id)}
         @close=${() => {
         // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
         if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {

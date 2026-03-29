@@ -501,6 +501,9 @@ export class DataService {
   updatePollination = (data: Parameters<GeneticsAPI['updatePollination']>[0]) =>
     this._geneticsAPI.updatePollination(data);
 
+  deletePollination = (event_id: string) =>
+    this._geneticsAPI.deletePollination(event_id);
+
   harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
     this._geneticsAPI.harvestSeeds(data);
 
