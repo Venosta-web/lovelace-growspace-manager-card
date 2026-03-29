@@ -574,6 +574,7 @@ export class DialogHost extends LitElement {
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data: Parameters<typeof this.store.dataService.addSeedBatch>[0]) => this.store.dataService.addSeedBatch(data)}
+        .onUpdateSeedBatch=${(data: Parameters<typeof this.store.dataService.updateSeedBatch>[0]) => this.store.dataService.updateSeedBatch(data)}
         .onLogPollination=${(data: Parameters<typeof this.store.dataService.logPollination>[0]) => this.store.dataService.logPollination(data)}
         .onHarvestSeeds=${(data: Parameters<typeof this.store.dataService.harvestSeeds>[0]) => this.store.dataService.harvestSeeds(data)}
         @close=${() => {

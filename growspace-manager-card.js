@@ -6884,6 +6884,9 @@ class GeneticsAPI extends BaseAPI {
     async addSeedBatch(data) {
         await this.callService(DOMAIN, 'add_seed_batch', data);
     }
+    async updateSeedBatch(data) {
+        await this.callService(DOMAIN, 'update_seed_batch', data);
+    }
     async logPollination(data) {
         await this.callService(DOMAIN, 'log_pollination', data);
     }
@@ -7012,6 +7015,7 @@ let DataService$1 = class DataService {
         // ========================================
         this.fetchGeneticsData = () => this._geneticsAPI.fetchGeneticsData();
         this.addSeedBatch = (data) => this._geneticsAPI.addSeedBatch(data);
+        this.updateSeedBatch = (data) => this._geneticsAPI.updateSeedBatch(data);
         this.logPollination = (data) => this._geneticsAPI.logPollination(data);
         this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
         // Initialize all API services
@@ -17344,14 +17348,22 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Seeds & Genetics tab state
         this.seedBatches = [];
         this.pollinationEvents = [];
+        this.plants = [];
         this.initialTab = 'strains';
         this._activeMainTab = 'strains';
         this._seedSubView = 'list';
+        this._editingBatchId = null;
         this._submitError = null;
         this._selectedEventId = null;
         this._batchForm = {
-            strain_name: '', breeder: '', quantity: 1,
-            acquisition_date: '', generation: 'F1', lineage: '', notes: ''
+            strain_name: '',
+            breeder: '',
+            quantity: 1,
+            acquisition_date: '',
+            generation: 'F1',
+            parent_1_key: '',
+            parent_2_key: '',
+            notes: '',
         };
         this._pollinationForm = {
             date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
@@ -17360,6 +17372,21 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
+    }
+    get _flowerVegPlants() {
+        const ELIGIBLE_STAGES = ['flower', 'veg'];
+        return this.plants.flatMap((device) => device.plants
+            .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
+            .map((p) => {
+            const stage = p.attributes.stage;
+            const stageDays = p.attributes[`${stage}_days`];
+            const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
+            const strain = p.attributes.strain ?? '';
+            const phenotype = p.attributes.phenotype;
+            const phenoStr = phenotype ? ` (${phenotype})` : '';
+            const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
+            return { plant_id: p.attributes.plant_id, label };
+        }));
     }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
@@ -18878,7 +18905,12 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       <div class="seeds-section">
         <div class="seeds-header">
           <h3>Seed inventory</h3>
-          <button class="md3-button filled" @click=${() => { this._seedSubView = 'add-batch'; }}>
+          <button class="md3-button filled" @click=${() => {
+            this._editingBatchId = null;
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
+            this._submitError = null;
+            this._seedSubView = 'add-batch';
+        }}>
             Add batch
           </button>
         </div>
@@ -18886,8 +18918,42 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             ? x `<p class="empty-state">No seed batches yet.</p>`
             : this.seedBatches.map(b => x `
               <div class="seed-batch-card">
-                <div class="seed-batch-name">${b.strain_name}</div>
+                <div class="seed-batch-card-header">
+                  <div class="seed-batch-name">${b.strain_name}</div>
+                  <button class="seed-batch-edit-btn" title="Edit batch" @click=${() => {
+                const p1Key = b.parent_1_strain
+                    ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
+                    : '';
+                const p2Key = b.parent_2_strain
+                    ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
+                    : '';
+                this._batchForm = {
+                    strain_name: b.strain_name,
+                    breeder: b.breeder,
+                    quantity: b.quantity,
+                    acquisition_date: b.acquisition_date,
+                    generation: b.generation,
+                    parent_1_key: p1Key,
+                    parent_2_key: p2Key,
+                    notes: b.notes ?? '',
+                };
+                this._editingBatchId = b.batch_id;
+                this._submitError = null;
+                this._seedSubView = 'add-batch';
+            }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiPencil}"></path>
+                    </svg>
+                  </button>
+                </div>
                 <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
+                ${(b.parent_1_strain || b.parent_2_strain) ? x `
+                  <div class="seed-batch-parents">
+                    ${b.parent_1_strain ? x `<span class="seed-batch-parent-chip">♀ ${b.parent_1_strain}${b.parent_1_phenotype ? ` (${b.parent_1_phenotype})` : ''}</span>` : E}
+                    ${(b.parent_1_strain && b.parent_2_strain) ? x `<span class="seed-batch-parent-sep">×</span>` : E}
+                    ${b.parent_2_strain ? x `<span class="seed-batch-parent-chip">♂ ${b.parent_2_strain}${b.parent_2_phenotype ? ` (${b.parent_2_phenotype})` : ''}</span>` : E}
+                  </div>
+                ` : E}
                 ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
                 ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
               </div>
@@ -18920,18 +18986,30 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     `;
     }
     _renderAddBatchForm() {
+        const isEditing = this._editingBatchId !== null;
+        const uniqueBreeders = [...new Set(this.strains.map((s) => s.breeder).filter(Boolean))].sort();
+        const strainOptions = this.strains
+            .slice()
+            .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+            .map((s) => ({
+            key: `${s.strain}||${s.phenotype}`,
+            label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+        }));
         return x `
+      <datalist id="batch-breeder-suggestions">
+        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
       <div class="form-view">
         <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
-          <h3>Add seed batch</h3>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; }}>← Back</button>
+          <h3>${isEditing ? 'Edit seed batch' : 'Add seed batch'}</h3>
         </div>
         <label>Strain name
           <input type="text" .value=${this._batchForm.strain_name}
             @input=${(e) => { this._batchForm = { ...this._batchForm, strain_name: e.target.value }; }} />
         </label>
         <label>Breeder
-          <input type="text" .value=${this._batchForm.breeder}
+          <input type="text" list="batch-breeder-suggestions" .value=${this._batchForm.breeder}
             @input=${(e) => { this._batchForm = { ...this._batchForm, breeder: e.target.value }; }} />
         </label>
         <label>Quantity
@@ -18946,9 +19024,17 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
             @input=${(e) => { this._batchForm = { ...this._batchForm, generation: e.target.value }; }} />
         </label>
-        <label>Lineage
-          <input type="text" placeholder="Strain A x Strain B" .value=${this._batchForm.lineage}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, lineage: e.target.value }; }} />
+        <label>Parent 1
+          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_1_key: e.target.value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_1_key === o.key}>${o.label}</option>`)}
+          </select>
+        </label>
+        <label>Parent 2
+          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_2_key: e.target.value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_2_key === o.key}>${o.label}</option>`)}
+          </select>
         </label>
         <label>Notes
           <input type="text" .value=${this._batchForm.notes}
@@ -18956,13 +19042,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </label>
         ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
         </div>
       </div>
     `;
     }
     _renderLogPollinationForm() {
+        const eligiblePlants = this._flowerVegPlants;
         return x `
       <div class="form-view">
         <div class="form-header">
@@ -18973,13 +19060,25 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <input type="date" .value=${this._pollinationForm.date}
             @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, date: e.target.value }; }} />
         </label>
-        <label>Donor plant ID
-          <input type="text" placeholder="Plant ID of donor" .value=${this._pollinationForm.donor_plant_id}
-            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: e.target.value }; }} />
+        <label>Donor plant (male / pollen donor)
+          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: e.target.value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => x `
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
         </label>
-        <label>Receiver plant ID
-          <input type="text" placeholder="Plant ID of receiver" .value=${this._pollinationForm.receiver_plant_id}
-            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: e.target.value }; }} />
+        <label>Receiver plant (female / seed bearer)
+          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: e.target.value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => x `
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.receiver_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
         </label>
         <label>Notes
           <input type="text" .value=${this._pollinationForm.notes}
@@ -19018,27 +19117,56 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     async _submitAddBatch() {
         const f = this._batchForm;
-        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation || !f.lineage) {
+        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation) {
             this._submitError = 'Please fill in all required fields.';
             return;
         }
         this._submitError = null;
+        const resolveKey = (key) => {
+            if (!key)
+                return { strain: null, phenotype: null };
+            const [strain, phenotype] = key.split('||', 2);
+            return { strain: strain || null, phenotype: phenotype || null };
+        };
+        const p1 = resolveKey(f.parent_1_key);
+        const p2 = resolveKey(f.parent_2_key);
         try {
-            await this.onAddSeedBatch?.({
-                strain_name: f.strain_name,
-                breeder: f.breeder,
-                quantity: f.quantity,
-                acquisition_date: f.acquisition_date,
-                generation: f.generation,
-                lineage: f.lineage,
-                notes: f.notes,
-            });
+            if (this._editingBatchId) {
+                await this.onUpdateSeedBatch?.({
+                    batch_id: this._editingBatchId,
+                    strain_name: f.strain_name,
+                    breeder: f.breeder,
+                    quantity: f.quantity,
+                    acquisition_date: f.acquisition_date,
+                    generation: f.generation,
+                    parent_1_strain: p1.strain,
+                    parent_1_phenotype: p1.phenotype,
+                    parent_2_strain: p2.strain,
+                    parent_2_phenotype: p2.phenotype,
+                    notes: f.notes,
+                });
+            }
+            else {
+                await this.onAddSeedBatch?.({
+                    strain_name: f.strain_name,
+                    breeder: f.breeder,
+                    quantity: f.quantity,
+                    acquisition_date: f.acquisition_date,
+                    generation: f.generation,
+                    parent_1_strain: p1.strain,
+                    parent_1_phenotype: p1.phenotype,
+                    parent_2_strain: p2.strain,
+                    parent_2_phenotype: p2.phenotype,
+                    notes: f.notes,
+                });
+            }
             this._seedSubView = 'list';
-            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', lineage: '', notes: '' };
+            this._editingBatchId = null;
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
             this.onSeedDataChanged?.();
         }
         catch (e) {
-            console.error('Failed to add seed batch', e);
+            console.error('Failed to save seed batch', e);
             this._submitError = 'Failed to save. Please check your connection and try again.';
         }
     }
@@ -19776,16 +19904,63 @@ StrainLibraryDialog.styles = [
         padding: 14px 16px;
         margin-bottom: 10px;
       }
+      .seed-batch-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
       .seed-batch-name {
         font-weight: 700;
         font-size: 1rem;
         color: var(--primary-text-color);
-        margin-bottom: 4px;
+      }
+      .seed-batch-edit-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.15s, color 0.15s;
+      }
+      .seed-batch-edit-btn:hover {
+        background: var(--divider-color, rgba(255,255,255,0.1));
+        color: var(--primary-text-color);
+      }
+      .seed-batch-edit-btn svg {
+        fill: currentColor;
       }
       .seed-batch-meta {
         font-size: 0.82rem;
         color: var(--secondary-text-color);
         margin-bottom: 4px;
+      }
+      .seed-batch-parents {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+      .seed-batch-parent-chip {
+        font-size: 0.78rem;
+        color: var(--primary-text-color);
+        background: var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 6px;
+        padding: 2px 7px;
+      }
+      .seed-batch-parent-sep {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        font-weight: 600;
       }
       .seed-batch-lineage {
         font-size: 0.8rem;
@@ -19955,6 +20130,9 @@ __decorate([
     n$5({ type: Array })
 ], StrainLibraryDialog.prototype, "pollinationEvents", void 0);
 __decorate([
+    n$5({ type: Array })
+], StrainLibraryDialog.prototype, "plants", void 0);
+__decorate([
     n$5({ type: String })
 ], StrainLibraryDialog.prototype, "initialTab", void 0);
 __decorate([
@@ -19963,6 +20141,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "onAddSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onUpdateSeedBatch", void 0);
 __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "onLogPollination", void 0);
@@ -19975,6 +20156,9 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_seedSubView", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_editingBatchId", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_submitError", void 0);
@@ -31820,9 +32004,11 @@ let DialogHost = class DialogHost extends i$3 {
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}
         .pollinationEvents=${Object.values(this._pollinationEvents)}
+        .plants=${this._devicesController.value ?? []}
         .initialTab=${active.payload.initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data) => this.store.dataService.addSeedBatch(data)}
+        .onUpdateSeedBatch=${(data) => this.store.dataService.updateSeedBatch(data)}
         .onLogPollination=${(data) => this.store.dataService.logPollination(data)}
         .onHarvestSeeds=${(data) => this.store.dataService.harvestSeeds(data)}
         @close=${() => {

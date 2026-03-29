@@ -492,6 +492,9 @@ export class DataService {
   addSeedBatch = (data: Parameters<GeneticsAPI['addSeedBatch']>[0]) =>
     this._geneticsAPI.addSeedBatch(data);
 
+  updateSeedBatch = (data: Parameters<GeneticsAPI['updateSeedBatch']>[0]) =>
+    this._geneticsAPI.updateSeedBatch(data);
+
   logPollination = (data: Parameters<GeneticsAPI['logPollination']>[0]) =>
     this._geneticsAPI.logPollination(data);
 

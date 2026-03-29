@@ -74,6 +74,20 @@ export class StrainLibraryDialog extends LitElement {
     parent_2_phenotype?: string | null;
     notes?: string;
   }) => Promise<void>;
+  @property({ attribute: false }) onUpdateSeedBatch?: (data: {
+    batch_id: string;
+    strain_name?: string;
+    breeder?: string;
+    quantity?: number;
+    acquisition_date?: string;
+    generation?: string;
+    lineage?: string;
+    parent_1_strain?: string | null;
+    parent_1_phenotype?: string | null;
+    parent_2_strain?: string | null;
+    parent_2_phenotype?: string | null;
+    notes?: string;
+  }) => Promise<void>;
   @property({ attribute: false }) onLogPollination?: (data: {
     date: string; donor_plant_id: string; receiver_plant_id: string; notes?: string;
   }) => Promise<void>;
@@ -83,6 +97,7 @@ export class StrainLibraryDialog extends LitElement {
 
   @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
+  @state() private _editingBatchId: string | null = null;
   @state() private _submitError: string | null = null;
   @state() private _selectedEventId: string | null = null;
   @state() private _batchForm = {
@@ -800,16 +815,63 @@ export class StrainLibraryDialog extends LitElement {
         padding: 14px 16px;
         margin-bottom: 10px;
       }
+      .seed-batch-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
       .seed-batch-name {
         font-weight: 700;
         font-size: 1rem;
         color: var(--primary-text-color);
-        margin-bottom: 4px;
+      }
+      .seed-batch-edit-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.15s, color 0.15s;
+      }
+      .seed-batch-edit-btn:hover {
+        background: var(--divider-color, rgba(255,255,255,0.1));
+        color: var(--primary-text-color);
+      }
+      .seed-batch-edit-btn svg {
+        fill: currentColor;
       }
       .seed-batch-meta {
         font-size: 0.82rem;
         color: var(--secondary-text-color);
         margin-bottom: 4px;
+      }
+      .seed-batch-parents {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+      .seed-batch-parent-chip {
+        font-size: 0.78rem;
+        color: var(--primary-text-color);
+        background: var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 6px;
+        padding: 2px 7px;
+      }
+      .seed-batch-parent-sep {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        font-weight: 600;
       }
       .seed-batch-lineage {
         font-size: 0.8rem;
@@ -2500,7 +2562,12 @@ export class StrainLibraryDialog extends LitElement {
       <div class="seeds-section">
         <div class="seeds-header">
           <h3>Seed inventory</h3>
-          <button class="md3-button filled" @click=${() => { this._seedSubView = 'add-batch'; }}>
+          <button class="md3-button filled" @click=${() => {
+            this._editingBatchId = null;
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
+            this._submitError = null;
+            this._seedSubView = 'add-batch';
+          }}>
             Add batch
           </button>
         </div>
@@ -2508,8 +2575,42 @@ export class StrainLibraryDialog extends LitElement {
           ? html`<p class="empty-state">No seed batches yet.</p>`
           : this.seedBatches.map(b => html`
               <div class="seed-batch-card">
-                <div class="seed-batch-name">${b.strain_name}</div>
+                <div class="seed-batch-card-header">
+                  <div class="seed-batch-name">${b.strain_name}</div>
+                  <button class="seed-batch-edit-btn" title="Edit batch" @click=${() => {
+                    const p1Key = b.parent_1_strain
+                      ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
+                      : '';
+                    const p2Key = b.parent_2_strain
+                      ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
+                      : '';
+                    this._batchForm = {
+                      strain_name: b.strain_name,
+                      breeder: b.breeder,
+                      quantity: b.quantity,
+                      acquisition_date: b.acquisition_date,
+                      generation: b.generation,
+                      parent_1_key: p1Key,
+                      parent_2_key: p2Key,
+                      notes: b.notes ?? '',
+                    };
+                    this._editingBatchId = b.batch_id;
+                    this._submitError = null;
+                    this._seedSubView = 'add-batch';
+                  }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiPencil}"></path>
+                    </svg>
+                  </button>
+                </div>
                 <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
+                ${(b.parent_1_strain || b.parent_2_strain) ? html`
+                  <div class="seed-batch-parents">
+                    ${b.parent_1_strain ? html`<span class="seed-batch-parent-chip">♀ ${b.parent_1_strain}${b.parent_1_phenotype ? ` (${b.parent_1_phenotype})` : ''}</span>` : nothing}
+                    ${(b.parent_1_strain && b.parent_2_strain) ? html`<span class="seed-batch-parent-sep">×</span>` : nothing}
+                    ${b.parent_2_strain ? html`<span class="seed-batch-parent-chip">♂ ${b.parent_2_strain}${b.parent_2_phenotype ? ` (${b.parent_2_phenotype})` : ''}</span>` : nothing}
+                  </div>
+                ` : nothing}
                 ${b.lineage ? html`<div class="seed-batch-lineage">${b.lineage}</div>` : nothing}
                 ${b.notes ? html`<div class="seed-batch-notes">${b.notes}</div>` : nothing}
               </div>
@@ -2546,6 +2647,7 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _renderAddBatchForm(): TemplateResult {
+    const isEditing = this._editingBatchId !== null;
     const uniqueBreeders = [...new Set(this.strains.map((s) => s.breeder).filter(Boolean))].sort() as string[];
 
     const strainOptions = this.strains
@@ -2562,8 +2664,8 @@ export class StrainLibraryDialog extends LitElement {
       </datalist>
       <div class="form-view">
         <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; }}>← Back</button>
-          <h3>Add seed batch</h3>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; }}>← Back</button>
+          <h3>${isEditing ? 'Edit seed batch' : 'Add seed batch'}</h3>
         </div>
         <label>Strain name
           <input type="text" .value=${this._batchForm.strain_name}
@@ -2603,7 +2705,7 @@ export class StrainLibraryDialog extends LitElement {
         </label>
         ${this._submitError ? html`<p class="form-error">${this._submitError}</p>` : nothing}
         <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; this._submitError = null; }}>Cancel</button>
           <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
         </div>
       </div>
@@ -2697,23 +2799,40 @@ export class StrainLibraryDialog extends LitElement {
     const p2 = resolveKey(f.parent_2_key);
 
     try {
-      await this.onAddSeedBatch?.({
-        strain_name: f.strain_name,
-        breeder: f.breeder,
-        quantity: f.quantity,
-        acquisition_date: f.acquisition_date,
-        generation: f.generation,
-        parent_1_strain: p1.strain,
-        parent_1_phenotype: p1.phenotype,
-        parent_2_strain: p2.strain,
-        parent_2_phenotype: p2.phenotype,
-        notes: f.notes,
-      });
+      if (this._editingBatchId) {
+        await this.onUpdateSeedBatch?.({
+          batch_id: this._editingBatchId,
+          strain_name: f.strain_name,
+          breeder: f.breeder,
+          quantity: f.quantity,
+          acquisition_date: f.acquisition_date,
+          generation: f.generation,
+          parent_1_strain: p1.strain,
+          parent_1_phenotype: p1.phenotype,
+          parent_2_strain: p2.strain,
+          parent_2_phenotype: p2.phenotype,
+          notes: f.notes,
+        });
+      } else {
+        await this.onAddSeedBatch?.({
+          strain_name: f.strain_name,
+          breeder: f.breeder,
+          quantity: f.quantity,
+          acquisition_date: f.acquisition_date,
+          generation: f.generation,
+          parent_1_strain: p1.strain,
+          parent_1_phenotype: p1.phenotype,
+          parent_2_strain: p2.strain,
+          parent_2_phenotype: p2.phenotype,
+          notes: f.notes,
+        });
+      }
       this._seedSubView = 'list';
+      this._editingBatchId = null;
       this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
       this.onSeedDataChanged?.();
     } catch (e) {
-      console.error('Failed to add seed batch', e);
+      console.error('Failed to save seed batch', e);
       this._submitError = 'Failed to save. Please check your connection and try again.';
     }
   }

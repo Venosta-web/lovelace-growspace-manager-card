@@ -37,6 +37,23 @@ export class GeneticsAPI extends BaseAPI {
     await this.callService(DOMAIN, 'add_seed_batch', data as Record<string, unknown>);
   }
 
+  async updateSeedBatch(data: {
+    batch_id: string;
+    strain_name?: string;
+    breeder?: string;
+    quantity?: number;
+    acquisition_date?: string;
+    generation?: string;
+    lineage?: string;
+    parent_1_strain?: string | null;
+    parent_1_phenotype?: string | null;
+    parent_2_strain?: string | null;
+    parent_2_phenotype?: string | null;
+    notes?: string;
+  }): Promise<void> {
+    await this.callService(DOMAIN, 'update_seed_batch', data as Record<string, unknown>);
+  }
+
   async logPollination(data: {
     date: string;
     donor_plant_id: string;
