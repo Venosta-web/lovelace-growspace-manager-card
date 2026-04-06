@@ -85,7 +85,10 @@ export class HarvestScoringDialog extends LitElement {
         dialogStyles,
         css`
       :host {
-        display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .score-grid {
@@ -377,6 +380,7 @@ export class HarvestScoringDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: #4caf50;">
           <!-- HEADER -->

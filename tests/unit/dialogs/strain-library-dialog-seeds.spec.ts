@@ -277,7 +277,8 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
                 quantity: 5,
                 acquisition_date: '2026-01-01',
                 generation: 'F1',
-                lineage: 'A x B',
+                parent_1_key: 'Parent A||Pheno1',
+                parent_2_key: 'Parent B||',
                 notes: 'test',
             };
             await element.updateComplete;
@@ -294,7 +295,10 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
                 quantity: 5,
                 acquisition_date: '2026-01-01',
                 generation: 'F1',
-                lineage: 'A x B',
+                parent_1_strain: 'Parent A',
+                parent_1_phenotype: 'Pheno1',
+                parent_2_strain: 'Parent B',
+                parent_2_phenotype: null,
                 notes: 'test',
             });
             expect((element as any)._seedSubView).toBe('list');
@@ -308,7 +312,8 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
                 quantity: 1,
                 acquisition_date: '2026-01-01',
                 generation: 'F1',
-                lineage: 'A x B',
+                parent_1_key: '',
+                parent_2_key: '',
                 notes: '',
             };
             await element.updateComplete;

@@ -21,6 +21,12 @@ export class GrowReportDialog extends LitElement {
   static styles = [
     sharedStyles,
     css`
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
       .content {
         display: flex;
         flex-direction: column;
@@ -117,9 +123,12 @@ export class GrowReportDialog extends LitElement {
   render() {
     return html`
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._close}
         hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">

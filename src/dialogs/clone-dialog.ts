@@ -28,8 +28,10 @@ export class CloneDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;
@@ -117,11 +119,12 @@ export class CloneDialog extends LitElement {
 
     return html`
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._handleClose}
         hideActions
         .heading=${title}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">

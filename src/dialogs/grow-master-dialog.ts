@@ -18,7 +18,10 @@ export class GrowMasterDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Specific overrides or additions */
@@ -114,7 +117,8 @@ export class GrowMasterDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
           <div class="dialog-header">

@@ -26,7 +26,10 @@ export class TrainingDialog extends LitElement {
     css`
       :host {
         display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;
@@ -112,7 +115,15 @@ export class TrainingDialog extends LitElement {
     const targetText = count > 0 ? `${count} Selected Plant${count !== 1 ? 's' : ''}` : 'Growspace';
 
     return html`
-      <ha-dialog .open=${this.open} @closed=${this._handleClose} hideActions .heading=${title}>
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._handleClose}
+        hideActions
+        .heading=${title}
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
             <div class="dialog-icon">

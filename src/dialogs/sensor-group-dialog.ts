@@ -23,6 +23,12 @@ export class SensorGroupDialog extends LitElement {
     static styles = [
         dialogStyles,
         css`
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
       .group-form {
         display: flex;
         flex-direction: column;
@@ -138,8 +144,9 @@ export class SensorGroupDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        width="full"
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
         heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
       >
         <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">

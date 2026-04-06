@@ -42,7 +42,10 @@ export class NutrientInventoryDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: clamp(400px, 600px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .inventory-list {
@@ -245,7 +248,14 @@ export class NutrientInventoryDialog extends LitElement {
                   </svg>
                 </div>
                 <div class="dialog-title-group">
-                  <h2 class="dialog-title">Nutrient Inventory</h2>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <h2 class="dialog-title">Nutrient Inventory</h2>
+                    <gs-help-tooltip
+                      content="Track your nutrient bottles — name, brand, and current stock levels. Used to calculate feeds and trigger low-stock alerts."
+                      placement="bottom"
+                      label="Nutrient Inventory"
+                    ></gs-help-tooltip>
+                  </div>
                   <div class="dialog-subtitle">Manage stock levels</div>
                 </div>
                 <button class="md3-button text" @click=${this._close}>
@@ -280,7 +290,8 @@ export class NutrientInventoryDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         ${content}
       </ha-dialog>

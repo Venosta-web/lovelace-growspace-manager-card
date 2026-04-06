@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { CropSteeringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
-import { mdiChartTimelineVariantShimmer, mdiClose, mdiWaterPercent, mdiSprout, mdiArrowUp, mdiArrowDown, mdiMinus } from '@mdi/js';
+import { mdiChartTimelineVariantShimmer, mdiClose, mdiWaterPercent, mdiSprout, mdiArrowUp, mdiArrowDown, mdiMinus, mdiCompassOutline } from '@mdi/js';
 import '../components/ui';
 import '../components/ui/gs-help-tooltip';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -26,7 +26,10 @@ export class CropSteeringDialog extends LitElement {
         dialogStyles,
         css`
       :host {
-        --mdc-dialog-min-width: clamp(350px, 600px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .metric-grid {
         display: grid;
@@ -138,25 +141,34 @@ export class CropSteeringDialog extends LitElement {
 
         return html`
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._close}
-        heading="Crop Steering"
         hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
-        <!-- Custom Header -->
-        <div slot="heading" class="dialog-header">
-          <div style="display: flex; flex-direction: column;">
-            <h2 class="dialog-title">Crop Steering Diagnostics</h2>
-            <div class="dialog-subtitle">${this.growspaceName}</div>
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiCompassOutline}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Crop Steering Diagnostics</h2>
+                <gs-help-tooltip
+                  content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
+                  placement="bottom"
+                  label="Crop Steering"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
           </div>
-          <div class="header-actions">
-            <ha-icon-button
-              .path=${mdiClose}
-              @click=${this._close}
-              title="Close"
-            ></ha-icon-button>
-          </div>
-        </div>
 
         <div class="dialog-content">
           ${stateObj === undefined || isNaN(score)

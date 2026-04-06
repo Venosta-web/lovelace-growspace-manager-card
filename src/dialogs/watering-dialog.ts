@@ -46,7 +46,10 @@ export class WateringDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .product-row {
         display: flex;
@@ -310,10 +313,17 @@ export class WateringDialog extends LitElement {
 
     // Logic for recommendations to sort or star
     // For now simple listing as per IPM dialog style
-
     return html`
-      <ha-dialog open @closed=${this._close} hideActions .heading=${'Record Watering'}>
-        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
@@ -322,27 +332,30 @@ export class WateringDialog extends LitElement {
               <div style="display:flex;align-items:center;gap:6px;">
                 <h2 class="dialog-title">Record Watering</h2>
                 <gs-help-tooltip
-                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants."
+                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants. Select one or more target plants below."
                   placement="bottom"
                   label="Record Watering"
                 ></gs-help-tooltip>
               </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
-            <button class="md3-button text" @click=${this._close}>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
 
-          <div class="dialog-content-grid">
+          <div class="config-content">
             ${hasPhiWarning
-        ? html`
-                  <div class="error-bar" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;">
+              ? html`
+                  <div
+                    class="error-bar"
+                    style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;"
+                  >
                     <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
                     ${phiWarningText}
                   </div>
                 `
-        : nothing}
+              : nothing}
             <!-- Settings Section -->
             <div class="form-section">
               <h3>Watering Settings</h3>
@@ -352,8 +365,8 @@ export class WateringDialog extends LitElement {
                 .min=${0.1}
                 .step=${0.1}
                 @change=${(e: CustomEvent) => {
-        this._volume = parseFloat(e.detail) || 0;
-      }}
+                  this._volume = parseFloat(e.detail) || 0;
+                }}
                 style="margin-bottom: 12px;"
               ></md3-number-input>
 
@@ -361,7 +374,6 @@ export class WateringDialog extends LitElement {
                 label="Nutrient Preset"
                 .value=${this._selectedPresetId || ''}
                 .options=${[
-        { label: 'Manual / No Preset', value: '' },
         ...presetList.map((p) => ({ label: p.label, value: p.value })),
       ]}
                 @change=${(e: CustomEvent) => this._handlePresetChange(e)}

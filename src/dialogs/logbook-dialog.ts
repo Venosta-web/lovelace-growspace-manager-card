@@ -26,32 +26,35 @@ export class LogbookDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      ha-dialog {
-        --mdc-dialog-min-width: 90vw;
-        --mdc-dialog-max-width: 90vw;
-        --mdc-dialog-min-height: 80vh;
-        --mdc-dialog-max-height: 90vh;
-      }
-
-      @media (min-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 600px;
-          --mdc-dialog-max-width: 800px;
-        }
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .dialog-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0;
-        padding-bottom: 0;
+      }
+
+      .dialog-title-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .dialog-subtitle {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
       }
 
       .content-wrapper {
-        height: 70vh;
         display: flex;
         flex-direction: column;
+        height: 100%;
+        max-height: 90vh;
         overflow: hidden;
       }
 
@@ -118,25 +121,35 @@ export class LogbookDialog extends LitElement {
     if (!this.open) return html``;
 
     return html`
-      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
-        <div slot="heading" class="dialog-header">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h2 class="dialog-title">Events Logbook</h2>
-            <gs-help-tooltip
-              content="Free-form grow log — add notes, observations, or reminders tied to today's date."
-              placement="bottom"
-              label="Events Logbook"
-            ></gs-help-tooltip>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiFormatListBulleted}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Events Logbook</h2>
+                <gs-help-tooltip
+                  content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+                  placement="bottom"
+                  label="Events Logbook"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">Recent events and history</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
           </div>
-          <button
-            class="md3-button text"
-            @click=${this._close}
-            style="min-width:auto; padding:8px;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
         </div>
 
         <div class="content-wrapper">
@@ -167,20 +180,20 @@ export class LogbookDialog extends LitElement {
 
           <!-- Content -->
           ${this._activeTab === 'list'
-            ? html`
+        ? html`
                 <growspace-logbook
                   .hass=${this.hass}
                   .growspaceId=${this.growspaceId}
                 ></growspace-logbook>
               `
-            : this._activeTab === 'timeline'
-              ? html`
+        : this._activeTab === 'timeline'
+          ? html`
                   <growspace-timeline
                     .hass=${this.hass}
                     .growspaceId=${this.growspaceId}
                   ></growspace-timeline>
                 `
-              : html`
+          : html`
                   <div
                     style="padding: 20px; display: flex; flex-direction: column; align-items: center;"
                   >

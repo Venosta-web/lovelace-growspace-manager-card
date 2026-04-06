@@ -257,7 +257,15 @@ export class ECRampEditorDialog extends LitElement {
         const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
 
         return html`
-      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
+        .heading=${title}
+      >
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
@@ -266,11 +274,13 @@ export class ECRampEditorDialog extends LitElement {
             <div class="dialog-title-group">
               <div style="display:flex;align-items:center;gap:6px;">
                 <h2 class="dialog-title">${title}</h2>
-                ${this._view === 'EDIT' ? html`<gs-help-tooltip
-                  content="An EC Ramp Curve defines target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Plants need progressively stronger nutrients as they mature. Start low (0.8–1.2 in seedling), ramp up through veg (1.5–2.0), peak in flower (2.0–2.8), then flush low at harvest."
+                <gs-help-tooltip
+                  content=${this._view === 'LIST' 
+                    ? "Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage." 
+                    : "Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp."}
                   placement="bottom"
-                  label="EC Ramp Curve"
-                ></gs-help-tooltip>` : nothing}
+                  label=${title}
+                ></gs-help-tooltip>
               </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>

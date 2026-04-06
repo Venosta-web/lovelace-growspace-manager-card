@@ -15,11 +15,26 @@ export const dialogStyles = [
       /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
     }
 
-    /* Restored from 1.0.24.3.0 */
-    .dialog-content-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: grid;
+    ha-dialog {
+      --dialog-surface-margin-top: 40px !important;
+      --ha-dialog-max-width: 98vw !important;
+      --ha-dialog-width-full: 98vw !important;
+      --ha-dialog-min-height: 85vh !important;
+      --dialog-surface-width: 98vw !important;
+      --dialog-surface-max-width: 98vw !important;
+      --dialog-content-width: 98vw !important;
+      --width: 98vw !important;
+      --dialog-content-padding: 0 !important;
+    }
+    .glass-dialog-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-height: 85vh;
+      overflow: hidden;
+      position: relative;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
     }

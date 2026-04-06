@@ -97,6 +97,7 @@ var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
 var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
+var mdiCompassOutline = "M7,17L10.2,10.2L17,7L13.8,13.8L7,17M12,11.1A0.9,0.9 0 0,0 11.1,12A0.9,0.9 0 0,0 12,12.9A0.9,0.9 0 0,0 12.9,12A0.9,0.9 0 0,0 12,11.1M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z";
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
 var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
 var mdiContentSave = "M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z";
@@ -110,6 +111,7 @@ var mdiDumbbell = "M20.57,14.86L22,13.43L20.57,12L17,15.57L8.43,7L12,3.43L10.57,
 var mdiEye = "M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z";
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFileChart = "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M7,20H9V14H7V20M11,20H13V12H11V20M15,20H17V16H15V20Z";
+var mdiFileUpload = "M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19H10.5V16H8L12,12L16,16H13.5M13,9V3.5L18.5,9H13Z";
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
@@ -6893,6 +6895,9 @@ class GeneticsAPI extends BaseAPI {
     async updatePollination(data) {
         await this.callService(DOMAIN, 'update_pollination', data);
     }
+    async deletePollination(event_id) {
+        await this.callService(DOMAIN, 'delete_pollination', { event_id });
+    }
     async harvestSeeds(data) {
         await this.callService(DOMAIN, 'harvest_seeds', data);
     }
@@ -7021,6 +7026,7 @@ let DataService$1 = class DataService {
         this.updateSeedBatch = (data) => this._geneticsAPI.updateSeedBatch(data);
         this.logPollination = (data) => this._geneticsAPI.logPollination(data);
         this.updatePollination = (data) => this._geneticsAPI.updatePollination(data);
+        this.deletePollination = (event_id) => this._geneticsAPI.deletePollination(event_id);
         this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
         // Initialize all API services
         this._growspaceAPI = new GrowspaceAPI(hass);
@@ -10430,11 +10436,26 @@ const dialogStyles = [
       /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
     }
 
-    /* Restored from 1.0.24.3.0 */
-    .dialog-content-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: grid;
+    ha-dialog {
+      --dialog-surface-margin-top: 40px !important;
+      --ha-dialog-max-width: 98vw !important;
+      --ha-dialog-width-full: 98vw !important;
+      --ha-dialog-min-height: 85vh !important;
+      --dialog-surface-width: 98vw !important;
+      --dialog-surface-max-width: 98vw !important;
+      --dialog-content-width: 98vw !important;
+      --width: 98vw !important;
+      --dialog-content-padding: 0 !important;
+    }
+    .glass-dialog-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-height: 85vh;
+      overflow: hidden;
+      position: relative;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
     }
@@ -11163,6 +11184,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -11707,6 +11729,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -11717,7 +11740,14 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Batch Add Plants</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Batch Add Plants</h2>
+                <gs-help-tooltip
+                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
+                  placement="bottom"
+                  label="Batch Add"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
             </div>
             <button
@@ -14220,6 +14250,7 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        width="full"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -14234,7 +14265,14 @@ let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
+                <gs-help-tooltip
+                  content="Detailed overview of this plant's current state, genetics, and history. Access actions and timeline from the tabs below."
+                  placement="bottom"
+                  label="Plant Overview"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">
                 ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
               </div>
@@ -15077,6 +15115,10 @@ PlantOverviewDialog.styles = [
     i$6 `
       :host {
         display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .overview-grid {
@@ -17358,6 +17400,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._seedSubView = 'list';
         this._editingBatchId = null;
         this._editingEventId = null;
+        this._confirmDeleteEventId = null;
         this._submitError = null;
         this._selectedEventId = null;
         this._batchForm = {
@@ -17580,6 +17623,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
@@ -18548,11 +18592,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     renderImportDialog() {
         return x `
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto;">
           <div class="dialog-header">
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Import Strains</h2>
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
             </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Import Strains</h2>
             <button
               class="md3-button text"
               @click=${() => (this._importDialogOpen = false)}
@@ -18659,7 +18706,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         const breeders = this._getUniqueBreeders();
         return x `
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 600px; max-width: 90vw; height: 80vh; max-height: 80vh;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; max-height: 90vh;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -18667,7 +18714,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Breeder Manager</h2>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <h2 class="dialog-title">Breeder Manager</h2>
+                  <gs-help-tooltip
+                    content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+                    placement="bottom"
+                    label="Breeders"
+                  ></gs-help-tooltip>
+                </div>
             </div>
             <button
               class="md3-button text close"
@@ -19001,6 +19055,25 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             }}>
                       <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiPencil}"></path></svg>
                     </button>
+                    ${this._confirmDeleteEventId === e.event_id
+                ? x `
+                          <span class="delete-confirm-text">Delete?</span>
+                          <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                    await this.onDeletePollination?.(e.event_id);
+                    this._confirmDeleteEventId = null;
+                    this.onSeedDataChanged?.();
+                }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                          </button>
+                          <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteEventId = null; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                          </button>
+                        `
+                : x `
+                          <button class="icon-btn danger" title="Delete" @click=${() => { this._confirmDeleteEventId = e.event_id; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                          </button>
+                        `}
                   </div>
                 </div>
                 <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>
@@ -19266,7 +19339,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
         return x `
       <div class="crop-overlay" style="z-index:1001;">
-        <div class="glass-dialog-container" style="width:400px; height:auto; padding:24px; display:flex; flex-direction:column;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
@@ -19290,28 +19363,21 @@ StrainLibraryDialog.styles = [
     i$6 `
       :host {
         --accent-green: #4caf50;
-        /* Using dialogStyles variables where possible */
       }
 
-      ha-dialog {
-        --mdc-dialog-min-width: 80vw;
-        --mdc-dialog-max-width: 95vw;
-        --dialog-surface-margin: 24px;
-        --dialog-content-padding: 0;
-        --dialog-scrollable-header-padding: 0;
-      }
+
 
       /* Additional specific styles */
 
       /* Layout Overrides */
-      .strain-dialog-container {
-        @apply .glass-dialog-container;
-      }
-
       .glass-dialog-container {
-        width: 80vw;
-        max-width: 95vw;
-        height: 85vh;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: transparent;
       }
 
       @media (min-width: 601px) {
@@ -19732,13 +19798,20 @@ StrainLibraryDialog.styles = [
       /* Mobile Responsive */
       @media (max-width: 600px) {
         ha-dialog {
-          --mdc-dialog-min-width: 95vw;
-          --mdc-dialog-max-width: 95vw;
+          --ha-dialog-width-md: 100vw;
+          --ha-dialog-max-width: 100vw;
+          --ha-dialog-width-full: 100vw;
+          --dialog-surface-width: 100vw;
+          --dialog-surface-max-width: 100vw;
+          --dialog-content-width: 100vw;
+          --dialog-surface-margin: 0;
+          --dialog-surface-margin-top: 0;
         }
         .glass-dialog-container {
-          width: 95vw;
-          height: 90vh;
-          max-width: 95vw;
+          width: 100vw;
+          height: 100vh;
+          max-width: 100vw;
+          border-radius: 0;
         }
         .sd-header {
           padding: 16px;
@@ -20067,6 +20140,11 @@ StrainLibraryDialog.styles = [
       .icon-btn.danger:hover {
         color: var(--error-color, #f44336);
       }
+      .delete-confirm-text {
+        font-size: 0.75rem;
+        color: var(--error-color, #f44336);
+        align-self: center;
+      }
       .badge {
         display: inline-block;
         padding: 2px 10px;
@@ -20225,6 +20303,9 @@ __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "onUpdatePollination", void 0);
 __decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onDeletePollination", void 0);
+__decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
 __decorate([
@@ -20236,6 +20317,9 @@ __decorate([
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_editingEventId", void 0);
+__decorate([
+    r$2()
+], StrainLibraryDialog.prototype, "_confirmDeleteEventId", void 0);
 __decorate([
     r$2()
 ], StrainLibraryDialog.prototype, "_submitError", void 0);
@@ -20325,8 +20409,9 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        width="full"
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
         heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
       >
         <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">
@@ -20434,6 +20519,12 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
 SensorGroupDialog.styles = [
     dialogStyles,
     i$6 `
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
       .group-form {
         display: flex;
         flex-direction: column;
@@ -20818,9 +20909,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       <ha-dialog
         open
         @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
       >
         <div class="glass-dialog-container">
           <!--Header -->
@@ -21676,13 +21767,18 @@ ConfigDialog.styles = [
     i$6 `
       :host {
         display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Config Tabs Specific */
       .glass-dialog-container {
-        min-width: 0;
-        max-width: 95vw;
-        height: 700px;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        height: auto;
         max-height: 90vh;
       }
       .config-tabs {
@@ -22052,7 +22148,8 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
           <div class="dialog-header">
@@ -22138,7 +22235,10 @@ GrowMasterDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Specific overrides or additions */
@@ -22245,8 +22345,9 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        width="full"
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
@@ -22319,6 +22420,10 @@ StrainRecommendationDialog.styles = [
     i$6 `
       :host {
         display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .content-padding {
         padding: 24px;
@@ -22918,9 +23023,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
@@ -22928,7 +23035,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Irrigation Management</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Irrigation Management</h2>
+                <gs-help-tooltip
+                  content="Schedule and manage irrigation events, soil moisture targets, and drain run-off cycles for this growspace."
+                  placement="bottom"
+                  label="Irrigation Management"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
             <button
@@ -24122,7 +24236,10 @@ IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(400px, 80vw, 1400px);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Overrides/Specific Layouts */
@@ -26615,25 +26732,35 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         if (!this.open)
             return x ``;
         return x `
-      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
-        <div slot="heading" class="dialog-header">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h2 class="dialog-title">Events Logbook</h2>
-            <gs-help-tooltip
-              content="Free-form grow log — add notes, observations, or reminders tied to today's date."
-              placement="bottom"
-              label="Events Logbook"
-            ></gs-help-tooltip>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiFormatListBulleted}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Events Logbook</h2>
+                <gs-help-tooltip
+                  content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+                  placement="bottom"
+                  label="Events Logbook"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">Recent events and history</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
           </div>
-          <button
-            class="md3-button text"
-            @click=${this._close}
-            style="min-width:auto; padding:8px;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
         </div>
 
         <div class="content-wrapper">
@@ -26705,32 +26832,35 @@ let LogbookDialog = class LogbookDialog extends i$3 {
 LogbookDialog.styles = [
     dialogStyles,
     i$6 `
-      ha-dialog {
-        --mdc-dialog-min-width: 90vw;
-        --mdc-dialog-max-width: 90vw;
-        --mdc-dialog-min-height: 80vh;
-        --mdc-dialog-max-height: 90vh;
-      }
-
-      @media (min-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 600px;
-          --mdc-dialog-max-width: 800px;
-        }
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .dialog-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0;
-        padding-bottom: 0;
+      }
+
+      .dialog-title-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .dialog-subtitle {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
       }
 
       .content-wrapper {
-        height: 70vh;
         display: flex;
         flex-direction: column;
+        height: 100%;
+        max-height: 90vh;
         overflow: hidden;
       }
 
@@ -27212,8 +27342,16 @@ let WateringDialog = class WateringDialog extends i$3 {
         // Logic for recommendations to sort or star
         // For now simple listing as per IPM dialog style
         return x `
-      <ha-dialog open @closed=${this._close} hideActions .heading=${'Record Watering'}>
-        <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
@@ -27222,22 +27360,25 @@ let WateringDialog = class WateringDialog extends i$3 {
               <div style="display:flex;align-items:center;gap:6px;">
                 <h2 class="dialog-title">Record Watering</h2>
                 <gs-help-tooltip
-                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants."
+                  content="Log a watering event — record volume, EC, pH, and runoff data for one or more plants. Select one or more target plants below."
                   placement="bottom"
                   label="Record Watering"
                 ></gs-help-tooltip>
               </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
-            <button class="md3-button text" @click=${this._close}>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
 
-          <div class="dialog-content-grid">
+          <div class="config-content">
             ${hasPhiWarning
             ? x `
-                  <div class="error-bar" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;">
+                  <div
+                    class="error-bar"
+                    style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;"
+                  >
                     <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
                     ${phiWarningText}
                   </div>
@@ -27261,7 +27402,6 @@ let WateringDialog = class WateringDialog extends i$3 {
                 label="Nutrient Preset"
                 .value=${this._selectedPresetId || ''}
                 .options=${[
-            { label: 'Manual / No Preset', value: '' },
             ...presetList.map((p) => ({ label: p.label, value: p.value })),
         ]}
                 @change=${(e) => this._handlePresetChange(e)}
@@ -27412,7 +27552,10 @@ WateringDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .product-row {
         display: flex;
@@ -27564,7 +27707,15 @@ let TrainingDialog = class TrainingDialog extends i$3 {
             : 'Record training activity';
         const targetText = count > 0 ? `${count} Selected Plant${count !== 1 ? 's' : ''}` : 'Growspace';
         return x `
-      <ha-dialog .open=${this.open} @closed=${this._handleClose} hideActions .heading=${title}>
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._handleClose}
+        hideActions
+        .heading=${title}
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -27642,7 +27793,10 @@ TrainingDialog.styles = [
     i$6 `
       :host {
         display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;
@@ -27741,11 +27895,12 @@ let CloneDialog = class CloneDialog extends i$3 {
         const growspaceEntries = Object.entries(this.growspaceOptions || {});
         return x `
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._handleClose}
         hideActions
         .heading=${title}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
@@ -27823,8 +27978,10 @@ CloneDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;
@@ -29014,7 +29171,14 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
                   </svg>
                 </div>
                 <div class="dialog-title-group">
-                  <h2 class="dialog-title">Nutrient Inventory</h2>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <h2 class="dialog-title">Nutrient Inventory</h2>
+                    <gs-help-tooltip
+                      content="Track your nutrient bottles — name, brand, and current stock levels. Used to calculate feeds and trigger low-stock alerts."
+                      placement="bottom"
+                      label="Nutrient Inventory"
+                    ></gs-help-tooltip>
+                  </div>
                   <div class="dialog-subtitle">Manage stock levels</div>
                 </div>
                 <button class="md3-button text" @click=${this._close}>
@@ -29047,7 +29211,8 @@ let NutrientInventoryDialog = class NutrientInventoryDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         ${content}
       </ha-dialog>
@@ -29162,7 +29327,10 @@ NutrientInventoryDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(400px, 600px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .inventory-list {
@@ -29310,7 +29478,8 @@ let NutrientDialog = class NutrientDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
@@ -29383,7 +29552,10 @@ NutrientDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .dialog-header {
@@ -29598,7 +29770,15 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         const subtitle = plantId ? `${strainName} (${plantId})` : strainName;
         const printers = this._getPrinters();
         return x `
-      <ha-dialog open @closed=${this._close} hideActions .heading=${'Print Label'}>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Print Label'}
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
         <div class="glass-dialog-container" style="--stage-color: #2196F3;">
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -29717,6 +29897,12 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
 PrintLabelDialog.styles = [
     dialogStyles,
     i$6 `
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
       .preview-container {
         background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
         border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
@@ -29981,6 +30167,7 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: #4caf50;">
           <!-- HEADER -->
@@ -30183,7 +30370,10 @@ HarvestScoringDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .score-grid {
@@ -30578,33 +30768,38 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                 @closed=${this._close}
                 heading="Camera Snapshots"
                 hideActions
+                width="full"
+                .scrimClickAction=${''}
+                .escapeKeyAction=${'close'}
             >
-                <!-- Custom Header -->
-                <div slot="heading" class="dialog-header">
-                    <div style="display: flex; flex-direction: column;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                          <h2 class="dialog-title">Camera Snapshots</h2>
-                          <gs-help-tooltip
+        <div class="glass-dialog-container">
+            <!-- HEADER -->
+            <div class="dialog-header">
+                <div class="dialog-icon">
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiCamera}"></path>
+                    </svg>
+                </div>
+                <div class="dialog-title-group">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <h2 class="dialog-title">Camera Snapshots</h2>
+                        <gs-help-tooltip
                             content="View and compare time-lapse camera snapshots from your grow space."
                             placement="bottom"
                             label="Camera Snapshots"
-                          ></gs-help-tooltip>
-                        </div>
-                        <div class="dialog-subtitle">${this.growspaceName}</div>
+                        ></gs-help-tooltip>
                     </div>
-                    <div class="header-actions">
-                        <ha-icon-button
-                            .path=${mdiRefresh}
-                            @click=${this._fetchSnapshots}
-                            ?disabled=${this._isLoading}
-                            title="Refresh"
-                        ></ha-icon-button>
-                        <ha-icon-button
-                            .path=${mdiClose}
-                            @click=${this._close}
-                            title="Close"
-                        ></ha-icon-button>
-                    </div>
+                    <div class="dialog-subtitle">${this.growspaceName}</div>
+                </div>
+                <div class="header-actions" style="display:flex; gap:8px; margin-left: auto;">
+                    <button class="md3-button text" @click=${this._fetchSnapshots} ?disabled=${this._isLoading} title="Refresh">
+                        <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+                    </button>
+                    <button class="md3-button text" @click=${this._close} title="Close">
+                        <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                    </button>
+                </div>
+            </div>
                 </div>
 
                 <div class="dialog-content">
@@ -30668,7 +30863,10 @@ SnapshotsDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(350px, 800px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .snapshots-grid {
         display: grid;
@@ -30834,25 +31032,34 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         }
         return x `
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._close}
-        heading="Crop Steering"
         hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
-        <!-- Custom Header -->
-        <div slot="heading" class="dialog-header">
-          <div style="display: flex; flex-direction: column;">
-            <h2 class="dialog-title">Crop Steering Diagnostics</h2>
-            <div class="dialog-subtitle">${this.growspaceName}</div>
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiCompassOutline}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Crop Steering Diagnostics</h2>
+                <gs-help-tooltip
+                  content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
+                  placement="bottom"
+                  label="Crop Steering"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">${this.growspaceName}</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
           </div>
-          <div class="header-actions">
-            <ha-icon-button
-              .path=${mdiClose}
-              @click=${this._close}
-              title="Close"
-            ></ha-icon-button>
-          </div>
-        </div>
 
         <div class="dialog-content">
           ${stateObj === undefined || isNaN(score)
@@ -30908,7 +31115,10 @@ CropSteeringDialog.styles = [
     dialogStyles,
     i$6 `
       :host {
-        --mdc-dialog-min-width: clamp(350px, 600px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .metric-grid {
         display: grid;
@@ -31099,7 +31309,15 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         const title = this._view === 'LIST' ? 'EC Ramp Curves' : (this._editingCurve?.id ? 'Edit EC Ramp' : 'New EC Ramp');
         const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
+        .heading=${title}
+      >
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
@@ -31108,11 +31326,13 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
             <div class="dialog-title-group">
               <div style="display:flex;align-items:center;gap:6px;">
                 <h2 class="dialog-title">${title}</h2>
-                ${this._view === 'EDIT' ? x `<gs-help-tooltip
-                  content="An EC Ramp Curve defines target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Plants need progressively stronger nutrients as they mature. Start low (0.8–1.2 in seedling), ramp up through veg (1.5–2.0), peak in flower (2.0–2.8), then flush low at harvest."
+                <gs-help-tooltip
+                  content=${this._view === 'LIST'
+            ? "Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage."
+            : "Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp."}
                   placement="bottom"
-                  label="EC Ramp Curve"
-                ></gs-help-tooltip>` : E}
+                  label=${title}
+                ></gs-help-tooltip>
               </div>
               <div class="dialog-subtitle">${subtitle}</div>
             </div>
@@ -31493,9 +31713,12 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
     render() {
         return x `
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._close}
         hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">
@@ -31649,6 +31872,12 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
 GrowReportDialog.styles = [
     sharedStyles,
     i$6 `
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
       .content {
         display: flex;
         flex-direction: column;
@@ -31730,22 +31959,35 @@ GrowReportDialog = __decorate([
 let DialogHost = class DialogHost extends i$3 {
     constructor() {
         super(...arguments);
+        this._controllersInitialized = false;
         // Genetics state
         this._seedBatches = {};
         this._pollinationEvents = {};
         this._geneticsLoaded = false;
-        this.strainLibrary = [];
     }
     connectedCallback() {
         super.connectedCallback();
         if (this.store) {
-            this._activeDialogController = new libExports.StoreController(this, this.store.ui.$activeDialog);
-            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+            this._initControllers();
         }
     }
+    updated(changed) {
+        super.updated(changed);
+        if (changed.has('store') && this.store && !this._controllersInitialized) {
+            this._initControllers();
+        }
+    }
+    _initControllers() {
+        if (this._controllersInitialized)
+            return;
+        this._controllersInitialized = true;
+        this._activeDialogController = new libExports.StoreController(this, this.store.ui.$activeDialog);
+        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        this._strainLibraryController = new libExports.StoreController(this, this.store.data.$strainLibrary);
+    }
     render() {
-        if (!this.store)
+        if (!this.store || !this._controllersInitialized)
             return x ``;
         const active = this._activeDialogController.value;
         const devices = this._devicesController.value;
@@ -31753,7 +31995,7 @@ let DialogHost = class DialogHost extends i$3 {
         console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE')
             return x ``;
-        const strainLibrary = this.strainLibrary || [];
+        const strainLibrary = this._strainLibraryController?.value ?? [];
         const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
         // Prepare options for select dropdowns if needed
         const growspaceOptions = {};
@@ -32089,6 +32331,7 @@ let DialogHost = class DialogHost extends i$3 {
         .onLogPollination=${(data) => this.store.dataService.logPollination(data)}
         .onHarvestSeeds=${(data) => this.store.dataService.harvestSeeds(data)}
         .onUpdatePollination=${(data) => this.store.dataService.updatePollination(data)}
+        .onDeletePollination=${(event_id) => this.store.dataService.deletePollination(event_id)}
         @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
             if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
@@ -32522,10 +32765,10 @@ let DialogHost = class DialogHost extends i$3 {
     }
 };
 __decorate([
-    c$2({ context: hassContext, subscribe: true })
+    n$5({ attribute: false })
 ], DialogHost.prototype, "hass", void 0);
 __decorate([
-    c$2({ context: storeContext, subscribe: true })
+    n$5({ attribute: false })
 ], DialogHost.prototype, "store", void 0);
 __decorate([
     r$2()
@@ -32533,9 +32776,6 @@ __decorate([
 __decorate([
     r$2()
 ], DialogHost.prototype, "_pollinationEvents", void 0);
-__decorate([
-    c$2({ context: strainLibraryContext, subscribe: true })
-], DialogHost.prototype, "strainLibrary", void 0);
 DialogHost = __decorate([
     t$2('growspace-dialog-host')
 ], DialogHost);
@@ -107258,6 +107498,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     constructor() {
         super(...arguments);
         this.store = new GrowspaceStore();
+        this._dialogPortal = null;
         this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
             this.store.updateHass(this.hass);
             if (refresh) {
@@ -107338,12 +107579,23 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        // Listen for export ready events from store
         this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        if (!this._dialogPortal) {
+            const portal = document.createElement('growspace-dialog-host');
+            portal.store = this.store;
+            if (this.hass)
+                portal.hass = this.hass;
+            document.body.appendChild(portal);
+            this._dialogPortal = portal;
+        }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        if (this._dialogPortal) {
+            document.body.removeChild(this._dialogPortal);
+            this._dialogPortal = null;
+        }
         this.store.destroy();
     }
     updated(changedProps) {
@@ -107351,6 +107603,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
             this._subscriptionController.updateHass(this.hass);
+            if (this._dialogPortal)
+                this._dialogPortal.hass = this.hass;
             // Re-check for pending deep link when hass (and thus devices) updates
             const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
             if (pendingId) {
@@ -107503,14 +107757,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        ${this.renderDialogs()}
       </error-boundary>
     `;
-    }
-    renderDialogs() {
-        return x `<growspace-dialog-host
-      .devices=${this._devicesController.value}
-    ></growspace-dialog-host>`;
     }
 };
 GrowspaceManagerCard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];

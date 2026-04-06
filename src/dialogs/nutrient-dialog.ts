@@ -28,7 +28,10 @@ export class NutrientDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .dialog-header {
@@ -114,7 +117,8 @@ export class NutrientDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">

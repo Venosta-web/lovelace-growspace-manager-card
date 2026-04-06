@@ -175,6 +175,7 @@ export class AddPlantsDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -185,7 +186,14 @@ export class AddPlantsDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Batch Add Plants</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Batch Add Plants</h2>
+                <gs-help-tooltip
+                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
+                  placement="bottom"
+                  label="Batch Add"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
             </div>
             <button

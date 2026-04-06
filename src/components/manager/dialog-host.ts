@@ -1,7 +1,5 @@
-import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
-import { consume } from '@lit/context';
-import { hassContext, storeContext, strainLibraryContext } from '../../context';
+import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
 import { GrowspaceStore } from '../../store/core/growspace-store';
 import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
 // Global store imports removed
@@ -47,16 +45,18 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 @customElement('growspace-dialog-host')
 export class DialogHost extends LitElement {
-  @consume({ context: hassContext, subscribe: true })
+  @property({ attribute: false })
   hass!: HomeAssistant;
 
-  @consume({ context: storeContext, subscribe: true })
+  @property({ attribute: false })
   store!: GrowspaceStore;
 
   // Controllers
   private _activeDialogController!: StoreController<ActiveDialogState>;
   private _devicesController!: StoreController<GrowspaceDevice[]>;
   private _selectedDeviceController!: StoreController<string | null>;
+  private _strainLibraryController!: StoreController<StrainEntry[]>;
+  private _controllersInitialized = false;
 
   // Genetics state
   @state() private _seedBatches: Record<string, SeedBatch> = {};
@@ -66,17 +66,28 @@ export class DialogHost extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     if (this.store) {
-      this._activeDialogController = new StoreController(this, this.store.ui.$activeDialog);
-      this._devicesController = new StoreController(this, this.store.data.$devices);
-      this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+      this._initControllers();
     }
   }
 
-  @consume({ context: strainLibraryContext, subscribe: true })
-  strainLibrary: StrainEntry[] = [];
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (changed.has('store') && this.store && !this._controllersInitialized) {
+      this._initControllers();
+    }
+  }
+
+  private _initControllers(): void {
+    if (this._controllersInitialized) return;
+    this._controllersInitialized = true;
+    this._activeDialogController = new StoreController(this, this.store.ui.$activeDialog);
+    this._devicesController = new StoreController(this, this.store.data.$devices);
+    this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+    this._strainLibraryController = new StoreController(this, this.store.data.$strainLibrary);
+  }
 
   render() {
-    if (!this.store) return html``;
+    if (!this.store || !this._controllersInitialized) return html``;
 
     const active = this._activeDialogController.value;
     const devices = this._devicesController.value;
@@ -85,7 +96,7 @@ export class DialogHost extends LitElement {
     console.log('[DialogHost] Rendering with active type:', active.type);
     if (active.type === 'NONE') return html``;
 
-    const strainLibrary = this.strainLibrary || [];
+    const strainLibrary = this._strainLibraryController?.value ?? [];
     const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
 
     // Prepare options for select dropdowns if needed

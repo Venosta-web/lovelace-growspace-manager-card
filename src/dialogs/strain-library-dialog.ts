@@ -23,6 +23,7 @@ import {
   mdiChevronRight,
   mdiDotsVertical,
   mdiAccountGroup,
+  mdiFileUpload,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
@@ -175,28 +176,21 @@ export class StrainLibraryDialog extends LitElement {
     css`
       :host {
         --accent-green: #4caf50;
-        /* Using dialogStyles variables where possible */
       }
 
-      ha-dialog {
-        --mdc-dialog-min-width: 80vw;
-        --mdc-dialog-max-width: 95vw;
-        --dialog-surface-margin: 24px;
-        --dialog-content-padding: 0;
-        --dialog-scrollable-header-padding: 0;
-      }
+
 
       /* Additional specific styles */
 
       /* Layout Overrides */
-      .strain-dialog-container {
-        @apply .glass-dialog-container;
-      }
-
       .glass-dialog-container {
-        width: 80vw;
-        max-width: 95vw;
-        height: 85vh;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        background: transparent;
       }
 
       @media (min-width: 601px) {
@@ -617,13 +611,20 @@ export class StrainLibraryDialog extends LitElement {
       /* Mobile Responsive */
       @media (max-width: 600px) {
         ha-dialog {
-          --mdc-dialog-min-width: 95vw;
-          --mdc-dialog-max-width: 95vw;
+          --ha-dialog-width-md: 100vw;
+          --ha-dialog-max-width: 100vw;
+          --ha-dialog-width-full: 100vw;
+          --dialog-surface-width: 100vw;
+          --dialog-surface-max-width: 100vw;
+          --dialog-content-width: 100vw;
+          --dialog-surface-margin: 0;
+          --dialog-surface-margin-top: 0;
         }
         .glass-dialog-container {
-          width: 95vw;
-          height: 90vh;
-          max-width: 95vw;
+          width: 100vw;
+          height: 100vh;
+          max-width: 100vw;
+          border-radius: 0;
         }
         .sd-header {
           padding: 16px;
@@ -1217,6 +1218,7 @@ export class StrainLibraryDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
@@ -2217,11 +2219,14 @@ export class StrainLibraryDialog extends LitElement {
   private renderImportDialog(): TemplateResult {
     return html`
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 400px; max-width: 90vw; height: auto;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto;">
           <div class="dialog-header">
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Import Strains</h2>
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
             </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Import Strains</h2>
             <button
               class="md3-button text"
               @click=${() => (this._importDialogOpen = false)}
@@ -2331,7 +2336,7 @@ export class StrainLibraryDialog extends LitElement {
 
     return html`
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 600px; max-width: 90vw; height: 80vh; max-height: 80vh;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; max-height: 90vh;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -2339,7 +2344,14 @@ export class StrainLibraryDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Breeder Manager</h2>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <h2 class="dialog-title">Breeder Manager</h2>
+                  <gs-help-tooltip
+                    content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+                    placement="bottom"
+                    label="Breeders"
+                  ></gs-help-tooltip>
+                </div>
             </div>
             <button
               class="md3-button text close"
@@ -2986,7 +2998,7 @@ export class StrainLibraryDialog extends LitElement {
 
     return html`
       <div class="crop-overlay" style="z-index:1001;">
-        <div class="glass-dialog-container" style="width:400px; height:auto; padding:24px; display:flex; flex-direction:column;">
+        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.

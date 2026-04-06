@@ -62,7 +62,10 @@ export class IrrigationDialog extends LitElement {
     dialogStyles,
     css`
       :host {
-        --mdc-dialog-min-width: clamp(400px, 80vw, 1400px);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Overrides/Specific Layouts */
@@ -1057,9 +1060,11 @@ export class IrrigationDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="full"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
+          <!-- HEADER -->
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
@@ -1067,7 +1072,14 @@ export class IrrigationDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Irrigation Management</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Irrigation Management</h2>
+                <gs-help-tooltip
+                  content="Schedule and manage irrigation events, soil moisture targets, and drain run-off cycles for this growspace."
+                  placement="bottom"
+                  label="Irrigation Management"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">${this.growspaceName}</div>
             </div>
             <button

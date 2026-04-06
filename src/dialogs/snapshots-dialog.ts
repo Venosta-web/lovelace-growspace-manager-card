@@ -36,7 +36,10 @@ export class SnapshotsDialog extends LitElement {
         dialogStyles,
         css`
       :host {
-        --mdc-dialog-min-width: clamp(350px, 800px, 90vw);
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
       .snapshots-grid {
         display: grid;
@@ -285,33 +288,38 @@ export class SnapshotsDialog extends LitElement {
                 @closed=${this._close}
                 heading="Camera Snapshots"
                 hideActions
+                width="full"
+                .scrimClickAction=${''}
+                .escapeKeyAction=${'close'}
             >
-                <!-- Custom Header -->
-                <div slot="heading" class="dialog-header">
-                    <div style="display: flex; flex-direction: column;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                          <h2 class="dialog-title">Camera Snapshots</h2>
-                          <gs-help-tooltip
+        <div class="glass-dialog-container">
+            <!-- HEADER -->
+            <div class="dialog-header">
+                <div class="dialog-icon">
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiCamera}"></path>
+                    </svg>
+                </div>
+                <div class="dialog-title-group">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <h2 class="dialog-title">Camera Snapshots</h2>
+                        <gs-help-tooltip
                             content="View and compare time-lapse camera snapshots from your grow space."
                             placement="bottom"
                             label="Camera Snapshots"
-                          ></gs-help-tooltip>
-                        </div>
-                        <div class="dialog-subtitle">${this.growspaceName}</div>
+                        ></gs-help-tooltip>
                     </div>
-                    <div class="header-actions">
-                        <ha-icon-button
-                            .path=${mdiRefresh}
-                            @click=${this._fetchSnapshots}
-                            ?disabled=${this._isLoading}
-                            title="Refresh"
-                        ></ha-icon-button>
-                        <ha-icon-button
-                            .path=${mdiClose}
-                            @click=${this._close}
-                            title="Close"
-                        ></ha-icon-button>
-                    </div>
+                    <div class="dialog-subtitle">${this.growspaceName}</div>
+                </div>
+                <div class="header-actions" style="display:flex; gap:8px; margin-left: auto;">
+                    <button class="md3-button text" @click=${this._fetchSnapshots} ?disabled=${this._isLoading} title="Refresh">
+                        <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+                    </button>
+                    <button class="md3-button text" @click=${this._close} title="Close">
+                        <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+                    </button>
+                </div>
+            </div>
                 </div>
 
                 <div class="dialog-content">

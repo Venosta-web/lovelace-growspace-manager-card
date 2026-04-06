@@ -118,13 +118,18 @@ export class ConfigDialog extends LitElement {
     css`
       :host {
         display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       /* Config Tabs Specific */
       .glass-dialog-container {
-        min-width: 0;
-        max-width: 95vw;
-        height: 700px;
+        width: 100%;
+        max-width: 100%;
+        min-height: 0;
+        height: auto;
         max-height: 90vh;
       }
       .config-tabs {
@@ -591,9 +596,9 @@ export class ConfigDialog extends LitElement {
       <ha-dialog
         open
         @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        scrimClickAction=""
+        escapeKeyAction="close"
+        width="full"
       >
         <div class="glass-dialog-container">
           <!--Header -->

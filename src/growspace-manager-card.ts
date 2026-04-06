@@ -13,6 +13,7 @@ import { ViewMode } from './features/environment/constants';
 import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
 import './components/manager/dialog-host';
+import type { DialogHost } from './components/manager/dialog-host';
 import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
@@ -33,6 +34,8 @@ import { StoreController } from '@nanostores/lit';
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
   store = new GrowspaceStore();
+
+  private _dialogPortal: DialogHost | null = null;
 
   protected _subscriptionController = new SubscriptionController(
     this,
@@ -126,13 +129,23 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   connectedCallback() {
     super.connectedCallback();
-    // Listen for export ready events from store
     this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    if (!this._dialogPortal) {
+      const portal = document.createElement('growspace-dialog-host') as DialogHost;
+      portal.store = this.store;
+      if (this.hass) portal.hass = this.hass;
+      document.body.appendChild(portal);
+      this._dialogPortal = portal;
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    if (this._dialogPortal) {
+      document.body.removeChild(this._dialogPortal);
+      this._dialogPortal = null;
+    }
     this.store.destroy();
   }
 
@@ -146,6 +159,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
       this._subscriptionController.updateHass(this.hass);
+      if (this._dialogPortal) this._dialogPortal.hass = this.hass;
 
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
@@ -332,15 +346,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        ${this.renderDialogs()}
       </error-boundary>
     `;
-  }
-
-  private renderDialogs(): TemplateResult {
-    return html`<growspace-dialog-host
-      .devices=${this._devicesController.value}
-    ></growspace-dialog-host>`;
   }
 
   private _handleError = (error: Error, errorInfo: unknown) => {

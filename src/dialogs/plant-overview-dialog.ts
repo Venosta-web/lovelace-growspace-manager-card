@@ -248,6 +248,10 @@ export class PlantOverviewDialog extends LitElement {
     css`
       :host {
         display: block;
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
       }
 
       .overview-grid {
@@ -933,6 +937,7 @@ export class PlantOverviewDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        width="full"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -947,7 +952,14 @@ export class PlantOverviewDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
+                <gs-help-tooltip
+                  content="Detailed overview of this plant's current state, genetics, and history. Access actions and timeline from the tabs below."
+                  placement="bottom"
+                  label="Plant Overview"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">
                 ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
               </div>

@@ -40,10 +40,19 @@ export class NutrientPresetsEditor extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
-      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
-      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    this._initControllers();
+  }
+
+  willUpdate(changedProperties: Map<string, any>) {
+    if (changedProperties.has('store') && this.store) {
+      this._initControllers();
     }
+  }
+
+  private _initControllers() {
+    if (!this.store || this._presetsController) return;
+    this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
+    this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
   }
 
   static styles = [
@@ -280,8 +289,16 @@ export class NutrientPresetsEditor extends LitElement {
   }
 
   private _renderList() {
+    if (!this._presetsController) {
+      return html`
+        <div class="empty-state">
+          <ha-circular-progress active></ha-circular-progress>
+          <p>Loading presets...</p>
+        </div>
+      `;
+    }
     const presets = this._presetsController.value;
-    const presetEntries = Object.values(presets);
+    const presetEntries = Object.values(presets || {});
     if (presetEntries.length === 0) {
       return html`
         <div class="empty-state">
@@ -459,7 +476,7 @@ export class NutrientPresetsEditor extends LitElement {
     const nutrients = new Set<string>();
 
     // Add nutrients from presets
-    const presets = this._presetsController.value;
+    const presets = this._presetsController?.value;
     if (presets) {
       Object.values(presets).forEach((preset) => {
         if (preset.nutrients) {
@@ -471,7 +488,7 @@ export class NutrientPresetsEditor extends LitElement {
     }
 
     // Add nutrients from inventory
-    const inventory = this._inventoryController.value;
+    const inventory = this._inventoryController?.value;
     if (inventory && inventory.stocks) {
       Object.values(inventory.stocks).forEach((stock) => {
         if (stock.name) nutrients.add(stock.name);
