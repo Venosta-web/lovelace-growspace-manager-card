@@ -14,13 +14,17 @@ describe('NutrientDialog', () => {
             data: {
                 $nutrientPresets: {
                     get: () => ({}),
-                    subscribe: (fn: any) => { fn({}); return () => { }; }
+                    subscribe: (fn: any) => { fn({}); return () => { }; },
+                    listen: () => () => {}
                 },
                 $nutrientInventory: {
                     get: () => ({}),
-                    subscribe: (fn: any) => { fn({}); return () => { }; }
+                    subscribe: (fn: any) => { fn({}); return () => { }; },
+                    listen: () => () => {}
                 }
-            }
+            },
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn()
         } as any;
         document.body.appendChild(element);
         await element.updateComplete;

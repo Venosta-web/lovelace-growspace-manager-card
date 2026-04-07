@@ -42,10 +42,20 @@ export class IPMDialog extends LitElement {
 
   private _presetsController!: StoreController<Record<string, IPMPreset>>;
 
+  private _initControllers() {
+    if (this.store && !this._presetsController) {
+      this._presetsController = new StoreController(this, this.store.data.$ipmPresets);
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
-      this._presetsController = new StoreController(this, this.store.data.$ipmPresets);
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
     }
   }
 
@@ -288,11 +298,13 @@ export class IPMDialog extends LitElement {
 
           <div class="dialog-content-grid">
             ${this._error ? html`<div class="error-bar">${this._error}</div>` : nothing}
-            ${this._view === 'APPLY'
-        ? this._renderApply()
-        : this._view === 'LIST'
-          ? this._renderList()
-          : this._renderEdit()}
+            ${!this._presetsController
+        ? html`<div class="loading-container" style="display:flex;justify-content:center;padding:40px;"><ha-circular-progress active></ha-circular-progress></div>`
+        : this._view === 'APPLY'
+          ? this._renderApply()
+          : this._view === 'LIST'
+            ? this._renderList()
+            : this._renderEdit()}
           </div>
 
           <div class="button-group">${this._renderFooterButtons()}</div>
@@ -338,7 +350,7 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderApply() {
-    const presets = this._presetsController.value;
+    const presets = this._presetsController?.value;
     const presetList = Object.values(presets || {});
     const targetText =
       this.plantIds && this.plantIds.length > 0
@@ -375,7 +387,7 @@ export class IPMDialog extends LitElement {
   }
 
   private _renderList() {
-    const presets = this._presetsController.value;
+    const presets = this._presetsController?.value;
     const presetEntries = Object.values(presets || {});
     if (presetEntries.length === 0) {
       return html`

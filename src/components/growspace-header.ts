@@ -94,9 +94,8 @@ export class GrowspaceHeader extends LitElement {
     this._envAttrs = envAttrs;
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.store) {
+  private _initControllers() {
+    if (this.store && !this._viewModeController) {
       this._viewModeController = new StoreController(this, this.store.ui.$viewMode);
       this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
       this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
@@ -127,6 +126,11 @@ export class GrowspaceHeader extends LitElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
   }
@@ -150,13 +154,17 @@ export class GrowspaceHeader extends LitElement {
 
   // Perform metrics calculation before update to ensure data is ready for render
   willUpdate(changedProps: Map<PropertyKey, unknown>) {
+    if (changedProps.has('store')) {
+      this._initControllers();
+    }
+
     // Only update metrics if relevant data changed
     if (changedProps.has('device') || this._shouldUpdateMetrics()) {
       this._updateMetrics();
     }
 
     // Re-fetch history when device changes so sparklines show fresh data
-    if (changedProps.has('device') && this.store?.history) {
+    if ((changedProps.has('device') || changedProps.has('store')) && this.store?.history) {
       this.store.history.loadHistoryOnDemand();
     }
   }

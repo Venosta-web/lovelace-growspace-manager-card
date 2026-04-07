@@ -1,4 +1,4 @@
-import { LitElement, html, TemplateResult } from 'lit';
+import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
@@ -37,11 +37,21 @@ export class GrowspaceViewStandard extends LitElement {
   private _isTransplantModeController!: StoreController<boolean>;
   private _devicesController!: StoreController<GrowspaceDevice[]>;
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.store) {
+  private _initControllers() {
+    if (this.store && !this._isTransplantModeController) {
       this._isTransplantModeController = new StoreController(this, this.store.ui.$isTransplantMode);
       this._devicesController = new StoreController(this, this.store.data.$devices);
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
     }
   }
 

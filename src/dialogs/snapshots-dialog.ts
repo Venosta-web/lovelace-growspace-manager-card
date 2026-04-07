@@ -320,9 +320,8 @@ export class SnapshotsDialog extends LitElement {
                     </button>
                 </div>
             </div>
-                </div>
 
-                <div class="dialog-content">
+            <div class="dialog-content">
                     ${this._renderTabBar()}
 
                     ${this._activeTab === 'snapshots' ? html`

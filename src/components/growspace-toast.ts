@@ -20,10 +20,20 @@ export class GrowspaceToast extends LitElement {
 
   private _timeoutId: number | null = null;
 
+  private _initControllers() {
+    if (this.store && !this._notificationController) {
+      this._notificationController = new StoreController(this, this.store.ui.$notification);
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
-      this._notificationController = new StoreController(this, this.store.ui.$notification);
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
     }
   }
 
@@ -37,7 +47,9 @@ export class GrowspaceToast extends LitElement {
       // Longer duration for actions
       const duration = notification.action ? 6000 : 3000;
       this._timeoutId = window.setTimeout(() => {
-        this.store.ui.clearToast();
+        if (this.store?.ui) {
+          this.store.ui.clearToast();
+        }
       }, duration);
     }
   }

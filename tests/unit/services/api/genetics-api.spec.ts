@@ -116,6 +116,23 @@ describe('GeneticsAPI', () => {
         });
     });
 
+    // ── updateSeedBatch ───────────────────────────────────────────────────────
+
+    describe('updateSeedBatch', () => {
+        it('calls service with correct payload', async () => {
+            api.updateHass(mockHass);
+            const payload = {
+                batch_id: 'batch-1',
+                strain_name: 'Super Lemon Haze',
+                quantity: 15,
+            };
+
+            await api.updateSeedBatch(payload);
+
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'update_seed_batch', payload);
+        });
+    });
+
     // ── harvestSeeds ──────────────────────────────────────────────────────────
 
     describe('harvestSeeds', () => {
@@ -135,6 +152,35 @@ describe('GeneticsAPI', () => {
             await api.harvestSeeds(payload);
 
             expect(callService).toHaveBeenCalledWith('growspace_manager', 'harvest_seeds', payload);
+        });
+    });
+
+    // ── updatePollination ─────────────────────────────────────────────────────
+
+    describe('updatePollination', () => {
+        it('calls service with correct payload', async () => {
+            api.updateHass(mockHass);
+            const payload = {
+                event_id: 'evt-1',
+                notes: 'Updated notes',
+            };
+
+            await api.updatePollination(payload);
+
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'update_pollination', payload);
+        });
+    });
+
+    // ── deletePollination ─────────────────────────────────────────────────────
+
+    describe('deletePollination', () => {
+        it('calls service with correct event_id', async () => {
+            api.updateHass(mockHass);
+            const event_id = 'evt-2';
+
+            await api.deletePollination(event_id);
+
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'delete_pollination', { event_id });
         });
     });
 

@@ -1,5 +1,7 @@
 import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { provide } from '@lit/context';
+import { hassContext, storeContext } from '../../lib/context';
 import { GrowspaceStore } from '../../store/core/growspace-store';
 import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
 // Global store imports removed
@@ -45,9 +47,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 @customElement('growspace-dialog-host')
 export class DialogHost extends LitElement {
+  @provide({ context: hassContext })
   @property({ attribute: false })
   hass!: HomeAssistant;
 
+  @provide({ context: storeContext })
   @property({ attribute: false })
   store!: GrowspaceStore;
 

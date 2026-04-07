@@ -256,7 +256,9 @@ describe('WateringDialog Rendering', () => {
                 $nutrientInventory: atom(null)
             },
             showToast: vi.fn(),
-            refreshData: vi.fn()
+            refreshData: vi.fn(),
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn()
         };
 
         element = document.createElement('growspace-watering-dialog-test') as WateringDialog;

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { atom } from 'nanostores';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { ContextProvider } from '@lit/context';
 import { hassContext, storeContext } from '../../../../../src/context';
@@ -50,6 +51,9 @@ describe('PlantOverviewContainer', () => {
       data: {
         $strainLibrary: { get: () => [], listen: () => () => {} },
       },
+      grid: {
+        $growspaceOptions: atom({}),
+      },
       // Adding minimal observable state required by viewmodel
       plants: { get: () => [] },
       $state: {
@@ -61,6 +65,9 @@ describe('PlantOverviewContainer', () => {
     mockHass = {
       callService: vi.fn(),
       callWS: vi.fn(),
+      connection: {
+        subscribeEvents: vi.fn(() => Promise.resolve(() => {})),
+      },
     };
 
     // Render component inside context providers
@@ -434,7 +441,23 @@ describe('PlantOverviewContainer', () => {
     
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'STRAIN_LIBRARY',
-      payload: {}
+      payload: {
+        editingStrain: {
+          strain: 'Blue Dream',
+          phenotype: '',
+          key: 'Blue Dream',
+          breeder: '',
+          type: 'Hybrid',
+          flowering_days_min: 60,
+          flowering_days_max: 70,
+          lineage: '',
+          sex: 'Feminized',
+          description: '',
+          image: '',
+          sativa_percentage: 50,
+          indica_percentage: 50,
+        }
+      }
     });
   });
 

@@ -1,4 +1,4 @@
-import { LitElement, html, css, TemplateResult, nothing } from 'lit';
+import { LitElement, html, css, TemplateResult, nothing, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { createRef, ref } from 'lit/directives/ref.js';
@@ -44,9 +44,10 @@ export class GrowspaceGrid extends LitElement {
   private _isCompactController!: StoreController<boolean>;
   private _isLoadingController!: StoreController<boolean>;
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.store) {
+  private _overlayModeController!: StoreController<GridOverlayMode>;
+
+  private _initControllers() {
+    if (this.store && !this._isEditModeController) {
       this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
       this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
       this._isCompactController = new StoreController(this, this.store.ui.$isCompactView);
@@ -55,7 +56,16 @@ export class GrowspaceGrid extends LitElement {
     }
   }
 
-  private _overlayModeController!: StoreController<GridOverlayMode>;
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
+    }
+  }
 
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();

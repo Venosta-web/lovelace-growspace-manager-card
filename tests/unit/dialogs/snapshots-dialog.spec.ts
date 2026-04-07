@@ -197,31 +197,26 @@ describe('SnapshotsDialog', () => {
         expect(mockUi.showToast).toHaveBeenCalledWith('Failed to capture snapshot', 'error');
     });
 
-    it('should refresh when clicking refresh button', async () => {
-        element.dialogState = { growspaceId: 'gs1' };
+    it('should fetch snapshots when refresh button is clicked', async () => {
         element.open = true;
+        element.dialogState = { growspaceId: 'gs1' };
         await element.updateComplete;
 
-        mockDataService.getSnapshots.mockClear();
-
-        const iconBtns = element.shadowRoot?.querySelectorAll('ha-icon-button');
-        const refreshBtn = iconBtns?.[0];
-        (refreshBtn as HTMLElement).click();
+        const refreshBtn = element.shadowRoot?.querySelector('button[title="Refresh"]') as HTMLButtonElement;
+        refreshBtn.click();
 
         expect(mockDataService.getSnapshots).toHaveBeenCalledWith('gs1');
     });
 
-    it('should close dialog when clicking close button', async () => {
+    it('should close dialog when close button is clicked', async () => {
         element.open = true;
         await element.updateComplete;
 
+        const closeBtn = element.shadowRoot?.querySelector('button[title="Close"]') as HTMLButtonElement;
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const iconBtns = element.shadowRoot?.querySelectorAll('ha-icon-button');
-        const closeBtn = iconBtns?.[1];
-        (closeBtn as HTMLElement).click();
-
+        closeBtn.click();
         expect(closeSpy).toHaveBeenCalled();
     });
 

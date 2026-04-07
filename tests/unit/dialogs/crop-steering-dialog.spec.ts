@@ -159,11 +159,13 @@ describe('CropSteeringDialog', () => {
         expect(element.shadowRoot?.textContent).toContain('Crop steering data is currently unavailable');
     });
 
-    it('should close the dialog when close button is clicked', () => {
+    it('should close the dialog when the close button is clicked', async () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
-        const closeBtn = element.shadowRoot?.querySelector('ha-icon-button[title="Close"]');
-        closeBtn?.dispatchEvent(new CustomEvent('click'));
+
+        const closeBtn = element.shadowRoot?.querySelector('button.md3-button') as HTMLButtonElement;
+        closeBtn.click();
+
         expect(closeSpy).toHaveBeenCalled();
     });
 

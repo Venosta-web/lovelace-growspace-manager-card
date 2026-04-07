@@ -21,6 +21,7 @@ describe('DialogHost', () => {
     const $nutrientPresets = atom<Record<string, any>>({});
     const $ipmPresets = atom<Record<string, any>>({});
     const $nutrientInventory = atom<any>(null);
+    const $ecRampCurves = atom<Record<string, any>>({});
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -49,7 +50,8 @@ describe('DialogHost', () => {
                 $strainLibrary: atom([]),
                 $nutrientPresets: $nutrientPresets,
                 $ipmPresets: $ipmPresets,
-                $nutrientInventory: $nutrientInventory
+                $nutrientInventory: $nutrientInventory,
+                $ecRampCurves: $ecRampCurves
             },
             actions: {
                 plant: {
@@ -96,7 +98,14 @@ describe('DialogHost', () => {
             handleUpdateGrowspace: vi.fn(),
             showToast: vi.fn(),
             dataService: {
-                configureEnvironment: vi.fn()
+                configureEnvironment: vi.fn(),
+                fetchGeneticsData: vi.fn().mockResolvedValue({ seed_batches: {}, pollination_events: {} })
+            },
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn(),
+            grid: {
+                $growspaceOptions: atom({})
             },
             analyzeGrowspace: vi.fn(),
             getStrainRecommendation: vi.fn(),
@@ -107,7 +116,10 @@ describe('DialogHost', () => {
         (element as any).store = mockStore;
 
         mockHass = {
-            states: {}
+            states: {},
+            connection: {
+                subscribeEvents: vi.fn(() => Promise.resolve(() => {})),
+            }
         };
         element.hass = mockHass;
 

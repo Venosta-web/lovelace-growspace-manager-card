@@ -4,7 +4,8 @@
   "description": "",
   "main": "rollup.config.js",
   "scripts": {
-    "build": "rollup -c && cp dist/growspace-manager-card.js growspace-manager-card.js",
+    "build": "rollup -c && cp dist/growspace-manager-card.js growspace-manager-card.js && cp dist/growspace-manager-card.js ../../config/www/growspace-manager-card.js",
+    "watch": "rollup -c -w",
     "build:coverage": "COVERAGE=true rollup -c",
     "test": "vitest run",
     "test:e2e": "npm run build && playwright test --config=playwright.e2e.config.ts",

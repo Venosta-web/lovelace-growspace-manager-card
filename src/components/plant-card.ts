@@ -1,4 +1,4 @@
-import { LitElement, html, nothing } from 'lit';
+import { LitElement, html, nothing, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { classMap } from 'lit/directives/class-map.js';
@@ -43,11 +43,21 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   private _isEditModeController!: StoreController<boolean>;
   private _selectedPlantsController!: StoreController<Set<string>>;
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (!this._isEditModeController && this.store) {
+  private _initControllers() {
+    if (this.store && !this._isEditModeController) {
       this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
       this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
     }
   }
 

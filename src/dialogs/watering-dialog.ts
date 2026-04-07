@@ -32,12 +32,45 @@ export class WateringDialog extends LitElement {
   private _presetsController!: StoreController<Record<string, NutrientPreset>>;
   private _inventoryController!: StoreController<import('../types').NutrientInventory | null>;
 
+  protected willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('store')) {
+      this._initControllers();
+    }
+    if (this.hass && (!this._dataService)) {
+      this._dataService = new DataService(this.hass);
+    }
+    if (changedProperties.has('open') && this.open) {
+      this._resetForm();
+    }
+  }
+
+  private _initControllers() {
+    if (!this.store || !this.store.data) return;
+
+    // Only initialize if not already done for this store
+    if (!this._presetsController) {
+      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
+
+      // Trigger fetch if empty
+      const presets = this._presetsController.value;
+      if (!presets || Object.keys(presets).length === 0) {
+        this.store.fetchNutrientPresets();
+      }
+    }
+
+    if (!this._inventoryController) {
+      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+
+      // Trigger fetch if empty
+      if (!this._inventoryController.value) {
+        this.store.fetchNutrientInventory();
+      }
+    }
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    if (this.store) {
-      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
-      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
-    }
+    this._initControllers();
   }
 
   private _dataService?: DataService;
@@ -111,15 +144,6 @@ export class WateringDialog extends LitElement {
     `,
   ];
 
-  protected willUpdate(changedProps: PropertyValues): void {
-    if (changedProps.has('open') && this.open) {
-      this._resetForm();
-    }
-    if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-      this._dataService = new DataService(this.hass);
-    }
-  }
-
   private _resetForm() {
     this._volume = 1.0;
     this._nutrients = [];
@@ -139,8 +163,6 @@ export class WateringDialog extends LitElement {
 
   private _removeNutrient(index: number) {
     this._nutrients = this._nutrients.filter((_, i) => i !== index);
-    // If we manually remove a nutrient, we might be diverging from the preset
-    // but let's keep the presetId for the service call unless the user explicitly changes the preset selector
   }
 
   private _handlePresetChange(e: CustomEvent | Event) {
@@ -223,9 +245,9 @@ export class WateringDialog extends LitElement {
   }
 
   private _getPresetOptions(currentStage?: string, daysInStage = 0) {
-    if (!this.store) return [];
+    if (!this.store || !this._presetsController) return [];
 
-    const presetsRecord = this._presetsController?.value || {};
+    const presetsRecord = this._presetsController.value || {};
     return Object.values(presetsRecord).map((p) => {
       let recommended = false;
       if (p.stage && p.stage === currentStage) {
@@ -311,6 +333,27 @@ export class WateringDialog extends LitElement {
 
     const presetList = this._getPresetOptions(currentStage, daysInStage);
 
+    if (!this._presetsController?.value) {
+      return html`
+        <ha-dialog open @closed=${this._close} hideActions width="full">
+          <div class="glass-dialog-container">
+            <div class="dialog-header">
+              <div class="dialog-icon"><ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon></div>
+              <div class="dialog-title-group">
+                <h2 class="dialog-title">Loading...</h2>
+              </div>
+              <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
+                <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+              </button>
+            </div>
+            <div class="config-content" style="display: flex; justify-content: center; align-items: center; min-height: 200px;">
+              <ha-circular-progress active></ha-circular-progress>
+            </div>
+          </div>
+        </ha-dialog>
+      `;
+    }
+
     // Logic for recommendations to sort or star
     // For now simple listing as per IPM dialog style
     return html`
@@ -346,7 +389,7 @@ export class WateringDialog extends LitElement {
 
           <div class="config-content">
             ${hasPhiWarning
-              ? html`
+        ? html`
                   <div
                     class="error-bar"
                     style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid #ff9800;"
@@ -355,7 +398,7 @@ export class WateringDialog extends LitElement {
                     ${phiWarningText}
                   </div>
                 `
-              : nothing}
+        : nothing}
             <!-- Settings Section -->
             <div class="form-section">
               <h3>Watering Settings</h3>
@@ -365,8 +408,8 @@ export class WateringDialog extends LitElement {
                 .min=${0.1}
                 .step=${0.1}
                 @change=${(e: CustomEvent) => {
-                  this._volume = parseFloat(e.detail) || 0;
-                }}
+        this._volume = parseFloat(e.detail) || 0;
+      }}
                 style="margin-bottom: 12px;"
               ></md3-number-input>
 

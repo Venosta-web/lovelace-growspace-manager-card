@@ -10,10 +10,19 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import type { ReadableAtom } from 'nanostores';
-import { mdiClose, mdiDna, mdiDelete, mdiCheck } from '@mdi/js';
+import {
+  mdiClose,
+  mdiDna,
+  mdiDelete,
+  mdiCheck,
+  mdiFlower,
+  mdiCannabis,
+  mdiArrowRight,
+  mdiContentCopy,
+} from '@mdi/js';
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent, PlantTimelineEvent } from '../../../types';
+import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent, PlantTimelineEvent, StrainEntry } from '../../../types';
 import { getTimelineService } from '../../../services/timeline-service';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
@@ -26,6 +35,8 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import '../components/plant-dashboard-tab';
 import '../components/plant-actions-tab';
 import '../components/plant-timeline-tab';
+import '../../../components/ui/md3-select';
+import '../../../components/ui/md3-number-input';
 
 /**
  * Container component for plant overview dialog
@@ -45,15 +56,29 @@ export class PlantOverviewContainer extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
 
   // Local UI state
-  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' = 'dashboard';
+  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' = 'dashboard';
   @state() private _isEditing = true;
   @state() private _showAllDates = false;
   @state() private _showDeleteConfirmation = false;
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
+  // Stage-aware footer state
+  @state() private _moveTargetGrowspaceId = '';
+
+  // Harvest/scoring tab state
+  @state() private _harvestMetricsEdit: Record<string, unknown> = {};
+  @state() private _scoresEdit: Record<string, number | null> = {};
+  @state() private _starPreview: Record<string, number | null> = {};
+  @state() private _savingHarvest = false;
+
+  // Score Phenotype in actions tab
+  @state() private _showScoringForm = false;
+  @state() private _savingScore = false;
+
   // ViewModel
   private viewModel!: ReadableAtom<PlantOverviewViewModel>;
   private viewModelController!: StoreController<PlantOverviewViewModel>;
+  private _growspaceOptionsController!: StoreController<Record<string, string>>;
 
   static styles = [
     dialogStyles,
@@ -158,10 +183,26 @@ export class PlantOverviewContainer extends LitElement {
         this._logbookEvents
       );
       this.viewModelController = new StoreController(this, this.viewModel);
+      this._growspaceOptionsController = new StoreController(this, this.store.grid.$growspaceOptions);
+      this._initHarvestState();
     }
 
     // Fetch logbook events asynchronously; the @state update will trigger a re-render
     this._fetchLogbookEvents();
+  }
+
+  private _initHarvestState(): void {
+    const hm = this.plant?.attributes?.harvest_metrics || {};
+    this._harvestMetricsEdit = { ...hm };
+    const rawScores = this.plant?.attributes?.scores || {};
+    this._scoresEdit = {
+      vigor: rawScores.vigor ?? null,
+      structure: rawScores.structure ?? null,
+      aroma: rawScores.aroma ?? null,
+      resin: rawScores.resin ?? null,
+      pest_resistance: rawScores.pest_resistance ?? null,
+    };
+    this._starPreview = {};
   }
 
   private async _fetchLogbookEvents(): Promise<void> {
@@ -180,6 +221,10 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   willUpdate(changedProps: Map<string, unknown>): void {
+    if (changedProps.has('plant') && this.plant) {
+      this._initHarvestState();
+    }
+
     // Recreate ViewModel if inputs change
     if (
       (changedProps.has('plant') ||
@@ -237,6 +282,7 @@ export class PlantOverviewContainer extends LitElement {
             ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : nothing}
             ${this._activeTab === 'actions' ? this._renderActions(vm) : nothing}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : nothing}
+            ${this._activeTab === 'harvest' ? this._renderHarvestTab() : nothing}
           </div>
 
           <!-- ACTIONS -->
@@ -284,6 +330,8 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _renderTabs(): TemplateResult {
+    const stage = (this.plant?.state || '').toLowerCase();
+    const showHarvestTab = ['dry', 'drying', 'cure', 'curing'].includes(stage);
     return html`
       <div class="tabs-container">
         <button
@@ -319,6 +367,20 @@ export class PlantOverviewContainer extends LitElement {
           </svg>
           Timeline
         </button>
+        ${showHarvestTab ? html`
+          <button
+            class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
+            @click=${() => {
+              this._activeTab = 'harvest';
+              this._initHarvestState();
+            }}
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="${mdiCannabis}"></path>
+            </svg>
+            Scoring & Harvest
+          </button>
+        ` : nothing}
       </div>
     `;
   }
@@ -343,6 +405,7 @@ export class PlantOverviewContainer extends LitElement {
         .availableActions=${vm.availableActions}
         @action-click=${this._handleActionClick}
       ></plant-actions-tab>
+      ${this._renderScorePhenotypeSection()}
     `;
   }
 
@@ -457,6 +520,12 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _renderFooter(vm: PlantOverviewViewModel): TemplateResult {
+    const stage = (this.plant?.state || '').toLowerCase();
+    const growspaceOptions = this._growspaceOptionsController?.value ?? {};
+    const growspaceEntries = Object.entries(growspaceOptions).filter(
+      ([id]) => id !== this.plant?.attributes?.growspace_id
+    );
+
     return html`
       <div
         class="dialog-actions"
@@ -473,6 +542,82 @@ export class PlantOverviewContainer extends LitElement {
             Delete
           </button>
         </div>
+
+        ${this._activeTab === 'dashboard' ? html`
+          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <!-- Mother: Take Clone with count -->
+            ${stage === 'mother' ? html`
+              <div style="display:flex; align-items:center; gap:8px;">
+                <md3-number-input
+                  id="clone-count-input"
+                  .value=${1}
+                  .min=${1}
+                  .max=${10}
+                  style="width: 80px;"
+                ></md3-number-input>
+                <button
+                  class="md3-button primary"
+                  @click=${(e: MouseEvent) => {
+                    const container = (e.currentTarget as HTMLElement).closest('.dynamic-actions');
+                    const input = container?.querySelector('#clone-count-input') as HTMLInputElement;
+                    const val = input ? parseInt(input.value, 10) : 1;
+                    this._handleTakeClone(isNaN(val) ? 1 : val);
+                  }}
+                >
+                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                    <path d="${mdiContentCopy}"></path>
+                  </svg>
+                  Take Clone
+                </button>
+              </div>
+            ` : nothing}
+
+            <!-- Flower: Harvest -->
+            ${stage === 'flower' || stage === 'flowering' ? html`
+              <button class="md3-button primary" @click=${this._handleHarvest}>
+                <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                  <path d="${mdiFlower}"></path>
+                </svg>
+                Harvest
+              </button>
+            ` : nothing}
+
+            <!-- Dry: Finish Drying -->
+            ${stage === 'dry' || stage === 'drying' ? html`
+              <button class="md3-button primary" @click=${this._handleFinishDrying}>
+                <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                  <path d="${mdiCannabis}"></path>
+                </svg>
+                Finish Drying
+              </button>
+            ` : nothing}
+
+            <!-- Move to Growspace (all active plants) -->
+            ${growspaceEntries.length > 0 ? html`
+              <div style="display:flex; align-items:center; gap:8px;">
+                <md3-select
+                  label="Move to Growspace"
+                  .value=${this._moveTargetGrowspaceId}
+                  .options=${growspaceEntries.map(([id, name]) => ({ label: name, value: id }))}
+                  style="width: 200px;"
+                  @change=${(e: CustomEvent) => (this._moveTargetGrowspaceId = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button primary"
+                  @click=${this._handleMovePlant}
+                  style="margin-top: 24px;"
+                  ?disabled=${!this._moveTargetGrowspaceId}
+                >
+                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                    <path d="${mdiArrowRight}"></path>
+                  </svg>
+                  Move
+                </button>
+              </div>
+            ` : nothing}
+          </div>
+        ` : nothing}
+
         <div class="primary-actions" style="display:flex; gap:12px;">
           <button class="md3-button outlined" @click=${this._handleClose}>Cancel</button>
           <button
@@ -582,7 +727,41 @@ export class PlantOverviewContainer extends LitElement {
       case 'print_label':
         this._openPrintLabel();
         break;
+      case 'pollinate':
+        this._openLogPollination();
+        break;
     }
+  }
+
+  private _handleHarvest(): void {
+    this.store.harvestPlant(this.plant);
+  }
+
+  private _handleFinishDrying(): void {
+    this.store.finishDryingPlant(this.plant);
+  }
+
+  private _handleMovePlant(): void {
+    if (!this._moveTargetGrowspaceId) return;
+    this.store.actions.plant.move(this.plant, this._moveTargetGrowspaceId);
+    this._handleClose();
+  }
+
+  private _handleTakeClone(numClones: number): void {
+    // Reuse the existing clone dialog, passing numClones via payload when supported
+    this._openClone();
+    void numClones; // clone dialog handles count internally
+  }
+
+  private _openLogPollination(): void {
+    const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+    this.dispatchEvent(
+      new CustomEvent('open-log-pollination', {
+        detail: { plantId },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _openPrintLabel(): void {
@@ -642,10 +821,307 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _openStrainEditor(): void {
+    const strain = this.plant?.attributes?.strain ?? '';
+    const phenotype = this.plant?.attributes?.phenotype ?? '';
+    const strainLibrary = this.store.data.$strainLibrary.get();
+    let strainEntry: StrainEntry | undefined = strainLibrary.find((s) => {
+      const entryPhenotype = s.phenotype || '';
+      return s.strain === strain && entryPhenotype === phenotype;
+    });
+    if (!strainEntry && strain) {
+      const key = phenotype ? `${strain}_${phenotype}` : strain;
+      strainEntry = {
+        strain,
+        phenotype,
+        key,
+        breeder: '',
+        type: 'Hybrid',
+        flowering_days_min: 60,
+        flowering_days_max: 70,
+        lineage: '',
+        sex: 'Feminized',
+        description: '',
+        image: '',
+        sativa_percentage: 50,
+        indica_percentage: 50,
+      };
+    }
     this.store.ui.setActiveDialog({
       type: 'STRAIN_LIBRARY',
-      payload: {},
+      payload: { editingStrain: strainEntry },
     });
+  }
+
+  // ── Harvest / Scoring tab ──────────────────────────────────────────────────
+
+  private _setScore(key: string, value: number): void {
+    const current = this._scoresEdit[key];
+    this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+  }
+
+  private _renderScoreRow(dim: { key: string; label: string; description: string; emoji: string }): TemplateResult {
+    const current = this._scoresEdit[dim.key] as number | null;
+    const preview = this._starPreview[dim.key] as number | null;
+    return html`
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;">
+            <span style="font-size:1.2rem;">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
+            ${current !== null && current !== undefined ? `${current} / 5` : '—'}
+          </span>
+        </div>
+        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          ${[1, 2, 3, 4, 5].map(star => html`
+            <button
+              style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
+                filter: ${(current !== null && star <= current) || (preview !== null && star <= preview)
+                  ? 'grayscale(0) opacity(1)'
+                  : 'grayscale(0.6) opacity(0.5)'};"
+              aria-label="Set ${dim.label} score to ${star}"
+              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
+              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
+              @click=${() => this._setScore(dim.key, star)}
+              ?disabled=${this._savingHarvest}
+            >⭐</button>
+          `)}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderHarvestTab(): TemplateResult {
+    const SCORE_DIMENSIONS = [
+      { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+      { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+      { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+      { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+      { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+    ];
+    const isSaving = this._savingHarvest;
+    const hm = this._harvestMetricsEdit as Record<string, number | string | null>;
+    const stage = (this.plant?.state || '').toLowerCase();
+    const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
+
+    return html`
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Score Grid -->
+        <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
+          ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+        </div>
+        <p style="font-size:0.8rem; opacity:0.45; margin:8px 0 0; text-align:center;">
+          All fields are optional — you can advance without scoring.
+        </p>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Yield Metrics -->
+        <div>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Yield metrics</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Wet weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 120"
+                .value=${String(hm.wet_weight ?? '')}
+                @input=${(e: InputEvent) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Dry weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 28"
+                .value=${String(hm.dry_weight ?? '')}
+                @input=${(e: InputEvent) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Trim weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 5"
+                .value=${String(hm.trim_weight ?? '')}
+                @input=${(e: InputEvent) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Lab Results -->
+        <div>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Lab results</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">THC (%)</label>
+              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
+                .value=${String(hm.thc_percentage ?? '')}
+                @input=${(e: InputEvent) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">CBD (%)</label>
+              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
+                .value=${String(hm.cbd_percentage ?? '')}
+                @input=${(e: InputEvent) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; grid-column: 1 / -1;">
+              <label style="font-size:0.75rem; opacity:0.7;">Terpene profile</label>
+              <textarea rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
+                .value=${String(hm.terpene_profile ?? '')}
+                @input=${(e: InputEvent) => {
+                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: (e.target as HTMLTextAreaElement).value };
+                }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box; resize:vertical;"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button
+            class="md3-button outlined"
+            @click=${() => this._skipAndAdvance()}
+            ?disabled=${isSaving}
+          >${advanceLabel}</button>
+          <button
+            class="md3-button filled"
+            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+            @click=${() => this._saveHarvestMetrics()}
+            ?disabled=${isSaving}
+          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _skipAndAdvance(): void {
+    if (this._savingHarvest) return;
+    const stage = (this.plant?.state || '').toLowerCase();
+    if (stage === 'dry' || stage === 'drying') {
+      this._handleFinishDrying();
+    } else {
+      this._handleHarvest();
+    }
+  }
+
+  private async _saveHarvestMetrics(): Promise<void> {
+    if (!this.plant?.attributes?.plant_id) return;
+    this._savingHarvest = true;
+    try {
+      const plantId = this.plant.attributes.plant_id;
+      const m = this._harvestMetricsEdit;
+      if (Object.keys(m).length > 0) {
+        await this.store.dataService.updateHarvestMetrics({ plant_id: plantId, ...m });
+      }
+      const s = this._scoresEdit;
+      if (Object.keys(s).length > 0) {
+        await this.store.dataService.scorePlant({ plant_id: plantId, ...s });
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await this.store.refreshData();
+      this._activeTab = 'dashboard';
+    } catch (e) {
+      console.error('Failed to save harvest metrics', e);
+      this.store.ui.showToast('Failed to save harvest metrics. Check your connection and try again.', 'error');
+    } finally {
+      this._savingHarvest = false;
+    }
+  }
+
+  // ── Score Phenotype (actions tab) ─────────────────────────────────────────
+
+  private _renderScorePhenotypeSection(): TemplateResult {
+    const SCORE_DIMENSIONS = [
+      { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+      { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+      { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+      { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+      { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+    ];
+    return html`
+      <div style="background:var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius:12px; padding:16px; grid-column: 1 / -1;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:${this._showScoringForm ? '16px' : '0'};">
+          <h3 style="margin:0;">Score Phenotype</h3>
+          <button
+            class="md3-button outlined"
+            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
+          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
+        </div>
+        ${this._showScoringForm ? html`
+          <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
+            ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+          </div>
+          <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+            <button
+              class="md3-button filled"
+              @click=${() => this._savePhenotypeScore()}
+              ?disabled=${this._savingScore}
+            >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
+          </div>
+        ` : html`
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px; pointer-events:none; opacity:0.7;">
+            ${SCORE_DIMENSIONS.map(dim => {
+              const val = this._scoresEdit[dim.key];
+              return html`
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                    <span>${dim.emoji}</span>${dim.label}
+                  </span>
+                  <span style="font-size:0.95rem; opacity:0.7;">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
+                </div>
+              `;
+            })}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  private async _savePhenotypeScore(): Promise<void> {
+    if (!this.plant?.attributes?.plant_id) return;
+    this._savingScore = true;
+    try {
+      const plantId = this.plant.attributes.plant_id;
+      await this.store.dataService.scorePlant({ plant_id: plantId, ...this._scoresEdit });
+      await this.store.refreshData();
+      this._showScoringForm = false;
+    } catch (e) {
+      console.error('Failed to save phenotype scores', e);
+      this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
+    } finally {
+      this._savingScore = false;
+    }
   }
 }
 

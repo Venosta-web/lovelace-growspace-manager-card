@@ -136,10 +136,14 @@ export class NutrientInventoryDialog extends LitElement {
     `,
   ];
 
-  protected firstUpdated(): void {
+  protected willUpdate(changedProperties: import('lit').PropertyValues): void {
     if (this.hass) {
-      this._dataService = new DataService(this.hass);
-      this._fetchInventory();
+      if (!this._dataService) {
+        this._dataService = new DataService(this.hass);
+        this._fetchInventory();
+      } else if (this._dataService.hass !== this.hass) {
+        this._dataService.updateHass(this.hass);
+      }
     }
   }
 

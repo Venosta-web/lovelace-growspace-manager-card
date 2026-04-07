@@ -49,7 +49,7 @@ describe('LogbookDialog', () => {
         const dialog = element.shadowRoot?.querySelector('ha-dialog');
         expect(dialog).toBeTruthy();
         // Check if property binding works (requires casting or checking attribute)
-        expect((dialog as any).open).toBe(true);
+        expect(dialog?.hasAttribute('open')).toBe(true);
 
         const logbook = element.shadowRoot?.querySelector('growspace-logbook');
         expect(logbook).toBeTruthy();
@@ -74,9 +74,9 @@ describe('LogbookDialog', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const closeBtn = element.shadowRoot?.querySelector('button');
+        const closeBtn = element.shadowRoot?.querySelector('button.md3-button') as HTMLButtonElement;
         expect(closeBtn).toBeTruthy();
-        (closeBtn as HTMLElement).click();
+        closeBtn.click();
 
         expect(closeSpy).toHaveBeenCalled();
     });

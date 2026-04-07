@@ -78,6 +78,13 @@ describe('DialogHost Coverage', () => {
                         const index = listeners.indexOf(fn);
                         if (index !== -1) listeners.splice(index, 1);
                     };
+                },
+                listen(fn: any) {
+                    listeners.push(fn);
+                    return () => {
+                        const index = listeners.indexOf(fn);
+                        if (index !== -1) listeners.splice(index, 1);
+                    };
                 }
             };
         };
@@ -96,6 +103,7 @@ describe('DialogHost Coverage', () => {
                 $nutrientPresets: createMockAtom({}),
                 $ipmPresets: createMockAtom({}),
                 $nutrientInventory: createMockAtom([]),
+                $ecRampCurves: createMockAtom({}),
                 strains: [
                     { key: 'Existing_p1', strain: 'Existing', phenotype: 'p1' }
                 ],
@@ -110,7 +118,14 @@ describe('DialogHost Coverage', () => {
                 ]
             },
             dataService: {
-                configureEnvironment: vi.fn().mockResolvedValue(true)
+                configureEnvironment: vi.fn().mockResolvedValue(true),
+                fetchGeneticsData: vi.fn().mockResolvedValue({ seed_batches: {}, pollination_events: {} })
+            },
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn(),
+            grid: {
+                $growspaceOptions: createMockAtom({})
             },
             actions: {
                 plant: {
@@ -136,6 +151,9 @@ describe('DialogHost Coverage', () => {
         (element as any).store = mockStore;
         (element as any).hass = {
             callService: vi.fn().mockResolvedValue(true),
+            connection: {
+                subscribeEvents: vi.fn(() => Promise.resolve(() => {})),
+            },
             states: {
                 'sensor.growspace_manager': {
                     attributes: {
@@ -895,7 +913,11 @@ describe('DialogHost Coverage', () => {
 
             const activeState = {
                 type: 'PLANT_OVERVIEW',
-                payload: { plant: { id: 'p1' }, editedAttributes: {}, selectedPlantIds: ['p1'] }
+                payload: {
+                    plant: { id: 'p1', entity_id: 'sensor.plant_p1', state: 'veg', attributes: { plant_id: 'p1', strain: 'Test', stage: 'veg' } },
+                    editedAttributes: { strain: 'Test' },
+                    selectedPlantIds: ['p1']
+                }
             } as any;
             mockStore.ui.$activeDialog.set(activeState);
 

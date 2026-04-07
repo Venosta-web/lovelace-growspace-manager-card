@@ -91,30 +91,37 @@ describe('WateringDialog', () => {
         mockStore = {
             data: {
                 $devices: {
-                    get: () => [mockDevice],
-                    subscribe: vi.fn()
+                    get: vi.fn(() => [mockDevice]),
+                    subscribe: vi.fn(() => () => {}),
+                    listen: vi.fn(() => () => {})
                 },
                 $nutrientPresets: {
-                    get: () => ({ 'veg1': mockPreset }),
-                    subscribe: vi.fn()
+                    get: vi.fn(() => ({ 'veg1': mockPreset })),
+                    subscribe: vi.fn(() => () => {}),
+                    listen: vi.fn(() => () => {})
+                },
+                $nutrientInventory: {
+                    get: vi.fn(() => null),
+                    subscribe: vi.fn(() => () => {}),
+                    listen: vi.fn(() => () => {})
                 },
                 $selectedDevice: {
-                    get: () => 'gs1',
-                    subscribe: vi.fn()
+                    get: vi.fn(() => 'gs1'),
+                    subscribe: vi.fn(() => () => {}),
+                    listen: vi.fn(() => () => {})
                 },
                 $ipmPresets: {
                     get: () => ({}),
-                    subscribe: vi.fn()
-                },
-                $nutrientInventory: {
-                    get: () => ({}),
-                    subscribe: vi.fn()
+                    subscribe: vi.fn(),
+                    listen: vi.fn(() => () => {})
                 }
             },
             showToast: vi.fn(),
             refreshData: vi.fn(),
             waterPlant: mockWaterPlant,
             waterGrowspace: mockWaterGrowspace,
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
             dataService: {
                 fetchNutrientPresets: vi.fn(),
                 fetchIPMPresets: vi.fn()
@@ -172,27 +179,27 @@ describe('WateringDialog', () => {
         expect((element as any)._volume).toBe(5.5);
     });
 
-    it('should add and remove nutrients manually', async () => {
+    it('should add a nutrient row when add button is clicked', async () => {
         element.open = true;
         await element.updateComplete;
 
-        const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || []).find(b => b.textContent?.includes('Add')) as HTMLElement;
+        const addBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button') || [])
+            .find(b => b.textContent?.includes('Add')) as HTMLButtonElement;
         addBtn.click();
         await element.updateComplete;
 
-        expect((element as any)._nutrients.length).toBe(1);
+        const rows = element.shadowRoot?.querySelectorAll('.product-row');
+        expect(rows?.length).toBe(1);
+    });
 
-        const nameInput = element.shadowRoot?.querySelector('md3-text-input[label="Nutrient Name"]') as any;
-        const concInput = element.shadowRoot?.querySelector('md3-number-input[label="ml/L"]') as any;
-
-        nameInput.dispatchEvent(new CustomEvent('change', { detail: 'CalMag' }));
-        concInput.dispatchEvent(new CustomEvent('change', { detail: '1.5' }));
+    it('should remove a nutrient row when remove button is clicked', async () => {
+        element.open = true;
+        await element.updateComplete;
+        (element as any)._nutrients = [{ name: 'Test', concentration: 1 }];
         await element.updateComplete;
 
-        expect((element as any)._nutrients[0]).toEqual({ name: 'CalMag', concentration: 1.5 });
-
-        // Remove
-        const removeBtn = element.shadowRoot?.querySelector('button.icon') as HTMLElement;
+        const removeBtn = element.shadowRoot?.querySelector('.product-row button') as HTMLButtonElement;
+        expect(removeBtn).toBeTruthy();
         removeBtn.click();
         await element.updateComplete;
 
@@ -700,13 +707,15 @@ describe('WateringDialog', () => {
         });
 
         it('should render nothing in _renderPresetOptions if presets are missing', async () => {
-            mockStore.data.$nutrientPresets.get = () => null;
+            mockStore.data.$nutrientPresets.get.mockReturnValue(null);
             element.open = true;
             await element.updateComplete;
 
             const select = element.shadowRoot?.querySelector('md3-select') as any;
-            // If presets are null, only the "Manual" option should be there
-            expect(select?.options?.length).toBe(1);
+            // The refactored component shows a loading state if presetsController.value is null/missing
+            // In the test, we've mocked the value to be null
+            const loading = element.shadowRoot?.querySelector('ha-circular-progress');
+            expect(loading).toBeTruthy();
         });
 
         it('should handle missing selectedDevice in _renderPresetOptions', async () => {

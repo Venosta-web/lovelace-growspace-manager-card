@@ -58,9 +58,8 @@ export class GrowspaceAnalytics extends LitElement {
     Record<string, import('../types').HistoryTimeRange>
   >;
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.store) {
+  private _initControllers() {
+    if (this.store && !this._historyCacheController) {
       this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
       this._historyLoadingController = new StoreController(
         this,
@@ -86,6 +85,17 @@ export class GrowspaceAnalytics extends LitElement {
     }
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this.store) {
@@ -95,7 +105,7 @@ export class GrowspaceAnalytics extends LitElement {
 
   firstUpdated() {
     // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
-    if (this.store?.history && !this._historyLoadedController.value) {
+    if (this.store?.history && !this._historyLoadedController?.value) {
       this.store.history.loadHistoryOnDemand();
     }
   }
@@ -104,8 +114,8 @@ export class GrowspaceAnalytics extends LitElement {
     // Trigger lazy load if history is not loaded and not currently loading
     if (
       this.store?.history &&
-      !this._historyLoadedController.value &&
-      !this._historyLoadingController.value
+      !this._historyLoadedController?.value &&
+      !this._historyLoadingController?.value
     ) {
       this.store.history.loadHistoryOnDemand();
     }
@@ -126,8 +136,8 @@ export class GrowspaceAnalytics extends LitElement {
     }[] = [];
 
     const processedMetrics = new Set<string>();
-    const activeEnvGraphs = this._activeEnvGraphsController.value;
-    const linkedGraphGroups = this._linkedGraphGroupsController.value;
+    const activeEnvGraphs = this._activeEnvGraphsController?.value || new Set<string>();
+    const linkedGraphGroups = this._linkedGraphGroupsController?.value || [];
 
     // Process Linked Groups
     linkedGraphGroups.forEach((group) => {
@@ -165,13 +175,13 @@ export class GrowspaceAnalytics extends LitElement {
     if (
       !this.store?.history ||
       !this._activeEnvGraphsController ||
-      this._activeEnvGraphsController.value.size === 0
+      (this._activeEnvGraphsController?.value?.size || 0) === 0
     )
       return html``;
     if (!this.device) return html``;
 
     // Show loading state while history is being fetched
-    if (this._historyLoadingController.value) {
+    if (this._historyLoadingController?.value) {
       return html`
         <div class="graphs-container">
           ${this.renderTimeRangeSelector(this.store.history.getRange())}
@@ -188,7 +198,7 @@ export class GrowspaceAnalytics extends LitElement {
       `;
     }
 
-    let sensorHistory = this._combinedHistoryController.value;
+    let sensorHistory = this._combinedHistoryController?.value || {};
     const range = this.store.history.getRange();
 
     const graphs = repeat(

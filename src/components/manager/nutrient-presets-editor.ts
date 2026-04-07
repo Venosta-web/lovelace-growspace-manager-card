@@ -53,6 +53,15 @@ export class NutrientPresetsEditor extends LitElement {
     if (!this.store || this._presetsController) return;
     this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
     this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+
+    // Trigger initial fetch if empty
+    const presets = this._presetsController.value;
+    if (!presets || Object.keys(presets).length === 0) {
+      this.store.fetchNutrientPresets();
+    }
+    if (!this._inventoryController.value) {
+      this.store.fetchNutrientInventory();
+    }
   }
 
   static styles = [

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { atom } from 'nanostores';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
 import { nothing } from 'lit';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
@@ -124,9 +125,12 @@ describe('WateringDialog Batch Submission', () => {
             'pre2': { id: 'pre2', name: 'Flower', stage: 'flower', min_days_in_stage: 10, nutrients: [] }
         };
 
-        mockStore.data.$devices = { get: () => [mockDevice], subscribe: vi.fn() };
-        mockStore.data.$selectedDevice = { get: () => 'd1', subscribe: vi.fn() };
-        mockStore.data.$nutrientPresets = { get: () => mockPresets, subscribe: vi.fn() };
+        mockStore.data.$devices = atom([mockDevice]);
+        mockStore.data.$selectedDevice = atom('d1');
+        mockStore.data.$nutrientPresets = atom(mockPresets);
+        mockStore.data.$nutrientInventory = atom(null);
+        mockStore.fetchNutrientPresets = vi.fn();
+        mockStore.fetchNutrientInventory = vi.fn();
 
         dialog.dialogState = {
             mode: 'plant',

@@ -13,6 +13,7 @@ import {
   mdiBug,
   mdiContentCopy,
   mdiPrinter,
+  mdiDna,
 } from '@mdi/js';
 import type { ActionConfig } from '../viewmodels/plant-overview.viewmodel';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -28,6 +29,7 @@ export class PlantActionsTab extends LitElement {
     mdiBug,
     mdiContentCopy,
     mdiPrinter,
+    mdiDna,
   };
 
   static styles = [

@@ -56,7 +56,7 @@ export interface PlantOverviewViewModel {
   editedAttributes: PlantOverviewEditedAttributes;
 
   // UI state
-  activeTab: 'dashboard' | 'actions' | 'timeline';
+  activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
   isEditing: boolean;
   showAllDates: boolean;
   showDeleteConfirmation: boolean;
@@ -273,6 +273,13 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       enabled: stage !== 'harvested',
       tooltip: stage === 'harvested' ? 'Cannot print labels for harvested plants' : undefined,
     },
+    {
+      id: 'pollinate',
+      label: 'Log Pollination',
+      icon: 'mdiDna',
+      enabled: stage === 'flower' || stage === 'flowering',
+      tooltip: stage !== 'flower' && stage !== 'flowering' ? 'Only available in flower stage' : undefined,
+    },
   ];
 
   return actions;
@@ -330,7 +337,7 @@ export function createPlantOverviewViewModel(
   plant: PlantEntity,
   editedAttributes: PlantOverviewEditedAttributes,
   uiState: {
-    activeTab: 'dashboard' | 'actions' | 'timeline';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;

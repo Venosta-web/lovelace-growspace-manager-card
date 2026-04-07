@@ -20,7 +20,8 @@ vi.mock('../../../src/components/ui/md3-number-input', () => ({
 const mocks = vi.hoisted(() => ({
     fetchNutrientInventory: vi.fn(),
     updateNutrientStock: vi.fn(),
-    removeNutrientStock: vi.fn()
+    removeNutrientStock: vi.fn(),
+    updateHass: vi.fn()
 }));
 
 vi.mock('../../../src/data-service', () => {
