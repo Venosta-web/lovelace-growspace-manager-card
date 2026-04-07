@@ -119,4 +119,121 @@ describe('GrowspaceAnalyticsCardEditor', () => {
         expect(eventArg.type).toBe('config-changed');
         expect(eventArg.detail.config.default_growspace).toBe('gs2');
     });
+
+    test('handles _loadGrowspaces with missing hass', () => {
+        element.hass = undefined as any;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._sensorGrowspaces).toEqual([]);
+    });
+
+    test('handles _loadGrowspaces with missing sensor or attributes', () => {
+        element.hass = { states: {} } as any;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._sensorGrowspaces).toEqual([]);
+
+        element.hass = {
+            states: {
+                'sensor.growspaces_list': {
+                    attributes: {}
+                }
+            }
+        } as any;
+        (element as any)._loadGrowspaces();
+        expect((element as any)._sensorGrowspaces).toEqual([]);
+    });
+
+    test('loads growspaces with fallback names in array format', () => {
+        element.hass = {
+            states: {
+                'sensor.growspaces_list': {
+                    attributes: {
+                        growspaces: [
+                            { id: 'gs1' }, // Missing name
+                            { id: 'gs2', name: '' } // Empty name
+                        ]
+                    }
+                }
+            }
+        } as any;
+        (element as any)._loadGrowspaces();
+        const opts = (element as any)._sensorGrowspaces;
+        expect(opts[0].name).toBe('gs1');
+        expect(opts[1].name).toBe('gs2');
+    });
+
+    test('loads growspaces with fallback names in object format', () => {
+        element.hass = {
+            states: {
+                'sensor.growspaces_list': {
+                    attributes: {
+                        growspaces: {
+                            gs1: '',
+                        }
+                    }
+                }
+            }
+        } as any;
+        (element as any)._loadGrowspaces();
+        const opts = (element as any)._sensorGrowspaces;
+        expect(opts[0].name).toBe('gs1');
+    });
+
+    test('_valueChanged guard (missing config or hass)', () => {
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        
+        (element as any)._config = undefined;
+        (element as any)._valueChanged(new Event('change'));
+        expect(spy).not.toHaveBeenCalled();
+
+        (element as any)._config = { type: 'custom:growspace-analytics-card' };
+        element.hass = undefined as any;
+        (element as any)._valueChanged(new Event('change'));
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('_valueChanged does nothing if value is the same', () => {
+        (element as any)._config = { 
+            type: 'custom:growspace-analytics-card',
+            default_growspace: 'gs1'
+        };
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        
+        const event = { target: { value: 'gs1' } } as any;
+        (element as any)._valueChanged(event);
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('render returns empty template if hass or config is missing', async () => {
+        const el = await fixture<GrowspaceAnalyticsCardEditor>(html`<growspace-analytics-card-editor></growspace-analytics-card-editor>`);
+        
+        el.hass = undefined as any;
+        (el as any)._config = undefined;
+        await el.updateComplete;
+        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+
+        el.hass = element.hass;
+        (el as any)._config = undefined;
+        await el.updateComplete;
+        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+
+        el.hass = undefined as any;
+        (el as any)._config = { type: 'test' };
+        await el.updateComplete;
+        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+    });
+
+    test('firstUpdated calls _loadGrowspaces', async () => {
+        const el = new GrowspaceAnalyticsCardEditor();
+        const spy = vi.spyOn(el as any, '_loadGrowspaces');
+        el.hass = element.hass;
+        
+        // Use document.createElement to avoid fixture rendering immediately
+        const div = document.createElement('div');
+        div.appendChild(el);
+        document.body.appendChild(div);
+        
+        await el.updateComplete;
+        expect(spy).toHaveBeenCalled();
+        document.body.removeChild(div);
+    });
 });
