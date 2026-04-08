@@ -47859,7 +47859,8 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
         this.isLoading = false;
     }
     focusPlant(index) {
-        const selector = 'growspace-grid';
+        const selector = 'growspace-grid-container'
+            ;
         const grid = this.shadowRoot?.querySelector(selector);
         if (grid) {
             grid.focusPlant(index);
@@ -47880,8 +47881,13 @@ let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
       </div>
       <div class="view-mode-container compact">
         ${x `
-              <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
-            `}
+              <growspace-grid-container
+                .plants=${this.grid}
+                .rows=${this.rows}
+                .cols=${this.cols}
+              ></growspace-grid-container>
+            `
+            }
       </div>
     `;
     }
@@ -48459,7 +48465,8 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         }
     }
     focusPlant(index) {
-        const selector = 'growspace-grid';
+        const selector = 'growspace-grid-container'
+            ;
         const grid = this.shadowRoot?.querySelector(selector);
         if (grid) {
             grid.focusPlant(index);
@@ -48495,13 +48502,14 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
             : ''}
 
       ${x `
-            <growspace-grid
+            <growspace-grid-container
               .plants=${this.grid}
               .rows=${this.rows}
               .cols=${this.cols}
               @transplant-drop=${(e) => this._handleTransplantDrop(e)}
-            ></growspace-grid>
-          `}
+            ></growspace-grid-container>
+          `
+            }
 
       ${this.config?.initial_view_mode === 'header'
             ? x `

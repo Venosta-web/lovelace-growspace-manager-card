@@ -22,7 +22,7 @@ export const FEATURE_FLAGS = {
    * Use new growspace-grid-container with ViewModel architecture
    * Phase 4 Tier 1: Grid refactoring
    */
-  USE_NEW_GROWSPACE_GRID: false,
+  USE_NEW_GROWSPACE_GRID: true,
 
   /**
    * Use event bus for cross-component communication

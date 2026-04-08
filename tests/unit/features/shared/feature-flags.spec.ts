@@ -11,8 +11,8 @@ describe('feature-flags', () => {
       expect(FEATURE_FLAGS.USE_NEW_DIALOGS).toBe(true);
     });
 
-    it('USE_NEW_GROWSPACE_GRID is disabled', () => {
-      expect(FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID).toBe(false);
+    it('USE_NEW_GROWSPACE_GRID is enabled', () => {
+      expect(FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID).toBe(true);
     });
 
     it('USE_EVENT_BUS is enabled', () => {
@@ -29,8 +29,8 @@ describe('feature-flags', () => {
       expect(isFeatureEnabled('USE_NEW_DIALOGS')).toBe(true);
     });
 
-    it('returns false for USE_NEW_GROWSPACE_GRID', () => {
-      expect(isFeatureEnabled('USE_NEW_GROWSPACE_GRID')).toBe(false);
+    it('returns true for USE_NEW_GROWSPACE_GRID', () => {
+      expect(isFeatureEnabled('USE_NEW_GROWSPACE_GRID')).toBe(true);
     });
 
     it('returns true for USE_EVENT_BUS', () => {
