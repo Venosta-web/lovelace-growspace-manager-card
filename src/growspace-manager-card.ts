@@ -16,7 +16,7 @@ import type { DialogHost } from './components/manager/dialog-host';
 import './components/manager/edit-mode-banner';
 import './components/plant-card';
 import './components/growspace-header';
-import './components/growspace-toast';
+import './features/ui/containers/growspace-toast.container';
 
 import { LibraryExportReadyEvent } from './lib/events';
 import './components/growspace-view-switcher';

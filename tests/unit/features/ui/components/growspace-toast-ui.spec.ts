@@ -40,7 +40,7 @@ describe('growspace-toast-ui', () => {
     const el = await fixture<GrowspaceToastUI>(html`
       <growspace-toast-ui
         .notification=${{ message: 'Deleted', type: 'info', action: { label: 'Undo', callback: () => {} } }}
-        @toast-action-clicked=${handler}
+        @toast-action-clicked=${handler as EventListener}
       ></growspace-toast-ui>
     `);
     (el.shadowRoot!.querySelector('.toast-action') as HTMLElement).click();

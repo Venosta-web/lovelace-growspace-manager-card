@@ -50,10 +50,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
     return html`
       <div class="graphs-container">
         ${this._renderTimeRangeSelector()}
-        ${repeat(
+        ${repeat<AnalyticsItem>(
           this.items,
-          (item) => (item.type === 'group' ? \`group-\${item.metrics.join('-')}\` : \`single-\${item.metrics[0]}\`),
-          (item) => this._renderItem(item)
+          (item: AnalyticsItem) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`),
+          (item: AnalyticsItem) => this._renderItem(item)
         )}
       </div>
     `;

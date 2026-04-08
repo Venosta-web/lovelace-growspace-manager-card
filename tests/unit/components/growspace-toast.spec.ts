@@ -1,6 +1,6 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { GrowspaceToast } from '../../../src/components/growspace-toast';
+import { GrowspaceToastContainer as GrowspaceToast } from '../../../src/features/ui/containers/growspace-toast.container';
 import { atom } from 'nanostores';
 
 describe('GrowspaceToast', () => {
