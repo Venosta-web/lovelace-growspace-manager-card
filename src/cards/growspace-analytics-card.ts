@@ -9,7 +9,7 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
-import '../components/growspace-analytics';
+import '../features/ui/containers/growspace-analytics.container';
 import '../components/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';

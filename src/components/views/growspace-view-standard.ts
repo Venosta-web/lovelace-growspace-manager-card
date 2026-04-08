@@ -7,7 +7,7 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../
 import { storeContext } from '../../context';
 import type { GrowspaceStore } from '../../store/core/growspace-store';
 import '../growspace-header';
-import '../growspace-analytics';
+import '../../features/ui/containers/growspace-analytics.container';
 import '../growspace-grid';
 import '../manager/edit-mode-banner';
 import '../transplant-source-panel';

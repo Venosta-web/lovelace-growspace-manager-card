@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture } from '@open-wc/testing-helpers';
-import { GrowspaceAnalytics } from '../../../src/components/growspace-analytics';
+import { GrowspaceAnalyticsContainer } from '../../../src/features/ui/containers/growspace-analytics.container';
 import { storeContext, hassContext } from '../../../src/context';
 import { ContextProvider } from '@lit/context';
 
@@ -17,7 +17,7 @@ vi.mock('../../../src/growspace-env-chart', () => {
 });
 
 describe('GrowspaceAnalytics', () => {
-    let element: GrowspaceAnalytics;
+    let element: GrowspaceAnalyticsContainer;
     let mockStore: any;
     let hassMock: any;
     let wrapper: HTMLElement;
@@ -127,7 +127,7 @@ describe('GrowspaceAnalytics', () => {
     });
 
     it('should be defined', () => {
-        expect(element).toBeInstanceOf(GrowspaceAnalytics);
+        expect(element).toBeInstanceOf(GrowspaceAnalyticsContainer);
     });
 
     it('should call stopAutoRefresh on disconnectedCallback', () => {
@@ -143,7 +143,7 @@ describe('GrowspaceAnalytics', () => {
 
     it('should handle disconnectedCallback when store is not defined', () => {
         // Create element without store
-        const elementWithoutStore = new GrowspaceAnalytics();
+        const elementWithoutStore = new GrowspaceAnalyticsContainer();
         (elementWithoutStore as any).store = undefined;
 
         // Should not throw
@@ -355,7 +355,7 @@ describe('GrowspaceAnalytics', () => {
 
     it('should handle connectedCallback when store is missing', () => {
         // Create element without valid store context or prevent injection
-        const el = new GrowspaceAnalytics();
+        const el = new GrowspaceAnalyticsContainer();
         // Since we cannot easily control consume without correct context, we'll manually check
         // We just ensure it doesn't throw.
         // Mock super.connectedCallback? No, just call it.
