@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
-import { FEATURE_FLAGS } from '../../../../src/features/shared/config/feature-flags';
 
-// Mock imports
+// Mock imports — include both legacy paths (for old imports still in the view) and new container paths
 vi.mock('../../../../src/components/growspace-header', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
 vi.mock('../../../../src/components/growspace-analytics', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-analytics.container', () => ({}));
 vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({}));
+vi.mock('../../../../src/features/ui/components/growspace-edit-mode-banner-ui', () => ({}));
 vi.mock('../../../../src/components/transplant-source-panel', () => ({}));
 vi.mock('../../../../src/components/growspace-grid', () => ({}));
 vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
@@ -42,9 +44,8 @@ class MockGridContainer extends LitElement {
     focusPlant(index: number) { }
 }
 
-// Helper to get grid selector based on feature flag
-const getGridSelector = () =>
-    FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID ? 'growspace-grid-container' : 'growspace-grid';
+// Grid container is always used unconditionally
+const getGridSelector = () => 'growspace-grid-container';
 
 import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
 
@@ -277,25 +278,19 @@ describe('GrowspaceViewStandard', () => {
         expect(mockStore.hass.callService).not.toHaveBeenCalled();
     });
 
-    it('should render growspace-grid-container when USE_NEW_GROWSPACE_GRID flag is true', async () => {
-        const original = FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID;
-        try {
-            (FEATURE_FLAGS as any).USE_NEW_GROWSPACE_GRID = true;
-            element.requestUpdate();
-            await element.updateComplete;
+    it('should always render growspace-grid-container unconditionally', async () => {
+        element.requestUpdate();
+        await element.updateComplete;
 
-            const container = element.shadowRoot?.querySelector('growspace-grid-container');
-            expect(container).toBeTruthy();
+        const container = element.shadowRoot?.querySelector('growspace-grid-container');
+        expect(container).toBeTruthy();
 
-            // Verify the transplant-drop event handler is wired up in the new container
-            mockStore.hass.callService.mockReturnValue(Promise.resolve({}));
-            container?.dispatchEvent(new CustomEvent('transplant-drop', {
-                detail: { plant_id: 'p1', target_row: 1, target_col: 1 },
-            }));
-            await new Promise((r) => setTimeout(r, 0));
-        } finally {
-            (FEATURE_FLAGS as any).USE_NEW_GROWSPACE_GRID = original;
-        }
+        // Verify the transplant-drop event handler is wired up
+        mockStore.hass.callService.mockReturnValue(Promise.resolve({}));
+        container?.dispatchEvent(new CustomEvent('transplant-drop', {
+            detail: { plant_id: 'p1', target_row: 1, target_col: 1 },
+        }));
+        await new Promise((r) => setTimeout(r, 0));
     });
 
     it('should use value fallback in redispatch', async () => {

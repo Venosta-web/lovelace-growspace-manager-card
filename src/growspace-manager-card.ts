@@ -11,11 +11,11 @@ import { ViewMode } from './features/environment/constants';
 
 import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
-import './components/manager/dialog-host';
-import type { DialogHost } from './components/manager/dialog-host';
-import './components/manager/edit-mode-banner';
+import './features/ui/containers/growspace-dialog-host.container';
+import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
+import './features/ui/components/growspace-edit-mode-banner-ui';
 import './components/plant-card';
-import './components/growspace-header';
+import './features/ui/containers/growspace-header.container';
 import './features/ui/containers/growspace-toast.container';
 
 import { LibraryExportReadyEvent } from './lib/events';
@@ -34,7 +34,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   @provide({ context: storeContext })
   store = new GrowspaceStore();
 
-  private _dialogPortal: DialogHost | null = null;
+  private _dialogPortal: GrowspaceDialogHost | null = null;
 
   protected _subscriptionController = new SubscriptionController(
     this,
@@ -114,7 +114,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     super.connectedCallback();
     this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
     if (!this._dialogPortal) {
-      const portal = document.createElement('growspace-dialog-host') as DialogHost;
+      const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
       portal.store = this.store;
       if (this.hass) portal.hass = this.hass;
       document.body.appendChild(portal);

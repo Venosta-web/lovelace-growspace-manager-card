@@ -55,7 +55,7 @@ describe('NutrientDialog', () => {
         await element.updateComplete;
 
         // Default tab is inventory
-        let inventory = element.shadowRoot?.querySelector('nutrient-inventory-dialog');
+        let inventory = element.shadowRoot?.querySelector('growspace-nutrient-inventory-dialog-ui');
         expect(inventory).not.toBeNull();
 
         // Switch to presets
@@ -65,9 +65,9 @@ describe('NutrientDialog', () => {
 
         await element.updateComplete;
 
-        const presetsEditor = element.shadowRoot?.querySelector('nutrient-presets-editor');
+        const presetsEditor = element.shadowRoot?.querySelector('growspace-nutrient-presets-editor');
         expect(presetsEditor).not.toBeNull();
-        expect(element.shadowRoot?.querySelector('nutrient-inventory-dialog')).toBeNull();
+        expect(element.shadowRoot?.querySelector('growspace-nutrient-inventory-dialog-ui')).toBeNull();
 
         // Switch back to inventory
         const inventoryTab = element.shadowRoot?.querySelectorAll('.tab')[0] as HTMLElement;
@@ -75,8 +75,8 @@ describe('NutrientDialog', () => {
         inventoryTab.click();
 
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('nutrient-inventory-dialog')).not.toBeNull();
-        expect(element.shadowRoot?.querySelector('nutrient-presets-editor')).toBeNull();
+        expect(element.shadowRoot?.querySelector('growspace-nutrient-inventory-dialog-ui')).not.toBeNull();
+        expect(element.shadowRoot?.querySelector('growspace-nutrient-presets-editor')).toBeNull();
     });
 
     it('should dispatch close event on close button click', async () => {

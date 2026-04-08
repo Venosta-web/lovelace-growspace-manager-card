@@ -2,7 +2,7 @@ import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiChevronDown } from '@mdi/js';
 import { GrowspaceDevice } from '../../types';
-import '../growspace-header';
+import '../../features/ui/containers/growspace-header.container';
 import { growspaceCardStyles } from '../../styles/growspace-card.styles';
 import { sharedStyles } from '../../styles/shared.styles';
 import { uiStyles } from '../../styles/ui.styles';
@@ -22,7 +22,6 @@ export class GrowspaceViewHeader extends LitElement {
       <div class="view-mode-container header">
         <growspace-header
           .device=${this.device}
-          .growspaceOptions=${this.growspaceOptions}
           @growspace-changed=${(e: CustomEvent) => this._redispatch(e, 'growspace-changed')}
         ></growspace-header>
         <button class="expand-handle" @click=${this._dispatchToggle}>

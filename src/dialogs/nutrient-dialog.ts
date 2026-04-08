@@ -1,13 +1,14 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
+import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../context';
 import { mdiBottleTonicPlus, mdiClose, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import './nutrient-inventory-dialog';
-import '../components/manager/nutrient-presets-editor';
+import '../features/ui/components/growspace-nutrient-inventory-dialog-ui';
+import '../features/ui/containers/growspace-nutrient-presets-editor.container';
 import '../components/ui/gs-help-tooltip';
 
 type Tab = 'inventory' | 'presets';
@@ -23,6 +24,25 @@ export class NutrientDialog extends LitElement {
 
   @property({ type: Boolean }) public open = false;
   @state() private _activeTab: Tab = 'inventory';
+
+  private _inventoryController!: StoreController<import('../types').NutrientInventory | null>;
+
+  private _initControllers() {
+    if (this.store && !this._inventoryController) {
+      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
+    }
+  }
 
   static styles = [
     dialogStyles,
@@ -171,16 +191,17 @@ export class NutrientDialog extends LitElement {
 
           <div class="content-area">
             ${this._activeTab === 'inventory'
-              ? html`<nutrient-inventory-dialog
+              ? html`<growspace-nutrient-inventory-dialog-ui
                   .open=${true}
                   .embedded=${true}
-                  .store=${this.store}
-                ></nutrient-inventory-dialog>`
-              : html`<nutrient-presets-editor
+                  .inventory=${this._inventoryController?.value ?? null}
+                  @update-stock=${(e: CustomEvent) => this.store.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                  @add-stock=${(e: CustomEvent) => this.store.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                ></growspace-nutrient-inventory-dialog-ui>`
+              : html`<growspace-nutrient-presets-editor
                   .open=${true}
                   .embedded=${true}
-                  .store=${this.store}
-                ></nutrient-presets-editor>`}
+                ></growspace-nutrient-presets-editor>`}
           </div>
         </div>
       </ha-dialog>

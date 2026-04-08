@@ -8,8 +8,8 @@ import { atom, computed } from 'nanostores';
 
 // Mock dependencies
 // Mock dependencies
-vi.mock('../../src/components/growspace-header', () => ({}));
-vi.mock('../../src/components/manager/dialog-host', () => ({}));
+vi.mock('../../src/features/ui/containers/growspace-header.container', () => ({}));
+vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/components/growspace-view-switcher', () => ({}));
 
 export const mockSubscriptionCallback = { fn: undefined as ((refresh: boolean) => void) | undefined };
@@ -55,6 +55,7 @@ const atomMocks = vi.hoisted(() => ({
     $cardViewState: null as any,
     $pendingDeepLinkPlantId: null as any,
     $mainCardState: null as any,
+    $gridOverlayMode: null as any,
 }));
 
 vi.mock('../../src/store/core/growspace-store', () => ({

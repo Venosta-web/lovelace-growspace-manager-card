@@ -48,6 +48,11 @@ export interface StrainLibraryDialogState {
   source?: 'add-plant' | 'add-plants' | 'plant-overview';
   returnPayload?: unknown;
   initialTab?: 'strains' | 'seeds';
+  view?: 'strains' | 'editor';
+}
+
+export interface EnvironmentConfigDialogState {
+  deviceId: string;
 }
 
 export interface EnvironmentConfigData {
@@ -205,6 +210,7 @@ export interface HarvestScoringDialogState {
 export interface SnapshotsDialogState {
   growspaceId: string;
 }
+
 
 export interface CropSteeringDialogState {
   growspaceId: string;

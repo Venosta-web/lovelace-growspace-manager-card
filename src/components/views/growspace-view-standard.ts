@@ -6,10 +6,10 @@ import { mdiChevronUp } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../types';
 import { storeContext } from '../../context';
 import type { GrowspaceStore } from '../../store/core/growspace-store';
-import '../growspace-header';
+import '../../features/ui/containers/growspace-header.container';
 import '../../features/ui/containers/growspace-analytics.container';
 import '../growspace-grid';
-import '../manager/edit-mode-banner';
+import '../../features/ui/components/growspace-edit-mode-banner-ui';
 import '../transplant-source-panel';
 import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
 import '../../features/plants/containers/growspace-grid.container';
@@ -110,7 +110,6 @@ export class GrowspaceViewStandard extends LitElement {
     return html`
       <growspace-header
         .device=${this.device}
-        .growspaceOptions=${this.growspaceOptions}
         @growspace-changed=${(e: CustomEvent) => this._redispatch(e, 'growspace-changed')}
       ></growspace-header>
 

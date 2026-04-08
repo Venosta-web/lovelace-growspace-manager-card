@@ -1,15 +1,16 @@
 import { LitElement, html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
 
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
 import { HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
 import { ResizeController } from '../../../controllers/resize-controller';
-
 import { headerStyles } from '../../../styles/header.styles';
-import '../../../components/growspace-header/header-actions';
-import '../../../components/growspace-header/header-hero';
-import '../../../components/growspace-header/header-stages';
-import '../../../components/growspace-header/header-secondary';
+
+import './growspace-header-actions-ui';
+import './growspace-header-hero-ui';
+import './growspace-header-stages-ui';
+import './growspace-header-secondary-ui';
 
 @customElement('growspace-header-ui')
 export class GrowspaceHeaderUI extends LitElement {
@@ -23,6 +24,12 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | null = null;
   @property({ type: Boolean }) compact = false;
+  @property({ attribute: false }) historyCache: any = {};
+  @property() timeRange = '24h';
+  @property() viewMode = '';
+  @property({ type: Boolean }) isEditMode = false;
+  @property({ attribute: false }) selectedPlants = new Set<string>();
+  @property({ attribute: false }) hass!: HomeAssistant;
 
   @state() private _mobileLink = false;
   private _resizeController = new ResizeController(this, () => {});
@@ -117,50 +124,68 @@ export class GrowspaceHeaderUI extends LitElement {
           </div>
 
           <!-- Row 1 Right: Actions & Device Chips -->
-          <growspace-header-actions
+          <growspace-header-actions-ui
             class="header-actions"
             .deviceChips=${this.deviceChips}
             .isMobile=${this._resizeController.isMobile}
             .mobileLink=${this._mobileLink}
-            @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
-            @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
-            @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+            .viewMode=${this.viewMode}
+            .isEditMode=${this.isEditMode}
+            .selectedPlants=${this.selectedPlants}
+            .selectedDevice=${this.deviceId}
+            @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+            @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
             @toggle-mobile-link=${() => this._handleToggleMobileLink()}
-          ></growspace-header-actions>
+            @action-triggered=${(e: any) =>
+              this.dispatchEvent(
+                new CustomEvent('action-triggered', {
+                  detail: e.detail,
+                  bubbles: true,
+                  composed: true,
+                })
+              )}
+          ></growspace-header-actions-ui>
 
           <!-- Row 2 Left: Stages -->
           <div class="header-stage-area-wrapper">
-            <growspace-header-stages .dominant=${this.dominant}></growspace-header-stages>
+            <growspace-header-stages-ui
+              .dominant=${this.dominant}
+            ></growspace-header-stages-ui>
           </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">
-            <growspace-header-secondary
-              .chips=${this.secondaryChips}
-              .inventory=${this.inventory}
-              .compact=${this.compact}
+            <growspace-header-secondary-ui
               .isMobile=${this._resizeController.isMobile}
               .mobileLink=${this._mobileLink}
+              .compact=${this.compact}
+              .chips=${this.secondaryChips}
+              .inventory=${this.inventory}
               @open-nutrients=${() => this._openNutrients()}
-              @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
-              @chip-drag-start=${(e: CustomEvent) =>
-                this._handleChipDragStart(null, e.detail.metric)}
-              @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-              @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
-            ></growspace-header-secondary>
+              @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+              @chip-drag-start=${(e: any) =>
+                this._handleChipDragStart(e.detail.event, e.detail.metric)}
+              @chip-drop=${(e: any) =>
+                this._handleChipDrop(e.detail.event, e.detail.targetMetric)}
+              @unlink-graphs=${(e: any) => this._unlinkGraphs(e.detail.groupIndex)}
+            ></growspace-header-secondary-ui>
           </div>
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
-        <growspace-header-hero
+        <growspace-header-hero-ui
+          .hass=${this.hass}
           .chips=${this.heroChips}
           .device=${this.device}
           .isMobile=${this._resizeController.isMobile}
           .mobileLink=${this._mobileLink}
-          @toggle-graph=${(e: CustomEvent) => this._toggleEnvGraph(e.detail.metric)}
-          @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
-          @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-        ></growspace-header-hero>
+          .historyCache=${this.historyCache}
+          .timeRange=${this.timeRange}
+          @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+          @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
+          @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
+        ></growspace-header-hero-ui>
       </div>
     `;
   }

@@ -17,6 +17,7 @@ import type {
   CropSteeringDialogState,
   ECRampDialogState,
   GrowReportDialogState,
+  EnvironmentConfigDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -43,4 +44,5 @@ export type ActiveDialogState =
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
   | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
   | { type: 'EC_RAMP_EDITOR'; payload: ECRampDialogState }
-  | { type: 'GROW_REPORT'; payload: GrowReportDialogState };
+  | { type: 'GROW_REPORT'; payload: GrowReportDialogState }
+  | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };

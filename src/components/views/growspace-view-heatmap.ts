@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { GrowspaceDevice } from '../../types';
-import '../growspace-header';
+import '../../features/ui/containers/growspace-header.container';
 import '../heatmap-3d';
 
 /**
@@ -54,7 +54,7 @@ export class GrowspaceViewHeatmap extends LitElement {
     return html`
       <growspace-header
         .device=${this.device}
-        .growspaceOptions=${this.growspaceOptions}
+        @growspace-changed=${(e: CustomEvent) => this._redispatch(e, 'growspace-changed')}
       ></growspace-header>
 
       <heatmap-3d
@@ -67,5 +67,16 @@ export class GrowspaceViewHeatmap extends LitElement {
         @sensor-position-changed=${this._handleSensorPositionChanged}
       ></heatmap-3d>
     `;
+  }
+
+  private _redispatch(e: CustomEvent, type: string) {
+    e.stopPropagation();
+    this.dispatchEvent(
+      new CustomEvent(type, {
+        detail: e.detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 }

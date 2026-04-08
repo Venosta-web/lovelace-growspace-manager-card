@@ -10,7 +10,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { ViewMode } from '../features/environment/constants';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
-import '../components/manager/dialog-host';
+import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../components/growspace-view-switcher';
 import '../components/error-boundary';

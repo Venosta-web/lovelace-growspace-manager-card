@@ -44645,81 +44645,40 @@ GrowspaceHeader = __decorate([
     t$2('growspace-header')
 ], GrowspaceHeader);
 
-let GrowspaceToast = class GrowspaceToast extends i$3 {
+let GrowspaceToastUI = class GrowspaceToastUI extends i$3 {
     constructor() {
         super(...arguments);
-        this._timeoutId = null;
-    }
-    _initControllers() {
-        if (this.store && !this._notificationController) {
-            this._notificationController = new libExports.StoreController(this, this.store.ui.$notification);
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        this._initControllers();
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('store')) {
-            this._initControllers();
-        }
-    }
-    updated(changedProps) {
-        super.updated(changedProps);
-        const notification = this._notificationController?.value;
-        if (notification) {
-            this._resetTimeout();
-            // Longer duration for actions
-            const duration = notification.action ? 6000 : 3000;
-            this._timeoutId = window.setTimeout(() => {
-                if (this.store?.ui) {
-                    this.store.ui.clearToast();
-                }
-            }, duration);
-        }
-    }
-    _resetTimeout() {
-        if (this._timeoutId) {
-            window.clearTimeout(this._timeoutId);
-            this._timeoutId = null;
-        }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._resetTimeout();
+        this.notification = null;
     }
     render() {
-        if (!this._notificationController)
-            return x ``;
-        const notification = this._notificationController.value;
-        const isVisible = !!notification;
+        const isVisible = !!this.notification;
         return x `
       <div
         class=${e({
             'toast-notification': true,
             visible: isVisible,
-            [notification?.type || 'info']: true,
+            [this.notification?.type || 'info']: true,
         })}
       >
-        <span class="toast-message">${notification?.message || ''}</span>
-        ${notification?.action
+        <span class="toast-message">${this.notification?.message || ''}</span>
+        ${this.notification?.action
             ? x `
               <button
                 class="toast-action"
-                @click=${() => {
-                notification.action?.callback();
-                this.store.ui.clearToast();
-            }}
+                @click=${this._handleActionClick}
               >
-                ${notification.action.label}
+                ${this.notification.action.label}
               </button>
             `
             : ''}
       </div>
     `;
     }
+    _handleActionClick() {
+        this.dispatchEvent(new CustomEvent('toast-action-clicked', { bubbles: true, composed: true }));
+    }
 };
-GrowspaceToast.styles = i$6 `
+GrowspaceToastUI.styles = i$6 `
     :host {
       position: fixed;
       bottom: 24px;
@@ -44790,11 +44749,67 @@ GrowspaceToast.styles = i$6 `
     }
   `;
 __decorate([
+    n$5({ attribute: false })
+], GrowspaceToastUI.prototype, "notification", void 0);
+GrowspaceToastUI = __decorate([
+    t$2('growspace-toast-ui')
+], GrowspaceToastUI);
+
+let GrowspaceToastContainer = class GrowspaceToastContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._timeoutId = null;
+    }
+    _initControllers() {
+        if (this.store && !this._controller) {
+            this._controller = new libExports.StoreController(this, this.store.ui.$notification);
+        }
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._initControllers();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._clearTimeout();
+    }
+    updated() {
+        const notification = this._controller?.value;
+        if (notification) {
+            this._clearTimeout();
+            const duration = notification.action ? 6000 : 3000;
+            this._timeoutId = window.setTimeout(() => {
+                this.store?.ui?.clearToast();
+            }, duration);
+        }
+    }
+    _clearTimeout() {
+        if (this._timeoutId !== null) {
+            window.clearTimeout(this._timeoutId);
+            this._timeoutId = null;
+        }
+    }
+    render() {
+        if (!this._controller)
+            return x ``;
+        return x `
+      <growspace-toast-ui
+        .notification=${this._controller.value}
+        @toast-action-clicked=${this._handleActionClicked}
+      ></growspace-toast-ui>
+    `;
+    }
+    _handleActionClicked() {
+        this._controller.value?.action?.callback();
+        this.store?.ui?.clearToast();
+    }
+};
+__decorate([
     c$2({ context: storeContext })
-], GrowspaceToast.prototype, "store", void 0);
-GrowspaceToast = __decorate([
+], GrowspaceToastContainer.prototype, "store", void 0);
+GrowspaceToastContainer = __decorate([
     t$2('growspace-toast')
-], GrowspaceToast);
+], GrowspaceToastContainer);
 
 const variables = i$6 `
   :host {
@@ -48006,12 +48021,118 @@ GrowspaceViewHeader = __decorate([
     t$2('growspace-view-header')
 ], GrowspaceViewHeader);
 
-// Global imports removed
-let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
+let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.items = [];
+        this.isLoading = false;
+        this.range = '24h';
+        this.sensorHistory = {};
+    }
+    render() {
+        if (this.items.length === 0)
+            return x ``;
+        if (this.isLoading) {
+            return x `
+        <div class="graphs-container">
+          ${this._renderTimeRangeSelector()}
+          <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);">
+            <div class="loading-spinner" style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+            <span style="margin-left:12px;">Loading history data...</span>
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="graphs-container">
+        ${this._renderTimeRangeSelector()}
+        ${c(this.items, (item) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`), (item) => this._renderItem(item))}
+      </div>
+    `;
+    }
+    _renderTimeRangeSelector() {
+        const ranges = ['1h', '6h', '24h', '7d'];
+        return x `
+      <div class="time-range-selector">
+        ${ranges.map((r) => x `
+          <button
+            class="range-btn ${this.range === r ? 'active' : ''}"
+            @click=${() => this._emitSetRange(r)}
+          >${r}</button>
+        `)}
+      </div>
+    `;
+    }
+    _renderItem(item) {
+        if (item.type === 'group') {
+            return x `
+        <growspace-env-chart
+          .hass=${this.hass}
+          .device=${this.device}
+          .sensorHistory=${this.sensorHistory}
+          .metrics=${item.metrics}
+          .isCombined=${true}
+          .range=${this.range}
+          @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
+          @unlink-graphs=${(e) => this._redispatch('unlink-graphs', e.detail)}
+          @unlink-graph=${(e) => this._redispatch('unlink-graph', e.detail)}
+        ></growspace-env-chart>
+      `;
+        }
+        return x `
+      <growspace-env-chart
+        .hass=${this.hass}
+        .device=${this.device}
+        .sensorHistory=${this.sensorHistory}
+        .metricKey=${item.metrics[0]}
+        .metrics=${item.metrics}
+        .range=${this.range}
+        @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
+      ></growspace-env-chart>
+    `;
+    }
+    _emitSetRange(range) {
+        this.dispatchEvent(new CustomEvent('set-range', { detail: range, bubbles: true, composed: true }));
+    }
+    _redispatch(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+};
+GrowspaceAnalyticsUI.styles = [
+    growspaceCardStyles,
+    sharedStyles,
+    i$6 `
+      :host { display: block; }
+      .graphs-container { display: flex; flex-direction: column; gap: 12px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "items", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceAnalyticsUI.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "range", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "sensorHistory", void 0);
+GrowspaceAnalyticsUI = __decorate([
+    t$2('growspace-analytics-ui')
+], GrowspaceAnalyticsUI);
+
+let GrowspaceAnalyticsContainer = class GrowspaceAnalyticsContainer extends i$3 {
     _initControllers() {
-        if (this.store && !this._analyticsController) {
-            this._analyticsController = new libExports.StoreController(this, this.store.history.$analyticsViewState);
-            // OPTIMIZATION: Trigger lazy loading of history when component connects if needed
+        if (this.store && !this._controller) {
+            this._controller = new libExports.StoreController(this, this.store.history.$analyticsViewState);
             this.store.history.startAutoRefresh();
         }
     }
@@ -48019,228 +48140,94 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         super.connectedCallback();
         this._initControllers();
     }
-    willUpdate(changedProps) {
-        if (changedProps.has('store')) {
-            this._initControllers();
-        }
-    }
     disconnectedCallback() {
         super.disconnectedCallback();
-        if (this.store) {
-            this.store.history.stopAutoRefresh();
-        }
+        this.store?.history?.stopAutoRefresh();
     }
     firstUpdated() {
-        if (this.store?.history && !this._analyticsController?.value?.historyLoaded) {
+        if (this.store?.history && !this._controller?.value?.historyLoaded) {
             this.store.history.loadHistoryOnDemand();
         }
     }
-    updated(_changedProperties) {
-        const state = this._analyticsController?.value;
+    updated() {
+        const state = this._controller?.value;
         if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
             this.store.history.loadHistoryOnDemand();
         }
     }
-    get _itemsToRender() {
-        if (!this.store?.history || !this._analyticsController)
+    get _items() {
+        if (!this._controller)
             return [];
+        const { activeEnvGraphs = new Set(), linkedGraphGroups = [] } = this._controller.value ?? {};
         const getSortIndex = (metric) => {
-            const index = METRIC_SORT_ORDER.indexOf(metric);
-            return index !== -1 ? index : 999;
+            const i = METRIC_SORT_ORDER.indexOf(metric);
+            return i !== -1 ? i : 999;
         };
         const items = [];
-        const processedMetrics = new Set();
-        const { activeEnvGraphs = new Set(), linkedGraphGroups = [] } = this._analyticsController.value ?? {};
-        // Process Linked Groups
+        const processed = new Set();
         linkedGraphGroups.forEach((group) => {
-            const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
-            if (activeMetricsInGroup.length > 0) {
-                const minIndex = Math.min(...activeMetricsInGroup.map(getSortIndex));
-                items.push({
-                    type: 'group',
-                    metrics: activeMetricsInGroup,
-                    sortIndex: minIndex,
-                });
-                activeMetricsInGroup.forEach((m) => processedMetrics.add(m));
+            const active = group.filter((m) => activeEnvGraphs.has(m));
+            if (active.length > 0) {
+                items.push({ type: 'group', metrics: active, sortIndex: Math.min(...active.map(getSortIndex)) });
+                active.forEach((m) => processed.add(m));
             }
         });
-        // Process Individual Metrics
         activeEnvGraphs.forEach((metric) => {
-            // Check for composite keys (e.g. circulation_fan:sensor.fan_1)
-            const baseMetric = metric.includes(':') ? metric.split(':')[0] : metric;
-            if (!processedMetrics.has(metric)) {
-                items.push({
-                    type: 'single',
-                    metrics: [metric],
-                    sortIndex: getSortIndex(baseMetric),
-                });
+            if (!processed.has(metric)) {
+                const base = metric.includes(':') ? metric.split(':')[0] : metric;
+                items.push({ type: 'single', metrics: [metric], sortIndex: getSortIndex(base) });
             }
         });
-        items.sort((a, b) => a.sortIndex - b.sortIndex);
-        return items;
+        return items.sort((a, b) => a.sortIndex - b.sortIndex);
     }
     render() {
-        const analyticsState = this._analyticsController?.value;
-        if (!this.store?.history ||
-            !analyticsState ||
-            (analyticsState.activeEnvGraphs?.size || 0) === 0)
+        const state = this._controller?.value;
+        if (!state || state.activeEnvGraphs?.size === 0 || !this.device)
             return x ``;
-        if (!this.device)
-            return x ``;
-        if (analyticsState.historyLoading) {
-            return x `
-        <div class="graphs-container">
-          ${this.renderTimeRangeSelector(this.store.history.getRange())}
-          <div
-            style="display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--secondary-text-color, #666);"
-          >
-            <div
-              class="loading-spinner"
-              style="width: 24px; height: 24px; border: 2px solid var(--primary-color, #03a9f4); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"
-            ></div>
-            <span style="margin-left: 12px;">Loading history data...</span>
-          </div>
-        </div>
-      `;
-        }
-        let sensorHistory = analyticsState.combinedHistory || {};
-        const range = this.store.history.getRange();
-        const graphs = c(this._itemsToRender, 
-        // Key function: Unique ID for the item
-        (item) => item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`, 
-        // Render function
-        (item) => {
-            let customSensorId;
-            if (item.type === 'group') {
-                return x `
-            <growspace-env-chart
-              .hass=${this.hass}
-              .device=${this.device}
-              .sensorHistory=${sensorHistory}
-              .metrics=${item.metrics}
-              .isCombined=${true}
-              .metricConfig=${METRIC_CONFIG}
-              .range=${range}
-              @toggle-graph=${this._handleToggleGraph}
-              @unlink-graphs=${this._handleUnlinkGraphs}
-              @unlink-graph=${this._handleUnlinkGraphMetric}
-            ></growspace-env-chart>
-          `;
-            }
-            else {
-                const metricKey = item.metrics[0];
-                let baseMetric = metricKey;
-                let chartTitle;
-                // Handle Composite Key
-                if (metricKey.includes(':')) {
-                    const [metric, entityId] = metricKey.split(':');
-                    baseMetric = metric;
-                    // Synthetic History: Map 'baseMetric' to the data stored under 'metricKey'
-                    // We create a new object to avoid mutating the global cache structure for this render pass
-                    // This effectively "renames" the data key so the chart component finds it under the expected metric name
-                    if (sensorHistory[metricKey]) {
-                        sensorHistory = { ...sensorHistory, [baseMetric]: sensorHistory[metricKey] };
-                    }
-                    // Try to get a friendly name for the title
-                    const stateObj = this.hass.states[entityId];
-                    const friendlyName = stateObj?.attributes?.friendly_name || entityId;
-                    chartTitle = `${METRIC_CONFIG[baseMetric]?.title || baseMetric} (${friendlyName})`;
-                    customSensorId = entityId; // Pass the specific sensor ID
-                }
-                return x `
-            <growspace-env-chart
-              .hass=${this.hass}
-              .device=${this.device}
-              .sensorHistory=${sensorHistory}
-              .metricKey=${baseMetric}
-              .metrics=${[baseMetric]}
-              .metricConfig=${METRIC_CONFIG}
-              .range=${range}
-              .chartTitle=${chartTitle}
-              .customSensorId=${customSensorId}
-              @toggle-graph=${(e) => {
-                    e.stopPropagation();
-                    this.store.toggleEnvGraph(metricKey);
-                }}
-            ></growspace-env-chart>
-          `;
-            }
-        });
         return x `
-      <div class="graphs-container">${this.renderTimeRangeSelector(range)} ${graphs}</div>
+      <growspace-analytics-ui
+        .items=${this._items}
+        .isLoading=${state.historyLoading}
+        .range=${this.store.history.getRange()}
+        .hass=${this.hass}
+        .device=${this.device}
+        .sensorHistory=${state.combinedHistory || {}}
+        @set-range=${this._handleSetRange}
+        @toggle-graph=${this._handleToggleGraph}
+        @unlink-graphs=${this._handleUnlinkGraphs}
+        @unlink-graph=${this._handleUnlinkGraphMetric}
+      ></growspace-analytics-ui>
     `;
     }
-    renderTimeRangeSelector(currentRange) {
-        const ranges = ['1h', '6h', '24h', '7d'];
-        return x `
-      <div class="time-range-selector">
-        ${ranges.map((r) => x `
-            <button
-              class="range-btn ${currentRange === r ? 'active' : ''}"
-              @click=${() => this._setGraphRange(r)}
-            >
-              ${r}
-            </button>
-          `)}
-      </div>
-    `;
-    }
-    _setGraphRange(range) {
+    _handleSetRange(e) {
         if (this.device) {
-            this.store.history.setGraphRange(this.device.deviceId, range);
-            this.store.history.loadHistoryOnDemand(); // Reload logic to match controller behavior
+            this.store.history.setGraphRange(this.device.deviceId, e.detail);
+            this.store.history.loadHistoryOnDemand();
         }
     }
     _handleToggleGraph(e) {
-        e.stopPropagation();
-        // Chart emits detail: metricKey (string)
-        const metric = e.detail;
-        if (metric && typeof metric === 'string' && this.store) {
-            this.store.toggleEnvGraph(metric);
-        }
+        if (typeof e.detail === 'string')
+            this.store.toggleEnvGraph(e.detail);
     }
     _handleUnlinkGraphs(e) {
-        e.stopPropagation();
-        // detail is groupIndex
         this.store.history.unlinkGraphGroup(e.detail);
     }
     _handleUnlinkGraphMetric(e) {
-        e.stopPropagation();
-        // detail is metric string
         this.store.history.unlinkGraphMetric(e.detail);
     }
 };
-GrowspaceAnalytics.styles = [
-    growspaceCardStyles,
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .graphs-container {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    `,
-];
 __decorate([
     c$2({ context: hassContext, subscribe: true })
-], GrowspaceAnalytics.prototype, "hass", void 0);
+], GrowspaceAnalyticsContainer.prototype, "hass", void 0);
 __decorate([
     c$2({ context: storeContext })
-], GrowspaceAnalytics.prototype, "store", void 0);
+], GrowspaceAnalyticsContainer.prototype, "store", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceAnalytics.prototype, "device", void 0);
-GrowspaceAnalytics = __decorate([
+], GrowspaceAnalyticsContainer.prototype, "device", void 0);
+GrowspaceAnalyticsContainer = __decorate([
     t$2('growspace-analytics')
-], GrowspaceAnalytics);
+], GrowspaceAnalyticsContainer);
 
 let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
     constructor() {

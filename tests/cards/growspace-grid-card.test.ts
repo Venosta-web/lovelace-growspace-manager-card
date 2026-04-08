@@ -11,7 +11,7 @@ if (!customElements.get('growspace-grid-card')) {
 }
 
 // Mock sub-components so they don't throw or interfere
-vi.mock('../../src/components/manager/dialog-host', () => ({}));
+vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/components/growspace-toast', () => ({}));
 vi.mock('../../src/components/growspace-view-switcher', () => ({}));
 vi.mock('../../src/components/error-boundary', () => ({

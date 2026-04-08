@@ -62,6 +62,9 @@ export class GrowspaceStore {
     devices: import('../../types').GrowspaceDevice[];
     selectedDevice: string | null;
     strainLibrary: import('../../types').StrainEntry[];
+    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+    ipmPresets: Record<string, import('../../types').IPMPreset>;
+    nutrientInventory: import('../../types').NutrientInventory | null;
   }>;
 
   /** Combined atom for header-actions rendering — one subscription replaces four. */
@@ -145,12 +148,31 @@ export class GrowspaceStore {
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
-      [this.ui.$activeDialog, this.data.$devices, this.data.$selectedDevice, this.data.$strainLibrary],
-      (activeDialog, devices, selectedDevice, strainLibrary) => ({
+      [
+        this.ui.$activeDialog,
+        this.data.$devices,
+        this.data.$selectedDevice,
+        this.data.$strainLibrary,
+        this.data.$nutrientPresets,
+        this.data.$ipmPresets,
+        this.data.$nutrientInventory,
+      ],
+      (
         activeDialog,
         devices,
         selectedDevice,
         strainLibrary,
+        nutrientPresets,
+        ipmPresets,
+        nutrientInventory
+      ) => ({
+        activeDialog,
+        devices,
+        selectedDevice,
+        strainLibrary,
+        nutrientPresets,
+        ipmPresets,
+        nutrientInventory,
       })
     );
 
