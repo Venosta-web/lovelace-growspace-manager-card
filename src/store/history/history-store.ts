@@ -35,6 +35,31 @@ export class GrowspaceHistoryStore {
   // --- Computed Stores ---
   public readonly $combinedHistory: ReadableAtom<SensorHistories>;
 
+  /**
+   * Single combined atom for all header-relevant history state. Replaces four
+   * separate StoreController subscriptions in GrowspaceHeader.
+   */
+  public readonly $headerHistoryState: ReadableAtom<{
+    historyCache: Record<string, HistorySensorState[]>;
+    historyLoading: boolean;
+    activeEnvGraphs: Set<string>;
+    linkedGraphGroups: string[][];
+  }>;
+
+  /**
+   * Single combined atom for all analytics-relevant history state. Replaces
+   * seven separate StoreController subscriptions in GrowspaceAnalytics.
+   * Does not include $historyCache — $combinedHistory already derives from it.
+   */
+  public readonly $analyticsViewState: ReadableAtom<{
+    historyLoading: boolean;
+    historyLoaded: boolean;
+    activeEnvGraphs: Set<string>;
+    linkedGraphGroups: string[][];
+    combinedHistory: SensorHistories;
+    graphRanges: Record<string, HistoryTimeRange>;
+  }>;
+
   constructor(dataService: DataService, dataStore: GrowspaceDataStore) {
     this.dataService = dataService;
     this.dataStore = dataStore;
@@ -55,6 +80,16 @@ export class GrowspaceHistoryStore {
       }
     });
 
+    this.$headerHistoryState = computed(
+      [this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups],
+      (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+        historyCache,
+        historyLoading,
+        activeEnvGraphs,
+        linkedGraphGroups,
+      })
+    );
+
     this.$combinedHistory = computed(
       this.$historyCache,
       (cache): SensorHistories => {
@@ -73,6 +108,25 @@ export class GrowspaceHistoryStore {
         });
         return result;
       }
+    );
+
+    this.$analyticsViewState = computed(
+      [
+        this.$historyLoading,
+        this.$historyLoaded,
+        this.$activeEnvGraphs,
+        this.$linkedGraphGroups,
+        this.$combinedHistory,
+        this.$graphRanges,
+      ],
+      (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
+        historyLoading,
+        historyLoaded,
+        activeEnvGraphs,
+        linkedGraphGroups,
+        combinedHistory,
+        graphRanges,
+      })
     );
   }
 

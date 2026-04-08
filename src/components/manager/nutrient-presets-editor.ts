@@ -35,8 +35,7 @@ export class NutrientPresetsEditor extends LitElement {
   @state() private _editingPreset: Partial<NutrientPreset> | null = null;
   @state() private _error: string | null = null;
 
-  private _presetsController!: StoreController<Record<string, NutrientPreset>>;
-  private _inventoryController!: StoreController<import('../../types').NutrientInventory | null>;
+  private _nutrientDataController!: StoreController<import('../../store/core/data-store').NutrientDataState>;
 
   connectedCallback() {
     super.connectedCallback();
@@ -50,16 +49,16 @@ export class NutrientPresetsEditor extends LitElement {
   }
 
   private _initControllers() {
-    if (!this.store || this._presetsController) return;
-    this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
-    this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    if (!this.store || this._nutrientDataController) return;
+    this._nutrientDataController = new StoreController(this, this.store.data.$nutrientDataState);
+
+    const { nutrientPresets, nutrientInventory } = this._nutrientDataController.value;
 
     // Trigger initial fetch if empty
-    const presets = this._presetsController.value;
-    if (!presets || Object.keys(presets).length === 0) {
+    if (!nutrientPresets || Object.keys(nutrientPresets).length === 0) {
       this.store.fetchNutrientPresets();
     }
-    if (!this._inventoryController.value) {
+    if (!nutrientInventory) {
       this.store.fetchNutrientInventory();
     }
   }
@@ -298,7 +297,8 @@ export class NutrientPresetsEditor extends LitElement {
   }
 
   private _renderList() {
-    if (!this._presetsController) {
+    const { nutrientPresets, isLoading } = this._nutrientDataController.value;
+    if (isLoading) {
       return html`
         <div class="empty-state">
           <ha-circular-progress active></ha-circular-progress>
@@ -306,8 +306,7 @@ export class NutrientPresetsEditor extends LitElement {
         </div>
       `;
     }
-    const presets = this._presetsController.value;
-    const presetEntries = Object.values(presets || {});
+    const presetEntries = Object.values(nutrientPresets || {}) as NutrientPreset[];
     if (presetEntries.length === 0) {
       return html`
         <div class="empty-state">
@@ -484,24 +483,28 @@ export class NutrientPresetsEditor extends LitElement {
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
 
+    const { nutrientPresets, nutrientInventory } = this._nutrientDataController.value;
+
     // Add nutrients from presets
-    const presets = this._presetsController?.value;
-    if (presets) {
-      Object.values(presets).forEach((preset) => {
-        if (preset.nutrients) {
-          preset.nutrients.forEach((n) => {
-            if (n.name) nutrients.add(n.name);
-          });
+    if (nutrientPresets) {
+      (Object.values(nutrientPresets) as import('../../services/types').NutrientPreset[]).forEach(
+        (preset) => {
+          if (preset.nutrients) {
+            preset.nutrients.forEach((n: import('../../services/types').NutrientItem) => {
+              if (n.name) nutrients.add(n.name);
+            });
+          }
         }
-      });
+      );
     }
 
     // Add nutrients from inventory
-    const inventory = this._inventoryController?.value;
-    if (inventory && inventory.stocks) {
-      Object.values(inventory.stocks).forEach((stock) => {
-        if (stock.name) nutrients.add(stock.name);
-      });
+    if (nutrientInventory && nutrientInventory.stocks) {
+      (Object.values(nutrientInventory.stocks) as import('../../services/types').NutrientStock[]).forEach(
+        (stock) => {
+          if (stock.name) nutrients.add(stock.name);
+        }
+      );
     }
 
     return Array.from(nutrients).sort();

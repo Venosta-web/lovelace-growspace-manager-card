@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DialogHost } from '../../../../src/components/manager/dialog-host';
 import { html } from 'lit';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 import { ActiveDialogState } from '../../../../src/ui-state';
 import { GrowspaceDevice } from '../../../../src/types';
 
@@ -18,10 +18,19 @@ describe('DialogHost', () => {
     const $activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
     const $devices = atom<any[]>([]);
     const $selectedDevice = atom<string | null>(null);
+    const $strainLibrary = atom<any[]>([]);
     const $nutrientPresets = atom<Record<string, any>>({});
     const $ipmPresets = atom<Record<string, any>>({});
     const $nutrientInventory = atom<any>(null);
     const $ecRampCurves = atom<Record<string, any>>({});
+
+    // Combined atom matching GrowspaceStore.$dialogHostState
+    const $dialogHostState = computed(
+        [$activeDialog, $devices, $selectedDevice, $strainLibrary],
+        (activeDialog, devices, selectedDevice, strainLibrary) => ({
+            activeDialog, devices, selectedDevice, strainLibrary,
+        })
+    );
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -47,7 +56,7 @@ describe('DialogHost', () => {
             data: {
                 $devices: $devices,
                 $selectedDevice: $selectedDevice,
-                $strainLibrary: atom([]),
+                $strainLibrary: $strainLibrary,
                 $nutrientPresets: $nutrientPresets,
                 $ipmPresets: $ipmPresets,
                 $nutrientInventory: $nutrientInventory,
@@ -107,6 +116,7 @@ describe('DialogHost', () => {
             grid: {
                 $growspaceOptions: atom({})
             },
+            $dialogHostState: $dialogHostState,
             analyzeGrowspace: vi.fn(),
             getStrainRecommendation: vi.fn(),
             archivePlant: vi.fn(),
@@ -127,6 +137,7 @@ describe('DialogHost', () => {
         $activeDialog.set({ type: 'NONE' });
         $devices.set([]);
         $selectedDevice.set(null);
+        $strainLibrary.set([]);
         $nutrientPresets.set({});
         $ipmPresets.set({});
         $nutrientInventory.set(null);

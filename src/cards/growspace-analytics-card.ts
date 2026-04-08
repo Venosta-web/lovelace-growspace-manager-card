@@ -38,12 +38,10 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
         }
     );
 
-    protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-    protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-    protected _cardViewController = new StoreController(this, this.store.ui.$cardViewState);
+    protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
 
     @provide({ context: hassContext })
@@ -128,9 +126,10 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
             return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
 
-        const devices = this._activeDevicesController.value;
+        const { devices, selectedDevice } = this._viewController.value.grid;
+        const { isLoading } = this._viewController.value.ui;
 
-        if (this._cardViewController.value.isLoading) {
+        if (isLoading && !devices.length) {
             return html`
         <ha-card>
           <div class="loading-container">
@@ -144,7 +143,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
             return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
 
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const selectedDeviceData = devices.find((d: any) => d.deviceId === selectedDevice);
         if (!selectedDeviceData) {
             return html`<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
         }

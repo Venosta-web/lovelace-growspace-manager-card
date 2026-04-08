@@ -105,6 +105,20 @@ describe('WateringDialog', () => {
                     subscribe: vi.fn(() => () => {}),
                     listen: vi.fn(() => () => {})
                 },
+                get $nutrientDataState() {
+                    const self = mockStore.data;
+                    const listeners: any[] = [];
+                    return {
+                        get: () => ({
+                            nutrientPresets: self.$nutrientPresets.get(),
+                            nutrientInventory: self.$nutrientInventory.get(),
+                            ecRampCurves: {},
+                            isLoading: false,
+                        }),
+                        subscribe(fn: any) { listeners.push(fn); fn(this.get()); return () => {}; },
+                        listen(fn: any) { listeners.push(fn); return () => {}; },
+                    };
+                },
                 $selectedDevice: {
                     get: vi.fn(() => 'gs1'),
                     subscribe: vi.fn(() => () => {}),
@@ -122,6 +136,7 @@ describe('WateringDialog', () => {
             waterGrowspace: mockWaterGrowspace,
             fetchNutrientPresets: vi.fn(),
             fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn(),
             dataService: {
                 fetchNutrientPresets: vi.fn(),
                 fetchIPMPresets: vi.fn()

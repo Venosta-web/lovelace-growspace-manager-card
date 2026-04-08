@@ -4,7 +4,7 @@ import { fixture, html, elementUpdated } from '@open-wc/testing-helpers';
 import { GrowspaceHeader } from '../../../src/components/growspace-header';
 import { MetricsUtils } from '../../../src/utils/metrics-utils';
 import { GrowspaceDevice } from '../../../src/types';
-import { atom, map } from 'nanostores';
+import { atom, computed, map } from 'nanostores';
 
 // Helper to silence specific console errors during tests (if needed) or mocks
 vi.mock('../../../src/utils/metrics-utils', () => ({
@@ -50,8 +50,16 @@ describe('GrowspaceHeader', () => {
     // Atoms
     const $devices = atom<any[]>([]);
     const $selectedDevice = atom<string | null>(null);
+    const $historyCache = map<Record<string, any>>({});
+    const $historyLoading = atom(false);
     const $activeEnvGraphs = atom(new Set<string>());
     const $linkedGraphGroups = atom<any[]>([]);
+    const $headerHistoryState = computed(
+        [$historyCache, $historyLoading, $activeEnvGraphs, $linkedGraphGroups],
+        (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+            historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups,
+        })
+    );
 
     beforeEach(async () => {
         vi.clearAllMocks();
@@ -82,11 +90,17 @@ describe('GrowspaceHeader', () => {
         $devices.set(mockDevices);
         $selectedDevice.set('d1');
 
+        const $nutrientInventory = atom<any>(null);
+        const $headerState = computed(
+            [$devices, $nutrientInventory, $headerHistoryState],
+            (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history })
+        );
+
         mockStore = {
             data: {
                 $devices,
                 $selectedDevice,
-                $nutrientInventory: atom(null),
+                $nutrientInventory,
             },
             ui: {
                 $viewMode: atom('standard'),
@@ -95,16 +109,18 @@ describe('GrowspaceHeader', () => {
                 $gridOverlayMode: atom('none'),
             },
             history: {
-                $historyCache: map({}),
-                $historyLoading: atom(false),
+                $historyCache,
+                $historyLoading,
                 $activeEnvGraphs,
                 $linkedGraphGroups,
+                $headerHistoryState,
                 loadHistoryOnDemand: vi.fn().mockResolvedValue(undefined),
                 linkGraphs: vi.fn(),
                 unlinkGraphGroup: vi.fn(),
                 startAutoRefresh: vi.fn(),
                 stopAutoRefresh: vi.fn(),
             },
+            $headerState,
             handleDeviceChange: vi.fn(),
             toggleEnvGraph: vi.fn(),
             openNutrientsDialog: vi.fn(),

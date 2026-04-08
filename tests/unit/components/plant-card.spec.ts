@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { html } from 'lit';
 import { GrowspacePlantCard } from '../../../src/components/plant-card';
 import { PlantEntity } from '../../../src/types';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 
 // Shared styles used natively in browser tests
 
@@ -18,6 +18,9 @@ describe('PlantCard', () => {
     // Local atoms
     const $isEditMode = atom<boolean>(false);
     const $selectedPlants = atom<Set<string>>(new Set());
+    const $cardViewState = computed([$isEditMode, $selectedPlants], (isEditMode, selectedPlants) => ({
+        isEditMode, selectedPlants,
+    }));
 
     beforeEach(async () => {
         vi.clearAllMocks();
@@ -27,11 +30,18 @@ describe('PlantCard', () => {
         const $nutrientPresets = atom<any>({});
         const $ipmPresets = atom<any>({});
         const $selectedDevice = atom<string | null>(null);
+        const $plantCardViewState = computed(
+            [$isEditMode, $selectedPlants, $devices, $nutrientPresets],
+            (isEditMode, selectedPlants, devices, nutrientPresets) => ({
+                isEditMode, selectedPlants, devices, nutrientPresets,
+            })
+        );
 
         mockStore = {
             ui: {
                 $isEditMode,
                 $selectedPlants,
+                $cardViewState,
                 closeDialog: vi.fn(),
                 setActiveDialog: vi.fn()
             },
@@ -40,7 +50,8 @@ describe('PlantCard', () => {
                 $nutrientPresets,
                 $ipmPresets,
                 $selectedDevice
-            }
+            },
+            $plantCardViewState,
         };
 
         // Reset atoms

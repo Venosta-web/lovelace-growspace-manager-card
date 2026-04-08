@@ -47,18 +47,17 @@ export class GrowspaceHeaderActions extends LitElement {
   @state() private _draggedMetric: string | null = null; // Local drag state
 
   // Controllers
-  private _viewModeController!: StoreController<string>;
-  private _isEditModeController!: StoreController<boolean>;
-  private _selectedPlantsController!: StoreController<Set<string>>;
-  private _selectedDeviceController!: StoreController<string | null>;
+  private _headerActionsController!: StoreController<{
+    viewMode: string;
+    isEditMode: boolean;
+    selectedPlants: Set<string>;
+    selectedDevice: string | null;
+  }>;
 
   connectedCallback() {
     super.connectedCallback();
     if (this.store) {
-      this._viewModeController = new StoreController(this, this.store.ui.$viewMode);
-      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
-      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
-      this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+      this._headerActionsController = new StoreController(this, this.store.$headerActionsState);
     }
   }
 
@@ -89,22 +88,22 @@ export class GrowspaceHeaderActions extends LitElement {
       case 'config': {
         const device = this.store.data.$devices
           .get()
-          .find((d) => d.deviceId === this._selectedDeviceController.value);
+          .find((d) => d.deviceId === this._headerActionsController.value.selectedDevice);
         if (device) this.store.openConfigDialog(device);
         break;
       }
       case 'edit':
-        this.store.ui.setEditMode(!this._isEditModeController.value);
+        this.store.ui.setEditMode(!this._headerActionsController.value.isEditMode);
         break;
       case 'compact': {
-        const currentMode = this._viewModeController.value;
+        const currentMode = this._headerActionsController.value.viewMode;
         this.store.ui.setViewMode(
           currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT
         );
         break;
       }
       case 'heatmap': {
-        const currentMode = this._viewModeController.value;
+        const currentMode = this._headerActionsController.value.viewMode;
         this.store.ui.setViewMode(
           currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP
         );
@@ -114,22 +113,22 @@ export class GrowspaceHeaderActions extends LitElement {
         this.store.openStrainLibraryDialog();
         break;
       case 'irrigation':
-        if (this._selectedDeviceController.value) this.store.openIrrigationDialog();
+        if (this._headerActionsController.value.selectedDevice) this.store.openIrrigationDialog();
         break;
       case 'ai':
-        this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
+        this.store.openGrowMasterDialog(this._headerActionsController.value.selectedDevice || '');
         break;
       case 'logbook':
         this.store.openLogbookDialog();
         break;
       case 'snapshots':
-        this.store.openSnapshotsDialog(this._selectedDeviceController.value || undefined);
+        this.store.openSnapshotsDialog(this._headerActionsController.value.selectedDevice || undefined);
         break;
       case 'water': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
         this.store.openWateringDialog({
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-          growspaceId: this._selectedDeviceController.value || undefined,
+          growspaceId: this._headerActionsController.value.selectedDevice || undefined,
           mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
         });
         break;
@@ -138,7 +137,7 @@ export class GrowspaceHeaderActions extends LitElement {
         const selectedPlants = this.store.ui.$selectedPlants.get();
         this.store.openIPMDialog({
           growspaceId:
-            this._selectedDeviceController.value ||
+            this._headerActionsController.value.selectedDevice ||
             this.store.data.$devices.get()[0]?.deviceId ||
             '', // Fallback
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
@@ -149,7 +148,7 @@ export class GrowspaceHeaderActions extends LitElement {
         const selectedPlants = this.store.ui.$selectedPlants.get();
         this.store.openTrainingDialog(
           selectedPlants.size > 0 ? Array.from(selectedPlants) : [],
-          this._selectedDeviceController.value || undefined
+          this._headerActionsController.value.selectedDevice || undefined
         );
         break;
       }
@@ -157,10 +156,10 @@ export class GrowspaceHeaderActions extends LitElement {
         this.store.openNutrientsDialog();
         break;
       case 'ec_ramp':
-        this.store.openECRampDialog(this._selectedDeviceController.value || undefined);
+        this.store.openECRampDialog(this._headerActionsController.value.selectedDevice || undefined);
         break;
       case 'report':
-        this.store.openGrowReportDialog(this._selectedDeviceController.value || undefined);
+        this.store.openGrowReportDialog(this._headerActionsController.value.selectedDevice || undefined);
         break;
     }
   }
@@ -429,13 +428,13 @@ export class GrowspaceHeaderActions extends LitElement {
       ${this._iconButton(
         mdiPencil, 'edit', 'Edit Mode',
         'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.',
-        this._isEditModeController?.value
+        this._headerActionsController?.value?.isEditMode
       )}
 
       ${this._iconButton(
         mdiCube, 'heatmap', '3D Heatmap',
         'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.',
-        this._viewModeController?.value === ViewMode.HEATMAP
+        this._headerActionsController?.value?.viewMode === ViewMode.HEATMAP
       )}
 
       ${this._iconButton(
@@ -453,7 +452,7 @@ export class GrowspaceHeaderActions extends LitElement {
   }
 
   private _renderMenu() {
-    const selectedCount = this._selectedPlantsController?.value?.size || 0;
+    const selectedCount = this._headerActionsController?.value?.selectedPlants?.size || 0;
     return html`
       <div id="header-menu" popover="auto" class="menu-dropdown">
         <div class="menu-header">Plant Actions</div>

@@ -34,13 +34,11 @@ export class GrowspaceViewStandard extends LitElement {
   @property({ type: Number }) selectedCount = 0;
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
-  private _isTransplantModeController!: StoreController<boolean>;
-  private _devicesController!: StoreController<GrowspaceDevice[]>;
+  private _viewStandardController!: StoreController<{ isTransplantMode: boolean; devices: GrowspaceDevice[] }>;
 
   private _initControllers() {
-    if (this.store && !this._isTransplantModeController) {
-      this._isTransplantModeController = new StoreController(this, this.store.ui.$isTransplantMode);
-      this._devicesController = new StoreController(this, this.store.data.$devices);
+    if (this.store && !this._viewStandardController) {
+      this._viewStandardController = new StoreController(this, this.store.$viewStandardState);
     }
   }
 
@@ -56,7 +54,7 @@ export class GrowspaceViewStandard extends LitElement {
   }
 
   private _getPlantsByStage(stage: string): (PlantEntity & { _growspaceName?: string })[] {
-    const devices = this._devicesController?.value || [];
+    const devices = this._viewStandardController?.value?.devices || [];
     return devices
       .flatMap((d) =>
         (d.plants || []).map((p) => ({
@@ -126,7 +124,7 @@ export class GrowspaceViewStandard extends LitElement {
             ></growspace-edit-mode-banner>
           `
         : ''}
-      ${this._isTransplantModeController?.value
+      ${this._viewStandardController?.value?.isTransplantMode
         ? html`
             <transplant-source-panel
               .clonePlants=${this._getPlantsByStage('clone')}

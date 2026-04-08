@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { GrowspaceGrid } from '../../../src/components/growspace-grid';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 import { ContextProvider } from '@lit/context';
 import { storeContext } from '../../../src/context';
 
@@ -61,6 +61,17 @@ describe('GrowspaceGrid', () => {
         $activeDialog = atom({ type: 'NONE', payload: null });
         $gridOverlayMode = atom('none');
 
+        const $cardViewState = computed(
+            [$isEditMode, $selectedPlants, $isCompactView, $isLoading, $viewMode,
+             $focusedPlantIndex, $notification, $activeDialog, $gridOverlayMode],
+            (isEditMode, selectedPlants, isCompact, isLoading, viewMode,
+             focusedPlantIndex, notification, activeDialog, overlayMode) => ({
+                isEditMode, selectedPlants, isCompact, isLoading, viewMode,
+                focusedPlantIndex, notification, activeDialog, overlayMode,
+                isCompactView: isCompact,
+            })
+        );
+
         mockStore = {
             ui: {
                 $isEditMode,
@@ -72,6 +83,7 @@ describe('GrowspaceGrid', () => {
                 $notification,
                 $activeDialog,
                 $gridOverlayMode,
+                $cardViewState,
                 setEditMode: vi.fn(),
                 setViewMode: vi.fn(),
                 togglePlantSelection: vi.fn(),
@@ -503,8 +515,8 @@ describe('GrowspaceGrid', () => {
     });
 
     it('falls back to none overlay mode when controller value is missing', async () => {
-        // Set value to undefined to trigger || 'none'
-        (element as any)._overlayModeController = { value: undefined };
+        // Simulate missing controller by setting it to undefined
+        (element as any)._cardViewController = undefined;
         const plant: any = {
             entity_id: 'p1',
             state: 'ok',
@@ -542,7 +554,7 @@ describe('GrowspaceGrid', () => {
             // store is undefined by default
             document.body.appendChild(newElement);
             await waitForUpdates(newElement);
-            expect((newElement as any)._isEditModeController).toBeUndefined();
+            expect((newElement as any)._cardViewController).toBeUndefined();
             document.body.removeChild(newElement);
         });
     });

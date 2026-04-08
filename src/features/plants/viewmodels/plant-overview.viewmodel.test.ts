@@ -32,6 +32,9 @@ describe('PlantOverviewViewModel', () => {
           },
         ]),
       } as any,
+      grid: {
+        $growspaceOptions: atom({}),
+      } as any,
     };
 
     // Mock plant

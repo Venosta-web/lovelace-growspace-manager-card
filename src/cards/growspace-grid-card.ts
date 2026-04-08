@@ -7,7 +7,6 @@ import { storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
-import type { GrowspaceDevice } from '../services/types';
 import { ViewMode } from '../features/environment/constants';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
@@ -42,24 +41,10 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         }
     );
 
-    // Consolidated UI Controller
-    protected _cardViewController = new StoreController(this, this.store.ui.$cardViewState);
-    protected _selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
-
-    // Data Store Controllers (for reactivity)
-    protected _devicesController = new StoreController(this, this.store.data.$devices);
-    protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-
-    // Grid derived atoms
-    protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-    protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
-    protected _growspaceOptionsController = new StoreController(
-        this,
-        this.store.grid.$growspaceOptions
-    );
+    protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
 
     @provide({ context: hassContext })
@@ -172,9 +157,10 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
             return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
 
-        const devices = this._activeDevicesController.value;
+        const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+        const { effectiveRows, grid } = gridLayout;
 
-        if (this._cardViewController.value.isLoading) {
+        if (this._viewController.value.ui.isLoading) {
             return html`
         <ha-card>
           <div class="loading-container">
@@ -188,13 +174,11 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
             return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
 
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         if (!selectedDeviceData) {
             return html`<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
         }
 
-        const growspaceOptions = this._growspaceOptionsController.value;
-        const { effectiveRows, grid } = this._gridLayoutController.value;
         const isWide = selectedDeviceData.plantsPerRow > 7;
 
         return html`
@@ -228,18 +212,18 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}
               .rows=${effectiveRows}
-              .isEditMode=${this._cardViewController.value.isEditMode}
+              .isEditMode=${this._viewController.value.ui.isEditMode}
               .isCompact=${true}
-              .selectedCount=${this._selectedPlantsController.value.size}
+              .selectedCount=${this._viewController.value.ui.selectedPlants.size}
               .config=${this._config}
-              .isLoading=${this._cardViewController.value.isLoading}
-              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+              .isLoading=${this._viewController.value.ui.isLoading}
+              .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}
             ></growspace-view-switcher>
           </div>
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        <growspace-dialog-host .devices=${this._devicesController.value}></growspace-dialog-host>
+        <growspace-dialog-host .devices=${devices}></growspace-dialog-host>
       </error-boundary>
     `;
     }

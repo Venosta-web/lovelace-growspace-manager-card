@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 import { FEATURE_FLAGS } from '../../../../src/features/shared/config/feature-flags';
 
 // Mock imports
@@ -58,6 +58,11 @@ describe('GrowspaceViewStandard', () => {
         isTransplantModeAtom = atom(false);
         devicesAtom = atom([]);
 
+        const $viewStandardState = computed(
+            [isTransplantModeAtom, devicesAtom],
+            (isTransplantMode, devices) => ({ isTransplantMode, devices })
+        );
+
         mockStore = {
             ui: {
                 $isTransplantMode: isTransplantModeAtom,
@@ -66,6 +71,7 @@ describe('GrowspaceViewStandard', () => {
             data: {
                 $devices: devicesAtom
             },
+            $viewStandardState,
             hass: {
                 callService: vi.fn(),
             },

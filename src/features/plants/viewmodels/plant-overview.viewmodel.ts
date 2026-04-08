@@ -77,6 +77,9 @@ export interface PlantOverviewViewModel {
   // Available actions (computed based on stage)
   availableActions: ActionConfig[];
 
+  // Data for selectors
+  growspaceOptions: Record<string, string>;
+
   // Validation
   hasUnsavedChanges: boolean;
   canSave: boolean;
@@ -351,8 +354,9 @@ export function createPlantOverviewViewModel(
       // Most data comes from props (plant, editedAttributes)
       // But we do watch for new logbook events
       store.data.$strainLibrary, // For strain data
+      store.grid.$growspaceOptions, // For stage moves
     ],
-    (strainLibrary) => {
+    (strainLibrary, growspaceOptions) => {
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
       const stageColor = PlantUtils.getPlantStageColor(plant.state);
       const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
@@ -362,7 +366,9 @@ export function createPlantOverviewViewModel(
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
       const phenoValue = editedAttributes.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
+      const displaySubtitle = `${plant.state} Stage • ${
+        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+      }`;
 
       const timelineEvents = processTimelineEvents(plant, logbookEvents);
 
@@ -403,7 +409,101 @@ export function createPlantOverviewViewModel(
         // Available actions
         availableActions,
 
+        // Data for selectors
+        growspaceOptions,
+
         // Validation
+        hasUnsavedChanges: unsavedChanges,
+        canSave: canSave && unsavedChanges,
+      };
+    }
+  );
+}
+
+/**
+ * Create a STABLE ViewModel for plant overview dialog.
+ * This version takes atoms for all inputs, allowing it to be used with a
+ * single persistent StoreController in the container component.
+ */
+export function createStablePlantOverviewViewModel(
+  $plant: ReadableAtom<PlantEntity | null>,
+  $editedAttributes: ReadableAtom<PlantOverviewEditedAttributes>,
+  $uiState: ReadableAtom<{
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
+    isEditing: boolean;
+    showAllDates: boolean;
+    showDeleteConfirmation: boolean;
+  }>,
+  store: GrowspaceStore,
+  $logbookEvents: ReadableAtom<GrowspaceEvent[]>
+): ReadableAtom<PlantOverviewViewModel> {
+  return computed(
+    [
+      $plant,
+      $editedAttributes,
+      $uiState,
+      $logbookEvents,
+      store.data.$strainLibrary,
+      store.grid.$growspaceOptions,
+    ],
+    (plant, editedAttributes, uiState, logbookEvents, strainLibrary, growspaceOptions) => {
+      // Fallback for null plant (initial state)
+      if (!plant) {
+        return {
+          plant: {} as PlantEntity,
+          editedAttributes: {} as PlantOverviewEditedAttributes,
+          activeTab: uiState.activeTab,
+          isEditing: false,
+          showAllDates: false,
+          showDeleteConfirmation: false,
+          plantId: '',
+          stageColor: '',
+          stageIcon: '',
+          displayName: '',
+          displaySubtitle: '',
+          timelineEvents: [],
+          plantStats: [],
+          availableActions: [],
+          growspaceOptions: {},
+          hasUnsavedChanges: false,
+          canSave: false,
+        } as PlantOverviewViewModel;
+      }
+
+      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      const stageColor = PlantUtils.getPlantStageColor(plant.state);
+      const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
+
+      const strainValue = editedAttributes.strain;
+      const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
+
+      const phenoValue = editedAttributes.phenotype;
+      const displaySubtitle = `${plant.state} Stage • ${
+        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+      }`;
+
+      const timelineEvents = processTimelineEvents(plant, logbookEvents);
+      const plantStats = calculatePlantStats(plant);
+      const availableActions = getAvailableActions(plant);
+      const unsavedChanges = hasUnsavedChanges(plant, editedAttributes);
+      const canSave = canSaveAttributes(editedAttributes);
+
+      return {
+        plant,
+        editedAttributes,
+        activeTab: uiState.activeTab,
+        isEditing: uiState.isEditing,
+        showAllDates: uiState.showAllDates,
+        showDeleteConfirmation: uiState.showDeleteConfirmation,
+        plantId,
+        stageColor,
+        stageIcon,
+        displayName,
+        displaySubtitle,
+        timelineEvents,
+        plantStats,
+        availableActions,
+        growspaceOptions,
         hasUnsavedChanges: unsavedChanges,
         canSave: canSave && unsavedChanges,
       };

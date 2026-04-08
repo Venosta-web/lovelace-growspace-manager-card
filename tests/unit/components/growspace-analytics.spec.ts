@@ -30,6 +30,7 @@ describe('GrowspaceAnalytics', () => {
     let $linkedGraphGroups: any;
     let $combinedHistory: any;
     let $graphRanges: any;
+    let $analyticsViewState: any;
     let setGraphRange: any;
     let toggleEnvGraph: any;
     let unlinkGraphGroup: any;
@@ -56,6 +57,20 @@ describe('GrowspaceAnalytics', () => {
         });
         $graphRanges = createMockAtom({});
 
+        // Combined atom — delegates to individual mocks so existing mockReturnValue patterns work
+        $analyticsViewState = {
+            get: vi.fn().mockImplementation(() => ({
+                historyLoading: $historyLoading.get(),
+                historyLoaded: $historyLoaded.get(),
+                activeEnvGraphs: $activeEnvGraphs.get(),
+                linkedGraphGroups: $linkedGraphGroups.get(),
+                combinedHistory: $combinedHistory.get(),
+                graphRanges: $graphRanges.get(),
+            })),
+            subscribe: vi.fn(() => vi.fn()),
+            listen: vi.fn(),
+        };
+
         setGraphRange = vi.fn();
         toggleEnvGraph = vi.fn();
         unlinkGraphGroup = vi.fn();
@@ -71,6 +86,7 @@ describe('GrowspaceAnalytics', () => {
                 $linkedGraphGroups,
                 $combinedHistory,
                 $graphRanges,
+                $analyticsViewState,
                 getRange: vi.fn().mockReturnValue('24h'),
                 setGraphRange,
                 toggleEnvGraph,

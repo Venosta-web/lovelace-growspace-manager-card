@@ -39,14 +39,17 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   @consume({ context: storeContext })
   private store!: GrowspaceStore;
 
-  // UI state via StoreController - direct subscription to atoms
-  private _isEditModeController!: StoreController<boolean>;
-  private _selectedPlantsController!: StoreController<Set<string>>;
+  // Unified state via StoreController
+  private _viewController!: StoreController<{
+    isEditMode: boolean;
+    selectedPlants: Set<string>;
+    devices: import('../types').GrowspaceDevice[];
+    nutrientPresets: Record<string, import('../types').NutrientPreset>;
+  }>;
 
   private _initControllers() {
-    if (this.store && !this._isEditModeController) {
-      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
-      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+    if (this.store && !this._viewController) {
+      this._viewController = new StoreController(this, this.store.$plantCardViewState);
     }
   }
 
@@ -63,12 +66,12 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
 
   // Getters to satisfy DragDropHost interface
   get isEditMode(): boolean {
-    return this._isEditModeController?.value ?? false;
+    return this._viewController?.value?.isEditMode ?? false;
   }
 
   get selected(): boolean {
     const plantId = this.plant?.attributes?.plant_id;
-    return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
+    return (plantId && this._viewController?.value?.selectedPlants?.has(plantId)) || false;
   }
 
   // Instantiate controller
@@ -86,12 +89,13 @@ export class GrowspacePlantCard extends LitElement implements DragDropHost {
   }
 
   get _hasRecommendedPreset(): boolean {
-    if (!this.plant || !this.store) return false;
+    if (!this.plant || !this._viewController?.value) return false;
+    const { devices, nutrientPresets } = this._viewController.value;
+
     const growspaceId = this.plant.attributes.growspace_id;
-    const device = this.store.data.$devices.get().find((d) => d.deviceId === growspaceId);
+    const device = devices.find((d: any) => d.deviceId === growspaceId);
     if (!device) return false;
 
-    const nutrientPresets = this.store.data.$nutrientPresets.get();
     const currentStage = this.plant.attributes.stage;
     const daysInStage = this.plant.attributes.days_in_stage || 0;
 

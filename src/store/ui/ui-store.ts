@@ -55,6 +55,8 @@ export class GrowspaceUIStore {
         this.$activeDialog,
         this.$notification,
         this.$focusedPlantIndex,
+        this.$selectedPlants,
+        this.$gridOverlayMode,
       ],
       (
         viewMode,
@@ -63,7 +65,9 @@ export class GrowspaceUIStore {
         isCompact,
         activeDialog,
         notification,
-        focusedPlantIndex
+        focusedPlantIndex,
+        selectedPlants,
+        overlayMode
       ) => ({
         viewMode,
         isLoading,
@@ -72,6 +76,8 @@ export class GrowspaceUIStore {
         activeDialog,
         notification,
         focusedPlantIndex,
+        selectedPlants,
+        overlayMode,
       })
     );
   }
@@ -88,6 +94,8 @@ export class GrowspaceUIStore {
       action?: { label: string; callback: () => void };
     } | null;
     focusedPlantIndex: number;
+    selectedPlants: Set<string>;
+    overlayMode: GridOverlayMode;
   }>;
 
   // Actions

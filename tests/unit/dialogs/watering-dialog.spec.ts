@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WateringDialog } from '../../../src/dialogs/watering-dialog';
 import { fixture, html } from '@open-wc/testing-helpers';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 
 // Mock UI components to avoid rendering issues
 vi.mock('../../../src/components/ui/md3-text-input', () => ({
@@ -28,22 +28,21 @@ describe('WateringDialog', () => {
             waterGrowspace: vi.fn()
         };
 
+        const $nutrientPresets1 = atom<any>({
+            'p1': { id: 'p1', name: 'Veg', nutrients: [{ name: 'A', dose_ml_l: 2 }] },
+            'p2': { id: 'p2', name: 'Flower', nutrients: [{ name: 'B', dose_ml_l: 3 }], stage: 'flower', min_days_in_stage: 10 }
+        });
+        const $nutrientInventory1 = atom<any>({
+            stocks: { 's1': { name: 'InventoryNutrient', amount: 100, unit: 'ml' } }
+        });
+        const $nutrientDataState1 = computed(
+            [$nutrientPresets1, $nutrientInventory1],
+            (nutrientPresets, nutrientInventory) => ({ nutrientPresets, nutrientInventory, ecRampCurves: {}, isLoading: false })
+        );
+
         mockStore = {
             data: {
-                $nutrientPresets: atom({
-                    'p1': {
-                        id: 'p1',
-                        name: 'Veg',
-                        nutrients: [{ name: 'A', dose_ml_l: 2 }]
-                    },
-                    'p2': {
-                        id: 'p2',
-                        name: 'Flower',
-                        nutrients: [{ name: 'B', dose_ml_l: 3 }],
-                        stage: 'flower',
-                        min_days_in_stage: 10
-                    }
-                }),
+                $nutrientPresets: $nutrientPresets1,
                 $devices: atom([
                     {
                         deviceId: 'd1',
@@ -54,14 +53,14 @@ describe('WateringDialog', () => {
                     }
                 ]),
                 $selectedDevice: atom('d1'),
-                $nutrientInventory: atom({
-                    stocks: {
-                        's1': { name: 'InventoryNutrient', amount: 100, unit: 'ml' }
-                    }
-                })
+                $nutrientInventory: $nutrientInventory1,
+                $nutrientDataState: $nutrientDataState1,
             },
             showToast: vi.fn(),
             refreshData: vi.fn(),
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn(),
             waterPlant: mockDataService.waterPlant,
             waterGrowspace: mockDataService.waterGrowspace
         };
@@ -248,17 +247,26 @@ describe('WateringDialog Rendering', () => {
             customElements.define('growspace-watering-dialog-test', class extends WateringDialog { });
         }
 
+        const $nutrientPresets2 = atom<any>({});
+        const $nutrientInventory2 = atom<any>(null);
+        const $nutrientDataState2 = computed(
+            [$nutrientPresets2, $nutrientInventory2],
+            (nutrientPresets, nutrientInventory) => ({ nutrientPresets, nutrientInventory, ecRampCurves: {}, isLoading: false })
+        );
+
         mockStore = {
             data: {
-                $nutrientPresets: atom({}),
+                $nutrientPresets: $nutrientPresets2,
                 $devices: atom([]),
                 $selectedDevice: atom(null),
-                $nutrientInventory: atom(null)
+                $nutrientInventory: $nutrientInventory2,
+                $nutrientDataState: $nutrientDataState2,
             },
             showToast: vi.fn(),
             refreshData: vi.fn(),
             fetchNutrientPresets: vi.fn(),
-            fetchNutrientInventory: vi.fn()
+            fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn()
         };
 
         element = document.createElement('growspace-watering-dialog-test') as WateringDialog;

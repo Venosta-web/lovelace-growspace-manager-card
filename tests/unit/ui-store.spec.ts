@@ -287,7 +287,9 @@ describe('UI Store', () => {
                 isCompact: false,
                 activeDialog: { type: 'NONE' },
                 notification: null,
-                focusedPlantIndex: -1
+                focusedPlantIndex: -1,
+                selectedPlants: new Set(),
+                overlayMode: 'none',
             });
         });
 

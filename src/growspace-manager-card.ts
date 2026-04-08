@@ -6,7 +6,6 @@ import { hassContext, configContext, strainLibraryContext, storeContext } from '
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
-import type { GrowspaceDevice } from './services/types';
 import type { StrainEntry } from './features/plants/types';
 import { ViewMode } from './features/environment/constants';
 
@@ -48,27 +47,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
   );
 
-  // UI Store Controllers
-  // Consolidated UI Controller
-  protected _cardViewController = new StoreController(this, this.store.ui.$cardViewState);
-  protected _selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+  protected _viewController = new StoreController(this, this.store.$mainCardState);
 
-  // Data Store Controllers (for reactivity)
-  protected _devicesController = new StoreController(this, this.store.data.$devices);
-  protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-  protected _strainLibraryController = new StoreController(this, this.store.data.$strainLibrary);
-
-  // Grid derived atoms
-  protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-  protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
-  protected _growspaceOptionsController = new StoreController(
-    this,
-    this.store.grid.$growspaceOptions
-  );
-
-  /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
-    return this._selectedDeviceController.value;
+    return this._viewController.value.grid.selectedDevice;
   }
 
   @provide({ context: strainLibraryContext })
@@ -80,9 +62,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return this.store.dataService;
   }
 
-  // Getter to provide pre-loaded devices to the history controller
   get devices() {
-    return this._devicesController.value as GrowspaceDevice[];
+    return this._viewController.value.grid.devices;
   }
 
   @provide({ context: hassContext })
@@ -96,7 +77,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   static styles: CSSResultGroup = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 
   protected firstUpdated() {
-    this.store.updateHass(this.hass);
+    if (this.hass) {
+      this.store.updateHass(this.hass);
+    }
     this.store.initializeSelectedDevice(this._config);
     this.store.fetchStrainLibrary();
     this.store.fetchNutrientPresets();
@@ -169,8 +152,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     }
 
     // Sync strain library to context provider
-    if (this._strainLibraryController.value !== this._strainLibrary) {
-      this._strainLibrary = (this._strainLibraryController.value || []) as StrainEntry[];
+    const currentStrainLibrary = this._viewController.value?.strainLibrary;
+    if (currentStrainLibrary !== this._strainLibrary) {
+      this._strainLibrary = (currentStrainLibrary || []) as StrainEntry[];
     }
   }
 
@@ -275,10 +259,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this._activeDevicesController.value;
+    const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+    const { effectiveRows, grid } = gridLayout;
 
-    // Show loading spinner if initially loading and no devices yet
-    if (this._cardViewController.value.isLoading) {
+    if (this._viewController.value.ui.isLoading) {
       return html`
         <ha-card>
           <div class="loading-container">
@@ -292,14 +276,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
-    // Use memoized values from grid store atoms
-    const growspaceOptions = this._growspaceOptionsController.value;
-    const { effectiveRows, grid } = this._gridLayoutController.value;
     const isWide = selectedDeviceData.plantsPerRow > 7;
 
     return html`
@@ -329,18 +310,18 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @exit-edit-mode=${this._handleExitEditMode}
           >
             <growspace-view-switcher
-              .viewMode=${this._cardViewController.value.viewMode}
+              .viewMode=${this._viewController.value.ui.viewMode}
               .hass=${this.hass}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}
               .rows=${effectiveRows}
-              .isEditMode=${this._cardViewController.value.isEditMode}
-              .isCompact=${this._cardViewController.value.isCompact}
-              .selectedCount=${this._selectedPlantsController.value.size}
+              .isEditMode=${this._viewController.value.ui.isEditMode}
+              .isCompact=${this._viewController.value.ui.isCompact}
+              .selectedCount=${this._viewController.value.ui.selectedPlants.size}
               .config=${this._config}
-              .isLoading=${this._cardViewController.value.isLoading}
-              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+              .isLoading=${this._viewController.value.ui.isLoading}
+              .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}
             ></growspace-view-switcher>
           </div>
         </ha-card>

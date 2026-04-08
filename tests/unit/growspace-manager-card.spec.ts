@@ -42,6 +42,7 @@ const atomMocks = vi.hoisted(() => ({
     $activeDevices: null as any,
     $gridLayout: null as any,
     $growspaceOptions: null as any,
+    $gridViewState: null as any,
     $viewMode: null as any,
     $isLoading: null as any,
     $activeDialog: null as any,
@@ -53,6 +54,7 @@ const atomMocks = vi.hoisted(() => ({
     $notification: null as any,
     $cardViewState: null as any,
     $pendingDeepLinkPlantId: null as any,
+    $mainCardState: null as any,
 }));
 
 vi.mock('../../src/store/core/growspace-store', () => ({
@@ -96,10 +98,12 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             $activeDevices: atomMocks.$activeDevices,
             $gridLayout: atomMocks.$gridLayout,
             $growspaceOptions: atomMocks.$growspaceOptions,
+            $gridViewState: atomMocks.$gridViewState,
         };
         history = {
             $historyCache: {},
         };
+        $mainCardState = atomMocks.$mainCardState;
 
         constructor(host: any) { this.host = host; }
         updateHass() { }
@@ -136,6 +140,12 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$activeDevices = atom<any[]>([]);
         atomMocks.$gridLayout = atom({ effectiveRows: 1, grid: [] });
         atomMocks.$growspaceOptions = atom({});
+        atomMocks.$gridViewState = atom({
+            devices: [],
+            selectedDevice: 'gs1',
+            gridLayout: { effectiveRows: 1, grid: [] },
+            growspaceOptions: {},
+        });
         atomMocks.$viewMode = atom('standard');
         atomMocks.$isLoading = atom(false);
         atomMocks.$activeDialog = atom<any>({ type: 'NONE' });
@@ -145,19 +155,28 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$focusedPlantIndex = atom<number>(-1);
         atomMocks.$notification = atom<any>(null);
         atomMocks.$pendingDeepLinkPlantId = atom<string | null>(null);
+        atomMocks.$gridOverlayMode = atom('none');
 
         // Derived mock for consolidated state - matches implementation
         atomMocks.$cardViewState = computed(
-            [atomMocks.$viewMode, atomMocks.$isLoading, atomMocks.$isEditMode, atomMocks.$isCompactView, atomMocks.$activeDialog, atomMocks.$notification, atomMocks.$focusedPlantIndex],
-            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+            [atomMocks.$viewMode, atomMocks.$isLoading, atomMocks.$isEditMode, atomMocks.$isCompactView, atomMocks.$activeDialog, atomMocks.$notification, atomMocks.$focusedPlantIndex, atomMocks.$selectedPlants, atomMocks.$gridOverlayMode],
+            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex, selectedPlants, overlayMode) => ({
                 viewMode,
                 isLoading,
                 isEditMode,
                 isCompact,
                 activeDialog,
                 notification,
-                focusedPlantIndex
+                focusedPlantIndex,
+                selectedPlants,
+                overlayMode,
             })
+        );
+
+        // Derived mock for main card state (grid + ui + strainLibrary)
+        atomMocks.$mainCardState = computed(
+            [atomMocks.$gridViewState, atomMocks.$cardViewState, atomMocks.$strainLibrary],
+            (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
         );
 
         // Mock history
@@ -272,12 +291,13 @@ describe('GrowspaceManagerCard', () => {
 
         it('should expose public getters', () => {
             expect(element.dataService).toBe(element.store.dataService);
-            expect(element.devices).toEqual([]);
-            expect(element.selectedDevice).toBe('gs1');
+            // devices and selectedDevice now come from $gridViewState
+            expect(element.devices).toEqual(atomMocks.$gridViewState.get().devices);
+            expect(element.selectedDevice).toBe(atomMocks.$gridViewState.get().selectedDevice);
         });
 
         it('should sync strain library when controller updates', async () => {
-            (element as any)._strainLibraryController = { value: [{ strain: 'new' }] };
+            (element as any)._viewController = { value: { grid: {}, ui: {}, strainLibrary: [{ strain: 'new' }] } };
             (element as any).updated(new Map());
             expect((element as any)._strainLibrary).toEqual([{ strain: 'new' }]);
         });
@@ -351,7 +371,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render no data message if no devices', async () => {
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([]);
+            atomMocks.$gridViewState.set({ devices: [], selectedDevice: null, gridLayout: { effectiveRows: 0, grid: [] }, growspaceOptions: {} });
             document.body.appendChild(element);
             await element.updateComplete;
             const msg = element.shadowRoot?.querySelector('.no-data');
@@ -360,10 +380,8 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render error if selected device is invalid', async () => {
             atomMocks.$isLoading.set(false);
-            // Setup mock devices with defined properties
             const mockDevice = { deviceId: 'gs2', name: 'Other', plantsPerRow: 4 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs2: 'Other' } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -375,10 +393,7 @@ describe('GrowspaceManagerCard', () => {
         it('should render main card', async () => {
             atomMocks.$isLoading.set(false);
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs1: 'Tent' } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -390,9 +405,7 @@ describe('GrowspaceManagerCard', () => {
         it('should render wide card class', async () => {
             atomMocks.$isLoading.set(false);
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 8 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs1: 'Tent' } });
 
             document.body.appendChild(element);
             await element.updateComplete;

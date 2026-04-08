@@ -8,6 +8,13 @@ export interface GridLayout {
   grid: (PlantEntity | null)[][];
 }
 
+export interface GridViewState {
+  devices: GrowspaceDevice[];
+  selectedDevice: string | null;
+  gridLayout: GridLayout;
+  growspaceOptions: Record<string, string>;
+}
+
 export class GrowspaceGridStore {
   /**
    * Derived list of devices whose plants exclude any optimistically deleted IDs.
@@ -23,6 +30,13 @@ export class GrowspaceGridStore {
    * Computed grid layout for the currently selected device.
    */
   public readonly $gridLayout: ReadableAtom<GridLayout>;
+
+  /**
+   * Single combined atom for all grid-related state. Replaces three separate
+   * StoreController subscriptions in the root card — all three derived atoms
+   * recompute together when devices change, so a single subscriber is correct.
+   */
+  public readonly $gridViewState: ReadableAtom<GridViewState>;
 
   constructor(dataStore: GrowspaceDataStore) {
     this.$activeDevices = computed(
@@ -64,6 +78,16 @@ export class GrowspaceGridStore {
         );
         return { effectiveRows, grid };
       }
+    );
+
+    this.$gridViewState = computed(
+      [this.$activeDevices, this.$gridLayout, this.$growspaceOptions, dataStore.$selectedDevice],
+      (devices, gridLayout, growspaceOptions, selectedDevice): GridViewState => ({
+        devices,
+        selectedDevice,
+        gridLayout,
+        growspaceOptions,
+      })
     );
   }
 }

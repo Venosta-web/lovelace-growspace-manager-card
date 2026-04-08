@@ -1,5 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { atom, computed } from 'nanostores';
 
 // Target the decorators directly to avoid ReferenceErrors during component import
 
@@ -22,18 +23,22 @@ describe('NutrientPresetsEditor', () => {
             saveNutrientPreset: vi.fn().mockResolvedValue(undefined),
             removeNutrientPreset: vi.fn().mockResolvedValue(undefined)
         };
+        const $nutrientPresets = atom<any>({});
+        const $nutrientInventory = atom<any>({});
+        const $nutrientDataState = computed(
+            [$nutrientPresets, $nutrientInventory],
+            (nutrientPresets, nutrientInventory) => ({
+                nutrientPresets, nutrientInventory, ecRampCurves: {}, isLoading: false,
+            })
+        );
+
         mockStore = {
             dataService: mockDataService,
             fetchNutrientPresets: vi.fn(),
             data: {
-                $nutrientPresets: {
-                    get: () => ({}),
-                    subscribe: (fn: any) => { fn({}); return () => { }; }
-                },
-                $nutrientInventory: {
-                    get: () => ({}),
-                    subscribe: (fn: any) => { fn({}); return () => { }; }
-                }
+                $nutrientPresets,
+                $nutrientInventory,
+                $nutrientDataState,
             }
         };
 
@@ -65,7 +70,7 @@ describe('NutrientPresetsEditor', () => {
             p1: { nutrients: [{ name: 'A' }, { name: 'B' }] },
             p2: { nutrients: [{ name: 'A' }, { name: 'C' }] }
         };
-        vi.spyOn(mockStore.data.$nutrientPresets, 'get').mockReturnValue(mockPresets);
+        mockStore.data.$nutrientPresets.set(mockPresets);
 
         const suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toEqual(['A', 'B', 'C']);
@@ -113,7 +118,7 @@ describe('NutrientPresetsEditor', () => {
 
     it('should handle delete preset with confirmation', async () => {
         const presets = { 'p1': { id: 'p1', name: 'Test P1', nutrients: [] } };
-        mockStore.data.$nutrientPresets.get = () => presets;
+        mockStore.data.$nutrientPresets.set(presets);
         // Re-render list
         (element as any)._view = 'LIST';
         element.requestUpdate();
@@ -176,7 +181,7 @@ describe('NutrientPresetsEditor', () => {
     });
 
     it('should render empty state if no presets', async () => {
-        mockStore.data.$nutrientPresets.get = () => ({});
+        mockStore.data.$nutrientPresets.set({});
         (element as any)._view = 'LIST';
         element.requestUpdate();
         await element.updateComplete;
@@ -248,7 +253,7 @@ describe('NutrientPresetsEditor', () => {
     it('should handle edit/delete from list', async () => {
         const preset = { id: 'p1', name: 'UI Preset', nutrients: [] };
         // Setup data
-        mockStore.data.$nutrientPresets.get = () => ({ 'p1': preset });
+        mockStore.data.$nutrientPresets.set({ 'p1': preset });
         (element as any)._view = 'LIST';
         element.requestUpdate();
         await element.updateComplete;
@@ -338,7 +343,7 @@ describe('NutrientPresetsEditor', () => {
             p1: { nutrients: undefined }, // Should be skipped
             p2: { nutrients: [{ /* no name */ }, { name: 'Good' }] }
         };
-        vi.spyOn(mockStore.data.$nutrientPresets, 'get').mockReturnValue(mockPresets);
+        mockStore.data.$nutrientPresets.set(mockPresets);
 
         const suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toEqual(['Good']);
@@ -361,7 +366,7 @@ describe('NutrientPresetsEditor', () => {
             stage: 'veg',
             min_days_in_stage: 14
         };
-        mockStore.data.$nutrientPresets.get = () => ({ 'p_full': fullPreset });
+        mockStore.data.$nutrientPresets.set({ 'p_full': fullPreset });
         (element as any)._view = 'LIST';
         element.requestUpdate();
         await element.updateComplete;
@@ -378,7 +383,7 @@ describe('NutrientPresetsEditor', () => {
                 s2: { name: 'Bloom' }
             }
         };
-        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(mockInventory);
+        mockStore.data.$nutrientInventory.set(mockInventory);
 
         const suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toContain('Grow');
@@ -386,11 +391,11 @@ describe('NutrientPresetsEditor', () => {
     });
 
     it('should handle missing inventory or stocks in suggestions', () => {
-        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(null);
+        mockStore.data.$nutrientInventory.set(null);
         let suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toEqual([]);
 
-        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue({});
+        mockStore.data.$nutrientInventory.set({});
         suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toEqual([]);
     });
@@ -400,11 +405,11 @@ describe('NutrientPresetsEditor', () => {
         partialElement.store = undefined;
         // Should not throw
         partialElement.connectedCallback();
-        expect(partialElement._presetsController).toBeUndefined();
+        expect(partialElement._nutrientDataController).toBeUndefined();
     });
 
     it('should handle mission controller value in _startNew', () => {
-        vi.spyOn(mockStore.data.$nutrientPresets, 'get').mockReturnValue(null);
+        mockStore.data.$nutrientPresets.set(null);
         (element as any)._startNew();
         expect((element as any)._view).toBe('EDIT');
         expect((element as any)._editingPreset.name).toBe('');
@@ -417,7 +422,7 @@ describe('NutrientPresetsEditor', () => {
                 s2: { /* missing name */ }
             }
         };
-        vi.spyOn(mockStore.data.$nutrientInventory, 'get').mockReturnValue(mockInventory);
+        mockStore.data.$nutrientInventory.set(mockInventory);
         const suggestions = (element as any)._getNutrientSuggestions();
         expect(suggestions).toEqual(['Grow']);
     });
@@ -430,7 +435,7 @@ describe('NutrientPresetsEditor', () => {
 
     it('should cover branch in _renderList when nutrients missing', async () => {
         const partialPreset = { id: 'p1', name: 'Partial' };
-        mockStore.data.$nutrientPresets.get = () => ({ 'p1': partialPreset });
+        mockStore.data.$nutrientPresets.set({ 'p1': partialPreset });
         (element as any)._view = 'LIST';
         element.requestUpdate();
         await element.updateComplete;

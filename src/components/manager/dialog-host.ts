@@ -56,10 +56,12 @@ export class DialogHost extends LitElement {
   store!: GrowspaceStore;
 
   // Controllers
-  private _activeDialogController!: StoreController<ActiveDialogState>;
-  private _devicesController!: StoreController<GrowspaceDevice[]>;
-  private _selectedDeviceController!: StoreController<string | null>;
-  private _strainLibraryController!: StoreController<StrainEntry[]>;
+  private _dialogHostController!: StoreController<{
+    activeDialog: ActiveDialogState;
+    devices: GrowspaceDevice[];
+    selectedDevice: string | null;
+    strainLibrary: StrainEntry[];
+  }>;
   private _controllersInitialized = false;
 
   // Genetics state
@@ -84,23 +86,16 @@ export class DialogHost extends LitElement {
   private _initControllers(): void {
     if (this._controllersInitialized) return;
     this._controllersInitialized = true;
-    this._activeDialogController = new StoreController(this, this.store.ui.$activeDialog);
-    this._devicesController = new StoreController(this, this.store.data.$devices);
-    this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-    this._strainLibraryController = new StoreController(this, this.store.data.$strainLibrary);
+    this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
   }
 
   render() {
     if (!this.store || !this._controllersInitialized) return html``;
 
-    const active = this._activeDialogController.value;
-    const devices = this._devicesController.value;
-    const selectedDeviceId = this._selectedDeviceController.value;
+    const { activeDialog: active, devices, selectedDevice: selectedDeviceId, strainLibrary } = this._dialogHostController.value;
 
     console.log('[DialogHost] Rendering with active type:', active.type);
     if (active.type === 'NONE') return html``;
-
-    const strainLibrary = this._strainLibraryController?.value ?? [];
     const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
 
     // Prepare options for select dropdowns if needed
@@ -172,7 +167,7 @@ export class DialogHost extends LitElement {
   }
 
   private _closeDialogIfActive(type: ActiveDialogState['type']) {
-    if (this._activeDialogController.value.type === type) {
+    if (this._dialogHostController.value.activeDialog.type === type) {
       this.store.ui.closeDialog();
     }
   }
@@ -204,7 +199,7 @@ export class DialogHost extends LitElement {
     const dialogState = active.payload;
 
     // Get all clone and seedling plants from all growspaces
-    const devices = this._devicesController.value;
+    const devices = this._dialogHostController.value.devices;
     const clonePlants = this._getPlantsByStage(devices, 'clone');
     const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
     const targetGrowspaceId = selectedDeviceData?.deviceId || '';
@@ -229,7 +224,7 @@ export class DialogHost extends LitElement {
         .seedlingPlants=${seedlingPlants}
         .targetGrowspaceId=${targetGrowspaceId}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'ADD_PLANT') {
+        if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANT') {
           this.store.ui.closeDialog();
         }
       }}
@@ -329,7 +324,7 @@ export class DialogHost extends LitElement {
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'ADD_PLANTS') {
+        if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANTS') {
           this.store.ui.closeDialog();
         }
       }}
@@ -378,7 +373,7 @@ export class DialogHost extends LitElement {
           .plant=${dialogState.plant}
           .editedAttributes=${dialogState.editedAttributes}
           @close=${() => {
-          if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+          if (this._dialogHostController.value.activeDialog.type === 'PLANT_OVERVIEW') {
             this.store.ui.closeDialog();
           }
         }}
@@ -466,7 +461,7 @@ export class DialogHost extends LitElement {
         .selectedPlantIds=${dialogState.selectedPlantIds}
         .growspaceOptions=${growspaceOptions}
         @close=${() => {
-        if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+        if (this._dialogHostController.value.activeDialog.type === 'PLANT_OVERVIEW') {
           this.store.ui.closeDialog();
         }
       }}
@@ -585,7 +580,7 @@ export class DialogHost extends LitElement {
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}
         .pollinationEvents=${Object.values(this._pollinationEvents)}
-        .plants=${this._devicesController.value ?? []}
+        .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data: Parameters<typeof this.store.dataService.addSeedBatch>[0]) => this.store.dataService.addSeedBatch(data)}
@@ -596,7 +591,7 @@ export class DialogHost extends LitElement {
         .onDeletePollination=${(event_id: string) => this.store.dataService.deletePollination(event_id)}
         @close=${() => {
         // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
-        if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
+        if (this._dialogHostController.value.activeDialog.type === 'STRAIN_LIBRARY') {
           this.store.ui.closeDialog();
         }
       }}
@@ -705,7 +700,7 @@ export class DialogHost extends LitElement {
       <config-dialog
         .open=${true}
         .hass=${this.hass}
-        .devices=${this._devicesController.value}
+        .devices=${this._dialogHostController.value.devices}
         .currentTab=${dialogState.currentTab}
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}

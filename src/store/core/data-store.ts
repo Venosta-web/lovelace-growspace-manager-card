@@ -1,4 +1,4 @@
-import { atom, onMount, WritableAtom } from 'nanostores';
+import { atom, onMount, WritableAtom, computed, ReadableAtom } from 'nanostores';
 import {
   GrowspaceDevice,
   StrainEntry,
@@ -7,6 +7,13 @@ import {
   NutrientPreset,
   IPMPreset,
 } from '../../types';
+
+export interface NutrientDataState {
+  nutrientPresets: Record<string, NutrientPreset>;
+  nutrientInventory: import('../../types').NutrientInventory | null;
+  ecRampCurves: Record<string, import('../../schemas/api-schema').ECRampCurve>;
+  isLoading: boolean;
+}
 
 export class GrowspaceDataStore {
   // Domain Data Atoms
@@ -22,6 +29,7 @@ export class GrowspaceDataStore {
   public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
   public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
   public readonly $ecRampCurves: WritableAtom<Record<string, import('../../schemas/api-schema').ECRampCurve>>;
+  public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
 
   /** Indicates if store has active subscribers (for lazy loading) */
   private _isActive = false;
@@ -38,6 +46,16 @@ export class GrowspaceDataStore {
     this.$ipmPresets = atom<Record<string, IPMPreset>>({});
     this.$nutrientInventory = atom<import('../../types').NutrientInventory | null>(null);
     this.$ecRampCurves = atom<Record<string, import('../../schemas/api-schema').ECRampCurve>>({});
+
+    this.$nutrientDataState = computed(
+      [this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves],
+      (nutrientPresets, nutrientInventory, ecRampCurves) => ({
+        nutrientPresets,
+        nutrientInventory,
+        ecRampCurves,
+        isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
+      })
+    );
 
     // Lazy initialization: only log activity when store has subscribers
     onMount(this.$devices, () => {

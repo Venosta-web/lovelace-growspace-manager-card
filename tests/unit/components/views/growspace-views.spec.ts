@@ -380,7 +380,7 @@ describe('Growspace Views', () => {
                         plants: undefined
                     }
                 ];
-                (element as any)._devicesController = { value: mockDevices };
+                (element as any)._viewStandardController = { value: { isTransplantMode: false, devices: mockDevices } };
             });
 
             it('should correctly filter plants for the "vegetative" stage', () => {

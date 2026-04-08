@@ -16056,53 +16056,69 @@ function canSaveAttributes(editedAttributes) {
     return true;
 }
 /**
- * Create ViewModel for plant overview dialog
+ * Create a STABLE ViewModel for plant overview dialog.
+ * This version takes atoms for all inputs, allowing it to be used with a
+ * single persistent StoreController in the container component.
  */
-function createPlantOverviewViewModel(plant, editedAttributes, uiState, store, logbookEvents = []) {
+function createStablePlantOverviewViewModel($plant, $editedAttributes, $uiState, store, $logbookEvents) {
     return computed([
-        // We don't need many store subscriptions for this dialog
-        // Most data comes from props (plant, editedAttributes)
-        // But we do watch for new logbook events
-        store.data.$strainLibrary, // For strain data
-    ], (strainLibrary) => {
+        $plant,
+        $editedAttributes,
+        $uiState,
+        $logbookEvents,
+        store.data.$strainLibrary,
+        store.grid.$growspaceOptions,
+    ], (plant, editedAttributes, uiState, logbookEvents, strainLibrary, growspaceOptions) => {
+        // Fallback for null plant (initial state)
+        if (!plant) {
+            return {
+                plant: {},
+                editedAttributes: {},
+                activeTab: uiState.activeTab,
+                isEditing: false,
+                showAllDates: false,
+                showDeleteConfirmation: false,
+                plantId: '',
+                stageColor: '',
+                stageIcon: '',
+                displayName: '',
+                displaySubtitle: '',
+                timelineEvents: [],
+                plantStats: [],
+                availableActions: [],
+                growspaceOptions: {},
+                hasUnsavedChanges: false,
+                canSave: false,
+            };
+        }
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         const stageColor = PlantUtils.getPlantStageColor(plant.state);
         const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-        // Ensure displayName is a string (editedAttributes.strain is PlantAttributeValue)
         const strainValue = editedAttributes.strain;
         const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
         const phenoValue = editedAttributes.phenotype;
         const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
         const timelineEvents = processTimelineEvents(plant, logbookEvents);
-        // Calculate stats
         const plantStats = calculatePlantStats(plant);
-        // Available actions
         const availableActions = getAvailableActions(plant);
-        // Validation
         const unsavedChanges = hasUnsavedChanges(plant, editedAttributes);
         const canSave = canSaveAttributes(editedAttributes);
         return {
-            // Core data
             plant,
             editedAttributes,
-            // UI state
             activeTab: uiState.activeTab,
             isEditing: uiState.isEditing,
             showAllDates: uiState.showAllDates,
             showDeleteConfirmation: uiState.showDeleteConfirmation,
-            // Computed identifiers
             plantId,
             stageColor,
             stageIcon,
             displayName,
             displaySubtitle,
-            // Timeline data
             timelineEvents,
-            // Plant stats
             plantStats,
-            // Available actions
             availableActions,
-            // Validation
+            growspaceOptions,
             hasUnsavedChanges: unsavedChanges,
             canSave: canSave && unsavedChanges,
         };
@@ -16817,21 +16833,34 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         // Score Phenotype in actions tab
         this._showScoringForm = false;
         this._savingScore = false;
+        // ViewModel state managed via atoms
+        this._plantAtom = atom(null);
+        this._editedAttributesAtom = atom({});
+        this._uiStateAtom = atom({
+            activeTab: 'dashboard',
+            isEditing: true,
+            showAllDates: false,
+            showDeleteConfirmation: false,
+        });
+        this._logbookEventsAtom = atom([]);
     }
     connectedCallback() {
         super.connectedCallback();
         if (this.plant && this.store) {
-            this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
+            // Initialize atoms with current prop values
+            this._plantAtom.set(this.plant);
+            this._editedAttributesAtom.set(this.editedAttributes);
+            this._uiStateAtom.set({
                 activeTab: this._activeTab,
                 isEditing: this._isEditing,
                 showAllDates: this._showAllDates,
                 showDeleteConfirmation: this._showDeleteConfirmation,
-            }, this.store, this._logbookEvents);
+            });
+            this.viewModel = createStablePlantOverviewViewModel(this._plantAtom, this._editedAttributesAtom, this._uiStateAtom, this.store, this._logbookEventsAtom);
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
-            this._growspaceOptionsController = new libExports.StoreController(this, this.store.grid.$growspaceOptions);
             this._initHarvestState();
         }
-        // Fetch logbook events asynchronously; the @state update will trigger a re-render
+        // Fetch logbook events asynchronously; the atom update will trigger a re-render
         this._fetchLogbookEvents();
     }
     _initHarvestState() {
@@ -16855,9 +16884,11 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             const service = getTimelineService(this.hass);
             const plantId = this.plant.attributes?.plant_id;
             // Fetch by plantId so events from previous growspaces are included
-            this._logbookEvents = plantId
+            const events = plantId
                 ? await service.fetchPlantEvents(plantId, growspaceId)
                 : await service.fetchGrowspaceEvents(growspaceId);
+            this._logbookEvents = events;
+            this._logbookEventsAtom.set(events);
         }
         catch (_e) {
             // Non-critical — timeline still shows plant attribute events
@@ -16866,24 +16897,34 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     willUpdate(changedProps) {
         if (changedProps.has('plant') && this.plant) {
             this._initHarvestState();
+            this._plantAtom.set(this.plant);
+            // Initialize viewModel on first plant arrival if not already done in connectedCallback
+            if (!this.viewModelController && this.store) {
+                this._editedAttributesAtom.set(this.editedAttributes);
+                this._uiStateAtom.set({
+                    activeTab: this._activeTab,
+                    isEditing: this._isEditing,
+                    showAllDates: this._showAllDates,
+                    showDeleteConfirmation: this._showDeleteConfirmation,
+                });
+                this.viewModel = createStablePlantOverviewViewModel(this._plantAtom, this._editedAttributesAtom, this._uiStateAtom, this.store, this._logbookEventsAtom);
+                this.viewModelController = new libExports.StoreController(this, this.viewModel);
+            }
         }
-        // Recreate ViewModel if inputs change
-        if ((changedProps.has('plant') ||
-            changedProps.has('editedAttributes') ||
-            changedProps.has('_activeTab') ||
+        if (changedProps.has('editedAttributes')) {
+            this._editedAttributesAtom.set(this.editedAttributes);
+        }
+        // Update UI state atom when local properties change
+        if (changedProps.has('_activeTab') ||
             changedProps.has('_isEditing') ||
             changedProps.has('_showAllDates') ||
-            changedProps.has('_showDeleteConfirmation') ||
-            changedProps.has('_logbookEvents')) &&
-            this.plant &&
-            this.store) {
-            this.viewModel = createPlantOverviewViewModel(this.plant, this.editedAttributes, {
+            changedProps.has('_showDeleteConfirmation')) {
+            this._uiStateAtom.set({
                 activeTab: this._activeTab,
                 isEditing: this._isEditing,
                 showAllDates: this._showAllDates,
                 showDeleteConfirmation: this._showDeleteConfirmation,
-            }, this.store, this._logbookEvents);
-            this.viewModelController = new libExports.StoreController(this, this.viewModel);
+            });
         }
     }
     render() {
@@ -17137,7 +17178,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     _renderFooter(vm) {
         const stage = (this.plant?.state || '').toLowerCase();
-        const growspaceOptions = this._growspaceOptionsController?.value ?? {};
+        const growspaceOptions = vm.growspaceOptions;
         const growspaceEntries = Object.entries(growspaceOptions).filter(([id]) => id !== this.plant?.attributes?.growspace_id);
         return x `
       <div
@@ -27669,20 +27710,17 @@ let WateringDialog = class WateringDialog extends i$3 {
     _initControllers() {
         if (!this.store || !this.store.data)
             return;
-        // Only initialize if not already done for this store
-        if (!this._presetsController) {
-            this._presetsController = new libExports.StoreController(this, this.store.data.$nutrientPresets);
-            // Trigger fetch if empty
-            const presets = this._presetsController.value;
-            if (!presets || Object.keys(presets).length === 0) {
+        if (!this._nutrientDataController) {
+            this._nutrientDataController = new libExports.StoreController(this, this.store.data.$nutrientDataState);
+            const { nutrientPresets, nutrientInventory, ecRampCurves } = this._nutrientDataController.value;
+            if (!nutrientPresets || Object.keys(nutrientPresets).length === 0) {
                 this.store.fetchNutrientPresets();
             }
-        }
-        if (!this._inventoryController) {
-            this._inventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
-            // Trigger fetch if empty
-            if (!this._inventoryController.value) {
+            if (!nutrientInventory) {
                 this.store.fetchNutrientInventory();
+            }
+            if (Object.keys(ecRampCurves).length === 0) {
+                this.store.fetchECRampCurves();
             }
         }
     }
@@ -27716,7 +27754,7 @@ let WateringDialog = class WateringDialog extends i$3 {
             this._nutrients = [];
             return;
         }
-        const presets = this._presetsController.value;
+        const { nutrientPresets: presets } = this._nutrientDataController.value;
         if (presets && presets[presetId]) {
             const preset = presets[presetId];
             this._nutrients = preset.nutrients.map((n) => ({
@@ -27769,9 +27807,11 @@ let WateringDialog = class WateringDialog extends i$3 {
         }
     }
     _getPresetOptions(currentStage, daysInStage = 0) {
-        if (!this.store || !this._presetsController)
+        if (!this.store || !this._nutrientDataController)
             return [];
-        const presetsRecord = this._presetsController.value || {};
+        const { nutrientPresets: presetsRecord } = this._nutrientDataController.value;
+        if (!presetsRecord)
+            return [];
         return Object.values(presetsRecord).map((p) => {
             let recommended = false;
             if (p.stage && p.stage === currentStage) {
@@ -27832,8 +27872,9 @@ let WateringDialog = class WateringDialog extends i$3 {
                 }
             }
         }
+        const { isLoading, nutrientPresets } = this._nutrientDataController.value;
         const presetList = this._getPresetOptions(currentStage, daysInStage);
-        if (!this._presetsController?.value) {
+        if (isLoading || !nutrientPresets) {
             return x `
         <ha-dialog open @closed=${this._close} hideActions width="full">
           <div class="glass-dialog-container">
@@ -28037,10 +28078,9 @@ let WateringDialog = class WateringDialog extends i$3 {
     }
     _getNutrientSuggestions() {
         const nutrients = new Set();
-        if (!this.store || !this.store.data || !this._presetsController || !this._inventoryController)
+        if (!this.store || !this.store.data || !this._nutrientDataController)
             return [];
-        // Add nutrients from presets
-        const presets = this._presetsController.value;
+        const { nutrientPresets: presets, nutrientInventory: inventory } = this._nutrientDataController.value;
         if (presets) {
             Object.values(presets).forEach((preset) => {
                 if (preset.nutrients) {
@@ -28051,8 +28091,6 @@ let WateringDialog = class WateringDialog extends i$3 {
                 }
             });
         }
-        // Add nutrients from inventory
-        const inventory = this._inventoryController.value;
         if (inventory && inventory.stocks) {
             Object.values(inventory.stocks).forEach((stock) => {
                 if (stock.name)
@@ -28582,16 +28620,15 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         }
     }
     _initControllers() {
-        if (!this.store || this._presetsController)
+        if (!this.store || this._nutrientDataController)
             return;
-        this._presetsController = new libExports.StoreController(this, this.store.data.$nutrientPresets);
-        this._inventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
+        this._nutrientDataController = new libExports.StoreController(this, this.store.data.$nutrientDataState);
+        const { nutrientPresets, nutrientInventory } = this._nutrientDataController.value;
         // Trigger initial fetch if empty
-        const presets = this._presetsController.value;
-        if (!presets || Object.keys(presets).length === 0) {
+        if (!nutrientPresets || Object.keys(nutrientPresets).length === 0) {
             this.store.fetchNutrientPresets();
         }
-        if (!this._inventoryController.value) {
+        if (!nutrientInventory) {
             this.store.fetchNutrientInventory();
         }
     }
@@ -28751,7 +28788,8 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     `;
     }
     _renderList() {
-        if (!this._presetsController) {
+        const { nutrientPresets, isLoading } = this._nutrientDataController.value;
+        if (isLoading) {
             return x `
         <div class="empty-state">
           <ha-circular-progress active></ha-circular-progress>
@@ -28759,8 +28797,7 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
         </div>
       `;
         }
-        const presets = this._presetsController.value;
-        const presetEntries = Object.values(presets || {});
+        const presetEntries = Object.values(nutrientPresets || {});
         if (presetEntries.length === 0) {
             return x `
         <div class="empty-state">
@@ -28928,10 +28965,10 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
     }
     _getNutrientSuggestions() {
         const nutrients = new Set();
+        const { nutrientPresets, nutrientInventory } = this._nutrientDataController.value;
         // Add nutrients from presets
-        const presets = this._presetsController?.value;
-        if (presets) {
-            Object.values(presets).forEach((preset) => {
+        if (nutrientPresets) {
+            Object.values(nutrientPresets).forEach((preset) => {
                 if (preset.nutrients) {
                     preset.nutrients.forEach((n) => {
                         if (n.name)
@@ -28941,9 +28978,8 @@ let NutrientPresetsEditor = class NutrientPresetsEditor extends i$3 {
             });
         }
         // Add nutrients from inventory
-        const inventory = this._inventoryController?.value;
-        if (inventory && inventory.stocks) {
-            Object.values(inventory.stocks).forEach((stock) => {
+        if (nutrientInventory && nutrientInventory.stocks) {
+            Object.values(nutrientInventory.stocks).forEach((stock) => {
                 if (stock.name)
                     nutrients.add(stock.name);
             });
@@ -32533,21 +32569,15 @@ let DialogHost = class DialogHost extends i$3 {
         if (this._controllersInitialized)
             return;
         this._controllersInitialized = true;
-        this._activeDialogController = new libExports.StoreController(this, this.store.ui.$activeDialog);
-        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-        this._strainLibraryController = new libExports.StoreController(this, this.store.data.$strainLibrary);
+        this._dialogHostController = new libExports.StoreController(this, this.store.$dialogHostState);
     }
     render() {
         if (!this.store || !this._controllersInitialized)
             return x ``;
-        const active = this._activeDialogController.value;
-        const devices = this._devicesController.value;
-        const selectedDeviceId = this._selectedDeviceController.value;
+        const { activeDialog: active, devices, selectedDevice: selectedDeviceId, strainLibrary } = this._dialogHostController.value;
         console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE')
             return x ``;
-        const strainLibrary = this._strainLibraryController?.value ?? [];
         const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
         // Prepare options for select dropdowns if needed
         const growspaceOptions = {};
@@ -32614,7 +32644,7 @@ let DialogHost = class DialogHost extends i$3 {
     `;
     }
     _closeDialogIfActive(type) {
-        if (this._activeDialogController.value.type === type) {
+        if (this._dialogHostController.value.activeDialog.type === type) {
             this.store.ui.closeDialog();
         }
     }
@@ -32640,7 +32670,7 @@ let DialogHost = class DialogHost extends i$3 {
             return x ``;
         const dialogState = active.payload;
         // Get all clone and seedling plants from all growspaces
-        const devices = this._devicesController.value;
+        const devices = this._dialogHostController.value.devices;
         const clonePlants = this._getPlantsByStage(devices, 'clone');
         const seedlingPlants = this._getPlantsByStage(devices, 'seedling');
         const targetGrowspaceId = selectedDeviceData?.deviceId || '';
@@ -32664,7 +32694,7 @@ let DialogHost = class DialogHost extends i$3 {
         .seedlingPlants=${seedlingPlants}
         .targetGrowspaceId=${targetGrowspaceId}
         @close=${() => {
-            if (this._activeDialogController.value.type === 'ADD_PLANT') {
+            if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANT') {
                 this.store.ui.closeDialog();
             }
         }}
@@ -32745,7 +32775,7 @@ let DialogHost = class DialogHost extends i$3 {
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
         @close=${() => {
-            if (this._activeDialogController.value.type === 'ADD_PLANTS') {
+            if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANTS') {
                 this.store.ui.closeDialog();
             }
         }}
@@ -32786,7 +32816,7 @@ let DialogHost = class DialogHost extends i$3 {
           .plant=${dialogState.plant}
           .editedAttributes=${dialogState.editedAttributes}
           @close=${() => {
-                if (this._activeDialogController.value.type === 'PLANT_OVERVIEW') {
+                if (this._dialogHostController.value.activeDialog.type === 'PLANT_OVERVIEW') {
                     this.store.ui.closeDialog();
                 }
             }}
@@ -32875,7 +32905,7 @@ let DialogHost = class DialogHost extends i$3 {
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}
         .pollinationEvents=${Object.values(this._pollinationEvents)}
-        .plants=${this._devicesController.value ?? []}
+        .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${active.payload.initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data) => this.store.dataService.addSeedBatch(data)}
@@ -32886,7 +32916,7 @@ let DialogHost = class DialogHost extends i$3 {
         .onDeletePollination=${(event_id) => this.store.dataService.deletePollination(event_id)}
         @close=${() => {
             // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
-            if (this._activeDialogController.value.type === 'STRAIN_LIBRARY') {
+            if (this._dialogHostController.value.activeDialog.type === 'STRAIN_LIBRARY') {
                 this.store.ui.closeDialog();
             }
         }}
@@ -32986,7 +33016,7 @@ let DialogHost = class DialogHost extends i$3 {
       <config-dialog
         .open=${true}
         .hass=${this.hass}
-        .devices=${this._devicesController.value}
+        .devices=${this._dialogHostController.value.devices}
         .currentTab=${dialogState.currentTab}
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
@@ -34238,9 +34268,8 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         this.dragController = new DragDropController(this);
     }
     _initControllers() {
-        if (this.store && !this._isEditModeController) {
-            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
+        if (this.store && !this._viewController) {
+            this._viewController = new libExports.StoreController(this, this.store.$plantCardViewState);
         }
     }
     connectedCallback() {
@@ -34254,11 +34283,11 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
     }
     // Getters to satisfy DragDropHost interface
     get isEditMode() {
-        return this._isEditModeController?.value ?? false;
+        return this._viewController?.value?.isEditMode ?? false;
     }
     get selected() {
         const plantId = this.plant?.attributes?.plant_id;
-        return (plantId && this._selectedPlantsController?.value?.has(plantId)) || false;
+        return (plantId && this._viewController?.value?.selectedPlants?.has(plantId)) || false;
     }
     get growthDeviation() {
         const strain = this.strainLibrary.find((s) => s.strain === this.plant.attributes.strain);
@@ -34271,13 +34300,13 @@ let GrowspacePlantCard = class GrowspacePlantCard extends i$3 {
         return PlantUtils.getPlantDisplayData(this.plant, this.strainLibrary);
     }
     get _hasRecommendedPreset() {
-        if (!this.plant || !this.store)
+        if (!this.plant || !this._viewController?.value)
             return false;
+        const { devices, nutrientPresets } = this._viewController.value;
         const growspaceId = this.plant.attributes.growspace_id;
-        const device = this.store.data.$devices.get().find((d) => d.deviceId === growspaceId);
+        const device = devices.find((d) => d.deviceId === growspaceId);
         if (!device)
             return false;
-        const nutrientPresets = this.store.data.$nutrientPresets.get();
         const currentStage = this.plant.attributes.stage;
         const daysInStage = this.plant.attributes.days_in_stage || 0;
         return Object.values(nutrientPresets).some((p) => p.stage === currentStage && (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage));
@@ -43377,10 +43406,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
     connectedCallback() {
         super.connectedCallback();
         if (this.store) {
-            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
-            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+            this._headerActionsController = new libExports.StoreController(this, this.store.$headerActionsState);
         }
     }
     get _chipDraggable() {
@@ -43407,21 +43433,21 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             case 'config': {
                 const device = this.store.data.$devices
                     .get()
-                    .find((d) => d.deviceId === this._selectedDeviceController.value);
+                    .find((d) => d.deviceId === this._headerActionsController.value.selectedDevice);
                 if (device)
                     this.store.openConfigDialog(device);
                 break;
             }
             case 'edit':
-                this.store.ui.setEditMode(!this._isEditModeController.value);
+                this.store.ui.setEditMode(!this._headerActionsController.value.isEditMode);
                 break;
             case 'compact': {
-                const currentMode = this._viewModeController.value;
+                const currentMode = this._headerActionsController.value.viewMode;
                 this.store.ui.setViewMode(currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT);
                 break;
             }
             case 'heatmap': {
-                const currentMode = this._viewModeController.value;
+                const currentMode = this._headerActionsController.value.viewMode;
                 this.store.ui.setViewMode(currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP);
                 break;
             }
@@ -43429,23 +43455,23 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
                 this.store.openStrainLibraryDialog();
                 break;
             case 'irrigation':
-                if (this._selectedDeviceController.value)
+                if (this._headerActionsController.value.selectedDevice)
                     this.store.openIrrigationDialog();
                 break;
             case 'ai':
-                this.store.openGrowMasterDialog(this._selectedDeviceController.value || '');
+                this.store.openGrowMasterDialog(this._headerActionsController.value.selectedDevice || '');
                 break;
             case 'logbook':
                 this.store.openLogbookDialog();
                 break;
             case 'snapshots':
-                this.store.openSnapshotsDialog(this._selectedDeviceController.value || undefined);
+                this.store.openSnapshotsDialog(this._headerActionsController.value.selectedDevice || undefined);
                 break;
             case 'water': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openWateringDialog({
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
-                    growspaceId: this._selectedDeviceController.value || undefined,
+                    growspaceId: this._headerActionsController.value.selectedDevice || undefined,
                     mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
                 });
                 break;
@@ -43453,7 +43479,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             case 'ipm': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
                 this.store.openIPMDialog({
-                    growspaceId: this._selectedDeviceController.value ||
+                    growspaceId: this._headerActionsController.value.selectedDevice ||
                         this.store.data.$devices.get()[0]?.deviceId ||
                         '', // Fallback
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
@@ -43462,17 +43488,17 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
             }
             case 'training': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this._selectedDeviceController.value || undefined);
+                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this._headerActionsController.value.selectedDevice || undefined);
                 break;
             }
             case 'nutrients':
                 this.store.openNutrientsDialog();
                 break;
             case 'ec_ramp':
-                this.store.openECRampDialog(this._selectedDeviceController.value || undefined);
+                this.store.openECRampDialog(this._headerActionsController.value.selectedDevice || undefined);
                 break;
             case 'report':
-                this.store.openGrowReportDialog(this._selectedDeviceController.value || undefined);
+                this.store.openGrowReportDialog(this._headerActionsController.value.selectedDevice || undefined);
                 break;
         }
     }
@@ -43568,9 +43594,9 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
           `
             : ''}
 
-      ${this._iconButton(mdiPencil, 'edit', 'Edit Mode', 'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.', this._isEditModeController?.value)}
+      ${this._iconButton(mdiPencil, 'edit', 'Edit Mode', 'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.', this._headerActionsController?.value?.isEditMode)}
 
-      ${this._iconButton(mdiCube, 'heatmap', '3D Heatmap', 'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.', this._viewModeController?.value === ViewMode.HEATMAP)}
+      ${this._iconButton(mdiCube, 'heatmap', '3D Heatmap', 'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.', this._headerActionsController?.value?.viewMode === ViewMode.HEATMAP)}
 
       ${this._iconButton(mdiCog, 'config', 'Settings', 'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.')}
 
@@ -43583,7 +43609,7 @@ let GrowspaceHeaderActions = class GrowspaceHeaderActions extends i$3 {
     `;
     }
     _renderMenu() {
-        const selectedCount = this._selectedPlantsController?.value?.size || 0;
+        const selectedCount = this._headerActionsController?.value?.selectedPlants?.size || 0;
         return x `
       <div id="header-menu" popover="auto" class="menu-dropdown">
         <div class="menu-header">Plant Actions</div>
@@ -44413,7 +44439,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     }
     // Helper getters
     get activeEnvGraphs() {
-        return this._activeEnvGraphsController?.value || new Set();
+        return this._headerController?.value?.history?.activeEnvGraphs || new Set();
     }
     /*
      * Computes derived metrics for rendering.
@@ -44427,25 +44453,15 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
             this._envAttrs = {};
             return;
         }
-        const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._linkedGraphGroupsController?.value || []);
+        const { mainChips, deviceChips, dominant, envAttrs } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, this.activeEnvGraphs, this._headerController?.value?.history?.linkedGraphGroups || []);
         this._mainChips = mainChips;
         this._deviceChips = deviceChips;
         this._dominant = dominant;
         this._envAttrs = envAttrs;
     }
     _initControllers() {
-        if (this.store && !this._viewModeController) {
-            this._viewModeController = new libExports.StoreController(this, this.store.ui.$viewMode);
-            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-            this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
-            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
-            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
-            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
-            this._nutrientInventoryController = new libExports.StoreController(this, this.store.data.$nutrientInventory);
-            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
+        if (this.store && !this._headerController) {
+            this._headerController = new libExports.StoreController(this, this.store.$headerState);
             // Load history data when header is mounted (important for header-only view mode)
             this.store.history.loadHistoryOnDemand();
             // Start auto-refresh for hero sparklines even without analytics view
@@ -44463,7 +44479,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
         const args = [
             this.device?.deviceId,
             this.activeEnvGraphs,
-            this._linkedGraphGroupsController?.value,
+            this._headerController?.value?.history?.linkedGraphGroups,
         ];
         const changed = !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
         if (changed) {
@@ -44515,7 +44531,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
     render() {
         if (!this.device || !this.hass)
             return x ``;
-        const devices = this._devicesController?.value || [];
+        const devices = this._headerController?.value?.devices || [];
         const deviceId = this.device.deviceId;
         // Split chips into Hero and Secondary sets (Restoring original logic)
         const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
@@ -44569,7 +44585,7 @@ let GrowspaceHeader = class GrowspaceHeader extends i$3 {
           <div class="secondary-strip-container">
             <growspace-header-secondary
               .chips=${secondaryChips}
-              .inventory=${this._nutrientInventoryController?.value || null}
+              .inventory=${this._headerController?.value?.nutrientInventory || null}
               .compact=${this.compact}
               .isMobile=${this._resizeController.isMobile}
               .mobileLink=${this._mobileLink}
@@ -45377,12 +45393,8 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         this._gridRef = e$1();
     }
     _initControllers() {
-        if (this.store && !this._isEditModeController) {
-            this._isEditModeController = new libExports.StoreController(this, this.store.ui.$isEditMode);
-            this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-            this._isCompactController = new libExports.StoreController(this, this.store.ui.$isCompactView);
-            this._isLoadingController = new libExports.StoreController(this, this.store.ui.$isLoading);
-            this._overlayModeController = new libExports.StoreController(this, this.store.ui.$gridOverlayMode);
+        if (this.store && !this._cardViewController) {
+            this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
         }
     }
     connectedCallback() {
@@ -45531,10 +45543,11 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
             ? ''
             : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
         const flatGrid = this.plants.flat();
-        const isLoading = this._isLoadingController?.value;
+        const cardState = this._cardViewController?.value;
+        const isLoading = cardState?.isLoading;
         return x `
       <div
-        class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView
+        class="grid ${cardState?.isCompact ? 'compact' : ''} ${isListView
             ? 'force-list-view'
             : ''}"
         style="${gridStyle}"
@@ -45554,7 +45567,7 @@ let GrowspaceGrid = class GrowspaceGrid extends i$3 {
         if (!plant) {
             return this.renderEmptySlot(row, col);
         }
-        const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
+        const overlayMode = this._cardViewController?.value?.overlayMode ?? GridOverlayMode.NONE;
         const overlayColor = this._getOverlayColor(overlayMode, plant);
         return x `
       <div class="grid-item-wrapper">
@@ -47990,14 +48003,8 @@ GrowspaceViewHeader = __decorate([
 // Global imports removed
 let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
     _initControllers() {
-        if (this.store && !this._historyCacheController) {
-            this._historyCacheController = new libExports.StoreController(this, this.store.history.$historyCache);
-            this._historyLoadingController = new libExports.StoreController(this, this.store.history.$historyLoading);
-            this._historyLoadedController = new libExports.StoreController(this, this.store.history.$historyLoaded);
-            this._activeEnvGraphsController = new libExports.StoreController(this, this.store.history.$activeEnvGraphs);
-            this._linkedGraphGroupsController = new libExports.StoreController(this, this.store.history.$linkedGraphGroups);
-            this._combinedHistoryController = new libExports.StoreController(this, this.store.history.$combinedHistory);
-            this._graphRangesController = new libExports.StoreController(this, this.store.history.$graphRanges);
+        if (this.store && !this._analyticsController) {
+            this._analyticsController = new libExports.StoreController(this, this.store.history.$analyticsViewState);
             // OPTIMIZATION: Trigger lazy loading of history when component connects if needed
             this.store.history.startAutoRefresh();
         }
@@ -48018,21 +48025,18 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         }
     }
     firstUpdated() {
-        // OPTIMIZATION: Trigger lazy loading of history data when analytics component first renders
-        if (this.store?.history && !this._historyLoadedController?.value) {
+        if (this.store?.history && !this._analyticsController?.value?.historyLoaded) {
             this.store.history.loadHistoryOnDemand();
         }
     }
     updated(_changedProperties) {
-        // Trigger lazy load if history is not loaded and not currently loading
-        if (this.store?.history &&
-            !this._historyLoadedController?.value &&
-            !this._historyLoadingController?.value) {
+        const state = this._analyticsController?.value;
+        if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
             this.store.history.loadHistoryOnDemand();
         }
     }
     get _itemsToRender() {
-        if (!this.store?.history || !this._activeEnvGraphsController)
+        if (!this.store?.history || !this._analyticsController)
             return [];
         const getSortIndex = (metric) => {
             const index = METRIC_SORT_ORDER.indexOf(metric);
@@ -48040,8 +48044,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         };
         const items = [];
         const processedMetrics = new Set();
-        const activeEnvGraphs = this._activeEnvGraphsController?.value || new Set();
-        const linkedGraphGroups = this._linkedGraphGroupsController?.value || [];
+        const { activeEnvGraphs = new Set(), linkedGraphGroups = [] } = this._analyticsController.value ?? {};
         // Process Linked Groups
         linkedGraphGroups.forEach((group) => {
             const activeMetricsInGroup = group.filter((m) => activeEnvGraphs.has(m));
@@ -48071,14 +48074,14 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         return items;
     }
     render() {
+        const analyticsState = this._analyticsController?.value;
         if (!this.store?.history ||
-            !this._activeEnvGraphsController ||
-            (this._activeEnvGraphsController?.value?.size || 0) === 0)
+            !analyticsState ||
+            (analyticsState.activeEnvGraphs?.size || 0) === 0)
             return x ``;
         if (!this.device)
             return x ``;
-        // Show loading state while history is being fetched
-        if (this._historyLoadingController?.value) {
+        if (analyticsState.historyLoading) {
             return x `
         <div class="graphs-container">
           ${this.renderTimeRangeSelector(this.store.history.getRange())}
@@ -48094,7 +48097,7 @@ let GrowspaceAnalytics = class GrowspaceAnalytics extends i$3 {
         </div>
       `;
         }
-        let sensorHistory = this._combinedHistoryController?.value || {};
+        let sensorHistory = analyticsState.combinedHistory || {};
         const range = this.store.history.getRange();
         const graphs = c(this._itemsToRender, 
         // Key function: Unique ID for the item
@@ -48409,9 +48412,8 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         this.selectedCount = 0;
     }
     _initControllers() {
-        if (this.store && !this._isTransplantModeController) {
-            this._isTransplantModeController = new libExports.StoreController(this, this.store.ui.$isTransplantMode);
-            this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
+        if (this.store && !this._viewStandardController) {
+            this._viewStandardController = new libExports.StoreController(this, this.store.$viewStandardState);
         }
     }
     connectedCallback() {
@@ -48424,7 +48426,7 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         }
     }
     _getPlantsByStage(stage) {
-        const devices = this._devicesController?.value || [];
+        const devices = this._viewStandardController?.value?.devices || [];
         return devices
             .flatMap((d) => (d.plants || []).map((p) => ({
             ...p,
@@ -48483,7 +48485,7 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
             ></growspace-edit-mode-banner>
           `
             : ''}
-      ${this._isTransplantModeController?.value
+      ${this._viewStandardController?.value?.isTransplantMode
             ? x `
             <transplant-source-panel
               .clonePlants=${this._getPlantsByStage('clone')}
@@ -105425,6 +105427,12 @@ class GrowspaceDataStore {
         this.$ipmPresets = atom({});
         this.$nutrientInventory = atom(null);
         this.$ecRampCurves = atom({});
+        this.$nutrientDataState = computed([this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves], (nutrientPresets, nutrientInventory, ecRampCurves) => ({
+            nutrientPresets,
+            nutrientInventory,
+            ecRampCurves,
+            isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
+        }));
         // Lazy initialization: only log activity when store has subscribers
         onMount(this.$devices, () => {
             this._isActive = true;
@@ -105632,7 +105640,9 @@ class GrowspaceUIStore {
             this.$activeDialog,
             this.$notification,
             this.$focusedPlantIndex,
-        ], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+            this.$selectedPlants,
+            this.$gridOverlayMode,
+        ], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex, selectedPlants, overlayMode) => ({
             viewMode,
             isLoading,
             isEditMode,
@@ -105640,6 +105650,8 @@ class GrowspaceUIStore {
             activeDialog,
             notification,
             focusedPlantIndex,
+            selectedPlants,
+            overlayMode,
         }));
     }
     // Actions
@@ -105743,6 +105755,12 @@ class GrowspaceHistoryStore {
                 this.handleDeviceChange(deviceId);
             }
         });
+        this.$headerHistoryState = computed([this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups], (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+            historyCache,
+            historyLoading,
+            activeEnvGraphs,
+            linkedGraphGroups,
+        }));
         this.$combinedHistory = computed(this.$historyCache, (cache) => {
             const result = { ...cache };
             const commonMetrics = [
@@ -105760,6 +105778,21 @@ class GrowspaceHistoryStore {
             });
             return result;
         });
+        this.$analyticsViewState = computed([
+            this.$historyLoading,
+            this.$historyLoaded,
+            this.$activeEnvGraphs,
+            this.$linkedGraphGroups,
+            this.$combinedHistory,
+            this.$graphRanges,
+        ], (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
+            historyLoading,
+            historyLoaded,
+            activeEnvGraphs,
+            linkedGraphGroups,
+            combinedHistory,
+            graphRanges,
+        }));
     }
     // --- Actions ---
     setHistoryData(metric, data) {
@@ -106277,6 +106310,12 @@ class GrowspaceGridStore {
             const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
             return { effectiveRows, grid };
         });
+        this.$gridViewState = computed([this.$activeDevices, this.$gridLayout, this.$growspaceOptions, dataStore.$selectedDevice], (devices, gridLayout, growspaceOptions, selectedDevice) => ({
+            devices,
+            selectedDevice,
+            gridLayout,
+            growspaceOptions,
+        }));
     }
 }
 
@@ -107721,6 +107760,29 @@ class GrowspaceStore {
         this.ui = new GrowspaceUIStore();
         this.history = new GrowspaceHistoryStore(this.dataService, this.data);
         this.grid = new GrowspaceGridStore(this.data);
+        // Cross-store computed atoms
+        this.$dialogHostState = computed([this.ui.$activeDialog, this.data.$devices, this.data.$selectedDevice, this.data.$strainLibrary], (activeDialog, devices, selectedDevice, strainLibrary) => ({
+            activeDialog,
+            devices,
+            selectedDevice,
+            strainLibrary,
+        }));
+        this.$headerActionsState = computed([this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$selectedDevice], (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
+            viewMode,
+            isEditMode,
+            selectedPlants,
+            selectedDevice,
+        }));
+        this.$sharedCardViewState = computed([this.grid.$gridViewState, this.ui.$cardViewState], (grid, ui) => ({ grid, ui }));
+        this.$plantCardViewState = computed([this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$devices, this.data.$nutrientPresets], (isEditMode, selectedPlants, devices, nutrientPresets) => ({
+            isEditMode,
+            selectedPlants,
+            devices,
+            nutrientPresets,
+        }));
+        this.$viewStandardState = computed([this.ui.$isTransplantMode, this.data.$devices], (isTransplantMode, devices) => ({ isTransplantMode, devices }));
+        this.$headerState = computed([this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState], (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history }));
+        this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
         this.syncService = new SyncService(this.dataService, this.data, this.ui);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
@@ -108107,18 +108169,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
                 this.store.refreshData(true);
             }
         });
-        // UI Store Controllers
-        // Consolidated UI Controller
-        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
-        this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-        // Data Store Controllers (for reactivity)
-        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-        this._strainLibraryController = new libExports.StoreController(this, this.store.data.$strainLibrary);
-        // Grid derived atoms
-        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
-        this._gridLayoutController = new libExports.StoreController(this, this.store.grid.$gridLayout);
-        this._growspaceOptionsController = new libExports.StoreController(this, this.store.grid.$growspaceOptions);
+        this._viewController = new libExports.StoreController(this, this.store.$mainCardState);
         this._strainLibrary = [];
         this._handleLibraryExportReady = (e) => {
             this._downloadFile(e.detail.url);
@@ -108142,20 +108193,20 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             }
         };
     }
-    /* Getter for convenience/compatibility if needed, or update call sites */
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
     // Getter to satisfy GrowspaceCardHost interface and allow external access
     get dataService() {
         return this.store.dataService;
     }
-    // Getter to provide pre-loaded devices to the history controller
     get devices() {
-        return this._devicesController.value;
+        return this._viewController.value.grid.devices;
     }
     firstUpdated() {
-        this.store.updateHass(this.hass);
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+        }
         this.store.initializeSelectedDevice(this._config);
         this.store.fetchStrainLibrary();
         this.store.fetchNutrientPresets();
@@ -108214,8 +108265,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             }
         }
         // Sync strain library to context provider
-        if (this._strainLibraryController.value !== this._strainLibrary) {
-            this._strainLibrary = (this._strainLibraryController.value || []);
+        const currentStrainLibrary = this._viewController.value?.strainLibrary;
+        if (currentStrainLibrary !== this._strainLibrary) {
+            this._strainLibrary = (currentStrainLibrary || []);
         }
     }
     static async getConfigElement() {
@@ -108293,9 +108345,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
-        const devices = this._activeDevicesController.value;
-        // Show loading spinner if initially loading and no devices yet
-        if (this._cardViewController.value.isLoading) {
+        const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+        const { effectiveRows, grid } = gridLayout;
+        if (this._viewController.value.ui.isLoading) {
             return x `
         <ha-card>
           <div class="loading-container">
@@ -108307,13 +108359,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
         }
-        // Use memoized values from grid store atoms
-        const growspaceOptions = this._growspaceOptionsController.value;
-        const { effectiveRows, grid } = this._gridLayoutController.value;
         const isWide = selectedDeviceData.plantsPerRow > 7;
         return x `
       <error-boundary
@@ -108342,18 +108391,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             @exit-edit-mode=${this._handleExitEditMode}
           >
             <growspace-view-switcher
-              .viewMode=${this._cardViewController.value.viewMode}
+              .viewMode=${this._viewController.value.ui.viewMode}
               .hass=${this.hass}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}
               .rows=${effectiveRows}
-              .isEditMode=${this._cardViewController.value.isEditMode}
-              .isCompact=${this._cardViewController.value.isCompact}
-              .selectedCount=${this._selectedPlantsController.value.size}
+              .isEditMode=${this._viewController.value.ui.isEditMode}
+              .isCompact=${this._viewController.value.ui.isCompact}
+              .selectedCount=${this._viewController.value.ui.selectedPlants.size}
               .config=${this._config}
-              .isLoading=${this._cardViewController.value.isLoading}
-              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+              .isLoading=${this._viewController.value.ui.isLoading}
+              .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}
             ></growspace-view-switcher>
           </div>
         </ha-card>
@@ -108395,16 +108444,7 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
                 this.store.refreshData(true);
             }
         });
-        // Consolidated UI Controller
-        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
-        this._selectedPlantsController = new libExports.StoreController(this, this.store.ui.$selectedPlants);
-        // Data Store Controllers (for reactivity)
-        this._devicesController = new libExports.StoreController(this, this.store.data.$devices);
-        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-        // Grid derived atoms
-        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
-        this._gridLayoutController = new libExports.StoreController(this, this.store.grid.$gridLayout);
-        this._growspaceOptionsController = new libExports.StoreController(this, this.store.grid.$growspaceOptions);
+        this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._handleSelectAll = () => this.store.selectAllPlants();
         this._handleClearSelection = () => this.store.clearPlantSelection();
         this._handleWaterSelected = () => this.store.openBatchWateringDialog();
@@ -108426,7 +108466,7 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         };
     }
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
     firstUpdated() {
         if (this.hass) {
@@ -108490,8 +108530,9 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
-        const devices = this._activeDevicesController.value;
-        if (this._cardViewController.value.isLoading) {
+        const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+        const { effectiveRows, grid } = gridLayout;
+        if (this._viewController.value.ui.isLoading) {
             return x `
         <ha-card>
           <div class="loading-container">
@@ -108503,12 +108544,10 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
         }
-        const growspaceOptions = this._growspaceOptionsController.value;
-        const { effectiveRows, grid } = this._gridLayoutController.value;
         const isWide = selectedDeviceData.plantsPerRow > 7;
         return x `
       <error-boundary
@@ -108541,18 +108580,18 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}
               .rows=${effectiveRows}
-              .isEditMode=${this._cardViewController.value.isEditMode}
+              .isEditMode=${this._viewController.value.ui.isEditMode}
               .isCompact=${true}
-              .selectedCount=${this._selectedPlantsController.value.size}
+              .selectedCount=${this._viewController.value.ui.selectedPlants.size}
               .config=${this._config}
-              .isLoading=${this._cardViewController.value.isLoading}
-              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+              .isLoading=${this._viewController.value.ui.isLoading}
+              .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}
             ></growspace-view-switcher>
           </div>
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        <growspace-dialog-host .devices=${this._devicesController.value}></growspace-dialog-host>
+        <growspace-dialog-host .devices=${devices}></growspace-dialog-host>
       </error-boundary>
     `;
     }
@@ -108602,9 +108641,7 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
                 this.store.refreshData(true);
             }
         });
-        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
-        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
-        this._cardViewController = new libExports.StoreController(this, this.store.ui.$cardViewState);
+        this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Analytics Card caught error:', error, errorInfo);
             if (this.hass) {
@@ -108617,7 +108654,7 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
         };
     }
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
     firstUpdated() {
         if (this.hass) {
@@ -108664,8 +108701,9 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
         }
-        const devices = this._activeDevicesController.value;
-        if (this._cardViewController.value.isLoading) {
+        const { devices, selectedDevice } = this._viewController.value.grid;
+        const { isLoading } = this._viewController.value.ui;
+        if (isLoading && !devices.length) {
             return x `
         <ha-card>
           <div class="loading-container">
@@ -108677,7 +108715,7 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
         if (!devices.length) {
             return x `<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
         }
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         if (!selectedDeviceData) {
             return x `<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
         }
@@ -108741,8 +108779,7 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
                 this.store.refreshData(true);
             }
         });
-        this._activeDevicesController = new libExports.StoreController(this, this.store.grid.$activeDevices);
-        this._selectedDeviceController = new libExports.StoreController(this, this.store.data.$selectedDevice);
+        this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._userQuery = '';
         this._isLoading = false;
         this._response = null;
@@ -108759,7 +108796,7 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
         };
     }
     get selectedDevice() {
-        return this._selectedDeviceController.value;
+        return this._viewController.value.grid.selectedDevice;
     }
     firstUpdated() {
         if (this.hass) {
@@ -108823,7 +108860,7 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
                 const device = this.selectedDevice;
                 if (!device)
                     throw new Error('No device selected and "Analyze All" was false.');
-                const deviceObj = this._activeDevicesController.value.find(d => d.deviceId === device);
+                const deviceObj = this._viewController.value.grid.devices.find((d) => d.deviceId === device);
                 if (!deviceObj)
                     throw new Error('Selected device not found in devices list.');
                 responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
@@ -108842,8 +108879,21 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
         if (!this.hass) {
             return x `<ha-card><div class="error-state">Home Assistant not available</div></ha-card>`;
         }
-        const devices = this._activeDevicesController.value;
-        const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+        const { devices, selectedDevice } = this._viewController.value.grid;
+        const { isLoading: storeLoading } = this._viewController.value.ui;
+        if (storeLoading && !devices.length) {
+            return x `
+        <ha-card>
+          <div class="gm-loading">
+            <svg class="spinner" viewBox="0 0 24 24">
+              <path d="${mdiLoading}" fill="currentColor"></path>
+            </svg>
+            <span>Synchronizing growspace data...</span>
+          </div>
+        </ha-card>
+      `;
+        }
+        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
         return x `
       <error-boundary

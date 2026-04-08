@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 import { WateringDialog } from '../../src/dialogs/watering-dialog';
 import { nothing } from 'lit';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
@@ -35,6 +35,9 @@ describe('WateringDialog Batch Submission', () => {
         mockStore = {
             showToast: mockShowToast,
             refreshData: mockRefreshData,
+            fetchNutrientPresets: vi.fn(),
+            fetchNutrientInventory: vi.fn(),
+            fetchECRampCurves: vi.fn(),
             waterPlant: mockWaterPlant,
             waterGrowspace: mockWaterGrowspace,
             data: {
@@ -125,12 +128,17 @@ describe('WateringDialog Batch Submission', () => {
             'pre2': { id: 'pre2', name: 'Flower', stage: 'flower', min_days_in_stage: 10, nutrients: [] }
         };
 
+        const $nutrientPresets = atom(mockPresets);
+        const $nutrientInventory = atom<any>(null);
+        const $nutrientDataState = computed(
+            [$nutrientPresets, $nutrientInventory],
+            (nutrientPresets, nutrientInventory) => ({ nutrientPresets, nutrientInventory, ecRampCurves: {}, isLoading: false })
+        );
         mockStore.data.$devices = atom([mockDevice]);
         mockStore.data.$selectedDevice = atom('d1');
-        mockStore.data.$nutrientPresets = atom(mockPresets);
-        mockStore.data.$nutrientInventory = atom(null);
-        mockStore.fetchNutrientPresets = vi.fn();
-        mockStore.fetchNutrientInventory = vi.fn();
+        mockStore.data.$nutrientPresets = $nutrientPresets;
+        mockStore.data.$nutrientInventory = $nutrientInventory;
+        mockStore.data.$nutrientDataState = $nutrientDataState;
 
         dialog.dialogState = {
             mode: 'plant',

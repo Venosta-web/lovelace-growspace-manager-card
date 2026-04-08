@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspacePlantCard } from '../../../src/components/plant-card';
-import { atom } from 'nanostores';
+import { atom, computed } from 'nanostores';
 
 describe('GrowspacePlantCard Branch Coverage', () => {
     let element: GrowspacePlantCard;
@@ -18,6 +18,13 @@ describe('GrowspacePlantCard Branch Coverage', () => {
         const $ipmPresets = atom<any>({});
         const $selectedDevice = atom<string | null>(null);
 
+        const $plantCardViewState = computed(
+            [$isEditMode, $selectedPlants, $devices, $nutrientPresets],
+            (isEditMode, selectedPlants, devices, nutrientPresets) => ({
+                isEditMode, selectedPlants, devices, nutrientPresets,
+            })
+        );
+
         mockStore = {
             ui: {
                 $isEditMode,
@@ -30,7 +37,8 @@ describe('GrowspacePlantCard Branch Coverage', () => {
                 $nutrientPresets,
                 $ipmPresets,
                 $selectedDevice
-            }
+            },
+            $plantCardViewState,
         };
 
         if (!customElements.get('growspace-plant-card')) {
@@ -40,6 +48,7 @@ describe('GrowspacePlantCard Branch Coverage', () => {
         element = document.createElement('growspace-plant-card') as GrowspacePlantCard;
         (element as any).store = mockStore;
         // Do NOT set default plant here, as we want to test undefined plant cases
+        document.body.appendChild(element);
     });
 
     afterEach(() => {

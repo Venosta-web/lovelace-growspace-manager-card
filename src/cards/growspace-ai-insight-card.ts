@@ -39,11 +39,10 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
     }
   );
 
-  protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-  protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-
+  protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  
   get selectedDevice() {
-    return this._selectedDeviceController.value;
+    return this._viewController.value.grid.selectedDevice;
   }
 
   @provide({ context: hassContext })
@@ -224,7 +223,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       } else {
         const device = this.selectedDevice;
         if (!device) throw new Error('No device selected and "Analyze All" was false.');
-        const deviceObj = this._activeDevicesController.value.find(d => d.deviceId === device);
+        const deviceObj = this._viewController.value.grid.devices.find((d: any) => d.deviceId === device);
         if (!deviceObj) throw new Error('Selected device not found in devices list.');
 
         responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
@@ -244,9 +243,23 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error-state">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this._activeDevicesController.value;
-    const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+    const { devices, selectedDevice } = this._viewController.value.grid;
+    const { isLoading: storeLoading } = this._viewController.value.ui;
 
+    if (storeLoading && !devices.length) {
+      return html`
+        <ha-card>
+          <div class="gm-loading">
+            <svg class="spinner" viewBox="0 0 24 24">
+              <path d="${mdiLoading}" fill="currentColor"></path>
+            </svg>
+            <span>Synchronizing growspace data...</span>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    const selectedDeviceData = devices.find((d: any) => d.deviceId === selectedDevice);
     const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
 
     return html`

@@ -13,7 +13,7 @@ vi.mock('../../../../src/components/ui/scroll-container', () => ({
     ScrollContainer: class extends HTMLElement { }
 }));
 
-import { atom, map } from 'nanostores';
+import { atom, computed, map } from 'nanostores';
 
 describe('GrowspaceHeaderActions', () => {
     let element: GrowspaceHeaderActions;
@@ -54,7 +54,13 @@ describe('GrowspaceHeaderActions', () => {
             data: {
                 $selectedDevice,
                 $devices
-            }
+            },
+            $headerActionsState: computed(
+                [$viewMode, $isEditMode, $selectedPlants, $selectedDevice],
+                (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
+                    viewMode, isEditMode, selectedPlants, selectedDevice,
+                })
+            ),
         };
 
         mockHass = {

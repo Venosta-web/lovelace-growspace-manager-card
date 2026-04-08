@@ -1,3 +1,4 @@
+import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
   StrainEntry,
@@ -55,6 +56,61 @@ export class GrowspaceStore {
   // New infrastructure (Phase 1)
   public readonly eventBus: EventBus;
 
+  /** Combined atom for dialog-host rendering — one subscription replaces four. */
+  public readonly $dialogHostState!: ReadableAtom<{
+    activeDialog: import('../../ui-state').ActiveDialogState;
+    devices: import('../../types').GrowspaceDevice[];
+    selectedDevice: string | null;
+    strainLibrary: import('../../types').StrainEntry[];
+  }>;
+
+  /** Combined atom for header-actions rendering — one subscription replaces four. */
+  public readonly $headerActionsState!: ReadableAtom<{
+    viewMode: import('../../types').GrowspaceViewMode;
+    isEditMode: boolean;
+    selectedPlants: Set<string>;
+    selectedDevice: string | null;
+  }>;
+
+  /** Combined atom for card rendering — one subscription replaces grid + ui modules. */
+  public readonly $sharedCardViewState!: ReadableAtom<{
+    grid: import('../grid/grid-store').GridViewState;
+    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
+  }>;
+
+  /** Combined atom for individual plant-card rendering. */
+  public readonly $plantCardViewState!: ReadableAtom<{
+    isEditMode: boolean;
+    selectedPlants: Set<string>;
+    devices: import('../../types').GrowspaceDevice[];
+    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+  }>;
+
+  /** Combined atom for growspace-view-standard — one subscription replaces two. */
+  public readonly $viewStandardState!: ReadableAtom<{
+    isTransplantMode: boolean;
+    devices: import('../../types').GrowspaceDevice[];
+  }>;
+
+  /** Combined atom for growspace-header — one subscription replaces three. */
+  public readonly $headerState!: ReadableAtom<{
+    devices: import('../../types').GrowspaceDevice[];
+    nutrientInventory: import('../../types').NutrientInventory | null;
+    history: {
+      historyCache: Record<string, any>;
+      historyLoading: boolean;
+      activeEnvGraphs: Set<string>;
+      linkedGraphGroups: string[][];
+    };
+  }>;
+
+  /** Combined atom for growspace-manager-card — extends $sharedCardViewState with strainLibrary. */
+  public readonly $mainCardState!: ReadableAtom<{
+    grid: import('../grid/grid-store').GridViewState;
+    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
+    strainLibrary: import('../../types').StrainEntry[];
+  }>;
+
   /** Unified Action Context */
   public get context(): ActionContext {
     return {
@@ -86,6 +142,57 @@ export class GrowspaceStore {
     this.ui = new GrowspaceUIStore();
     this.history = new GrowspaceHistoryStore(this.dataService, this.data);
     this.grid = new GrowspaceGridStore(this.data);
+
+    // Cross-store computed atoms
+    this.$dialogHostState = computed(
+      [this.ui.$activeDialog, this.data.$devices, this.data.$selectedDevice, this.data.$strainLibrary],
+      (activeDialog, devices, selectedDevice, strainLibrary) => ({
+        activeDialog,
+        devices,
+        selectedDevice,
+        strainLibrary,
+      })
+    );
+
+    this.$headerActionsState = computed(
+      [this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$selectedDevice],
+      (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
+        viewMode,
+        isEditMode,
+        selectedPlants,
+        selectedDevice,
+      })
+    );
+
+    this.$sharedCardViewState = computed(
+      [this.grid.$gridViewState, this.ui.$cardViewState],
+      (grid, ui) => ({ grid, ui })
+    );
+
+    this.$plantCardViewState = computed(
+      [this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$devices, this.data.$nutrientPresets],
+      (isEditMode, selectedPlants, devices, nutrientPresets) => ({
+        isEditMode,
+        selectedPlants,
+        devices,
+        nutrientPresets,
+      })
+    );
+
+    this.$viewStandardState = computed(
+      [this.ui.$isTransplantMode, this.data.$devices],
+      (isTransplantMode, devices) => ({ isTransplantMode, devices })
+    );
+
+    this.$headerState = computed(
+      [this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState],
+      (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history })
+    );
+
+    this.$mainCardState = computed(
+      [this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary],
+      (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
+    );
 
     // Initialize services
     this.syncService = new SyncService(this.dataService, this.data, this.ui);

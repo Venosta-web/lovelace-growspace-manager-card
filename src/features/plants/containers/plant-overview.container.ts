@@ -9,7 +9,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import type { ReadableAtom } from 'nanostores';
+import { atom, type ReadableAtom, type WritableAtom } from 'nanostores';
 import {
   mdiClose,
   mdiDna,
@@ -27,6 +27,7 @@ import { getTimelineService } from '../../../services/timeline-service';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createPlantOverviewViewModel,
+  createStablePlantOverviewViewModel,
   type PlantOverviewViewModel,
 } from '../viewmodels/plant-overview.viewmodel';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -75,10 +76,24 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _showScoringForm = false;
   @state() private _savingScore = false;
 
-  // ViewModel
+  // ViewModel state managed via atoms
+  private _plantAtom = atom<PlantEntity | null>(null);
+  private _editedAttributesAtom = atom<PlantOverviewEditedAttributes>({} as PlantOverviewEditedAttributes);
+  private _uiStateAtom = atom<{
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
+    isEditing: boolean;
+    showAllDates: boolean;
+    showDeleteConfirmation: boolean;
+  }>({
+    activeTab: 'dashboard',
+    isEditing: true,
+    showAllDates: false,
+    showDeleteConfirmation: false,
+  });
+  private _logbookEventsAtom = atom<GrowspaceEvent[]>([]);
+
   private viewModel!: ReadableAtom<PlantOverviewViewModel>;
   private viewModelController!: StoreController<PlantOverviewViewModel>;
-  private _growspaceOptionsController!: StoreController<Record<string, string>>;
 
   static styles = [
     dialogStyles,
@@ -170,24 +185,28 @@ export class PlantOverviewContainer extends LitElement {
     super.connectedCallback();
 
     if (this.plant && this.store) {
-      this.viewModel = createPlantOverviewViewModel(
-        this.plant,
-        this.editedAttributes,
-        {
-          activeTab: this._activeTab,
-          isEditing: this._isEditing,
-          showAllDates: this._showAllDates,
-          showDeleteConfirmation: this._showDeleteConfirmation,
-        },
+      // Initialize atoms with current prop values
+      this._plantAtom.set(this.plant);
+      this._editedAttributesAtom.set(this.editedAttributes);
+      this._uiStateAtom.set({
+        activeTab: this._activeTab,
+        isEditing: this._isEditing,
+        showAllDates: this._showAllDates,
+        showDeleteConfirmation: this._showDeleteConfirmation,
+      });
+
+      this.viewModel = createStablePlantOverviewViewModel(
+        this._plantAtom,
+        this._editedAttributesAtom,
+        this._uiStateAtom,
         this.store,
-        this._logbookEvents
+        this._logbookEventsAtom
       );
       this.viewModelController = new StoreController(this, this.viewModel);
-      this._growspaceOptionsController = new StoreController(this, this.store.grid.$growspaceOptions);
       this._initHarvestState();
     }
 
-    // Fetch logbook events asynchronously; the @state update will trigger a re-render
+    // Fetch logbook events asynchronously; the atom update will trigger a re-render
     this._fetchLogbookEvents();
   }
 
@@ -212,9 +231,12 @@ export class PlantOverviewContainer extends LitElement {
       const service = getTimelineService(this.hass);
       const plantId = this.plant.attributes?.plant_id;
       // Fetch by plantId so events from previous growspaces are included
-      this._logbookEvents = plantId
+      const events = plantId
         ? await service.fetchPlantEvents(plantId, growspaceId)
         : await service.fetchGrowspaceEvents(growspaceId);
+      
+      this._logbookEvents = events;
+      this._logbookEventsAtom.set(events);
     } catch (_e) {
       // Non-critical — timeline still shows plant attribute events
     }
@@ -223,33 +245,45 @@ export class PlantOverviewContainer extends LitElement {
   willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('plant') && this.plant) {
       this._initHarvestState();
-    }
+      this._plantAtom.set(this.plant);
 
-    // Recreate ViewModel if inputs change
-    if (
-      (changedProps.has('plant') ||
-        changedProps.has('editedAttributes') ||
-        changedProps.has('_activeTab') ||
-        changedProps.has('_isEditing') ||
-        changedProps.has('_showAllDates') ||
-        changedProps.has('_showDeleteConfirmation') ||
-        changedProps.has('_logbookEvents')) &&
-      this.plant &&
-      this.store
-    ) {
-      this.viewModel = createPlantOverviewViewModel(
-        this.plant,
-        this.editedAttributes,
-        {
+      // Initialize viewModel on first plant arrival if not already done in connectedCallback
+      if (!this.viewModelController && this.store) {
+        this._editedAttributesAtom.set(this.editedAttributes);
+        this._uiStateAtom.set({
           activeTab: this._activeTab,
           isEditing: this._isEditing,
           showAllDates: this._showAllDates,
           showDeleteConfirmation: this._showDeleteConfirmation,
-        },
-        this.store,
-        this._logbookEvents
-      );
-      this.viewModelController = new StoreController(this, this.viewModel);
+        });
+        this.viewModel = createStablePlantOverviewViewModel(
+          this._plantAtom,
+          this._editedAttributesAtom,
+          this._uiStateAtom,
+          this.store,
+          this._logbookEventsAtom
+        );
+        this.viewModelController = new StoreController(this, this.viewModel);
+      }
+    }
+
+    if (changedProps.has('editedAttributes')) {
+      this._editedAttributesAtom.set(this.editedAttributes);
+    }
+
+    // Update UI state atom when local properties change
+    if (
+      changedProps.has('_activeTab') ||
+      changedProps.has('_isEditing') ||
+      changedProps.has('_showAllDates') ||
+      changedProps.has('_showDeleteConfirmation')
+    ) {
+      this._uiStateAtom.set({
+        activeTab: this._activeTab,
+        isEditing: this._isEditing,
+        showAllDates: this._showAllDates,
+        showDeleteConfirmation: this._showDeleteConfirmation,
+      });
     }
   }
 
@@ -521,7 +555,7 @@ export class PlantOverviewContainer extends LitElement {
 
   private _renderFooter(vm: PlantOverviewViewModel): TemplateResult {
     const stage = (this.plant?.state || '').toLowerCase();
-    const growspaceOptions = this._growspaceOptionsController?.value ?? {};
+    const growspaceOptions = vm.growspaceOptions;
     const growspaceEntries = Object.entries(growspaceOptions).filter(
       ([id]) => id !== this.plant?.attributes?.growspace_id
     );

@@ -147,6 +147,43 @@ describe('DialogHost Coverage', () => {
             showToast: vi.fn(),
         };
 
+        // Combined atom matching GrowspaceStore.$dialogHostState
+        const subAtoms = [
+            mockStore.ui.$activeDialog,
+            mockStore.data.$devices,
+            mockStore.data.$selectedDevice,
+            mockStore.data.$strainLibrary,
+        ];
+        const dialogHostListeners: any[] = [];
+        const getDialogHostValue = () => ({
+            activeDialog: mockStore.ui.$activeDialog.get(),
+            devices: mockStore.data.$devices.get(),
+            selectedDevice: mockStore.data.$selectedDevice.get(),
+            strainLibrary: mockStore.data.$strainLibrary.get(),
+        });
+        subAtoms.forEach(sub => sub.listen(() => {
+            const v = getDialogHostValue();
+            dialogHostListeners.forEach(l => l(v));
+        }));
+        mockStore.$dialogHostState = {
+            get() { return getDialogHostValue(); },
+            subscribe(fn: any) {
+                dialogHostListeners.push(fn);
+                fn(getDialogHostValue());
+                return () => {
+                    const i = dialogHostListeners.indexOf(fn);
+                    if (i !== -1) dialogHostListeners.splice(i, 1);
+                };
+            },
+            listen(fn: any) {
+                dialogHostListeners.push(fn);
+                return () => {
+                    const i = dialogHostListeners.indexOf(fn);
+                    if (i !== -1) dialogHostListeners.splice(i, 1);
+                };
+            },
+        };
+
         element = new DialogHost();
         (element as any).store = mockStore;
         (element as any).hass = {

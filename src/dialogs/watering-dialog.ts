@@ -29,8 +29,7 @@ export class WateringDialog extends LitElement {
   @state() private _selectedPresetId = '';
   @state() private _isSubmitting = false;
 
-  private _presetsController!: StoreController<Record<string, NutrientPreset>>;
-  private _inventoryController!: StoreController<import('../types').NutrientInventory | null>;
+  private _nutrientDataController!: StoreController<import('../store/core/data-store').NutrientDataState>;
 
   protected willUpdate(changedProperties: PropertyValues) {
     if (changedProperties.has('store')) {
@@ -47,23 +46,19 @@ export class WateringDialog extends LitElement {
   private _initControllers() {
     if (!this.store || !this.store.data) return;
 
-    // Only initialize if not already done for this store
-    if (!this._presetsController) {
-      this._presetsController = new StoreController(this, this.store.data.$nutrientPresets);
+    if (!this._nutrientDataController) {
+      this._nutrientDataController = new StoreController(this, this.store.data.$nutrientDataState);
 
-      // Trigger fetch if empty
-      const presets = this._presetsController.value;
-      if (!presets || Object.keys(presets).length === 0) {
+      const { nutrientPresets, nutrientInventory, ecRampCurves } = this._nutrientDataController.value;
+
+      if (!nutrientPresets || Object.keys(nutrientPresets).length === 0) {
         this.store.fetchNutrientPresets();
       }
-    }
-
-    if (!this._inventoryController) {
-      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
-
-      // Trigger fetch if empty
-      if (!this._inventoryController.value) {
+      if (!nutrientInventory) {
         this.store.fetchNutrientInventory();
+      }
+      if (Object.keys(ecRampCurves).length === 0) {
+        this.store.fetchECRampCurves();
       }
     }
   }
@@ -177,11 +172,11 @@ export class WateringDialog extends LitElement {
       return;
     }
 
-    const presets = this._presetsController.value;
+    const { nutrientPresets: presets } = this._nutrientDataController.value;
 
     if (presets && presets[presetId]) {
       const preset = presets[presetId];
-      this._nutrients = preset.nutrients.map((n) => ({
+      this._nutrients = preset.nutrients.map((n: import('../services/types').NutrientItem) => ({
         name: n.name,
         concentration: n.dose_ml_l,
       }));
@@ -245,21 +240,24 @@ export class WateringDialog extends LitElement {
   }
 
   private _getPresetOptions(currentStage?: string, daysInStage = 0) {
-    if (!this.store || !this._presetsController) return [];
+    if (!this.store || !this._nutrientDataController) return [];
 
-    const presetsRecord = this._presetsController.value || {};
-    return Object.values(presetsRecord).map((p) => {
-      let recommended = false;
-      if (p.stage && p.stage === currentStage) {
-        if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
-          recommended = true;
+    const { nutrientPresets: presetsRecord } = this._nutrientDataController.value;
+    if (!presetsRecord) return [];
+    return (Object.values(presetsRecord) as import('../services/types').NutrientPreset[]).map(
+      (p) => {
+        let recommended = false;
+        if (p.stage && p.stage === currentStage) {
+          if (!p.min_days_in_stage || daysInStage >= p.min_days_in_stage) {
+            recommended = true;
+          }
         }
+        return {
+          label: `${p.name}${recommended ? ' ⭐(Recommended)' : ''}`,
+          value: p.id,
+        };
       }
-      return {
-        label: `${p.name}${recommended ? ' ⭐(Recommended)' : ''}`,
-        value: p.id,
-      };
-    });
+    );
   }
 
   private _close() {
@@ -331,9 +329,10 @@ export class WateringDialog extends LitElement {
       }
     }
 
+    const { isLoading, nutrientPresets } = this._nutrientDataController.value;
     const presetList = this._getPresetOptions(currentStage, daysInStage);
 
-    if (!this._presetsController?.value) {
+    if (isLoading || !nutrientPresets) {
       return html`
         <ha-dialog open @closed=${this._close} hideActions width="full">
           <div class="glass-dialog-container">
@@ -543,27 +542,27 @@ export class WateringDialog extends LitElement {
 
   private _getNutrientSuggestions(): string[] {
     const nutrients = new Set<string>();
-    if (!this.store || !this.store.data || !this._presetsController || !this._inventoryController)
-      return [];
+    if (!this.store || !this.store.data || !this._nutrientDataController) return [];
 
-    // Add nutrients from presets
-    const presets = this._presetsController.value;
+    const { nutrientPresets: presets, nutrientInventory: inventory } =
+      this._nutrientDataController.value;
+
     if (presets) {
-      Object.values(presets).forEach((preset) => {
+      (Object.values(presets) as import('../services/types').NutrientPreset[]).forEach((preset) => {
         if (preset.nutrients) {
-          preset.nutrients.forEach((n) => {
+          preset.nutrients.forEach((n: import('../services/types').NutrientItem) => {
             if (n.name) nutrients.add(n.name);
           });
         }
       });
     }
 
-    // Add nutrients from inventory
-    const inventory = this._inventoryController.value;
     if (inventory && inventory.stocks) {
-      Object.values(inventory.stocks).forEach((stock) => {
-        if (stock.name) nutrients.add(stock.name);
-      });
+      (Object.values(inventory.stocks) as import('../services/types').NutrientStock[]).forEach(
+        (stock) => {
+          if (stock.name) nutrients.add(stock.name);
+        }
+      );
     }
 
     return Array.from(nutrients).sort();

@@ -38,21 +38,11 @@ export class GrowspaceGrid extends LitElement {
   @property({ type: Number }) rows: number = 3;
   @property({ type: Number }) cols: number = 3;
 
-  // UI state via StoreController - direct subscription to atoms
-  private _isEditModeController!: StoreController<boolean>;
-  private _selectedPlantsController!: StoreController<Set<string>>;
-  private _isCompactController!: StoreController<boolean>;
-  private _isLoadingController!: StoreController<boolean>;
-
-  private _overlayModeController!: StoreController<GridOverlayMode>;
+  private _cardViewController!: StoreController<ReturnType<typeof this.store.ui.$cardViewState.get>>;
 
   private _initControllers() {
-    if (this.store && !this._isEditModeController) {
-      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
-      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
-      this._isCompactController = new StoreController(this, this.store.ui.$isCompactView);
-      this._isLoadingController = new StoreController(this, this.store.ui.$isLoading);
-      this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
+    if (this.store && !this._cardViewController) {
+      this._cardViewController = new StoreController(this, this.store.ui.$cardViewState);
     }
   }
 
@@ -567,11 +557,12 @@ export class GrowspaceGrid extends LitElement {
       : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
 
     const flatGrid = this.plants.flat();
-    const isLoading = this._isLoadingController?.value;
+    const cardState = this._cardViewController?.value;
+    const isLoading = cardState?.isLoading;
 
     return html`
       <div
-        class="grid ${this._isCompactController?.value ? 'compact' : ''} ${isListView
+        class="grid ${cardState?.isCompact ? 'compact' : ''} ${isListView
         ? 'force-list-view'
         : ''}"
         style="${gridStyle}"
@@ -599,7 +590,7 @@ export class GrowspaceGrid extends LitElement {
       return this.renderEmptySlot(row, col);
     }
 
-    const overlayMode = this._overlayModeController?.value || GridOverlayMode.NONE;
+    const overlayMode = this._cardViewController?.value?.overlayMode ?? GridOverlayMode.NONE;
     const overlayColor = this._getOverlayColor(overlayMode, plant);
 
     // Phase 2: Feature flag to toggle between old and new plant card

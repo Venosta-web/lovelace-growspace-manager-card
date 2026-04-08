@@ -3,7 +3,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { StoreController } from '@nanostores/lit';
 import { HomeAssistant } from 'custom-card-helpers';
 
-import { GridOverlayMode } from '../constants';
 import { consume } from '@lit/context';
 import { hassContext, configContext, storeContext } from '../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../types';
@@ -36,22 +35,12 @@ export class GrowspaceHeader extends LitElement {
   @property({ attribute: false }) public growspaceOptions: Record<string, string> = {};
   @property({ attribute: false }) public historyData: unknown[] | null = null;
 
-  // Reactivity Controllers
-  private _viewModeController!: StoreController<string>;
-  private _isEditModeController!: StoreController<boolean>;
-  private _selectedPlantsController!: StoreController<Set<string>>;
-
-  // Data Store Controllers
-  private _devicesController!: StoreController<GrowspaceDevice[]>;
-  private _selectedDeviceController!: StoreController<string | null>;
-
-  // History Store Controllers
-  private _historyCacheController!: StoreController<any>;
-  private _historyLoadingController!: StoreController<boolean>;
-  private _activeEnvGraphsController!: StoreController<Set<string>>;
-  private _linkedGraphGroupsController!: StoreController<string[][]>;
-  private _nutrientInventoryController!: StoreController<NutrientInventory | null>;
-  private _overlayModeController!: StoreController<GridOverlayMode>;
+  // Combined controller replacing devices + nutrientInventory + headerHistory
+  private _headerController!: StoreController<{
+    devices: GrowspaceDevice[];
+    nutrientInventory: NutrientInventory | null;
+    history: { historyCache: Record<string, any>; historyLoading: boolean; activeEnvGraphs: Set<string>; linkedGraphGroups: string[][] };
+  }>;
 
   private _resizeController = new ResizeController(this, () => { });
 
@@ -65,7 +54,7 @@ export class GrowspaceHeader extends LitElement {
 
   // Helper getters
   get activeEnvGraphs() {
-    return this._activeEnvGraphsController?.value || new Set();
+    return this._headerController?.value?.history?.activeEnvGraphs || new Set();
   }
 
   /*
@@ -85,7 +74,7 @@ export class GrowspaceHeader extends LitElement {
       this.hass,
       this.device,
       this.activeEnvGraphs,
-      this._linkedGraphGroupsController?.value || []
+      this._headerController?.value?.history?.linkedGraphGroups || []
     );
 
     this._mainChips = mainChips;
@@ -95,29 +84,8 @@ export class GrowspaceHeader extends LitElement {
   }
 
   private _initControllers() {
-    if (this.store && !this._viewModeController) {
-      this._viewModeController = new StoreController(this, this.store.ui.$viewMode);
-      this._isEditModeController = new StoreController(this, this.store.ui.$isEditMode);
-      this._selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
-      this._devicesController = new StoreController(this, this.store.data.$devices);
-      this._selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-      this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
-      this._historyLoadingController = new StoreController(
-        this,
-        this.store.history.$historyLoading
-      );
-      this._activeEnvGraphsController = new StoreController(
-        this,
-        this.store.history.$activeEnvGraphs
-      );
-      this._linkedGraphGroupsController = new StoreController(
-        this,
-        this.store.history.$linkedGraphGroups
-      );
-      this._nutrientInventoryController = new StoreController(
-        this, this.store.data.$nutrientInventory
-      );
-      this._overlayModeController = new StoreController(this, this.store.ui.$gridOverlayMode);
+    if (this.store && !this._headerController) {
+      this._headerController = new StoreController(this, this.store.$headerState);
 
       // Load history data when header is mounted (important for header-only view mode)
       this.store.history.loadHistoryOnDemand();
@@ -142,7 +110,7 @@ export class GrowspaceHeader extends LitElement {
     const args = [
       this.device?.deviceId,
       this.activeEnvGraphs,
-      this._linkedGraphGroupsController?.value,
+      this._headerController?.value?.history?.linkedGraphGroups,
     ];
     const changed =
       !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
@@ -206,7 +174,7 @@ export class GrowspaceHeader extends LitElement {
   render() {
     if (!this.device || !this.hass) return html``;
 
-    const devices = this._devicesController?.value || [];
+    const devices = this._headerController?.value?.devices || [];
     const deviceId = this.device.deviceId;
 
     // Split chips into Hero and Secondary sets (Restoring original logic)
@@ -264,7 +232,7 @@ export class GrowspaceHeader extends LitElement {
           <div class="secondary-strip-container">
             <growspace-header-secondary
               .chips=${secondaryChips}
-              .inventory=${this._nutrientInventoryController?.value || null}
+              .inventory=${this._headerController?.value?.nutrientInventory || null}
               .compact=${this.compact}
               .isMobile=${this._resizeController.isMobile}
               .mobileLink=${this._mobileLink}
