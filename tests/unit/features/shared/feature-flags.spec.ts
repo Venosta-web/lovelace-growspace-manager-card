@@ -3,16 +3,8 @@ import { FEATURE_FLAGS, isFeatureEnabled } from '../../../../src/features/shared
 
 describe('feature-flags', () => {
   describe('FEATURE_FLAGS', () => {
-    it('USE_NEW_PLANT_CARD is enabled', () => {
-      expect(FEATURE_FLAGS.USE_NEW_PLANT_CARD).toBe(true);
-    });
-
     it('USE_NEW_DIALOGS is enabled', () => {
       expect(FEATURE_FLAGS.USE_NEW_DIALOGS).toBe(true);
-    });
-
-    it('USE_NEW_GROWSPACE_GRID is enabled', () => {
-      expect(FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID).toBe(true);
     });
 
     it('USE_EVENT_BUS is enabled', () => {
@@ -21,16 +13,8 @@ describe('feature-flags', () => {
   });
 
   describe('isFeatureEnabled', () => {
-    it('returns true for USE_NEW_PLANT_CARD', () => {
-      expect(isFeatureEnabled('USE_NEW_PLANT_CARD')).toBe(true);
-    });
-
     it('returns true for USE_NEW_DIALOGS', () => {
       expect(isFeatureEnabled('USE_NEW_DIALOGS')).toBe(true);
-    });
-
-    it('returns true for USE_NEW_GROWSPACE_GRID', () => {
-      expect(isFeatureEnabled('USE_NEW_GROWSPACE_GRID')).toBe(true);
     });
 
     it('returns true for USE_EVENT_BUS', () => {

@@ -2,8 +2,6 @@ import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiFullscreenExit } from '@mdi/js';
 import { PlantEntity } from '../../types';
-import '../growspace-grid';
-import { FEATURE_FLAGS } from '../../features/shared/config/feature-flags';
 import '../../features/plants/containers/growspace-grid.container';
 import { growspaceCardStyles } from '../../styles/growspace-card.styles';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -64,10 +62,7 @@ export class GrowspaceViewCompact extends LitElement {
   ];
 
   public focusPlant(index: number) {
-    const selector = FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID
-      ? 'growspace-grid-container'
-      : 'growspace-grid';
-    const grid = this.shadowRoot?.querySelector(selector);
+    const grid = this.shadowRoot?.querySelector('growspace-grid-container');
     if (grid) {
       (grid as unknown as { focusPlant: (index: number) => void }).focusPlant(index);
     }
@@ -87,17 +82,11 @@ export class GrowspaceViewCompact extends LitElement {
         </button>
       </div>
       <div class="view-mode-container compact">
-        ${FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID
-          ? html`
-              <growspace-grid-container
-                .plants=${this.grid}
-                .rows=${this.rows}
-                .cols=${this.cols}
-              ></growspace-grid-container>
-            `
-          : html`
-              <growspace-grid .plants=${this.grid} .rows=${this.rows} .cols=${this.cols}></growspace-grid>
-            `}
+        <growspace-grid-container
+          .plants=${this.grid}
+          .rows=${this.rows}
+          .cols=${this.cols}
+        ></growspace-grid-container>
       </div>
     `;
   }

@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { PlantEntity } from '../types';
 import { sharedStyles } from '../styles/shared.styles';
 import { variables } from '../styles/variables';
-import './plant-card';
+import '../features/plants/containers/plant-card.container';
 
 @customElement('transplant-source-panel')
 export class TransplantSourcePanel extends LitElement {
@@ -157,7 +157,7 @@ export class TransplantSourcePanel extends LitElement {
 
   private _renderDraggablePlant(plant: PlantEntity, _stage: 'clone' | 'seedling') {
     return html`
-      <growspace-plant-card
+      <plant-card-container
         class="source-plant-card"
         .plant=${plant}
         .row=${plant.attributes.row}
@@ -165,7 +165,7 @@ export class TransplantSourcePanel extends LitElement {
         .forceDraggable=${true}
         draggable="true"
         @dragstart=${(e: DragEvent) => this._handleDragStart(e, plant)}
-      ></growspace-plant-card>
+      ></plant-card-container>
     `;
   }
 }

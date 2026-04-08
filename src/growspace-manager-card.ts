@@ -14,7 +14,6 @@ import './growspace-env-chart';
 import './features/ui/containers/growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
 import './features/ui/components/growspace-edit-mode-banner-ui';
-import './components/plant-card';
 import './features/ui/containers/growspace-header.container';
 import './features/ui/containers/growspace-toast.container';
 
