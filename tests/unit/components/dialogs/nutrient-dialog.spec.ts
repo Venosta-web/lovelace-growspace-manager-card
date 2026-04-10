@@ -18,8 +18,8 @@ describe('NutrientDialog', () => {
                     listen: () => () => {}
                 },
                 $nutrientInventory: {
-                    get: () => ({}),
-                    subscribe: (fn: any) => { fn({}); return () => { }; },
+                    get: () => null,
+                    subscribe: (fn: any) => { fn(null); return () => { }; },
                     listen: () => () => {}
                 }
             },

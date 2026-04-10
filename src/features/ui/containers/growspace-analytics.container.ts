@@ -118,7 +118,10 @@ export class GrowspaceAnalyticsContainer extends LitElement {
   }
 
   private _handleToggleGraph(e: CustomEvent) {
-    if (typeof e.detail === 'string') this.store.toggleEnvGraph(e.detail);
+    const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
+    if (metric) {
+      this.store?.toggleEnvGraph(metric);
+    }
   }
 
   private _handleUnlinkGraphs(e: CustomEvent) {

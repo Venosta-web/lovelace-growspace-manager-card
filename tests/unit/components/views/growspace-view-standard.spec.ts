@@ -316,4 +316,33 @@ describe('GrowspaceViewStandard', () => {
             detail: 'fallback'
         }));
     });
+
+    it('should re-initialize controllers when store property changes', async () => {
+        const initSpy = vi.spyOn(element as any, '_initControllers');
+        
+        // Trigger property change
+        element.store = { ...mockStore, newProp: true };
+        
+        // willUpdate is called by Lit before update
+        element.requestUpdate('store', mockStore);
+        await element.updateComplete;
+        
+        expect(initSpy).toHaveBeenCalled();
+    });
+
+    it('_getPlantsByStage should return empty array if devices are missing', async () => {
+        // Force the controller to have no value or empty devices
+        // Since it's a nanostores controller, we control it via the atom
+        devicesAtom.set(null as any);
+        
+        const plants = (element as any)._getPlantsByStage('clone');
+        expect(plants).toEqual([]);
+    });
+
+    it('_getPlantsByStage should handle devices without plants property', async () => {
+        devicesAtom.set([{ name: 'Empty GS' } as any]);
+        
+        const plants = (element as any)._getPlantsByStage('clone');
+        expect(plants).toEqual([]);
+    });
 });

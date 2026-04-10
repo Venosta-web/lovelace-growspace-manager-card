@@ -133,18 +133,11 @@ export class GrowspaceHeaderUI extends LitElement {
             .isEditMode=${this.isEditMode}
             .selectedPlants=${this.selectedPlants}
             .selectedDevice=${this.deviceId}
-            @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+            @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
             @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
             @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
             @toggle-mobile-link=${() => this._handleToggleMobileLink()}
-            @action-triggered=${(e: any) =>
-              this.dispatchEvent(
-                new CustomEvent('action-triggered', {
-                  detail: e.detail,
-                  bubbles: true,
-                  composed: true,
-                })
-              )}
+            @action-triggered=${(e: any) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('action-triggered', { detail: e.detail, bubbles: true, composed: true })); }}
           ></growspace-header-actions-ui>
 
           <!-- Row 2 Left: Stages -->
@@ -163,7 +156,7 @@ export class GrowspaceHeaderUI extends LitElement {
               .chips=${this.secondaryChips}
               .inventory=${this.inventory}
               @open-nutrients=${() => this._openNutrients()}
-              @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+              @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
               @chip-drag-start=${(e: any) =>
                 this._handleChipDragStart(e.detail.event, e.detail.metric)}
               @chip-drop=${(e: any) =>
@@ -182,7 +175,7 @@ export class GrowspaceHeaderUI extends LitElement {
           .mobileLink=${this._mobileLink}
           .historyCache=${this.historyCache}
           .timeRange=${this.timeRange}
-          @toggle-graph=${(e: any) => this._toggleEnvGraph(e.detail.metric)}
+          @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
           @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
           @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero-ui>

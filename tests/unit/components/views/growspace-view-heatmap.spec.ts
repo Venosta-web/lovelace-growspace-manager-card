@@ -109,4 +109,20 @@ describe('GrowspaceViewHeatmap', () => {
         expect(listener).toHaveBeenCalled();
         expect(listener.mock.calls[0][0].detail).toEqual(eventDetail);
     });
+
+    it('should redispatch events from header', async () => {
+        const header = element.shadowRoot?.querySelector('growspace-header');
+        const spy = vi.fn();
+        element.addEventListener('growspace-changed', spy);
+
+        const detail = 'gs2';
+        header?.dispatchEvent(new CustomEvent('growspace-changed', {
+            detail,
+            bubbles: true,
+            composed: true
+        }));
+
+        expect(spy).toHaveBeenCalled();
+        expect(spy.mock.calls[0][0].detail).toBe(detail);
+    });
 });

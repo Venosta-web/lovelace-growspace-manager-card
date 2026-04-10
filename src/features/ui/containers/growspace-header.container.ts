@@ -63,36 +63,14 @@ export class GrowspaceHeaderContainer extends LitElement {
     this._initControllers();
   }
 
-  private _lastUpdateArgs: unknown[] = [];
-
-  private _shouldUpdateMetrics(): boolean {
-    const activeEnvGraphs = this._headerController?.value?.history?.activeEnvGraphs || new Set();
-    const linkedGraphGroups = this._headerController?.value?.history?.linkedGraphGroups || [];
-    
-    const args = [
-      this.device?.deviceId,
-      Array.from(activeEnvGraphs).sort().join(','),
-      JSON.stringify(linkedGraphGroups),
-    ];
-    
-    const changed = !this._lastUpdateArgs.length || args.some((arg, i) => arg !== this._lastUpdateArgs[i]);
-    if (changed) {
-      this._lastUpdateArgs = args;
-    }
-    return changed;
-  }
-
-  private _updateMetrics() {
+  private get _metrics() {
     if (!this.device || !this.hass) {
-      this._heroChips = [];
-      this._secondaryChips = [];
-      this._deviceChips = [];
-      this._dominant = undefined;
-      return;
+      return { heroChips: [], secondaryChips: [], deviceChips: [], dominant: undefined };
     }
 
-    const activeEnvGraphs = this._headerController?.value?.history?.activeEnvGraphs || new Set();
-    const linkedGraphGroups = this._headerController?.value?.history?.linkedGraphGroups || [];
+    const state = this._headerController?.value;
+    const activeEnvGraphs = state?.history?.activeEnvGraphs || new Set();
+    const linkedGraphGroups = state?.history?.linkedGraphGroups || [];
 
     const { mainChips, deviceChips, dominant } = MetricsUtils.computeHeaderMetrics(
       this.hass,
@@ -103,28 +81,23 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     // Split mainChips into Hero and Secondary
     const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
-    this._heroChips = [];
-    this._secondaryChips = [];
+    const heroChips: HeaderChip[] = [];
+    const secondaryChips: HeaderChip[] = [];
     
     mainChips.forEach(chip => {
       if (heroKeySet.has(chip.key)) {
-        this._heroChips.push(chip);
+        heroChips.push(chip);
       } else {
-        this._secondaryChips.push(chip);
+        secondaryChips.push(chip);
       }
     });
 
-    this._deviceChips = deviceChips;
-    this._dominant = dominant;
+    return { heroChips, secondaryChips, deviceChips, dominant };
   }
 
   willUpdate(changedProps: Map<PropertyKey, unknown>) {
     if (changedProps.has('store')) {
       this._initControllers();
-    }
-
-    if (changedProps.has('device') || this._shouldUpdateMetrics()) {
-      this._updateMetrics();
     }
 
     if ((changedProps.has('device') || changedProps.has('store')) && this.store?.history) {
@@ -144,7 +117,10 @@ export class GrowspaceHeaderContainer extends LitElement {
   }
 
   private _handleToggleGraph(e: CustomEvent) {
-    this.store?.toggleEnvGraph(e.detail.metric);
+    const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
+    if (metric) {
+      this.store?.toggleEnvGraph(metric);
+    }
   }
 
   private _handleChipDragStart(e: CustomEvent) {
@@ -169,31 +145,17 @@ export class GrowspaceHeaderContainer extends LitElement {
     this.store?.openNutrientsDialog();
   }
 
-  private _handleActionTriggered(e: CustomEvent) {
+  private _handleActionTriggered(e: CustomEvent<{ action: string }>) {
     const { action } = e.detail;
+    console.log(`[GrowspaceHeaderContainer] Action triggered: ${action}`);
+    if (!this.store) return;
+    
     switch (action) {
       case 'add_plant':
         this.store.openAddPlantDialog();
         break;
       case 'config': {
         if (this.device) this.store.openConfigDialog(this.device);
-        break;
-      }
-      case 'edit':
-        this.store.ui.setEditMode(!this._actionsController.value.isEditMode);
-        break;
-      case 'compact': {
-        const currentMode = this._actionsController.value.viewMode;
-        this.store.ui.setViewMode(
-          currentMode === ViewMode.COMPACT ? ViewMode.STANDARD : ViewMode.COMPACT
-        );
-        break;
-      }
-      case 'heatmap': {
-        const currentMode = this._actionsController.value.viewMode;
-        this.store.ui.setViewMode(
-          currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP
-        );
         break;
       }
       case 'strains':
@@ -245,19 +207,31 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'report':
         this.store.openGrowReportDialog(this.device?.deviceId || undefined);
         break;
+      case 'edit':
+        this.store.ui.setEditMode(!this.store.ui.$isEditMode.get());
+        break;
+      case 'heatmap': {
+        const currentMode = this.store.ui.$viewMode.get();
+        this.store.ui.setViewMode(currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP);
+        break;
+      }
+      default:
+        console.warn(`[GrowspaceHeaderContainer] Unknown action: ${action}`);
     }
   }
 
   render() {
     if (!this.device || !this.hass) return nothing;
 
+    const { heroChips, secondaryChips, deviceChips, dominant } = this._metrics;
+
     return html`
       <growspace-header-ui
         .hass=${this.hass}
-        .heroChips=${this._heroChips}
-        .secondaryChips=${this._secondaryChips}
-        .deviceChips=${this._deviceChips}
-        .dominant=${this._dominant}
+        .heroChips=${heroChips}
+        .secondaryChips=${secondaryChips}
+        .deviceChips=${deviceChips}
+        .dominant=${dominant}
         .inventory=${this._headerController?.value?.nutrientInventory || null}
         .devices=${this._headerController?.value?.devices || []}
         .deviceId=${this.device.deviceId}

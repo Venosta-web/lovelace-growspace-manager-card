@@ -287,10 +287,10 @@ export class GrowspaceEnvChart extends LitElement {
       const baseKey = key.includes(':') ? key.split(':')[0] : key;
 
       const baseConfig = this.metricConfig[baseKey] || {
-        color: this.isCombined ? METRIC_CONFIG[baseKey]?.color || '#ffffff' : this.color,
-        title: this.chartTitle || (this.isCombined ? METRIC_CONFIG[baseKey]?.title || baseKey : this.title),
-        unit: this.isCombined ? METRIC_CONFIG[baseKey]?.unit || '' : this.unit,
-        icon: this.isCombined ? METRIC_CONFIG[baseKey]?.icon || '' : this.icon,
+        color: METRIC_CONFIG[baseKey]?.color || this.color,
+        title: this.chartTitle || METRIC_CONFIG[baseKey]?.title || this.title || baseKey,
+        unit: METRIC_CONFIG[baseKey]?.unit || this.unit,
+        icon: METRIC_CONFIG[baseKey]?.icon || this.icon,
       };
 
       // Handle color deviation for multi-sensor series

@@ -1,12 +1,14 @@
 import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
-  StrainEntry,
   PlantEntity,
   PlantOverviewDialogState,
-  GrowspaceManagerCardConfig,
-  AddPlantDialogState,
+  PlantAttributes,
   AddPlantsDialogState,
+  AddPlantDialogState,
+  StrainEntry,
+  NutrientPreset,
+  GrowspaceManagerCardConfig,
 } from '../../types';
 import { ViewMode } from '../../constants';
 import { DataService } from '../../data-service';
@@ -476,13 +478,13 @@ export class GrowspaceStore {
     return await plantActions.movePlantToNextStage(this.context, plant);
   }
 
-  handleTakeClone = async (motherPlant: PlantEntity, numClones?: number): Promise<boolean> => {
-    const success = await plantActions.takeClone(this.context, motherPlant, numClones);
+  async handleTakeClone(motherPlant: PlantEntity, numClones?: number, targetGrowspaceId?: string): Promise<boolean> {
+    const success = await plantActions.takeClone(this.context, motherPlant, numClones, targetGrowspaceId);
     if (success) {
       await this.refreshData();
     }
     return success;
-  };
+  }
 
   async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string): Promise<boolean> {
     return await plantActions.movePlantToGrowspace(this.context, plant, targetGrowspace);
@@ -520,6 +522,10 @@ export class GrowspaceStore {
     await strainActions.removeStrain(this.context, strainKey);
   }
 
+  async updateStrain(strainData: Partial<StrainEntry>) {
+    await strainActions.updateStrain(this.context, strainData);
+  }
+
   // eslint-disable-next-line camelcase
   async handleAddGrowspace(detail: {
     name: string;
@@ -534,6 +540,15 @@ export class GrowspaceStore {
       detail.plantsPerRow,
       detail.notification_service
     );
+  }
+
+  async handleRemoveGrowspace(growspaceId: string) {
+    await strainActions.removeGrowspace(this.context, growspaceId);
+  }
+
+  async handleRemoveEnvironment(growspaceId: string) {
+    await this.dataService.removeEnvironment(growspaceId);
+    await this.refreshData();
   }
 
   // eslint-disable-next-line camelcase
@@ -578,6 +593,11 @@ export class GrowspaceStore {
 
   handleKeyboardNavigation(key: string) {
     keyboardActions.handleKeyboardNavigation(this.context, key);
+  }
+
+  async addNutrientPreset(preset: any) {
+    await this.dataService.saveNutrientPreset(preset);
+    await this.refreshData();
   }
 
   async harvestPlant(plant: PlantEntity) {

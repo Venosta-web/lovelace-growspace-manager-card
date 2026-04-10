@@ -9,26 +9,27 @@ import '../ui/quick-note-input';
 import '../ui/vpd-heatmap';
 import '../ui/confirm-delete-dialog';
 import {
-  mdiWater,
-  mdiSprout,
   mdiAlertCircle,
-  mdiNoteText,
-  mdiLeaf,
-  mdiBug,
+  mdiDelete,
+  mdiNote,
+  mdiTag,
   mdiThermometer,
   mdiWaterPercent,
   mdiGauge,
-  mdiFlaskOutline,
   mdiFlash,
   mdiCupWater,
-  mdiTag,
-  mdiDelete,
-  mdiDumbbell,
+  mdiFlaskOutline,
   mdiFlower,
   mdiHairDryer,
   mdiCannabis,
+  mdiSprout,
+  mdiNoteText,
+  mdiWater,
+  mdiBug,
+  mdiLeaf,
   mdiWeatherSunny,
   mdiWeatherNight,
+  mdiDumbbell,
 } from '@mdi/js';
 
 // Correlation window constant
@@ -641,29 +642,7 @@ export class PlantTimeline extends LitElement {
           </div>
           ${(() => {
             // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
-            let temperature = event.metadata?.temperature;
-            let humidity = event.metadata?.humidity;
-            let vpd = event.metadata?.vpd;
-
-            // Fallback parsing if metadata is missing but reasons exist
-            if ((temperature === undefined || humidity === undefined || vpd === undefined) && event.reasons) {
-              const reasons = event.reasons;
-
-              if (temperature === undefined) {
-                const tempMatch = reasons.find(r => r.includes('Temperature'))?.match(/Temperature:\s*([\d.]+)/);
-                if (tempMatch) temperature = parseFloat(tempMatch[1]);
-              }
-
-              if (humidity === undefined) {
-                const humMatch = reasons.find(r => r.includes('Humidity'))?.match(/Humidity:\s*([\d.]+)/);
-                if (humMatch) humidity = parseFloat(humMatch[1]);
-              }
-
-              if (vpd === undefined) {
-                const vpdMatch = reasons.find((r) => r.includes('VPD'))?.match(/VPD:\s*([\d.]+)/);
-                if (vpdMatch) vpd = parseFloat(vpdMatch[1]);
-              }
-            }
+            const { temperature, humidity, vpd } = this._getEnvironmentalData(event);
 
             return temperature !== undefined && humidity !== undefined
               ? html`
@@ -692,7 +671,6 @@ export class PlantTimeline extends LitElement {
   }
 
   private _renderMetadata(metadata?: TimelineEventMetadata) {
-    if (metadata) console.log('_renderMetadata called with:', metadata);
     if (!metadata || Object.keys(metadata).length === 0) return nothing;
 
     const items = [
@@ -780,9 +758,7 @@ export class PlantTimeline extends LitElement {
 
     const stage = latestStageEvent.type === 'stage_change'
       ? latestStageEvent.to?.toLowerCase()
-      : latestStageEvent.type === 'milestone'
-        ? latestStageEvent.label?.toLowerCase()
-        : undefined;
+      : latestStageEvent.label?.toLowerCase();
 
     if (stage === 'seedling' || stage === 'clone') return 'seedling';
     if (stage === 'veg' || stage === 'vegetative' || stage === 'mother') return 'vegetative';
@@ -791,6 +767,40 @@ export class PlantTimeline extends LitElement {
     if (stage === 'dry' || stage === 'cure') return 'late_flower'; // Heatmap less relevant here but keep valid
 
     return 'vegetative';
+  }
+
+  private _getEnvironmentalData(event: PlantTimelineEvent) {
+    const temperature = event.metadata?.temperature;
+    const humidity = event.metadata?.humidity;
+    const vpd = event.metadata?.vpd;
+
+    if (event.type !== 'environmental_report' || !event.reasons) {
+      return { temperature, humidity, vpd };
+    }
+
+    if (temperature !== undefined && humidity !== undefined && vpd !== undefined) {
+      return { temperature, humidity, vpd };
+    }
+
+    let parsedTemp = temperature;
+    let parsedHum = humidity;
+    let parsedVpd = vpd;
+
+    const parse = (label: string, current: number | undefined, reason: string) => {
+      if (current !== undefined || !reason.includes(label)) {
+        return current;
+      }
+      const m = reason.match(new RegExp(`${label}:\\s*([\\d.]+)`));
+      return m ? parseFloat(m[1]) : current;
+    };
+
+    for (const r of event.reasons) {
+      parsedTemp = parse('Temperature', parsedTemp, r);
+      parsedHum = parse('Humidity', parsedHum, r);
+      parsedVpd = parse('VPD', parsedVpd, r);
+    }
+
+    return { temperature: parsedTemp, humidity: parsedHum, vpd: parsedVpd };
   }
 }
 

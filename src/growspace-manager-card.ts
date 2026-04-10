@@ -141,13 +141,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
       this._subscriptionController.updateHass(this.hass);
-      if (this._dialogPortal) this._dialogPortal.hass = this.hass;
+      if (this._dialogPortal) {
+        this._dialogPortal.hass = this.hass;
+      }
 
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
       if (pendingId) {
         this.store.handleDeepLink(pendingId);
       }
+    }
+
+    if (this._dialogPortal && (changedProps.has('hass') || changedProps.has('_config'))) {
+      this._dialogPortal.config = this._config;
     }
 
     // Sync strain library to context provider
