@@ -341,7 +341,7 @@ export class GrowspaceDialogHost extends LitElement {
     });
   }
 
-  private _handleStrainCreatedAtSource(e: CustomEvent) {
+  protected _handleStrainCreatedAtSource(e: CustomEvent) {
     this.store?.ui.setActiveDialog({
       type: 'STRAIN_LIBRARY',
       payload: {

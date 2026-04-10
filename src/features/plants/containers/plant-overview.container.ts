@@ -187,7 +187,7 @@ export class PlantOverviewContainer extends LitElement {
     if (this.plant && this.store) {
       // Initialize atoms with current prop values
       this._plantAtom.set(this.plant);
-      this._editedAttributesAtom.set(this.editedAttributes);
+      this._editedAttributesAtom.set(this.editedAttributes || {} as PlantOverviewEditedAttributes);
       this._uiStateAtom.set({
         activeTab: this._activeTab,
         isEditing: this._isEditing,

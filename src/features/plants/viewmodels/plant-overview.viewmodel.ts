@@ -362,10 +362,10 @@ export function createPlantOverviewViewModel(
       const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
 
       // Ensure displayName is a string (editedAttributes.strain is PlantAttributeValue)
-      const strainValue = editedAttributes.strain;
+      const strainValue = editedAttributes?.strain;
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
-      const phenoValue = editedAttributes.phenotype;
+      const phenoValue = editedAttributes?.phenotype;
       const displaySubtitle = `${plant.state} Stage • ${
         typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
       }`;
@@ -474,10 +474,10 @@ export function createStablePlantOverviewViewModel(
       const stageColor = PlantUtils.getPlantStageColor(plant.state);
       const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
 
-      const strainValue = editedAttributes.strain;
+      const strainValue = editedAttributes?.strain;
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
-      const phenoValue = editedAttributes.phenotype;
+      const phenoValue = editedAttributes?.phenotype;
       const displaySubtitle = `${plant.state} Stage • ${
         typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
       }`;

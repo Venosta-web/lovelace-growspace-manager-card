@@ -1,0 +1,259 @@
+
+> lovelace-growspace-manager-card@1.0.30-alpha.1 test:coverage
+> vitest run --coverage src/features/ui/components/growspace-header-actions-ui.ts tests/unit/features/ui/components/growspace-header-actions-ui.spec.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstderr[2m | unknown test
+[22m[39mLit is in dev mode. Not recommended for production! See https://lit.dev/msg/dev-mode for more information.
+[90mstderr[2m | tests/unit/features/ui/components/growspace-header-actions-ui.spec.ts
+[22m[39m[Error: ResizeObserver loop completed with undelivered notifications.]
+ [32m✓[39m [30m[43m chromium [49m[39m tests/unit/features/ui/components/growspace-header-actions-ui.spec.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m40 passed[39m[22m[90m (40)[39m
+[2m   Start at [22m 17:35:52
+[2m   Duration [22m 1.35s[2m (transform 0ms, setup 5ms, import 75ms, tests 53ms, environment 0ms)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |    2.11 |     0.77 |    1.89 |    2.02 |                   
+ src               |       0 |        0 |       0 |       0 |                   
+  constants.ts     |       0 |        0 |       0 |       0 |                   
+  context.ts       |       0 |        0 |       0 |       0 |                   
+  data-service.ts  |       0 |        0 |       0 |       0 |                   
+  events.ts        |       0 |        0 |       0 |       0 |                   
+  ...ransformer.ts |       0 |        0 |       0 |       0 |                   
+  ...-env-chart.ts |       0 |        0 |       0 |       0 |                   
+  ...ard-editor.ts |       0 |        0 |       0 |       0 | 9-158             
+  ...nager-card.ts |       0 |        0 |       0 |       0 | 32-345            
+  index.ts         |       0 |        0 |     100 |       0 | 28-29             
+  ui-state.ts      |       0 |        0 |       0 |       0 |                   
+ src/adapters      |       0 |        0 |       0 |       0 |                   
+  ...ce-adapter.ts |       0 |        0 |       0 |       0 | 20-273            
+  hass-types.ts    |       0 |        0 |       0 |       0 | 25-51             
+ src/cards         |       0 |        0 |       0 |       0 |                   
+  ...sight-card.ts |       0 |        0 |       0 |       0 | 25-341            
+  ...ytics-card.ts |       0 |        0 |       0 |       0 | 24-170            
+  ...-grid-card.ts |       0 |        0 |       0 |       0 | 27-234            
+ src/cards/editors |       0 |        0 |       0 |       0 |                   
+  ...ard-editor.ts |       0 |        0 |       0 |       0 | 8-107             
+  ...ard-editor.ts |       0 |        0 |       0 |       0 | 8-107             
+  ...ard-editor.ts |       0 |        0 |       0 |       0 | 9-137             
+ src/components    |    4.23 |     1.21 |    1.92 |     2.7 |                   
+  ...r-boundary.ts |       0 |        0 |       0 |       0 | 20-309            
+  ...space-chip.ts |      88 |    41.66 |      50 |   78.57 | 143-164           
+  ...w-switcher.ts |       0 |        0 |       0 |       0 | 14-102            
+  heatmap-3d.ts    |       0 |        0 |       0 |       0 | 17-1196           
+  ...urce-panel.ts |       0 |        0 |       0 |       0 | 9-167             
+ ...mponents/plant |       0 |        0 |       0 |       0 |                   
+  plant-stats.ts   |       0 |      100 |       0 |       0 | 9-17              
+  ...t-timeline.ts |       0 |        0 |       0 |       0 | 36-803            
+ src/components/ui |    5.42 |     1.52 |    5.98 |    4.18 |                   
+  ...ete-dialog.ts |       0 |        0 |       0 |       0 | 10-126            
+  ...r-boundary.ts |       0 |        0 |       0 |       0 | 11-162            
+  ...ce-logbook.ts |       0 |        0 |       0 |       0 | 20-496            
+  ...e-timeline.ts |       0 |        0 |       0 |       0 | 21-448            
+  ...lp-tooltip.ts |   92.85 |       50 |     100 |     100 | 108               
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  ...date-input.ts |       0 |        0 |       0 |       0 | 7-44              
+  ...mber-input.ts |       0 |        0 |       0 |       0 | 6-32              
+  md3-select.ts    |       0 |        0 |       0 |       0 | 8-38              
+  md3-switch.ts    |       0 |        0 |       0 |       0 | 5-70              
+  ...text-input.ts |       0 |        0 |       0 |       0 | 6-49              
+  ...stock-chip.ts |       0 |        0 |       0 |       0 | 8-40              
+  ...note-input.ts |       0 |        0 |       0 |       0 | 10-319            
+  ...-container.ts |   73.33 |       40 |      50 |   66.66 | 32-39,115-126     
+  vpd-heatmap.ts   |       0 |        0 |       0 |       0 | 7-254             
+ ...mponents/views |       0 |        0 |       0 |       0 |                   
+  ...ew-compact.ts |       0 |        0 |       0 |       0 | 12-95             
+  ...iew-header.ts |       0 |        0 |       0 |       0 | 12-48             
+  ...ew-heatmap.ts |       0 |        0 |       0 |       0 | 12-74             
+  ...w-standard.ts |       0 |        0 |       0 |       0 | 20-165            
+ src/controllers   |   10.69 |     3.77 |    8.92 |   11.85 |                   
+  ...controller.ts |       0 |        0 |       0 |       0 | 19-230            
+  ...controller.ts |       0 |        0 |       0 |       0 | 6-57              
+  ...controller.ts |       0 |        0 |       0 |       0 | 5-53              
+  ...controller.ts |   76.66 |       40 |   71.42 |   79.31 | 28-30,36,60-61    
+  ...controller.ts |       0 |        0 |       0 |       0 | 13-110            
+ src/dialogs       |       0 |        0 |       0 |       0 |                   
+  ...ant-dialog.ts |       0 |        0 |       0 |       0 | 17-560            
+  ...nts-dialog.ts |       0 |        0 |       0 |       0 | 16-348            
+  clone-dialog.ts  |       0 |        0 |       0 |       0 | 13-181            
+  config-dialog.ts |       0 |        0 |       0 |       0 | 37-1578           
+  ...ing-dialog.ts |       0 |        0 |       0 |       0 | 14-142            
+  ...tor-dialog.ts |       0 |        0 |       0 |       0 | 26-482            
+  ...ter-dialog.ts |       0 |        0 |       0 |       0 | 7-154             
+  ...ort-dialog.ts |       0 |        0 |       0 |       0 | 11-267            
+  ...ing-dialog.ts |       0 |        0 |       0 |       0 | 20-573            
+  ...ion-dialog.ts |       0 |        0 |       0 |       0 | 16-2310           
+  ...ook-dialog.ts |       0 |        0 |       0 |       0 | 17-174            
+  ...ent-dialog.ts |       0 |        0 |       0 |       0 | 17-199            
+  ...iew-dialog.ts |       0 |        0 |       0 |       0 | 63-1834           
+  ...bel-dialog.ts |       0 |        0 |       0 |       0 | 12-348            
+  ...oup-dialog.ts |       0 |        0 |       0 |       0 | 10-254            
+  ...ots-dialog.ts |       0 |        0 |       0 |       0 | 15-349            
+  ...ary-dialog.ts |       0 |        0 |       0 |       0 | 37-2999           
+  ...ion-dialog.ts |       0 |        0 |       0 |       0 | 11-136            
+  ...ing-dialog.ts |       0 |        0 |       0 |       0 | 13-187            
+ ...es/environment |     100 |      100 |     100 |     100 |                   
+  constants.ts     |     100 |      100 |     100 |     100 |                   
+  types.ts         |       0 |        0 |       0 |       0 |                   
+ ...ent/components |       0 |        0 |       0 |       0 |                   
+  env-chart.ts     |       0 |        0 |       0 |       0 | 29-909            
+ ...ironment/utils |       0 |        0 |       0 |       0 |                   
+  ...ransformer.ts |       0 |        0 |       0 |       0 | 19-159            
+ ...eatures/plants |     100 |      100 |     100 |     100 |                   
+  constants.ts     |     100 |      100 |     100 |     100 |                   
+  types.ts         |     100 |      100 |     100 |     100 |                   
+ ...nts/components |       0 |        0 |       0 |       0 |                   
+  ...ce-grid-ui.ts |       0 |        0 |       0 |       0 | 42-545            
+  ...ctions-tab.ts |       0 |        0 |       0 |       0 | 22-132            
+  plant-card-ui.ts |       0 |        0 |       0 |       0 | 34-332            
+  ...hboard-tab.ts |       0 |      100 |       0 |       0 | 18-63             
+  ...ntity-card.ts |       0 |        0 |       0 |       0 | 16-140            
+  ...dates-card.ts |       0 |        0 |       0 |       0 | 16-202            
+  ...stats-card.ts |       0 |        0 |       0 |       0 | 14-88             
+  ...meline-tab.ts |       0 |      100 |       0 |       0 | 15-32             
+ ...nts/containers |       0 |        0 |       0 |       0 |                   
+  ....container.ts |       0 |        0 |       0 |       0 | 25-187            
+  ....container.ts |       0 |        0 |       0 |       0 | 27-122            
+  ....container.ts |       0 |        0 |       0 |       0 | 46-1157           
+ ...nts/viewmodels |       0 |        0 |       0 |       0 |                   
+  ....viewmodel.ts |       0 |        0 |       0 |       0 | 16-168            
+  ....viewmodel.ts |       0 |        0 |       0 |       0 | 52-128            
+  ....viewmodel.ts |       0 |        0 |       0 |       0 | 95-491            
+ ...hared/commands |       0 |        0 |       0 |       0 |                   
+  command.ts       |       0 |        0 |       0 |       0 | 85-190            
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ .../shared/config |       0 |      100 |       0 |       0 |                   
+  feature-flags.ts |       0 |      100 |       0 |       0 | 8-26              
+ ...ed/controllers |       0 |        0 |       0 |       0 |                   
+  ...controller.ts |       0 |        0 |       0 |       0 | 17-53             
+  ...controller.ts |       0 |        0 |       0 |       0 | 33-80             
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  ...controller.ts |       0 |        0 |       0 |       0 | 31-100            
+ .../shared/events |       0 |        0 |       0 |       0 |                   
+  event-bus.ts     |       0 |        0 |       0 |       0 | 22-223            
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ ...shared/layouts |       0 |        0 |       0 |       0 |                   
+  ...log.layout.ts |       0 |        0 |       0 |       0 | 46-461            
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ ...s/shared/types |       0 |        0 |       0 |       0 |                   
+  ...on-context.ts |       0 |        0 |       0 |       0 |                   
+ .../ui/components |   10.81 |      8.1 |   13.51 |   11.61 |                   
+  ...alytics-ui.ts |       0 |        0 |       0 |       0 | 17-110            
+  ...-banner-ui.ts |       0 |        0 |       0 |       0 | 23-311            
+  ...actions-ui.ts |     100 |     93.1 |     100 |     100 | 53,99             
+  ...er-hero-ui.ts |       0 |        0 |       0 |       0 | 11-376            
+  ...condary-ui.ts |       0 |        0 |       0 |       0 | 10-101            
+  ...-stages-ui.ts |       0 |        0 |       0 |       0 | 7-51              
+  ...-header-ui.ts |       0 |        0 |       0 |       0 | 16-180            
+  ...-dialog-ui.ts |       0 |        0 |       0 |       0 | 18-487            
+  ...-dialog-ui.ts |       0 |        0 |       0 |       0 | 16-297            
+  ...-editor-ui.ts |       0 |        0 |       0 |       0 | 18-289            
+  ...e-toast-ui.ts |       0 |        0 |       0 |       0 | 12-112            
+  ...-dialog-ui.ts |       0 |        0 |       0 |       0 | 9-280             
+ .../ui/containers |       0 |        0 |       0 |       0 |                   
+  ....container.ts |       0 |        0 |       0 |       0 | 14-132            
+  ....container.ts |       0 |        0 |       0 |       0 | 53-1187           
+  ....container.ts |       0 |        0 |       0 |       0 | 17-228            
+  ....container.ts |       0 |        0 |       0 |       0 | 11-62             
+  ....container.ts |       0 |        0 |       0 |       0 | 11-64             
+ src/lib           |    82.6 |      100 |     100 |    82.6 |                   
+  constants.ts     |     100 |      100 |     100 |     100 |                   
+  context.ts       |       0 |      100 |     100 |       0 | 7-10              
+ src/lib/events    |       0 |      100 |       0 |       0 |                   
+  grid-events.ts   |       0 |      100 |       0 |       0 | 10-29             
+  index.ts         |       0 |        0 |       0 |       0 |                   
+  ...ary-events.ts |       0 |      100 |       0 |       0 | 2-4               
+  plant-events.ts  |       0 |      100 |       0 |       0 | 4-93              
+ src/lib/types     |     100 |      100 |     100 |     100 |                   
+  config.ts        |       0 |        0 |       0 |       0 |                   
+  dialog.ts        |       0 |        0 |       0 |       0 |                   
+  hass.ts          |     100 |      100 |     100 |     100 |                   
+  index.ts         |       0 |        0 |       0 |       0 |                   
+ src/localize      |       0 |        0 |       0 |       0 |                   
+  localize.ts      |       0 |        0 |       0 |       0 | 16-52             
+ ...lize/languages |       0 |      100 |     100 |       0 |                   
+  en.ts            |       0 |      100 |     100 |       0 | 1                 
+ src/schemas       |       0 |        0 |       0 |       0 |                   
+  api-schema.ts    |       0 |        0 |       0 |       0 | 3-399             
+ src/services      |       0 |        0 |       0 |       0 |                   
+  base-api.ts      |       0 |        0 |       0 |       0 | 11-52             
+  data-service.ts  |       0 |        0 |       0 |       0 | 50-528            
+  sync-service.ts  |       0 |        0 |       0 |       0 | 12-166            
+  ...ne-service.ts |       0 |        0 |       0 |       0 | 20-138            
+  types.ts         |       0 |      100 |       0 |       0 | 367               
+  ...do-manager.ts |       0 |        0 |       0 |       0 | 9-65              
+ src/services/api  |       0 |        0 |       0 |       0 |                   
+  ai-api.ts        |       0 |        0 |       0 |       0 | 17-76             
+  camera-api.ts    |       0 |        0 |       0 |       0 | 29-67             
+  genetics-api.ts  |       0 |        0 |       0 |       0 | 6-99              
+  growspace-api.ts |       0 |        0 |       0 |       0 | 15-303            
+  history-api.ts   |       0 |        0 |       0 |       0 | 23-148            
+  ...gation-api.ts |       0 |        0 |       0 |       0 | 17-205            
+  nutrient-api.ts  |       0 |        0 |       0 |       0 | 29-247            
+  plant-api.ts     |       0 |        0 |       0 |       0 | 23-303            
+  report-api.ts    |       0 |        0 |       0 |       0 | 32-57             
+  strain-api.ts    |       0 |        0 |       0 |       0 | 40-386            
+  vision-api.ts    |       0 |        0 |       0 |       0 | 19-61             
+ src/store/core    |       0 |        0 |       0 |       0 |                   
+  ...on-context.ts |       0 |        0 |       0 |       0 |                   
+  ...dispatcher.ts |       0 |      100 |       0 |       0 | 16-112            
+  data-store.ts    |       0 |        0 |       0 |       0 | 35-264            
+  ...pace-store.ts |       0 |        0 |       0 |       0 | 121-785           
+ src/store/grid    |       0 |        0 |       0 |       0 |                   
+  grid-store.ts    |       0 |        0 |       0 |       0 | 42-85             
+ src/store/history |       0 |        0 |       0 |       0 |                   
+  history-store.ts |       0 |        0 |       0 |       0 | 29-702            
+ src/store/plant   |       0 |        0 |       0 |       0 |                   
+  ipm-actions.ts   |       0 |        0 |       0 |       0 | 20-31             
+  ...ry-actions.ts |       0 |        0 |       0 |       0 | 11-262            
+  plant-actions.ts |       0 |        0 |       0 |       0 | 18-705            
+  ...in-actions.ts |       0 |        0 |       0 |       0 | 13-197            
+ src/store/system  |       0 |        0 |       0 |       0 |                   
+  ai-actions.ts    |       0 |        0 |       0 |       0 | 5-88              
+  ...ce-actions.ts |       0 |        0 |       0 |       0 | 5-17              
+  ...rd-actions.ts |       0 |        0 |       0 |       0 | 16-78             
+  ...ic-manager.ts |       0 |        0 |       0 |       0 | 13-122            
+ src/store/ui      |       0 |        0 |       0 |       0 |                   
+  dialog-types.ts  |       0 |        0 |       0 |       0 |                   
+  ui-actions.ts    |       0 |        0 |       0 |       0 | 7-430             
+  ui-store.ts      |       0 |        0 |       0 |       0 | 32-196            
+ src/styles        |   11.11 |      100 |     100 |   11.11 |                   
+  dialog.styles.ts |       0 |      100 |     100 |       0 | 5                 
+  ...ard.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  header.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  ...ard.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  ...ats.styles.ts |       0 |      100 |     100 |       0 | 3                 
+  shared.styles.ts |     100 |      100 |     100 |     100 |                   
+  ...-variables.ts |       0 |      100 |     100 |       0 | 14                
+  ui.styles.ts     |       0 |      100 |     100 |       0 | 3                 
+  variables.ts     |       0 |      100 |     100 |       0 | 3                 
+ src/utils         |       0 |        0 |       0 |       0 |                   
+  ...tics-utils.ts |       0 |        0 |       0 |       0 | 15-48             
+  chart-utils.ts   |       0 |        0 |       0 |       0 | 16-545            
+  data-service.ts  |       0 |        0 |       0 |       0 | 3-47              
+  date-utils.ts    |       0 |        0 |       0 |       0 | 14-115            
+  metrics-utils.ts |       0 |        0 |       0 |       0 | 51-705            
+  plant-utils.ts   |       0 |        0 |       0 |       0 | 16-572            
+  ...type-utils.ts |       0 |        0 |       0 |       0 | 6-162             
+ src/utils/three   |       0 |        0 |       0 |       0 |                   
+  ...on-manager.ts |       0 |        0 |       0 |       0 | 12-222            
+  scene-manager.ts |       0 |        0 |       0 |       0 | 24-215            
+ ...hree/renderers |       0 |        0 |       0 |       0 |                   
+  base-renderer.ts |       0 |        0 |       0 |       0 | 29-77             
+  ...t-renderer.ts |       0 |        0 |       0 |       0 | 5-878             
+  fan-renderer.ts  |       0 |        0 |       0 |       0 | 6-237             
+  ...e-renderer.ts |       0 |        0 |       0 |       0 | 9-104             
+  ...t-renderer.ts |       0 |        0 |       0 |       0 | 9-131             
+  ...t-renderer.ts |       0 |        0 |       0 |       0 | 6-410             
+  ...r-renderer.ts |       0 |        0 |       0 |       0 | 10-227            
+  tank-renderer.ts |       0 |        0 |       0 |       0 | 6-152             
+  ...d-renderer.ts |       0 |        0 |       0 |       0 | 8-413             
+-------------------|---------|----------|---------|---------|-------------------
