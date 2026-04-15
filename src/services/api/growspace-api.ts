@@ -252,7 +252,14 @@ export class GrowspaceAPI extends BaseAPI {
         payload.minimum_source_air_temperature = data.minimumSourceAirTemperature;
       if (data.sensorGroups) payload.sensor_groups = data.sensorGroups;
       if (data.sensorCoordinates) payload.sensor_coordinates = data.sensorCoordinates;
-      if (data.irrigationTanks) payload.irrigation_tanks = data.irrigationTanks;
+      if (data.irrigationTanks && data.irrigationTanks.length > 0) {
+        payload.irrigation_tanks = data.irrigationTanks.map((t: any) => ({
+          sensor_entity: t.sensorEntity,
+          name: t.name,
+          warning_level: t.warningLevel,
+          ...(t.volumeLiters != null ? { volume_liters: t.volumeLiters } : {}),
+        }));
+      }
 
       await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
       console.log('[GrowspaceAPI:configureEnvironment] Service Called');
