@@ -2,8 +2,10 @@ import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
+import * as snapshotActions from '../plant/snapshot-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
+import type { VisionCheckupConfig } from '../../lib/types/dialog';
 
 interface IGrowspaceStore {
   context: ActionContext;
@@ -138,4 +140,14 @@ export class ActionDispatcher {
       libraryActions.saveNutrientPreset(this.ctx, preset),
     removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
   };
+
+  public readonly snapshots = {
+    list: (growspaceId: string) => snapshotActions.getSnapshots(this.ctx, growspaceId),
+    capture: (growspaceId: string) => snapshotActions.captureSnapshot(this.ctx, growspaceId),
+    visionHistory: (growspaceId: string) => snapshotActions.getVisionHistory(this.ctx, growspaceId),
+    triggerCheckup: (growspaceId: string) => snapshotActions.triggerVisionCheckup(this.ctx, growspaceId),
+    updateCheckupConfig: (growspaceId: string, config: VisionCheckupConfig) =>
+      snapshotActions.updateVisionCheckupConfig(this.ctx, growspaceId, config),
+  };
 }
+
