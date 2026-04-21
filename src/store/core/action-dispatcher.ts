@@ -4,6 +4,7 @@ import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
 import * as snapshotActions from '../plant/snapshot-actions';
 import * as reportActions from '../plant/report-actions';
+import * as aiActions from '../system/ai-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -155,5 +156,14 @@ export class ActionDispatcher {
     fetch: (growspaceId: string) => reportActions.fetchGrowReport(this.ctx, growspaceId),
     export: (growspaceId: string, format: string) =>
       reportActions.exportGrowReport(this.ctx, growspaceId, format),
+  };
+
+  public readonly ai = {
+    /** Analyze all growspaces at once */
+    analyzeAll: () => aiActions.analyzeGrowspace(this.ctx, '', true),
+    /** Ask for advice about the currently selected device */
+    askAdvice: (query: string) => aiActions.analyzeGrowspace(this.ctx, query, false),
+    /** Get a strain recommendation */
+    strainRecommendation: (query: string) => aiActions.getStrainRecommendation(this.ctx, query),
   };
 }
