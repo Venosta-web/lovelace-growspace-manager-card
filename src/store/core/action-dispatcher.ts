@@ -1,6 +1,7 @@
 import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
+import * as libraryActions from '../plant/library-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 
@@ -116,5 +117,25 @@ export class ActionDispatcher {
     /** Select all plants in current growspace */
     selectAllPlants: () =>
       uiActions.selectAllPlants(this.ctx),
+  };
+
+  public readonly library = {
+    fetchStrains: (force = false) => libraryActions.fetchStrainLibrary(this.ctx, force),
+    fetchNutrientPresets: (force = false) => libraryActions.fetchNutrientPresets(this.ctx, force),
+    fetchIPMPresets: (force = false) => libraryActions.fetchIPMPresets(this.ctx, force),
+    fetchNutrientInventory: (force = false) => libraryActions.fetchNutrientInventory(this.ctx, force),
+    updateNutrientStock: (id: string, name: string, currentMl: number, initialMl: number) =>
+      libraryActions.updateNutrientStock(this.ctx, id, name, currentMl, initialMl),
+    removeNutrientStock: (id: string) => libraryActions.removeNutrientStock(this.ctx, id),
+    fetchECRampCurves: (force = false) => libraryActions.fetchECRampCurves(this.ctx, force),
+    saveECRampCurve: (data: Parameters<typeof libraryActions.saveECRampCurve>[1]) =>
+      libraryActions.saveECRampCurve(this.ctx, data),
+    removeECRampCurve: (id: string) => libraryActions.removeECRampCurve(this.ctx, id),
+  };
+
+  public readonly nutrient = {
+    savePreset: (preset: Parameters<typeof libraryActions.saveNutrientPreset>[1]) =>
+      libraryActions.saveNutrientPreset(this.ctx, preset),
+    removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
   };
 }

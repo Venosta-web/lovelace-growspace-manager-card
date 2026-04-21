@@ -262,3 +262,36 @@ export async function removeECRampCurve(ctx: ActionContext, curveId: string) {
     ctx.showToast(`Failed to remove EC ramp: ${error}`, 'error');
   }
 }
+
+export async function saveNutrientPreset(
+  ctx: ActionContext,
+  preset: {
+    preset_id?: string;
+    name: string;
+    nutrients: { name: string; dose_ml_l: number }[];
+    stage?: string;
+    min_days_in_stage?: number;
+  }
+) {
+  try {
+    await ctx.dataService.saveNutrientPreset(preset);
+    await fetchNutrientPresets(ctx, true);
+    ctx.showToast(`Saved preset: ${preset.name}`, 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to save preset: ${error}`, 'error');
+    throw e;
+  }
+}
+
+export async function removeNutrientPreset(ctx: ActionContext, presetId: string) {
+  try {
+    await ctx.dataService.removeNutrientPreset(presetId);
+    await fetchNutrientPresets(ctx, true);
+    ctx.showToast('Removed nutrient preset', 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to remove preset: ${error}`, 'error');
+    throw e;
+  }
+}
