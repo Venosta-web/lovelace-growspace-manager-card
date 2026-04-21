@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { openBatchCloneDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
@@ -346,5 +347,141 @@ describe('BatchCloneDialog – _submit', () => {
     await (el as any)._submit();
 
     expect((el as any)._isSubmitting).toBe(false);
+  });
+});
+
+describe('BatchCloneDialog – willUpdate', () => {
+  it('calls _resetForm when "open" changes to true', () => {
+    const el = createElement();
+    const resetFormSpy = vi.spyOn(el as any, '_resetForm');
+    const changedProps = new Map([['open', false]]);
+    el.open = true;
+    (el as any).willUpdate(changedProps);
+    expect(resetFormSpy).toHaveBeenCalled();
+  });
+
+  it('sets targetGrowspaceId from options if not already set', () => {
+    const el = createElement();
+    (el as any)._targetGrowspaceId = '';
+    const changedProps = new Map([['growspaceOptions', {}]]);
+    (el as any).growspaceOptions = { 'gs-opt': 'Opt 1' };
+    (el as any).willUpdate(changedProps);
+    expect((el as any)._targetGrowspaceId).toBe('gs-opt');
+  });
+
+  it('does nothing if open changed to false', () => {
+    const el = createElement();
+    const resetFormSpy = vi.spyOn(el as any, '_resetForm');
+    const changedProps = new Map([['open', true]]);
+    el.open = false;
+    (el as any).willUpdate(changedProps);
+    expect(resetFormSpy).not.toHaveBeenCalled();
+  });
+
+  it('handles growspaceOptions change when _targetGrowspaceId is already set', () => {
+    const el = createElement();
+    (el as any)._targetGrowspaceId = 'existing-id';
+    const changedProps = new Map([['growspaceOptions', {}]]);
+    (el as any).growspaceOptions = { 'new-id': 'New Opt' };
+    (el as any).willUpdate(changedProps);
+    expect((el as any)._targetGrowspaceId).toBe('existing-id');
+  });
+});
+
+describe('BatchCloneDialog – render', () => {
+  it('renders nothing when closed', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${false}></batch-clone-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('ha-dialog')).toBeNull();
+  });
+
+  it('renders dialog when open', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true}></batch-clone-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+  });
+
+  it('renders submit state properly', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true}></batch-clone-dialog>
+    `);
+    (el as any)._isSubmitting = true;
+    (el as any)._progress = 50;
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('.progress-bar')).not.toBeNull();
+  });
+
+  it('triggers change and input events correctly', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true} .growspaceOptions=${{ 'gs-1': 'Tent 1', 'gs-2': 'Tent 2' }}></batch-clone-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    select.dispatchEvent(new CustomEvent('change', { detail: 'gs-2' }));
+    expect((el as any)._targetGrowspaceId).toBe('gs-2');
+
+    const input = el.shadowRoot!.querySelector('input.clones-input') as HTMLInputElement;
+    input.value = '5';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(5);
+  });
+  
+  it('ignores invalid input for numClones', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true}></batch-clone-dialog>
+    `);
+    await el.updateComplete;
+    
+    (el as any)._numClones = 1;
+    const input = el.shadowRoot!.querySelector('input.clones-input') as HTMLInputElement;
+    
+    input.value = 'abc';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(1);
+  });
+
+  it('renders with undefined dialogState', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true} .dialogState=${undefined}></batch-clone-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
+  });
+
+  it('renders with empty growspaceOptions', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true} .growspaceOptions=${{}}></batch-clone-dialog>
+    `);
+    expect(el.shadowRoot!.querySelectorAll('md3-select-option')).toHaveLength(0);
+  });
+
+  it('handles numClones input boundaries', async () => {
+    const el = await fixture<BatchCloneDialog>(html`
+      <batch-clone-dialog .open=${true}></batch-clone-dialog>
+    `);
+    await el.updateComplete;
+    const input = el.shadowRoot!.querySelector('input.clones-input') as HTMLInputElement;
+
+    // Below min
+    input.value = '0';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(1);
+
+    // At min
+    input.value = '1';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(1);
+
+    // At max
+    input.value = '20';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(20);
+
+    // Above max
+    input.value = '21';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._numClones).toBe(20);
   });
 });

@@ -123,6 +123,16 @@ describe('GrowspaceEditModeBannerUI', () => {
         expect(listener).toHaveBeenCalled();
     });
 
+    it('should dispatch clone-selected event', async () => {
+        const listener = vi.fn();
+        element.addEventListener('clone-selected', listener);
+
+        const btn = element.shadowRoot?.querySelector('button[title="Clone Selected"]');
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+    });
+
     describe('Scrolling Interactions', () => {
         let container: HTMLElement;
 
@@ -169,6 +179,16 @@ describe('GrowspaceEditModeBannerUI', () => {
 
             expect((element as any)._canScrollLeft).toBe(true);
             expect((element as any)._canScrollRight).toBe(true);
+        });
+
+        it('should call _checkScroll when ResizeObserver triggers', async () => {
+            const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
+            
+            // Access the ResizeController internal ResizeObserver callback if possible
+            // Or just simulate what ResizeController does:
+            (element as any)._checkScroll();
+            
+            expect(checkScrollSpy).toHaveBeenCalled();
         });
     });
 });

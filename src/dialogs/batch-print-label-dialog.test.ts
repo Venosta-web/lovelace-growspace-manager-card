@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { openBatchPrintLabelsDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
@@ -178,6 +179,17 @@ describe('BatchPrintLabelDialog – _getPrinters', () => {
     const hass = { states: { 'sensor.temp': { attributes: {} } } } as any;
     const el = createElement(makeMockStore(), hass);
     expect((el as any)._getPrinters()).toEqual([]);
+  });
+
+  it('uses entity ID when friendly name is missing', () => {
+    const hass = {
+      states: {
+        'image.no_name_last_label_made': { attributes: {} },
+      },
+    } as any;
+    const el = createElement(makeMockStore(), hass);
+    const printers = (el as any)._getPrinters();
+    expect(printers[0].label).toBe('image.no_name_last_label_made');
   });
 });
 
@@ -369,5 +381,117 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     const batchCall = mockStore.printLabel.mock.calls[1];
     expect(batchCall[0].deviceId).toBeUndefined();
+  });
+});
+
+describe('BatchPrintLabelDialog – willUpdate', () => {
+  it('calls _resetForm when "open" changes to true', () => {
+    const el = createElement();
+    const resetFormSpy = vi.spyOn(el as any, '_resetForm');
+    const changedProps = new Map([['open', false]]);
+    el.open = true;
+    (el as any).willUpdate(changedProps);
+    expect(resetFormSpy).toHaveBeenCalled();
+  });
+
+  it('does nothing if open changed to false', () => {
+    const el = createElement();
+    const resetFormSpy = vi.spyOn(el as any, '_resetForm');
+    const changedProps = new Map([['open', true]]);
+    el.open = false;
+    (el as any).willUpdate(changedProps);
+    expect(resetFormSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('BatchPrintLabelDialog – render', () => {
+  it('renders nothing when closed', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${false}></batch-print-label-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('ha-dialog')).toBeNull();
+  });
+
+  it('renders dialog when open', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .dialogState=${{ plantIds: ['p1'] }}></batch-print-label-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('1 plant(s) selected');
+  });
+
+  it('renders submission progress bar', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    (el as any)._isSubmitting = true;
+    (el as any)._progress = 45;
+    await el.updateComplete;
+    const bar = el.shadowRoot!.querySelector('.progress-bar') as HTMLElement;
+    expect(bar).not.toBeNull();
+    expect(bar.style.width).toBe('45%');
+  });
+
+  it('handles printer selection and copies input', async () => {
+    const hass = makeHass();
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass} .growspaceOptions=${{ 'gs-1': 'Tent 1' }}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+
+    const select = el.shadowRoot!.querySelector('md3-select') as any;
+    select.dispatchEvent(new CustomEvent('change', { detail: 'image.printer_b_last_label_made' }));
+    expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
+
+    const input = el.shadowRoot!.querySelector('input.copies-input') as HTMLInputElement;
+    input.value = '10';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._copies).toBe(10);
+  });
+
+  it('shows warning when no printers discovered', async () => {
+    const hass = { states: {} } as any;
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).toContain('No Niimbot printers discovered');
+  });
+
+  it('ignores invalid copies input', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    
+    (el as any)._copies = 1;
+    const input = el.shadowRoot!.querySelector('input.copies-input') as HTMLInputElement;
+    
+    input.value = 'abc';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._copies).toBe(1);
+    
+    input.value = '0';
+    input.dispatchEvent(new Event('input'));
+    expect((el as any)._copies).toBe(1);
+  });
+
+  it('renders with undefined dialogState', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .dialogState=${undefined}></batch-print-label-dialog>
+    `);
+    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
+  });
+
+  it('renders printing label text during submission', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .dialogState=${{ plantIds: ['p1'] }}></batch-print-label-dialog>
+    `);
+    (el as any)._isSubmitting = true;
+    (el as any)._progress = 75;
+    await el.updateComplete;
+
+    const btn = el.shadowRoot!.querySelector('button.primary') as HTMLElement;
+    expect(btn.textContent).toContain('Printing... 75%');
   });
 });
