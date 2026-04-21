@@ -181,13 +181,36 @@ export class PlantOverviewContainer extends LitElement {
     `,
   ];
 
+  private _getAttributesFromPlant(): PlantOverviewEditedAttributes {
+    const attrs = this.plant?.attributes;
+    if (!attrs) return {} as PlantOverviewEditedAttributes;
+    return {
+      strain: attrs.strain as string | undefined,
+      phenotype: attrs.phenotype as string | undefined,
+      row: attrs.row as number | undefined,
+      col: attrs.col as number | undefined,
+      seedling_start: attrs.seedling_start as string | null | undefined,
+      mother_start: attrs.mother_start as string | null | undefined,
+      clone_start: attrs.clone_start as string | null | undefined,
+      veg_start: attrs.veg_start as string | null | undefined,
+      flower_start: attrs.flower_start as string | null | undefined,
+      dry_start: attrs.dry_start as string | null | undefined,
+      cure_start: attrs.cure_start as string | null | undefined,
+    };
+  }
+
   connectedCallback(): void {
     super.connectedCallback();
 
     if (this.plant && this.store) {
       // Initialize atoms with current prop values
       this._plantAtom.set(this.plant);
-      this._editedAttributesAtom.set(this.editedAttributes || {} as PlantOverviewEditedAttributes);
+      // Seed editedAttributes with current plant values so canSave works from the start
+      const initialAttrs =
+        this.editedAttributes && Object.keys(this.editedAttributes).length > 0
+          ? this.editedAttributes
+          : this._getAttributesFromPlant();
+      this._editedAttributesAtom.set(initialAttrs);
       this._uiStateAtom.set({
         activeTab: this._activeTab,
         isEditing: this._isEditing,
@@ -249,7 +272,11 @@ export class PlantOverviewContainer extends LitElement {
 
       // Initialize viewModel on first plant arrival if not already done in connectedCallback
       if (!this.viewModelController && this.store) {
-        this._editedAttributesAtom.set(this.editedAttributes);
+        const initialAttrs =
+          this.editedAttributes && Object.keys(this.editedAttributes).length > 0
+            ? this.editedAttributes
+            : this._getAttributesFromPlant();
+        this._editedAttributesAtom.set(initialAttrs);
         this._uiStateAtom.set({
           activeTab: this._activeTab,
           isEditing: this._isEditing,
@@ -265,10 +292,6 @@ export class PlantOverviewContainer extends LitElement {
         );
         this.viewModelController = new StoreController(this, this.viewModel);
       }
-    }
-
-    if (changedProps.has('editedAttributes')) {
-      this._editedAttributesAtom.set(this.editedAttributes);
     }
 
     // Update UI state atom when local properties change
@@ -706,10 +729,10 @@ export class PlantOverviewContainer extends LitElement {
 
   private _handleAttributeChange(e: CustomEvent): void {
     const { key, value } = e.detail;
-    this.editedAttributes = {
-      ...this.editedAttributes,
+    this._editedAttributesAtom.set({
+      ...this._editedAttributesAtom.get(),
       [key]: value,
-    };
+    });
   }
 
   private _handleToggleDates(): void {
@@ -721,7 +744,7 @@ export class PlantOverviewContainer extends LitElement {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
     this.store.updatePlantFromDialog({
       plant: this.plant,
-      editedAttributes: this.editedAttributes,
+      editedAttributes: this._editedAttributesAtom.get(),
       selectedPlantIds: [plantId],
     });
     this._handleClose();

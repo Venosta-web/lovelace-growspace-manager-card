@@ -5599,8 +5599,14 @@ class GrowspaceAPI extends BaseAPI {
                 payload.sensor_groups = data.sensorGroups;
             if (data.sensorCoordinates)
                 payload.sensor_coordinates = data.sensorCoordinates;
-            if (data.irrigationTanks)
-                payload.irrigation_tanks = data.irrigationTanks;
+            if (data.irrigationTanks && data.irrigationTanks.length > 0) {
+                payload.irrigation_tanks = data.irrigationTanks.map((t) => ({
+                    sensor_entity: t.sensorEntity,
+                    name: t.name,
+                    warning_level: t.warningLevel,
+                    ...(t.volumeLiters != null ? { volume_liters: t.volumeLiters } : {}),
+                }));
+            }
             await this.callService(DOMAIN$1, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
@@ -30300,9 +30306,9 @@ function createStablePlantOverviewViewModel($plant, $editedAttributes, $uiState,
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         const stageColor = PlantUtils.getPlantStageColor(plant.state);
         const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-        const strainValue = editedAttributes.strain;
+        const strainValue = editedAttributes?.strain;
         const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
-        const phenoValue = editedAttributes.phenotype;
+        const phenoValue = editedAttributes?.phenotype;
         const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'}`;
         const timelineEvents = processTimelineEvents(plant, logbookEvents);
         const plantStats = calculatePlantStats(plant);
@@ -31050,12 +31056,34 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         });
         this._logbookEventsAtom = atom([]);
     }
+    _getAttributesFromPlant() {
+        const attrs = this.plant?.attributes;
+        if (!attrs)
+            return {};
+        return {
+            strain: attrs.strain,
+            phenotype: attrs.phenotype,
+            row: attrs.row,
+            col: attrs.col,
+            seedling_start: attrs.seedling_start,
+            mother_start: attrs.mother_start,
+            clone_start: attrs.clone_start,
+            veg_start: attrs.veg_start,
+            flower_start: attrs.flower_start,
+            dry_start: attrs.dry_start,
+            cure_start: attrs.cure_start,
+        };
+    }
     connectedCallback() {
         super.connectedCallback();
         if (this.plant && this.store) {
             // Initialize atoms with current prop values
             this._plantAtom.set(this.plant);
-            this._editedAttributesAtom.set(this.editedAttributes);
+            // Seed editedAttributes with current plant values so canSave works from the start
+            const initialAttrs = this.editedAttributes && Object.keys(this.editedAttributes).length > 0
+                ? this.editedAttributes
+                : this._getAttributesFromPlant();
+            this._editedAttributesAtom.set(initialAttrs);
             this._uiStateAtom.set({
                 activeTab: this._activeTab,
                 isEditing: this._isEditing,
@@ -31106,7 +31134,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             this._plantAtom.set(this.plant);
             // Initialize viewModel on first plant arrival if not already done in connectedCallback
             if (!this.viewModelController && this.store) {
-                this._editedAttributesAtom.set(this.editedAttributes);
+                const initialAttrs = this.editedAttributes && Object.keys(this.editedAttributes).length > 0
+                    ? this.editedAttributes
+                    : this._getAttributesFromPlant();
+                this._editedAttributesAtom.set(initialAttrs);
                 this._uiStateAtom.set({
                     activeTab: this._activeTab,
                     isEditing: this._isEditing,
@@ -31116,9 +31147,6 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
                 this.viewModel = createStablePlantOverviewViewModel(this._plantAtom, this._editedAttributesAtom, this._uiStateAtom, this.store, this._logbookEventsAtom);
                 this.viewModelController = new libExports.StoreController(this, this.viewModel);
             }
-        }
-        if (changedProps.has('editedAttributes')) {
-            this._editedAttributesAtom.set(this.editedAttributes);
         }
         // Update UI state atom when local properties change
         if (changedProps.has('_activeTab') ||
@@ -31528,10 +31556,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     _handleAttributeChange(e) {
         const { key, value } = e.detail;
-        this.editedAttributes = {
-            ...this.editedAttributes,
+        this._editedAttributesAtom.set({
+            ...this._editedAttributesAtom.get(),
             [key]: value,
-        };
+        });
     }
     _handleToggleDates() {
         this._showAllDates = !this._showAllDates;
@@ -31541,7 +31569,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
         this.store.updatePlantFromDialog({
             plant: this.plant,
-            editedAttributes: this.editedAttributes,
+            editedAttributes: this._editedAttributesAtom.get(),
             selectedPlantIds: [plantId],
         });
         this._handleClose();
@@ -32252,14 +32280,11 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .clonePlants=${clonePlants}
         .seedlingPlants=${seedlingPlants}
         .targetGrowspaceId=${targetGrowspaceId}
-        @close=${() => {
-            if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANT') {
-                store.ui.closeDialog();
-            }
-        }}
+        @close=${() => this._closeDialogIfActive('ADD_PLANT')}
         @add-plant-submit=${(e) => store.confirmAddPlant(e.detail)}
         @transplant-plant-submit=${(e) => this._handleTransplant(e.detail)}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
+        @data-changed=${() => this._handleDataChanged()}
       ></add-plant-dialog>
     `;
     }
@@ -32368,14 +32393,11 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .clone_start=${active.payload?.clone_start || ''}
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
-        @close=${() => {
-            if (this._dialogHostController.value.activeDialog.type === 'ADD_PLANTS') {
-                this.store?.ui.closeDialog();
-            }
-        }}
+        @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
         @show-toast=${(e) => this.store?.showToast(e.detail.message, e.detail.type)}
         @add-plants-submit=${(e) => this.store?.confirmAddPlants(e.detail)}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
+        @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
     `;
     }
@@ -32390,11 +32412,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
           .open=${true}
           .plant=${dialogState.plant}
           .editedAttributes=${dialogState.editedAttributes}
-          @close=${() => {
-                if (this._dialogHostController.value.activeDialog.type === 'PLANT_OVERVIEW') {
-                    this.store?.ui.closeDialog();
-                }
-            }}
+          @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
           @update-plant=${(e) => this.store?.updatePlantFromDialog({
                 plant: dialogState.plant,
                 editedAttributes: e.detail,
@@ -32458,12 +32476,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .onHarvestSeeds=${(data) => this.store?.dataService.harvestSeeds(data)}
         .onUpdatePollination=${(data) => this.store?.dataService.updatePollination(data)}
         .onDeletePollination=${(event_id) => this.store?.dataService.deletePollination(event_id)}
-        @close=${() => {
-            // Only close if we're still on STRAIN_LIBRARY to prevent closing the new dialog
-            if (this._dialogHostController.value.activeDialog.type === 'STRAIN_LIBRARY') {
-                this.store?.ui.closeDialog();
-            }
-        }}
+        @close=${() => this._closeDialogIfActive('STRAIN_LIBRARY')}
         @strain-created-at-source=${(e) => {
             const { strain, source, returnPayload } = e.detail;
             if (source === 'add-plant') {
@@ -32577,7 +32590,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             try {
                 await this.store.handleAddGrowspace(e.detail);
                 this.store.ui.closeDialog();
-                await this.store.refreshData();
                 await this._handleDataChanged();
                 this.store.ui.showToast('Growspace added', 'success');
             }
@@ -32589,7 +32601,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             if (!this.store)
                 return;
             this.store.handleUpdateGrowspace({
-                growspace_id: e.detail.growspace_id,
+                growspace_id: e.detail.growspaceId,
                 name: e.detail.name,
                 rows: e.detail.rows,
                 plantsPerRow: e.detail.plantsPerRow,
@@ -32698,6 +32710,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}
         @analyze-growspace=${(e) => this.store?.analyzeGrowspace(e.detail.query, false)}
         @analyze-all-growspaces=${(e) => this.store?.analyzeGrowspace(e.detail.query, true)}
+        @data-changed=${() => this._handleDataChanged()}
       ></grow-master-dialog>
     `;
     }
@@ -32712,6 +32725,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('STRAIN_RECOMMENDATION')}
         @get-recommendation=${(e) => this.store?.getStrainRecommendation(e.detail.query)}
+        @data-changed=${() => this._handleDataChanged()}
       >
       </strain-recommendation-dialog>
     `;
@@ -32740,6 +32754,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .growspaceId=${dialogState.growspaceId || selectedDeviceData?.deviceId}
         @close=${() => this._closeDialogIfActive('LOGBOOK')}
+        @data-changed=${() => this._handleDataChanged()}
       ></logbook-dialog>
     `;
     }
@@ -32765,6 +32780,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         }}
         @save-preset=${(e) => this.store?.addNutrientPreset(e.detail)}
         @update-stock=${(e) => this.store?.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+        @data-changed=${() => this._handleDataChanged()}
       ></growspace-watering-dialog-ui>
     `;
     }
@@ -32827,6 +32843,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .dialogState=${active.payload}
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this._closeDialogIfActive('SNAPSHOTS')}
+        @data-changed=${() => this._handleDataChanged()}
       ></snapshots-dialog>
     `;
     }
@@ -32839,6 +32856,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .dialogState=${active.payload}
         .growspaceName=${selectedDeviceData?.name || ''}
         @close=${() => this._closeDialogIfActive('CROP_STEERING')}
+        @data-changed=${() => this._handleDataChanged()}
       ></crop-steering-dialog>
     `;
     }
@@ -32852,6 +32870,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @close=${() => this._closeDialogIfActive('NUTRIENT_INVENTORY')}
         @update-stock=${(e) => this.store?.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
         @add-stock=${(e) => this.store?.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+        @data-changed=${() => this._handleDataChanged()}
       ></growspace-nutrient-inventory-dialog-ui>
     `;
     }
@@ -32879,6 +32898,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             }
         }}
         @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
+        @data-changed=${() => this._handleDataChanged()}
       ></clone-dialog>
     `;
     }
@@ -32901,6 +32921,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .dialogState=${active.payload}
         @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
+        @data-changed=${() => this._handleDataChanged()}
       ></print-label-dialog>
     `;
     }
@@ -32912,6 +32933,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .dialogState=${active.payload}
         @close=${() => this._closeDialogIfActive('HARVEST_SCORING')}
+        @data-changed=${() => this._handleDataChanged()}
       ></harvest-scoring-dialog>
     `;
     }
@@ -32938,6 +32960,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .store=${this.store}
         .state=${active.payload}
         @close=${() => this._closeDialogIfActive('GROW_REPORT')}
+        @data-changed=${() => this._handleDataChanged()}
       ></grow-report-dialog>
       `;
     }

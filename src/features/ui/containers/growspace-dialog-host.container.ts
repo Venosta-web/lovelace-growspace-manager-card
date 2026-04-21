@@ -683,7 +683,7 @@ export class GrowspaceDialogHost extends LitElement {
         @edit-growspace-submit=${(e: CustomEvent) => {
         if (!this.store) return;
         this.store.handleUpdateGrowspace({
-          growspace_id: e.detail.growspace_id,
+          growspace_id: e.detail.growspaceId,
           name: e.detail.name,
           rows: e.detail.rows,
           plantsPerRow: e.detail.plantsPerRow,
