@@ -227,3 +227,7 @@ export interface ECRampDialogState {
 export interface GrowReportDialogState {
   growspaceId: string;
 }
+
+export interface BatchCloneDialogState {
+  plantIds: string[];
+}

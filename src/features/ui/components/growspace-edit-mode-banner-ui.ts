@@ -14,6 +14,7 @@ import {
   mdiDelete,
   mdiSwapHorizontal,
   mdiPrinter,
+  mdiContentCopy,
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -272,6 +273,13 @@ export class EditModeBanner extends LitElement {
               title="Transplant Mode"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSwapHorizontal}"></path></svg>
+            </button>
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('clone-selected')}
+              title="Clone Selected"
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
             </button>
             <button
               class="icon-button"

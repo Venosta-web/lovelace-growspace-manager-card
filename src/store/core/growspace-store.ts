@@ -614,6 +614,10 @@ export class GrowspaceStore {
     uiActions.openBatchPrintLabelsDialog(this.context);
   }
 
+  openBatchCloneDialog() {
+    uiActions.openBatchCloneDialog(this.context);
+  }
+
   openBatchWateringDialog(growspaceId?: string) {
     uiActions.openBatchWateringDialog(this.context, growspaceId);
   }

@@ -266,8 +266,8 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       id: 'clone',
       label: 'Take Clone',
       icon: 'mdiContentCopy',
-      enabled: stage === 'mother' || stage === 'veg',
-      tooltip: stage !== 'mother' && stage !== 'veg' ? 'Clone from mother or veg plants' : undefined,
+      enabled: stage === 'mother' || stage === 'veg' || stage === 'flower',
+      tooltip: stage !== 'mother' && stage !== 'veg' && stage !== 'flower' ? 'Clone from mother or veg and flower plants' : undefined,
     },
     {
       id: 'print_label',
@@ -366,9 +366,8 @@ export function createPlantOverviewViewModel(
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
       const phenoValue = editedAttributes?.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${
-        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
-      }`;
+      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+        }`;
 
       const timelineEvents = processTimelineEvents(plant, logbookEvents);
 
@@ -478,9 +477,8 @@ export function createStablePlantOverviewViewModel(
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
       const phenoValue = editedAttributes?.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${
-        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
-      }`;
+      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+        }`;
 
       const timelineEvents = processTimelineEvents(plant, logbookEvents);
       const plantStats = calculatePlantStats(plant);

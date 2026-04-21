@@ -223,7 +223,7 @@ describe('GrowspaceWateringDialogUI', () => {
 
     const summaryRow = el.shadowRoot!.querySelector('.calculation-row');
     expect(summaryRow?.textContent).toContain('CalMag');
-    expect(summaryRow?.textContent).toContain('2L x 1.5 ml/L');
+    expect(summaryRow?.textContent).toContain('2L × 1.5 ml/L');
     expect(summaryRow?.textContent).toContain('3.0 ml');
 
     const totalRow = el.shadowRoot!.querySelectorAll('.calculation-row')[1];

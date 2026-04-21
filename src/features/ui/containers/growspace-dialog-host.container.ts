@@ -37,6 +37,7 @@ import '../../../dialogs/nutrient-dialog';
 import '../../../dialogs/plant-overview-dialog';
 import '../../../dialogs/print-label-dialog';
 import '../../../dialogs/batch-print-label-dialog';
+import '../../../dialogs/batch-clone-dialog';
 import '../../../dialogs/snapshots-dialog';
 import '../../../dialogs/strain-library-dialog';
 import '../../../dialogs/strain-recommendation-dialog';
@@ -176,6 +177,8 @@ export class GrowspaceDialogHost extends LitElement {
             return this._renderPrintLabelDialog(active, effectiveDeviceData);
           case 'BATCH_PRINT_LABELS':
             return this._renderBatchPrintLabelsDialog(active);
+          case 'BATCH_CLONE':
+            return this._renderBatchCloneDialog(active, growspaceOptions);
           case 'HARVEST_SCORING':
             return this._renderHarvestScoringDialog(active);
           case 'SNAPSHOTS':
@@ -1125,6 +1128,21 @@ export class GrowspaceDialogHost extends LitElement {
         .dialogState=${active.payload}
         @close=${() => this._closeDialogIfActive('BATCH_PRINT_LABELS')}
       ></batch-print-label-dialog>
+    `;
+  }
+
+  private _renderBatchCloneDialog(
+    active: ActiveDialogState,
+    growspaceOptions: Record<string, string>
+  ): TemplateResult {
+    if (active.type !== 'BATCH_CLONE') return html``;
+    return html`
+      <batch-clone-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this._closeDialogIfActive('BATCH_CLONE')}
+      ></batch-clone-dialog>
     `;
   }
 

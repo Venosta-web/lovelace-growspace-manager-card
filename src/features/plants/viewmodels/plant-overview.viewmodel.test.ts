@@ -393,7 +393,22 @@ describe('PlantOverviewViewModel', () => {
       expect(cloneAction?.enabled).toBe(true);
     });
 
-    it('should disable clone action for flowering plants', () => {
+    it('should disable clone action for drying plants', () => {
+      const dryingPlant = { ...mockPlant, state: 'dry' };
+      const viewModel = createPlantOverviewViewModel(
+        dryingPlant,
+        mockEditedAttributes,
+        mockUIState,
+        mockStore as GrowspaceStore
+      );
+      const value = viewModel.get();
+
+      const cloneAction = value.availableActions.find((a) => a.id === 'clone');
+      expect(cloneAction).toBeDefined();
+      expect(cloneAction?.enabled).toBe(false);
+    });
+
+    it('should enable clone action for flowering plants', () => {
       const floweringPlant = { ...mockPlant, state: 'flower' };
       const viewModel = createPlantOverviewViewModel(
         floweringPlant,
@@ -405,7 +420,7 @@ describe('PlantOverviewViewModel', () => {
 
       const cloneAction = value.availableActions.find((a) => a.id === 'clone');
       expect(cloneAction).toBeDefined();
-      expect(cloneAction?.enabled).toBe(false);
+      expect(cloneAction?.enabled).toBe(true);
     });
 
     it('should enable IPM action for active plants', () => {

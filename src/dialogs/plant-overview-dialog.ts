@@ -1056,7 +1056,7 @@ export class PlantOverviewDialog extends LitElement {
               <!-- DYNAMIC ACTIONS BASED ON STAGE -->
               ${this._activeTab === 'dashboard'
         ? html`
-                    ${(this.plant.state || '').toLowerCase() === 'mother'
+                    ${['mother', 'veg', 'flower'].includes((this.plant.state || '').toLowerCase())
             ? html`
                           <div
                             class="take-clone-container"

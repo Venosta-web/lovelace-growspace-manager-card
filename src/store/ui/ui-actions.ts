@@ -141,6 +141,16 @@ export function openBatchPrintLabelsDialog(ctx: ActionContext) {
   });
 }
 
+export function openBatchCloneDialog(ctx: ActionContext) {
+  const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+  if (selectedIds.length === 0) return;
+
+  ctx.ui.setActiveDialog({
+    type: 'BATCH_CLONE',
+    payload: { plantIds: selectedIds },
+  });
+}
+
 export function openBatchWateringDialog(ctx: ActionContext, growspaceId?: string) {
   const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
   if (selectedIds.length === 0 && !growspaceId) return;

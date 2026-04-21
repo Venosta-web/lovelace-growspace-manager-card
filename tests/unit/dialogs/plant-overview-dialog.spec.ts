@@ -208,22 +208,24 @@ describe('PlantOverviewDialog', () => {
             document.body.removeChild(element);
         });
 
-        it('should show Take Clone button for Mother plant', async () => {
-            element.plant = { ...mockPlant, state: PlantStage.MOTHER };
-            element.open = true;
-            document.body.appendChild(element);
-            await element.updateComplete;
+        it('should show Take Clone button for Mother, Veg, and Flower plants', async () => {
+            for (const stage of [PlantStage.MOTHER, PlantStage.VEG, PlantStage.FLOWER]) {
+                const testElement = document.createElement('plant-overview-dialog') as any;
+                testElement.plant = { ...mockPlant, state: stage };
+                testElement.open = true;
+                document.body.appendChild(testElement);
+                await testElement.updateComplete;
 
-            const cloneBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find((b: HTMLButtonElement) => b.textContent?.includes('Take Clone'));
-            expect(cloneBtn).toBeTruthy();
+                const cloneBtn = Array.from(testElement.shadowRoot?.querySelectorAll('button') || []).find((b: any) => b.textContent?.includes('Take Clone'));
+                expect(cloneBtn, `Clone button should exist for stage ${stage}`).toBeTruthy();
 
-            const listener = vi.fn();
-            element.addEventListener(TakeCloneEvent.TYPE, listener);
-            (cloneBtn as HTMLElement).click();
-            expect(listener).toHaveBeenCalled();
+                const listener = vi.fn();
+                testElement.addEventListener(TakeCloneEvent.TYPE, listener);
+                (cloneBtn as HTMLElement).click();
+                expect(listener, `TakeClone event should be dispatched for stage ${stage}`).toHaveBeenCalled();
 
-            document.body.removeChild(element);
+                document.body.removeChild(testElement);
+            }
         });
 
         it('should show Move button for Clone plant', async () => {
@@ -1375,9 +1377,14 @@ describe('PlantOverviewDialog', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            if (stage === 'flower') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Harvest');
-            if (stage === 'dry') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Finish Drying');
-            if (stage === 'clone') expect(element.shadowRoot?.querySelector('button.primary')?.textContent).toContain('Move');
+            if (stage === 'flower') {
+                const buttons = Array.from(element.shadowRoot?.querySelectorAll('button.primary') || []);
+                const buttonText = buttons.map(b => b.textContent?.trim());
+                expect(buttonText).toContain('Harvest');
+                expect(buttonText).toContain('Take Clone');
+            }
+            if (stage === 'dry') expect(element.shadowRoot?.querySelector('button.primary')?.textContent?.trim()).toBe('Finish Drying');
+            if (stage === 'clone') expect(element.shadowRoot?.querySelector('button.primary')?.textContent?.trim()).toBe('Move');
 
             document.body.removeChild(element);
         }

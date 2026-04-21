@@ -602,8 +602,8 @@ export class PlantOverviewContainer extends LitElement {
 
         ${this._activeTab === 'dashboard' ? html`
           <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-            <!-- Mother: Take Clone with count -->
-            ${stage === 'mother' ? html`
+            <!-- Mother/Veg/Flower: Take Clone with count -->
+            ${['mother', 'veg', 'flower'].includes(stage || '') ? html`
               <div style="display:flex; align-items:center; gap:8px;">
                 <md3-number-input
                   id="clone-count-input"
