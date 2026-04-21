@@ -47,6 +47,12 @@ export class ActionDispatcher {
       }),
 
     addBatch: (detail: AddPlantsDialogState) => plantActions.confirmAddPlants(this.ctx, detail),
+
+    saveHarvestMetrics: (plantId: string, metrics: Record<string, unknown>) =>
+      plantActions.saveHarvestMetrics(this.ctx, plantId, metrics),
+
+    scorePhenotype: (plantId: string, scores: Record<string, number | null>) =>
+      plantActions.scorePhenotype(this.ctx, plantId, scores),
   };
 
   public readonly growspace = {

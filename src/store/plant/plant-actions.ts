@@ -705,3 +705,44 @@ export async function printLabel(
     throw e;
   }
 }
+
+/**
+ * Save harvest yield metrics for a plant.
+ * No-ops if the metrics object has no keys (nothing to persist).
+ */
+export async function saveHarvestMetrics(
+  ctx: ActionContext,
+  plantId: string,
+  metrics: Record<string, unknown>
+): Promise<void> {
+  if (Object.keys(metrics).length === 0) return;
+  try {
+    await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
+    ctx.showToast('Harvest metrics saved', 'success');
+    await ctx.refreshData();
+  } catch (error) {
+    ctx.showToast(`Failed to save harvest metrics: ${error}`, 'error');
+    throw error;
+  }
+}
+
+/**
+ * Score a plant's phenotype traits.
+ * No-ops if every value in the scores map is null or undefined.
+ */
+export async function scorePhenotype(
+  ctx: ActionContext,
+  plantId: string,
+  scores: Record<string, number | null>
+): Promise<void> {
+  const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
+  if (!hasValue) return;
+  try {
+    await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
+    ctx.showToast('Scores saved', 'success');
+    await ctx.refreshData();
+  } catch (error) {
+    ctx.showToast(`Failed to save scores: ${error}`, 'error');
+    throw error;
+  }
+}
