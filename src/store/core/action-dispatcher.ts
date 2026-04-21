@@ -5,6 +5,9 @@ import * as libraryActions from '../plant/library-actions';
 import * as snapshotActions from '../plant/snapshot-actions';
 import * as reportActions from '../plant/report-actions';
 import * as aiActions from '../system/ai-actions';
+import * as environmentActions from '../growspace/environment-actions';
+import * as breederActions from '../plant/breeder-actions';
+import * as geneticsActions from '../plant/genetics-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -165,5 +168,34 @@ export class ActionDispatcher {
     askAdvice: (query: string) => aiActions.analyzeGrowspace(this.ctx, query, false),
     /** Get a strain recommendation */
     strainRecommendation: (query: string) => aiActions.getStrainRecommendation(this.ctx, query),
+  };
+
+  public readonly environment = {
+    configure: (data: Parameters<typeof environmentActions.configureEnvironment>[1]) =>
+      environmentActions.configureEnvironment(this.ctx, data),
+    remove: (growspaceId: string) => environmentActions.removeEnvironment(this.ctx, growspaceId),
+    resetWaterTracking: (growspaceId: string) =>
+      environmentActions.resetWaterTracking(this.ctx, growspaceId),
+  };
+
+  public readonly breeder = {
+    update: (oldName: string, newName: string, logo?: string) =>
+      breederActions.updateBreeder(this.ctx, oldName, newName, logo),
+    delete: (name: string) => breederActions.deleteBreeder(this.ctx, name),
+  };
+
+  public readonly genetics = {
+    addSeedBatch: (data: Parameters<typeof geneticsActions.addSeedBatch>[1]) =>
+      geneticsActions.addSeedBatch(this.ctx, data),
+    updateSeedBatch: (data: Parameters<typeof geneticsActions.updateSeedBatch>[1]) =>
+      geneticsActions.updateSeedBatch(this.ctx, data),
+    logPollination: (data: Parameters<typeof geneticsActions.logPollination>[1]) =>
+      geneticsActions.logPollination(this.ctx, data),
+    updatePollination: (data: Parameters<typeof geneticsActions.updatePollination>[1]) =>
+      geneticsActions.updatePollination(this.ctx, data),
+    deletePollination: (eventId: string) =>
+      geneticsActions.deletePollination(this.ctx, eventId),
+    harvestSeeds: (data: Parameters<typeof geneticsActions.harvestSeeds>[1]) =>
+      geneticsActions.harvestSeeds(this.ctx, data),
   };
 }
