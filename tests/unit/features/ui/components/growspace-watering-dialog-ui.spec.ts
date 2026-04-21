@@ -183,4 +183,74 @@ describe('GrowspaceWateringDialogUI', () => {
     expect((el as any)._nutrients.length).toBe(0);
     expect((el as any)._volume).toBe(1.0);
   });
+
+  it('updates _volume when volume input changes', async () => {
+    const el = await fixture<GrowspaceWateringDialogUI>(html`
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
+    `);
+    const volumeInput = el.shadowRoot!.querySelector('md3-number-input[label="Volume (Liters)"]') as HTMLElement;
+    volumeInput.dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
+    await el.updateComplete;
+    expect((el as any)._volume).toBe(2.5);
+  });
+
+  it('updates nutrient name and concentration when inputs change', async () => {
+    const el = await fixture<GrowspaceWateringDialogUI>(html`
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
+    `);
+    el.setNutrients([{ name: '', concentration: 0 }]);
+    await el.updateComplete;
+
+    const nameInput = el.shadowRoot!.querySelector('md3-text-input[label="Nutrient Name"]') as any;
+    const concInput = el.shadowRoot!.querySelector('md3-number-input[label="ml/L"]') as any;
+
+    nameInput.value = 'Product X';
+    nameInput.dispatchEvent(new CustomEvent('change', { detail: 'Product X' }));
+
+    concInput.dispatchEvent(new CustomEvent('change', { detail: '5.2' }));
+
+    await el.updateComplete;
+    expect((el as any)._nutrients[0]).toEqual({ name: 'Product X', concentration: 5.2 });
+  });
+
+  it('shows correct calculations in summary', async () => {
+    const el = await fixture<GrowspaceWateringDialogUI>(html`
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
+    `);
+    (el as any)._volume = 2.0;
+    el.setNutrients([{ name: 'CalMag', concentration: 1.5 }]);
+    await el.updateComplete;
+
+    const summaryRow = el.shadowRoot!.querySelector('.calculation-row');
+    expect(summaryRow?.textContent).toContain('CalMag');
+    expect(summaryRow?.textContent).toContain('2L x 1.5 ml/L');
+    expect(summaryRow?.textContent).toContain('3.0 ml');
+
+    const totalRow = el.shadowRoot!.querySelectorAll('.calculation-row')[1];
+    expect(totalRow?.textContent).toContain('3.0 ml');
+  });
+
+  it('disables buttons when isSubmitting is true', async () => {
+    const el = await fixture<GrowspaceWateringDialogUI>(html`
+      <growspace-watering-dialog-ui .open=${true} .isSubmitting=${true}></growspace-watering-dialog-ui>
+    `);
+    const cancelBtn = el.shadowRoot!.querySelector('.button-group button.tonal') as HTMLButtonElement;
+    const submitBtn = el.shadowRoot!.querySelector('.button-group button.primary') as HTMLButtonElement;
+
+    expect(cancelBtn.disabled).toBe(true);
+    expect(submitBtn.disabled).toBe(true);
+    expect(submitBtn.textContent).toContain('Recording...');
+  });
+
+  it('disables submit button when volume is 0', async () => {
+    const el = await fixture<GrowspaceWateringDialogUI>(html`
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
+    `);
+    const volumeInput = el.shadowRoot!.querySelector('md3-number-input[label="Volume (Liters)"]') as HTMLElement;
+    volumeInput.dispatchEvent(new CustomEvent('change', { detail: '0' }));
+    await el.updateComplete;
+
+    const submitBtn = el.shadowRoot!.querySelector('.button-group button.primary') as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
+  });
 });

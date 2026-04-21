@@ -93,6 +93,36 @@ describe('GrowspaceEditModeBannerUI', () => {
         expect(listener).toHaveBeenCalled();
     });
 
+    it('should dispatch transplant-mode event', async () => {
+        const listener = vi.fn();
+        element.addEventListener('transplant-mode', listener);
+
+        const btn = element.shadowRoot?.querySelector('button[title="Transplant Mode"]');
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+    });
+
+    it('should dispatch print-labels-selected event', async () => {
+        const listener = vi.fn();
+        element.addEventListener('print-labels-selected', listener);
+
+        const btn = element.shadowRoot?.querySelector('button[title="Print Labels"]');
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+    });
+
+    it('should dispatch delete-selected event', async () => {
+        const listener = vi.fn();
+        element.addEventListener('delete-selected', listener);
+
+        const btn = element.shadowRoot?.querySelector('button[title="Delete Selected"]');
+        (btn as HTMLElement)?.click();
+
+        expect(listener).toHaveBeenCalled();
+    });
+
     describe('Scrolling Interactions', () => {
         let container: HTMLElement;
 

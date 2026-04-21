@@ -311,10 +311,10 @@ export class PrintLabelDialog extends LitElement {
               class="md3-button primary"
               style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
               @click=${this._submit}
-              ?disabled=${this._isSubmitting}
+              ?disabled=${this._isSubmitting || this._previewLoading}
             >
               <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? 'Printing...' : 'Print Now'}
+              ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
             </button>
           </div>
         </div>

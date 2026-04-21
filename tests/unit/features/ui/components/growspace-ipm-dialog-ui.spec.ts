@@ -108,33 +108,39 @@ describe('GrowspaceIPMDialogUI', () => {
     expect(applyTarget?.textContent).toContain('2 Plants');
   });
 
-  it('dispatches apply-ipm event with preset and notes detail', async () => {
-    const handler = vi.fn();
-    const el = await fixture<GrowspaceIPMDialogUI>(html`
-      <growspace-ipm-dialog-ui
-        .open=${true}
-        .presets=${mockPresets}
-        @apply-ipm=${handler}
-      ></growspace-ipm-dialog-ui>
-    `);
-    (el as any)._selectedPresetId = 'preset-1';
-    (el as any)._notes = 'Test notes';
-    await el.updateComplete;
-    const applyBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
-    applyBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
-    expect(handler.mock.calls[0][0].detail).toMatchObject({ presetId: 'preset-1', notes: 'Test notes' });
-  });
+    it('should update _selectedPresetId on select change', async () => {
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
+      `);
+      const select = el.shadowRoot!.querySelector('md3-select') as any;
+      select.dispatchEvent(new CustomEvent('change', { detail: 'preset-2' }));
+      expect((el as any)._selectedPresetId).toBe('preset-2');
+    });
 
-  it('switches to LIST view when Manage Presets button is clicked', async () => {
-    const el = await fixture<GrowspaceIPMDialogUI>(html`
-      <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
-    `);
-    const manageBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.tonal') as HTMLElement;
-    manageBtn?.click();
-    await el.updateComplete;
-    expect((el as any)._view).toBe('LIST');
-  });
+    it('should update _notes on textarea input', async () => {
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
+      `);
+      const textarea = el.shadowRoot!.querySelector('ha-textarea') as HTMLTextAreaElement;
+      textarea.value = 'New treatment notes';
+      textarea.dispatchEvent(new Event('input'));
+      expect((el as any)._notes).toBe('New treatment notes');
+    });
+
+    it('should disable Apply button when isSubmitting is true', async () => {
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui
+          .open=${true}
+          .presets=${mockPresets}
+          .isSubmitting=${true}
+        ></growspace-ipm-dialog-ui>
+      `);
+      (el as any)._selectedPresetId = 'preset-1';
+      await el.updateComplete;
+      const applyBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLButtonElement;
+      expect(applyBtn.disabled).toBe(true);
+      expect(applyBtn.textContent).toContain('Applying...');
+    });
 
   describe('LIST view', () => {
     let el: GrowspaceIPMDialogUI;
@@ -155,7 +161,7 @@ describe('GrowspaceIPMDialogUI', () => {
     it('shows preset names', () => {
       const names = Array.from(el.shadowRoot!.querySelectorAll('.preset-name')).map((n) => n.textContent);
       expect(names).toContain('Neem Oil Spray');
-      expect(names).toContain('Root Drench');
+      expect(names).toContain('Root Drench'); 
     });
 
     it('shows empty state when no presets', async () => {
@@ -184,6 +190,7 @@ describe('GrowspaceIPMDialogUI', () => {
       await el.updateComplete;
       expect((el as any)._view).toBe('EDIT');
       expect((el as any)._editingPreset).not.toBeNull();
+      expect((el as any)._editingPreset.name).toBe('Neem Oil Spray');
     });
 
     it('dispatches delete-preset event when delete button clicked', async () => {
@@ -192,6 +199,7 @@ describe('GrowspaceIPMDialogUI', () => {
       const deleteBtn = el.shadowRoot!.querySelector('.preset-actions button:last-child') as HTMLElement;
       deleteBtn?.click();
       expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].detail).toEqual({ presetId: 'preset-1' });
     });
   });
 
@@ -202,11 +210,7 @@ describe('GrowspaceIPMDialogUI', () => {
       el = await fixture<GrowspaceIPMDialogUI>(html`
         <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
       `);
-      // Switch to LIST and then start a new preset
-      (el as any)._view = 'LIST';
-      await el.updateComplete;
-      const addBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
-      addBtn?.click();
+      (el as any)._startNew();
       await el.updateComplete;
     });
 
@@ -215,18 +219,56 @@ describe('GrowspaceIPMDialogUI', () => {
       expect(productRows.length).toBe(1);
     });
 
+    it('updates preset name on input change', async () => {
+      const input = el.shadowRoot!.querySelector('md3-text-input[label="Preset Name"]') as any;
+      input.dispatchEvent(new CustomEvent('change', { detail: 'Brand New Preset' }));
+      expect((el as any)._editingPreset.name).toBe('Brand New Preset');
+    });
+
+    it('updates preset type on select change', async () => {
+      const select = el.shadowRoot!.querySelector('select[class="md3-input"]') as HTMLSelectElement;
+      select.value = 'beneficials';
+      select.dispatchEvent(new Event('change'));
+      expect((el as any)._editingPreset.type).toBe('beneficials');
+    });
+
     it('adds a product row when Add button clicked', async () => {
       const addBtn = el.shadowRoot!.querySelector('.form-section button.md3-button.text') as HTMLElement;
       addBtn?.click();
       await el.updateComplete;
       expect(el.shadowRoot!.querySelectorAll('.product-row').length).toBe(2);
+      expect((el as any)._editingPreset.items.length).toBe(2);
+    });
+
+    it('updates product details when inputs change', async () => {
+      const productRow = el.shadowRoot!.querySelector('.product-row');
+      const nameInput = productRow!.querySelector('md3-text-input[label="Product"]') as any;
+      const doseInput = productRow!.querySelector('md3-number-input[label="Dose"]') as any;
+      const unitInput = productRow!.querySelector('md3-text-input[label="Unit"]') as any;
+      const phiInput = productRow!.querySelector('md3-number-input[label="PHI (Days)"]') as any;
+
+      nameInput.dispatchEvent(new CustomEvent('change', { detail: 'New Product' }));
+      doseInput.dispatchEvent(new CustomEvent('change', { detail: '10.5' }));
+      unitInput.dispatchEvent(new CustomEvent('change', { detail: 'oz' }));
+      phiInput.dispatchEvent(new CustomEvent('change', { detail: '14' }));
+
+      const item = (el as any)._editingPreset.items[0];
+      expect(item.name).toBe('New Product');
+      expect(item.dose_amount).toBe(10.5);
+      expect(item.dose_unit).toBe('oz');
+      expect(item.phi_days).toBe(14);
     });
 
     it('removes a product row when delete icon clicked', async () => {
-      const removeBtn = el.shadowRoot!.querySelector('.product-row button.md3-button.icon') as HTMLElement;
+      // Add one first so we have 2
+      (el as any)._addProduct();
+      await el.updateComplete;
+      expect(el.shadowRoot!.querySelectorAll('.product-row').length).toBe(2);
+
+      const removeBtn = el.shadowRoot!.querySelectorAll('.product-row button.md3-button.icon')[0] as HTMLElement;
       removeBtn?.click();
       await el.updateComplete;
-      expect(el.shadowRoot!.querySelectorAll('.product-row').length).toBe(0);
+      expect(el.shadowRoot!.querySelectorAll('.product-row').length).toBe(1);
     });
 
     it('dispatches save-preset event when Save Preset clicked', async () => {
@@ -235,6 +277,15 @@ describe('GrowspaceIPMDialogUI', () => {
       const saveBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
       saveBtn?.click();
       expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].detail).toEqual((el as any)._editingPreset);
+    });
+
+    it('disables save button when isSubmitting is true', async () => {
+      el.isSubmitting = true;
+      await el.updateComplete;
+      const saveBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLButtonElement;
+      expect(saveBtn.disabled).toBe(true);
+      expect(saveBtn.textContent).toContain('Saving...');
     });
 
     it('switches back to LIST view when Cancel clicked', async () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GrowspaceNutrientInventoryDialogUI } from '../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
-import '../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
-import { NutrientInventory, NutrientStock } from '../../../src/types';
+import { GrowspaceNutrientInventoryDialogUI } from '../../../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
+import '../../../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
+import { NutrientInventory, NutrientStock } from '../../../../../src/types';
 
 if (!customElements.get('ha-dialog')) {
     class HaDialogMock extends HTMLElement {

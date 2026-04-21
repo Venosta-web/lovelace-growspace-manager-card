@@ -103,6 +103,18 @@ export class BatchPrintLabelDialog extends LitElement {
     this._isSubmitting = true;
     this._progress = 0;
 
+    // Warm up Niimbot before batch printing — the first service call initializes the
+    // printer session; without it all labels come out blank.
+    try {
+      await this.store.printLabel({
+        plantId: plantIds[0],
+        deviceId: this._selectedDeviceId || undefined,
+        preview: true,
+      });
+    } catch (_e) {
+      // Warm-up failure is non-fatal; attempt batch anyway.
+    }
+
     const total = plantIds.length * this._copies;
     let completed = 0;
     const errors: string[] = [];

@@ -135,6 +135,7 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
       const deleteBtn = el.shadowRoot!.querySelector('.preset-actions button:last-child') as HTMLElement;
       deleteBtn?.click();
       expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].detail).toEqual({ presetId: 'preset-a' });
     });
   });
 
@@ -145,8 +146,7 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
       el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
         <growspace-nutrient-presets-editor-ui .open=${true} .presets=${{}}></growspace-nutrient-presets-editor-ui>
       `);
-      const addBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
-      addBtn?.click();
+      (el as any)._startNew();
       await el.updateComplete;
     });
 
@@ -154,18 +154,43 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
       expect(el.shadowRoot!.querySelectorAll('.nutrient-row').length).toBe(1);
     });
 
+    it('updates preset name on input change', async () => {
+      const input = el.shadowRoot!.querySelector('md3-text-input[label="Preset Name"]') as any;
+      input.dispatchEvent(new CustomEvent('change', { detail: 'Custom Recipe' }));
+      expect((el as any)._editingPreset.name).toBe('Custom Recipe');
+    });
+
     it('adds a nutrient row when Add button clicked', async () => {
       const addBtn = el.shadowRoot!.querySelector('.form-section button.md3-button.text') as HTMLElement;
       addBtn?.click();
       await el.updateComplete;
       expect(el.shadowRoot!.querySelectorAll('.nutrient-row').length).toBe(2);
+      expect((el as any)._editingPreset.nutrients.length).toBe(2);
+    });
+
+    it('updates nutrient details when inputs change', async () => {
+      const row = el.shadowRoot!.querySelector('.nutrient-row');
+      const nameInput = row!.querySelector('md3-text-input[label="Product"]') as any;
+      const doseInput = row!.querySelector('md3-number-input[label="Dose (ml/L)"]') as any;
+
+      nameInput.dispatchEvent(new CustomEvent('change', { detail: 'CalMag+' }));
+      doseInput.dispatchEvent(new CustomEvent('change', { detail: '2.5' }));
+
+      const nutrient = (el as any)._editingPreset.nutrients[0];
+      expect(nutrient.name).toBe('CalMag+');
+      expect(nutrient.dose_ml_l).toBe(2.5);
     });
 
     it('removes a nutrient row when delete icon clicked', async () => {
-      const removeBtn = el.shadowRoot!.querySelector('.nutrient-row button.md3-button.icon') as HTMLElement;
+      // Add one first so we have 2
+      (el as any)._addNutrient();
+      await el.updateComplete;
+      expect(el.shadowRoot!.querySelectorAll('.nutrient-row').length).toBe(2);
+
+      const removeBtn = el.shadowRoot!.querySelectorAll('.nutrient-row button.md3-button.icon')[0] as HTMLElement;
       removeBtn?.click();
       await el.updateComplete;
-      expect(el.shadowRoot!.querySelectorAll('.nutrient-row').length).toBe(0);
+      expect(el.shadowRoot!.querySelectorAll('.nutrient-row').length).toBe(1);
     });
 
     it('dispatches save-preset event when Save Preset clicked', async () => {
@@ -174,6 +199,15 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
       const saveBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
       saveBtn?.click();
       expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].detail).toEqual((el as any)._editingPreset);
+    });
+
+    it('disables save button when isSubmitting is true', async () => {
+      el.isSubmitting = true;
+      await el.updateComplete;
+      const saveBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLButtonElement;
+      expect(saveBtn.disabled).toBe(true);
+      expect(saveBtn.textContent).toContain('Saving...');
     });
 
     it('switches back to LIST view when Cancel clicked', async () => {

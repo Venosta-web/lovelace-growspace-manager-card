@@ -123,6 +123,17 @@ describe('GrowspaceHeaderSecondaryUI', () => {
     expect(handler.mock.calls[0][0].detail.targetMetric).toBe('ph');
   });
 
+  it('prevents default on dragover', async () => {
+    const chips = [makeChip()];
+    const el = await fixture<GrowspaceHeaderSecondaryUI>(html`
+      <growspace-header-secondary-ui .chips=${chips}></growspace-header-secondary-ui>
+    `);
+    const chip = el.shadowRoot!.querySelector('growspace-chip') as HTMLElement;
+    const event = new DragEvent('dragover', { cancelable: true });
+    chip.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
   it('dispatches unlink-graphs when chip emits unlink event', async () => {
     const handler = vi.fn();
     const chips = [makeChip({ key: 'ph', groupIndex: 2 })];
