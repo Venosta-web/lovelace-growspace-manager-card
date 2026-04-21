@@ -251,6 +251,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   }
 
+  private _handlePrintLabelsSelected() {
+    this.store.openBatchPrintLabelsDialog();
+  }
+
   private _handleDeleteSelected = () => {
     this.store.deleteSelectedPlants();
   };
@@ -310,6 +314,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @training-selected=${this._handleTrainingSelected}
             @ipm-selected=${this._handleIPMSelected}
             @batch-add-plants=${this._handleBatchAddPlants}
+            @print-labels-selected=${this._handlePrintLabelsSelected}
             @delete-selected=${this._handleDeleteSelected}
             @transplant-mode=${this._handleTransplantMode}
             @exit-edit-mode=${this._handleExitEditMode}

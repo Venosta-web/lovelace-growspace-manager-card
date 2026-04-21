@@ -12,6 +12,7 @@ import type {
   IPMDialogState,
   CloneDialogState,
   PrintLabelDialogState,
+  BatchPrintLabelsDialogState,
   HarvestScoringDialogState,
   SnapshotsDialogState,
   CropSteeringDialogState,
@@ -38,6 +39,7 @@ export type ActiveDialogState =
   | { type: 'IPM'; payload: IPMDialogState }
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
   | { type: 'PRINT_LABEL'; payload: PrintLabelDialogState }
+  | { type: 'BATCH_PRINT_LABELS'; payload: BatchPrintLabelsDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }

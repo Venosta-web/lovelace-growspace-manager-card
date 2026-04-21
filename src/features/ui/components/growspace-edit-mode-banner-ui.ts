@@ -13,6 +13,7 @@ import {
   mdiChevronRight,
   mdiDelete,
   mdiSwapHorizontal,
+  mdiPrinter,
 } from '@mdi/js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { sharedStyles } from '../../../styles/shared.styles';
@@ -278,6 +279,13 @@ export class EditModeBanner extends LitElement {
               title="Batch Add Plants"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
+            </button>
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('print-labels-selected')}
+              title="Print Labels"
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
             <button

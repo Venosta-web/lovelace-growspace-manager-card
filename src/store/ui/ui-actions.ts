@@ -131,6 +131,16 @@ export function handleDeepLink(ctx: ActionContext, plantId: string) {
   }
 }
 
+export function openBatchPrintLabelsDialog(ctx: ActionContext) {
+  const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+  if (selectedIds.length === 0) return;
+
+  ctx.ui.setActiveDialog({
+    type: 'BATCH_PRINT_LABELS',
+    payload: { plantIds: selectedIds },
+  });
+}
+
 export function openBatchWateringDialog(ctx: ActionContext, growspaceId?: string) {
   const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
   if (selectedIds.length === 0 && !growspaceId) return;

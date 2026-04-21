@@ -195,6 +195,10 @@ export interface PrintLabelDialogState {
   deviceId?: string;
 }
 
+export interface BatchPrintLabelsDialogState {
+  plantIds: string[];
+}
+
 /** State for the harvest scoring modal shown before actually harvesting a plant. */
 export interface HarvestScoringDialogState {
   /** The plant being harvested. */

@@ -36,6 +36,7 @@ import '../../../dialogs/logbook-dialog';
 import '../../../dialogs/nutrient-dialog';
 import '../../../dialogs/plant-overview-dialog';
 import '../../../dialogs/print-label-dialog';
+import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/snapshots-dialog';
 import '../../../dialogs/strain-library-dialog';
 import '../../../dialogs/strain-recommendation-dialog';
@@ -173,6 +174,8 @@ export class GrowspaceDialogHost extends LitElement {
             return this._renderNutrientDialog(active, effectiveDeviceData);
           case 'PRINT_LABEL':
             return this._renderPrintLabelDialog(active, effectiveDeviceData);
+          case 'BATCH_PRINT_LABELS':
+            return this._renderBatchPrintLabelsDialog(active);
           case 'HARVEST_SCORING':
             return this._renderHarvestScoringDialog(active);
           case 'SNAPSHOTS':
@@ -1111,6 +1114,17 @@ export class GrowspaceDialogHost extends LitElement {
         @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
         @data-changed=${() => this._handleDataChanged()}
       ></print-label-dialog>
+    `;
+  }
+
+  private _renderBatchPrintLabelsDialog(active: ActiveDialogState): TemplateResult {
+    if (active.type !== 'BATCH_PRINT_LABELS') return html``;
+    return html`
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this._closeDialogIfActive('BATCH_PRINT_LABELS')}
+      ></batch-print-label-dialog>
     `;
   }
 

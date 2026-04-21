@@ -610,6 +610,10 @@ export class GrowspaceStore {
 
   // Removed: getCommonGrowspaceId - now internal to ui-actions
 
+  openBatchPrintLabelsDialog() {
+    uiActions.openBatchPrintLabelsDialog(this.context);
+  }
+
   openBatchWateringDialog(growspaceId?: string) {
     uiActions.openBatchWateringDialog(this.context, growspaceId);
   }
