@@ -207,9 +207,14 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'report':
         this.store.openGrowReportDialog(this.device?.deviceId || undefined);
         break;
-      case 'edit':
-        this.store.ui.setEditMode(!this.store.ui.$isEditMode.get());
+      case 'edit': {
+        const newEditMode = !this.store.ui.$isEditMode.get();
+        this.store.ui.setEditMode(newEditMode);
+        if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
+          this.store.ui.setViewMode(ViewMode.STANDARD);
+        }
         break;
+      }
       case 'heatmap': {
         const currentMode = this.store.ui.$viewMode.get();
         this.store.ui.setViewMode(currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP);
