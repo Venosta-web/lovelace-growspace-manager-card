@@ -3,6 +3,7 @@ import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
 import * as snapshotActions from '../plant/snapshot-actions';
+import * as reportActions from '../plant/report-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -149,5 +150,10 @@ export class ActionDispatcher {
     updateCheckupConfig: (growspaceId: string, config: VisionCheckupConfig) =>
       snapshotActions.updateVisionCheckupConfig(this.ctx, growspaceId, config),
   };
-}
 
+  public readonly report = {
+    fetch: (growspaceId: string) => reportActions.fetchGrowReport(this.ctx, growspaceId),
+    export: (growspaceId: string, format: string) =>
+      reportActions.exportGrowReport(this.ctx, growspaceId, format),
+  };
+}
