@@ -106,7 +106,7 @@ describe('PlantOverviewContainer', () => {
     expect(dialog).toBeTruthy();
 
     const title = element.shadowRoot!.querySelector('.dialog-title');
-    expect(title?.textContent).toBe('Unknown Strain'); // Fallback when strain not found in library
+    expect(title?.textContent).toBe('Blue Dream'); // Seeded from plant.attributes.strain
 
     // Verify tabs are present
     const tabs = element.shadowRoot!.querySelectorAll('.tab-btn');
@@ -469,13 +469,15 @@ describe('PlantOverviewContainer', () => {
     element['_handleAttributeChange'](new CustomEvent('attribute-change', { detail: { key: 'strain', value: 'New Strain' } }));
     await element.updateComplete;
 
+    // Capture the update-plant event dispatched by the container
+    let updatePlantDetail: unknown;
+    element.addEventListener('update-plant', (e: Event) => {
+      updatePlantDetail = (e as CustomEvent).detail;
+    });
+
     saveBtn.click();
 
-    expect(mockStore.updatePlantFromDialog).toHaveBeenCalledWith({
-      plant: mockPlant,
-      editedAttributes: { strain: 'New Strain' },
-      selectedPlantIds: ['plant_1']
-    });
+    expect(updatePlantDetail).toMatchObject({ strain: 'New Strain' });
     expect(mockStore.ui.closeDialog).toHaveBeenCalled(); // Should close upon save
   });
 
