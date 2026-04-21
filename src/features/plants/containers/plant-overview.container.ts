@@ -740,13 +740,13 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _handleSave(): void {
-    // Update plant through store
-    const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-    this.store.updatePlantFromDialog({
-      plant: this.plant,
-      editedAttributes: this._editedAttributesAtom.get(),
-      selectedPlantIds: [plantId],
-    });
+    this.dispatchEvent(
+      new CustomEvent('update-plant', {
+        detail: this._editedAttributesAtom.get(),
+        bubbles: true,
+        composed: true,
+      })
+    );
     this._handleClose();
   }
 
