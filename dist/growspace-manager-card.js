@@ -30766,15 +30766,25 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @submit-watering=${async (e) => {
             try {
                 const { volume, nutrients, presetId } = e.detail;
+                const nutrientRecord = {};
+                if (Array.isArray(nutrients)) {
+                    for (const n of nutrients) {
+                        if (n.name && n.concentration > 0)
+                            nutrientRecord[n.name] = n.concentration;
+                    }
+                }
+                else if (nutrients && typeof nutrients === 'object') {
+                    Object.assign(nutrientRecord, nutrients);
+                }
                 if (payload?.mode === 'plant') {
                     const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
-                    const promises = plantIds.map((pid) => this.store?.actions.environment.waterPlant(pid, volume, nutrients, presetId));
+                    const promises = plantIds.map((pid) => this.store?.actions.environment.waterPlant(pid, volume, nutrientRecord, presetId));
                     await Promise.all(promises);
                 }
                 else {
                     const growspaceId = payload?.growspace_id || selectedDeviceData?.deviceId;
                     if (growspaceId) {
-                        await this.store?.actions.environment.waterGrowspace(growspaceId, volume, nutrients, presetId);
+                        await this.store?.actions.environment.waterGrowspace(growspaceId, volume, nutrientRecord, presetId);
                     }
                 }
                 await this._handleDataChanged();
@@ -101199,7 +101209,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (event === 'click' && data.plant) {
             if (data.plant.entity_id) {
                 // Existing plant
-                this.store?.openPlantOverviewDialog(data.plant);
+                this.store?.actions.ui.openPlantOverviewDialog(data.plant);
             }
             else if (data.plant.row !== undefined && data.plant.col !== undefined) {
                 // Empty slot
@@ -105188,6 +105198,8 @@ class ActionDispatcher {
             handlePlantClick: (plant) => handlePlantClick(this.ctx, plant),
             /** Open add plant dialog at specific position */
             openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
+            /** Open plant overview dialog */
+            openPlantOverviewDialog: (plant, selectedIds) => openPlantOverviewDialog(this.ctx, plant, selectedIds),
             /** Select all plants in current growspace */
             selectAllPlants: () => selectAllPlants(this.ctx),
             /** Open strain recommendation dialog */
@@ -106030,30 +106042,11 @@ class GrowspaceStore {
     handlePlantClick(plant) {
         handlePlantClick(this.context, plant);
     }
-    openPlantOverviewDialog(plant, selectedIds) {
-        openPlantOverviewDialog(this.context, plant, selectedIds);
-    }
-    async updatePlantFromDialog(dialogState) {
-        await updatePlantFromDialog(this.context, dialogState);
-    }
     async updatePlant(plantId, updates) {
         await updatePlant(this.context, plantId, updates);
     }
-    async handleDeletePlant(plantId) {
-        await handleDeletePlant(this.context, plantId);
-    }
     async handleMovePlantToNextStage(plant) {
         return await movePlantToNextStage(this.context, plant);
-    }
-    async handleTakeClone(motherPlant, numClones, targetGrowspaceId) {
-        const success = await takeClone(this.context, motherPlant, numClones, targetGrowspaceId);
-        if (success) {
-            await this.refreshData();
-        }
-        return success;
-    }
-    async movePlantToGrowspace(plant, targetGrowspace) {
-        return await movePlantToGrowspace(this.context, plant, targetGrowspace);
     }
     async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
         if (!this.data.$selectedDevice.get())
@@ -106118,12 +106111,6 @@ class GrowspaceStore {
     async addNutrientPreset(preset) {
         await this.dataService.saveNutrientPreset(preset);
         await this.refreshData();
-    }
-    async harvestPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
-    }
-    async finishDryingPlant(plant) {
-        await this.handleMovePlantToNextStage(plant);
     }
     // Removed: getCommonGrowspaceId - now internal to ui-actions
     openBatchPrintLabelsDialog() {
@@ -106196,9 +106183,6 @@ class GrowspaceStore {
     }
     openWateringDialog(options) {
         openWateringDialog(this.context, options);
-    }
-    openTrainingDialog(plantIds, growspaceId) {
-        openTrainingDialog(this.context, plantIds, growspaceId);
     }
     openNutrientsDialog() {
         openNutrientsDialog(this.context);

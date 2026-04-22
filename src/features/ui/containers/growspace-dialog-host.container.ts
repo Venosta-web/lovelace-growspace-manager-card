@@ -822,10 +822,18 @@ export class GrowspaceDialogHost extends LitElement {
         @submit-watering=${async (e: CustomEvent) => {
         try {
           const { volume, nutrients, presetId } = e.detail;
+          const nutrientRecord: Record<string, number> = {};
+          if (Array.isArray(nutrients)) {
+            for (const n of (nutrients as Array<{ name: string; concentration: number }>)) {
+              if (n.name && n.concentration > 0) nutrientRecord[n.name] = n.concentration;
+            }
+          } else if (nutrients && typeof nutrients === 'object') {
+            Object.assign(nutrientRecord, nutrients);
+          }
           if (payload?.mode === 'plant') {
             const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
             const promises = plantIds.map((pid: string) =>
-              this.store?.actions.environment.waterPlant(pid, volume, nutrients, presetId)
+              this.store?.actions.environment.waterPlant(pid, volume, nutrientRecord, presetId)
             );
             await Promise.all(promises);
           } else {
@@ -834,7 +842,7 @@ export class GrowspaceDialogHost extends LitElement {
               await this.store?.actions.environment.waterGrowspace(
                 growspaceId,
                 volume,
-                nutrients,
+                nutrientRecord,
                 presetId
               );
             }
