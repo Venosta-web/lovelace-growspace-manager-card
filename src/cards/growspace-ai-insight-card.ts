@@ -217,19 +217,20 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
     this._error = null;
 
     try {
-      let responseData: GrowAdviceResponse;
+      let responseText: GrowAdviceResponse;
       if (all) {
-        responseData = await this.store.dataService.analyzeAllGrowspaces();
+        responseText = await this.store.dataService.analyzeAllGrowspaces();
       } else {
         const device = this.selectedDevice;
         if (!device) throw new Error('No device selected and "Analyze All" was false.');
-        const deviceObj = this._viewController.value.grid.devices.find((d: any) => d.deviceId === device);
-        if (!deviceObj) throw new Error('Selected device not found in devices list.');
-
-        responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
+        const devices = this.store.data.$devices.get();
+        if (!devices.find((d: any) => d.deviceId === device)) {
+          throw new Error('Selected device not found in devices list.');
+        }
+        responseText = await this.store.dataService.askGrowAdvice(device, this._userQuery);
       }
 
-      this._response = this._extractText(responseData);
+      this._response = this._extractText(responseText);
     } catch (e: unknown) {
       this._error = e instanceof Error ? e.message : 'Unknown error occurred during analysis.';
       console.error('AI Analysis failed:', e);

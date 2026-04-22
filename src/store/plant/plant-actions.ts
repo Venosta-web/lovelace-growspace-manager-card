@@ -154,7 +154,8 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
  */
 export async function movePlantToNextStage(
   ctx: ActionContext,
-  plant: PlantEntity
+  plant: PlantEntity,
+  metrics?: Record<string, unknown>
 ): Promise<boolean> {
   const stage = plant.attributes?.stage;
   let targetGrowspace = '';
@@ -181,15 +182,17 @@ export async function movePlantToNextStage(
 
   try {
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+    await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
     ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
     // Small delay to allow backend commit to complete before fetching updated data
     await new Promise((resolve) => setTimeout(resolve, 500));
     await ctx.refreshData();
     ctx.closeDialog();
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
     console.error('Error moving plant to next stage:', err);
+    ctx.showToast(`Failed to move plant: ${error}`, 'error');
     return false;
   }
 }
@@ -268,10 +271,15 @@ export async function takeClone(
       `Clone taken from ${motherPlant.attributes?.strain || 'plant'}`,
       targetGrowspaceId ? `to ${targetGrowspaceId}` : ''
     );
+    ctx.showToast(
+      `Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`,
+      'success'
+    );
     return true;
   } catch (error: unknown) {
     const e = error instanceof Error ? error.message : 'Unknown error';
     console.error(`Failed to take clone: ${e}`);
+    ctx.showToast(`Failed to take clone: ${e}`, 'error');
     return false;
   }
 }

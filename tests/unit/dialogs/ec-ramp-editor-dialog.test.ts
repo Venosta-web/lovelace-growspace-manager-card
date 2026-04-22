@@ -49,7 +49,13 @@ describe('ECRampEditorDialog', () => {
                     }
                 }
             },
-            fetchECRampCurves: vi.fn().mockResolvedValue({}),
+            actions: {
+                library: {
+                    fetchECRampCurves: vi.fn().mockResolvedValue({}),
+                    saveECRampCurve: vi.fn().mockResolvedValue({}),
+                    removeECRampCurve: vi.fn().mockResolvedValue({}),
+                }
+            },
         };
 
         element = document.createElement('ec-ramp-editor-dialog') as ECRampEditorDialog;
@@ -81,7 +87,7 @@ describe('ECRampEditorDialog', () => {
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
         expect((element as any)._view).toBe('LIST');
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalled();
+        expect(mockStore.actions.library.fetchECRampCurves).toHaveBeenCalled();
     });
 
     it('should render curve list', async () => {
@@ -175,13 +181,12 @@ describe('ECRampEditorDialog', () => {
         // Success path
         (element as any)._editingCurve.points = [{ day: 1, target_ec: 1.0 }];
         await (element as any)._saveCurve();
-        expect(mockDataService.saveECRampCurve).toHaveBeenCalled();
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalledWith(true);
+        expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalled();
         expect((element as any)._view).toBe('LIST');
     });
 
     it('should handle save errors', async () => {
-        mockDataService.saveECRampCurve.mockRejectedValue(new Error('Save Error'));
+        mockStore.actions.library.saveECRampCurve.mockRejectedValue(new Error('Save Error'));
         (element as any)._startNew();
         (element as any)._editingCurve.name = 'Test';
         await (element as any)._saveCurve();
@@ -200,13 +205,12 @@ describe('ECRampEditorDialog', () => {
         await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async delete
 
         expect(confirmSpy).toHaveBeenCalled();
-        expect(mockDataService.removeECRampCurve).toHaveBeenCalledWith('curve1');
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalledWith(true);
+        expect(mockStore.actions.library.removeECRampCurve).toHaveBeenCalledWith('curve1');
     });
 
     it('should handle delete error', async () => {
         vi.spyOn(window, 'confirm').mockReturnValue(true);
-        mockDataService.removeECRampCurve.mockRejectedValue(new Error('Delete Fail'));
+        mockStore.actions.library.removeECRampCurve.mockRejectedValue(new Error('Delete Fail'));
 
         await (element as any)._deleteCurve('curve1');
         expect((element as any)._error).toBe('Delete Fail');
@@ -297,7 +301,7 @@ describe('ECRampEditorDialog', () => {
 
         await (element as any)._saveCurve();
 
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.points[0].day).toBe(1);
         expect(savedCurve.points[1].day).toBe(10);
     });
@@ -325,8 +329,8 @@ describe('ECRampEditorDialog', () => {
         await element.updateComplete;
 
         await (element as any)._saveCurve();
-        expect(mockDataService.saveECRampCurve).toHaveBeenCalled();
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalled();
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.stage).toBe('veg');
     });
 
@@ -356,7 +360,7 @@ describe('ECRampEditorDialog', () => {
 
     it('should handle delete cancellation', async () => {
         vi.spyOn(window, 'confirm').mockReturnValue(false);
-        const removeSpy = vi.spyOn(mockDataService, 'removeECRampCurve');
+        const removeSpy = vi.spyOn(mockStore.actions.library, 'removeECRampCurve');
 
         await (element as any)._deleteCurve('curve1');
         expect(removeSpy).not.toHaveBeenCalled();
@@ -364,7 +368,7 @@ describe('ECRampEditorDialog', () => {
 
     it('should handle non-Error exceptions in delete', async () => {
         vi.spyOn(window, 'confirm').mockReturnValue(true);
-        mockDataService.removeECRampCurve.mockRejectedValue('String Error');
+        mockStore.actions.library.removeECRampCurve.mockRejectedValue('String Error');
 
         await (element as any)._deleteCurve('curve1');
         expect((element as any)._error).toBe('Unknown error');
@@ -373,7 +377,7 @@ describe('ECRampEditorDialog', () => {
     it('should handle non-Error exceptions in save', async () => {
         (element as any)._startNew();
         (element as any)._editingCurve.name = 'Test';
-        mockDataService.saveECRampCurve.mockRejectedValue('String Error');
+        mockStore.actions.library.saveECRampCurve.mockRejectedValue('String Error');
 
         await (element as any)._saveCurve();
         expect((element as any)._error).toBe('Unknown error');
@@ -390,7 +394,7 @@ describe('ECRampEditorDialog', () => {
 
         await (element as any)._saveCurve();
 
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.points.length).toBe(1);
         expect(savedCurve.points[0].day).toBe(10);
     });
@@ -443,7 +447,7 @@ describe('ECRampEditorDialog', () => {
 
         await (element as any)._saveCurve();
 
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.stage).toBe('flower');
     });
 
