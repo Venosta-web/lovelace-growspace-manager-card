@@ -610,7 +610,7 @@ export class Heatmap3D extends LitElement {
         if (event === 'click' && data.plant) {
             if (data.plant.entity_id) {
                 // Existing plant
-                this.store?.openPlantOverviewDialog(data.plant);
+                this.store?.actions.ui.openPlantOverviewDialog(data.plant);
             } else if (data.plant.row !== undefined && data.plant.col !== undefined) {
                 // Empty slot
                 this.store?.openAddPlantDialog(data.plant.row, data.plant.col);

@@ -503,7 +503,7 @@ describe('GrowspaceStore', () => {
 
         it('should open plant overview dialog', () => {
             const plant = { attributes: { plant_id: 'p1' } } as any;
-            store.openPlantOverviewDialog(plant, ['p2']);
+            store.actions.ui.openPlantOverviewDialog(plant, ['p2']);
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW', payload: expect.objectContaining({ plant, selectedPlantIds: ['p2'] }) }));
         });
 
@@ -602,7 +602,7 @@ describe('GrowspaceStore', () => {
                 editedAttributes: { notes: 'Edit' },
                 selectedPlantIds: ['p1']
             } as any;
-            await store.updatePlantFromDialog(dialogState);
+            await store.actions.plant.updateFromDialog(dialogState);
             expect(store.dataService.updatePlant).toHaveBeenCalled();
             expect(uiStore.closeDialog).toHaveBeenCalled();
         });
@@ -629,43 +629,42 @@ describe('GrowspaceStore', () => {
 
         it('should handle delete plant error', async () => {
             mockDataServiceInstance.removePlant.mockRejectedValue(new Error('Fail'));
-            await store.handleDeletePlant('p1');
+            await store.actions.plant.delete('p1');
             expect(dataStore.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
             expect(dataStore.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p1'); // Revert on error
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error', undefined);
         });
 
         it('should handle delete plant success', async () => {
-            await store.handleDeletePlant('p1');
+            await store.actions.plant.delete('p1');
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Deleted'), 'success', expect.anything());
             expect(uiStore.deselectPlants).toHaveBeenCalledWith(['p1']);
         });
 
         it('should handle move plant', async () => {
-            await store.movePlantToGrowspace({ attributes: { plant_id: 'p1', stage: 'flower' } } as any, 'dry');
+            await store.actions.plant.move({ attributes: { plant_id: 'p1', stage: 'flower' } } as any, 'dry');
             expect(store.dataService.harvestPlant).toHaveBeenCalledWith('p1', 'dry');
         });
 
         it('should handle move plant error', async () => {
             mockDataServiceInstance.harvestPlant.mockRejectedValue(new Error('Fail'));
-            await store.movePlantToGrowspace({ attributes: { plant_id: 'p1', stage: 'flower' } } as any, 'dry');
+            await store.actions.plant.move({ attributes: { plant_id: 'p1', stage: 'flower' } } as any, 'dry');
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to move'), 'error', undefined);
         });
 
         it('should handle take clone', async () => {
-            // Test wrapper again to be sure
             const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1' } } as any;
-            store.handleTakeClone(plant, 5);
+            await store.actions.plant.takeClone(plant, 5);
             expect(store.dataService.takeClone).toHaveBeenCalledWith({ mother_plant_id: 'p1', num_clones: 5 });
         });
 
         it('should call harvest wrappers', async () => {
             const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1', stage: 'flower' } } as any;
-            await store.harvestPlant(plant);
+            await store.actions.plant.harvest(plant);
             expect(store.dataService.harvestPlant).toHaveBeenCalled();
 
             plant.attributes.stage = 'dry';
-            await store.finishDryingPlant(plant);
+            await store.actions.plant.finishDrying(plant);
             expect(store.dataService.harvestPlant).toHaveBeenCalled();
         });
     });
@@ -923,7 +922,7 @@ describe('GrowspaceStore', () => {
 
             (uiStore.$isEditMode.get as any).mockReturnValue(true);
 
-            await store.updatePlantFromDialog(dialogState);
+            await store.actions.plant.updateFromDialog(dialogState);
 
             expect(store.dataService.updatePlant).toHaveBeenCalledTimes(2);
             expect(uiStore.setEditMode).toHaveBeenCalledWith(false);
@@ -936,13 +935,13 @@ describe('GrowspaceStore', () => {
             mockDataServiceInstance.takeClone.mockRejectedValue(new Error('Clone Fail'));
             const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1' } } as any;
 
-            await store.handleTakeClone(plant, 5);
+            await store.actions.plant.takeClone(plant, 5);
             expect(spy).toHaveBeenCalledWith('Failed to take clone: Clone Fail');
         });
 
         it('should move clone using moveClone service', async () => {
             const plant = { entity_id: 's.c1', attributes: { plant_id: 'c1', stage: 'clone' } } as any;
-            await store.movePlantToGrowspace(plant, 'veg');
+            await store.actions.plant.move(plant, 'veg');
             expect(store.dataService.moveClone).toHaveBeenCalledWith('c1', 'veg');
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Moved plant to veg'), 'success', expect.anything());
         });
@@ -1186,7 +1185,7 @@ describe('GrowspaceStore', () => {
         const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
         mockDataServiceInstance.updatePlant.mockRejectedValue(new Error('Update Fail'));
 
-        await store.updatePlantFromDialog({
+        await store.actions.plant.updateFromDialog({
             plant: { attributes: { plant_id: 'p1' } } as any,
             editedAttributes: {},
             selectedPlantIds: ['p1']
@@ -1197,7 +1196,7 @@ describe('GrowspaceStore', () => {
 
     it('should close PLANT_OVERVIEW dialog on delete if open', async () => {
         (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'PLANT_OVERVIEW' });
-        await store.handleDeletePlant('p1');
+        await store.actions.plant.delete('p1');
         expect(uiStore.closeDialog).toHaveBeenCalled();
     });
 
@@ -2055,7 +2054,7 @@ describe('GrowspaceStore', () => {
                 selectedPlantIds: ['p1', 'p2']
             };
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
-            await store.updatePlantFromDialog(dialogState);
+            await store.actions.plant.updateFromDialog(dialogState);
             expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledTimes(2);
             expect(uiStore.closeDialog).toHaveBeenCalled();
         });
@@ -2065,7 +2064,7 @@ describe('GrowspaceStore', () => {
             const plant = { entity_id: 'sensor.p1', attributes: { plant_id: '' } } as any;
             const dialogState = { plant, editedAttributes: {} };
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
-            await store.updatePlantFromDialog(dialogState);
+            await store.actions.plant.updateFromDialog(dialogState);
             expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledWith(expect.objectContaining({ plant_id: 'p1' }));
         });
 
@@ -2074,7 +2073,7 @@ describe('GrowspaceStore', () => {
             const dialogState = { plant, editedAttributes: {} };
             (uiStore.$isEditMode.get as any).mockReturnValue(true);
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
-            await store.updatePlantFromDialog(dialogState);
+            await store.actions.plant.updateFromDialog(dialogState);
             expect(uiStore.clearPlantSelection).toHaveBeenCalled();
             expect(uiStore.setEditMode).toHaveBeenCalledWith(false);
         });
@@ -2221,7 +2220,7 @@ describe('GrowspaceStore', () => {
         it('should push undo action when deleting plants', async () => {
             mockDataServiceInstance.removePlant.mockResolvedValue({ success: true });
 
-            await store.handleDeletePlant('p1');
+            await store.actions.plant.delete('p1');
 
             expect(store.undoRedoManager.pushAction).toHaveBeenCalled();
 
@@ -2234,7 +2233,7 @@ describe('GrowspaceStore', () => {
             const plant = { attributes: { plant_id: 'p1', growspace_id: 'gs1' } } as any;
             mockDataServiceInstance.harvestPlant.mockResolvedValue({ success: true });
 
-            await store.movePlantToGrowspace(plant, 'gs2');
+            await store.actions.plant.move(plant, 'gs2');
 
             expect(store.undoRedoManager.pushAction).toHaveBeenCalled();
 
@@ -2558,7 +2557,7 @@ describe('GrowspaceStore', () => {
             mockDataServiceInstance.removePlant.mockResolvedValue(true);
 
             // Execute delete to push to undo stack
-            await store.handleDeletePlant('p1');
+            await store.actions.plant.delete('p1');
 
             // Verify undo stack has it
             // Spy should have been set before action if we want to catch calling it? 
@@ -2801,7 +2800,7 @@ describe('GrowspaceStore', () => {
                 payload: expect.objectContaining({})
             }));
 
-            store.openTrainingDialog(['p1']);
+            store.actions.ui.openTrainingDialog(['p1']);
             expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'TRAINING',
                 payload: expect.objectContaining({ plantIds: ['p1'] })

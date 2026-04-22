@@ -961,14 +961,19 @@ describe('Heatmap3D Logic', () => {
 
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
-            const storeSpy = { openPlantOverviewDialog: vi.fn(), openAddPlantDialog: vi.fn() };
+            const openPlantOverviewDialog = vi.fn();
+            const openAddPlantDialog = vi.fn();
+            const storeSpy = {
+                actions: { ui: { openPlantOverviewDialog } },
+                openAddPlantDialog,
+            };
             (element as any).store = storeSpy;
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
-            expect(storeSpy.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+            expect(openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(storeSpy.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(openAddPlantDialog).toHaveBeenCalledWith(3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {

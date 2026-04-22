@@ -131,6 +131,10 @@ export class ActionDispatcher {
     openAddPlantDialog: (row?: number, col?: number) =>
       uiActions.openAddPlantDialog(this.ctx, row, col),
 
+    /** Open plant overview dialog */
+    openPlantOverviewDialog: (plant: import('../../types').PlantEntity, selectedIds?: string[]) =>
+      uiActions.openPlantOverviewDialog(this.ctx, plant, selectedIds),
+
     /** Select all plants in current growspace */
     selectAllPlants: () =>
       uiActions.selectAllPlants(this.ctx),

@@ -456,38 +456,12 @@ export class GrowspaceStore {
     uiActions.handlePlantClick(this.context, plant);
   }
 
-  openPlantOverviewDialog(plant: PlantEntity, selectedIds?: string[]) {
-    uiActions.openPlantOverviewDialog(this.context, plant, selectedIds);
-  }
-
-  async updatePlantFromDialog(
-    dialogState: Pick<PlantOverviewDialogState, 'plant' | 'editedAttributes' | 'selectedPlantIds'>
-  ) {
-    await plantActions.updatePlantFromDialog(this.context, dialogState);
-  }
-
   async updatePlant(plantId: string, updates: Partial<PlantEntity['attributes']>) {
     await plantActions.updatePlant(this.context, plantId, updates);
   }
 
-  async handleDeletePlant(plantId: string | string[]) {
-    await plantActions.handleDeletePlant(this.context, plantId);
-  }
-
   async handleMovePlantToNextStage(plant: PlantEntity): Promise<boolean> {
     return await plantActions.movePlantToNextStage(this.context, plant);
-  }
-
-  async handleTakeClone(motherPlant: PlantEntity, numClones?: number, targetGrowspaceId?: string): Promise<boolean> {
-    const success = await plantActions.takeClone(this.context, motherPlant, numClones, targetGrowspaceId);
-    if (success) {
-      await this.refreshData();
-    }
-    return success;
-  }
-
-  async movePlantToGrowspace(plant: PlantEntity, targetGrowspace: string): Promise<boolean> {
-    return await plantActions.movePlantToGrowspace(this.context, plant, targetGrowspace);
   }
 
   async handleDrop(
@@ -600,14 +574,6 @@ export class GrowspaceStore {
     await this.refreshData();
   }
 
-  async harvestPlant(plant: PlantEntity) {
-    await this.handleMovePlantToNextStage(plant);
-  }
-
-  async finishDryingPlant(plant: PlantEntity) {
-    await this.handleMovePlantToNextStage(plant);
-  }
-
   // Removed: getCommonGrowspaceId - now internal to ui-actions
 
   openBatchPrintLabelsDialog() {
@@ -706,10 +672,6 @@ export class GrowspaceStore {
     mode?: 'plant' | 'growspace';
   }) {
     uiActions.openWateringDialog(this.context, options);
-  }
-
-  openTrainingDialog(plantIds: string[], growspaceId?: string) {
-    uiActions.openTrainingDialog(this.context, plantIds, growspaceId);
   }
 
   openNutrientsDialog() {

@@ -826,13 +826,6 @@ describe('GrowspaceStore Branch Coverage', () => {
             await store.printLabel({ plant_id: 'p1' });
             // Should not throw
         });
-        it('should handle handleDeletePlant with non-existent plant', async () => {
-            (dataStore.$devices.get as any).mockReturnValue([
-                { deviceId: 'd1', plants: [] }
-            ]);
-            await store.handleDeletePlant('p-missing');
-            expect(mockDataServiceInstance.removePlant).toHaveBeenCalledWith('p-missing');
-        });
 
         it('confirmAddPlants should handle devices with undefined plants array', async () => {
             // Mock devices with missing plants array
@@ -962,22 +955,6 @@ describe('GrowspaceStore Branch Coverage', () => {
             expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
         });
 
-        it('should updatePlantFromDialog without clearing selection if not in edit mode', async () => {
-            const dialogState = {
-                plant: { entity_id: 's.p1', attributes: { plant_id: 'p1' } },
-                editedAttributes: {},
-                selectedPlantIds: ['p1']
-            };
-            (uiStore.$isEditMode.get as any).mockReturnValue(false); // Key: Not in edit mode
-
-            await store.updatePlantFromDialog(dialogState as any);
-
-            expect(mockDataServiceInstance.updatePlant).toHaveBeenCalled();
-            expect(uiStore.closeDialog).toHaveBeenCalled();
-            // Should NOT call these:
-            expect(uiStore.clearPlantSelection).not.toHaveBeenCalled();
-            expect(uiStore.setEditMode).not.toHaveBeenCalled();
-        });
 
         it('should handle fetchStrainLibraryImpl early return if no hass', async () => {
             store.hass = undefined as any;
