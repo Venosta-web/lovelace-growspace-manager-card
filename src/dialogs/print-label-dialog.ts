@@ -200,12 +200,12 @@ export class PrintLabelDialog extends LitElement {
                 deviceId: this._selectedDeviceId || undefined,
                 preview: false
             });
-            this.store.showToast('Label printing command sent', 'success');
+            this.store.actions.ui.toast('Label printing command sent', 'success');
             this._close();
         } catch (e: unknown) {
             const error = e instanceof Error ? e.message : 'Unknown error';
             console.error('Failed to print label:', e);
-            this.store?.showToast(`Error: ${error}`, 'error');
+            this.store?.actions.ui.toast(`Error: ${error}`, 'error');
         } finally {
             this._isSubmitting = false;
         }

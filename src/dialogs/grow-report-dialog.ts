@@ -94,10 +94,10 @@ export class GrowReportDialog extends LitElement {
     this._loading = true;
     this._error = null;
     try {
-      this._reportData = await this.store.dataService.fetchGrowReport(this.state.growspaceId);
+      this._reportData = await this.store.actions.report.fetch(this.state.growspaceId);
     } catch (err: any) {
       this._error = err?.message || 'Failed to load grow report';
-      this.store.ui.showToast(this._error!, 'error');
+      // Toast is shown inside the action
     } finally {
       this._loading = false;
     }
@@ -107,10 +107,9 @@ export class GrowReportDialog extends LitElement {
     if (this._exporting) return;
     this._exporting = true;
     try {
-      await this.store.dataService.exportGrowReport(this.state.growspaceId, format);
-      this.store.ui.showToast(`Grow report export triggered (${format.toUpperCase()})`, 'success');
-    } catch (err: any) {
-      this.store.ui.showToast(err?.message || 'Failed to export grow report', 'error');
+      await this.store.actions.report.export(this.state.growspaceId, format);
+    } catch {
+      // Toast is shown inside the action
     } finally {
       this._exporting = false;
     }

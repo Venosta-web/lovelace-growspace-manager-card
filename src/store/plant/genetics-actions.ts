@@ -99,3 +99,14 @@ export async function harvestSeeds(ctx: ActionContext, data: HarvestSeedsData): 
     throw e;
   }
 }
+
+/** Fetch genetics data (seed batches and pollination events) */
+export async function fetchGeneticsData(ctx: ActionContext) {
+  try {
+    return await ctx.dataService.fetchGeneticsData();
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to fetch genetics data: ${error}`, 'error');
+    throw e;
+  }
+}

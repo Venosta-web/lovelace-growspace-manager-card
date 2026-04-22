@@ -11,7 +11,11 @@ const mockStore = {
         $strainLibrary: atom<any[]>([])
     },
     printLabel: vi.fn(),
-    showToast: vi.fn()
+    actions: {
+        ui: {
+            toast: vi.fn(),
+        },
+    },
 };
 
 describe('PrintLabelDialog', () => {
@@ -58,7 +62,7 @@ describe('PrintLabelDialog', () => {
 
         // Reset mocks
         mockStore.printLabel.mockReset();
-        mockStore.showToast.mockReset();
+        mockStore.actions.ui.toast.mockReset();
         mockStore.data.$devices.set([]);
         mockStore.data.$strainLibrary.set([]);
 
@@ -282,7 +286,7 @@ describe('PrintLabelDialog', () => {
                 preview: false,
                 deviceId: 'printer1'
             }));
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('sent'), 'success');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('sent'), 'success');
             expect(closeSpy).toHaveBeenCalled();
         });
 
@@ -292,7 +296,7 @@ describe('PrintLabelDialog', () => {
 
             await (element as any)._submit();
 
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Print failed'), 'error');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('Print failed'), 'error');
             expect(consoleSpy).toHaveBeenCalled();
         });
 
@@ -302,7 +306,7 @@ describe('PrintLabelDialog', () => {
 
             await (element as any)._submit();
 
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
             expect(consoleSpy).toHaveBeenCalled();
         });
 

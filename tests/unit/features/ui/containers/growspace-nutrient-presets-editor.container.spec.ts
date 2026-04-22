@@ -27,11 +27,12 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
             data: {
                 $nutrientDataState,
             },
-            dataService: {
-                saveNutrientPreset: vi.fn().mockResolvedValue(true),
-                removeNutrientPreset: vi.fn().mockResolvedValue(true),
-            },
-            fetchNutrientPresets: vi.fn().mockResolvedValue(true),
+            actions: {
+                nutrient: {
+                    savePreset: vi.fn().mockResolvedValue(true),
+                    removePreset: vi.fn().mockResolvedValue(true),
+                }
+            }
         };
     };
 
@@ -57,7 +58,7 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
         expect(element.shadowRoot?.querySelector('growspace-nutrient-presets-editor-ui')).toBeTruthy();
     });
 
-    it('save-preset calls saveNutrientPreset with correct args and then fetchNutrientPresets', async () => {
+    it('save-preset calls savePreset with correct args', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-nutrient-presets-editor-ui')!;
 
         const preset = { id: 'p1', name: 'Bloom', nutrients: [{ name: 'N', dose_ml_l: 2 }] };
@@ -65,12 +66,11 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
 
         await new Promise((r) => setTimeout(r, 50));
 
-        expect(mockStore.dataService.saveNutrientPreset).toHaveBeenCalledWith({
+        expect(mockStore.actions.nutrient.savePreset).toHaveBeenCalledWith({
             preset_id: 'p1',
             name: 'Bloom',
             nutrients: [{ name: 'N', dose_ml_l: 2 }],
         });
-        expect(mockStore.fetchNutrientPresets).toHaveBeenCalledWith(true);
     });
 
     it('save-preset uses "Unnamed Preset" when name is missing', async () => {
@@ -80,20 +80,19 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
 
         await new Promise((r) => setTimeout(r, 50));
 
-        expect(mockStore.dataService.saveNutrientPreset).toHaveBeenCalledWith(
+        expect(mockStore.actions.nutrient.savePreset).toHaveBeenCalledWith(
             expect.objectContaining({ name: 'Unnamed Preset' })
         );
     });
 
-    it('delete-preset calls removeNutrientPreset and then fetchNutrientPresets', async () => {
+    it('delete-preset calls removePreset', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-nutrient-presets-editor-ui')!;
 
         ui.dispatchEvent(new CustomEvent('delete-preset', { detail: { presetId: 'preset1' } }));
 
         await new Promise((r) => setTimeout(r, 50));
 
-        expect(mockStore.dataService.removeNutrientPreset).toHaveBeenCalledWith('preset1');
-        expect(mockStore.fetchNutrientPresets).toHaveBeenCalledWith(true);
+        expect(mockStore.actions.nutrient.removePreset).toHaveBeenCalledWith('preset1');
     });
 
     it('close event from UI re-dispatches close event from container', async () => {

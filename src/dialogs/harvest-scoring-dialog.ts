@@ -290,8 +290,7 @@ export class HarvestScoringDialog extends LitElement {
             // 1. Save scores if any are set
             const hasAnyScore = Object.values(this._scores).some((v) => v !== null);
             if (hasAnyScore) {
-                await this.store.dataService.scorePlant({
-                    plant_id: plantId,
+                await this.store.actions.plant.scorePhenotype(plantId, {
                     vigor: this._scores.vigor as number | null,
                     structure: this._scores.structure as number | null,
                     aroma: this._scores.aroma as number | null,
@@ -323,41 +322,26 @@ export class HarvestScoringDialog extends LitElement {
             if (this._terpeneProfile.trim()) metrics.terpene_profile = this._terpeneProfile.trim();
 
             // 3. Harvest the plant, passing metrics directly to the service
-            const stage = plant.attributes?.stage || 'flower';
-            const targetMap: Record<string, string> = {
-                flower: 'dry',
-                dry: 'cure',
-                mother: 'clone',
-            };
-            const targetGrowspace = targetMap[stage] ?? 'dry';
-            const plantIdResolved = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             const hasMetrics = Object.keys(metrics).length > 0;
-            await this.store.dataService.harvestPlant(
-                plantIdResolved,
-                targetGrowspace,
-                hasMetrics ? metrics : undefined
-            );
-            // Small delay to allow backend commit before refresh
-            await new Promise((r) => setTimeout(r, 500));
-            await this.store.refreshData();
+            await this.store.actions.plant.harvest(plant, hasMetrics ? metrics : undefined);
+            
+            // Note: Delay, refresh data and close are handled by the action module
             this._dispatchClose();
-        } catch (e: unknown) {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            console.error('[HarvestScoringDialog] Error:', e);
-            this.store?.showToast(`Harvest failed: ${error}`, 'error');
         } finally {
             this._isSubmitting = false;
         }
     }
 
-    private _skipAndHarvest(): void {
+    private async _skipAndHarvest(): Promise<void> {
         if (!this.dialogState || this._isSubmitting || !this.store) return;
-        // No scoring – just harvest
-        this.store.harvestPlant(this.dialogState.plant).catch((e: unknown) => {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            this.store?.showToast(`Harvest failed: ${error}`, 'error');
-        });
-        this._dispatchClose();
+        this._isSubmitting = true;
+        try {
+            // No scoring – just harvest
+            await this.store.actions.plant.harvest(this.dialogState.plant);
+            this._dispatchClose();
+        } finally {
+            this._isSubmitting = false;
+        }
     }
 
     private _dispatchClose(): void {

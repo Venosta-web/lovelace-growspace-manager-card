@@ -791,11 +791,11 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _handleHarvest(): void {
-    this.store.harvestPlant(this.plant);
+    this.store.actions.plant.harvest(this.plant);
   }
 
   private _handleFinishDrying(): void {
-    this.store.finishDryingPlant(this.plant);
+    this.store.actions.plant.finishDrying(this.plant);
   }
 
   private _handleMovePlant(): void {
@@ -1097,20 +1097,12 @@ export class PlantOverviewContainer extends LitElement {
     this._savingHarvest = true;
     try {
       const plantId = this.plant.attributes.plant_id;
-      const m = this._harvestMetricsEdit;
-      if (Object.keys(m).length > 0) {
-        await this.store.dataService.updateHarvestMetrics({ plant_id: plantId, ...m });
-      }
-      const s = this._scoresEdit;
-      if (Object.keys(s).length > 0) {
-        await this.store.dataService.scorePlant({ plant_id: plantId, ...s });
-      }
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await this.store.refreshData();
+      await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
+      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
       this._activeTab = 'dashboard';
     } catch (e) {
+      // Toast is handled inside the action; just catch to prevent unhandled rejection
       console.error('Failed to save harvest metrics', e);
-      this.store.ui.showToast('Failed to save harvest metrics. Check your connection and try again.', 'error');
     } finally {
       this._savingHarvest = false;
     }
@@ -1170,12 +1162,11 @@ export class PlantOverviewContainer extends LitElement {
     this._savingScore = true;
     try {
       const plantId = this.plant.attributes.plant_id;
-      await this.store.dataService.scorePlant({ plant_id: plantId, ...this._scoresEdit });
-      await this.store.refreshData();
+      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
       this._showScoringForm = false;
     } catch (e) {
+      // Toast is handled inside the action; just catch to prevent unhandled rejection
       console.error('Failed to save phenotype scores', e);
-      this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
     } finally {
       this._savingScore = false;
     }

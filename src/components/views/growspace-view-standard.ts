@@ -79,14 +79,14 @@ export class GrowspaceViewStandard extends LitElement {
         veg_start: today,
       });
 
-      this.store.ui.showToast('Plant transplanted successfully', 'success');
+      this.store.actions.ui.toast('Plant transplanted successfully', 'success');
 
       // Refresh data after a small delay
       await new Promise((resolve) => setTimeout(resolve, 500));
       await this.store.refreshData();
     } catch (error) {
       console.error('[GrowspaceViewStandard] Transplant failed:', error);
-      this.store.ui.showToast('Failed to transplant plant', 'error');
+      this.store.actions.ui.toast('Failed to transplant plant', 'error');
     }
   }
 

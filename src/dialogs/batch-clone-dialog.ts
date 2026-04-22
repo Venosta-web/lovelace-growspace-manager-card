@@ -111,7 +111,7 @@ export class BatchCloneDialog extends LitElement {
       }
 
       try {
-        await this.store.handleTakeClone(motherPlant, this._numClones, this._targetGrowspaceId);
+        await this.store.actions.plant.takeClone(motherPlant, this._numClones, this._targetGrowspaceId);
       } catch (_e) {
         errors.push(plantId);
       }
@@ -123,9 +123,9 @@ export class BatchCloneDialog extends LitElement {
 
     const totalClones = plantIds.length * this._numClones;
     if (errors.length === 0) {
-      this.store.showToast(`Created ${totalClones} clone(s) successfully`, 'success');
+      this.store.actions.ui.toast(`Created ${totalClones} clone(s) successfully`, 'success');
     } else {
-      this.store.showToast(`Completed with ${errors.length} error(s)`, 'error');
+      this.store.actions.ui.toast(`Completed with ${errors.length} error(s)`, 'error');
     }
 
     this._close();

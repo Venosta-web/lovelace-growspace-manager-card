@@ -45,7 +45,7 @@ export class ECRampEditorDialog extends LitElement {
         if (this.store) {
             this._curvesController = new StoreController(this, this.store.data.$ecRampCurves);
             // Fetch curves when dialog opens
-            this.store.fetchECRampCurves();
+            void this.store.actions.library.fetchECRampCurves();
         }
     }
 
@@ -154,7 +154,7 @@ export class ECRampEditorDialog extends LitElement {
             this._editingCurve = null;
             this._error = null;
             if (this.store) {
-                this.store.fetchECRampCurves();
+                void this.store.actions.library.fetchECRampCurves();
             }
         }
     }
@@ -188,8 +188,7 @@ export class ECRampEditorDialog extends LitElement {
     private async _deleteCurve(curveId: string) {
         if (!confirm('Are you sure you want to delete this EC ramp curve?')) return;
         try {
-            await this.store.dataService.removeECRampCurve(curveId);
-            await this.store.fetchECRampCurves(true);
+            await this.store.actions.library.removeECRampCurve(curveId);
         } catch (err: unknown) {
             this._error = err instanceof Error ? err.message : 'Unknown error';
         }
@@ -236,13 +235,12 @@ export class ECRampEditorDialog extends LitElement {
         const sortedPoints = [...points].sort((a, b) => a.day - b.day);
 
         try {
-            await this.store.dataService.saveECRampCurve({
+            await this.store.actions.library.saveECRampCurve({
                 curve_id: this._editingCurve.id,
                 name: this._editingCurve.name.trim(),
                 stage: this._editingCurve.stage || 'flower',
                 points: sortedPoints,
             });
-            await this.store.fetchECRampCurves(true);
             this._view = 'LIST';
             this._editingCurve = null;
         } catch (err: unknown) {

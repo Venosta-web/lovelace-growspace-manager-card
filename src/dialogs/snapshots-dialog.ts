@@ -116,11 +116,11 @@ export class SnapshotsDialog extends LitElement {
     }
 
     private async _fetchSnapshots() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService) return;
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
 
         this._isLoading = true;
         try {
-            const response = await this.store.dataService.getSnapshots(this.dialogState.growspaceId);
+            const response = await this.store.actions.snapshots.list(this.dialogState.growspaceId);
             if (response) {
                 this._snapshots = response.snapshots || [];
             }
@@ -133,32 +133,26 @@ export class SnapshotsDialog extends LitElement {
     }
 
     private async _captureSnapshot() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService) return;
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
 
         this._isCapturing = true;
         try {
-            await this.store.dataService.captureSnapshot(this.dialogState.growspaceId);
-            this.store.ui.showToast('Snapshot captured successfully', 'success');
+            await this.store.actions.snapshots.capture(this.dialogState.growspaceId);
             // Refresh the list immediately
             await this._fetchSnapshots();
         } catch (err: any) {
             console.error('[SnapshotsDialog] Failed to capture snapshot:', err);
-            // Backend might return "no_cameras" error
-            if (err?.code === 'no_cameras') {
-                this.store.ui.showToast('No cameras configured for this growspace.', 'error');
-            } else {
-                this.store.ui.showToast('Failed to capture snapshot', 'error');
-            }
+            // Action handles toast
         } finally {
             this._isCapturing = false;
         }
     }
 
     private async _fetchVisionHistory() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService) return;
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
         this._isLoadingVision = true;
         try {
-            const response = await this.store.dataService.getVisionHistory(this.dialogState.growspaceId);
+            const response = await this.store.actions.snapshots.visionHistory(this.dialogState.growspaceId);
             if (response) {
                 this._visionHistory = response.history || [];
                 this._selectedResult = this._visionHistory[0] ?? null;
@@ -172,15 +166,14 @@ export class SnapshotsDialog extends LitElement {
     }
 
     private async _runVisionCheckup() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService) return;
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
         this._isRunningCheckup = true;
         try {
-            await this.store.dataService.triggerVisionCheckup(this.dialogState.growspaceId);
-            this.store.ui.showToast('Vision checkup complete', 'success');
+            await this.store.actions.snapshots.triggerCheckup(this.dialogState.growspaceId);
             await this._fetchVisionHistory();
         } catch (err) {
             console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
-            this.store.ui.showToast('Failed to run vision checkup', 'error');
+            // Action handles error toast
         } finally {
             this._isRunningCheckup = false;
         }

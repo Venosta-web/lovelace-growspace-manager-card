@@ -138,9 +138,9 @@ export class BatchPrintLabelDialog extends LitElement {
     this._isSubmitting = false;
 
     if (errors.length === 0) {
-      this.store.showToast(`Printed ${total} label(s) successfully`, 'success');
+      this.store.actions.ui.toast(`Printed ${total} label(s) successfully`, 'success');
     } else {
-      this.store.showToast(`Printed with ${errors.length} error(s)`, 'error');
+      this.store.actions.ui.toast(`Printed with ${errors.length} error(s)`, 'error');
     }
 
     this._close();

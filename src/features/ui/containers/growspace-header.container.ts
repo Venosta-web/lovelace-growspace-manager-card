@@ -192,7 +192,7 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'training': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.openTrainingDialog(
+        this.store.actions.ui.openTrainingDialog(
           selectedPlants.size > 0 ? Array.from(selectedPlants) : [],
           this.device?.deviceId || undefined
         );

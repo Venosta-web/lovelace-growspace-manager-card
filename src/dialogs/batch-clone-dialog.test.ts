@@ -134,8 +134,14 @@ function makePlant(plantId: string) {
 function makeMockStore(plantIds: string[] = [], overrides: Record<string, unknown> = {}) {
   const plants = plantIds.map(makePlant);
   return {
-    handleTakeClone: vi.fn().mockResolvedValue(true),
-    showToast: vi.fn(),
+    actions: {
+      plant: {
+        takeClone: vi.fn().mockResolvedValue(true),
+      },
+      ui: {
+        toast: vi.fn(),
+      },
+    },
     data: {
       $devices: {
         get: vi.fn().mockReturnValue([{ deviceId: 'gs-1', plants }]),
@@ -226,7 +232,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.handleTakeClone).not.toHaveBeenCalled();
+    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
   });
 
   it('does nothing when no target growspace is set', async () => {
@@ -237,7 +243,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.handleTakeClone).not.toHaveBeenCalled();
+    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
   });
 
   it('calls handleTakeClone once per selected plant', async () => {
@@ -249,7 +255,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.handleTakeClone).toHaveBeenCalledTimes(2);
+    expect(mockStore.actions.plant.takeClone).toHaveBeenCalledTimes(2);
   });
 
   it('passes numClones and targetGrowspaceId to handleTakeClone', async () => {
@@ -261,7 +267,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.handleTakeClone).toHaveBeenCalledWith(
+    expect(mockStore.actions.plant.takeClone).toHaveBeenCalledWith(
       expect.objectContaining({ attributes: expect.objectContaining({ plant_id: 'plant-1' }) }),
       3,
       'gs-2'
@@ -277,12 +283,12 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.showToast).toHaveBeenCalledWith('Created 4 clone(s) successfully', 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Created 4 clone(s) successfully', 'success');
   });
 
   it('shows error toast when some clones fail', async () => {
     const mockStore = makeMockStore(['plant-1', 'plant-2']);
-    mockStore.handleTakeClone = vi.fn()
+    mockStore.actions.plant.takeClone = vi.fn()
       .mockResolvedValueOnce(true)
       .mockRejectedValueOnce(new Error('clone error'));
     const el = createElement(mockStore);
@@ -292,7 +298,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.showToast).toHaveBeenCalledWith(
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
       expect.stringContaining('1 error'),
       'error'
     );
@@ -306,8 +312,8 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.handleTakeClone).not.toHaveBeenCalled();
-    expect(mockStore.showToast).toHaveBeenCalledWith(
+    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
       expect.stringContaining('1 error'),
       'error'
     );

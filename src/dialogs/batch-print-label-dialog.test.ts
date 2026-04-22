@@ -123,7 +123,11 @@ for (const tag of mockTags) {
 function makeMockStore(overrides: Record<string, unknown> = {}) {
   return {
     printLabel: vi.fn().mockResolvedValue(undefined),
-    showToast: vi.fn(),
+    actions: {
+      ui: {
+        toast: vi.fn(),
+      },
+    },
     ...overrides,
   };
 }
@@ -304,7 +308,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     // warm-up + 1 batch call
     expect(mockStore.printLabel).toHaveBeenCalledTimes(2);
-    expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('1 label'), 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('1 label'), 'success');
   });
 
   it('prints each plant for each copy', async () => {
@@ -327,7 +331,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.showToast).toHaveBeenCalledWith('Printed 4 label(s) successfully', 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Printed 4 label(s) successfully', 'success');
   });
 
   it('shows error toast when some prints fail', async () => {
@@ -345,7 +349,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('1 error'), 'error');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('1 error'), 'error');
   });
 
   it('reaches 100% progress after all labels are printed', async () => {

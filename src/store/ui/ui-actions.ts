@@ -11,6 +11,18 @@ export function setIsCompactView(ctx: ActionContext, value: boolean) {
   }
 }
 
+export function showToast(ctx: ActionContext, message: string, type: 'success' | 'error' | 'info' = 'info') {
+  ctx.showToast(message, type);
+}
+
+export function setActiveDialog(ctx: ActionContext, dialog: import('../../ui-state').ActiveDialogState) {
+  ctx.ui.setActiveDialog(dialog);
+}
+
+export function closeDialog(ctx: ActionContext) {
+  ctx.ui.closeDialog();
+}
+
 export function toggleHeaderExpansion(ctx: ActionContext) {
   if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
     ctx.ui.setViewMode(ViewMode.STANDARD);

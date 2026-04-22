@@ -44,6 +44,11 @@ const buildMockStore = () => ({
     openSnapshotsDialog: vi.fn(),
     openWateringDialog: vi.fn(),
     openIPMDialog: vi.fn(),
+    actions: {
+        ui: {
+            openTrainingDialog: vi.fn(),
+        },
+    },
     openTrainingDialog: vi.fn(),
     openNutrientsDialog: vi.fn(),
     openECRampDialog: vi.fn(),
@@ -269,7 +274,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'training' } })
         );
-        expect(mockStore.openTrainingDialog).toHaveBeenCalledWith(
+        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith(
             expect.arrayContaining(['p1', 'p2']),
             'grow1'
         );
@@ -280,7 +285,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'training' } })
         );
-        expect(mockStore.openTrainingDialog).toHaveBeenCalledWith([], 'grow1');
+        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], 'grow1');
     });
 
     it('nutrients action calls store.openNutrientsDialog', () => {

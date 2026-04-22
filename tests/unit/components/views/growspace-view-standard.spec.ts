@@ -67,7 +67,11 @@ describe('GrowspaceViewStandard', () => {
         mockStore = {
             ui: {
                 $isTransplantMode: isTransplantModeAtom,
-                showToast: vi.fn(),
+            },
+            actions: {
+                ui: {
+                    toast: vi.fn(),
+                },
             },
             data: {
                 $devices: devicesAtom
@@ -246,7 +250,7 @@ describe('GrowspaceViewStandard', () => {
             })
         );
 
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Plant transplanted successfully', 'success');
+        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Plant transplanted successfully', 'success');
         vi.useRealTimers();
     });
 
@@ -264,7 +268,7 @@ describe('GrowspaceViewStandard', () => {
         // Flush promise queue
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
+        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
         expect(consoleSpy).toHaveBeenCalled();
     });
 

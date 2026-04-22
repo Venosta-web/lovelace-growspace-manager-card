@@ -37,6 +37,10 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
       plant: {
         delete: vi.fn(),
         move: vi.fn(),
+        harvest: vi.fn(),
+        finishDrying: vi.fn(),
+        saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+        scorePhenotype: vi.fn().mockResolvedValue(undefined),
       },
     },
     ui: {
@@ -45,14 +49,9 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
       showToast: vi.fn(),
       $activeDialog: { get: vi.fn().mockReturnValue({ type: 'PLANT_OVERVIEW' }) },
     },
-    harvestPlant: vi.fn(),
-    finishDryingPlant: vi.fn(),
     updatePlantFromDialog: vi.fn(),
     refreshData: vi.fn().mockResolvedValue(undefined),
-    dataService: {
-      updateHarvestMetrics: vi.fn().mockResolvedValue({}),
-      scorePlant: vi.fn().mockResolvedValue({}),
-    },
+    dataService: {},
     grid: {
       $growspaceOptions: atom<Record<string, string>>({}),
     },
@@ -180,15 +179,15 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   // ── _handleHarvest ────────────────────────────────────────────────────────
-  it('_handleHarvest calls store.harvestPlant', () => {
+  it('_handleHarvest calls store.actions.plant.harvest', () => {
     (el as any)._handleHarvest();
-    expect(store.harvestPlant).toHaveBeenCalledWith(plant);
+    expect(store.actions.plant.harvest).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleFinishDrying ───────────────────────────────────────────────────
-  it('_handleFinishDrying calls store.finishDryingPlant', () => {
+  it('_handleFinishDrying calls store.actions.plant.finishDrying', () => {
     (el as any)._handleFinishDrying();
-    expect(store.finishDryingPlant).toHaveBeenCalledWith(plant);
+    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleMovePlant ──────────────────────────────────────────────────────
@@ -277,29 +276,29 @@ describe('PlantOverviewContainer – private method logic', () => {
   it('_skipAndAdvance does nothing when already saving', () => {
     (el as any)._savingHarvest = true;
     (el as any)._skipAndAdvance();
-    expect(store.harvestPlant).not.toHaveBeenCalled();
-    expect(store.finishDryingPlant).not.toHaveBeenCalled();
+    expect(store.actions.plant.harvest).not.toHaveBeenCalled();
+    expect(store.actions.plant.finishDrying).not.toHaveBeenCalled();
   });
 
   it('_skipAndAdvance calls finishDryingPlant for dry stage', () => {
     el.plant = makeMockPlant({}, 'dry');
     (el as any)._savingHarvest = false;
     (el as any)._skipAndAdvance();
-    expect(store.finishDryingPlant).toHaveBeenCalledWith(el.plant);
+    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
   });
 
   it('_skipAndAdvance calls finishDryingPlant for drying stage', () => {
     el.plant = makeMockPlant({}, 'drying');
     (el as any)._savingHarvest = false;
     (el as any)._skipAndAdvance();
-    expect(store.finishDryingPlant).toHaveBeenCalledWith(el.plant);
+    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
   });
 
   it('_skipAndAdvance calls harvestPlant for flower stage', () => {
     el.plant = makeMockPlant({}, 'flower');
     (el as any)._savingHarvest = false;
     (el as any)._skipAndAdvance();
-    expect(store.harvestPlant).toHaveBeenCalledWith(el.plant);
+    expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
   });
 
   // ── _saveHarvestMetrics ───────────────────────────────────────────────────
@@ -307,25 +306,20 @@ describe('PlantOverviewContainer – private method logic', () => {
     it('returns early when no plant_id', async () => {
       el.plant = makeMockPlant({ plant_id: undefined });
       await (el as any)._saveHarvestMetrics();
-      expect(store.dataService.updateHarvestMetrics).not.toHaveBeenCalled();
+      expect(store.actions.plant.saveHarvestMetrics).not.toHaveBeenCalled();
     });
 
-    it('calls updateHarvestMetrics when metrics present', async () => {
+    it('calls saveHarvestMetrics action with plantId and metrics', async () => {
       (el as any)._harvestMetricsEdit = { wet_weight: 100 };
-      (el as any)._scoresEdit = {};
+      (el as any)._scoresEdit = { vigor: 3 };
       await (el as any)._saveHarvestMetrics();
-      expect(store.dataService.updateHarvestMetrics).toHaveBeenCalledWith(
-        expect.objectContaining({ plant_id: 'test-plant-1', wet_weight: 100 })
+      expect(store.actions.plant.saveHarvestMetrics).toHaveBeenCalledWith(
+        'test-plant-1',
+        { wet_weight: 100 }
       );
-      expect(store.refreshData).toHaveBeenCalled();
-    });
-
-    it('calls scorePlant when scores present', async () => {
-      (el as any)._harvestMetricsEdit = {};
-      (el as any)._scoresEdit = { vigor: 4 };
-      await (el as any)._saveHarvestMetrics();
-      expect(store.dataService.scorePlant).toHaveBeenCalledWith(
-        expect.objectContaining({ plant_id: 'test-plant-1', vigor: 4 })
+      expect(store.actions.plant.scorePhenotype).toHaveBeenCalledWith(
+        'test-plant-1',
+        { vigor: 3 }
       );
     });
 
@@ -337,45 +331,38 @@ describe('PlantOverviewContainer – private method logic', () => {
       expect((el as any)._activeTab).toBe('dashboard');
     });
 
-    it('shows toast and resets flag on error', async () => {
-      store.dataService.updateHarvestMetrics.mockRejectedValue(new Error('fail'));
+    it('resets _savingHarvest flag on error', async () => {
+      store.actions.plant.saveHarvestMetrics.mockRejectedValue(new Error('fail'));
       (el as any)._harvestMetricsEdit = { wet_weight: 50 };
       (el as any)._scoresEdit = {};
       await (el as any)._saveHarvestMetrics();
-      expect(store.ui.showToast).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save harvest metrics'),
-        'error'
-      );
+      // Toast is handled inside the action; container just resets loading state
       expect((el as any)._savingHarvest).toBe(false);
     });
   });
 
   // ── _savePhenotypeScore ───────────────────────────────────────────────────
   describe('_savePhenotypeScore', () => {
-    it('returns early when no plant_id (line 1112)', async () => {
+    it('returns early when no plant_id', async () => {
       el.plant = makeMockPlant({ plant_id: undefined });
       await (el as any)._savePhenotypeScore();
-      expect(store.dataService.scorePlant).not.toHaveBeenCalled();
+      expect(store.actions.plant.scorePhenotype).not.toHaveBeenCalled();
     });
 
-    it('calls scorePlant and refreshes data on success (lines 1113-1118)', async () => {
+    it('calls scorePhenotype action and hides form on success', async () => {
       (el as any)._scoresEdit = { vigor: 5 };
       (el as any)._showScoringForm = true;
       await (el as any)._savePhenotypeScore();
-      expect(store.dataService.scorePlant).toHaveBeenCalledWith(
-        expect.objectContaining({ plant_id: 'test-plant-1', vigor: 5 })
+      expect(store.actions.plant.scorePhenotype).toHaveBeenCalledWith(
+        'test-plant-1',
+        { vigor: 5 }
       );
-      expect(store.refreshData).toHaveBeenCalled();
       expect((el as any)._showScoringForm).toBe(false);
     });
 
-    it('shows toast and resets flag on error (lines 1119-1123)', async () => {
-      store.dataService.scorePlant.mockRejectedValue(new Error('score fail'));
+    it('resets _savingScore flag on error', async () => {
+      store.actions.plant.scorePhenotype.mockRejectedValue(new Error('score fail'));
       await (el as any)._savePhenotypeScore();
-      expect(store.ui.showToast).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save scores'),
-        'error'
-      );
       expect((el as any)._savingScore).toBe(false);
     });
   });
@@ -433,7 +420,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       (b) => b.textContent?.includes('Harvest')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.harvestPlant).toHaveBeenCalled();
+    expect(store.actions.plant.harvest).toHaveBeenCalled();
   });
 
   // ── Footer: flowering stage Harvest button ────────────────────────────────
@@ -453,7 +440,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       (b) => b.textContent?.includes('Finish Drying')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.finishDryingPlant).toHaveBeenCalled();
+    expect(store.actions.plant.finishDrying).toHaveBeenCalled();
   });
 
   // ── Footer: growspace options visible (lines 596-617) ────────────────────

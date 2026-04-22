@@ -8,6 +8,7 @@ import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
+import * as ipmActions from '../plant/ipm-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -16,6 +17,7 @@ interface IGrowspaceStore {
   context: ActionContext;
   undo(): Promise<void>;
   redo(): Promise<void>;
+  refreshData(): void;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -41,10 +43,15 @@ export class ActionDispatcher {
 
     nextStage: (plant: PlantEntity) => plantActions.movePlantToNextStage(this.ctx, plant),
 
+    harvest: (plant: PlantEntity, metrics?: Record<string, unknown>) =>
+      plantActions.movePlantToNextStage(this.ctx, plant, metrics),
+
     takeClone: (mother: PlantEntity, num?: number, targetGrowspaceId?: string) =>
       plantActions.takeClone(this.ctx, mother, num, targetGrowspaceId),
 
     updateFromDialog: (state: PlantOverviewDialogState) => plantActions.updatePlantFromDialog(this.ctx, state),
+
+    finishDrying: (plant: PlantEntity) => plantActions.movePlantToNextStage(this.ctx, plant),
 
     add: (gid: string, r: number, c: number, s: string, p?: string) =>
       plantActions.confirmAddPlant(this.ctx, {
@@ -61,6 +68,9 @@ export class ActionDispatcher {
 
     scorePhenotype: (plantId: string, scores: Record<string, number | null>) =>
       plantActions.scorePhenotype(this.ctx, plantId, scores),
+
+    printLabel: (params: Parameters<typeof plantActions.printLabel>[1]) =>
+      plantActions.printLabel(this.ctx, params),
   };
 
   public readonly growspace = {
@@ -124,6 +134,48 @@ export class ActionDispatcher {
     /** Select all plants in current growspace */
     selectAllPlants: () =>
       uiActions.selectAllPlants(this.ctx),
+
+    /** Open strain recommendation dialog */
+    openStrainRecommendationDialog: () =>
+      uiActions.openStrainRecommendationDialog(this.ctx),
+
+    /** Export strain library as JSON */
+    exportStrainLibrary: () =>
+      uiActions.exportStrainLibrary(this.ctx),
+
+    showToast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
+      uiActions.showToast(this.ctx, message, type),
+
+    /** Refresh all data */
+    refreshData: () => this.store.refreshData(),
+
+    /** Set the active dialog */
+    setActiveDialog: (dialog: import('../../ui-state').ActiveDialogState) =>
+      uiActions.setActiveDialog(this.ctx, dialog),
+
+    /** Close the current dialog */
+    closeDialog: () => uiActions.closeDialog(this.ctx),
+    toast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
+      uiActions.showToast(this.ctx, message, type),
+
+    openNutrientPresetsDialog: () => uiActions.openNutrientPresetsDialog(this.ctx),
+    openIPMDialog: (context?: { growspaceId?: string; plantIds?: string[] }) =>
+      uiActions.openIPMDialog(this.ctx, context),
+    openLogbookDialog: () => uiActions.openLogbookDialog(this.ctx),
+    openConfigDialog: (device?: import('../../types').GrowspaceDevice) =>
+      uiActions.openConfigDialog(this.ctx, device),
+    openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
+    openIrrigationDialog: () => uiActions.openIrrigationDialog(this.ctx),
+    openGrowMasterDialog: (growspaceId: string) => uiActions.openGrowMasterDialog(this.ctx, growspaceId),
+    openWateringDialog: (options: { plantIds?: string[]; growspaceId?: string; mode?: 'plant' | 'growspace' }) =>
+      uiActions.openWateringDialog(this.ctx, options),
+    openTrainingDialog: (plantIds: string[], growspaceId?: string) =>
+      uiActions.openTrainingDialog(this.ctx, plantIds, growspaceId),
+    openNutrientsDialog: () => uiActions.openNutrientsDialog(this.ctx),
+    openSnapshotsDialog: (growspaceId?: string) => uiActions.openSnapshotsDialog(this.ctx, growspaceId),
+    openCropSteeringDialog: (growspaceId?: string) => uiActions.openCropSteeringDialog(this.ctx, growspaceId),
+    openECRampDialog: (growspaceId?: string) => uiActions.openECRampDialog(this.ctx, growspaceId),
+    openGrowReportDialog: (growspaceId?: string) => uiActions.openGrowReportDialog(this.ctx, growspaceId),
   };
 
   public readonly library = {
@@ -138,6 +190,7 @@ export class ActionDispatcher {
     saveECRampCurve: (data: Parameters<typeof libraryActions.saveECRampCurve>[1]) =>
       libraryActions.saveECRampCurve(this.ctx, data),
     removeECRampCurve: (id: string) => libraryActions.removeECRampCurve(this.ctx, id),
+    import: (file: File, replace: boolean) => this.ctx.dataService.importStrainLibrary(file, replace), // Temporarily calling dataService until library action exists
   };
 
   public readonly nutrient = {
@@ -176,6 +229,10 @@ export class ActionDispatcher {
     remove: (growspaceId: string) => environmentActions.removeEnvironment(this.ctx, growspaceId),
     resetWaterTracking: (growspaceId: string) =>
       environmentActions.resetWaterTracking(this.ctx, growspaceId),
+    waterPlant: (plantId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
+      plantActions.waterPlant(this.ctx, plantId, amount, nutrients, presetId),
+    waterGrowspace: (growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
+      plantActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
   };
 
   public readonly breeder = {
@@ -195,7 +252,13 @@ export class ActionDispatcher {
       geneticsActions.updatePollination(this.ctx, data),
     deletePollination: (eventId: string) =>
       geneticsActions.deletePollination(this.ctx, eventId),
+    fetchData: () => geneticsActions.fetchGeneticsData(this.ctx),
     harvestSeeds: (data: Parameters<typeof geneticsActions.harvestSeeds>[1]) =>
       geneticsActions.harvestSeeds(this.ctx, data),
+  };
+
+  public readonly ipm = {
+    apply: (detail: Parameters<typeof ipmActions.applyIPM>[1]) =>
+      ipmActions.applyIPM(this.ctx, detail),
   };
 }

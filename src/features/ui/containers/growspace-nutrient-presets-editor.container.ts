@@ -30,23 +30,18 @@ export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
 
   private _handleSave(e: CustomEvent<Partial<NutrientPreset>>) {
     const preset = e.detail;
-    // Call store/service to save
-    this.store.dataService.saveNutrientPreset({
+    void this.store.actions.nutrient.savePreset({
       preset_id: preset.id,
       name: preset.name || 'Unnamed Preset',
       nutrients: preset.nutrients?.map((n: import('../../../services/types').NutrientItem) => ({
         name: n.name,
         dose_ml_l: n.dose_ml_l
       })) || [],
-    }).then(() => {
-        this.store.fetchNutrientPresets(true);
     });
   }
 
   private _handleDelete(e: CustomEvent<{ presetId: string }>) {
-    this.store.dataService.removeNutrientPreset(e.detail.presetId).then(() => {
-        this.store.fetchNutrientPresets(true);
-    });
+    void this.store.actions.nutrient.removePreset(e.detail.presetId);
   }
 
   render() {
