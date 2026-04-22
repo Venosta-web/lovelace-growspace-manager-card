@@ -1553,22 +1553,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
-        it('should render legacy plant overview dialog when flag is false', async () => {
-            mockFeatureFlags.USE_NEW_DIALOGS = false;
-            mockStore.ui.$activeDialog.set({ 
-                type: 'PLANT_OVERVIEW' as any, 
-                payload: { plant: { entity_id: 'sensor.p1', id: 'p1', attributes: { strain: 'S1' } }, editedAttributes: {} } 
-            });
-            element.requestUpdate();
-            await element.updateComplete;
-            
-            await vi.waitFor(() => {
-                const dialog = element.shadowRoot?.querySelector('plant-overview-dialog');
-                expect(dialog, 'Should render legacy dialog when flag is false').toBeTruthy();
-            }, { timeout: 3000 });
-
-            mockFeatureFlags.USE_NEW_DIALOGS = true; // reset
-        });
 
         it('should handle various error paths and show error toasts', async () => {
             // Test L612: _performImport failure (uses store.ui.showToast)

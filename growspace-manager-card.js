@@ -76,7 +76,6 @@ var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
 var mdiBug = "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z";
 var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V4A2,2 0 0,1 7,2M7,4V8H17V4H7M7,10V12H9V10H7M11,10V12H13V10H11M15,10V12H17V10H15M7,14V16H9V14H7M11,14V16H13V14H11M15,14V16H17V14H15M7,18V20H9V18H7M11,18V20H13V18H11M15,18V20H17V18H15Z";
-var mdiCalendarClock = "M15,13H16.5V15.82L18.94,17.23L18.19,18.53L15,16.69V13M19,8H5V19H9.67C9.24,18.09 9,17.07 9,16A7,7 0 0,1 16,9C17.07,9 18.09,9.24 19,9.67V8M5,21C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1H18V3H19A2,2 0 0,1 21,5V11.1C22.24,12.36 23,14.09 23,16A7,7 0 0,1 16,23C14.09,23 12.36,22.24 11.1,21H5M16,11.15A4.85,4.85 0 0,0 11.15,16C11.15,18.68 13.32,20.85 16,20.85A4.85,4.85 0 0,0 20.85,16C20.85,13.32 18.68,11.15 16,11.15Z";
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
@@ -9481,580 +9480,6 @@ function requireLib () {
 
 var libExports = requireLib();
 
-async function fetchStrainLibrary(ctx, force = false) {
-    // Requires hass to be present in store (usually via dataService or just check store)
-    // The original code checks this.hass.
-    // We assume dataService has valid connection or we check it.
-    // Original code checked `if (!this.hass) return;`
-    // We can check if dataService is initialized or catch errors.
-    const CACHE_KEY = 'growspace_strain_library_v2';
-    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    let usedCache = false;
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-                ctx.data.setStrainLibrary(cache.data);
-                usedCache = true;
-            }
-        }
-        catch (e) {
-            console.warn('Failed to parse cached strain library', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    if (!usedCache) {
-        try {
-            const currentStrains = await ctx.dataService.fetchStrainLibrary();
-            if (Array.isArray(currentStrains)) {
-                ctx.data.setStrainLibrary(currentStrains);
-                const cacheData = {
-                    version: 2,
-                    timestamp: Date.now(),
-                    data: currentStrains,
-                };
-                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-            }
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library:', e);
-        }
-    }
-}
-async function fetchNutrientPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_presets';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
-                ctx.data.setNutrientPresets(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchNutrientPresets();
-        if (result) {
-            ctx.data.setNutrientPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch nutrient presets:', e);
-    }
-}
-async function fetchIPMPresets(ctx, force = false) {
-    const CACHE_KEY = 'growspace_ipm_presets';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
-                ctx.data.setIPMPresets(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchIPMPresets();
-        if (result) {
-            ctx.data.setIPMPresets(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch IPM presets:', e);
-    }
-}
-async function fetchNutrientInventory(ctx, force = false) {
-    const CACHE_KEY = 'growspace_nutrient_inventory';
-    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                ctx.data.setNutrientInventory(cache.data);
-                return;
-            }
-        }
-        catch (_) {
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    try {
-        const result = await ctx.dataService.fetchNutrientInventory();
-        if (result) {
-            ctx.data.setNutrientInventory(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch nutrient inventory:', e);
-    }
-}
-async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
-    try {
-        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast(`Updated stock: ${name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update stock: ${error}`, 'error');
-    }
-}
-async function removeNutrientStock(ctx, nutrientId) {
-    try {
-        await ctx.dataService.removeNutrientStock(nutrientId);
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast('Removed nutrient stock', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
-    }
-}
-async function fetchECRampCurves(ctx, force = false) {
-    const CACHE_KEY = 'growspace_ec_ramp_curves';
-    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
-    const cachedRaw = localStorage.getItem(CACHE_KEY);
-    if (!force && cachedRaw) {
-        try {
-            const cache = JSON.parse(cachedRaw);
-            const age = Date.now() - (cache.timestamp || 0);
-            if (age < CACHE_VALIDITY_MS) {
-                console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
-                ctx.data.setECRampCurves(cache.data);
-                return;
-            }
-        }
-        catch (e) {
-            console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
-            localStorage.removeItem(CACHE_KEY);
-        }
-    }
-    console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
-    try {
-        const result = await ctx.dataService.fetchECRampCurves();
-        if (result) {
-            ctx.data.setECRampCurves(result);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
-                timestamp: Date.now(),
-                data: result,
-            }));
-        }
-    }
-    catch (e) {
-        console.error('Failed to fetch EC ramp curves:', e);
-    }
-}
-
-function setIsCompactView(ctx, value) {
-    if (value) {
-        ctx.ui.setViewMode(ViewMode.COMPACT);
-    }
-    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-}
-function toggleHeaderExpansion(ctx) {
-    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-    else {
-        ctx.ui.setViewMode(ViewMode.HEADER);
-    }
-}
-function togglePlantSelection(ctx, plantOrId) {
-    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
-    if (!plantId)
-        return;
-    ctx.ui.togglePlantSelection(plantId);
-}
-function selectAllPlants(ctx) {
-    const selectedDevice = ctx.data.$selectedDevice.get();
-    if (!selectedDevice)
-        return;
-    const devices = ctx.data.$devices.get();
-    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
-    const allIds = [];
-    if (selectedDeviceData && selectedDeviceData.plants) {
-        selectedDeviceData.plants.forEach((plant) => {
-            const pId = plant.attributes.plant_id;
-            if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
-                allIds.push(pId);
-            }
-        });
-        ctx.ui.selectAllPlants(allIds);
-    }
-}
-function clearPlantSelection(ctx) {
-    ctx.ui.clearPlantSelection();
-}
-function exitEditMode(ctx) {
-    ctx.ui.setEditMode(false);
-    ctx.ui.clearPlantSelection();
-}
-function handlePlantClick(ctx, plant) {
-    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
-        const plantId = plant.attributes.plant_id;
-        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
-            togglePlantSelection(ctx, plantId);
-        }
-        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
-    }
-    else {
-        openPlantOverviewDialog(ctx, plant);
-    }
-}
-function openPlantOverviewDialog(ctx, plant, selectedIds) {
-    ctx.ui.setActiveDialog({
-        type: 'PLANT_OVERVIEW',
-        payload: {
-            plant,
-            editedAttributes: { ...plant.attributes },
-            activeTab: 'dashboard',
-            selectedPlantIds: selectedIds,
-        },
-    });
-}
-function handleDeepLink(ctx, plantId) {
-    // 1. Wait for data to be ready if needed - for now we check devices
-    const devices = ctx.data.$devices.get();
-    if (!devices || devices.length === 0) {
-        console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
-        ctx.ui.setPendingDeepLink(plantId);
-        return;
-    }
-    // 2. Find the plant across all devices
-    let foundPlant;
-    for (const device of devices) {
-        if (!device.plants)
-            continue;
-        foundPlant = device.plants.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
-        if (foundPlant)
-            break;
-    }
-    if (foundPlant) {
-        console.log('[DeepLink] Plant found, opening dialog:', plantId);
-        openPlantOverviewDialog(ctx, foundPlant);
-        // 3. Clear pending state
-        ctx.ui.setPendingDeepLink(null);
-        // 4. Cleanup URL to prevent re-opening on refresh
-        const url = new URL(window.location.href);
-        url.searchParams.delete('plantId');
-        window.history.replaceState({}, '', url.toString());
-    }
-    else {
-        // Not found - could be stale or restricted access
-        console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
-        // Still clear pending state to avoid infinite retries if the ID is just wrong
-        ctx.ui.setPendingDeepLink(null);
-    }
-}
-function openBatchWateringDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            mode: 'plant',
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
-}
-function openBatchTrainingDialog(ctx, growspaceId) {
-    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
-    if (selectedIds.length === 0 && !growspaceId)
-        return;
-    let targetGrowspaceId = growspaceId;
-    if (!targetGrowspaceId && selectedIds.length > 0) {
-        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
-    }
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds: selectedIds,
-            growspaceId: targetGrowspaceId,
-        },
-    });
-}
-function openAddPlantDialog(ctx, row, col) {
-    if (row !== undefined && col !== undefined) {
-        fetchStrainLibrary(ctx);
-        ctx.ui.setActiveDialog({
-            type: 'ADD_PLANT',
-            payload: { row, col },
-        });
-        return;
-    }
-    const selectedDeviceId = ctx.data.$selectedDevice.get();
-    if (!selectedDeviceId) {
-        return;
-    }
-    const devices = ctx.data.$devices.get();
-    const device = devices.find((d) => d.deviceId === selectedDeviceId);
-    let targetRow = 0;
-    let targetCol = 0;
-    if (device) {
-        const occupied = new Set();
-        const deleted = ctx.data.$optimisticDeletedPlantIds.get();
-        device.plants.forEach((p) => {
-            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-            if (deleted.has(pId))
-                return;
-            const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
-            const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
-            occupied.add(`${r},${c}`);
-        });
-        let found = false;
-        const rows = device.rows || 4;
-        const cols = device.plantsPerRow || 4;
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                if (!occupied.has(`${r},${c}`)) {
-                    targetRow = r;
-                    targetCol = c;
-                    found = true;
-                    break;
-                }
-            }
-            if (found)
-                break;
-        }
-    }
-    fetchStrainLibrary(ctx);
-    ctx.ui.setActiveDialog({
-        type: 'ADD_PLANT',
-        payload: { row: targetRow, col: targetCol },
-    });
-}
-function openStrainRecommendationDialog(ctx) {
-    ctx.ui.setActiveDialog({
-        type: 'STRAIN_RECOMMENDATION',
-        payload: { isLoading: false, response: null },
-    });
-}
-function openNutrientPresetsDialog(ctx) {
-    fetchNutrientPresets(ctx);
-    ctx.ui.setActiveDialog({
-        type: 'NUTRIENT_PRESETS',
-        payload: {},
-    });
-}
-function openIPMDialog(ctx, context) {
-    fetchIPMPresets(ctx);
-    const growspaceId = context?.growspaceId ||
-        (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
-    ctx.ui.setActiveDialog({
-        type: 'IPM',
-        payload: {
-            growspaceId,
-            plantIds: context?.plantIds,
-        },
-    });
-}
-function openLogbookDialog(ctx) {
-    const growspaceId = ctx.data.$selectedDevice.get();
-    if (growspaceId) {
-        ctx.ui.setActiveDialog({
-            type: 'LOGBOOK',
-            payload: { growspaceId },
-        });
-    }
-}
-async function exportStrainLibrary(ctx) {
-    try {
-        const library = await ctx.dataService.fetchStrainLibrary();
-        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute('href', dataStr);
-        downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    }
-    catch (e) {
-        console.error(e);
-        ctx.showToast('Failed to export library', 'error');
-    }
-}
-/** HELPER: Get common growspace ID for multiple plants */
-function getCommonGrowspaceId(ctx, plantIds) {
-    const plantToDevice = ctx.data.$plantToDeviceMap.get();
-    let commonGrowspaceId;
-    for (const plantId of plantIds) {
-        const plantGrowspaceId = plantToDevice.get(plantId);
-        if (!plantGrowspaceId)
-            continue;
-        if (commonGrowspaceId === undefined) {
-            commonGrowspaceId = plantGrowspaceId;
-        }
-        else if (commonGrowspaceId !== plantGrowspaceId) {
-            return undefined; // Mixed growspaces
-        }
-    }
-    return commonGrowspaceId;
-}
-// ===== Standardized Dialog Opening Functions =====
-function openConfigDialog(ctx, device) {
-    ctx.ui.setActiveDialog({
-        type: 'CONFIG',
-        payload: {
-            currentTab: ConfigTab.ENVIRONMENT,
-            environmentData: {
-                selectedGrowspaceId: device?.deviceId || '',
-                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
-                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
-                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
-                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
-                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
-                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
-                stressThreshold: 0.8,
-                moldThreshold: 0.8,
-                lightSensor: device?.environmentAttributes?.lightSensor || '',
-                lightSensors: device?.environmentAttributes?.lightSensors || [],
-                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
-                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
-                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
-                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
-                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
-                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
-                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
-                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
-                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
-                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
-                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
-                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
-                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
-                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
-            },
-        },
-    });
-}
-function openStrainLibraryDialog(ctx, initialTab) {
-    ctx.ui.setActiveDialog({
-        type: 'STRAIN_LIBRARY',
-        payload: { initialTab },
-    });
-}
-function openIrrigationDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
-}
-function openGrowMasterDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'GROW_MASTER',
-        payload: {
-            growspaceId,
-            isLoading: false,
-            response: '',
-            mode: 'single',
-        },
-    });
-}
-function openWateringDialog(ctx, options) {
-    ctx.ui.setActiveDialog({
-        type: 'WATERING',
-        payload: {
-            plantIds: options.plantIds,
-            growspaceId: options.growspaceId,
-            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
-        },
-    });
-}
-function openTrainingDialog(ctx, plantIds, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'TRAINING',
-        payload: {
-            isOpen: true,
-            plantIds,
-            growspaceId,
-        },
-    });
-}
-function openNutrientsDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
-}
-function openSnapshotsDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'SNAPSHOTS',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
-function openCropSteeringDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'CROP_STEERING',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
-function openECRampDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'EC_RAMP_EDITOR',
-        payload: {
-            growspaceId,
-        },
-    });
-}
-function openGrowReportDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'GROW_REPORT',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
-
 const sharedStyles = i$6 `
   /* --- Glassmorphism Surfaces --- */
   :host {
@@ -13220,22 +12645,17 @@ let GrowspaceNutrientPresetsEditorContainer = class GrowspaceNutrientPresetsEdit
     }
     _handleSave(e) {
         const preset = e.detail;
-        // Call store/service to save
-        this.store.dataService.saveNutrientPreset({
+        void this.store.actions.nutrient.savePreset({
             preset_id: preset.id,
             name: preset.name || 'Unnamed Preset',
             nutrients: preset.nutrients?.map((n) => ({
                 name: n.name,
                 dose_ml_l: n.dose_ml_l
             })) || [],
-        }).then(() => {
-            this.store.fetchNutrientPresets(true);
         });
     }
     _handleDelete(e) {
-        this.store.dataService.removeNutrientPreset(e.detail.presetId).then(() => {
-            this.store.fetchNutrientPresets(true);
-        });
+        void this.store.actions.nutrient.removePreset(e.detail.presetId);
     }
     render() {
         if (!this.store || !this._nutrientDataController)
@@ -16517,7 +15937,7 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         if (this.store) {
             this._curvesController = new libExports.StoreController(this, this.store.data.$ecRampCurves);
             // Fetch curves when dialog opens
-            this.store.fetchECRampCurves();
+            void this.store.actions.library.fetchECRampCurves();
         }
     }
     updated(changedProps) {
@@ -16526,7 +15946,7 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
             this._editingCurve = null;
             this._error = null;
             if (this.store) {
-                this.store.fetchECRampCurves();
+                void this.store.actions.library.fetchECRampCurves();
             }
         }
     }
@@ -16556,8 +15976,7 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         if (!confirm('Are you sure you want to delete this EC ramp curve?'))
             return;
         try {
-            await this.store.dataService.removeECRampCurve(curveId);
-            await this.store.fetchECRampCurves(true);
+            await this.store.actions.library.removeECRampCurve(curveId);
         }
         catch (err) {
             this._error = err instanceof Error ? err.message : 'Unknown error';
@@ -16600,13 +16019,12 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         // Sort points by day
         const sortedPoints = [...points].sort((a, b) => a.day - b.day);
         try {
-            await this.store.dataService.saveECRampCurve({
+            await this.store.actions.library.saveECRampCurve({
                 curve_id: this._editingCurve.id,
                 name: this._editingCurve.name.trim(),
                 stage: this._editingCurve.stage || 'flower',
                 points: sortedPoints,
             });
-            await this.store.fetchECRampCurves(true);
             this._view = 'LIST';
             this._editingCurve = null;
         }
@@ -17202,11 +16620,11 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
         this._loading = true;
         this._error = null;
         try {
-            this._reportData = await this.store.dataService.fetchGrowReport(this.state.growspaceId);
+            this._reportData = await this.store.actions.report.fetch(this.state.growspaceId);
         }
         catch (err) {
             this._error = err?.message || 'Failed to load grow report';
-            this.store.ui.showToast(this._error, 'error');
+            // Toast is shown inside the action
         }
         finally {
             this._loading = false;
@@ -17217,11 +16635,10 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
             return;
         this._exporting = true;
         try {
-            await this.store.dataService.exportGrowReport(this.state.growspaceId, format);
-            this.store.ui.showToast(`Grow report export triggered (${format.toUpperCase()})`, 'success');
+            await this.store.actions.report.export(this.state.growspaceId, format);
         }
-        catch (err) {
-            this.store.ui.showToast(err?.message || 'Failed to export grow report', 'error');
+        catch {
+            // Toast is shown inside the action
         }
         finally {
             this._exporting = false;
@@ -17476,7 +16893,7 @@ GrowReportDialog = __decorate([
     t$2('grow-report-dialog')
 ], GrowReportDialog);
 
-const SCORE_DIMENSIONS$1 = [
+const SCORE_DIMENSIONS = [
     {
         key: 'vigor',
         label: 'Vigor',
@@ -17567,8 +16984,7 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
             // 1. Save scores if any are set
             const hasAnyScore = Object.values(this._scores).some((v) => v !== null);
             if (hasAnyScore) {
-                await this.store.dataService.scorePlant({
-                    plant_id: plantId,
+                await this.store.actions.plant.scorePhenotype(plantId, {
                     vigor: this._scores.vigor,
                     structure: this._scores.structure,
                     aroma: this._scores.aroma,
@@ -17597,39 +17013,27 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
             if (this._terpeneProfile.trim())
                 metrics.terpene_profile = this._terpeneProfile.trim();
             // 3. Harvest the plant, passing metrics directly to the service
-            const stage = plant.attributes?.stage || 'flower';
-            const targetMap = {
-                flower: 'dry',
-                dry: 'cure',
-                mother: 'clone',
-            };
-            const targetGrowspace = targetMap[stage] ?? 'dry';
-            const plantIdResolved = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
             const hasMetrics = Object.keys(metrics).length > 0;
-            await this.store.dataService.harvestPlant(plantIdResolved, targetGrowspace, hasMetrics ? metrics : undefined);
-            // Small delay to allow backend commit before refresh
-            await new Promise((r) => setTimeout(r, 500));
-            await this.store.refreshData();
+            await this.store.actions.plant.harvest(plant, hasMetrics ? metrics : undefined);
+            // Note: Delay, refresh data and close are handled by the action module
             this._dispatchClose();
-        }
-        catch (e) {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            console.error('[HarvestScoringDialog] Error:', e);
-            this.store?.showToast(`Harvest failed: ${error}`, 'error');
         }
         finally {
             this._isSubmitting = false;
         }
     }
-    _skipAndHarvest() {
+    async _skipAndHarvest() {
         if (!this.dialogState || this._isSubmitting || !this.store)
             return;
-        // No scoring – just harvest
-        this.store.harvestPlant(this.dialogState.plant).catch((e) => {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            this.store?.showToast(`Harvest failed: ${error}`, 'error');
-        });
-        this._dispatchClose();
+        this._isSubmitting = true;
+        try {
+            // No scoring – just harvest
+            await this.store.actions.plant.harvest(this.dialogState.plant);
+            this._dispatchClose();
+        }
+        finally {
+            this._isSubmitting = false;
+        }
     }
     _dispatchClose() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -17689,7 +17093,7 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
           <!-- SCORE GRID -->
           <div class="dialog-content-grid" style="display:block; padding: 24px;">
             <div class="score-grid">
-              ${SCORE_DIMENSIONS$1.map((dim) => this._renderScoreRow(dim))}
+              ${SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim))}
             </div>
             <p class="skip-hint">
               All fields are optional — you can harvest without scoring.
@@ -21768,3130 +21172,6 @@ NutrientDialog = __decorate([
     t$2('nutrient-dialog')
 ], NutrientDialog);
 
-/**
- * Quick note input component with image upload support
- * Extracted from plant-timeline for reusability
- */
-let QuickNoteInput = class QuickNoteInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.placeholder = 'Add a cultivation note...';
-        this.allowImages = true;
-        this.disabled = false;
-        this._text = '';
-        this._images = [];
-        this._isSaving = false;
-    }
-    /**
-     * Resize and compress an image file
-     */
-    async _resizeImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Could not get canvas context'));
-                        return;
-                    }
-                    // Max dimensions
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    }
-                    else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    // Compress to JPEG 0.8
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
-                };
-                img.onerror = (e) => reject(e);
-                img.src = e.target?.result;
-            };
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
-    }
-    async _handleFileSelect(e) {
-        const input = e.target;
-        if (!input.files)
-            return;
-        const files = Array.from(input.files);
-        for (const file of files) {
-            try {
-                const resized = await this._resizeImage(file);
-                this._images = [...this._images, resized];
-            }
-            catch (err) {
-                console.error('Error processing image:', err);
-            }
-        }
-        // Clear input to allow re-selecting same file
-        input.value = '';
-    }
-    _removeImage(index) {
-        this._images = this._images.filter((_, i) => i !== index);
-    }
-    async _submit() {
-        if (!this._text.trim() && !this._images.length)
-            return;
-        this._isSaving = true;
-        // Dispatch event with note data
-        this.dispatchEvent(new CustomEvent('submit', {
-            detail: {
-                text: this._text.trim(),
-                images: this._images,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-        // Note: The parent component should handle the actual submission
-        // and call clear() method on success
-    }
-    /**
-     * Public method to clear the input after successful submission
-     */
-    clear() {
-        this._text = '';
-        this._images = [];
-        this._isSaving = false;
-    }
-    /**
-     * Public method to set saving state (called by parent during submission)
-     */
-    setSaving(saving) {
-        this._isSaving = saving;
-    }
-    render() {
-        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
-        return x `
-      <div class="container">
-        <div class="input-wrapper">
-          <textarea
-            placeholder="${this.placeholder}"
-            .value=${this._text}
-            @input=${(e) => (this._text = e.target.value)}
-            rows="2"
-            ?disabled=${this.disabled || this._isSaving}
-          ></textarea>
-        </div>
-
-        ${this._images.length > 0
-            ? x `
-              <div class="image-previews">
-                ${this._images.map((img, i) => x `
-                    <div class="preview-item">
-                      <img src=${img} alt="Preview ${i + 1}" />
-                      <button
-                        class="remove-img"
-                        @click=${() => this._removeImage(i)}
-                        ?disabled=${this._isSaving}
-                        aria-label="Remove image"
-                      >
-                        <svg viewBox="0 0 24 24">
-                          <path d="${mdiClose}" />
-                        </svg>
-                      </button>
-                    </div>
-                  `)}
-              </div>
-            `
-            : E}
-
-        <div class="actions">
-          <div class="action-buttons">
-            ${this.allowImages
-            ? x `
-                    <input
-                      type="file"
-                      id="fileInput"
-                      @change=${this._handleFileSelect}
-                      multiple
-                      accept="image/*"
-                    />
-                  <button
-                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
-                    ?disabled=${this.disabled || this._isSaving}
-                    aria-label="Add image"
-                    title="Add image"
-                  >
-                    <svg viewBox="0 0 24 24">
-                      <path d="${mdiCameraPlus}" />
-                    </svg>
-                  </button>
-                `
-            : E}
-          </div>
-          <button
-            class="submit-btn"
-            @click=${this._submit}
-            ?disabled=${!canSubmit || this.disabled}
-            aria-label="Submit note"
-            title="Submit note"
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="${mdiSend}" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    `;
-    }
-};
-QuickNoteInput.styles = i$6 `
-    :host {
-      display: block;
-      margin-bottom: 24px;
-    }
-
-    .container {
-      padding: 12px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed var(--divider-color);
-    }
-
-    .input-wrapper {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-    }
-
-    textarea {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--primary-text-color);
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: none;
-      padding: 4px;
-      outline: none;
-      min-height: 40px;
-    }
-
-    textarea::placeholder {
-      color: var(--secondary-text-color);
-      opacity: 0.6;
-    }
-
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 8px;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    button:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    button.submit-btn {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-    }
-
-    button.submit-btn:hover:not(:disabled) {
-      background: var(--primary-color-dark, #0288d1);
-    }
-
-    svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    .image-previews {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-
-    .preview-item {
-      position: relative;
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-    }
-
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 4px;
-      border: 1px solid var(--divider-color);
-    }
-
-    .remove-img {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      background: var(--error-color, #f44336);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      padding: 0;
-      border: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .remove-img svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    .remove-img:hover {
-      background: var(--error-color-dark, #d32f2f);
-    }
-
-    input[type='file'] {
-      display: none;
-    }
-  `;
-__decorate([
-    n$5({ type: String })
-], QuickNoteInput.prototype, "placeholder", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], QuickNoteInput.prototype, "allowImages", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], QuickNoteInput.prototype, "disabled", void 0);
-__decorate([
-    r$2()
-], QuickNoteInput.prototype, "_text", void 0);
-__decorate([
-    r$2()
-], QuickNoteInput.prototype, "_images", void 0);
-__decorate([
-    r$2()
-], QuickNoteInput.prototype, "_isSaving", void 0);
-QuickNoteInput = __decorate([
-    t$2('quick-note-input')
-], QuickNoteInput);
-
-/**
- * Reusable confirmation dialog for delete operations
- * Used by plant-timeline and potentially other components
- */
-let ConfirmDeleteDialog = class ConfirmDeleteDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.title = 'Confirm Deletion';
-        this.message = 'Are you sure you want to delete this entry? This action cannot be undone.';
-    }
-    _handleCancel(e) {
-        e.stopPropagation();
-        this.open = false;
-        this.dispatchEvent(new CustomEvent('cancel'));
-    }
-    _handleConfirm(e) {
-        e.stopPropagation();
-        this.open = false;
-        this.dispatchEvent(new CustomEvent('confirm'));
-    }
-    _handleOverlayClick(e) {
-        if (e.target === e.currentTarget) {
-            this._handleCancel(e);
-        }
-    }
-    render() {
-        if (!this.open)
-            return null;
-        return x `
-      <div class="overlay" @click=${this._handleOverlayClick}>
-        <div class="dialog" @click=${(e) => e.stopPropagation()}>
-          <h2>${this.title}</h2>
-          <p>${this.message}</p>
-          <div class="actions">
-            <button class="cancel-btn" @click=${this._handleCancel}>
-              <svg viewBox="0 0 24 24">
-                <path d="${mdiClose}" />
-              </svg>
-              Cancel
-            </button>
-            <button class="delete-btn" @click=${this._handleConfirm}>
-              <svg viewBox="0 0 24 24">
-                <path d="${mdiDelete}" />
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-};
-ConfirmDeleteDialog.styles = i$6 `
-    :host {
-      display: none;
-    }
-
-    :host([open]) {
-      display: block;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .dialog {
-      width: 90%;
-      max-width: 420px;
-      padding: 24px;
-      background: var(--card-background-color, #1c1c1c);
-      border-radius: 16px;
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0, 0, 0, 0.4));
-    }
-
-    h2 {
-      margin: 0 0 12px 0;
-      font-size: 1.25rem;
-      color: var(--primary-text-color);
-    }
-
-    p {
-      margin: 0 0 24px 0;
-      color: var(--secondary-text-color);
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    button {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: none;
-    }
-
-    .cancel-btn {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--primary-text-color);
-    }
-
-    .cancel-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .delete-btn {
-      background: var(--error-color, #f44336);
-      color: white;
-    }
-
-    .delete-btn:hover {
-      background: var(--error-color-dark, #d32f2f);
-      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
-    }
-
-    svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-    }
-  `;
-__decorate([
-    n$5({ type: Boolean })
-], ConfirmDeleteDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String })
-], ConfirmDeleteDialog.prototype, "title", void 0);
-__decorate([
-    n$5({ type: String })
-], ConfirmDeleteDialog.prototype, "message", void 0);
-ConfirmDeleteDialog = __decorate([
-    t$2('confirm-delete-dialog')
-], ConfirmDeleteDialog);
-
-// Correlation window constant
-const CORRELATION_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
-let PlantTimeline = class PlantTimeline extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.events = [];
-        this._showDeleteConfirmation = false;
-        this._deletingEventId = null;
-        this._hoveredImage = null;
-    }
-    _getIcon(event) {
-        const { type } = event;
-        switch (type) {
-            case 'stage_change': {
-                const to = event.to?.toLowerCase();
-                if (to === 'flower')
-                    return mdiFlower;
-                if (to === 'dry')
-                    return mdiHairDryer;
-                if (to === 'cure')
-                    return mdiCannabis;
-                return mdiSprout;
-            }
-            case 'alert':
-                return mdiAlertCircle;
-            case 'note':
-                return mdiNoteText;
-            case 'milestone': {
-                const label = event.label?.toLowerCase() || '';
-                if (label.includes('flower'))
-                    return mdiFlower;
-                if (label.includes('dry'))
-                    return mdiHairDryer;
-                if (label.includes('cure'))
-                    return mdiCannabis;
-                return mdiSprout;
-            }
-            case 'action': {
-                const action = event.action;
-                if (action === 'water' || action === 'watering')
-                    return mdiWater;
-                if (action === 'ipm')
-                    return mdiBug;
-                if (action === 'training')
-                    return mdiDumbbell;
-                return mdiLeaf;
-            }
-            case 'environmental_report':
-                return event.sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
-            default:
-                return mdiLeaf;
-        }
-    }
-    _getStageColor(stage) {
-        switch (stage?.toLowerCase()) {
-            case 'flower':
-                return '#e91e63';
-            case 'veg':
-                return '#4caf50';
-            case 'seedling':
-                return '#8bc34a';
-            case 'clone':
-                return '#66bb6a';
-            case 'mother':
-                return '#2e7d32';
-            case 'dry':
-                return '#ff9800';
-            case 'cure':
-                return '#795548';
-            default:
-                return 'var(--divider-color)';
-        }
-    }
-    _isCorrelated(event, allEvents) {
-        if (event.type !== 'note')
-            return false;
-        const noteTime = new Date(event.date).getTime();
-        // Check for alerts within correlation window before this note
-        return allEvents.some((e) => {
-            if (e.type !== 'alert')
-                return false;
-            const alertTime = new Date(e.date).getTime();
-            const diff = noteTime - alertTime;
-            return diff > 0 && diff < CORRELATION_WINDOW_MS;
-        });
-    }
-    // Date formatting methods replaced by shared date utilities
-    async _handleNoteSubmit(e) {
-        const noteInput = this.shadowRoot?.querySelector('quick-note-input');
-        if (!noteInput)
-            return;
-        noteInput.setSaving(true);
-        try {
-            const service = getTimelineService(this.hass);
-            await service.addPlantNote(this.plant_id, {
-                notes: e.detail.text,
-                images: e.detail.images,
-            });
-            // Clear input on success
-            noteInput.clear();
-            // Allow time for recorder to write to DB
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            // Fire refresh event
-            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
-        }
-        catch (err) {
-            console.error('Error adding note:', err);
-        }
-        finally {
-            noteInput.setSaving(false);
-        }
-    }
-    _deleteEvent(e, eventId) {
-        e.stopPropagation();
-        this._deletingEventId = eventId;
-        this._showDeleteConfirmation = true;
-    }
-    async _confirmDeleteEvent() {
-        if (this._deletingEventId === null)
-            return;
-        try {
-            const service = getTimelineService(this.hass);
-            await service.deleteEvent(this._deletingEventId);
-            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
-        }
-        catch (err) {
-            console.error('Error deleting event:', err);
-        }
-        finally {
-            this._showDeleteConfirmation = false;
-            this._deletingEventId = null;
-        }
-    }
-    // Delete overlay now handled by confirm-delete-dialog component
-    _renderHoverOverlay() {
-        if (!this._hoveredImage)
-            return E;
-        return x `
-      <div class="image-hover-overlay">
-        <img src=${this._hoveredImage} />
-      </div>
-    `;
-    }
-    // Image handling now done by quick-note-input component
-    render() {
-        // Sort events descending
-        const sortedEvents = [...(this.events || [])]
-            .filter((e) => e.date)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        // Group by day using shared utility
-        const groupedByDay = new Map();
-        for (const event of sortedEvents) {
-            const date = new Date(event.date);
-            const dayKey = getDateKey(date);
-            if (!groupedByDay.has(dayKey)) {
-                groupedByDay.set(dayKey, []);
-            }
-            groupedByDay.get(dayKey).push(event);
-        }
-        const latestStageEvent = sortedEvents.find((e) => e.type === 'stage_change' || e.type === 'milestone');
-        const currentStage = latestStageEvent
-            ? latestStageEvent.type === 'stage_change' ? latestStageEvent.to : latestStageEvent.label
-            : undefined;
-        const stageColor = this._getStageColor(currentStage);
-        return x `
-      <div class="timeline" style="--stage-color: ${stageColor}">
-        <confirm-delete-dialog
-          .open=${this._showDeleteConfirmation}
-          @confirm=${this._confirmDeleteEvent}
-          @cancel=${() => (this._showDeleteConfirmation = false)}
-        ></confirm-delete-dialog>
-
-        ${this._renderHoverOverlay()}
-
-        <!-- Quick Note Section -->
-        <quick-note-input @submit=${this._handleNoteSubmit}></quick-note-input>
-
-        ${sortedEvents.length === 0
-            ? x `
-              <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
-                No entries for this plant yet.
-              </div>
-            `
-            : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
-                const alerts = dayEvents.filter((e) => e.type === 'alert');
-                const others = dayEvents.filter((e) => e.type !== 'alert');
-                return x `
-                <div class="day-group">
-                  <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
-
-                  ${alerts.length > 2
-                    ? x `
-                        <div class="day-summary glass-surface">
-                          <svg
-                            viewBox="0 0 24 24"
-                            style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"
-                          >
-                            <path d="${mdiAlertCircle}" />
-                          </svg>
-                          <span
-                            >${alerts.length} system alerts recorded. Environment may require
-                            attention.</span
-                          >
-                        </div>
-                      `
-                    : alerts.map((event) => this._renderEvent(event, sortedEvents))}
-                  ${others.map((event) => this._renderEvent(event, sortedEvents))}
-                </div>
-              `;
-            })}
-      </div>
-    `;
-    }
-    _renderEvent(event, allEvents) {
-        const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
-        return x `
-      <div
-        class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} ${event.type === 'environmental_report'
-            ? event.sensor_type === 'night_report'
-                ? 'is-night'
-                : 'is-day'
-            : ''} glass-surface"
-      >
-        <div class="icon-wrapper">
-          <svg viewBox="0 0 24 24">
-            <path d="${this._getIcon(event)}" />
-          </svg>
-        </div>
-        ${event.event_id
-            ? x `
-              <button
-                class="delete-btn"
-                @click=${(e) => this._deleteEvent(e, event.event_id)}
-              >
-                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
-                  <path d="${mdiDelete}" />
-                </svg>
-              </button>
-            `
-            : E}
-        <div class="date">
-          ${formatTime(new Date(event.date))}
-          ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
-        </div>
-        ${this._renderEventContent(event)} ${this._renderMetadata(event.metadata)}
-        ${this._renderImages(event.images)} ${this._renderTags(event.tags)}
-      </div>
-    `;
-    }
-    _renderEventContent(event) {
-        switch (event.type) {
-            case 'stage_change':
-                return x `
-          <div class="content">Stage Changed</div>
-          <div class="details">
-            Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong>
-          </div>
-        `;
-            case 'milestone':
-                return x `
-          <div class="content">${event.label} Started</div>
-          <div class="details">Agricultural milestone reached.</div>
-        `;
-            case 'action': {
-                const label = event.action === 'ipm'
-                    ? 'IPM'
-                    : event.action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-                return x `
-          <div class="content">${label}</div>
-          ${event.details ? x `<div class="details">${event.details}</div>` : E}
-        `;
-            }
-            case 'alert':
-                return x `
-          <div class="content" style="color: var(--error-color)">
-            Critical Alert: ${event.message}
-          </div>
-          <div class="details">Severity: ${event.severity}</div>
-        `;
-            case 'environmental_report': {
-                const isDay = event.sensor_type !== 'night_report';
-                return x `
-          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
-            ${isDay ? 'Day' : 'Night'} Environmental Report
-          </div>
-          <div class="details">
-            ${event.reasons?.map((r) => x `<span
-                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
-                  >${r}</span
-                >`)}
-          </div>
-          ${(() => {
-                    // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
-                    const { temperature, humidity, vpd } = this._getEnvironmentalData(event);
-                    return temperature !== undefined && humidity !== undefined
-                        ? x `
-                  <div
-                  style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
-                  >
-                    <vpd-heatmap
-                      .temperature=${temperature}
-                      .humidity=${humidity}
-                      .vpd=${vpd}
-                      .stage=${this._getCurrentStage()}
-                      .hass=${this.hass}
-                    ></vpd-heatmap>
-                  </div>
-                `
-                        : E;
-                })()}
-        `;
-            }
-            case 'note':
-                return x `
-          <div class="content">Note</div>
-          <div class="details">${event.text}</div>
-        `;
-        }
-    }
-    _renderMetadata(metadata) {
-        if (!metadata || Object.keys(metadata).length === 0)
-            return E;
-        const items = [
-            { key: 'temperature', icon: mdiThermometer, label: '°C' },
-            { key: 'humidity', icon: mdiWaterPercent, label: '%' },
-            { key: 'vpd', icon: mdiGauge, label: ' kPa' },
-            { key: 'ph', icon: mdiFlaskOutline, label: 'pH ', prefix: true },
-            { key: 'ec', icon: mdiFlash, label: 'EC ', prefix: true },
-            { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
-        ];
-        return x `
-              <div class="metadata-chips" >
-                ${items.map((item) => {
-            const val = metadata[item.key];
-            if (val === undefined || val === null)
-                return E;
-            const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
-            return x `
-            <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
-              <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
-              <span>${display}</span>
-            </div>
-          `;
-        })}
-        </div>
-          `;
-    }
-    _renderImages(images) {
-        if (!images || images.length === 0)
-            return E;
-        return x `
-          <div class="image-grid" >
-            ${images.map((img) => {
-            // If it's a relative path, prefix with /api/growspace_manager/v1/images/
-            const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
-            return x `
-            <img
-              src=${src}
-              @click=${() => this._openImage(src)}
-              @mouseenter=${() => (this._hoveredImage = src)}
-              @mouseleave=${() => (this._hoveredImage = null)}
-            />
-          `;
-        })}
-        </div>
-          `;
-    }
-    _renderTags(tags) {
-        if (!tags || tags.length === 0)
-            return E;
-        return x `
-          <div class="tags" >
-            ${tags.map((tag) => x `
-            <div class="tag">
-              <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
-                <path d="${mdiTag}" />
-              </svg>
-              ${tag}
-            </div>
-          `)}
-        </div>
-          `;
-    }
-    _openImage(src) {
-        window.open(src, '_blank');
-    }
-    _getCurrentStage() {
-        // Basic mapping from plant events/state to heatmap stage
-        // Default to vegetative if unsure
-        const sortedEvents = this.events || [];
-        const latestStageEvent = sortedEvents
-            .filter((e) => e.type === 'stage_change' || e.type === 'milestone')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-        // If no events, try to infer from passed stage if available (though not passed as prop here directly except via events)
-        // The parent passes events, but not the plant entity directly.
-        // However, we can look at the latest stage event.
-        if (!latestStageEvent)
-            return 'vegetative';
-        const stage = latestStageEvent.type === 'stage_change'
-            ? latestStageEvent.to?.toLowerCase()
-            : latestStageEvent.label?.toLowerCase();
-        if (stage === 'seedling' || stage === 'clone')
-            return 'seedling';
-        if (stage === 'veg' || stage === 'vegetative' || stage === 'mother')
-            return 'vegetative';
-        if (stage === 'flower')
-            return 'flower';
-        if (stage === 'late_flower' || stage === 'ripen' || stage === 'flush')
-            return 'late_flower';
-        if (stage === 'dry' || stage === 'cure')
-            return 'late_flower'; // Heatmap less relevant here but keep valid
-        return 'vegetative';
-    }
-    _getEnvironmentalData(event) {
-        const temperature = event.metadata?.temperature;
-        const humidity = event.metadata?.humidity;
-        const vpd = event.metadata?.vpd;
-        if (event.type !== 'environmental_report' || !event.reasons) {
-            return { temperature, humidity, vpd };
-        }
-        if (temperature !== undefined && humidity !== undefined && vpd !== undefined) {
-            return { temperature, humidity, vpd };
-        }
-        let parsedTemp = temperature;
-        let parsedHum = humidity;
-        let parsedVpd = vpd;
-        const parse = (label, current, reason) => {
-            if (current !== undefined || !reason.includes(label)) {
-                return current;
-            }
-            const m = reason.match(new RegExp(`${label}:\\s*([\\d.]+)`));
-            return m ? parseFloat(m[1]) : current;
-        };
-        for (const r of event.reasons) {
-            parsedTemp = parse('Temperature', parsedTemp, r);
-            parsedHum = parse('Humidity', parsedHum, r);
-            parsedVpd = parse('VPD', parsedVpd, r);
-        }
-        return { temperature: parsedTemp, humidity: parsedHum, vpd: parsedVpd };
-    }
-};
-PlantTimeline.styles = [
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-        padding: var(--spacing-md, 16px);
-      }
-      .timeline {
-        position: relative;
-        padding-left: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .timeline::before {
-        content: '';
-        position: absolute;
-        left: 11px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: var(--stage-color, var(--divider-color));
-      }
-      .event {
-        position: relative;
-        padding: 12px;
-        border-radius: 8px;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-      }
-      .delete-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        background: transparent;
-        border: none;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        padding: 4px;
-        opacity: 0;
-        transition: opacity 0.2s;
-        z-index: 10;
-      }
-      .event:hover .delete-btn {
-        opacity: 1;
-      }
-      .delete-btn:hover {
-        color: var(--error-color);
-      }
-      .icon-wrapper {
-        position: absolute;
-        left: -37px;
-        top: 12px;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: var(--card-background-color, #202020);
-        border: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1;
-      }
-      .icon-wrapper svg {
-        width: 16px;
-        height: 16px;
-        fill: var(--secondary-text-color, #aaa);
-      }
-      .date {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color, #aaa);
-        margin-bottom: 4px;
-      }
-      .content {
-        font-size: 0.95rem;
-        color: var(--primary-text-color, #fff);
-        font-weight: 600;
-      }
-      .details {
-        margin-top: 4px;
-        font-size: 0.85rem;
-        color: var(--secondary-text-color, #ccc);
-        line-height: 1.4;
-      }
-
-      /* Quick Note - styles now handled by quick-note-input component */
-
-      /* Metadata Chips */
-      .metadata-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 8px;
-      }
-      .chip {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 8px;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.1);
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        border: 1px solid transparent;
-      }
-      .chip svg {
-        width: 12px;
-        height: 12px;
-        fill: currentColor;
-      }
-      .chip.sensor {
-        border-color: rgba(var(--rgb-primary-color), 0.2);
-      }
-      .chip.action-stat {
-        background: rgba(var(--rgb-primary-color), 0.1);
-        color: var(--primary-color);
-      }
-
-      /* Image Grid */
-      .image-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 8px;
-        margin-top: 12px;
-      }
-      .image-grid img {
-        width: 100%;
-        aspect-ratio: 1;
-        object-fit: cover;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: transform 0.2s;
-        border: 1px solid var(--divider-color);
-      }
-      .image-grid img:hover {
-        transform: scale(1.02);
-      }
-
-      /* Tags */
-      .tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-        margin-top: 6px;
-      }
-      .tag {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.7rem;
-        padding: 1px 6px;
-        border-radius: 4px;
-        background: var(--divider-color);
-        color: var(--secondary-text-color);
-      }
-
-      /* Milestone Banner */
-      .event.type-milestone {
-        border-left: 4px solid var(--success-color);
-        background: linear-gradient(
-          90deg,
-          rgba(var(--rgb-success-color), 0.15) 0%,
-          transparent 100%
-        );
-      }
-      .event.type-milestone .content {
-        font-size: 1.05rem;
-        letter-spacing: 0.5px;
-        color: var(--success-color);
-      }
-
-      /* Type specific styling */
-      .type-alert .icon-wrapper {
-        border-color: var(--error-color, #f44336);
-      }
-      .type-alert .icon-wrapper svg {
-        fill: var(--error-color, #f44336);
-      }
-      .type-action .icon-wrapper {
-        border-color: var(--primary-color, #03a9f4);
-      }
-      .type-action .icon-wrapper svg {
-        fill: var(--primary-color, #03a9f4);
-      }
-      .type-stage_change .icon-wrapper {
-        border-color: var(--success-color, #4caf50);
-      }
-      .type-stage_change .icon-wrapper svg {
-        fill: var(--success-color, #4caf50);
-      }
-      .type-note .icon-wrapper {
-        border-color: var(--warning-color, #ff9800);
-      }
-      .type-note .icon-wrapper svg {
-        fill: var(--warning-color, #ff9800);
-      }
-      .type-environmental_report.is-night .icon-wrapper {
-        border-color: #3f51b5;
-      }
-      .type-environmental_report.is-night .icon-wrapper svg {
-        fill: #3f51b5;
-      }
-      .type-environmental_report.is-day .icon-wrapper {
-        border-color: #ffc107;
-      }
-      .type-environmental_report.is-day .icon-wrapper svg {
-        fill: #ffc107;
-      }
-
-      /* Action specific styling */
-      .action-ipm .icon-wrapper {
-        border-color: #9c27b0;
-      }
-      .action-ipm .icon-wrapper svg {
-        fill: #9c27b0;
-      }
-      .action-training .icon-wrapper {
-        border-color: var(--gm-warning-color, #ff9800);
-      }
-      .action-training .icon-wrapper svg {
-        fill: var(--gm-warning-color, #ff9800);
-      }
-      .action-water .icon-wrapper,
-      .action-watering .icon-wrapper,
-      .action-irrigation .icon-wrapper {
-        border-color: var(--gm-info-color, #2196f3);
-      }
-      .action-water .icon-wrapper svg,
-      .action-watering .icon-wrapper svg,
-      .action-irrigation .icon-wrapper svg {
-        fill: var(--gm-info-color, #2196f3);
-      }
-
-      /* Day grouping */
-      .day-header {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--primary-color, #03a9f4);
-        padding: 12px 0 8px 12px;
-        margin-left: -24px;
-        background: var(--card-background-color, #1c1c1c);
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        border-bottom: 1px solid var(--divider-color);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      .day-summary {
-        margin: 8px 0 16px 0;
-        padding: 8px 12px;
-        background: rgba(var(--rgb-warning-color), 0.1);
-        border: 1px solid rgba(var(--rgb-warning-color), 0.2);
-        border-radius: 8px;
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--warning-color);
-      }
-      .correlated-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        background: var(--success-color);
-        color: white;
-        font-size: 0.65rem;
-        padding: 1px 4px;
-        border-radius: 4px;
-        margin-left: 8px;
-        vertical-align: middle;
-      }
-
-      /* Delete dialog styles now handled by confirm-delete-dialog component */
-
-      .image-hover-overlay {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 9999;
-        pointer-events: none;
-        background: rgba(0, 0, 0, 0.9);
-        border-radius: 8px;
-        padding: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        max-width: 90vw;
-        max-height: 90vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .image-hover-overlay img {
-        max-width: 100%;
-        max-height: 100%;
-        border-radius: 4px;
-        object-fit: contain;
-      }
-    `,
-];
-__decorate([
-    n$5({ attribute: false })
-], PlantTimeline.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: String })
-], PlantTimeline.prototype, "plant_id", void 0);
-__decorate([
-    n$5({ type: Array })
-], PlantTimeline.prototype, "events", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_showDeleteConfirmation", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_deletingEventId", void 0);
-__decorate([
-    r$2()
-], PlantTimeline.prototype, "_hoveredImage", void 0);
-PlantTimeline = __decorate([
-    t$2('plant-timeline')
-], PlantTimeline);
-
-class PlantClickEvent extends CustomEvent {
-    constructor(plant) {
-        super(PlantClickEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantClickEvent.TYPE = 'plant-click';
-class AddPlantClickEvent extends CustomEvent {
-    constructor(row, col) {
-        super(AddPlantClickEvent.TYPE, {
-            detail: { row, col },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-AddPlantClickEvent.TYPE = 'add-plant-click';
-class UpdatePlantEvent extends CustomEvent {
-    constructor(updates) {
-        super(UpdatePlantEvent.TYPE, {
-            detail: updates,
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-UpdatePlantEvent.TYPE = 'update-plant';
-class DeletePlantEvent extends CustomEvent {
-    constructor(plantId) {
-        super(DeletePlantEvent.TYPE, {
-            detail: { plantId },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-DeletePlantEvent.TYPE = 'delete-plant';
-class HarvestPlantEvent extends CustomEvent {
-    constructor(plant) {
-        super(HarvestPlantEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-HarvestPlantEvent.TYPE = 'harvest-plant';
-class FinishDryingEvent extends CustomEvent {
-    constructor(plant) {
-        super(FinishDryingEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-FinishDryingEvent.TYPE = 'finish-drying';
-class TakeCloneEvent extends CustomEvent {
-    constructor(plant, numClones) {
-        super(TakeCloneEvent.TYPE, {
-            detail: { plant, numClones },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-TakeCloneEvent.TYPE = 'take-clone';
-class MoveCloneEvent extends CustomEvent {
-    constructor(plant, targetGrowspace) {
-        super(MoveCloneEvent.TYPE, {
-            detail: { plant, targetGrowspace },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-MoveCloneEvent.TYPE = 'move-clone';
-class PrintLabelEvent extends CustomEvent {
-    constructor(plant) {
-        super(PrintLabelEvent.TYPE, {
-            detail: { plant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PrintLabelEvent.TYPE = 'print-label';
-
-class PlantDropEvent extends CustomEvent {
-    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
-        super(PlantDropEvent.TYPE, {
-            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-PlantDropEvent.TYPE = 'plant-drop';
-class SelectionChangedEvent extends CustomEvent {
-    constructor(selectedPlants) {
-        super(SelectionChangedEvent.TYPE, {
-            detail: { selectedPlants },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-SelectionChangedEvent.TYPE = 'selection-changed';
-
-class LibraryExportReadyEvent extends CustomEvent {
-    constructor(url) {
-        super(LibraryExportReadyEvent.TYPE, {
-            detail: { url },
-            bubbles: true,
-            composed: true,
-        });
-    }
-}
-LibraryExportReadyEvent.TYPE = 'library-export-ready';
-
-const SCORE_DIMENSIONS = [
-    { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
-    { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
-    { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
-    { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
-    { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
-];
-let PlantOverviewDialog = class PlantOverviewDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceOptions = {};
-        this.isEditing = true;
-        this.showAllDates = false;
-        this.cloneTargetId = '';
-        this._showDeleteConfirmation = false;
-        this._activeTab = 'dashboard';
-        this._logbookEvents = [];
-        this._harvestMetricsEdit = {};
-        // Star scores: key → 1-5 or null
-        this._scoresEdit = {};
-        this._starPreview = {};
-        this._savingHarvest = false;
-        this._showScoringForm = false;
-        this._savingScore = false;
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        this._subscribeToEvents();
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        if (this._unsubEvents) {
-            this._unsubEvents.then((unsub) => unsub && unsub());
-            this._unsubEvents = undefined;
-        }
-    }
-    async _subscribeToEvents() {
-        if (!this.hass)
-            return;
-        // Subscribe if not already subscribed
-        if (!this._unsubEvents) {
-            this._unsubEvents = this.hass.connection.subscribeEvents((event) => this._handleGrowspaceEvent(event), 'growspace_manager_log_entry');
-        }
-    }
-    _handleGrowspaceEvent(event) {
-        const data = (event.data || event);
-        const plantId = this.plant?.attributes?.plant_id || this.plant?.entity_id.replace('sensor.', '');
-        const growspaceId = this.plant?.attributes?.growspace_id;
-        // Check if relevant to this plant (direct match)
-        const isForThisPlant = data.plant_id === plantId;
-        // Check if relevant to this growspace (e.g. irrigation)
-        const isForThisGrowspace = data.growspace_id === growspaceId;
-        const isSharedEvent = data.category === 'irrigation' && !data.plant_id;
-        if (isForThisPlant || (isForThisGrowspace && isSharedEvent)) {
-            // Prepend to list for instant update
-            // We cast to any because the event bus payload might differ slightly from GrowspaceEvent (e.g. timestamp vs start_time)
-            // but _renderTimeline mapping logic handles both.
-            this._logbookEvents = [data, ...this._logbookEvents];
-        }
-    }
-    willUpdate(changedProps) {
-        // Retry subscription if hass becomes available later
-        if (changedProps.has('hass') && this.hass && !this._unsubEvents) {
-            this._subscribeToEvents();
-        }
-        // Handle dialog state object if passed (legacy/alternative usage)
-        if (changedProps.has('dialog') && this.dialog) {
-            this.plant = this.dialog.plant;
-            this.editedAttributes = this.dialog.editedAttributes || this._getAttributesFromPlant();
-            this.cloneTargetId = '';
-            if (this.dialog.activeTab &&
-                (this.dialog.activeTab === 'dashboard' ||
-                    this.dialog.activeTab === 'actions' ||
-                    this.dialog.activeTab === 'timeline')) {
-                this._activeTab = this.dialog.activeTab;
-            }
-            // Fetch logbook when dialog is set
-            this._fetchLogbook();
-        }
-        // Handle direct prop injection (DialogHost usage)
-        // If editedAttributes is undefined/null (e.g. passed as null from parent), init it
-        if (!this.editedAttributes || (changedProps.has('plant') && !this.editedAttributes.strain)) {
-            this.editedAttributes = this._getAttributesFromPlant();
-        }
-        // Fetch logbook when plant changes (direct prop usage)
-        if (changedProps.has('plant') && this.plant) {
-            this._fetchLogbook();
-            const hm = this.plant.attributes?.harvest_metrics || {};
-            this._harvestMetricsEdit = { ...hm };
-            // Map scores dict: backend uses pest_resistance key
-            const rawScores = this.plant.attributes?.scores || {};
-            this._scoresEdit = {
-                vigor: rawScores.vigor ?? null,
-                structure: rawScores.structure ?? null,
-                aroma: rawScores.aroma ?? null,
-                resin: rawScores.resin ?? null,
-                pest_resistance: rawScores.pest_resistance ?? null,
-            };
-            this._starPreview = {};
-        }
-    }
-    async _fetchLogbook() {
-        if (!this.plant?.attributes?.growspace_id || !this.hass)
-            return;
-        try {
-            const service = getTimelineService(this.hass);
-            const plantId = this.plant.attributes.plant_id;
-            const growspaceId = this.plant.attributes.growspace_id;
-            // Fetch by plant_id so history from previous growspaces is included after stage moves
-            const fetchedEvents = plantId
-                ? await service.fetchPlantEvents(plantId, growspaceId)
-                : await service.fetchGrowspaceEvents(growspaceId);
-            // Identify optimistic events (no event_id, recent timestamp) to preserve
-            // This prevents "instant" notes from disappearing if the DB fetch is faster than the recorder commit
-            const now = new Date().getTime();
-            const optimisticEvents = this._logbookEvents.filter((e) => {
-                const evt = e;
-                if (evt.event_id)
-                    return false; // Already from DB
-                // Check if recent (< 60 seconds)
-                const ts = evt.timestamp || evt.start_time;
-                if (!ts)
-                    return false;
-                const time = new Date(ts).getTime();
-                return now - time < 60000;
-            });
-            // Merge: Put optimistic events first, then fetched events
-            this._logbookEvents = [...optimisticEvents, ...fetchedEvents];
-        }
-        catch (e) {
-            console.error('Error fetching logbook for dialog:', e);
-            // We don't necessarily show an error in the dialog, just log it and potentially keep old events
-        }
-    }
-    _getAttributesFromPlant() {
-        if (!this.plant)
-            return {};
-        return {
-            strain: this.plant?.attributes?.strain,
-            phenotype: this.plant?.attributes?.phenotype,
-            row: this.plant?.attributes?.row,
-            col: this.plant?.attributes?.col,
-            stage: this.plant?.state,
-            veg_start: this.plant?.attributes?.veg_start,
-            flower_start: this.plant?.attributes?.flower_start,
-            seedling_start: this.plant?.attributes?.seedling_start,
-            mother_start: this.plant?.attributes?.mother_start,
-            clone_start: this.plant?.attributes?.clone_start,
-            dry_start: this.plant?.attributes?.dry_start,
-            cure_start: this.plant?.attributes?.cure_start,
-        };
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    _update() {
-        if (!this.editedAttributes)
-            return;
-        this.dispatchEvent(new UpdatePlantEvent(this.editedAttributes));
-        const stage = (this.plant?.state || '').toLowerCase();
-        if (this._activeTab === 'harvest' && (stage === 'dry' || stage === 'cure')) {
-            this._saveHarvestMetrics();
-        }
-    }
-    _delete(_plantId) {
-        this._showDeleteConfirmation = true;
-    }
-    _confirmDelete() {
-        if (this.plant) {
-            const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-            this.dispatchEvent(new DeletePlantEvent(plantId));
-            this._showDeleteConfirmation = false;
-            this._close();
-        }
-    }
-    _cancelDelete() {
-        this._showDeleteConfirmation = false;
-    }
-    _harvest(plant) {
-        this.dispatchEvent(new HarvestPlantEvent(plant));
-    }
-    _finishDrying(plant) {
-        this.dispatchEvent(new FinishDryingEvent(plant));
-    }
-    _takeClone(plant, numClones) {
-        this.dispatchEvent(new TakeCloneEvent(plant, numClones));
-    }
-    _movePlant(plant) {
-        if (!this.cloneTargetId) {
-            // alert is not ideal but keeping for now as per previous logic
-            alert('Select a growspace');
-            return;
-        }
-        this.dispatchEvent(new MoveCloneEvent(plant, this.cloneTargetId));
-    }
-    _attributeChange(key, value) {
-        this.editedAttributes = { ...this.editedAttributes, [key]: value };
-        this.requestUpdate();
-    }
-    _toggleShowAllDates() {
-        this.showAllDates = !this.showAllDates;
-    }
-    _openWatering() {
-        if (!this.plant)
-            return;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const growspaceId = this.plant.attributes?.growspace_id;
-        this.dispatchEvent(new CustomEvent('open-watering', {
-            detail: {
-                mode: 'plant',
-                plantIds: [plantId],
-                growspaceId,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _openTraining() {
-        if (!this.plant)
-            return;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const growspaceId = this.plant.attributes?.growspace_id;
-        this.dispatchEvent(new CustomEvent('open-training', {
-            detail: {
-                isOpen: true,
-                plantIds: [plantId],
-                growspaceId,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _openIPM() {
-        if (!this.plant)
-            return;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const growspaceId = this.plant.attributes?.growspace_id;
-        this.dispatchEvent(new CustomEvent('open-ipm', {
-            detail: {
-                growspaceId,
-                plantIds: [plantId],
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _openClone() {
-        if (!this.plant)
-            return;
-        const growspaceId = this.plant.attributes?.growspace_id || '';
-        this.dispatchEvent(new CustomEvent('open-clone', {
-            detail: {
-                sourcePlant: this.plant,
-                defaultGrowspaceId: growspaceId,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _openLabelPrinter() {
-        if (!this.plant)
-            return;
-        this.dispatchEvent(new PrintLabelEvent(this.plant));
-    }
-    _openStrainEditor() {
-        if (!this.plant)
-            return;
-        const strain = this.plant.attributes?.strain;
-        const phenotype = this.plant.attributes?.phenotype;
-        this.dispatchEvent(new CustomEvent('open-strain-editor', {
-            detail: { strain, phenotype },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _renderStatItem(label, value, unit = '') {
-        if (value === undefined || value === null || value === '')
-            return E;
-        return x `
-      <div class="stat-item">
-        <span class="stat-value">${value} ${unit}</span>
-        <span class="stat-label">${label}</span>
-      </div>
-    `;
-    }
-    _renderPlantStats(plant) {
-        if (!plant.attributes)
-            return E;
-        const currentStage = (plant.state || '').toLowerCase();
-        const normalize = (s) => {
-            if (s === 'veg' || s === 'vegetative')
-                return PlantStage.VEG;
-            if (s === 'mom')
-                return PlantStage.MOTHER;
-            return s;
-        };
-        const normCurrent = normalize(currentStage);
-        const stats = [
-            {
-                label: 'Vegetative Stage',
-                value: plant.attributes.veg_days,
-                unit: 'days',
-                stage: PlantStage.VEG,
-            },
-            {
-                label: 'Flowering Stage',
-                value: plant.attributes.flower_days,
-                unit: 'days',
-                stage: PlantStage.FLOWER,
-            },
-            {
-                label: 'Mother Stage',
-                value: plant.attributes.mom_days,
-                unit: 'days',
-                stage: PlantStage.MOTHER,
-            },
-            {
-                label: 'Clone Stage',
-                value: plant.attributes.clone_days,
-                unit: 'days',
-                stage: PlantStage.CLONE,
-            },
-            {
-                label: 'Drying Stage',
-                value: plant.attributes.dry_days,
-                unit: 'days',
-                stage: PlantStage.DRY,
-            },
-            {
-                label: 'Curing Stage',
-                value: plant.attributes.cure_days,
-                unit: 'days',
-                stage: PlantStage.CURE,
-            },
-        ].filter((s) => {
-            if (s.value === undefined || s.value === null)
-                return false;
-            const val = Number(s.value);
-            if (val > 0)
-                return true;
-            // Show if 0 but it's the current stage
-            return s.stage === normCurrent;
-        });
-        if (stats.length === 0)
-            return E;
-        return x `
-      <div class="detail-card">
-        <h3>Days in Stage</h3>
-        <div class="stat-grid">
-          ${stats.map((s) => this._renderStatItem(s.label, s.value, s.unit))}
-        </div>
-      </div>
-    `;
-    }
-    _renderDeleteOverlay() {
-        return x `
-      <div
-        class="dialog-overlay"
-        style="position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; display:flex; align-items:center; justify-content:center;"
-      >
-        <div class="glass-dialog-container" style="width: 350px; height: auto; padding: 24px;">
-          <h2 class="dialog-title" style="margin-bottom:12px">Confirm Deletion</h2>
-          <p
-            style="color:var(--secondary-text-color, rgba(255,255,255,0.7)); margin-bottom:24px; font-size: 1rem; line-height: 1.5;"
-          >
-            Are you sure you want to delete this plant? This action cannot be undone.
-          </p>
-          <div style="display:flex; justify-content:flex-end; gap:12px">
-            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button danger" @click=${() => this._confirmDelete()}>
-              <svg
-                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    render() {
-        if (!this.plant || !this.editedAttributes)
-            return x ``;
-        const attributes = this.editedAttributes;
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        const stageColor = PlantUtils.getPlantStageColor(this.plant.state);
-        const stageIcon = PlantUtils.getPlantStageIcon(this.plant.state);
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        width="full"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-      >
-        <div class="glass-dialog-container" style="--stage-color: ${stageColor}">
-          ${this._showDeleteConfirmation ? this._renderDeleteOverlay() : E}
-
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${stageIcon}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${attributes.strain || 'Unknown Strain'}</h2>
-                <gs-help-tooltip
-                  content="Detailed overview of this plant's current state, genetics, and history. Access actions and timeline from the tabs below."
-                  placement="bottom"
-                  label="Plant Overview"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">
-                ${this.plant.state} Stage • ${attributes.phenotype || 'No Phenotype'}
-              </div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${() => this._openStrainEditor()}
-              style="min-width: auto; padding: 8px;"
-              title="Edit Strain Library Entry"
-            >
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDna}"></path>
-              </svg>
-            </button>
-            <button
-              class="md3-button text"
-              @click=${() => this._close()}
-              style="min-width: auto; padding: 8px;"
-              aria-label="Close"
-              title="Close"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- TABS -->
-          <div class="tabs-container">
-            <button
-              class="tab-btn ${this._activeTab === 'dashboard' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'dashboard')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
-              Overview
-            </button>
-            <button
-              class="tab-btn ${this._activeTab === 'actions' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'actions')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiFlash}"></path></svg>
-              Actions
-            </button>
-            <button
-              class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'timeline')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiCalendarClock}"></path></svg>
-              Timeline
-            </button>
-            ${['drying', 'curing', 'dry', 'cure'].includes((this.plant?.state || '').toLowerCase()) ? x `
-              <button
-                class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
-                @click=${() => {
-            this._activeTab = 'harvest';
-            this._harvestMetricsEdit = { ...(this.plant?.attributes?.harvest_metrics || {}) };
-            this._scoresEdit = { ...(this.plant?.attributes?.scores || {}) };
-        }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiCannabis}"></path></svg>
-                Scoring & Harvest
-              </button>
-            ` : E}
-          </div>
-
-          <div class="overview-grid">
-            ${this._activeTab === 'dashboard'
-            ? this._renderDashboard(attributes)
-            : this._activeTab === 'actions'
-                ? this._renderActions()
-                : this._activeTab === 'harvest'
-                    ? this._renderHarvestTab()
-                    : this._renderTimeline()}
-          </div>
-
-          <!-- ACTIONS -->
-          <div
-            class="dialog-actions"
-            style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;"
-          >
-            <div class="standard-actions" style="display:flex; gap:12px;">
-              <button class="md3-button danger" @click=${() => this._delete(plantId)}>
-                <svg
-                  style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="${mdiDelete}"></path>
-                </svg>
-                Delete
-              </button>
-            </div>
-
-            <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center;">
-              <!-- DYNAMIC ACTIONS BASED ON STAGE -->
-              ${this._activeTab === 'dashboard'
-            ? x `
-                    ${(this.plant.state || '').toLowerCase() === 'mother'
-                ? x `
-                          <div
-                            class="take-clone-container"
-                            style="display:flex; align-items:center; gap:8px;"
-                          >
-                            <md3-number-input
-                              id="clone-count-input"
-                              .value=${1}
-                              .min=${1}
-                              .max=${10}
-                              style="width: 80px;"
-                            ></md3-number-input>
-                            <button
-                              class="md3-button primary"
-                              @click=${(e) => {
-                    const container = e.currentTarget.closest('.take-clone-container');
-                    const input = container?.querySelector('#clone-count-input');
-                    const val = input ? parseInt(input.value, 10) : 1;
-                    const numClones = isNaN(val) ? 1 : val;
-                    this._takeClone(this.plant, numClones);
-                }}
-                            >
-                              <svg
-                                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="${mdiContentCopy}"></path>
-                              </svg>
-                              Take Clone
-                            </button>
-                          </div>
-                        `
-                : E}
-                    ${(this.plant.state || '').toLowerCase() === 'flower'
-                ? x `
-                          <button
-                            class="md3-button primary"
-                            @click=${() => this._harvest(this.plant)}
-                          >
-                            <svg
-                              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="${mdiFlower}"></path>
-                            </svg>
-                            Harvest
-                          </button>
-                        `
-                : E}
-                    ${(this.plant.state || '').toLowerCase() === 'dry'
-                ? x `
-                          <button
-                            class="md3-button primary"
-                            @click=${() => this._finishDrying(this.plant)}
-                          >
-                            <svg
-                              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                              viewBox="0 0 24 24"
-                            >
-                              <path d="${mdiCannabis}"></path>
-                            </svg>
-                            Finish Drying
-                          </button>
-                        `
-                : E}
-                    ${(this.plant.state || '').toLowerCase() !== ''
-                ? x `
-                          <div style="display:flex; align-items:center; gap:8px;">
-                            <md3-select
-                              label="Move to Growspace"
-                              .value=${this.cloneTargetId}
-                              .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
-                              style="width: 200px;"
-                              @change=${(e) => (this.cloneTargetId = e.detail)}
-                            ></md3-select>
-                            <button
-                              class="md3-button primary"
-                              @click=${() => this._movePlant(this.plant)}
-                              style="margin-top: 24px;"
-                            >
-                              <svg
-                                style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="${mdiArrowRight}"></path>
-                              </svg>
-                              Move
-                            </button>
-                          </div>
-                        `
-                : E}
-                  `
-            : E}
-
-              <button class="md3-button tonal" @click=${() => this._update()}>
-                <svg
-                  style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="${mdiCheck}"></path>
-                </svg>
-                Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderDashboard(attributes) {
-        return x `
-      <!-- IDENTITY & LOCATION CARD -->
-      <div class="detail-card">
-        <h3>Identity & Location</h3>
-        ${this.isEditing
-            ? x `
-              <md3-text-input
-                label="Strain Name"
-                .value=${attributes.strain || ''}
-                @change=${(e) => this._attributeChange('strain', e.detail)}
-              ></md3-text-input>
-              <md3-text-input
-                label="Phenotype"
-                .value=${attributes.phenotype || ''}
-                @change=${(e) => this._attributeChange('phenotype', e.detail)}
-              ></md3-text-input>
-
-              <div style="display:flex; gap:16px;">
-                <md3-number-input
-                  label="Row"
-                  .value=${attributes.row ?? ''}
-                  @change=${(e) => this._attributeChange('row', e.detail)}
-                ></md3-number-input>
-                <md3-number-input
-                  label="Column"
-                  .value=${attributes.col ?? ''}
-                  @change=${(e) => this._attributeChange('col', e.detail)}
-                ></md3-number-input>
-              </div>
-            `
-            : x `
-              <div class="stat-grid">
-                <div class="stat-item">
-                  <span class="stat-value">${this.plant.attributes?.strain}</span>
-                  <span class="stat-label">Strain</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-value">${this.plant.attributes?.phenotype || 'N/A'}</span>
-                  <span class="stat-label">Phenotype</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
-                  <span class="stat-label">Row</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-value">${this.plant.attributes?.col ?? '-'}</span>
-                  <span class="stat-label">Col</span>
-                </div>
-              </div>
-            `}
-      </div>
-      <!-- STATS CARD -->
-      ${this._renderPlantStats(this.plant)}
-
-      <!-- TIMELINE CARD (RENAMED TO LIFECYCLE DATES) -->
-      <div class="detail-card">
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-        >
-          <h3 style="margin: 0;">Lifecycle Dates</h3>
-          <button
-            class="md3-button text"
-            style="min-width: auto; padding: 4px;"
-            @click=${this._toggleShowAllDates}
-            aria-label="Toggle Dates"
-            title="Toggle Dates"
-          >
-            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiPencil}"></path>
-            </svg>
-          </button>
-        </div>
-
-        ${this.showAllDates
-            ? x `
-              <md3-date-input
-                label="Seedling Start"
-                .value=${attributes.seedling_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('seedling_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Mother Start"
-                .value=${attributes.mother_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('mother_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Clone Start"
-                .value=${attributes.clone_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('clone_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Vegetative Start"
-                .value=${attributes.veg_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('veg_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Flower Start"
-                .value=${attributes.flower_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('flower_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Dry Start"
-                .value=${attributes.dry_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('dry_start', e.detail)}
-              ></md3-date-input>
-              <md3-date-input
-                label="Cure Start"
-                .value=${attributes.cure_start ?? ''}
-                ?time=${true}
-                @change=${(e) => this._attributeChange('cure_start', e.detail)}
-              ></md3-date-input>
-            `
-            : x `
-              ${attributes.stage === PlantStage.MOTHER
-                ? x `
-                    <md3-date-input
-                      label="Mother Start"
-                      .value=${attributes.mother_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('mother_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-              ${attributes.stage === PlantStage.CLONE
-                ? x `
-                    <md3-date-input
-                      label="Clone Start"
-                      .value=${attributes.clone_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('clone_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-              ${attributes.stage === PlantStage.VEG || attributes.stage === PlantStage.FLOWER
-                ? x `
-                    <md3-date-input
-                      label="Vegetative Start"
-                      .value=${attributes.veg_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('veg_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-              ${attributes.stage === PlantStage.FLOWER
-                ? x `
-                    <md3-date-input
-                      label="Flower Start"
-                      .value=${attributes.flower_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('flower_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-              ${attributes.stage === PlantStage.DRY || attributes.stage === PlantStage.CURE
-                ? x `
-                    <md3-date-input
-                      label="Dry Start"
-                      .value=${attributes.dry_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('dry_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-              ${attributes.stage === PlantStage.CURE
-                ? x `
-                    <md3-date-input
-                      label="Cure Start"
-                      .value=${attributes.cure_start ?? ''}
-                      ?time=${true}
-                      @change=${(e) => this._attributeChange('cure_start', e.detail)}
-                    ></md3-date-input>
-                  `
-                : E}
-            `}
-      </div>
-    `;
-    }
-    _renderActions() {
-        const stage = (this.plant?.state || '').toLowerCase();
-        const isFlower = stage === PlantStage.FLOWER || stage === 'flowering';
-        return x `
-      <div class="detail-card" style="grid-column: 1 / -1;">
-        <h3>Quick Actions</h3>
-        <div class="action-grid">
-          <div class="action-card" @click=${() => this._openWatering()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            <span>Water Plant</span>
-          </div>
-          <div class="action-card" @click=${() => this._openTraining()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-            <span>Log Training</span>
-          </div>
-          <div class="action-card" @click=${() => this._openIPM()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBug}"></path></svg>
-            <span>Log IPM</span>
-          </div>
-          <div class="action-card" @click=${() => this._openClone()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-            <span>Take Clone</span>
-          </div>
-          <div class="action-card" @click=${() => this._openLabelPrinter()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
-            <span>Print Label</span>
-          </div>
-          ${isFlower ? x `
-          <div class="action-card" @click=${() => this._openLogPollination()}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
-            <span>Log Pollination</span>
-          </div>
-          ` : E}
-        </div>
-      </div>
-
-      <!-- Score Phenotype section -->
-      <div class="detail-card phenotype-card">
-        <div class="phenotype-card-header">
-          <h3>Score Phenotype</h3>
-          <button
-            class="md3-button outlined"
-            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
-          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
-        </div>
-        ${this._showScoringForm ? x `
-          <div class="phenotype-form">
-            <div class="score-grid">
-              ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-            </div>
-            <div class="phenotype-form-actions">
-              <button
-                class="md3-button filled"
-                @click=${() => this._savePhenotypeScore()}
-                ?disabled=${this._savingScore}
-              >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
-            </div>
-          </div>
-        ` : E}
-        ${!this._showScoringForm ? x `
-          <div class="score-grid score-grid--readonly">
-            ${SCORE_DIMENSIONS.map(dim => {
-            const val = this._scoresEdit[dim.key];
-            return x `
-                <div class="score-row">
-                  <div class="score-header">
-                    <span class="score-label">
-                      <span class="score-emoji">${dim.emoji}</span>
-                      ${dim.label}
-                    </span>
-                    <span class="score-value">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
-                  </div>
-                </div>
-              `;
-        })}
-          </div>
-        ` : E}
-      </div>
-    `;
-    }
-    async _savePhenotypeScore() {
-        if (!this.plant?.attributes?.plant_id)
-            return;
-        this._savingScore = true;
-        try {
-            const plantId = this.plant.attributes.plant_id;
-            await this.store.dataService.scorePlant({
-                plant_id: plantId,
-                ...this._scoresEdit,
-            });
-            await this.store.refreshData();
-            this._showScoringForm = false;
-        }
-        catch (e) {
-            console.error('Failed to save phenotype scores', e);
-            this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
-        }
-        finally {
-            this._savingScore = false;
-        }
-    }
-    _openLogPollination() {
-        this.dispatchEvent(new CustomEvent('open-log-pollination', {
-            detail: { plantId: this.plant?.attributes?.plant_id },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _renderTimeline() {
-        if (!this.plant)
-            return E;
-        const recordedEvents = this.plant.attributes?.events || [];
-        // 1. Extract Milestones
-        const milestones = [];
-        const milestoneFields = [
-            { key: 'planted_date', label: 'Planted' },
-            { key: 'seedling_start', label: 'Seedling' },
-            { key: 'mother_start', label: 'Mother' },
-            { key: 'clone_start', label: 'Clone' },
-            { key: 'veg_start', label: 'Vegetative' },
-            { key: 'flower_start', label: 'Flowering' },
-            { key: 'dry_start', label: 'Drying' },
-            { key: 'cure_start', label: 'Curing' },
-            { key: 'harvest_date', label: 'Harvested' },
-        ];
-        milestoneFields.forEach((field) => {
-            const date = this.plant?.attributes?.[field.key];
-            if (date) {
-                milestones.push({
-                    type: 'milestone',
-                    date: String(date),
-                    label: field.label,
-                });
-            }
-        });
-        // 2. Add Logbook Events (Watering, Training)
-        const normalize = (s) => s?.toLowerCase().trim() || '';
-        const plantId = this.plant?.attributes?.plant_id || this.plant.entity_id?.split('.')[1] || '';
-        const trainingTechniques = [
-            'topping',
-            'fim',
-            'lst',
-            'super_cropping',
-            'scrog',
-            'defoliating',
-            'lollipopping',
-        ];
-        const logbookEvents = this._logbookEvents
-            .filter((e) => {
-            const cat = normalize(e.category);
-            const type = normalize(e.sensor_type);
-            const reasons = e.reasons || [];
-            // 1. Check if it's a watering/irrigation event
-            const isWatering = cat === 'irrigation' ||
-                (cat === 'environmental' && ['irrigation', 'drain'].includes(type)) ||
-                ['irrigation', 'drain', 'water'].includes(type) ||
-                type.includes('water');
-            // 2. Check if it's a training event
-            const isTraining = cat === 'training' || trainingTechniques.some((t) => type.includes(t));
-            // 3. Check if it's an IPM event
-            const isIPM = cat === 'ipm' || type.startsWith('ipm_');
-            // 4. Check if it's a note event
-            const isNote = cat === 'note';
-            // 5. Check if it's an environmental report
-            const isEnvReport = cat === 'environmental_report';
-            if (!isWatering && !isTraining && !isIPM && !isNote && !isEnvReport)
-                return false;
-            // 5. Filter by plant_id
-            // For notes, check the direct plant_id field
-            if (isNote) {
-                const eventPlantId = e.plant_id;
-                return eventPlantId && eventPlantId === plantId;
-            }
-            // For others, check growspace-wide or reasons
-            // Include if it's an automated irrigation event (growspace-wide)
-            if (cat === 'irrigation' && !reasons.some((r) => r.startsWith('plant_id:'))) {
-                return true;
-            }
-            // Include environmental reports (always growspace-wide)
-            if (isEnvReport)
-                return true;
-            // Backend format: "plant_id:uuid-here"
-            const mentionsThisPlant = reasons.some((r) => {
-                const rLower = r.toLowerCase();
-                if (rLower.startsWith('plant_id:')) {
-                    const eventPlantId = rLower.replace('plant_id:', '').trim();
-                    return eventPlantId === plantId.toLowerCase();
-                }
-                return false;
-            });
-            return mentionsThisPlant;
-        })
-            .map((e) => {
-            const cat = normalize(e.category);
-            if (cat === 'note') {
-                return {
-                    type: 'note',
-                    date: e.timestamp || e.start_time,
-                    text: e.notes || '',
-                    images: e.images,
-                    tags: e.tags,
-                    metadata: e.metadata,
-                    event_id: e.event_id,
-                };
-            }
-            if (cat === 'environmental_report') {
-                return {
-                    type: 'environmental_report',
-                    date: e.start_time,
-                    sensor_type: e.sensor_type,
-                    reasons: e.reasons,
-                    metadata: e.metadata,
-                    event_id: e.event_id,
-                };
-            }
-            return {
-                type: 'action',
-                date: e.start_time,
-                action: e.category === 'watering' || e.category === 'irrigation'
-                    ? 'water'
-                    : e.category || e.sensor_type,
-                // Filter out plant_id: entries (internal) and Plants: list (shows all trained plants, not relevant for single plant view)
-                details: (e.reasons || [])
-                    .filter((r) => {
-                    const rLower = r.toLowerCase();
-                    return (!rLower.startsWith('plant_id:') &&
-                        !rLower.startsWith('plants:') &&
-                        !rLower.startsWith('plant:'));
-                })
-                    .join(', '),
-                event_id: e.event_id,
-            };
-        });
-        // Combine all
-        const allEvents = [...recordedEvents, ...milestones, ...logbookEvents];
-        return x `
-      <div style="grid-column: 1 / -1;">
-        <plant-timeline
-          .hass=${this.hass}
-          .plant_id=${plantId}
-          .events=${allEvents}
-          @growspace-refresh=${() => this._fetchLogbook()}
-        ></plant-timeline>
-      </div>
-    `;
-    }
-    _setScore(key, value) {
-        const current = this._scoresEdit[key];
-        this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
-    }
-    /** Skip scoring and immediately advance the plant to the next stage */
-    _skipAndAdvance() {
-        if (!this.plant || this._savingHarvest)
-            return;
-        const stage = (this.plant.state || '').toLowerCase();
-        if (stage === 'dry' || stage === 'drying') {
-            this._finishDrying(this.plant);
-        }
-        else {
-            // cure → whatever comes next (treated as a harvest/advance)
-            this._harvest(this.plant);
-        }
-    }
-    _renderScoreRow(dim) {
-        const current = this._scoresEdit[dim.key];
-        const preview = this._starPreview[dim.key];
-        return x `
-      <div class="score-row">
-        <div class="score-header">
-          <span class="score-label">
-            <span class="score-emoji">${dim.emoji}</span>
-            ${dim.label}
-          </span>
-          <span class="score-value">
-            ${current !== null ? `${current} / 5` : '—'}
-          </span>
-        </div>
-        <p class="score-description">${dim.description}</p>
-        <div class="star-row">
-          ${[1, 2, 3, 4, 5].map(star => x `
-            <button
-              class="star-btn
-                ${current !== null && star <= current ? 'active' : ''}
-                ${preview !== null && star <= preview ? 'preview' : ''}"
-              aria-label="Set ${dim.label} score to ${star}"
-              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
-              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
-              @click=${() => this._setScore(dim.key, star)}
-              ?disabled=${this._savingHarvest}
-            >⭐</button>
-          `)}
-        </div>
-      </div>
-    `;
-    }
-    _renderHarvestTab() {
-        const isSaving = this._savingHarvest;
-        const hm = this._harvestMetricsEdit;
-        const stage = (this.plant?.state || '').toLowerCase();
-        const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
-        return x `
-      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
-
-        <!-- Score Grid -->
-        <div class="score-grid">
-          ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-        </div>
-        <p class="skip-hint">All fields are optional — you can advance without scoring.</p>
-
-        <hr class="harvest-divider" />
-
-        <!-- Yield Metrics -->
-        <div class="metrics-section">
-          <p class="metrics-section-title">Yield metrics</p>
-          <div class="metrics-grid">
-            <div class="metric-field">
-              <label for="hm-wet">Wet weight (g)</label>
-              <input id="hm-wet" type="number" min="0" step="0.1" placeholder="e.g. 120"
-                .value=${String(hm.wet_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-              />
-            </div>
-            <div class="metric-field">
-              <label for="hm-dry">Dry weight (g)</label>
-              <input id="hm-dry" type="number" min="0" step="0.1" placeholder="e.g. 28"
-                .value=${String(hm.dry_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-              />
-            </div>
-            <div class="metric-field">
-              <label for="hm-trim">Trim weight (g)</label>
-              <input id="hm-trim" type="number" min="0" step="0.1" placeholder="e.g. 5"
-                .value=${String(hm.trim_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-              />
-            </div>
-          </div>
-        </div>
-
-        <hr class="harvest-divider" />
-
-        <!-- Lab Results -->
-        <div class="metrics-section">
-          <p class="metrics-section-title">Lab results</p>
-          <div class="metrics-grid">
-            <div class="metric-field">
-              <label for="hm-thc">THC (%)</label>
-              <input id="hm-thc" type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
-                .value=${String(hm.thc_percentage ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-              />
-            </div>
-            <div class="metric-field">
-              <label for="hm-cbd">CBD (%)</label>
-              <input id="hm-cbd" type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
-                .value=${String(hm.cbd_percentage ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-              />
-            </div>
-            <div class="metric-field terpene-field">
-              <label for="hm-terp">Terpene profile</label>
-              <textarea id="hm-terp" rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
-                .value=${String(hm.terpene_profile ?? '')}
-                @input=${(e) => {
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: e.target.value };
-        }}
-                ?disabled=${isSaving}
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <hr class="harvest-divider" />
-
-        <!-- Action Buttons (hidden in dry/cure stage — Save Changes handles saving) -->
-        ${(stage !== 'dry' && stage !== 'cure') ? x `
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <button
-            class="md3-button outlined"
-            @click=${() => this._skipAndAdvance()}
-            ?disabled=${isSaving}
-          >${advanceLabel}</button>
-          <button
-            class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
-            @click=${() => this._saveHarvestMetrics()}
-            ?disabled=${isSaving}
-          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
-        </div>
-        ` : E}
-      </div>
-    `;
-    }
-    async _saveHarvestMetrics() {
-        if (!this.plant?.attributes?.plant_id)
-            return;
-        this._savingHarvest = true;
-        try {
-            const plantId = this.plant.attributes.plant_id;
-            const m = this._harvestMetricsEdit;
-            if (Object.keys(m).length > 0) {
-                await this.store.dataService.updateHarvestMetrics({
-                    plant_id: plantId,
-                    ...m
-                });
-            }
-            const s = this._scoresEdit;
-            if (Object.keys(s).length > 0) {
-                await this.store.dataService.scorePlant({
-                    plant_id: plantId,
-                    ...s
-                });
-            }
-            // Small delay to allow backend to process before refresh
-            await new Promise(resolve => setTimeout(resolve, 500));
-            await this.store.refreshData();
-            this._activeTab = 'dashboard';
-        }
-        catch (e) {
-            console.error('Failed to save harvest metrics', e);
-            alert('Failed to save harvest metrics. Check controls/network.');
-        }
-        finally {
-            this._savingHarvest = false;
-        }
-    }
-};
-PlantOverviewDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 16px;
-      }
-
-      /* Timeline Styles */
-      .timeline {
-        position: relative;
-        padding-left: 24px;
-        border-left: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        margin-top: 16px;
-      }
-      .timeline-event {
-        margin-bottom: 24px;
-        position: relative;
-      }
-      .timeline-event::before {
-        content: '';
-        position: absolute;
-        left: -31px;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--event-color, #4caf50);
-        border: 2px solid var(--card-background-color, #2c2c2c);
-      }
-      .timeline-date {
-        font-size: 0.8rem;
-        opacity: 0.6;
-        margin-bottom: 4px;
-      }
-      .timeline-content {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 8px;
-        padding: 12px;
-      }
-
-      /* Stat Grid */
-      .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 12px;
-      }
-      .stat-item {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 8px;
-        padding: 12px;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-      }
-      .stat-value {
-        font-size: 1.1rem;
-        font-weight: 500;
-      }
-      .stat-label {
-        font-size: 0.75rem;
-        opacity: 0.7;
-      }
-
-      /* Image Gallery */
-      .image-gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        gap: 8px;
-        margin-top: 12px;
-      }
-      .plant-image {
-        width: 100%;
-        aspect-ratio: 1;
-        object-fit: cover;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: transform 0.2s;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-      .plant-image:hover {
-        transform: scale(1.05);
-      }
-
-      .md3-input-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1;
-        margin-bottom: 12px;
-      }
-
-      /* Action Grid */
-      .action-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 16px;
-        padding: 8px;
-      }
-      .action-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        border-radius: 12px;
-        padding: 24px 16px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-      }
-      .action-card:hover {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border-color: var(--primary-color, #4caf50);
-        transform: translateY(-2px);
-      }
-      .action-card svg {
-        width: 32px;
-        height: 32px;
-        fill: var(--primary-color, #4caf50);
-      }
-      .action-card span {
-        font-weight: 500;
-        font-size: 1rem;
-      }
-
-      @media (max-width: 600px) {
-        .overview-grid {
-          grid-template-columns: 1fr;
-          padding: 16px;
-        }
-      }
-      @media (max-width: 450px) {
-        .glass-dialog-container {
-          border-radius: 0;
-          width: 100vw;
-          height: 100vh;
-          max-width: 100%;
-        }
-        .overview-grid {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-        }
-        .dialog-header {
-          padding: 12px 16px;
-        }
-      }
-
-      .tabs-container {
-        display: flex;
-        padding: 0 24px;
-        margin-bottom: 16px;
-        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-      .tab-btn {
-        background: none;
-        border: none;
-        padding: 12px 16px;
-        color: var(--secondary-text-color, #aaa);
-        font-family: inherit;
-        font-size: 0.95rem;
-        cursor: pointer;
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: color 0.2s;
-      }
-      .tab-btn:hover {
-        color: var(--primary-text-color, #fff);
-      }
-      .tab-btn.active {
-        color: var(--primary-color, #4caf50);
-        font-weight: 500;
-      }
-      .tab-btn.active::after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: var(--primary-color, #4caf50);
-      }
-      .tab-btn svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-
-      /* Scrollable Actions */
-      .event-actions-wrapper {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        flex: 1;
-        position: relative;
-      }
-
-      .event-actions {
-        display: flex;
-        gap: 12px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        scroll-behavior: smooth;
-        padding: 4px 0;
-        width: 100%;
-        justify-content: flex-end;
-      }
-
-      .event-actions::-webkit-scrollbar {
-        display: none;
-      }
-
-      .event-actions button {
-        flex-shrink: 0;
-      }
-
-      .scroll-arrow {
-        min-width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary-text-color, #fff);
-        cursor: pointer;
-        border-radius: 50%;
-        transition: all 0.2s;
-        background: rgba(255, 255, 255, 0.1);
-        margin: 0 4px;
-        z-index: 1;
-        flex-shrink: 0;
-      }
-
-      .scroll-arrow:hover {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
-      .scroll-arrow.hidden {
-        opacity: 0;
-        pointer-events: none;
-        width: 0;
-        min-width: 0;
-        margin: 0;
-        visibility: hidden;
-      }
-
-      .scroll-arrow svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-
-      @media (max-width: 600px) {
-        .event-actions {
-          justify-content: flex-start;
-        }
-      }
-
-      /* ── Star Scoring (mirrors harvest-scoring-dialog) ── */
-      .score-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        padding: 8px 0;
-      }
-      .score-row {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .score-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .score-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        font-size: 0.95rem;
-      }
-      .score-emoji {
-        font-size: 1.2rem;
-      }
-      .score-value {
-        font-size: 0.95rem;
-        opacity: 0.7;
-        min-width: 30px;
-        text-align: right;
-      }
-      .score-description {
-        font-size: 0.8rem;
-        opacity: 0.5;
-        margin: 0;
-      }
-      .star-row {
-        display: flex;
-        gap: 6px;
-        margin-top: 4px;
-      }
-      .star-btn {
-        background: none;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        font-size: 1.6rem;
-        line-height: 1;
-        transition: transform 0.1s, filter 0.15s;
-        filter: grayscale(0.6) opacity(0.5);
-      }
-      .star-btn.active {
-        filter: grayscale(0) opacity(1);
-      }
-      .star-btn:hover,
-      .star-btn.preview {
-        transform: scale(1.2);
-        filter: grayscale(0) opacity(1);
-      }
-      .skip-hint {
-        font-size: 0.8rem;
-        opacity: 0.45;
-        margin-top: 8px;
-        text-align: center;
-      }
-      .phenotype-card {
-        grid-column: 1 / -1;
-      }
-      .phenotype-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .phenotype-card-header h3 {
-        margin: 0;
-      }
-      .phenotype-form {
-        margin-top: 16px;
-      }
-      .phenotype-form-actions {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 16px;
-      }
-      .score-grid--readonly {
-        margin-top: 12px;
-        pointer-events: none;
-        opacity: 0.7;
-      }
-      .metrics-section {
-        padding: 0;
-      }
-      .metrics-section-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        opacity: 0.6;
-        margin: 0 0 12px;
-      }
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 12px;
-      }
-      .metric-field {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .metric-field label {
-        font-size: 0.75rem;
-        opacity: 0.7;
-      }
-      .metric-field input,
-      .metric-field textarea {
-        background: var(--card-background-color, rgba(255,255,255,0.06));
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
-        border-radius: 8px;
-        color: var(--primary-text-color);
-        font-size: 0.9rem;
-        padding: 6px 10px;
-        width: 100%;
-        box-sizing: border-box;
-        transition: border-color 0.15s;
-      }
-      .metric-field input:focus,
-      .metric-field textarea:focus {
-        outline: none;
-        border-color: var(--primary-color, #4caf50);
-      }
-      .terpene-field {
-        grid-column: 1 / -1;
-      }
-      .terpene-field textarea {
-        resize: vertical;
-        min-height: 48px;
-      }
-      .harvest-divider {
-        border: none;
-        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-        margin: 0;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], PlantOverviewDialog.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true })
-], PlantOverviewDialog.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], PlantOverviewDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false })
-], PlantOverviewDialog.prototype, "dialog", void 0);
-__decorate([
-    n$5({ type: Object })
-], PlantOverviewDialog.prototype, "plant", void 0);
-__decorate([
-    n$5({ type: Object })
-], PlantOverviewDialog.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$5({ attribute: false })
-], PlantOverviewDialog.prototype, "editedAttributes", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "isEditing", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "showAllDates", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "cloneTargetId", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_showDeleteConfirmation", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_logbookEvents", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_harvestMetricsEdit", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_scoresEdit", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_starPreview", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_savingHarvest", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_showScoringForm", void 0);
-__decorate([
-    r$2()
-], PlantOverviewDialog.prototype, "_savingScore", void 0);
-PlantOverviewDialog = __decorate([
-    t$2('plant-overview-dialog')
-], PlantOverviewDialog);
-
 let PrintLabelDialog = class PrintLabelDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -24998,13 +21278,13 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
                 deviceId: this._selectedDeviceId || undefined,
                 preview: false
             });
-            this.store.showToast('Label printing command sent', 'success');
+            this.store.actions.ui.toast('Label printing command sent', 'success');
             this._close();
         }
         catch (e) {
             const error = e instanceof Error ? e.message : 'Unknown error';
             console.error('Failed to print label:', e);
-            this.store?.showToast(`Error: ${error}`, 'error');
+            this.store?.actions.ui.toast(`Error: ${error}`, 'error');
         }
         finally {
             this._isSubmitting = false;
@@ -25106,10 +21386,10 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
               class="md3-button primary"
               style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
               @click=${this._submit}
-              ?disabled=${this._isSubmitting}
+              ?disabled=${this._isSubmitting || this._previewLoading}
             >
               <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? 'Printing...' : 'Print Now'}
+              ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
             </button>
           </div>
         </div>
@@ -25246,6 +21526,479 @@ PrintLabelDialog = __decorate([
     t$2('print-label-dialog')
 ], PrintLabelDialog);
 
+let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this._selectedDeviceId = '';
+        this._copies = 1;
+        this._isSubmitting = false;
+        this._progress = 0;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._resetForm();
+        }
+    }
+    _resetForm() {
+        this._isSubmitting = false;
+        this._progress = 0;
+        this._copies = 1;
+        if (!this._selectedDeviceId) {
+            const printers = this._getPrinters();
+            if (printers.length > 0) {
+                this._selectedDeviceId = printers[0].value;
+            }
+        }
+    }
+    _getPrinters() {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states)
+            .filter((eid) => eid.startsWith('image.') && eid.includes('_last_label_made'))
+            .map((eid) => {
+            const name = this.hass.states[eid].attributes.friendly_name || eid;
+            return { label: name.replace(' Last Label Made', ''), value: eid };
+        });
+    }
+    async _submit() {
+        if (!this.store || !this.dialogState)
+            return;
+        const { plantIds } = this.dialogState;
+        if (plantIds.length === 0)
+            return;
+        this._isSubmitting = true;
+        this._progress = 0;
+        // Warm up Niimbot before batch printing — the first service call initializes the
+        // printer session; without it all labels come out blank.
+        try {
+            await this.store.printLabel({
+                plantId: plantIds[0],
+                deviceId: this._selectedDeviceId || undefined,
+                preview: true,
+            });
+        }
+        catch (_e) {
+            // Warm-up failure is non-fatal; attempt batch anyway.
+        }
+        const total = plantIds.length * this._copies;
+        let completed = 0;
+        const errors = [];
+        for (let copy = 0; copy < this._copies; copy++) {
+            for (const plantId of plantIds) {
+                try {
+                    await this.store.printLabel({
+                        plantId,
+                        deviceId: this._selectedDeviceId || undefined,
+                        preview: false,
+                    });
+                }
+                catch (e) {
+                    errors.push(plantId);
+                }
+                completed++;
+                this._progress = Math.round((completed / total) * 100);
+            }
+        }
+        this._isSubmitting = false;
+        if (errors.length === 0) {
+            this.store.actions.ui.toast(`Printed ${total} label(s) successfully`, 'success');
+        }
+        else {
+            this.store.actions.ui.toast(`Printed with ${errors.length} error(s)`, 'error');
+        }
+        this._close();
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const plantIds = this.dialogState?.plantIds ?? [];
+        const printers = this._getPrinters();
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Print Labels'}
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Print Labels</h2>
+              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid" style="display: block;">
+            <div class="form-section">
+              <h3>Printer Settings</h3>
+              <md3-select
+                label="Niimbot Printer"
+                .value=${this._selectedDeviceId || ''}
+                .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+                @change=${(e) => { this._selectedDeviceId = e.detail; }}
+              ></md3-select>
+
+              ${printers.length === 0 ? x `
+                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                  No Niimbot printers discovered. You can still try printing if you have a default printer configured.
+                </div>
+              ` : E}
+
+              <div class="copies-row">
+                <label>Copies per plant</label>
+                <input
+                  class="copies-input"
+                  type="number"
+                  min="1"
+                  max="99"
+                  .value=${String(this._copies)}
+                  @input=${(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!isNaN(v) && v >= 1)
+                this._copies = v;
+        }}
+                />
+              </div>
+            </div>
+
+            ${this._isSubmitting ? x `
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width: ${this._progress}%"></div>
+              </div>
+            ` : E}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+              @click=${this._submit}
+              ?disabled=${this._isSubmitting}
+            >
+              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+              ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+BatchPrintLabelDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .copies-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .copies-row label {
+        font-size: 0.9rem;
+        opacity: 0.7;
+        white-space: nowrap;
+      }
+      .copies-input {
+        width: 80px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: var(--primary-text-color, #fff);
+        font-size: 1rem;
+        padding: 8px 12px;
+        text-align: center;
+      }
+      .copies-input:focus {
+        outline: none;
+        border-color: var(--primary-color, #4caf50);
+      }
+      .progress-bar-wrap {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        height: 6px;
+        margin-top: 16px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        background: var(--primary-color, #4caf50);
+        height: 100%;
+        transition: width 0.3s ease;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], BatchPrintLabelDialog.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], BatchPrintLabelDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], BatchPrintLabelDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], BatchPrintLabelDialog.prototype, "dialogState", void 0);
+__decorate([
+    r$2()
+], BatchPrintLabelDialog.prototype, "_selectedDeviceId", void 0);
+__decorate([
+    r$2()
+], BatchPrintLabelDialog.prototype, "_copies", void 0);
+__decorate([
+    r$2()
+], BatchPrintLabelDialog.prototype, "_isSubmitting", void 0);
+__decorate([
+    r$2()
+], BatchPrintLabelDialog.prototype, "_progress", void 0);
+BatchPrintLabelDialog = __decorate([
+    t$2('batch-print-label-dialog')
+], BatchPrintLabelDialog);
+
+let BatchCloneDialog = class BatchCloneDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceOptions = {};
+        this._numClones = 1;
+        this._targetGrowspaceId = '';
+        this._isSubmitting = false;
+        this._progress = 0;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._resetForm();
+        }
+        if (changedProps.has('growspaceOptions') && !this._targetGrowspaceId) {
+            const firstId = Object.keys(this.growspaceOptions)[0];
+            if (firstId)
+                this._targetGrowspaceId = firstId;
+        }
+    }
+    _resetForm() {
+        this._isSubmitting = false;
+        this._progress = 0;
+        this._numClones = 1;
+        const firstId = Object.keys(this.growspaceOptions)[0];
+        this._targetGrowspaceId = firstId ?? '';
+    }
+    async _submit() {
+        if (!this.store || !this.dialogState)
+            return;
+        const { plantIds } = this.dialogState;
+        if (plantIds.length === 0 || !this._targetGrowspaceId)
+            return;
+        this._isSubmitting = true;
+        this._progress = 0;
+        const errors = [];
+        let completed = 0;
+        for (const plantId of plantIds) {
+            const devices = this.store.data.$devices.get();
+            let motherPlant;
+            for (const device of devices) {
+                motherPlant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
+                if (motherPlant)
+                    break;
+            }
+            if (!motherPlant) {
+                errors.push(plantId);
+                completed++;
+                this._progress = Math.round((completed / plantIds.length) * 100);
+                continue;
+            }
+            try {
+                await this.store.actions.plant.takeClone(motherPlant, this._numClones, this._targetGrowspaceId);
+            }
+            catch (_e) {
+                errors.push(plantId);
+            }
+            completed++;
+            this._progress = Math.round((completed / plantIds.length) * 100);
+        }
+        this._isSubmitting = false;
+        const totalClones = plantIds.length * this._numClones;
+        if (errors.length === 0) {
+            this.store.actions.ui.toast(`Created ${totalClones} clone(s) successfully`, 'success');
+        }
+        else {
+            this.store.actions.ui.toast(`Completed with ${errors.length} error(s)`, 'error');
+        }
+        this._close();
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const plantIds = this.dialogState?.plantIds ?? [];
+        const growspaceEntries = Object.entries(this.growspaceOptions);
+        const totalClones = plantIds.length * this._numClones;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        .heading=${'Clone Selected Plants'}
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="--stage-color: #8bc34a;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Clone Selected Plants</h2>
+              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
+            </div>
+            <button class="md3-button text" @click=${this._close}>
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+
+          <div class="dialog-content-grid" style="display: block;">
+            <div class="form-section">
+              <h3>Target Growspace</h3>
+              <md3-select
+                label="Destination"
+                .value=${this._targetGrowspaceId}
+                .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
+                @change=${(e) => { this._targetGrowspaceId = e.detail; }}
+              ></md3-select>
+
+              <div class="clones-row">
+                <label>Clones per plant</label>
+                <input
+                  class="clones-input"
+                  type="number"
+                  min="1"
+                  max="20"
+                  .value=${String(this._numClones)}
+                  @input=${(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (!isNaN(v) && v >= 1 && v <= 20)
+                this._numClones = v;
+        }}
+                />
+              </div>
+            </div>
+
+            ${this._isSubmitting ? x `
+              <div class="progress-bar-wrap">
+                <div class="progress-bar" style="width: ${this._progress}%"></div>
+              </div>
+            ` : E}
+          </div>
+
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
+              @click=${this._submit}
+              ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
+            >
+              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+              ${this._isSubmitting
+            ? `Cloning... ${this._progress}%`
+            : `Create ${totalClones} Clone${totalClones !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+BatchCloneDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .clones-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .clones-row label {
+        font-size: 0.9rem;
+        opacity: 0.7;
+        white-space: nowrap;
+      }
+      .clones-input {
+        width: 80px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: var(--primary-text-color, #fff);
+        font-size: 1rem;
+        padding: 8px 12px;
+        text-align: center;
+      }
+      .clones-input:focus {
+        outline: none;
+        border-color: var(--primary-color, #4caf50);
+      }
+      .progress-bar-wrap {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        height: 6px;
+        margin-top: 16px;
+        overflow: hidden;
+      }
+      .progress-bar {
+        background: var(--primary-color, #4caf50);
+        height: 100%;
+        transition: width 0.3s ease;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], BatchCloneDialog.prototype, "store", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], BatchCloneDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], BatchCloneDialog.prototype, "dialogState", void 0);
+__decorate([
+    n$5({ type: Object })
+], BatchCloneDialog.prototype, "growspaceOptions", void 0);
+__decorate([
+    r$2()
+], BatchCloneDialog.prototype, "_numClones", void 0);
+__decorate([
+    r$2()
+], BatchCloneDialog.prototype, "_targetGrowspaceId", void 0);
+__decorate([
+    r$2()
+], BatchCloneDialog.prototype, "_isSubmitting", void 0);
+__decorate([
+    r$2()
+], BatchCloneDialog.prototype, "_progress", void 0);
+BatchCloneDialog = __decorate([
+    t$2('batch-clone-dialog')
+], BatchCloneDialog);
+
 let SnapshotsDialog = class SnapshotsDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -25268,11 +22021,11 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _fetchSnapshots() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
             return;
         this._isLoading = true;
         try {
-            const response = await this.store.dataService.getSnapshots(this.dialogState.growspaceId);
+            const response = await this.store.actions.snapshots.list(this.dialogState.growspaceId);
             if (response) {
                 this._snapshots = response.snapshots || [];
             }
@@ -25286,35 +22039,28 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _captureSnapshot() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
             return;
         this._isCapturing = true;
         try {
-            await this.store.dataService.captureSnapshot(this.dialogState.growspaceId);
-            this.store.ui.showToast('Snapshot captured successfully', 'success');
+            await this.store.actions.snapshots.capture(this.dialogState.growspaceId);
             // Refresh the list immediately
             await this._fetchSnapshots();
         }
         catch (err) {
             console.error('[SnapshotsDialog] Failed to capture snapshot:', err);
-            // Backend might return "no_cameras" error
-            if (err?.code === 'no_cameras') {
-                this.store.ui.showToast('No cameras configured for this growspace.', 'error');
-            }
-            else {
-                this.store.ui.showToast('Failed to capture snapshot', 'error');
-            }
+            // Action handles toast
         }
         finally {
             this._isCapturing = false;
         }
     }
     async _fetchVisionHistory() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
             return;
         this._isLoadingVision = true;
         try {
-            const response = await this.store.dataService.getVisionHistory(this.dialogState.growspaceId);
+            const response = await this.store.actions.snapshots.visionHistory(this.dialogState.growspaceId);
             if (response) {
                 this._visionHistory = response.history || [];
                 this._selectedResult = this._visionHistory[0] ?? null;
@@ -25329,17 +22075,16 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _runVisionCheckup() {
-        if (!this.dialogState?.growspaceId || !this.store?.dataService)
+        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
             return;
         this._isRunningCheckup = true;
         try {
-            await this.store.dataService.triggerVisionCheckup(this.dialogState.growspaceId);
-            this.store.ui.showToast('Vision checkup complete', 'success');
+            await this.store.actions.snapshots.triggerCheckup(this.dialogState.growspaceId);
             await this._fetchVisionHistory();
         }
         catch (err) {
             console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
-            this.store.ui.showToast('Failed to run vision checkup', 'error');
+            // Action handles error toast
         }
         finally {
             this._isRunningCheckup = false;
@@ -30212,8 +26957,8 @@ function getAvailableActions(plant) {
             id: 'clone',
             label: 'Take Clone',
             icon: 'mdiContentCopy',
-            enabled: stage === 'mother' || stage === 'veg',
-            tooltip: stage !== 'mother' && stage !== 'veg' ? 'Clone from mother or veg plants' : undefined,
+            enabled: stage === 'mother' || stage === 'veg' || stage === 'flower',
+            tooltip: stage !== 'mother' && stage !== 'veg' && stage !== 'flower' ? 'Clone from mother or veg and flower plants' : undefined,
         },
         {
             id: 'print_label',
@@ -30979,6 +27724,1268 @@ PlantActionsTab = __decorate([
 ], PlantActionsTab);
 
 /**
+ * Quick note input component with image upload support
+ * Extracted from plant-timeline for reusability
+ */
+let QuickNoteInput = class QuickNoteInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.placeholder = 'Add a cultivation note...';
+        this.allowImages = true;
+        this.disabled = false;
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Resize and compress an image file
+     */
+    async _resizeImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Could not get canvas context'));
+                        return;
+                    }
+                    // Max dimensions
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    }
+                    else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG 0.8
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                };
+                img.onerror = (e) => reject(e);
+                img.src = e.target?.result;
+            };
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+        });
+    }
+    async _handleFileSelect(e) {
+        const input = e.target;
+        if (!input.files)
+            return;
+        const files = Array.from(input.files);
+        for (const file of files) {
+            try {
+                const resized = await this._resizeImage(file);
+                this._images = [...this._images, resized];
+            }
+            catch (err) {
+                console.error('Error processing image:', err);
+            }
+        }
+        // Clear input to allow re-selecting same file
+        input.value = '';
+    }
+    _removeImage(index) {
+        this._images = this._images.filter((_, i) => i !== index);
+    }
+    async _submit() {
+        if (!this._text.trim() && !this._images.length)
+            return;
+        this._isSaving = true;
+        // Dispatch event with note data
+        this.dispatchEvent(new CustomEvent('submit', {
+            detail: {
+                text: this._text.trim(),
+                images: this._images,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        // Note: The parent component should handle the actual submission
+        // and call clear() method on success
+    }
+    /**
+     * Public method to clear the input after successful submission
+     */
+    clear() {
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Public method to set saving state (called by parent during submission)
+     */
+    setSaving(saving) {
+        this._isSaving = saving;
+    }
+    render() {
+        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
+        return x `
+      <div class="container">
+        <div class="input-wrapper">
+          <textarea
+            placeholder="${this.placeholder}"
+            .value=${this._text}
+            @input=${(e) => (this._text = e.target.value)}
+            rows="2"
+            ?disabled=${this.disabled || this._isSaving}
+          ></textarea>
+        </div>
+
+        ${this._images.length > 0
+            ? x `
+              <div class="image-previews">
+                ${this._images.map((img, i) => x `
+                    <div class="preview-item">
+                      <img src=${img} alt="Preview ${i + 1}" />
+                      <button
+                        class="remove-img"
+                        @click=${() => this._removeImage(i)}
+                        ?disabled=${this._isSaving}
+                        aria-label="Remove image"
+                      >
+                        <svg viewBox="0 0 24 24">
+                          <path d="${mdiClose}" />
+                        </svg>
+                      </button>
+                    </div>
+                  `)}
+              </div>
+            `
+            : E}
+
+        <div class="actions">
+          <div class="action-buttons">
+            ${this.allowImages
+            ? x `
+                    <input
+                      type="file"
+                      id="fileInput"
+                      @change=${this._handleFileSelect}
+                      multiple
+                      accept="image/*"
+                    />
+                  <button
+                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
+                    ?disabled=${this.disabled || this._isSaving}
+                    aria-label="Add image"
+                    title="Add image"
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="${mdiCameraPlus}" />
+                    </svg>
+                  </button>
+                `
+            : E}
+          </div>
+          <button
+            class="submit-btn"
+            @click=${this._submit}
+            ?disabled=${!canSubmit || this.disabled}
+            aria-label="Submit note"
+            title="Submit note"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="${mdiSend}" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+QuickNoteInput.styles = i$6 `
+    :host {
+      display: block;
+      margin-bottom: 24px;
+    }
+
+    .container {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--divider-color);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--primary-text-color);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      padding: 4px;
+      outline: none;
+      min-height: 40px;
+    }
+
+    textarea::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.submit-btn {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+    }
+
+    button.submit-btn:hover:not(:disabled) {
+      background: var(--primary-color-dark, #0288d1);
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .image-previews {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .preview-item {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--divider-color);
+    }
+
+    .remove-img {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--error-color, #f44336);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .remove-img svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .remove-img:hover {
+      background: var(--error-color-dark, #d32f2f);
+    }
+
+    input[type='file'] {
+      display: none;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], QuickNoteInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "allowImages", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "disabled", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_text", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_images", void 0);
+__decorate([
+    r$2()
+], QuickNoteInput.prototype, "_isSaving", void 0);
+QuickNoteInput = __decorate([
+    t$2('quick-note-input')
+], QuickNoteInput);
+
+/**
+ * Reusable confirmation dialog for delete operations
+ * Used by plant-timeline and potentially other components
+ */
+let ConfirmDeleteDialog = class ConfirmDeleteDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.title = 'Confirm Deletion';
+        this.message = 'Are you sure you want to delete this entry? This action cannot be undone.';
+    }
+    _handleCancel(e) {
+        e.stopPropagation();
+        this.open = false;
+        this.dispatchEvent(new CustomEvent('cancel'));
+    }
+    _handleConfirm(e) {
+        e.stopPropagation();
+        this.open = false;
+        this.dispatchEvent(new CustomEvent('confirm'));
+    }
+    _handleOverlayClick(e) {
+        if (e.target === e.currentTarget) {
+            this._handleCancel(e);
+        }
+    }
+    render() {
+        if (!this.open)
+            return null;
+        return x `
+      <div class="overlay" @click=${this._handleOverlayClick}>
+        <div class="dialog" @click=${(e) => e.stopPropagation()}>
+          <h2>${this.title}</h2>
+          <p>${this.message}</p>
+          <div class="actions">
+            <button class="cancel-btn" @click=${this._handleCancel}>
+              <svg viewBox="0 0 24 24">
+                <path d="${mdiClose}" />
+              </svg>
+              Cancel
+            </button>
+            <button class="delete-btn" @click=${this._handleConfirm}>
+              <svg viewBox="0 0 24 24">
+                <path d="${mdiDelete}" />
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+ConfirmDeleteDialog.styles = i$6 `
+    :host {
+      display: none;
+    }
+
+    :host([open]) {
+      display: block;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog {
+      width: 90%;
+      max-width: 420px;
+      padding: 24px;
+      background: var(--card-background-color, #1c1c1c);
+      border-radius: 16px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0, 0, 0, 0.4));
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+      color: var(--primary-text-color);
+    }
+
+    p {
+      margin: 0 0 24px 0;
+      color: var(--secondary-text-color);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .cancel-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--primary-text-color);
+    }
+
+    .cancel-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .delete-btn {
+      background: var(--error-color, #f44336);
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background: var(--error-color-dark, #d32f2f);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean })
+], ConfirmDeleteDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfirmDeleteDialog.prototype, "title", void 0);
+__decorate([
+    n$5({ type: String })
+], ConfirmDeleteDialog.prototype, "message", void 0);
+ConfirmDeleteDialog = __decorate([
+    t$2('confirm-delete-dialog')
+], ConfirmDeleteDialog);
+
+// Correlation window constant
+const CORRELATION_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
+let PlantTimeline = class PlantTimeline extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.events = [];
+        this._showDeleteConfirmation = false;
+        this._deletingEventId = null;
+        this._hoveredImage = null;
+    }
+    _getIcon(event) {
+        const { type } = event;
+        switch (type) {
+            case 'stage_change': {
+                const to = event.to?.toLowerCase();
+                if (to === 'flower')
+                    return mdiFlower;
+                if (to === 'dry')
+                    return mdiHairDryer;
+                if (to === 'cure')
+                    return mdiCannabis;
+                return mdiSprout;
+            }
+            case 'alert':
+                return mdiAlertCircle;
+            case 'note':
+                return mdiNoteText;
+            case 'milestone': {
+                const label = event.label?.toLowerCase() || '';
+                if (label.includes('flower'))
+                    return mdiFlower;
+                if (label.includes('dry'))
+                    return mdiHairDryer;
+                if (label.includes('cure'))
+                    return mdiCannabis;
+                return mdiSprout;
+            }
+            case 'action': {
+                const action = event.action;
+                if (action === 'water' || action === 'watering')
+                    return mdiWater;
+                if (action === 'ipm')
+                    return mdiBug;
+                if (action === 'training')
+                    return mdiDumbbell;
+                return mdiLeaf;
+            }
+            case 'environmental_report':
+                return event.sensor_type === 'night_report' ? mdiWeatherNight : mdiWeatherSunny;
+            default:
+                return mdiLeaf;
+        }
+    }
+    _getStageColor(stage) {
+        switch (stage?.toLowerCase()) {
+            case 'flower':
+                return '#e91e63';
+            case 'veg':
+                return '#4caf50';
+            case 'seedling':
+                return '#8bc34a';
+            case 'clone':
+                return '#66bb6a';
+            case 'mother':
+                return '#2e7d32';
+            case 'dry':
+                return '#ff9800';
+            case 'cure':
+                return '#795548';
+            default:
+                return 'var(--divider-color)';
+        }
+    }
+    _isCorrelated(event, allEvents) {
+        if (event.type !== 'note')
+            return false;
+        const noteTime = new Date(event.date).getTime();
+        // Check for alerts within correlation window before this note
+        return allEvents.some((e) => {
+            if (e.type !== 'alert')
+                return false;
+            const alertTime = new Date(e.date).getTime();
+            const diff = noteTime - alertTime;
+            return diff > 0 && diff < CORRELATION_WINDOW_MS;
+        });
+    }
+    // Date formatting methods replaced by shared date utilities
+    async _handleNoteSubmit(e) {
+        const noteInput = this.shadowRoot?.querySelector('quick-note-input');
+        if (!noteInput)
+            return;
+        noteInput.setSaving(true);
+        try {
+            const service = getTimelineService(this.hass);
+            await service.addPlantNote(this.plant_id, {
+                notes: e.detail.text,
+                images: e.detail.images,
+            });
+            // Clear input on success
+            noteInput.clear();
+            // Allow time for recorder to write to DB
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            // Fire refresh event
+            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+        }
+        catch (err) {
+            console.error('Error adding note:', err);
+        }
+        finally {
+            noteInput.setSaving(false);
+        }
+    }
+    _deleteEvent(e, eventId) {
+        e.stopPropagation();
+        this._deletingEventId = eventId;
+        this._showDeleteConfirmation = true;
+    }
+    async _confirmDeleteEvent() {
+        if (this._deletingEventId === null)
+            return;
+        try {
+            const service = getTimelineService(this.hass);
+            await service.deleteEvent(this._deletingEventId);
+            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+        }
+        catch (err) {
+            console.error('Error deleting event:', err);
+        }
+        finally {
+            this._showDeleteConfirmation = false;
+            this._deletingEventId = null;
+        }
+    }
+    // Delete overlay now handled by confirm-delete-dialog component
+    _renderHoverOverlay() {
+        if (!this._hoveredImage)
+            return E;
+        return x `
+      <div class="image-hover-overlay">
+        <img src=${this._hoveredImage} />
+      </div>
+    `;
+    }
+    // Image handling now done by quick-note-input component
+    render() {
+        // Sort events descending
+        const sortedEvents = [...(this.events || [])]
+            .filter((e) => e.date)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // Group by day using shared utility
+        const groupedByDay = new Map();
+        for (const event of sortedEvents) {
+            const date = new Date(event.date);
+            const dayKey = getDateKey(date);
+            if (!groupedByDay.has(dayKey)) {
+                groupedByDay.set(dayKey, []);
+            }
+            groupedByDay.get(dayKey).push(event);
+        }
+        const latestStageEvent = sortedEvents.find((e) => e.type === 'stage_change' || e.type === 'milestone');
+        const currentStage = latestStageEvent
+            ? latestStageEvent.type === 'stage_change' ? latestStageEvent.to : latestStageEvent.label
+            : undefined;
+        const stageColor = this._getStageColor(currentStage);
+        return x `
+      <div class="timeline" style="--stage-color: ${stageColor}">
+        <confirm-delete-dialog
+          .open=${this._showDeleteConfirmation}
+          @confirm=${this._confirmDeleteEvent}
+          @cancel=${() => (this._showDeleteConfirmation = false)}
+        ></confirm-delete-dialog>
+
+        ${this._renderHoverOverlay()}
+
+        <!-- Quick Note Section -->
+        <quick-note-input @submit=${this._handleNoteSubmit}></quick-note-input>
+
+        ${sortedEvents.length === 0
+            ? x `
+              <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
+                No entries for this plant yet.
+              </div>
+            `
+            : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
+                const alerts = dayEvents.filter((e) => e.type === 'alert');
+                const others = dayEvents.filter((e) => e.type !== 'alert');
+                return x `
+                <div class="day-group">
+                  <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
+
+                  ${alerts.length > 2
+                    ? x `
+                        <div class="day-summary glass-surface">
+                          <svg
+                            viewBox="0 0 24 24"
+                            style="width: 20px; height: 20px; fill: var(--warning-color); margin-right: 8px;"
+                          >
+                            <path d="${mdiAlertCircle}" />
+                          </svg>
+                          <span
+                            >${alerts.length} system alerts recorded. Environment may require
+                            attention.</span
+                          >
+                        </div>
+                      `
+                    : alerts.map((event) => this._renderEvent(event, sortedEvents))}
+                  ${others.map((event) => this._renderEvent(event, sortedEvents))}
+                </div>
+              `;
+            })}
+      </div>
+    `;
+    }
+    _renderEvent(event, allEvents) {
+        const isCorrelated = event.type === 'note' && this._isCorrelated(event, allEvents);
+        return x `
+      <div
+        class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''} ${event.type === 'environmental_report'
+            ? event.sensor_type === 'night_report'
+                ? 'is-night'
+                : 'is-day'
+            : ''} glass-surface"
+      >
+        <div class="icon-wrapper">
+          <svg viewBox="0 0 24 24">
+            <path d="${this._getIcon(event)}" />
+          </svg>
+        </div>
+        ${event.event_id
+            ? x `
+              <button
+                class="delete-btn"
+                @click=${(e) => this._deleteEvent(e, event.event_id)}
+              >
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: currentColor;">
+                  <path d="${mdiDelete}" />
+                </svg>
+              </button>
+            `
+            : E}
+        <div class="date">
+          ${formatTime(new Date(event.date))}
+          ${isCorrelated ? x `<span class="correlated-badge">System Correlated</span>` : E}
+        </div>
+        ${this._renderEventContent(event)} ${this._renderMetadata(event.metadata)}
+        ${this._renderImages(event.images)} ${this._renderTags(event.tags)}
+      </div>
+    `;
+    }
+    _renderEventContent(event) {
+        switch (event.type) {
+            case 'stage_change':
+                return x `
+          <div class="content">Stage Changed</div>
+          <div class="details">
+            Transitioned from <strong>${event.from}</strong> to <strong>${event.to}</strong>
+          </div>
+        `;
+            case 'milestone':
+                return x `
+          <div class="content">${event.label} Started</div>
+          <div class="details">Agricultural milestone reached.</div>
+        `;
+            case 'action': {
+                const label = event.action === 'ipm'
+                    ? 'IPM'
+                    : event.action.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                return x `
+          <div class="content">${label}</div>
+          ${event.details ? x `<div class="details">${event.details}</div>` : E}
+        `;
+            }
+            case 'alert':
+                return x `
+          <div class="content" style="color: var(--error-color)">
+            Critical Alert: ${event.message}
+          </div>
+          <div class="details">Severity: ${event.severity}</div>
+        `;
+            case 'environmental_report': {
+                const isDay = event.sensor_type !== 'night_report';
+                return x `
+          <div class="content" style="color: ${isDay ? '#ffc107' : '#3f51b5'}">
+            ${isDay ? 'Day' : 'Night'} Environmental Report
+          </div>
+          <div class="details">
+            ${event.reasons?.map((r) => x `<span
+                  style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
+                  >${r}</span
+                >`)}
+          </div>
+          ${(() => {
+                    // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
+                    const { temperature, humidity, vpd } = this._getEnvironmentalData(event);
+                    return temperature !== undefined && humidity !== undefined
+                        ? x `
+                  <div
+                  style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                  >
+                    <vpd-heatmap
+                      .temperature=${temperature}
+                      .humidity=${humidity}
+                      .vpd=${vpd}
+                      .stage=${this._getCurrentStage()}
+                      .hass=${this.hass}
+                    ></vpd-heatmap>
+                  </div>
+                `
+                        : E;
+                })()}
+        `;
+            }
+            case 'note':
+                return x `
+          <div class="content">Note</div>
+          <div class="details">${event.text}</div>
+        `;
+        }
+    }
+    _renderMetadata(metadata) {
+        if (!metadata || Object.keys(metadata).length === 0)
+            return E;
+        const items = [
+            { key: 'temperature', icon: mdiThermometer, label: '°C' },
+            { key: 'humidity', icon: mdiWaterPercent, label: '%' },
+            { key: 'vpd', icon: mdiGauge, label: ' kPa' },
+            { key: 'ph', icon: mdiFlaskOutline, label: 'pH ', prefix: true },
+            { key: 'ec', icon: mdiFlash, label: 'EC ', prefix: true },
+            { key: 'amount_ml', icon: mdiCupWater, label: 'ml' },
+        ];
+        return x `
+              <div class="metadata-chips" >
+                ${items.map((item) => {
+            const val = metadata[item.key];
+            if (val === undefined || val === null)
+                return E;
+            const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
+            return x `
+            <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
+              <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
+              <span>${display}</span>
+            </div>
+          `;
+        })}
+        </div>
+          `;
+    }
+    _renderImages(images) {
+        if (!images || images.length === 0)
+            return E;
+        return x `
+          <div class="image-grid" >
+            ${images.map((img) => {
+            // If it's a relative path, prefix with /api/growspace_manager/v1/images/
+            const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
+            return x `
+            <img
+              src=${src}
+              @click=${() => this._openImage(src)}
+              @mouseenter=${() => (this._hoveredImage = src)}
+              @mouseleave=${() => (this._hoveredImage = null)}
+            />
+          `;
+        })}
+        </div>
+          `;
+    }
+    _renderTags(tags) {
+        if (!tags || tags.length === 0)
+            return E;
+        return x `
+          <div class="tags" >
+            ${tags.map((tag) => x `
+            <div class="tag">
+              <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
+                <path d="${mdiTag}" />
+              </svg>
+              ${tag}
+            </div>
+          `)}
+        </div>
+          `;
+    }
+    _openImage(src) {
+        window.open(src, '_blank');
+    }
+    _getCurrentStage() {
+        // Basic mapping from plant events/state to heatmap stage
+        // Default to vegetative if unsure
+        const sortedEvents = this.events || [];
+        const latestStageEvent = sortedEvents
+            .filter((e) => e.type === 'stage_change' || e.type === 'milestone')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        // If no events, try to infer from passed stage if available (though not passed as prop here directly except via events)
+        // The parent passes events, but not the plant entity directly.
+        // However, we can look at the latest stage event.
+        if (!latestStageEvent)
+            return 'vegetative';
+        const stage = latestStageEvent.type === 'stage_change'
+            ? latestStageEvent.to?.toLowerCase()
+            : latestStageEvent.label?.toLowerCase();
+        if (stage === 'seedling' || stage === 'clone')
+            return 'seedling';
+        if (stage === 'veg' || stage === 'vegetative' || stage === 'mother')
+            return 'vegetative';
+        if (stage === 'flower')
+            return 'flower';
+        if (stage === 'late_flower' || stage === 'ripen' || stage === 'flush')
+            return 'late_flower';
+        if (stage === 'dry' || stage === 'cure')
+            return 'late_flower'; // Heatmap less relevant here but keep valid
+        return 'vegetative';
+    }
+    _getEnvironmentalData(event) {
+        const temperature = event.metadata?.temperature;
+        const humidity = event.metadata?.humidity;
+        const vpd = event.metadata?.vpd;
+        if (event.type !== 'environmental_report' || !event.reasons) {
+            return { temperature, humidity, vpd };
+        }
+        if (temperature !== undefined && humidity !== undefined && vpd !== undefined) {
+            return { temperature, humidity, vpd };
+        }
+        let parsedTemp = temperature;
+        let parsedHum = humidity;
+        let parsedVpd = vpd;
+        const parse = (label, current, reason) => {
+            if (current !== undefined || !reason.includes(label)) {
+                return current;
+            }
+            const m = reason.match(new RegExp(`${label}:\\s*([\\d.]+)`));
+            return m ? parseFloat(m[1]) : current;
+        };
+        for (const r of event.reasons) {
+            parsedTemp = parse('Temperature', parsedTemp, r);
+            parsedHum = parse('Humidity', parsedHum, r);
+            parsedVpd = parse('VPD', parsedVpd, r);
+        }
+        return { temperature: parsedTemp, humidity: parsedHum, vpd: parsedVpd };
+    }
+};
+PlantTimeline.styles = [
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        padding: var(--spacing-md, 16px);
+      }
+      .timeline {
+        position: relative;
+        padding-left: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .timeline::before {
+        content: '';
+        position: absolute;
+        left: 11px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--stage-color, var(--divider-color));
+      }
+      .event {
+        position: relative;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+      }
+      .delete-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        z-index: 10;
+      }
+      .event:hover .delete-btn {
+        opacity: 1;
+      }
+      .delete-btn:hover {
+        color: var(--error-color);
+      }
+      .icon-wrapper {
+        position: absolute;
+        left: -37px;
+        top: 12px;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--card-background-color, #202020);
+        border: 2px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+      }
+      .icon-wrapper svg {
+        width: 16px;
+        height: 16px;
+        fill: var(--secondary-text-color, #aaa);
+      }
+      .date {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, #aaa);
+        margin-bottom: 4px;
+      }
+      .content {
+        font-size: 0.95rem;
+        color: var(--primary-text-color, #fff);
+        font-weight: 600;
+      }
+      .details {
+        margin-top: 4px;
+        font-size: 0.85rem;
+        color: var(--secondary-text-color, #ccc);
+        line-height: 1.4;
+      }
+
+      /* Quick Note - styles now handled by quick-note-input component */
+
+      /* Metadata Chips */
+      .metadata-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        border: 1px solid transparent;
+      }
+      .chip svg {
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+      }
+      .chip.sensor {
+        border-color: rgba(var(--rgb-primary-color), 0.2);
+      }
+      .chip.action-stat {
+        background: rgba(var(--rgb-primary-color), 0.1);
+        color: var(--primary-color);
+      }
+
+      /* Image Grid */
+      .image-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .image-grid img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 1px solid var(--divider-color);
+      }
+      .image-grid img:hover {
+        transform: scale(1.02);
+      }
+
+      /* Tags */
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+      .tag {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--divider-color);
+        color: var(--secondary-text-color);
+      }
+
+      /* Milestone Banner */
+      .event.type-milestone {
+        border-left: 4px solid var(--success-color);
+        background: linear-gradient(
+          90deg,
+          rgba(var(--rgb-success-color), 0.15) 0%,
+          transparent 100%
+        );
+      }
+      .event.type-milestone .content {
+        font-size: 1.05rem;
+        letter-spacing: 0.5px;
+        color: var(--success-color);
+      }
+
+      /* Type specific styling */
+      .type-alert .icon-wrapper {
+        border-color: var(--error-color, #f44336);
+      }
+      .type-alert .icon-wrapper svg {
+        fill: var(--error-color, #f44336);
+      }
+      .type-action .icon-wrapper {
+        border-color: var(--primary-color, #03a9f4);
+      }
+      .type-action .icon-wrapper svg {
+        fill: var(--primary-color, #03a9f4);
+      }
+      .type-stage_change .icon-wrapper {
+        border-color: var(--success-color, #4caf50);
+      }
+      .type-stage_change .icon-wrapper svg {
+        fill: var(--success-color, #4caf50);
+      }
+      .type-note .icon-wrapper {
+        border-color: var(--warning-color, #ff9800);
+      }
+      .type-note .icon-wrapper svg {
+        fill: var(--warning-color, #ff9800);
+      }
+      .type-environmental_report.is-night .icon-wrapper {
+        border-color: #3f51b5;
+      }
+      .type-environmental_report.is-night .icon-wrapper svg {
+        fill: #3f51b5;
+      }
+      .type-environmental_report.is-day .icon-wrapper {
+        border-color: #ffc107;
+      }
+      .type-environmental_report.is-day .icon-wrapper svg {
+        fill: #ffc107;
+      }
+
+      /* Action specific styling */
+      .action-ipm .icon-wrapper {
+        border-color: #9c27b0;
+      }
+      .action-ipm .icon-wrapper svg {
+        fill: #9c27b0;
+      }
+      .action-training .icon-wrapper {
+        border-color: var(--gm-warning-color, #ff9800);
+      }
+      .action-training .icon-wrapper svg {
+        fill: var(--gm-warning-color, #ff9800);
+      }
+      .action-water .icon-wrapper,
+      .action-watering .icon-wrapper,
+      .action-irrigation .icon-wrapper {
+        border-color: var(--gm-info-color, #2196f3);
+      }
+      .action-water .icon-wrapper svg,
+      .action-watering .icon-wrapper svg,
+      .action-irrigation .icon-wrapper svg {
+        fill: var(--gm-info-color, #2196f3);
+      }
+
+      /* Day grouping */
+      .day-header {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--primary-color, #03a9f4);
+        padding: 12px 0 8px 12px;
+        margin-left: -24px;
+        background: var(--card-background-color, #1c1c1c);
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        border-bottom: 1px solid var(--divider-color);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .day-summary {
+        margin: 8px 0 16px 0;
+        padding: 8px 12px;
+        background: rgba(var(--rgb-warning-color), 0.1);
+        border: 1px solid rgba(var(--rgb-warning-color), 0.2);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--warning-color);
+      }
+      .correlated-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: var(--success-color);
+        color: white;
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        border-radius: 4px;
+        margin-left: 8px;
+        vertical-align: middle;
+      }
+
+      /* Delete dialog styles now handled by confirm-delete-dialog component */
+
+      .image-hover-overlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.9);
+        border-radius: 8px;
+        padding: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .image-hover-overlay img {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 4px;
+        object-fit: contain;
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], PlantTimeline.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], PlantTimeline.prototype, "plant_id", void 0);
+__decorate([
+    n$5({ type: Array })
+], PlantTimeline.prototype, "events", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_showDeleteConfirmation", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_deletingEventId", void 0);
+__decorate([
+    r$2()
+], PlantTimeline.prototype, "_hoveredImage", void 0);
+PlantTimeline = __decorate([
+    t$2('plant-timeline')
+], PlantTimeline);
+
+/**
  * Plant Timeline Tab - Presentational Component
  *
  * Thin wrapper around plant-timeline that passes events through.
@@ -31433,8 +29440,8 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
 
         ${this._activeTab === 'dashboard' ? x `
           <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-            <!-- Mother: Take Clone with count -->
-            ${stage === 'mother' ? x `
+            <!-- Mother/Veg/Flower: Take Clone with count -->
+            ${['mother', 'veg', 'flower'].includes(stage || '') ? x `
               <div style="display:flex; align-items:center; gap:8px;">
                 <md3-number-input
                   id="clone-count-input"
@@ -31565,13 +29572,11 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._showAllDates = !this._showAllDates;
     }
     _handleSave() {
-        // Update plant through store
-        const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-        this.store.updatePlantFromDialog({
-            plant: this.plant,
-            editedAttributes: this._editedAttributesAtom.get(),
-            selectedPlantIds: [plantId],
-        });
+        this.dispatchEvent(new CustomEvent('update-plant', {
+            detail: this._editedAttributesAtom.get(),
+            bubbles: true,
+            composed: true,
+        }));
         this._handleClose();
     }
     _handleDelete(_plantId) {
@@ -31610,10 +29615,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         }
     }
     _handleHarvest() {
-        this.store.harvestPlant(this.plant);
+        this.store.actions.plant.harvest(this.plant);
     }
     _handleFinishDrying() {
-        this.store.finishDryingPlant(this.plant);
+        this.store.actions.plant.finishDrying(this.plant);
     }
     _handleMovePlant() {
         if (!this._moveTargetGrowspaceId)
@@ -31899,21 +29904,13 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._savingHarvest = true;
         try {
             const plantId = this.plant.attributes.plant_id;
-            const m = this._harvestMetricsEdit;
-            if (Object.keys(m).length > 0) {
-                await this.store.dataService.updateHarvestMetrics({ plant_id: plantId, ...m });
-            }
-            const s = this._scoresEdit;
-            if (Object.keys(s).length > 0) {
-                await this.store.dataService.scorePlant({ plant_id: plantId, ...s });
-            }
-            await new Promise(resolve => setTimeout(resolve, 500));
-            await this.store.refreshData();
+            await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
+            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
             this._activeTab = 'dashboard';
         }
         catch (e) {
+            // Toast is handled inside the action; just catch to prevent unhandled rejection
             console.error('Failed to save harvest metrics', e);
-            this.store.ui.showToast('Failed to save harvest metrics. Check your connection and try again.', 'error');
         }
         finally {
             this._savingHarvest = false;
@@ -31972,13 +29969,12 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._savingScore = true;
         try {
             const plantId = this.plant.attributes.plant_id;
-            await this.store.dataService.scorePlant({ plant_id: plantId, ...this._scoresEdit });
-            await this.store.refreshData();
+            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
             this._showScoringForm = false;
         }
         catch (e) {
+            // Toast is handled inside the action; just catch to prevent unhandled rejection
             console.error('Failed to save phenotype scores', e);
-            this.store.ui.showToast('Failed to save scores. Check your connection and try again.', 'error');
         }
         finally {
             this._savingScore = false;
@@ -32211,6 +30207,10 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                     return this._renderNutrientDialog(active, effectiveDeviceData);
                 case 'PRINT_LABEL':
                     return this._renderPrintLabelDialog(active, effectiveDeviceData);
+                case 'BATCH_PRINT_LABELS':
+                    return this._renderBatchPrintLabelsDialog(active);
+                case 'BATCH_CLONE':
+                    return this._renderBatchCloneDialog(active, growspaceOptions);
                 case 'HARVEST_SCORING':
                     return this._renderHarvestScoringDialog(active);
                 case 'SNAPSHOTS':
@@ -32239,7 +30239,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         if (!store)
             return;
         try {
-            const data = await store.dataService.fetchGeneticsData();
+            const data = await store.actions.genetics.fetchData();
             if (data) {
                 this._seedBatches = data.seed_batches;
                 this._pollinationEvents = data.pollination_events;
@@ -32299,24 +30299,22 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     /** Handle transplant from clone/seedling to new location */
     async _handleTransplant(detail) {
+        if (!this.store)
+            return;
         try {
-            // Update plant position and growspace
-            await this.hass.callService('growspace_manager', 'update_plant', {
-                plant_id: detail.plant_id,
+            // Update plant position and growspace using dispatcher
+            await this.store.actions.plant.update(detail.plant_id, {
                 row: detail.new_row,
                 col: detail.new_col,
                 growspace_id: detail.target_growspace_id,
                 veg_start: detail.veg_start,
             });
-            this.store?.ui.showToast('Plant transplanted successfully!', 'success');
-            this.store?.ui.closeDialog();
-            // Refresh data after a small delay
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            await this.store?.refreshData();
+            this.store.ui.closeDialog();
+            await this._handleDataChanged();
         }
         catch (e) {
             console.error('[DialogHost] Transplant failed:', e);
-            this.store?.ui.showToast(`Error: ${e.message || e}`, 'error');
+            // Toast handles in dispatcher or action
         }
     }
     _handleOpenStrainEditor(e) {
@@ -32345,7 +30343,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 indica_percentage: 50,
             };
         }
-        this.store?.ui.setActiveDialog({
+        this.store?.actions.ui.setActiveDialog({
             type: 'STRAIN_LIBRARY',
             payload: {
                 view: 'editor',
@@ -32354,7 +30352,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         });
     }
     _handleStrainCreatedAtSource(e) {
-        this.store?.ui.setActiveDialog({
+        this.store?.actions.ui.setActiveDialog({
             type: 'STRAIN_LIBRARY',
             payload: {
                 source: e.detail.source,
@@ -32394,60 +30392,57 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
         @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
-        @show-toast=${(e) => this.store?.showToast(e.detail.message, e.detail.type)}
-        @add-plants-submit=${(e) => this.store?.confirmAddPlants(e.detail)}
+        @show-toast=${(e) => this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
+        @add-plants-submit=${(e) => this.store?.actions.plant.addBatch(e.detail)}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
     `;
     }
-    _renderPlantOverviewDialog(active, growspaceOptions, _selectedDeviceData) {
+    _renderPlantOverviewDialog(active, _growspaceOptions, _selectedDeviceData) {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
-        {
-            // New refactored dialog with ViewModel pattern
-            return x `
-        <plant-overview-container
-          .open=${true}
-          .plant=${dialogState.plant}
-          .editedAttributes=${dialogState.editedAttributes}
-          @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
-          @update-plant=${(e) => this.store?.updatePlantFromDialog({
-                plant: dialogState.plant,
-                editedAttributes: e.detail,
-                selectedPlantIds: dialogState.selectedPlantIds,
-            })}
-          @delete-plant=${(e) => this.store?.handleDeletePlant(e.detail.plantId)}
-          @harvest-plant=${(e) => {
-                const plant = e.detail.plant;
-                this.store?.ui.setActiveDialog({
-                    type: 'HARVEST_SCORING',
-                    payload: { plant },
-                });
-            }}
-          @finish-drying=${(e) => this.store?.finishDryingPlant(e.detail.plant)}
-          @take-clone=${(e) => this.store?.handleTakeClone(e.detail.plant, e.detail.numClones)}
-          @move-clone=${(e) => this.store?.movePlantToGrowspace(e.detail.plant, e.detail.targetGrowspace)}
-          @open-watering=${(e) => this.store?.ui.setActiveDialog({
-                type: 'WATERING',
-                payload: e.detail,
-            })}
-          @open-training=${(e) => {
-                this.store?.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
-            }}
-          @open-ipm=${(e) => this.store?.ui.setActiveDialog({
-                type: 'IPM',
-                payload: e.detail,
-            })}
-          @open-clone=${(e) => this.store?.ui.setActiveDialog({
-                type: 'TAKE_CLONE',
-                payload: e.detail,
-            })}
-          @open-strain-editor=${(e) => this._handleOpenStrainEditor(e)}
-        ></plant-overview-container>
-      `;
-        }
+        return x `
+      <plant-overview-container
+        .open=${true}
+        .plant=${dialogState.plant}
+        .editedAttributes=${dialogState.editedAttributes}
+        @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
+        @update-plant=${(e) => this.store?.actions.plant.updateFromDialog({
+            plant: dialogState.plant,
+            editedAttributes: e.detail,
+            selectedPlantIds: dialogState.selectedPlantIds,
+            activeTab: dialogState.activeTab || 'dashboard',
+        })}
+        @delete-plant=${(e) => this.store?.actions.plant.delete(e.detail.plantId)}
+        @harvest-plant=${(e) => {
+            this.store?.actions.ui.setActiveDialog({
+                type: 'HARVEST_SCORING',
+                payload: { plant: e.detail.plant },
+            });
+        }}
+        @finish-drying=${(e) => this.store?.actions.plant.finishDrying(e.detail.plant)}
+        @take-clone=${(e) => this.store?.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+        @move-clone=${(e) => this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        @open-watering=${(e) => this.store?.actions.ui.setActiveDialog({
+            type: 'WATERING',
+            payload: e.detail,
+        })}
+        @open-training=${(e) => {
+            this.store?.actions.ui.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
+        }}
+        @open-ipm=${(e) => this.store?.actions.ui.setActiveDialog({
+            type: 'IPM',
+            payload: e.detail,
+        })}
+        @open-clone=${(e) => this.store?.actions.ui.setActiveDialog({
+            type: 'TAKE_CLONE',
+            payload: e.detail,
+        })}
+        @open-strain-editor=${(e) => this._handleOpenStrainEditor(e)}
+      ></plant-overview-container>
+    `;
     }
     _renderStrainLibraryDialog(active, strainLibrary, _selectedDeviceData) {
         if (active.type !== 'STRAIN_LIBRARY')
@@ -32470,33 +30465,19 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${active.payload.initialTab ?? 'strains'}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
-        .onAddSeedBatch=${(data) => this.store?.dataService.addSeedBatch(data)}
-        .onUpdateSeedBatch=${(data) => this.store?.dataService.updateSeedBatch(data)}
-        .onLogPollination=${(data) => this.store?.dataService.logPollination(data)}
-        .onHarvestSeeds=${(data) => this.store?.dataService.harvestSeeds(data)}
-        .onUpdatePollination=${(data) => this.store?.dataService.updatePollination(data)}
-        .onDeletePollination=${(event_id) => this.store?.dataService.deletePollination(event_id)}
+        .onAddSeedBatch=${(data) => this.store?.actions.genetics.addSeedBatch(data)}
+        .onUpdateSeedBatch=${(data) => this.store?.actions.genetics.updateSeedBatch(data)}
+        .onLogPollination=${(data) => this.store?.actions.genetics.logPollination(data)}
+        .onHarvestSeeds=${(data) => this.store?.actions.genetics.harvestSeeds(data)}
+        .onUpdatePollination=${(data) => this.store?.actions.genetics.updatePollination(data)}
+        .onDeletePollination=${(event_id) => this.store?.actions.genetics.deletePollination(event_id)}
         @close=${() => this._closeDialogIfActive('STRAIN_LIBRARY')}
         @strain-created-at-source=${(e) => {
-            const { strain, source, returnPayload } = e.detail;
-            if (source === 'add-plant') {
-                this.store?.ui.setActiveDialog({
-                    type: 'ADD_PLANT',
-                    payload: {
-                        ...returnPayload,
-                        strain: strain.strain,
-                        phenotype: strain.phenotype,
-                    },
-                });
-            }
-            else if (source === 'add-plants') {
-                this.store?.ui.setActiveDialog({
-                    type: 'ADD_PLANTS',
-                    payload: {
-                        ...returnPayload,
-                        strain: strain.strain,
-                        phenotype: strain.phenotype,
-                    },
+            const { source, returnPayload } = e.detail;
+            if (source === 'ADD_PLANT' || source === 'ADD_PLANTS') {
+                this.store?.actions.ui.setActiveDialog({
+                    type: source,
+                    payload: returnPayload,
                 });
             }
         }}
@@ -32504,24 +30485,26 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             if (!this.store)
                 return;
             try {
-                await this.store.updateStrain(e.detail);
-                await this._handleDataChanged();
+                await this.store.actions.strain.update(e.detail);
                 this.store.ui.closeDialog();
+                await this._handleDataChanged();
             }
             catch (e) {
                 console.error('[DialogHost] Save strain failed:', e);
-                this.store?.ui.showToast(`Error: ${e.message || e}`, 'error');
             }
         }}
-        @delete-strain=${(e) => this.store?.removeStrain(e.detail.key)}
+        @delete-strain=${(e) => {
+            this.store?.actions.strain.remove(e.detail.key);
+            this._handleDataChanged();
+        }}
         @update-breeder=${(e) => this._handleUpdateBreeder(e.detail)}
         @save-breeder=${(e) => this._handleSaveBreeder(e.detail)}
         @delete-breeder=${(e) => this._handleDeleteBreeder(e.detail)}
-        @import-library=${(e) => this._performImport(e.detail.file, e.detail.replace)}
-        @export-library=${() => this.store?.handleExportLibrary()}
-        @get-recommendation=${() => this.store?.openStrainRecommendationDialog()}
+        @import-library=${(e) => this._performImport(e.detail)}
+        @export-library=${() => this.store?.actions.ui.exportStrainLibrary()}
+        @get-recommendation=${() => this.store?.actions.ui.openStrainRecommendationDialog()}
         @open-print-label=${(e) => {
-            this.store?.ui.setActiveDialog({
+            this.store?.actions.ui.setActiveDialog({
                 type: 'PRINT_LABEL',
                 payload: e.detail,
             });
@@ -32530,45 +30513,38 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       ></strain-library-dialog>
     `;
     }
-    async _performImport(file, replace) {
-        if (!file)
+    async _performImport(detail) {
+        if (!detail.file)
             return;
         try {
-            await this.store?.performImport(file, replace);
+            await this.store?.actions.library.import(detail.file, detail.replace);
+            await this._handleDataChanged();
+            this.store?.actions.ui.showToast('Strain library imported successfully', 'success');
+            this.store?.actions.library.fetchStrains(true);
         }
-        catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Import failed';
-            console.error('Import failed:', err);
-            this.store?.showToast(`Import failed: ${errorMessage}`, 'error');
+        catch (e) {
+            this.store?.actions.ui.showToast(`Import failed: ${e.message || e}`, 'error');
         }
     }
     async _handleUpdateBreeder(detail) {
         try {
-            await this.store?.dataService.strainAPI.updateBreeder(detail.oldName, detail.newName, detail.logo);
-            this.store?.showToast('Breeder updated successfully!', 'success');
-            await this.store?.refreshData();
-            await this.store?.fetchStrainLibrary(true);
+            await this.store?.actions.breeder.update(detail.oldName, detail.newName, detail.logo);
+            await this.store?.actions.library.fetchStrains(true);
         }
         catch (err) {
             console.error('[DialogHost] Update breeder failed:', err);
-            this.store?.showToast('Failed to update breeder', 'error');
         }
     }
     async _handleSaveBreeder(_detail) {
-        // Breeders are derived from strains — there is no standalone breeder concept in the backend.
-        // The "save-breeder" event cannot persist without at least one strain using the breeder name.
-        this.store?.showToast('Breeders are created automatically when you save a strain with breeder info.', 'info');
+        this.store?.ui.showToast('Breeders are created automatically when you save a strain with breeder info.', 'info');
     }
     async _handleDeleteBreeder(detail) {
         try {
-            await this.store?.dataService.strainAPI.deleteBreeder(detail.name);
-            this.store?.showToast('Breeder deleted successfully!', 'success');
-            await this.store?.refreshData();
-            await this.store?.fetchStrainLibrary(true);
+            await this.store?.actions.breeder.delete(detail.name);
+            await this.store?.actions.library.fetchStrains(true);
         }
         catch (err) {
             console.error('[DialogHost] Delete breeder failed:', err);
-            this.store?.showToast('Failed to delete breeder', 'error');
         }
     }
     _renderConfigDialog(active, growspaceOptions, _selectedDeviceData) {
@@ -32588,44 +30564,67 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             if (!this.store)
                 return;
             try {
-                await this.store.handleAddGrowspace(e.detail);
+                await this.store.actions.growspace.add(e.detail);
                 this.store.ui.closeDialog();
                 await this._handleDataChanged();
-                this.store.ui.showToast('Growspace added', 'success');
             }
-            catch (err) {
-                this.store.ui.showToast(`Failed: ${err.message || err}`, 'error');
+            catch (e) {
+                console.error(e);
             }
         }}
-        @edit-growspace-submit=${(e) => {
+        @edit-growspace-submit=${async (e) => {
             if (!this.store)
                 return;
-            this.store.handleUpdateGrowspace({
-                growspace_id: e.detail.growspaceId,
-                name: e.detail.name,
-                rows: e.detail.rows,
-                plantsPerRow: e.detail.plantsPerRow,
-            });
+            try {
+                await this.store.actions.growspace.update({
+                    growspaceId: e.detail.growspaceId,
+                    name: e.detail.name,
+                    rows: e.detail.rows,
+                    plantsPerRow: e.detail.plantsPerRow,
+                });
+                await this._handleDataChanged();
+            }
+            catch (e) {
+                console.error(e);
+            }
         }}
-        @delete-growspace-submit=${(e) => this.store?.handleRemoveGrowspace(e.detail.growspace_id)}
-        @remove-environment-submit=${(e) => this.store?.handleRemoveEnvironment(e.detail.growspace_id)}
+        @delete-growspace-submit=${(e) => this._handleRemoveGrowspace(e.detail)}
+        @remove-environment-submit=${(e) => this._handleRemoveEnvironment(e.detail)}
         @configure-environment-submit=${(e) => this._handleEnvironmentConfig(e.detail)}
         @vision-checkup-config-submit=${(e) => this._handleVisionCheckupConfig(e.detail)}
-        @generate-grow-report=${(e) => this.store?.ui.setActiveDialog({
+        @generate-grow-report=${(e) => this.store?.actions.ui.setActiveDialog({
             type: 'GROW_REPORT',
             payload: { growspaceId: e.detail.growspace_id }
         })}
       ></config-dialog>
     `;
     }
+    async _handleRemoveGrowspace(detail) {
+        try {
+            await this.store?.actions.growspace.remove(detail.growspace_id);
+            await this._handleDataChanged();
+        }
+        catch (e) {
+            console.error(e);
+        }
+    }
+    async _handleRemoveEnvironment(detail) {
+        try {
+            await this.store?.actions.environment.remove(detail.growspace_id);
+            await this._handleDataChanged();
+        }
+        catch (e) {
+            console.error(e);
+        }
+    }
     async _handleEnvironmentConfig(detail) {
         const { selectedGrowspaceId, temperatureSensor, humiditySensor, vpdSensor, co2Sensor, circulationFanEntity, stressThreshold, moldThreshold, lightSensor, exhaustEntity, humidifierEntity, dehumidifierEntity, dehumidifierThresholds, soilMoistureSensor, dehumidifierControlEnabled, } = detail;
         if (!selectedGrowspaceId || !temperatureSensor || !humiditySensor) {
-            this.store?.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
+            this.store?.actions.ui.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
         try {
-            await this.store?.dataService.configureEnvironment({
+            await this.store?.actions.environment.configure({
                 growspaceId: selectedGrowspaceId,
                 temperatureSensor,
                 humiditySensor,
@@ -32651,25 +30650,19 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 sensorCoordinates: detail.sensorCoordinates,
                 irrigationTanks: detail.irrigationTanks,
             });
-            this.store?.showToast('Environment configured successfully!', 'success');
-            await this.store?.refreshData();
-            this.store?.ui.closeDialog();
+            this.store?.actions.ui.closeDialog();
         }
         catch (e) {
-            const errorMessage = e instanceof Error ? e.message : 'Configuration failed';
-            this.store?.showToast(`Error: ${errorMessage}`, 'error');
+            console.error('[DialogHost] configureEnvironment failed:', e);
         }
     }
     async _handleVisionCheckupConfig(detail) {
         try {
-            await this.store?.dataService.updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
-            this.store?.showToast('Vision checkup config saved', 'success');
-            await this.store?.refreshData();
-            this.store?.ui.closeDialog();
+            await this.store?.actions.snapshots.updateCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+            this.store?.actions.ui.closeDialog();
         }
         catch (e) {
-            const msg = e instanceof Error ? e.message : 'Save failed';
-            this.store?.showToast(`Error: ${msg}`, 'error');
+            console.error('[DialogHost] updateCheckupConfig failed:', e);
         }
     }
     _renderGrowMasterDialog(active, selectedDeviceData) {
@@ -32708,8 +30701,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}
-        @analyze-growspace=${(e) => this.store?.analyzeGrowspace(e.detail.query, false)}
-        @analyze-all-growspaces=${(e) => this.store?.analyzeGrowspace(e.detail.query, true)}
+        @analyze-growspace=${(e) => this.store?.actions.ai.askAdvice(e.detail.query)}
+        @analyze-all-growspaces=${(e) => this.store?.actions.ai.analyzeAll()}
         @data-changed=${() => this._handleDataChanged()}
       ></grow-master-dialog>
     `;
@@ -32724,7 +30717,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('STRAIN_RECOMMENDATION')}
-        @get-recommendation=${(e) => this.store?.getStrainRecommendation(e.detail.query)}
+        @get-recommendation=${(e) => this.store?.actions.ai.strainRecommendation(e.detail.query)}
         @data-changed=${() => this._handleDataChanged()}
       >
       </strain-recommendation-dialog>
@@ -32770,16 +30763,28 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .nutrientPresets=${nutrientPresets}
         .nutrientInventory=${nutrientInventory}
         @close=${() => this._closeDialogIfActive('WATERING')}
-        @submit-watering=${(e) => {
-            if (payload?.mode === 'growspace') {
-                this.store?.waterGrowspace(selectedDeviceData?.deviceId || '', e.detail.amount, e.detail.nutrients, e.detail.presetId);
+        @submit-watering=${async (e) => {
+            try {
+                const { volume, nutrients, presetId } = e.detail;
+                if (payload?.mode === 'plant') {
+                    const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
+                    const promises = plantIds.map((pid) => this.store?.actions.environment.waterPlant(pid, volume, nutrients, presetId));
+                    await Promise.all(promises);
+                }
+                else {
+                    const growspaceId = payload?.growspace_id || selectedDeviceData?.deviceId;
+                    if (growspaceId) {
+                        await this.store?.actions.environment.waterGrowspace(growspaceId, volume, nutrients, presetId);
+                    }
+                }
+                await this._handleDataChanged();
             }
-            else {
-                (payload?.plantIds || []).forEach((pid) => this.store?.waterPlant(pid, e.detail.amount, e.detail.nutrients, e.detail.presetId));
+            catch (e) {
+                console.error('[DialogHost] Watering failed:', e);
             }
         }}
-        @save-preset=${(e) => this.store?.addNutrientPreset(e.detail)}
-        @update-stock=${(e) => this.store?.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+        @save-preset=${(e) => this.store?.actions.nutrient.savePreset(e.detail)}
+        @update-stock=${(e) => this.store?.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
         @data-changed=${() => this._handleDataChanged()}
       ></growspace-watering-dialog-ui>
     `;
@@ -32822,14 +30827,19 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .plantIds=${payload?.selectedPlantIds || []}
         .presets=${ipmPresets}
         @close=${() => this._closeDialogIfActive('IPM')}
-        @apply-ipm=${async (e) => {
-            await this.store?.applyIPM({
-                preset_id: e.detail.presetId,
-                notes: e.detail.notes,
-                growspace_id: effectiveDeviceData?.deviceId,
-                plant_ids: payload?.selectedPlantIds,
-            });
-            this._handleDataChanged();
+        @submit-ipm=${async (e) => {
+            try {
+                await this.store?.actions.ipm.apply({
+                    preset_id: e.detail.preset_id,
+                    growspace_id: e.detail.growspace_id,
+                    plant_ids: e.detail.plant_ids,
+                    notes: e.detail.notes,
+                });
+                await this._handleDataChanged();
+            }
+            catch (e) {
+                console.error('[DialogHost] IPM failed:', e);
+            }
         }}
       ></growspace-ipm-dialog-ui>
     `;
@@ -32868,8 +30878,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .inventory=${nutrientInventory}
         @close=${() => this._closeDialogIfActive('NUTRIENT_INVENTORY')}
-        @update-stock=${(e) => this.store?.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-        @add-stock=${(e) => this.store?.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+        @update-stock=${(e) => this.store?.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+        @add-stock=${(e) => this.store?.actions.library.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
         @data-changed=${() => this._handleDataChanged()}
       ></growspace-nutrient-inventory-dialog-ui>
     `;
@@ -32888,13 +30898,12 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @take-clone-submit=${async (e) => {
             const { numClones, targetGrowspaceId } = e.detail;
             try {
-                await this.store?.handleTakeClone(dialogState.sourcePlant, numClones, targetGrowspaceId);
+                await this.store?.actions.plant.takeClone(dialogState.sourcePlant, numClones, targetGrowspaceId);
                 await this._handleDataChanged();
-                this.store?.showToast(`Taking ${numClones} clone${numClones > 1 ? 's' : ''}...`, 'success');
             }
             catch (e) {
-                console.error('[DialogHost] Transplant failed:', e);
-                this.store?.showToast(`Error: ${e.message || e}`, 'error');
+                console.error('[DialogHost] Take clone failed:', e);
+                this.store?.actions.ui.showToast(`Error: ${e.message || e}`, 'error');
             }
         }}
         @close=${() => this._closeDialogIfActive('TAKE_CLONE')}
@@ -32923,6 +30932,29 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @close=${() => this._closeDialogIfActive('PRINT_LABEL')}
         @data-changed=${() => this._handleDataChanged()}
       ></print-label-dialog>
+    `;
+    }
+    _renderBatchPrintLabelsDialog(active) {
+        if (active.type !== 'BATCH_PRINT_LABELS')
+            return x ``;
+        return x `
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        @close=${() => this._closeDialogIfActive('BATCH_PRINT_LABELS')}
+      ></batch-print-label-dialog>
+    `;
+    }
+    _renderBatchCloneDialog(active, growspaceOptions) {
+        if (active.type !== 'BATCH_CLONE')
+            return x ``;
+        return x `
+      <batch-clone-dialog
+        .open=${true}
+        .dialogState=${active.payload}
+        .growspaceOptions=${growspaceOptions}
+        @close=${() => this._closeDialogIfActive('BATCH_CLONE')}
+      ></batch-clone-dialog>
     `;
     }
     _renderHarvestScoringDialog(active) {
@@ -32971,26 +31003,24 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       <growspace-environment-config-dialog
         .open=${true}
         .deviceId=${active.payload?.deviceId}
-        @close=${() => this.store?.ui.closeDialog()}
+        @close=${() => this.store?.actions.ui.closeDialog()}
         @save-config=${(e) => this._handleEnvironmentConfigSubmit(e)}
       ></growspace-environment-config-dialog>
     `;
     }
     async _handleEnvironmentConfigSubmit(e) {
         try {
-            await this.store?.dataService.configureEnvironment(e.detail);
-            this.store?.showToast('Environment configured!', 'success');
-            this.store?.ui.closeDialog();
-            await this.store?.refreshData();
+            await this.store?.actions.environment.configure(e.detail);
+            this.store?.actions.ui.closeDialog();
         }
         catch (err) {
-            this.store?.showToast(`Failed to configure environment: ${err.message}`, 'error');
+            console.error('[DialogHost] configureEnvironment failed:', err);
         }
     }
     _handleDataChanged() {
         if (this._dataChangeTimeout)
             clearTimeout(this._dataChangeTimeout);
-        this._dataChangeTimeout = window.setTimeout(() => this.store?.refreshData(), 500);
+        this._dataChangeTimeout = window.setTimeout(() => this.store?.actions.ui.refreshData(), 500);
     }
 };
 __decorate([
@@ -33162,10 +31192,24 @@ let EditModeBanner = class EditModeBanner extends i$3 {
             </button>
             <button
               class="icon-button"
+              @click=${() => this._dispatch('clone-selected')}
+              title="Clone Selected"
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+            </button>
+            <button
+              class="icon-button"
               @click=${() => this._dispatch('batch-add-plants')}
               title="Batch Add Plants"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPlusBoxMultiple}"></path></svg>
+            </button>
+            <button
+              class="icon-button"
+              @click=${() => this._dispatch('print-labels-selected')}
+              title="Print Labels"
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiPrinter}"></path></svg>
             </button>
             <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
             <button
@@ -43496,7 +41540,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             }
             case 'training': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this.device?.deviceId || undefined);
+                this.store.actions.ui.openTrainingDialog(selectedPlants.size > 0 ? Array.from(selectedPlants) : [], this.device?.deviceId || undefined);
                 break;
             }
             case 'nutrients':
@@ -43508,9 +41552,14 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             case 'report':
                 this.store.openGrowReportDialog(this.device?.deviceId || undefined);
                 break;
-            case 'edit':
-                this.store.ui.setEditMode(!this.store.ui.$isEditMode.get());
+            case 'edit': {
+                const newEditMode = !this.store.ui.$isEditMode.get();
+                this.store.ui.setEditMode(newEditMode);
+                if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
+                    this.store.ui.setViewMode(ViewMode.STANDARD);
+                }
                 break;
+            }
             case 'heatmap': {
                 const currentMode = this.store.ui.$viewMode.get();
                 this.store.ui.setViewMode(currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP);
@@ -43738,6 +41787,129 @@ __decorate([
 GrowspaceToastContainer = __decorate([
     t$2('growspace-toast')
 ], GrowspaceToastContainer);
+
+class PlantClickEvent extends CustomEvent {
+    constructor(plant) {
+        super(PlantClickEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantClickEvent.TYPE = 'plant-click';
+class AddPlantClickEvent extends CustomEvent {
+    constructor(row, col) {
+        super(AddPlantClickEvent.TYPE, {
+            detail: { row, col },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+AddPlantClickEvent.TYPE = 'add-plant-click';
+class UpdatePlantEvent extends CustomEvent {
+    constructor(updates) {
+        super(UpdatePlantEvent.TYPE, {
+            detail: updates,
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+UpdatePlantEvent.TYPE = 'update-plant';
+class DeletePlantEvent extends CustomEvent {
+    constructor(plantId) {
+        super(DeletePlantEvent.TYPE, {
+            detail: { plantId },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+DeletePlantEvent.TYPE = 'delete-plant';
+class HarvestPlantEvent extends CustomEvent {
+    constructor(plant) {
+        super(HarvestPlantEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+HarvestPlantEvent.TYPE = 'harvest-plant';
+class FinishDryingEvent extends CustomEvent {
+    constructor(plant) {
+        super(FinishDryingEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+FinishDryingEvent.TYPE = 'finish-drying';
+class TakeCloneEvent extends CustomEvent {
+    constructor(plant, numClones) {
+        super(TakeCloneEvent.TYPE, {
+            detail: { plant, numClones },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+TakeCloneEvent.TYPE = 'take-clone';
+class MoveCloneEvent extends CustomEvent {
+    constructor(plant, targetGrowspace) {
+        super(MoveCloneEvent.TYPE, {
+            detail: { plant, targetGrowspace },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+MoveCloneEvent.TYPE = 'move-clone';
+class PrintLabelEvent extends CustomEvent {
+    constructor(plant) {
+        super(PrintLabelEvent.TYPE, {
+            detail: { plant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PrintLabelEvent.TYPE = 'print-label';
+
+class PlantDropEvent extends CustomEvent {
+    constructor(originalEvent, targetRow, targetCol, targetPlant, sourcePlant) {
+        super(PlantDropEvent.TYPE, {
+            detail: { originalEvent, targetRow, targetCol, targetPlant, sourcePlant },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+PlantDropEvent.TYPE = 'plant-drop';
+class SelectionChangedEvent extends CustomEvent {
+    constructor(selectedPlants) {
+        super(SelectionChangedEvent.TYPE, {
+            detail: { selectedPlants },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+SelectionChangedEvent.TYPE = 'selection-changed';
+
+class LibraryExportReadyEvent extends CustomEvent {
+    constructor(url) {
+        super(LibraryExportReadyEvent.TYPE, {
+            detail: { url },
+            bubbles: true,
+            composed: true,
+        });
+    }
+}
+LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
 /**
  * Growspace Grid ViewModel
@@ -47305,14 +45477,14 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
                 col: detail.target_col,
                 veg_start: today,
             });
-            this.store.ui.showToast('Plant transplanted successfully', 'success');
+            this.store.actions.ui.toast('Plant transplanted successfully', 'success');
             // Refresh data after a small delay
             await new Promise((resolve) => setTimeout(resolve, 500));
             await this.store.refreshData();
         }
         catch (error) {
             console.error('[GrowspaceViewStandard] Transplant failed:', error);
-            this.store.ui.showToast('Failed to transplant plant', 'error');
+            this.store.actions.ui.toast('Failed to transplant plant', 'error');
         }
     }
     focusPlant(index) {
@@ -105180,6 +103352,260 @@ class GrowspaceGridStore {
     }
 }
 
+async function fetchStrainLibrary(ctx, force = false) {
+    // Requires hass to be present in store (usually via dataService or just check store)
+    // The original code checks this.hass.
+    // We assume dataService has valid connection or we check it.
+    // Original code checked `if (!this.hass) return;`
+    // We can check if dataService is initialized or catch errors.
+    const CACHE_KEY = 'growspace_strain_library_v2';
+    const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    let usedCache = false;
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
+                ctx.data.setStrainLibrary(cache.data);
+                usedCache = true;
+            }
+        }
+        catch (e) {
+            console.warn('Failed to parse cached strain library', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    if (!usedCache) {
+        try {
+            const currentStrains = await ctx.dataService.fetchStrainLibrary();
+            if (Array.isArray(currentStrains)) {
+                ctx.data.setStrainLibrary(currentStrains);
+                const cacheData = {
+                    version: 2,
+                    timestamp: Date.now(),
+                    data: currentStrains,
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            }
+        }
+        catch (e) {
+            console.error('Failed to fetch strain library:', e);
+        }
+    }
+}
+async function fetchNutrientPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
+                ctx.data.setNutrientPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached nutrient presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchNutrientPresets();
+        if (result) {
+            ctx.data.setNutrientPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient presets:', e);
+    }
+}
+async function fetchIPMPresets(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ipm_presets';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
+                ctx.data.setIPMPresets(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached IPM presets', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchIPMPresets();
+        if (result) {
+            ctx.data.setIPMPresets(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch IPM presets:', e);
+    }
+}
+async function fetchNutrientInventory(ctx, force = false) {
+    const CACHE_KEY = 'growspace_nutrient_inventory';
+    const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                ctx.data.setNutrientInventory(cache.data);
+                return;
+            }
+        }
+        catch (_) {
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    try {
+        const result = await ctx.dataService.fetchNutrientInventory();
+        if (result) {
+            ctx.data.setNutrientInventory(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch nutrient inventory:', e);
+    }
+}
+async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
+    try {
+        await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast(`Updated stock: ${name}`, 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update stock: ${error}`, 'error');
+    }
+}
+async function removeNutrientStock(ctx, nutrientId) {
+    try {
+        await ctx.dataService.removeNutrientStock(nutrientId);
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('Removed nutrient stock', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
+    }
+}
+async function fetchECRampCurves(ctx, force = false) {
+    const CACHE_KEY = 'growspace_ec_ramp_curves';
+    const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
+    if (!ctx.hass)
+        return;
+    const cachedRaw = localStorage.getItem(CACHE_KEY);
+    if (!force && cachedRaw) {
+        try {
+            const cache = JSON.parse(cachedRaw);
+            const age = Date.now() - (cache.timestamp || 0);
+            if (age < CACHE_VALIDITY_MS) {
+                console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
+                ctx.data.setECRampCurves(cache.data);
+                return;
+            }
+        }
+        catch (e) {
+            console.warn('[LibraryActions] Failed to parse cached EC ramp curves', e);
+            localStorage.removeItem(CACHE_KEY);
+        }
+    }
+    console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
+    try {
+        const result = await ctx.dataService.fetchECRampCurves();
+        if (result) {
+            ctx.data.setECRampCurves(result);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({
+                timestamp: Date.now(),
+                data: result,
+            }));
+        }
+    }
+    catch (e) {
+        console.error('Failed to fetch EC ramp curves:', e);
+    }
+}
+async function saveECRampCurve(ctx, data) {
+    try {
+        await ctx.dataService.saveECRampCurve(data);
+        await fetchECRampCurves(ctx, true);
+        ctx.showToast(`Saved EC ramp: ${data.name}`, 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to save EC ramp: ${error}`, 'error');
+    }
+}
+async function removeECRampCurve(ctx, curveId) {
+    try {
+        await ctx.dataService.removeECRampCurve(curveId);
+        await fetchECRampCurves(ctx, true);
+        ctx.showToast('Removed EC ramp curve', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove EC ramp: ${error}`, 'error');
+    }
+}
+async function saveNutrientPreset(ctx, preset) {
+    try {
+        await ctx.dataService.saveNutrientPreset(preset);
+        await fetchNutrientPresets(ctx, true);
+        ctx.showToast(`Saved preset: ${preset.name}`, 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to save preset: ${error}`, 'error');
+        throw e;
+    }
+}
+async function removeNutrientPreset(ctx, presetId) {
+    try {
+        await ctx.dataService.removeNutrientPreset(presetId);
+        await fetchNutrientPresets(ctx, true);
+        ctx.showToast('Removed nutrient preset', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove preset: ${error}`, 'error');
+        throw e;
+    }
+}
+
 /**
  * Plant Actions - Unified business logic for plant operations.
  */
@@ -105304,7 +103730,7 @@ async function handleDeletePlant(ctx, plantId) {
 /**
  * Move plant to next stage (flower→dry, dry→cure, mother→clone).
  */
-async function movePlantToNextStage(ctx, plant) {
+async function movePlantToNextStage(ctx, plant, metrics) {
     const stage = plant.attributes?.stage;
     let targetGrowspace = '';
     const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
@@ -105327,7 +103753,7 @@ async function movePlantToNextStage(ctx, plant) {
     }
     try {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        await ctx.dataService.harvestPlant(plantId, targetGrowspace);
+        await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
         ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -105336,7 +103762,9 @@ async function movePlantToNextStage(ctx, plant) {
         return true;
     }
     catch (err) {
+        const error = err instanceof Error ? err.message : 'Unknown error';
         console.error('Error moving plant to next stage:', err);
+        ctx.showToast(`Failed to move plant: ${error}`, 'error');
         return false;
     }
 }
@@ -105396,11 +103824,13 @@ async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
             target_growspace_id: targetGrowspaceId,
         });
         console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
+        ctx.showToast(`Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`, 'success');
         return true;
     }
     catch (error) {
         const e = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Failed to take clone: ${e}`);
+        ctx.showToast(`Failed to take clone: ${e}`, 'error');
         return false;
     }
 }
@@ -105736,6 +104166,41 @@ async function printLabel(ctx, params) {
         throw e;
     }
 }
+/**
+ * Save harvest yield metrics for a plant.
+ * No-ops if the metrics object has no keys (nothing to persist).
+ */
+async function saveHarvestMetrics(ctx, plantId, metrics) {
+    if (Object.keys(metrics).length === 0)
+        return;
+    try {
+        await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
+        ctx.showToast('Harvest metrics saved', 'success');
+        await ctx.refreshData();
+    }
+    catch (error) {
+        ctx.showToast(`Failed to save harvest metrics: ${error}`, 'error');
+        throw error;
+    }
+}
+/**
+ * Score a plant's phenotype traits.
+ * No-ops if every value in the scores map is null or undefined.
+ */
+async function scorePhenotype(ctx, plantId, scores) {
+    const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
+    if (!hasValue)
+        return;
+    try {
+        await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
+        ctx.showToast('Scores saved', 'success');
+        await ctx.refreshData();
+    }
+    catch (error) {
+        ctx.showToast(`Failed to save scores: ${error}`, 'error');
+        throw error;
+    }
+}
 
 /**
  * Strain & Growspace Actions - Unified CRUD logic.
@@ -105906,70 +104371,490 @@ async function removeGrowspace(ctx, growspaceId) {
     }
 }
 
-class ActionDispatcher {
-    constructor(store) {
-        this.store = store;
-        this.plant = {
-            update: (id, updates) => updatePlant(this.ctx, id, updates),
-            delete: (id) => handleDeletePlant(this.ctx, id),
-            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
-            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
-            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
-            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
-            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
-            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
-                row: r,
-                col: c,
-                strain: s,
-                phenotype: p,
-            }),
-            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
-        };
-        this.growspace = {
-            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
-            update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
-            remove: (id) => removeGrowspace(this.ctx, id),
-            removeEnvironment: (id) => this.ctx.dataService.removeEnvironment(id),
-            resetWaterTracking: (id) => this.ctx.dataService.resetWaterTracking(id),
-        };
-        this.strain = {
-            add: (data) => addStrain(this.ctx, data),
-            update: (data) => updateStrain(this.ctx, data),
-            remove: (key) => removeStrain(this.ctx, key),
-        };
-        this.history = {
-            undo: () => this.store.undo(),
-            redo: () => this.store.redo(),
-            canUndo: () => this.store.canUndo,
-            canRedo: () => this.store.canRedo,
-        };
-        this.ui = {
-            /** Toggle plant selection state */
-            togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
-            /** Handle plant card click (opens overview dialog) */
-            handlePlantClick: (plant) => handlePlantClick(this.ctx, plant),
-            /** Open add plant dialog at specific position */
-            openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
-            /** Select all plants in current growspace */
-            selectAllPlants: () => selectAllPlants(this.ctx),
-        };
+function setIsCompactView(ctx, value) {
+    if (value) {
+        ctx.ui.setViewMode(ViewMode.COMPACT);
     }
-    get ctx() {
-        return this.store.context;
+    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+}
+function showToast(ctx, message, type = 'info') {
+    ctx.showToast(message, type);
+}
+function setActiveDialog(ctx, dialog) {
+    ctx.ui.setActiveDialog(dialog);
+}
+function closeDialog(ctx) {
+    ctx.ui.closeDialog();
+}
+function toggleHeaderExpansion(ctx) {
+    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+    else {
+        ctx.ui.setViewMode(ViewMode.HEADER);
+    }
+}
+function togglePlantSelection(ctx, plantOrId) {
+    const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
+    if (!plantId)
+        return;
+    ctx.ui.togglePlantSelection(plantId);
+}
+function selectAllPlants(ctx) {
+    const selectedDevice = ctx.data.$selectedDevice.get();
+    if (!selectedDevice)
+        return;
+    const devices = ctx.data.$devices.get();
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
+    const allIds = [];
+    if (selectedDeviceData && selectedDeviceData.plants) {
+        selectedDeviceData.plants.forEach((plant) => {
+            const pId = plant.attributes.plant_id;
+            if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
+                allIds.push(pId);
+            }
+        });
+        ctx.ui.selectAllPlants(allIds);
+    }
+}
+function clearPlantSelection(ctx) {
+    ctx.ui.clearPlantSelection();
+}
+function exitEditMode(ctx) {
+    ctx.ui.setEditMode(false);
+    ctx.ui.clearPlantSelection();
+}
+function handlePlantClick(ctx, plant) {
+    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
+        const plantId = plant.attributes.plant_id;
+        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
+            togglePlantSelection(ctx, plantId);
+        }
+        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
+    }
+    else {
+        openPlantOverviewDialog(ctx, plant);
+    }
+}
+function openPlantOverviewDialog(ctx, plant, selectedIds) {
+    ctx.ui.setActiveDialog({
+        type: 'PLANT_OVERVIEW',
+        payload: {
+            plant,
+            editedAttributes: { ...plant.attributes },
+            activeTab: 'dashboard',
+            selectedPlantIds: selectedIds,
+        },
+    });
+}
+function handleDeepLink(ctx, plantId) {
+    // 1. Wait for data to be ready if needed - for now we check devices
+    const devices = ctx.data.$devices.get();
+    if (!devices || devices.length === 0) {
+        console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
+        ctx.ui.setPendingDeepLink(plantId);
+        return;
+    }
+    // 2. Find the plant across all devices
+    let foundPlant;
+    for (const device of devices) {
+        if (!device.plants)
+            continue;
+        foundPlant = device.plants.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId);
+        if (foundPlant)
+            break;
+    }
+    if (foundPlant) {
+        console.log('[DeepLink] Plant found, opening dialog:', plantId);
+        openPlantOverviewDialog(ctx, foundPlant);
+        // 3. Clear pending state
+        ctx.ui.setPendingDeepLink(null);
+        // 4. Cleanup URL to prevent re-opening on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('plantId');
+        window.history.replaceState({}, '', url.toString());
+    }
+    else {
+        // Not found - could be stale or restricted access
+        console.warn(`[DeepLink] Plant ${plantId} not found in current devices.`);
+        // Still clear pending state to avoid infinite retries if the ID is just wrong
+        ctx.ui.setPendingDeepLink(null);
+    }
+}
+function openBatchPrintLabelsDialog(ctx) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0)
+        return;
+    ctx.ui.setActiveDialog({
+        type: 'BATCH_PRINT_LABELS',
+        payload: { plantIds: selectedIds },
+    });
+}
+function openBatchCloneDialog(ctx) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0)
+        return;
+    ctx.ui.setActiveDialog({
+        type: 'BATCH_CLONE',
+        payload: { plantIds: selectedIds },
+    });
+}
+function openBatchWateringDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            mode: 'plant',
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openBatchTrainingDialog(ctx, growspaceId) {
+    const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+    if (selectedIds.length === 0 && !growspaceId)
+        return;
+    let targetGrowspaceId = growspaceId;
+    if (!targetGrowspaceId && selectedIds.length > 0) {
+        targetGrowspaceId = getCommonGrowspaceId(ctx, selectedIds);
+    }
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds: selectedIds,
+            growspaceId: targetGrowspaceId,
+        },
+    });
+}
+function openAddPlantDialog(ctx, row, col) {
+    if (row !== undefined && col !== undefined) {
+        fetchStrainLibrary(ctx);
+        ctx.ui.setActiveDialog({
+            type: 'ADD_PLANT',
+            payload: { row, col },
+        });
+        return;
+    }
+    const selectedDeviceId = ctx.data.$selectedDevice.get();
+    if (!selectedDeviceId) {
+        return;
+    }
+    const devices = ctx.data.$devices.get();
+    const device = devices.find((d) => d.deviceId === selectedDeviceId);
+    let targetRow = 0;
+    let targetCol = 0;
+    if (device) {
+        const occupied = new Set();
+        const deleted = ctx.data.$optimisticDeletedPlantIds.get();
+        device.plants.forEach((p) => {
+            const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+            if (deleted.has(pId))
+                return;
+            const r = (p.attributes.row !== undefined ? p.attributes.row : 1) - 1;
+            const c = (p.attributes.col !== undefined ? p.attributes.col : 1) - 1;
+            occupied.add(`${r},${c}`);
+        });
+        let found = false;
+        const rows = device.rows || 4;
+        const cols = device.plantsPerRow || 4;
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (!occupied.has(`${r},${c}`)) {
+                    targetRow = r;
+                    targetCol = c;
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+                break;
+        }
+    }
+    fetchStrainLibrary(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'ADD_PLANT',
+        payload: { row: targetRow, col: targetCol },
+    });
+}
+function openStrainRecommendationDialog(ctx) {
+    ctx.ui.setActiveDialog({
+        type: 'STRAIN_RECOMMENDATION',
+        payload: { isLoading: false, response: null },
+    });
+}
+function openNutrientPresetsDialog(ctx) {
+    fetchNutrientPresets(ctx);
+    ctx.ui.setActiveDialog({
+        type: 'NUTRIENT_PRESETS',
+        payload: {},
+    });
+}
+function openIPMDialog(ctx, context) {
+    fetchIPMPresets(ctx);
+    const growspaceId = context?.growspaceId ||
+        (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
+    ctx.ui.setActiveDialog({
+        type: 'IPM',
+        payload: {
+            growspaceId,
+            plantIds: context?.plantIds,
+        },
+    });
+}
+function openLogbookDialog(ctx) {
+    const growspaceId = ctx.data.$selectedDevice.get();
+    if (growspaceId) {
+        ctx.ui.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: { growspaceId },
+        });
+    }
+}
+async function exportStrainLibrary(ctx) {
+    try {
+        const library = await ctx.dataService.fetchStrainLibrary();
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(library));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', dataStr);
+        downloadAnchorNode.setAttribute('download', 'strain_library_export.json');
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+    catch (e) {
+        console.error(e);
+        ctx.showToast('Failed to export library', 'error');
+    }
+}
+/** HELPER: Get common growspace ID for multiple plants */
+function getCommonGrowspaceId(ctx, plantIds) {
+    const plantToDevice = ctx.data.$plantToDeviceMap.get();
+    let commonGrowspaceId;
+    for (const plantId of plantIds) {
+        const plantGrowspaceId = plantToDevice.get(plantId);
+        if (!plantGrowspaceId)
+            continue;
+        if (commonGrowspaceId === undefined) {
+            commonGrowspaceId = plantGrowspaceId;
+        }
+        else if (commonGrowspaceId !== plantGrowspaceId) {
+            return undefined; // Mixed growspaces
+        }
+    }
+    return commonGrowspaceId;
+}
+// ===== Standardized Dialog Opening Functions =====
+function openConfigDialog(ctx, device) {
+    ctx.ui.setActiveDialog({
+        type: 'CONFIG',
+        payload: {
+            currentTab: ConfigTab.ENVIRONMENT,
+            environmentData: {
+                selectedGrowspaceId: device?.deviceId || '',
+                temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
+                humiditySensor: device?.environmentAttributes?.humiditySensor || '',
+                vpdSensor: device?.environmentAttributes?.vpdSensor || '',
+                co2Sensor: device?.environmentAttributes?.co2Sensor || '',
+                circulationFanEntity: device?.environmentAttributes?.circulationFanEntity || '',
+                circulationFanEntities: device?.environmentAttributes?.circulationFanEntities || [],
+                stressThreshold: 0.8,
+                moldThreshold: 0.8,
+                lightSensor: device?.environmentAttributes?.lightSensor || '',
+                lightSensors: device?.environmentAttributes?.lightSensors || [],
+                exhaustEntity: device?.environmentAttributes?.exhaustEntity || '',
+                exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
+                humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
+                humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
+                dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
+                dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
+                soilMoistureSensor: device?.environmentAttributes?.soilMoistureSensor || '',
+                dehumidifierControlEnabled: device?.environmentAttributes?.dehumidifierControlEnabled || false,
+                sensorGroups: device?.environmentAttributes?.sensorGroups || [],
+                sensorCoordinates: device?.environmentAttributes?.sensorCoordinates || {},
+                irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
+                cameraEntities: device?.environmentAttributes?.cameraEntities || [],
+                visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+            },
+        },
+    });
+}
+function openStrainLibraryDialog(ctx, initialTab) {
+    ctx.ui.setActiveDialog({
+        type: 'STRAIN_LIBRARY',
+        payload: { initialTab },
+    });
+}
+function openIrrigationDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+}
+function openGrowMasterDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_MASTER',
+        payload: {
+            growspaceId,
+            isLoading: false,
+            response: '',
+            mode: 'single',
+        },
+    });
+}
+function openWateringDialog(ctx, options) {
+    ctx.ui.setActiveDialog({
+        type: 'WATERING',
+        payload: {
+            plantIds: options.plantIds,
+            growspaceId: options.growspaceId,
+            mode: options.mode || (options.plantIds?.length ? 'plant' : 'growspace'),
+        },
+    });
+}
+function openTrainingDialog(ctx, plantIds, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'TRAINING',
+        payload: {
+            isOpen: true,
+            plantIds,
+            growspaceId,
+        },
+    });
+}
+function openNutrientsDialog(ctx) {
+    ctx.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+}
+function openSnapshotsDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'SNAPSHOTS',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openCropSteeringDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'CROP_STEERING',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+function openECRampDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'EC_RAMP_EDITOR',
+        payload: {
+            growspaceId,
+        },
+    });
+}
+function openGrowReportDialog(ctx, growspaceId) {
+    ctx.ui.setActiveDialog({
+        type: 'GROW_REPORT',
+        payload: {
+            growspaceId: growspaceId || '',
+        },
+    });
+}
+
+/**
+ * Snapshot & Vision Actions
+ *
+ * Write actions (capture, trigger, updateConfig) follow the standard
+ * wrap-and-toast pattern.
+ *
+ * Read-only fetchers (getSnapshots, getVisionHistory) propagate errors
+ * but do NOT toast on success — the caller (dialog) owns that UX decision.
+ */
+/**
+ * Fetch the snapshot list for a growspace (read-only, no toast).
+ */
+async function getSnapshots(ctx, growspaceId) {
+    return ctx.dataService.getSnapshots(growspaceId);
+}
+/**
+ * Capture a new snapshot for a growspace.
+ */
+async function captureSnapshot(ctx, growspaceId) {
+    try {
+        await ctx.dataService.captureSnapshot(growspaceId);
+        ctx.showToast('Snapshot captured', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to capture snapshot: ${error}`, 'error');
+        throw e;
+    }
+}
+/**
+ * Fetch the vision AI history for a growspace (read-only, no toast).
+ */
+async function getVisionHistory(ctx, growspaceId) {
+    return ctx.dataService.getVisionHistory(growspaceId);
+}
+/**
+ * Trigger a vision checkup for a growspace.
+ */
+async function triggerVisionCheckup(ctx, growspaceId) {
+    try {
+        await ctx.dataService.triggerVisionCheckup(growspaceId);
+        ctx.showToast('Vision checkup triggered', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to trigger checkup: ${error}`, 'error');
+        throw e;
+    }
+}
+/**
+ * Update the vision checkup configuration for a growspace.
+ */
+async function updateVisionCheckupConfig(ctx, growspaceId, config) {
+    try {
+        await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
+        ctx.showToast('Vision config saved', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to save vision config: ${error}`, 'error');
+        throw e;
     }
 }
 
-function initializeSelectedDevice(ctx, config) {
-    ctx.data.setConfig(config);
-    // Set view mode from config
-    if (config?.initial_view_mode) {
-        ctx.ui.setViewMode(config.initial_view_mode);
-    }
-    // Trigger update logic via sync service
-    ctx.syncService.updateDevicesState();
+/**
+ * Grow Report Actions
+ *
+ * fetch is read-only (propagates errors, no toast).
+ * export is a write action (toasts on success/error).
+ */
+/**
+ * Fetch the grow report data for a growspace (read-only, no toast).
+ */
+async function fetchGrowReport(ctx, growspaceId) {
+    return ctx.dataService.fetchGrowReport(growspaceId);
 }
-function handleDeviceChange(ctx, deviceId) {
-    ctx.data.setSelectedDevice(deviceId);
+/**
+ * Export the grow report in a given format.
+ */
+async function exportGrowReport(ctx, growspaceId, format) {
+    try {
+        await ctx.dataService.exportGrowReport(growspaceId, format);
+        ctx.showToast('Grow report exported', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to export report: ${error}`, 'error');
+        throw e;
+    }
 }
 
 async function analyzeGrowspace(ctx, query, all) {
@@ -106012,6 +104897,7 @@ async function analyzeGrowspace(ctx, query, all) {
                 payload: { ...d.payload, isLoading: false, response: text },
             });
         }
+        return text;
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
@@ -106054,6 +104940,358 @@ async function getStrainRecommendation(ctx, userQuery) {
         ? response.response
         : response;
     return typeof text === 'string' ? text : JSON.stringify(text);
+}
+
+/**
+ * Environment Actions
+ *
+ * Write-side operations for configuring, removing, and resetting growspace
+ * environment sensors. All follow the standard wrap-and-toast pattern.
+ */
+/** Configure the sensor layout for a growspace */
+async function configureEnvironment(ctx, data) {
+    try {
+        await ctx.dataService.configureEnvironment(data);
+        ctx.showToast('Environment configured successfully!', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Error: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Remove a growspace environment configuration */
+async function removeEnvironment(ctx, growspaceId) {
+    try {
+        await ctx.dataService.removeEnvironment(growspaceId);
+        ctx.showToast('Environment configuration removed', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to remove environment: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Reset watering-tracking data for a growspace */
+async function resetWaterTracking(ctx, growspaceId) {
+    try {
+        await ctx.dataService.resetWaterTracking(growspaceId);
+        ctx.showToast('Water tracking reset', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to reset water tracking: ${error}`, 'error');
+        throw e;
+    }
+}
+
+/**
+ * Breeder Actions
+ *
+ * Write-side operations for managing breeder entities via strainAPI.
+ * All follow the standard wrap-and-toast pattern.
+ *
+ * Note: These wrap `strainAPI` sub-object methods because `DataService`
+ * does not expose `updateBreeder`/`deleteBreeder` as top-level properties.
+ */
+/** Update an existing breeder's name and optional logo */
+async function updateBreeder(ctx, oldName, newName, logo) {
+    try {
+        await ctx.dataService.strainAPI.updateBreeder(oldName, newName, logo);
+        ctx.showToast('Breeder updated successfully!', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        ctx.showToast('Failed to update breeder', 'error');
+        throw e;
+    }
+}
+/** Delete a breeder by name */
+async function deleteBreeder(ctx, name) {
+    try {
+        await ctx.dataService.strainAPI.deleteBreeder(name);
+        ctx.showToast('Breeder deleted successfully!', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        ctx.showToast('Failed to delete breeder', 'error');
+        throw e;
+    }
+}
+
+/**
+ * Genetics Actions (Seed Batch + Pollination)
+ *
+ * Write-side operations for managing seed batches and pollination events.
+ * All follow the standard wrap-and-toast pattern.
+ */
+/** Add a new seed batch to the genetics library */
+async function addSeedBatch(ctx, data) {
+    try {
+        await ctx.dataService.addSeedBatch(data);
+        ctx.showToast('Seed batch added', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to add seed batch: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Update an existing seed batch */
+async function updateSeedBatch(ctx, data) {
+    try {
+        await ctx.dataService.updateSeedBatch(data);
+        ctx.showToast('Seed batch updated', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update seed batch: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Log a new pollination event */
+async function logPollination(ctx, data) {
+    try {
+        await ctx.dataService.logPollination(data);
+        ctx.showToast('Pollination event logged', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to log pollination: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Update an existing pollination event */
+async function updatePollination(ctx, data) {
+    try {
+        await ctx.dataService.updatePollination(data);
+        ctx.showToast('Pollination event updated', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update pollination: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Delete a pollination event by ID */
+async function deletePollination(ctx, eventId) {
+    try {
+        await ctx.dataService.deletePollination(eventId);
+        ctx.showToast('Pollination event deleted', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to delete pollination: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Harvest seeds from a pollination event */
+async function harvestSeeds(ctx, data) {
+    try {
+        await ctx.dataService.harvestSeeds(data);
+        ctx.showToast('Seeds harvested', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to harvest seeds: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Fetch genetics data (seed batches and pollination events) */
+async function fetchGeneticsData(ctx) {
+    try {
+        return await ctx.dataService.fetchGeneticsData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to fetch genetics data: ${error}`, 'error');
+        throw e;
+    }
+}
+
+/**
+ * IPM Actions - Unified business logic for Integrated Pest Management operations.
+ */
+/**
+ * Apply IPM treatment and refresh inventory if needed.
+ */
+async function applyIPM(ctx, detail) {
+    try {
+        await ctx.dataService.applyIPM(detail);
+        // Refresh nutrient inventory as IPM products often deduct from stock
+        await fetchNutrientInventory(ctx, true);
+        ctx.showToast('IPM treatment applied successfully', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Failed to apply IPM:', e);
+        ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
+        throw e;
+    }
+}
+
+class ActionDispatcher {
+    constructor(store) {
+        this.store = store;
+        this.plant = {
+            update: (id, updates) => updatePlant(this.ctx, id, updates),
+            delete: (id) => handleDeletePlant(this.ctx, id),
+            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
+            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
+            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
+            harvest: (plant, metrics) => movePlantToNextStage(this.ctx, plant, metrics),
+            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
+            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
+            finishDrying: (plant) => movePlantToNextStage(this.ctx, plant),
+            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
+                row: r,
+                col: c,
+                strain: s,
+                phenotype: p,
+            }),
+            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
+            saveHarvestMetrics: (plantId, metrics) => saveHarvestMetrics(this.ctx, plantId, metrics),
+            scorePhenotype: (plantId, scores) => scorePhenotype(this.ctx, plantId, scores),
+            printLabel: (params) => printLabel(this.ctx, params),
+        };
+        this.growspace = {
+            add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
+            update: (detail) => updateGrowspace(this.ctx, detail.growspaceId, detail.name, detail.rows, detail.plantsPerRow),
+            remove: (id) => removeGrowspace(this.ctx, id),
+            removeEnvironment: (id) => this.ctx.dataService.removeEnvironment(id),
+            resetWaterTracking: (id) => this.ctx.dataService.resetWaterTracking(id),
+        };
+        this.strain = {
+            add: (data) => addStrain(this.ctx, data),
+            update: (data) => updateStrain(this.ctx, data),
+            remove: (key) => removeStrain(this.ctx, key),
+        };
+        this.history = {
+            undo: () => this.store.undo(),
+            redo: () => this.store.redo(),
+            canUndo: () => this.store.canUndo,
+            canRedo: () => this.store.canRedo,
+        };
+        this.ui = {
+            /** Toggle plant selection state */
+            togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
+            /** Handle plant card click (opens overview dialog) */
+            handlePlantClick: (plant) => handlePlantClick(this.ctx, plant),
+            /** Open add plant dialog at specific position */
+            openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
+            /** Select all plants in current growspace */
+            selectAllPlants: () => selectAllPlants(this.ctx),
+            /** Open strain recommendation dialog */
+            openStrainRecommendationDialog: () => openStrainRecommendationDialog(this.ctx),
+            /** Export strain library as JSON */
+            exportStrainLibrary: () => exportStrainLibrary(this.ctx),
+            showToast: (message, type = 'info') => showToast(this.ctx, message, type),
+            /** Refresh all data */
+            refreshData: () => this.store.refreshData(),
+            /** Set the active dialog */
+            setActiveDialog: (dialog) => setActiveDialog(this.ctx, dialog),
+            /** Close the current dialog */
+            closeDialog: () => closeDialog(this.ctx),
+            toast: (message, type = 'info') => showToast(this.ctx, message, type),
+            openNutrientPresetsDialog: () => openNutrientPresetsDialog(this.ctx),
+            openIPMDialog: (context) => openIPMDialog(this.ctx, context),
+            openLogbookDialog: () => openLogbookDialog(this.ctx),
+            openConfigDialog: (device) => openConfigDialog(this.ctx, device),
+            openStrainLibraryDialog: () => openStrainLibraryDialog(this.ctx),
+            openIrrigationDialog: () => openIrrigationDialog(this.ctx),
+            openGrowMasterDialog: (growspaceId) => openGrowMasterDialog(this.ctx, growspaceId),
+            openWateringDialog: (options) => openWateringDialog(this.ctx, options),
+            openTrainingDialog: (plantIds, growspaceId) => openTrainingDialog(this.ctx, plantIds, growspaceId),
+            openNutrientsDialog: () => openNutrientsDialog(this.ctx),
+            openSnapshotsDialog: (growspaceId) => openSnapshotsDialog(this.ctx, growspaceId),
+            openCropSteeringDialog: (growspaceId) => openCropSteeringDialog(this.ctx, growspaceId),
+            openECRampDialog: (growspaceId) => openECRampDialog(this.ctx, growspaceId),
+            openGrowReportDialog: (growspaceId) => openGrowReportDialog(this.ctx, growspaceId),
+        };
+        this.library = {
+            fetchStrains: (force = false) => fetchStrainLibrary(this.ctx, force),
+            fetchNutrientPresets: (force = false) => fetchNutrientPresets(this.ctx, force),
+            fetchIPMPresets: (force = false) => fetchIPMPresets(this.ctx, force),
+            fetchNutrientInventory: (force = false) => fetchNutrientInventory(this.ctx, force),
+            updateNutrientStock: (id, name, currentMl, initialMl) => updateNutrientStock(this.ctx, id, name, currentMl, initialMl),
+            removeNutrientStock: (id) => removeNutrientStock(this.ctx, id),
+            fetchECRampCurves: (force = false) => fetchECRampCurves(this.ctx, force),
+            saveECRampCurve: (data) => saveECRampCurve(this.ctx, data),
+            removeECRampCurve: (id) => removeECRampCurve(this.ctx, id),
+            import: (file, replace) => this.ctx.dataService.importStrainLibrary(file, replace), // Temporarily calling dataService until library action exists
+        };
+        this.nutrient = {
+            savePreset: (preset) => saveNutrientPreset(this.ctx, preset),
+            removePreset: (id) => removeNutrientPreset(this.ctx, id),
+        };
+        this.snapshots = {
+            list: (growspaceId) => getSnapshots(this.ctx, growspaceId),
+            capture: (growspaceId) => captureSnapshot(this.ctx, growspaceId),
+            visionHistory: (growspaceId) => getVisionHistory(this.ctx, growspaceId),
+            triggerCheckup: (growspaceId) => triggerVisionCheckup(this.ctx, growspaceId),
+            updateCheckupConfig: (growspaceId, config) => updateVisionCheckupConfig(this.ctx, growspaceId, config),
+        };
+        this.report = {
+            fetch: (growspaceId) => fetchGrowReport(this.ctx, growspaceId),
+            export: (growspaceId, format) => exportGrowReport(this.ctx, growspaceId, format),
+        };
+        this.ai = {
+            /** Analyze all growspaces at once */
+            analyzeAll: () => analyzeGrowspace(this.ctx, '', true),
+            /** Ask for advice about the currently selected device */
+            askAdvice: (query) => analyzeGrowspace(this.ctx, query, false),
+            /** Get a strain recommendation */
+            strainRecommendation: (query) => getStrainRecommendation(this.ctx, query),
+        };
+        this.environment = {
+            configure: (data) => configureEnvironment(this.ctx, data),
+            remove: (growspaceId) => removeEnvironment(this.ctx, growspaceId),
+            resetWaterTracking: (growspaceId) => resetWaterTracking(this.ctx, growspaceId),
+            waterPlant: (plantId, amount, nutrients, presetId) => waterPlant(this.ctx, plantId, amount, nutrients, presetId),
+            waterGrowspace: (growspaceId, amount, nutrients, presetId) => waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
+        };
+        this.breeder = {
+            update: (oldName, newName, logo) => updateBreeder(this.ctx, oldName, newName, logo),
+            delete: (name) => deleteBreeder(this.ctx, name),
+        };
+        this.genetics = {
+            addSeedBatch: (data) => addSeedBatch(this.ctx, data),
+            updateSeedBatch: (data) => updateSeedBatch(this.ctx, data),
+            logPollination: (data) => logPollination(this.ctx, data),
+            updatePollination: (data) => updatePollination(this.ctx, data),
+            deletePollination: (eventId) => deletePollination(this.ctx, eventId),
+            fetchData: () => fetchGeneticsData(this.ctx),
+            harvestSeeds: (data) => harvestSeeds(this.ctx, data),
+        };
+        this.ipm = {
+            apply: (detail) => applyIPM(this.ctx, detail),
+        };
+    }
+    get ctx() {
+        return this.store.context;
+    }
+}
+
+function initializeSelectedDevice(ctx, config) {
+    ctx.data.setConfig(config);
+    // Set view mode from config
+    if (config?.initial_view_mode) {
+        ctx.ui.setViewMode(config.initial_view_mode);
+    }
+    // Trigger update logic via sync service
+    ctx.syncService.updateDevicesState();
+}
+function handleDeviceChange(ctx, deviceId) {
+    ctx.data.setSelectedDevice(deviceId);
 }
 
 /**
@@ -106120,27 +105358,6 @@ function handleKeyboardNavigation(ctx, key) {
                 handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
             }
             break;
-    }
-}
-
-/**
- * IPM Actions - Unified business logic for Integrated Pest Management operations.
- */
-/**
- * Apply IPM treatment and refresh inventory if needed.
- */
-async function applyIPM(ctx, detail) {
-    try {
-        await ctx.dataService.applyIPM(detail);
-        // Refresh nutrient inventory as IPM products often deduct from stock
-        await fetchNutrientInventory(ctx, true);
-        ctx.showToast('IPM treatment applied successfully', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to apply IPM:', e);
-        ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
-        throw e;
     }
 }
 
@@ -106909,6 +106126,12 @@ class GrowspaceStore {
         await this.handleMovePlantToNextStage(plant);
     }
     // Removed: getCommonGrowspaceId - now internal to ui-actions
+    openBatchPrintLabelsDialog() {
+        openBatchPrintLabelsDialog(this.context);
+    }
+    openBatchCloneDialog() {
+        openBatchCloneDialog(this.context);
+    }
     openBatchWateringDialog(growspaceId) {
         openBatchWateringDialog(this.context, growspaceId);
     }
@@ -107231,6 +106454,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     _handleBatchAddPlants() {
         this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
     }
+    _handlePrintLabelsSelected() {
+        this.store.openBatchPrintLabelsDialog();
+    }
+    _handleCloneSelected() {
+        this.store.openBatchCloneDialog();
+    }
     render() {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -107276,6 +106505,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             @training-selected=${this._handleTrainingSelected}
             @ipm-selected=${this._handleIPMSelected}
             @batch-add-plants=${this._handleBatchAddPlants}
+            @print-labels-selected=${this._handlePrintLabelsSelected}
+            @clone-selected=${this._handleCloneSelected}
             @delete-selected=${this._handleDeleteSelected}
             @transplant-mode=${this._handleTransplantMode}
             @exit-edit-mode=${this._handleExitEditMode}
@@ -107742,20 +106973,21 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
         this._response = null;
         this._error = null;
         try {
-            let responseData;
+            let responseText;
             if (all) {
-                responseData = await this.store.dataService.analyzeAllGrowspaces();
+                responseText = await this.store.dataService.analyzeAllGrowspaces();
             }
             else {
                 const device = this.selectedDevice;
                 if (!device)
                     throw new Error('No device selected and "Analyze All" was false.');
-                const deviceObj = this._viewController.value.grid.devices.find((d) => d.deviceId === device);
-                if (!deviceObj)
+                const devices = this.store.data.$devices.get();
+                if (!devices.find((d) => d.deviceId === device)) {
                     throw new Error('Selected device not found in devices list.');
-                responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
+                }
+                responseText = await this.store.dataService.askGrowAdvice(device, this._userQuery);
             }
-            this._response = this._extractText(responseData);
+            this._response = this._extractText(responseText);
         }
         catch (e) {
             this._error = e instanceof Error ? e.message : 'Unknown error occurred during analysis.';

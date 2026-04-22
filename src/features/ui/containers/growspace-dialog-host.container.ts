@@ -3,7 +3,6 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
-import { FEATURE_FLAGS } from '../../../features/shared/config/feature-flags';
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../../ui-state';
 import {
@@ -19,7 +18,6 @@ import {
   GrowspaceManagerCardConfig,
 } from '../../../types';
 import type { VisionCheckupConfigEventDetail, StrainLibraryDialogState } from '../../../lib/types/dialog';
-import { openStrainLibraryDialog } from '../../../store/ui/ui-actions';
 
 import './growspace-nutrient-presets-editor.container';
 import '../../../dialogs/add-plant-dialog';
@@ -34,7 +32,6 @@ import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
 import '../../../dialogs/nutrient-dialog';
-import '../../../dialogs/plant-overview-dialog';
 import '../../../dialogs/print-label-dialog';
 import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/batch-clone-dialog';
@@ -398,81 +395,24 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _renderPlantOverviewDialog(
     active: ActiveDialogState,
-    growspaceOptions: Record<string, string>,
+    _growspaceOptions: Record<string, string>,
     _selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'PLANT_OVERVIEW') return html``;
     const dialogState = active.payload;
 
-    // Phase 3: Feature flag to toggle between old and new dialog
-    const useNewDialog = FEATURE_FLAGS.USE_NEW_DIALOGS;
-
-    if (useNewDialog) {
-      // New refactored dialog with ViewModel pattern
-      return html`
-        <plant-overview-container
-          .open=${true}
-          .plant=${dialogState.plant}
-          .editedAttributes=${dialogState.editedAttributes}
-          @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
-          @update-plant=${(e: CustomEvent) =>
-          this.store?.actions.plant.updateFromDialog({
-            plant: dialogState.plant,
-            editedAttributes: e.detail,
-            selectedPlantIds: dialogState.selectedPlantIds,
-            activeTab: dialogState.activeTab || 'dashboard',
-          })}
-          @delete-plant=${(e: CustomEvent) => this.store?.actions.plant.delete(e.detail.plantId)}
-          @harvest-plant=${(e: CustomEvent) => {
-          this.store?.actions.ui.setActiveDialog({
-            type: 'HARVEST_SCORING',
-            payload: { plant: e.detail.plant },
-          });
-        }}
-          @finish-drying=${(e: CustomEvent) => this.store?.actions.plant.finishDrying(e.detail.plant)}
-          @take-clone=${(e: CustomEvent) =>
-          this.store?.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
-          @move-clone=${(e: CustomEvent) =>
-          this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
-          @open-watering=${(e: CustomEvent) =>
-          this.store?.actions.ui.setActiveDialog({
-            type: 'WATERING',
-            payload: e.detail,
-          })}
-          @open-training=${(e: CustomEvent) => {
-          this.store?.actions.ui.openTrainingDialog(e.detail.plantIds, e.detail.growspaceId);
-        }}
-          @open-ipm=${(e: CustomEvent) =>
-          this.store?.actions.ui.setActiveDialog({
-            type: 'IPM',
-            payload: e.detail,
-          })}
-          @open-clone=${(e: CustomEvent) =>
-          this.store?.actions.ui.setActiveDialog({
-            type: 'TAKE_CLONE',
-            payload: e.detail,
-          })}
-          @open-strain-editor=${(e: CustomEvent) => this._handleOpenStrainEditor(e)}
-        ></plant-overview-container>
-      `;
-    }
-
-    // Old dialog implementation
     return html`
-      <plant-overview-dialog
+      <plant-overview-container
         .open=${true}
         .plant=${dialogState.plant}
         .editedAttributes=${dialogState.editedAttributes}
-        .activeTab=${dialogState.activeTab}
-        .selectedPlantIds=${dialogState.selectedPlantIds}
-        .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
         @update-plant=${(e: CustomEvent) =>
         this.store?.actions.plant.updateFromDialog({
           plant: dialogState.plant,
           editedAttributes: e.detail,
           selectedPlantIds: dialogState.selectedPlantIds,
-          activeTab: (active.payload as any).activeTab || 'dashboard',
+          activeTab: dialogState.activeTab || 'dashboard',
         })}
         @delete-plant=${(e: CustomEvent) => this.store?.actions.plant.delete(e.detail.plantId)}
         @harvest-plant=${(e: CustomEvent) => {
@@ -505,20 +445,7 @@ export class GrowspaceDialogHost extends LitElement {
           payload: e.detail,
         })}
         @open-strain-editor=${(e: CustomEvent) => this._handleOpenStrainEditor(e)}
-        @print-label=${(e: CustomEvent<{ plant: PlantEntity }>) => {
-        const { plant } = e.detail;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        this.store?.actions.ui.setActiveDialog({
-          type: 'PRINT_LABEL',
-          payload: {
-            plantId,
-          },
-        });
-      }}
-        @open-log-pollination=${() => {
-        if (this.store) openStrainLibraryDialog(this.store.context, 'seeds');
-      }}
-      ></plant-overview-dialog>
+      ></plant-overview-container>
     `;
   }
 
