@@ -53,9 +53,10 @@ export class LogbookDialog extends LitElement {
       .content-wrapper {
         display: flex;
         flex-direction: column;
-        height: 100%;
-        max-height: 90vh;
+        flex: 1;
+        min-height: 0;
         overflow: hidden;
+        padding: 16px 24px;
       }
 
       .tab-bar {
@@ -98,6 +99,7 @@ export class LogbookDialog extends LitElement {
 
       growspace-logbook {
         flex: 1;
+        min-height: 0;
         overflow: hidden;
       }
 
@@ -150,9 +152,8 @@ export class LogbookDialog extends LitElement {
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
-        </div>
 
-        <div class="content-wrapper">
+          <div class="content-wrapper">
           <!-- Tab Switcher -->
           <div class="tab-bar">
             <button
@@ -213,6 +214,7 @@ export class LogbookDialog extends LitElement {
                     </p>
                   </div>
                 `}
+          </div>
         </div>
       </ha-dialog>
     `;

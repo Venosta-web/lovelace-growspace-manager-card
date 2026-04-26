@@ -5188,6 +5188,13 @@ class GrowspaceAdapter {
             substrateTemperatureSensors: wsData.substrate_temperature_sensors,
             cameraEntities: wsData.camera_entities,
             energySensors: wsData.energy_sensors,
+            // EC / pH / flow sensors (for capability detection)
+            phSensors: wsData.ph_sensors,
+            feedEcSensors: wsData.feed_ec_sensors,
+            substrateEcSensors: wsData.substrate_ec_sensors,
+            runoffEcSensors: wsData.runoff_ec_sensors,
+            drainVolumeSensors: wsData.drain_volume_sensors,
+            irrigationFlowSensors: wsData.irrigation_flow_sensors,
         };
         const stats = {
             maxVegDays: wsData.max_veg_days,
@@ -17458,7 +17465,8 @@ HarvestScoringDialog = __decorate([
     t$2('harvest-scoring-dialog')
 ], HarvestScoringDialog);
 
-let IrrigationDialog = class IrrigationDialog extends i$3 {
+var IrrigationDialog_1;
+let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
@@ -17482,6 +17490,72 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainSaving = false;
         this._drainLogging = false;
     }
+    /**
+     * Compute which tabs should be visible based on the growspace's capabilities.
+     * Pure derivation — no side effects.
+     */
+    get _visibleTabs() {
+        const tabs = ['schedules'];
+        const env = this.device?.environmentAttributes;
+        // Crop Steering (VWC): requires soil moisture sensor or active strategy
+        const hasSoilMoisture = !!(env?.soilMoistureSensor)
+            || (env?.soilMoistureSensors?.length ?? 0) > 0;
+        const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
+        if (hasSoilMoisture || hasStrategy) {
+            tabs.push('steering');
+        }
+        // Configuration: always shown
+        tabs.push('config');
+        // Tanks: only when tanks are configured
+        const hasTanks = (env?.irrigationTanks?.length ?? 0) > 0;
+        if (hasTanks) {
+            tabs.push('tanks');
+        }
+        // Water Analytics: when there's actual usage data
+        const hasWaterUsage = (this.device?.waterUsage?.litersToday ?? 0) > 0;
+        if (hasWaterUsage) {
+            tabs.push('water_analytics');
+        }
+        // Drain EC: when drain monitoring is configured/active OR EC sensors exist
+        const drainEnabled = !!this.device?.drainConfig?.enabled;
+        const hasDrainReadings = (this.device?.drainConfig?.readings?.length ?? 0) > 0;
+        const hasEcSensors = (env?.feedEcSensors?.length ?? 0) > 0 ||
+            (env?.runoffEcSensors?.length ?? 0) > 0 ||
+            (env?.substrateEcSensors?.length ?? 0) > 0 ||
+            (env?.phSensors?.length ?? 0) > 0;
+        if (drainEnabled || hasDrainReadings || hasEcSensors) {
+            tabs.push('drain_ec');
+        }
+        return tabs;
+    }
+    /**
+     * Generate setup hints for features that could be unlocked.
+     * Only shown when the growspace is in a "minimal" configuration.
+     */
+    get _setupHints() {
+        const hints = [];
+        this.device?.environmentAttributes;
+        const visible = this._visibleTabs;
+        if (!visible.includes('steering')) {
+            hints.push({
+                icon: '🌱',
+                text: 'Configure a soil moisture sensor in Environment Settings to enable VWC Crop Steering.',
+            });
+        }
+        if (!visible.includes('tanks')) {
+            hints.push({
+                icon: '🪣',
+                text: 'Add irrigation tanks in Environment Settings to track tank levels and water consumption.',
+            });
+        }
+        if (!visible.includes('drain_ec')) {
+            hints.push({
+                icon: '🧪',
+                text: 'Configure EC/pH sensors or enable drain monitoring to track nutrient runoff.',
+            });
+        }
+        return hints;
+    }
     willUpdate(changedProps) {
         // Only initialize state when dialog first opens, not on subsequent device updates
         // This prevents overwriting optimistic UI updates during active editing
@@ -17490,6 +17564,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService$1(this.hass);
+        }
+        // Tab fallback: if the active tab is no longer visible, reset to 'schedules'
+        if (!this._visibleTabs.includes(this._activeTab)) {
+            this._activeTab = 'schedules';
         }
     }
     _initializeState() {
@@ -18024,42 +18102,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             class="tabs-row"
             style="display: flex; gap: 16px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0;"
           >
-            <div
-              class="tab-item ${this._activeTab === 'schedules' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'schedules')}
-            >
-              Schedules
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'steering' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'steering')}
-            >
-              Crop Steering (VWC)
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'config' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'config')}
-            >
-              Configuration
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'tanks' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'tanks')}
-            >
-              Tanks
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'water_analytics' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'water_analytics')}
-            >
-              Water Analytics
-            </div>
-            <div
-              class="tab-item ${this._activeTab === 'drain_ec' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'drain_ec')}
-            >
-              Drain EC
-            </div>
+            ${this._visibleTabs.map((tab) => x `
+                <div
+                  class="tab-item ${this._activeTab === tab ? 'active' : ''}"
+                  @click=${() => (this._activeTab = tab)}
+                >
+                  ${IrrigationDialog_1._tabLabels[tab]}
+                </div>
+              `)}
           </div>
 
           <div class="dialog-body">
@@ -18074,6 +18124,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                         : this._activeTab === 'drain_ec'
                             ? this._renderDrainECTab()
                             : this._renderConfigSection()}
+
+            ${this._setupHints.length > 0
+            ? x `
+                <div class="setup-hints">
+                  ${this._setupHints.map((hint) => x `
+                      <div class="setup-hint">
+                        <span class="hint-icon">${hint.icon}</span>
+                        <span>${hint.text}</span>
+                      </div>
+                    `)}
+                </div>
+              `
+            : E}
           </div>
 
           <div class="button-group">
@@ -19622,8 +19685,43 @@ IrrigationDialog.styles = [
         display: flex;
         gap: 8px;
       }
+
+      /* Setup Hints */
+      .setup-hints {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        margin-top: 4px;
+      }
+
+      .setup-hint {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.82rem;
+        color: rgba(255, 255, 255, 0.55);
+        line-height: 1.4;
+      }
+
+      .setup-hint .hint-icon {
+        flex-shrink: 0;
+        font-size: 1rem;
+      }
     `,
 ];
+/** All possible tab IDs */
+IrrigationDialog._tabLabels = {
+    schedules: 'Schedules',
+    steering: 'Crop Steering (VWC)',
+    config: 'Configuration',
+    tanks: 'Tanks',
+    water_analytics: 'Water Analytics',
+    drain_ec: 'Drain EC',
+};
 __decorate([
     c$2({ context: hassContext, subscribe: true })
 ], IrrigationDialog.prototype, "hass", void 0);
@@ -19708,7 +19806,7 @@ __decorate([
 __decorate([
     r$2()
 ], IrrigationDialog.prototype, "_drainLogging", void 0);
-IrrigationDialog = __decorate([
+IrrigationDialog = IrrigationDialog_1 = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
 
@@ -20478,9 +20576,8 @@ let LogbookDialog = class LogbookDialog extends i$3 {
               <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
             </button>
           </div>
-        </div>
 
-        <div class="content-wrapper">
+          <div class="content-wrapper">
           <!-- Tab Switcher -->
           <div class="tab-bar">
             <button
@@ -20541,6 +20638,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
                     </p>
                   </div>
                 `}
+          </div>
         </div>
       </ha-dialog>
     `;
@@ -20576,9 +20674,10 @@ LogbookDialog.styles = [
       .content-wrapper {
         display: flex;
         flex-direction: column;
-        height: 100%;
-        max-height: 90vh;
+        flex: 1;
+        min-height: 0;
         overflow: hidden;
+        padding: 16px 24px;
       }
 
       .tab-bar {
@@ -20621,6 +20720,7 @@ LogbookDialog.styles = [
 
       growspace-logbook {
         flex: 1;
+        min-height: 0;
         overflow: hidden;
       }
 

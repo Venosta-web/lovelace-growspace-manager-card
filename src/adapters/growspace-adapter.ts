@@ -139,6 +139,13 @@ export class GrowspaceAdapter {
       substrateTemperatureSensors: wsData.substrate_temperature_sensors,
       cameraEntities: wsData.camera_entities,
       energySensors: wsData.energy_sensors,
+      // EC / pH / flow sensors (for capability detection)
+      phSensors: wsData.ph_sensors,
+      feedEcSensors: wsData.feed_ec_sensors,
+      substrateEcSensors: wsData.substrate_ec_sensors,
+      runoffEcSensors: wsData.runoff_ec_sensors,
+      drainVolumeSensors: wsData.drain_volume_sensors,
+      irrigationFlowSensors: wsData.irrigation_flow_sensors,
     };
 
     const stats: GrowspaceStats = {

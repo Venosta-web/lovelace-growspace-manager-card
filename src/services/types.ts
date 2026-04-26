@@ -228,6 +228,14 @@ export interface SerializedEnvironmentAttributes {
   substrate_temperature_sensors?: string[];
   camera_entities?: string[];
   energy_sensors?: string[];
+
+  // EC / pH / flow sensors
+  ph_sensors?: string[];
+  feed_ec_sensors?: string[];
+  substrate_ec_sensors?: string[];
+  runoff_ec_sensors?: string[];
+  drain_volume_sensors?: string[];
+  irrigation_flow_sensors?: string[];
 }
 
 export interface SerializedStats {
@@ -320,6 +328,14 @@ export interface EnvironmentAttributes {
   cameraEntities?: string[];
   energySensors?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
+
+  // EC / pH / flow sensors
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  substrateEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
 }
 
 export interface GrowspaceStats {
