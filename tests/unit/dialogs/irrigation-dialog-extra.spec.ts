@@ -59,9 +59,11 @@ describe('IrrigationDialog - Extra Coverage', () => {
         grid: {},
         biologicalMetrics: {} as any,
         environmentAttributes: {
+            soilMoistureSensor: 'sensor.sm1',
             irrigationTanks: [
                 { name: 'Tank 1', fillLevel: 50, isWarning: false, hoursRemaining: 48, depletionStatus: 'depleting' }
-            ]
+            ],
+            substrateEcSensors: [{ entity_id: 'sensor.ec1' }]
         } as any,
         waterUsage: {
             litersToday: 10.5,
@@ -73,6 +75,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             drainTimes: [{ time: '09:00', duration: 45 }]
         } as any,
         drainConfig: {
+            enabled: true,
             readings: [
                 {
                     timestamp: new Date(Date.now() - 1000 * 3600).toISOString(),
@@ -448,6 +451,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             element.device = {
                 ...mockDevice,
                 environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
                     irrigationTanks: [
                         { name: 'Refilling', depletionStatus: 'refilling', fillLevel: 90 },
                         { name: 'Stable', depletionStatus: 'static', fillLevel: 40 }
@@ -469,7 +473,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
     describe('Drain Config Tab (Save)', () => {
         beforeEach(async () => {
             const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Drain EC tab
+            // When all features enabled: Schedules[0], Steering[1], Config[2], Tanks[3], Analytics[4], Drain EC[5]
+            (tabs?.[5] as HTMLElement).click(); 
             await element.updateComplete;
         });
 

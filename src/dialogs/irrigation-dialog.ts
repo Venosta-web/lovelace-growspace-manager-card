@@ -550,15 +550,15 @@ export class IrrigationDialog extends LitElement {
       tabs.push('tanks');
     }
 
-    // Water Analytics: when there's actual usage data
+    // Water Analytics: when there's data to show (tanks, usage, or drain readings)
     const hasWaterUsage = (this.device?.waterUsage?.litersToday ?? 0) > 0;
-    if (hasWaterUsage) {
+    const hasDrainReadings = (this.device?.drainConfig?.readings?.length ?? 0) > 0;
+    if (hasTanks || hasWaterUsage || hasDrainReadings) {
       tabs.push('water_analytics');
     }
 
     // Drain EC: when drain monitoring is configured/active OR EC sensors exist
     const drainEnabled = !!this.device?.drainConfig?.enabled;
-    const hasDrainReadings = (this.device?.drainConfig?.readings?.length ?? 0) > 0;
     const hasEcSensors =
       (env?.feedEcSensors?.length ?? 0) > 0 ||
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
@@ -1341,7 +1341,7 @@ export class IrrigationDialog extends LitElement {
   }
 
   private _getEntities(domains: string[]) {
-    if (!this.hass) return [];
+    if (!this.hass?.states) return [];
     return Object.values(this.hass.states)
       .filter((stateObj) => {
         const domain = stateObj.entity_id.split('.')[0];

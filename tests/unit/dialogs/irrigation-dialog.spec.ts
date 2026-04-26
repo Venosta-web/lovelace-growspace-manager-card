@@ -60,8 +60,19 @@ describe('IrrigationDialog', () => {
         plants: [],
         grid: {},
         biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
+        environmentAttributes: {
+            soilMoistureSensor: 'sensor.sm1',
+            irrigationTanks: [{ name: 'Tank 1' }],
+            substrateEcSensors: [{ entity_id: 'sensor.ec1' }]
+        } as any,
         stats: {} as any,
+        waterUsage: {
+            litersToday: 10
+        } as any,
+        drainConfig: {
+            enabled: true,
+            readings: [{}]
+        } as any,
         irrigationConfig: {
             irrigationPumpEntity: 'switch.pump',
             drainPumpEntity: 'switch.drain',
@@ -1109,6 +1120,7 @@ describe('IrrigationDialog', () => {
             element.device = {
                 ...mockDevice,
                 environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
                     irrigationTanks: [
                         { name: 'Main Tank', fillLevel: 75, isWarning: false, warningLevel: 20 },
                         { name: 'Reserve Tank', fillLevel: 15, isWarning: true, warningLevel: 20 },
@@ -1153,21 +1165,33 @@ describe('IrrigationDialog', () => {
             expect(percentageText?.textContent).not.toContain('0%');
         });
 
-        it('should render empty state when no tanks configured', async () => {
+        it('should hide Tanks tab when no tanks configured', async () => {
             element.device = {
                 ...mockDevice,
-                environmentAttributes: { irrigationTanks: [] }
+                environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: [] }
             } as any;
             await element.updateComplete;
 
-            expect(element.shadowRoot?.textContent).toContain('No irrigation tanks configured');
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            expect(labels).not.toContain('Tanks');
         });
 
-        it('should render empty state when environmentAttributes is missing', async () => {
-            element.device = { ...mockDevice, environmentAttributes: undefined } as any;
+        it('should fallback to schedules when current tab is hidden', async () => {
+            // Start on tanks tab (index 3 with all features)
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            (tabs?.[3] as HTMLElement).click();
+            await element.updateComplete;
+            expect((element as any)._activeTab).toBe('tanks');
+
+            // Hide tanks
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: [] }
+            } as any;
             await element.updateComplete;
 
-            expect(element.shadowRoot?.textContent).toContain('No irrigation tanks configured');
+            expect((element as any)._activeTab).toBe('schedules');
         });
     });
 
@@ -1292,4 +1316,131 @@ describe('IrrigationDialog', () => {
             document.body.removeChild(element);
         });
     });
+
+    describe('Context-Aware Tab Visibility', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should show only minimal tabs (Schedules, Config) when no sensors are present', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: {} as any,
+                waterUsage: { litersToday: 0 } as any,
+                drainConfig: { enabled: false, readings: [] } as any,
+                irrigationStrategy: { enabled: false } as any
+            } as any;
+            await element.updateComplete;
+
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            
+            expect(labels).toContain('Schedules');
+            expect(labels).toContain('Configuration');
+            expect(labels).not.toContain('Crop Steering (VWC)');
+            expect(labels).not.toContain('Tanks');
+            expect(labels).not.toContain('Water Analytics');
+            expect(labels).not.toContain('Drain EC');
+        });
+
+        it('should show Steering tab when soil moisture sensor is present', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: { soilMoistureSensor: 'sensor.sm1' } as any,
+                irrigationStrategy: { enabled: false } as any,
+                waterUsage: { litersToday: 0 } as any,
+                drainConfig: { enabled: false, readings: [] } as any
+            } as any;
+            await element.updateComplete;
+
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            expect(labels).toContain('Crop Steering (VWC)');
+        });
+
+        it('should show Tanks tab when irrigation tanks are configured', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: { irrigationTanks: [{ name: 'Tank 1' }] } as any,
+                waterUsage: { litersToday: 0 } as any,
+                drainConfig: { enabled: false, readings: [] } as any,
+                irrigationStrategy: { enabled: false } as any
+            } as any;
+            await element.updateComplete;
+
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            expect(labels).toContain('Tanks');
+        });
+
+        it('should show Analytics tab when water usage is recorded', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: {} as any,
+                waterUsage: { litersToday: 5.5 } as any,
+                drainConfig: { enabled: false, readings: [] } as any,
+                irrigationStrategy: { enabled: false } as any
+            } as any;
+            await element.updateComplete;
+
+            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            expect(labels).toContain('Water Analytics');
+        });
+
+        it('should fallback to Schedules tab if active tab becomes hidden', async () => {
+            // Start with all capabilities
+            element.device = { ...mockDevice };
+            (element as any)._activeTab = 'tanks';
+            await element.updateComplete;
+            expect((element as any)._activeTab).toBe('tanks');
+
+            // Remove tank capability
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: [] }
+            } as any;
+            await element.updateComplete;
+
+            expect((element as any)._activeTab).toBe('schedules');
+        });
+    });
+
+    describe('Setup Hints', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should render setup hints when features are hidden', async () => {
+            element.device = {
+                ...mockDevice,
+                environmentAttributes: {} as any,
+                waterUsage: { litersToday: 0 } as any,
+                drainConfig: { enabled: false, readings: [] } as any,
+                irrigationStrategy: { enabled: false } as any
+            } as any;
+            await element.updateComplete;
+
+            const hints = element.shadowRoot?.querySelectorAll('.setup-hint');
+            expect(hints?.length).toBeGreaterThan(0);
+            
+            const hintText = element.shadowRoot?.querySelector('.setup-hints')?.textContent;
+            expect(hintText).toContain('Configure a soil moisture sensor');
+            expect(hintText).toContain('Add irrigation tanks');
+            expect(hintText).toContain('Configure EC/pH sensors');
+        });
+
+        it('should not render setup hints when all features are enabled', async () => {
+            element.device = { ...mockDevice };
+            await element.updateComplete;
+
+            const hints = element.shadowRoot?.querySelector('.setup-hints');
+            expect(hints).toBeFalsy();
+        });
+    });
 });
+

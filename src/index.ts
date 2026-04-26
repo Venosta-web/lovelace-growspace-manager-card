@@ -12,6 +12,7 @@ export { GrowspaceManagerCard } from './growspace-manager-card';
 export { GrowspaceGridCard } from './cards/growspace-grid-card';
 export { GrowspaceAnalyticsCard } from './cards/growspace-analytics-card';
 export { GrowspaceAiInsightCard } from './cards/growspace-ai-insight-card';
+export { GrowspaceTankCard } from './cards/growspace-tank-card';
 
 // Register cards in the Home Assistant card picker
 declare global {
@@ -49,6 +50,12 @@ window.customCards.push(
     type: 'growspace-ai-insight-card',
     name: 'Growspace AI Insight',
     description: 'AI-powered cultivation insights and recommendations.',
+    preview: false,
+  },
+  {
+    type: 'growspace-tank-card',
+    name: 'Growspace Tank',
+    description: 'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
     preview: false,
   },
 );
