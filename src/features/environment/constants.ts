@@ -205,6 +205,7 @@ export enum ConfigTab {
   ENVIRONMENT = 'environment',
   DEHUMIDIFIER = 'dehumidifier',
   SENSOR_GROUPS = 'sensor_groups',
+  SUBAREAS = 'subareas',
 }
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {

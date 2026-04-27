@@ -149,6 +149,7 @@ var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9
 var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
+var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
 var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
 var mdiWaterMinus = "M22 17V19H14V17H22M17.62 12C16.31 8.1 12 3.25 12 3.25S6 10 6 14C6 17.31 8.69 20 12 20C12.12 20 12.23 20 12.34 20C12.12 19.36 12 18.7 12 18C12 14.82 14.5 12.22 17.62 12Z";
 var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
@@ -348,6 +349,7 @@ var ConfigTab;
     ConfigTab["ENVIRONMENT"] = "environment";
     ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
     ConfigTab["SENSOR_GROUPS"] = "sensor_groups";
+    ConfigTab["SUBAREAS"] = "subareas";
 })(ConfigTab || (ConfigTab = {}));
 const DEFAULT_METRIC_CONFIG = {
     color: '#fff',
@@ -14304,6 +14306,383 @@ SensorGroupDialog = __decorate([
     t$2('sensor-group-dialog')
 ], SensorGroupDialog);
 
+let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.growspaceId = '';
+        // Sensor state fields matching EnvironmentConfig
+        this._temperatureSensors = [];
+        this._humiditySensors = [];
+        this._vpdSensors = [];
+        this._lightSensors = [];
+        this._exhaustFanEntities = [];
+        this._circulationFanEntities = [];
+        this._humidifierEntities = [];
+        this._dehumidifierEntities = [];
+        this._substrateTemperatureSensors = [];
+        this._cameraEntities = [];
+        this._saving = false;
+        this._error = '';
+    }
+    updated(changedProperties) {
+        if (changedProperties.has('hass') && this.hass) {
+            this._dataService = new DataService$1(this.hass);
+        }
+        if (changedProperties.has('subarea') && this.subarea) {
+            this._populateFromSubarea(this.subarea);
+        }
+        if (changedProperties.has('open') && this.open && this.subarea) {
+            this._populateFromSubarea(this.subarea);
+        }
+    }
+    _populateFromSubarea(subarea) {
+        const cfg = subarea.environment_config;
+        this._temperatureSensors = [...(cfg.temperature_sensors ?? [])];
+        this._humiditySensors = [...(cfg.humidity_sensors ?? [])];
+        this._vpdSensors = [...(cfg.vpd_sensors ?? [])];
+        this._lightSensors = [...(cfg.light_sensors ?? [])];
+        this._exhaustFanEntities = [...(cfg.exhaust_fan_entities ?? [])];
+        this._circulationFanEntities = [...(cfg.circulation_fan_entities ?? [])];
+        this._humidifierEntities = [...(cfg.humidifier_entities ?? [])];
+        this._dehumidifierEntities = [...(cfg.dehumidifier_entities ?? [])];
+        this._substrateTemperatureSensors = [...(cfg.substrate_temperature_sensors ?? [])];
+        this._cameraEntities = [...(cfg.camera_entities ?? [])];
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    async _save() {
+        if (!this.subarea || !this.growspaceId)
+            return;
+        if (!this._dataService) {
+            this._dataService = new DataService$1(this.hass);
+        }
+        this._saving = true;
+        this._error = '';
+        const updatedConfig = {
+            temperature_sensors: this._temperatureSensors,
+            humidity_sensors: this._humiditySensors,
+            vpd_sensors: this._vpdSensors,
+            light_sensors: this._lightSensors,
+            exhaust_fan_entities: this._exhaustFanEntities,
+            circulation_fan_entities: this._circulationFanEntities,
+            humidifier_entities: this._humidifierEntities,
+            dehumidifier_entities: this._dehumidifierEntities,
+            substrate_temperature_sensors: this._substrateTemperatureSensors,
+            camera_entities: this._cameraEntities,
+        };
+        try {
+            const updated = await this._dataService.updateSubarea(this.growspaceId, this.subarea.id, updatedConfig);
+            this.dispatchEvent(new CustomEvent('subarea-updated', {
+                detail: { subarea: updated },
+                bubbles: true,
+                composed: true,
+            }));
+            this._close();
+        }
+        catch (e) {
+            console.error('[SubareaConfigDialog] Failed to save:', e);
+            this._error = 'Failed to save subarea configuration.';
+        }
+        finally {
+            this._saving = false;
+        }
+    }
+    _getEntities(domains, deviceClass) {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states || {})
+            .filter((eid) => {
+            const state = this.hass.states[eid];
+            if (!state)
+                return false;
+            const domain = eid.split('.')[0];
+            const hasDomain = domains.includes(domain);
+            const hasDeviceClass = !deviceClass || state.attributes.device_class === deviceClass;
+            return hasDomain && hasDeviceClass;
+        })
+            .sort();
+    }
+    _renderMultiEntitySelect(label, values, domains, deviceClass, changeHandler) {
+        const listId = `list-multi-${label.replace(/[^a-z0-9]/gi, '-').toLowerCase()}`;
+        const entities = this._getEntities(domains, deviceClass);
+        return x `
+      <div class="multi-select-container">
+        <label class="md3-label-multi">${label}</label>
+        <div class="multi-select-box">
+          ${values.map((val) => x `
+              <div class="chip">
+                ${val}
+                <span
+                  class="chip-remove"
+                  @click=${() => changeHandler(values.filter((v) => v !== val))}
+                  >×</span
+                >
+              </div>
+            `)}
+          <input
+            class="search-input-inner"
+            list="${listId}"
+            placeholder=${values.length === 0 ? 'Add Entity...' : ''}
+            @change=${(e) => {
+            const input = e.target;
+            const val = input.value;
+            if (val && !values.includes(val)) {
+                changeHandler([...values, val]);
+            }
+            input.value = '';
+        }}
+          />
+        </div>
+        <datalist id="${listId}">
+          ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        width="full"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="max-width: 680px; height: auto; max-height: 90vh;">
+          <!-- Header -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiViewGrid}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Configure Subarea</h2>
+                <gs-help-tooltip
+                  content="Assign sensors and actuators to this subarea for independent environment monitoring."
+                  placement="bottom"
+                  label="Subarea Config"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">${this.subarea?.name ?? ''}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Content -->
+          <div class="config-content" style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 140px);">
+            <div class="form-section">
+
+              <div class="section-header">Monitoring Sensors</div>
+
+              ${this._renderMultiEntitySelect('Temperature Sensors', this._temperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => (this._temperatureSensors = v))}
+              ${this._renderMultiEntitySelect('Humidity Sensors', this._humiditySensors, ['sensor', 'input_number'], 'humidity', (v) => (this._humiditySensors = v))}
+              ${this._renderMultiEntitySelect('VPD Sensors', this._vpdSensors, ['sensor', 'input_number'], 'pressure', (v) => (this._vpdSensors = v))}
+              ${this._renderMultiEntitySelect('Substrate Temperature Sensors', this._substrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => (this._substrateTemperatureSensors = v))}
+              ${this._renderMultiEntitySelect('Light Source / Sensor', this._lightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (v) => (this._lightSensors = v))}
+
+              <div class="section-header" style="margin-top: 8px;">Climate Control</div>
+
+              ${this._renderMultiEntitySelect('Exhaust Fan / Switch', this._exhaustFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => (this._exhaustFanEntities = v))}
+              ${this._renderMultiEntitySelect('Circulation Fan / Switch', this._circulationFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (v) => (this._circulationFanEntities = v))}
+              ${this._renderMultiEntitySelect('Humidifier', this._humidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => (this._humidifierEntities = v))}
+              ${this._renderMultiEntitySelect('Dehumidifier', this._dehumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (v) => (this._dehumidifierEntities = v))}
+
+              <div class="section-header" style="margin-top: 8px;">Cameras</div>
+
+              ${this._renderMultiEntitySelect('Camera Entities', this._cameraEntities, ['camera'], null, (v) => (this._cameraEntities = v))}
+
+              ${this._error ? x `<div class="error-message">${this._error}</div>` : E}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="button-group" style="padding: 16px;">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._saving}>
+              Cancel
+            </button>
+            <button
+              class="md3-button primary"
+              @click=${this._save}
+              ?disabled=${this._saving}
+            >
+              ${this._saving ? 'Saving...' : 'Save Configuration'}
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+SubareaConfigDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --ha-dialog-width-md: 95vw;
+        --ha-dialog-max-width: 98vw;
+        --ha-dialog-width-full: 98vw;
+        --dialog-content-padding: 0;
+      }
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .multi-select-container {
+        position: relative;
+        margin-bottom: 0;
+      }
+      .multi-select-box {
+        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 4px 4px 0 0;
+        border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 26px 16px 6px;
+        min-height: 56px;
+        box-sizing: border-box;
+        position: relative;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+      }
+      .multi-select-box:hover {
+        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.08);
+        border-bottom-color: var(--primary-light-color-hover, rgba(255, 255, 255, 0.6));
+      }
+      .multi-select-box:focus-within {
+        background: rgba(var(--secondary-background-color, 255, 255, 255), 0.12);
+        border-bottom: 2px solid var(--primary-light-color-active, rgba(255, 255, 255, 0.6));
+        padding-bottom: 5px;
+      }
+      .md3-label-multi {
+        position: absolute;
+        top: 8px;
+        left: 16px;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        z-index: 10;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+        border-radius: 16px;
+        padding: 4px 12px;
+        font-size: 0.9rem;
+        height: 24px;
+      }
+      .chip-remove {
+        cursor: pointer;
+        margin-left: 6px;
+        font-weight: bold;
+        opacity: 0.7;
+      }
+      .chip-remove:hover {
+        opacity: 1;
+      }
+      .search-input-inner {
+        flex: 1;
+        min-width: 100px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        font-family: inherit;
+        font-size: 1rem;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+        outline: none;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        font-weight: 500;
+        color: var(--secondary-text-color);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .error-message {
+        color: var(--error-color, #ff5252);
+        font-size: 0.85rem;
+        padding: 8px 0;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], SubareaConfigDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SubareaConfigDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], SubareaConfigDialog.prototype, "growspaceId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SubareaConfigDialog.prototype, "subarea", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_temperatureSensors", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_humiditySensors", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_vpdSensors", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_lightSensors", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_exhaustFanEntities", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_circulationFanEntities", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_humidifierEntities", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_dehumidifierEntities", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_substrateTemperatureSensors", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_cameraEntities", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_saving", void 0);
+__decorate([
+    r$2()
+], SubareaConfigDialog.prototype, "_error", void 0);
+SubareaConfigDialog = __decorate([
+    t$2('subarea-config-dialog')
+], SubareaConfigDialog);
+
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -14357,6 +14736,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         // Sensor Groups
         this.envSensorGroups = [];
         this._showGroupDialog = false;
+        // Subareas
+        this._subareas = [];
+        this._subareasLoading = false;
+        this._subareasGrowspaceId = '';
+        this._showSubareaConfigDialog = false;
+        this._showAddSubarea = false;
+        this._newSubareaName = '';
+        this._deleteConfirmSubareaId = '';
         this._showDeleteConfirm = false;
     }
     willUpdate(changedProperties) {
@@ -14427,6 +14814,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     _switchTab(tab) {
         this.currentTab = tab;
+        if (tab === ConfigTab.SUBAREAS) {
+            this._loadSubareas();
+        }
     }
     // --- Submission Handlers ---
     _submitAddGrowspace() {
@@ -14599,6 +14989,27 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         ></sensor-group-dialog>
       `;
         }
+        if (this._showSubareaConfigDialog && this._editingSubarea) {
+            return x `
+        <subarea-config-dialog
+          .open=${true}
+          .hass=${this.hass}
+          .growspaceId=${this._subareasGrowspaceId}
+          .subarea=${this._editingSubarea}
+          @close=${(e) => {
+                e.stopPropagation();
+                this._showSubareaConfigDialog = false;
+                this._editingSubarea = undefined;
+            }}
+          @subarea-updated=${(e) => {
+                e.stopPropagation();
+                this._showSubareaConfigDialog = false;
+                this._editingSubarea = undefined;
+                this._loadSubareas();
+            }}
+        ></subarea-config-dialog>
+      `;
+        }
         return x `
       <ha-dialog
         open
@@ -14674,6 +15085,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
               3D Heatmap
             </div>
+            <div
+              class="config-tab ${this.currentTab === ConfigTab.SUBAREAS ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.SUBAREAS)}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiViewGrid}"></path></svg>
+              Subareas
+            </div>
           </div>
 
           <!--Content -->
@@ -14685,6 +15103,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : E}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : E}
             ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : E}
+            ${this.currentTab === ConfigTab.SUBAREAS ? this.renderSubareasTab() : E}
           </div>
 
           <!--Actions -->
@@ -14808,6 +15227,151 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSensorGroups = [...this.envSensorGroups, group];
         }
         this._showGroupDialog = false;
+    }
+    // --- Subareas ---
+    _getDataService() {
+        if (!this._dataService) {
+            this._dataService = new DataService$1(this.hass);
+        }
+        return this._dataService;
+    }
+    async _loadSubareas() {
+        const growspaceId = this.envSelectedId || this.editSelectedId;
+        if (!growspaceId) {
+            this._subareas = [];
+            this._subareasGrowspaceId = '';
+            return;
+        }
+        this._subareasGrowspaceId = growspaceId;
+        this._subareasLoading = true;
+        try {
+            this._subareas = await this._getDataService().getSubareas(growspaceId);
+        }
+        catch (e) {
+            console.error('[ConfigDialog] Failed to load subareas:', e);
+            this._subareas = [];
+        }
+        finally {
+            this._subareasLoading = false;
+        }
+    }
+    async _handleAddSubarea() {
+        const name = this._newSubareaName.trim();
+        if (!name || !this._subareasGrowspaceId)
+            return;
+        try {
+            await this._getDataService().addSubarea(this._subareasGrowspaceId, name);
+            this._newSubareaName = '';
+            this._showAddSubarea = false;
+            await this._loadSubareas();
+        }
+        catch (e) {
+            console.error('[ConfigDialog] Failed to add subarea:', e);
+        }
+    }
+    _handleEditSubarea(subarea) {
+        this._editingSubarea = subarea;
+        this._showSubareaConfigDialog = true;
+    }
+    _handleDeleteSubarea(subareaId) {
+        this._deleteConfirmSubareaId = subareaId;
+    }
+    async _confirmDeleteSubarea(subareaId) {
+        if (!this._subareasGrowspaceId)
+            return;
+        try {
+            await this._getDataService().removeSubarea(this._subareasGrowspaceId, subareaId);
+            this._deleteConfirmSubareaId = '';
+            await this._loadSubareas();
+        }
+        catch (e) {
+            console.error('[ConfigDialog] Failed to delete subarea:', e);
+        }
+    }
+    renderSubareasTab() {
+        const growspaceId = this.envSelectedId || this.editSelectedId;
+        if (!growspaceId) {
+            return x `
+        <div class="detail-card">
+          <h3>Subareas</h3>
+          <div style="text-align:center; padding:20px; color:var(--secondary-text-color);">
+            Please select a growspace in the Environment tab first.
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0;">Subareas</h3>
+          <button class="md3-button tonal" @click=${() => { this._showAddSubarea = true; this._newSubareaName = ''; }}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            Add Subarea
+          </button>
+        </div>
+
+        ${this._showAddSubarea
+            ? x `
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:16px; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+              <input
+                class="md3-input"
+                style="flex:1;"
+                placeholder="Subarea name..."
+                .value=${this._newSubareaName}
+                @input=${(e) => (this._newSubareaName = e.target.value)}
+                @keydown=${(e) => { if (e.key === 'Enter')
+                this._handleAddSubarea(); }}
+              />
+              <button class="md3-button primary" @click=${this._handleAddSubarea} ?disabled=${!this._newSubareaName.trim()}>
+                Add
+              </button>
+              <button class="md3-button tonal" @click=${() => (this._showAddSubarea = false)}>
+                Cancel
+              </button>
+            </div>
+          `
+            : E}
+
+        ${this._subareasLoading
+            ? x `<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">Loading...</div>`
+            : this._subareas.length === 0
+                ? x `<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No subareas configured. Add one to get started.</div>`
+                : x `
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${this._subareas.map((subarea) => x `
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+                    <div>
+                      <div style="font-weight:500;">${subarea.name}</div>
+                      <div style="font-size:0.8rem; color:var(--secondary-text-color);">ID: ${subarea.id}</div>
+                    </div>
+                    <div style="display:flex; gap:4px; align-items:center;">
+                      ${this._deleteConfirmSubareaId === subarea.id
+                    ? x `
+                          <span style="font-size:0.85rem; color:var(--secondary-text-color); margin-right:4px;">Remove ${subarea.name}?</span>
+                          <button class="md3-button primary error" @click=${() => this._confirmDeleteSubarea(subarea.id)} style="padding:6px 10px; min-width:auto; font-size:0.8rem;">
+                            Yes
+                          </button>
+                          <button class="md3-button tonal" @click=${() => (this._deleteConfirmSubareaId = '')} style="padding:6px 10px; min-width:auto; font-size:0.8rem;">
+                            No
+                          </button>
+                        `
+                    : x `
+                          <button class="md3-button text" @click=${() => this._handleEditSubarea(subarea)} style="padding:8px; min-width:auto;" title="Edit sensors">
+                            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          </button>
+                          <button class="md3-button text error" @click=${() => this._handleDeleteSubarea(subarea.id)} style="padding:8px; min-width:auto;" title="Delete subarea">
+                            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                          </button>
+                        `}
+                    </div>
+                  </div>
+                `)}
+              </div>
+            `}
+      </div>
+    `;
     }
     renderAddGrowspaceTab() {
         return x `
@@ -15797,6 +16361,30 @@ __decorate([
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_editingGroup", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_subareas", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_subareasLoading", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_subareasGrowspaceId", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_showSubareaConfigDialog", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_editingSubarea", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_showAddSubarea", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_newSubareaName", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_deleteConfirmSubareaId", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
@@ -107957,7 +108545,9 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             };
             this.store.initializeSelectedDevice(syntheticConfig);
         }
-        this._loadSubarea();
+        if (!this._subarea && !this._loading) {
+            this._loadSubarea();
+        }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
@@ -108034,6 +108624,10 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     setConfig(config) {
         if (!config)
             throw new Error('Invalid configuration');
+        if (!config.growspace_id)
+            throw new Error('growspace_id is required');
+        if (!config.subarea_id)
+            throw new Error('subarea_id is required');
         this._config = config;
         if (config.growspace_id) {
             const syntheticConfig = {
@@ -108082,6 +108676,8 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         }
         const ec = this._subarea.environment_config;
         const parentName = this._parentGrowspaceName || this._config.growspace_id;
+        const { devices } = this._viewController.value.grid;
+        const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
         return x `
             <error-boundary
                 .fallbackMessage=${'Failed to load Subarea Card'}
@@ -108099,6 +108695,9 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                     ${this._renderHeroSensors(ec)}
                     ${this._renderDeviceChips(ec)}
                     ${this._renderAdditionalSensors(ec)}
+                    ${parentDevice
+            ? x `<growspace-analytics .device=${parentDevice}></growspace-analytics>`
+            : ''}
                 </ha-card>
             </error-boundary>
         `;
@@ -110017,8 +110616,10 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
         }
     }
     firstUpdated() {
-        this._loadGrowspaces();
-        if (this._config?.growspace_id) {
+        if (this._growspaces.length === 0) {
+            this._loadGrowspaces();
+        }
+        if (this._config?.growspace_id && this._subareas.length === 0) {
             this._loadSubareas(this._config.growspace_id);
         }
     }

@@ -15,6 +15,8 @@ import {
   mdiFan,
   mdiAlert,
   mdiEye,
+  mdiViewGrid,
+  mdiPlus,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -24,6 +26,7 @@ import '../components/ui/md3-number-input';
 import '../components/ui/md3-select';
 import '../components/ui/gs-help-tooltip';
 import './sensor-group-dialog';
+import './subarea-config-dialog';
 import {
   GrowspaceDevice,
   DehumidifierStage,
@@ -32,6 +35,8 @@ import {
 } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
+import type { Subarea } from '../services/types';
+import { DataService } from '../services/data-service';
 
 @customElement('config-dialog')
 export class ConfigDialog extends LitElement {
@@ -112,6 +117,17 @@ export class ConfigDialog extends LitElement {
   @state() private envSensorGroups: import('../types').SensorGroup[] = [];
   @state() private _showGroupDialog = false;
   @state() private _editingGroup: import('../types').SensorGroup | undefined;
+
+  // Subareas
+  @state() private _subareas: Subarea[] = [];
+  @state() private _subareasLoading = false;
+  @state() private _subareasGrowspaceId = '';
+  @state() private _showSubareaConfigDialog = false;
+  @state() private _editingSubarea: Subarea | undefined;
+  @state() private _showAddSubarea = false;
+  @state() private _newSubareaName = '';
+  @state() private _deleteConfirmSubareaId = '';
+  private _dataService?: DataService;
 
   static styles = [
     dialogStyles,
@@ -390,6 +406,9 @@ export class ConfigDialog extends LitElement {
 
   private _switchTab(tab: ConfigTab) {
     this.currentTab = tab;
+    if (tab === ConfigTab.SUBAREAS) {
+      this._loadSubareas();
+    }
   }
 
   // --- Submission Handlers ---
@@ -592,6 +611,28 @@ export class ConfigDialog extends LitElement {
       `;
     }
 
+    if (this._showSubareaConfigDialog && this._editingSubarea) {
+      return html`
+        <subarea-config-dialog
+          .open=${true}
+          .hass=${this.hass}
+          .growspaceId=${this._subareasGrowspaceId}
+          .subarea=${this._editingSubarea}
+          @close=${(e: Event) => {
+            e.stopPropagation();
+            this._showSubareaConfigDialog = false;
+            this._editingSubarea = undefined;
+          }}
+          @subarea-updated=${(e: CustomEvent) => {
+            e.stopPropagation();
+            this._showSubareaConfigDialog = false;
+            this._editingSubarea = undefined;
+            this._loadSubareas();
+          }}
+        ></subarea-config-dialog>
+      `;
+    }
+
     return html`
       <ha-dialog
         open
@@ -667,6 +708,13 @@ export class ConfigDialog extends LitElement {
                <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
               3D Heatmap
             </div>
+            <div
+              class="config-tab ${this.currentTab === ConfigTab.SUBAREAS ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.SUBAREAS)}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiViewGrid}"></path></svg>
+              Subareas
+            </div>
           </div>
 
           <!--Content -->
@@ -679,6 +727,7 @@ export class ConfigDialog extends LitElement {
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
             ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : nothing}
+            ${this.currentTab === ConfigTab.SUBAREAS ? this.renderSubareasTab() : nothing}
           </div>
 
           <!--Actions -->
@@ -811,6 +860,153 @@ export class ConfigDialog extends LitElement {
     }
 
     this._showGroupDialog = false;
+  }
+
+  // --- Subareas ---
+
+  private _getDataService(): DataService {
+    if (!this._dataService) {
+      this._dataService = new DataService(this.hass);
+    }
+    return this._dataService;
+  }
+
+  private async _loadSubareas() {
+    const growspaceId = this.envSelectedId || this.editSelectedId;
+    if (!growspaceId) {
+      this._subareas = [];
+      this._subareasGrowspaceId = '';
+      return;
+    }
+    this._subareasGrowspaceId = growspaceId;
+    this._subareasLoading = true;
+    try {
+      this._subareas = await this._getDataService().getSubareas(growspaceId);
+    } catch (e) {
+      console.error('[ConfigDialog] Failed to load subareas:', e);
+      this._subareas = [];
+    } finally {
+      this._subareasLoading = false;
+    }
+  }
+
+  private async _handleAddSubarea() {
+    const name = this._newSubareaName.trim();
+    if (!name || !this._subareasGrowspaceId) return;
+    try {
+      await this._getDataService().addSubarea(this._subareasGrowspaceId, name);
+      this._newSubareaName = '';
+      this._showAddSubarea = false;
+      await this._loadSubareas();
+    } catch (e) {
+      console.error('[ConfigDialog] Failed to add subarea:', e);
+    }
+  }
+
+  private _handleEditSubarea(subarea: Subarea) {
+    this._editingSubarea = subarea;
+    this._showSubareaConfigDialog = true;
+  }
+
+  private _handleDeleteSubarea(subareaId: string) {
+    this._deleteConfirmSubareaId = subareaId;
+  }
+
+  private async _confirmDeleteSubarea(subareaId: string) {
+    if (!this._subareasGrowspaceId) return;
+    try {
+      await this._getDataService().removeSubarea(this._subareasGrowspaceId, subareaId);
+      this._deleteConfirmSubareaId = '';
+      await this._loadSubareas();
+    } catch (e) {
+      console.error('[ConfigDialog] Failed to delete subarea:', e);
+    }
+  }
+
+  private renderSubareasTab() {
+    const growspaceId = this.envSelectedId || this.editSelectedId;
+    if (!growspaceId) {
+      return html`
+        <div class="detail-card">
+          <h3>Subareas</h3>
+          <div style="text-align:center; padding:20px; color:var(--secondary-text-color);">
+            Please select a growspace in the Environment tab first.
+          </div>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="detail-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0;">Subareas</h3>
+          <button class="md3-button tonal" @click=${() => { this._showAddSubarea = true; this._newSubareaName = ''; }}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24">
+              <path d="${mdiPlus}"></path>
+            </svg>
+            Add Subarea
+          </button>
+        </div>
+
+        ${this._showAddSubarea
+          ? html`
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:16px; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+              <input
+                class="md3-input"
+                style="flex:1;"
+                placeholder="Subarea name..."
+                .value=${this._newSubareaName}
+                @input=${(e: Event) => (this._newSubareaName = (e.target as HTMLInputElement).value)}
+                @keydown=${(e: KeyboardEvent) => { if (e.key === 'Enter') this._handleAddSubarea(); }}
+              />
+              <button class="md3-button primary" @click=${this._handleAddSubarea} ?disabled=${!this._newSubareaName.trim()}>
+                Add
+              </button>
+              <button class="md3-button tonal" @click=${() => (this._showAddSubarea = false)}>
+                Cancel
+              </button>
+            </div>
+          `
+          : nothing}
+
+        ${this._subareasLoading
+          ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">Loading...</div>`
+          : this._subareas.length === 0
+            ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No subareas configured. Add one to get started.</div>`
+            : html`
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                ${this._subareas.map((subarea) => html`
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:8px;">
+                    <div>
+                      <div style="font-weight:500;">${subarea.name}</div>
+                      <div style="font-size:0.8rem; color:var(--secondary-text-color);">ID: ${subarea.id}</div>
+                    </div>
+                    <div style="display:flex; gap:4px; align-items:center;">
+                      ${this._deleteConfirmSubareaId === subarea.id
+                        ? html`
+                          <span style="font-size:0.85rem; color:var(--secondary-text-color); margin-right:4px;">Remove ${subarea.name}?</span>
+                          <button class="md3-button primary error" @click=${() => this._confirmDeleteSubarea(subarea.id)} style="padding:6px 10px; min-width:auto; font-size:0.8rem;">
+                            Yes
+                          </button>
+                          <button class="md3-button tonal" @click=${() => (this._deleteConfirmSubareaId = '')} style="padding:6px 10px; min-width:auto; font-size:0.8rem;">
+                            No
+                          </button>
+                        `
+                        : html`
+                          <button class="md3-button text" @click=${() => this._handleEditSubarea(subarea)} style="padding:8px; min-width:auto;" title="Edit sensors">
+                            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                          </button>
+                          <button class="md3-button text error" @click=${() => this._handleDeleteSubarea(subarea.id)} style="padding:8px; min-width:auto;" title="Delete subarea">
+                            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                          </button>
+                        `}
+                    </div>
+                  </div>
+                `)}
+              </div>
+            `}
+      </div>
+    `;
   }
 
   private renderAddGrowspaceTab() {
