@@ -14813,8 +14813,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     _close() {
-        // Prevent closing if we are showing the sub-dialog (which implies the main dialog unmounted)
-        if (this._showGroupDialog)
+        // Prevent closing if we are showing a sub-dialog (which implies the main dialog unmounted)
+        if (this._showGroupDialog || this._showSubareaConfigDialog)
             return;
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
