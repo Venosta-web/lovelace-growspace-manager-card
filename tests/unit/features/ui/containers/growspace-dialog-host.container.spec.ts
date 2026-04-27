@@ -135,6 +135,8 @@ describe('GrowspaceDialogHostContainer', () => {
                     addBatch: vi.fn().mockResolvedValue(true),
                     update: vi.fn().mockResolvedValue(true),
                     remove: vi.fn().mockResolvedValue(true),
+                    finishDrying: vi.fn().mockResolvedValue(true),
+                    move: vi.fn().mockResolvedValue(true),
                 },
                 growspace: {
                     remove: vi.fn().mockResolvedValue(true),
@@ -1760,6 +1762,471 @@ describe('GrowspaceDialogHostContainer', () => {
              // onDeletePollination (Line 555)
              dialog.onDeletePollination('ep1');
              expect(mockStore.actions.genetics.deletePollination).toHaveBeenCalledWith('ep1');
+        });
+    });
+
+    describe('New Coverage Tests', () => {
+        // Helper to open a dialog type and get the element
+        const openDialog = async (type: string, payload: any = {}) => {
+            mockStore.ui.$activeDialog.set({ type: type as any, payload });
+            await element.updateComplete;
+            await element.updateComplete;
+        };
+
+        it('should render BATCH_PRINT_LABELS dialog', async () => {
+            await openDialog('BATCH_PRINT_LABELS', { plants: [] });
+            expect(element.shadowRoot?.querySelector('batch-print-label-dialog')).toBeTruthy();
+        });
+
+        it('should handle @close on BATCH_PRINT_LABELS', async () => {
+            await openDialog('BATCH_PRINT_LABELS', { plants: [] });
+            const dialog = element.shadowRoot?.querySelector('batch-print-label-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should render BATCH_CLONE dialog', async () => {
+            await openDialog('BATCH_CLONE', { plants: [] });
+            expect(element.shadowRoot?.querySelector('batch-clone-dialog')).toBeTruthy();
+        });
+
+        it('should handle @close on BATCH_CLONE', async () => {
+            await openDialog('BATCH_CLONE', { plants: [] });
+            const dialog = element.shadowRoot?.querySelector('batch-clone-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @close on ADD_PLANT dialog', async () => {
+            await openDialog('ADD_PLANT', { row: 0, col: 0 });
+            const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @add-plant-submit on ADD_PLANT dialog', async () => {
+            await openDialog('ADD_PLANT', { row: 0, col: 0 });
+            const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
+            dialog?.dispatchEvent(new CustomEvent('add-plant-submit', { detail: { strain: 'Test' } }));
+            expect(mockStore.actions.plant.add).toHaveBeenCalledWith({ strain: 'Test' });
+        });
+
+        it('should handle @close on ADD_PLANTS dialog', async () => {
+            await openDialog('ADD_PLANTS', {});
+            const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @add-plants-submit on ADD_PLANTS dialog', async () => {
+            await openDialog('ADD_PLANTS', {});
+            const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+            dialog?.dispatchEvent(new CustomEvent('add-plants-submit', { detail: { amount: 3 } }));
+            expect(mockStore.actions.plant.addBatch).toHaveBeenCalledWith({ amount: 3 });
+        });
+
+        it('should handle @show-toast on ADD_PLANTS dialog', async () => {
+            await openDialog('ADD_PLANTS', {});
+            const dialog = element.shadowRoot?.querySelector('add-plants-dialog');
+            dialog?.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Done', type: 'success' } }));
+            expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Done', 'success');
+        });
+
+        it('should handle @close on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @edit-growspace-submit on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+                detail: { growspaceId: 'g1', name: 'New Name', rows: 3, plantsPerRow: 4 }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.growspace.update).toHaveBeenCalledWith(expect.objectContaining({
+                    growspaceId: 'g1', name: 'New Name', rows: 3
+                }));
+            });
+        });
+
+        it('should handle @delete-growspace-submit on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+                detail: { growspace_id: 'g1' }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.growspace.remove).toHaveBeenCalledWith('g1');
+            });
+        });
+
+        it('should handle @remove-environment-submit on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('remove-environment-submit', {
+                detail: { growspace_id: 'g1' }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.environment.remove).toHaveBeenCalledWith('g1');
+            });
+        });
+
+        it('should handle @configure-environment-submit on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('configure-environment-submit', {
+                detail: {
+                    selectedGrowspaceId: 'g1',
+                    temperatureSensor: 'sensor.temp',
+                    humiditySensor: 'sensor.humidity',
+                }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.environment.configure).toHaveBeenCalled();
+            });
+        });
+
+        it('should handle @configure-environment-submit validation failure (missing mandatory fields)', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('configure-environment-submit', {
+                detail: { selectedGrowspaceId: '', temperatureSensor: '', humiditySensor: '' }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('mandatory'), 'error'
+                );
+            });
+        });
+
+        it('should handle @generate-grow-report on CONFIG dialog', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('generate-grow-report', {
+                detail: { growspace_id: 'g1' }
+            }));
+            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'GROW_REPORT',
+                payload: { growspaceId: 'g1' }
+            }));
+        });
+
+        it('should handle @analyze-growspace on GROW_MASTER dialog', async () => {
+            await openDialog('GROW_MASTER', {});
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
+            dialog?.dispatchEvent(new CustomEvent('analyze-growspace', { detail: { query: 'How is the plant?' } }));
+            expect(mockStore.actions.ai.askAdvice).toHaveBeenCalledWith('How is the plant?');
+        });
+
+        it('should handle @analyze-all-growspaces on GROW_MASTER dialog', async () => {
+            await openDialog('GROW_MASTER', {});
+            const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
+            dialog?.dispatchEvent(new CustomEvent('analyze-all-growspaces', { detail: {} }));
+            expect(mockStore.actions.ai.analyzeAll).toHaveBeenCalled();
+        });
+
+        it('should handle @get-recommendation on STRAIN_RECOMMENDATION dialog', async () => {
+            await openDialog('STRAIN_RECOMMENDATION', {});
+            const dialog = element.shadowRoot?.querySelector('strain-recommendation-dialog');
+            dialog?.dispatchEvent(new CustomEvent('get-recommendation', { detail: { query: 'best strain for cold' } }));
+            expect(mockStore.actions.ai.strainRecommendation).toHaveBeenCalledWith('best strain for cold');
+        });
+
+        it('should handle @close on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @harvest-plant on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('harvest-plant', { detail: { plant: { entity_id: 'p1' } } }));
+            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'HARVEST_SCORING'
+            }));
+        });
+
+        it('should handle @finish-drying on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant: { entity_id: 'p1' } } }));
+            expect(mockStore.actions.plant.finishDrying).toHaveBeenCalled();
+        });
+
+        it('should handle @take-clone on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('take-clone', { detail: { plant: { entity_id: 'p1' }, numClones: 2 } }));
+            expect(mockStore.actions.plant.takeClone).toHaveBeenCalled();
+        });
+
+        it('should handle @move-clone on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: { entity_id: 'p1' }, targetGrowspace: 'g2' } }));
+            expect(mockStore.actions.plant.move).toHaveBeenCalled();
+        });
+
+        it('should handle @open-watering on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('open-watering', { detail: { plantId: 'p1' } }));
+            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'WATERING' }));
+        });
+
+        it('should handle @open-training on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('open-training', { detail: { plantIds: ['p1'], growspaceId: 'g1' } }));
+            expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith(['p1'], 'g1');
+        });
+
+        it('should handle @open-ipm on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('open-ipm', { detail: { growspaceId: 'g1' } }));
+            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'IPM' }));
+        });
+
+        it('should handle @open-clone on PLANT_OVERVIEW dialog', async () => {
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('open-clone', { detail: { sourcePlant: 'p1' } }));
+            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'TAKE_CLONE' }));
+        });
+
+        it('should handle @open-strain-editor on PLANT_OVERVIEW dialog', async () => {
+            const spy = vi.spyOn(element as any, '_handleOpenStrainEditor');
+            await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
+            const dialog = element.shadowRoot?.querySelector('plant-overview-container');
+            dialog?.dispatchEvent(new CustomEvent('open-strain-editor', {
+                detail: { strain: 'OG Kush', phenotype: '' }
+            }));
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle @close on STRAIN_LIBRARY dialog', async () => {
+            await openDialog('STRAIN_LIBRARY', {});
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @close on TRAINING dialog', async () => {
+            await openDialog('TRAINING', {});
+            const dialog = element.shadowRoot?.querySelector('training-dialog');
+            dialog?.dispatchEvent(new CustomEvent('close'));
+            expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+        });
+
+        it('should handle @submit-ipm on IPM dialog', async () => {
+            await openDialog('IPM', { selectedPlantIds: ['p1'] });
+            const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('submit-ipm', {
+                detail: { preset_id: 'pr1', growspace_id: 'g1', plant_ids: ['p1'], notes: 'test' }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.ipm.apply).toHaveBeenCalledWith(expect.objectContaining({
+                    preset_id: 'pr1',
+                    growspace_id: 'g1',
+                }));
+            });
+        });
+
+        it('should handle @submit-ipm failure on IPM dialog', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockStore.actions.ipm.apply.mockRejectedValue(new Error('IPM failed'));
+            await openDialog('IPM', { selectedPlantIds: ['p1'] });
+            const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('submit-ipm', {
+                detail: { preset_id: 'pr1', growspace_id: 'g1', plant_ids: ['p1'], notes: '' }
+            }));
+            await vi.waitFor(() => {
+                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM failed:', expect.any(Error));
+            });
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle @submit-watering with array nutrients', async () => {
+            await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
+            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('submit-watering', {
+                detail: {
+                    volume: 500,
+                    nutrients: [{ name: 'CalMag', concentration: 2.5 }, { name: '', concentration: 0 }],
+                    presetId: null
+                }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.environment.waterPlant).toHaveBeenCalledWith(
+                    'p1', 500, { CalMag: 2.5 }, null
+                );
+            });
+        });
+
+        it('should handle @submit-watering failure', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockStore.actions.environment.waterPlant.mockRejectedValue(new Error('Water failed'));
+            await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
+            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('submit-watering', {
+                detail: { volume: 100, nutrients: {}, presetId: null }
+            }));
+            await vi.waitFor(() => {
+                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] Watering failed:', expect.any(Error));
+            });
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle @submit-watering growspace mode with no growspaceId (skips call)', async () => {
+            await openDialog('WATERING', { mode: 'growspace', growspace_id: '' });
+            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('submit-watering', {
+                detail: { volume: 100, nutrients: {}, presetId: null }
+            }));
+            await new Promise(r => setTimeout(r, 50));
+            expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();
+        });
+
+        it('should handle @take-clone-submit failure with toast', async () => {
+            mockStore.actions.plant.takeClone.mockRejectedValue(new Error('Clone error'));
+            await openDialog('TAKE_CLONE', { sourcePlant: 'p1', defaultGrowspaceId: 'g1' });
+            const dialog = element.shadowRoot?.querySelector('clone-dialog');
+            dialog?.dispatchEvent(new CustomEvent('take-clone-submit', {
+                detail: { numClones: 1, targetGrowspaceId: 'g2' }
+            }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('Clone error'), 'error'
+                );
+            });
+        });
+
+        it('should handle @edit-growspace-submit failure on CONFIG dialog', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockStore.actions.growspace.update.mockRejectedValue(new Error('Update failed'));
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('edit-growspace-submit', {
+                detail: { growspaceId: 'g1', name: 'X', rows: 1, plantsPerRow: 1 }
+            }));
+            await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle @delete-growspace-submit failure on CONFIG dialog', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockStore.actions.growspace.remove.mockRejectedValue(new Error('Remove failed'));
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('delete-growspace-submit', {
+                detail: { growspace_id: 'g1' }
+            }));
+            await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle @remove-environment-submit failure on CONFIG dialog', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            mockStore.actions.environment.remove.mockRejectedValue(new Error('Remove env failed'));
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('remove-environment-submit', {
+                detail: { growspace_id: 'g1' }
+            }));
+            await vi.waitFor(() => expect(consoleSpy).toHaveBeenCalled());
+            consoleSpy.mockRestore();
+        });
+
+        it('should handle _getPlantsByStage with actual plant data', async () => {
+            mockStore.$devices.set([{
+                deviceId: 'g1',
+                name: 'Tent 1',
+                plants: [
+                    { entity_id: 'p1', attributes: { stage: 'clone', name: 'Clone 1' } },
+                    { entity_id: 'p2', attributes: { stage: 'veg', name: 'Veg 1' } },
+                ]
+            }]);
+            await openDialog('ADD_PLANT', { row: 0, col: 0 });
+            const dialog = element.shadowRoot?.querySelector('add-plant-dialog') as any;
+            expect(dialog).toBeTruthy();
+            expect(dialog.clonePlants?.length).toBe(1);
+            expect(dialog.clonePlants?.[0]._growspaceName).toBe('Tent 1');
+        });
+
+        it('should handle _closeDialogIfActive when type does not match (no-op)', async () => {
+            await openDialog('ADD_PLANT', { row: 0, col: 0 });
+            // Change active type so it doesn't match
+            mockStore.ui.$activeDialog.set({ type: 'CONFIG' as any, payload: {} });
+            await element.updateComplete;
+            // Now call close on ADD_PLANT – type won't match so closeDialog not called again
+            const addPlantDialog = element.shadowRoot?.querySelector('add-plant-dialog');
+            // add-plant-dialog might not be in DOM since type changed to CONFIG
+            // Just verify closeDialog was never called via type mismatch
+            mockStore.actions.ui.closeDialog.mockClear();
+            // @ts-ignore
+            (element as any)._closeDialogIfActive('ADD_PLANT');
+            expect(mockStore.actions.ui.closeDialog).not.toHaveBeenCalled();
+        });
+
+        it('should not render any dialog when store is not initialized', async () => {
+            // Test the render guard (store missing)
+            const freshElement = await fixture<GrowspaceDialogHost>(
+                html`<growspace-dialog-host .hass=${mockHass}></growspace-dialog-host>`
+            );
+            await freshElement.updateComplete;
+            // Without store, no dialog elements should be rendered
+            expect(freshElement.shadowRoot?.querySelector('add-plant-dialog')).toBeNull();
+            expect(freshElement.shadowRoot?.querySelector('config-dialog')).toBeNull();
+        });
+
+        it('should handle @strain-created-at-source with non-ADD_PLANT/ADD_PLANTS source (no-op)', async () => {
+            await openDialog('STRAIN_LIBRARY', {});
+            const dialog = element.shadowRoot?.querySelector('strain-library-dialog');
+            mockStore.actions.ui.setActiveDialog.mockClear();
+            dialog?.dispatchEvent(new CustomEvent('strain-created-at-source', {
+                detail: { source: 'UNKNOWN_SOURCE', returnPayload: {} }
+            }));
+            // Should not call setActiveDialog for unknown sources
+            expect(mockStore.actions.ui.setActiveDialog).not.toHaveBeenCalled();
+        });
+
+        it('should handle _refreshGeneticsData when fetchData returns null', async () => {
+            mockStore.actions.genetics.fetchData.mockResolvedValue(null);
+            // @ts-ignore
+            await (element as any)._refreshGeneticsData();
+            // Should not crash - data is null so seed batches unchanged
+            expect((element as any)._seedBatches).toEqual({});
+        });
+
+        it('should handle @submit on CONFIG dialog (add growspace success)', async () => {
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            dialog?.dispatchEvent(new CustomEvent('submit', { detail: { name: 'New Room', rows: 3, plantsPerRow: 4 } }));
+            await vi.waitFor(() => {
+                expect(mockStore.actions.growspace.add).toHaveBeenCalledWith(
+                    expect.objectContaining({ name: 'New Room' })
+                );
+                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
+            });
+        });
+
+        it('should handle @submit on CONFIG with missing store (no-op guard)', async () => {
+            // Test the if (!this.store) return; guard in CONFIG submit
+            await openDialog('CONFIG', {});
+            const dialog = element.shadowRoot?.querySelector('config-dialog');
+            // Temporarily remove store
+            const origStore = element.store;
+            (element as any).store = null;
+            dialog?.dispatchEvent(new CustomEvent('submit', { detail: { name: 'Room' } }));
+            await new Promise(r => setTimeout(r, 50));
+            (element as any).store = origStore;
+            // No error thrown = guard worked
         });
     });
 });

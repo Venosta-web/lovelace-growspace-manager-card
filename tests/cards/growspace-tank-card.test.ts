@@ -32,6 +32,10 @@ describe('GrowspaceTankCard', () => {
         const mockHass = {
             states: {},
             callService: vi.fn(),
+            connection: {
+                sendMessagePromise: vi.fn().mockResolvedValue({}),
+                subscribeEvents: vi.fn().mockResolvedValue(() => {}),
+            },
             language: 'en',
             themes: { theme: 'default' },
         };
@@ -186,6 +190,48 @@ describe('GrowspaceTankCard', () => {
         expect(tank2?.querySelector('.depletion-label')?.textContent).toContain('↑ Refilling');
     });
 
+    test('renders tanks with edge case data correctly', async () => {
+        const mockTanks: IrrigationTank[] = [
+            {
+                name: 'Static Tank',
+                fillLevel: 50,
+                isWarning: false,
+                depletionStatus: 'static',
+                warningLevel: 20,
+                sensorEntity: 'sensor.tank_3'
+            },
+            {
+                name: 'Unknown Tank',
+                fillLevel: null as any,
+                isWarning: false,
+                depletionStatus: 'unknown' as any,
+                warningLevel: 20,
+                sensorEntity: 'sensor.tank_4'
+            }
+        ];
+
+        element.store.ui.$isLoading.set(false);
+        element.store.data.$devices.set([
+            {
+                deviceId: 'selected_tent',
+                name: 'Selected Tent',
+                environmentAttributes: { irrigationTanks: mockTanks },
+                plants: []
+            } as any
+        ]);
+        element.store.data.$selectedDevice.set('selected_tent');
+        await element.updateComplete;
+
+        const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
+        
+        // Static tank
+        expect(tankCards?.[0].querySelector('.depletion-label')?.textContent).toContain('— Stable');
+        
+        // Null fill level
+        expect(tankCards?.[1].querySelector('.percentage-text')?.textContent).toContain('N/A');
+        expect(tankCards?.[1].querySelector('.depletion-label')).toBeFalsy();
+    });
+
     test('renders average level when no warnings', async () => {
         const mockTanks: IrrigationTank[] = [
             {
@@ -242,5 +288,33 @@ describe('GrowspaceTankCard', () => {
         const storeSpy = vi.spyOn(element.store, 'destroy');
         element.disconnectedCallback();
         expect(storeSpy).toHaveBeenCalled();
+    });
+
+    test('subscription controller callback updates store and refreshes data', () => {
+        const updateHassSpy = vi.spyOn(element.store, 'updateHass');
+        const refreshDataSpy = vi.spyOn(element.store, 'refreshData');
+        
+        // Access private _onUpdate from the controller
+        const controller = (element as any)._subscriptionController;
+        controller._onUpdate(true); // pass refresh = true
+        
+        expect(updateHassSpy).toHaveBeenCalled();
+        expect(refreshDataSpy).toHaveBeenCalledWith(true);
+    });
+
+    test('selectedDevice getter returns value from store', () => {
+        element.store.data.$selectedDevice.set('test_device');
+        expect(element.selectedDevice).toBe('test_device');
+    });
+
+    test('_handleError logs error to console', () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const error = new Error('Test error');
+        const errorInfo = { componentStack: 'stack' };
+        
+        (element as any)._handleError(error, errorInfo);
+        
+        expect(consoleSpy).toHaveBeenCalledWith('Growspace Tank Card caught error:', error, errorInfo);
+        consoleSpy.mockRestore();
     });
 });

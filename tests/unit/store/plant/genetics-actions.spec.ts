@@ -6,6 +6,7 @@ import {
   updatePollination,
   deletePollination,
   harvestSeeds,
+  fetchGeneticsData,
 } from '../../../../src/store/plant/genetics-actions';
 import { makeFakeCtx } from '../../helpers/fake-ctx';
 
@@ -41,6 +42,12 @@ describe('addSeedBatch', () => {
     await expect(addSeedBatch(ctx, seedBatchData)).rejects.toThrow('add-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('add-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.addSeedBatch.mockRejectedValue('raw string');
+    await expect(addSeedBatch(ctx, seedBatchData)).rejects.toBe('raw string');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('updateSeedBatch', () => {
@@ -61,6 +68,12 @@ describe('updateSeedBatch', () => {
     await expect(updateSeedBatch(ctx, { batch_id: 'b1' } as any)).rejects.toThrow('upd-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.updateSeedBatch.mockRejectedValue(42);
+    await expect(updateSeedBatch(ctx, { batch_id: 'b1' } as any)).rejects.toBe(42);
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('logPollination', () => {
@@ -79,6 +92,12 @@ describe('logPollination', () => {
     ctx.dataService.logPollination.mockRejectedValue(new Error('poll-err'));
     await expect(logPollination(ctx, pollinationData)).rejects.toThrow('poll-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('poll-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.logPollination.mockRejectedValue(null);
+    await expect(logPollination(ctx, pollinationData)).rejects.toBeNull();
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -100,6 +119,12 @@ describe('updatePollination', () => {
     await expect(updatePollination(ctx, { event_id: 'ev-1' } as any)).rejects.toThrow('upd2-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd2-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.updatePollination.mockRejectedValue('oops');
+    await expect(updatePollination(ctx, { event_id: 'ev-1' } as any)).rejects.toBe('oops');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('deletePollination', () => {
@@ -118,6 +143,12 @@ describe('deletePollination', () => {
     ctx.dataService.deletePollination.mockRejectedValue(new Error('del-err'));
     await expect(deletePollination(ctx, 'ev-1')).rejects.toThrow('del-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.deletePollination.mockRejectedValue({});
+    await expect(deletePollination(ctx, 'ev-1')).rejects.toEqual({});
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -138,5 +169,38 @@ describe('harvestSeeds', () => {
     ctx.dataService.harvestSeeds.mockRejectedValue(new Error('harvest-err'));
     await expect(harvestSeeds(ctx, { pollination_event_id: 'ev-1' } as any)).rejects.toThrow('harvest-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('harvest-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.harvestSeeds.mockRejectedValue('bad');
+    await expect(harvestSeeds(ctx, { pollination_event_id: 'ev-1' } as any)).rejects.toBe('bad');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
+});
+
+describe('fetchGeneticsData', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('returns data from dataService on success', async () => {
+    const fakeData = { seed_batches: [], pollination_events: [] };
+    ctx.dataService.fetchGeneticsData.mockResolvedValue(fakeData);
+
+    const result = await fetchGeneticsData(ctx);
+
+    expect(ctx.dataService.fetchGeneticsData).toHaveBeenCalled();
+    expect(result).toBe(fakeData);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    ctx.dataService.fetchGeneticsData.mockRejectedValue(new Error('fetch-err'));
+    await expect(fetchGeneticsData(ctx)).rejects.toThrow('fetch-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('fetch-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.fetchGeneticsData.mockRejectedValue('nope');
+    await expect(fetchGeneticsData(ctx)).rejects.toBe('nope');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });

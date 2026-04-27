@@ -26,11 +26,19 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
             } else {
                 this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
             }
+        } else {
+            this._sensorGrowspaces = [];
         }
     }
 
     protected firstUpdated(): void {
         this._loadGrowspaces();
+    }
+
+    protected updated(changedProps: Map<string, unknown>): void {
+        if (changedProps.has('hass')) {
+            this._loadGrowspaces();
+        }
     }
 
     public get _default_growspace(): string {

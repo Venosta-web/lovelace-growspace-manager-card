@@ -56,6 +56,8 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
                     name: String(name) || id,
                 }));
             }
+        } else {
+            this._growspaces = [];
         }
     }
 

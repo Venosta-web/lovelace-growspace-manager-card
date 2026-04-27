@@ -109050,27 +109050,27 @@ GrowspaceSubareaCard.styles = [
             }
 
             .config-button {
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: var(--secondary-text-color);
-                padding: 4px;
-                border-radius: 8px;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: color 0.2s, background 0.2s;
+                color: var(--primary-text-color, #fff);
+                cursor: pointer;
+                transition: all 0.2s;
                 flex-shrink: 0;
             }
 
             .config-button:hover {
-                color: var(--primary-text-color);
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
             }
 
             .config-button svg {
-                width: 20px;
-                height: 20px;
+                width: 22px;
+                height: 22px;
                 fill: currentColor;
             }
 
@@ -110981,6 +110981,9 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                     name: String(name) || id,
                 }));
             }
+        }
+        else {
+            this._growspaces = [];
         }
     }
     async _loadSubareas(growspaceId) {
