@@ -340,6 +340,10 @@ export class ConfigDialog extends LitElement {
   protected updated(changedProperties: Map<string, unknown>) {
     super.updated(changedProperties);
 
+    if (changedProperties.has('hass') && this.hass) {
+      this._dataService = new DataService(this.hass);
+    }
+
     // Apply initial tab state only once when dialog opens
     if (changedProperties.has('open')) {
       if (this.open) {
@@ -359,6 +363,9 @@ export class ConfigDialog extends LitElement {
     environmentData?: EnvironmentConfigData
   ) {
     this.currentTab = currentTab;
+    if (this.currentTab === ConfigTab.SUBAREAS) {
+      this._loadSubareas();
+    }
     if (environmentData) {
       this.envSelectedId = environmentData.selectedGrowspaceId;
       this.envTemperatureSensor = environmentData.temperatureSensor;
