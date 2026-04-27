@@ -232,7 +232,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         }
 
         // Keep parent growspace name in sync
-        const { devices } = this._viewController.value.grid;
+        const devices = this._viewController.value?.grid?.devices ?? [];
         if (devices.length && this._config?.growspace_id) {
             const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
             if (parent && parent.name !== this._parentGrowspaceName) {
@@ -284,13 +284,11 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     public setConfig(config: GrowspaceSubareaCardConfig): void {
         if (!config) throw new Error('Invalid configuration');
         this._config = config;
-        if (config.growspace_id) {
-            const syntheticConfig: GrowspaceManagerCardConfig = {
-                ...config,
-                default_growspace: config.growspace_id,
-            };
-            this.store.initializeSelectedDevice(syntheticConfig);
-        }
+        const syntheticConfig: GrowspaceManagerCardConfig = {
+            ...config,
+            default_growspace: config.growspace_id || '',
+        };
+        this.store.initializeSelectedDevice(syntheticConfig);
     }
 
     public getCardSize(): number {

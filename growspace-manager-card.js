@@ -108580,7 +108580,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             this._loadSubarea();
         }
         // Keep parent growspace name in sync
-        const { devices } = this._viewController.value.grid;
+        const devices = this._viewController.value?.grid?.devices ?? [];
         if (devices.length && this._config?.growspace_id) {
             const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
             if (parent && parent.name !== this._parentGrowspaceName) {
@@ -108631,13 +108631,11 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         if (!config)
             throw new Error('Invalid configuration');
         this._config = config;
-        if (config.growspace_id) {
-            const syntheticConfig = {
-                ...config,
-                default_growspace: config.growspace_id,
-            };
-            this.store.initializeSelectedDevice(syntheticConfig);
-        }
+        const syntheticConfig = {
+            ...config,
+            default_growspace: config.growspace_id || '',
+        };
+        this.store.initializeSelectedDevice(syntheticConfig);
     }
     getCardSize() {
         return 4;
