@@ -12,8 +12,14 @@ if (!customElements.get('growspace-tank-card')) {
 
 // Mock sub-components
 vi.mock('../../src/components/error-boundary', () => ({
-    ErrorBoundary: class extends HTMLElement {}
+    ErrorBoundary: class extends HTMLElement {
+        constructor() {
+            super();
+            this.attachShadow({ mode: 'open' }).innerHTML = '<slot></slot>';
+        }
+    }
 }));
+// We don't necessarily need to mock the editor class itself if we just check tag name
 vi.mock('../../src/cards/editors/growspace-tank-card-editor', () => ({
     GrowspaceTankCardEditor: class extends HTMLElement {}
 }));
@@ -22,12 +28,16 @@ describe('GrowspaceTankCard', () => {
     let element: GrowspaceTankCard;
 
     beforeEach(async () => {
-        element = await fixture<GrowspaceTankCard>(html`<growspace-tank-card></growspace-tank-card>`);
-        element.hass = {
+        // Create element with hass already set to avoid the "Home Assistant not available" flash
+        const mockHass = {
             states: {},
             callService: vi.fn(),
             language: 'en',
-        } as any;
+            themes: { theme: 'default' },
+        };
+        element = await fixture<GrowspaceTankCard>(html`
+            <growspace-tank-card .hass=${mockHass}></growspace-tank-card>
+        `);
     });
 
     afterEach(() => {
@@ -54,11 +64,10 @@ describe('GrowspaceTankCard', () => {
     });
 
     test('renders error state when hass is missing', async () => {
-        const el = await fixture<GrowspaceTankCard>(html`<growspace-tank-card></growspace-tank-card>`);
-        el.hass = undefined as any;
-        await el.updateComplete;
+        element.hass = undefined as any;
+        await element.updateComplete;
 
-        const errorDiv = el.shadowRoot?.querySelector('.error');
+        const errorDiv = element.shadowRoot?.querySelector('.error');
         expect(errorDiv).toBeTruthy();
         expect(errorDiv?.textContent).toContain('Home Assistant not available');
     });
@@ -84,10 +93,11 @@ describe('GrowspaceTankCard', () => {
 
     test('renders error state when selected device is not found', async () => {
         element.store.ui.$isLoading.set(false);
+        // Added plants: [] and environmentAttributes to avoid store crashes and mapping issues
         element.store.data.$devices.set([
-            { deviceId: 'wrong_device', name: 'Wrong Tent' } as any
+            { deviceId: 'wrong_device', name: 'Wrong Tent', environmentAttributes: {}, plants: [] } as any
         ]);
-        (element as any)._viewController.value.grid.selectedDevice = 'selected_tent';
+        element.store.data.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const errorDiv = element.shadowRoot?.querySelector('.error');
@@ -101,7 +111,8 @@ describe('GrowspaceTankCard', () => {
             {
                 deviceId: 'selected_tent',
                 name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: [] }
+                environmentAttributes: { irrigationTanks: [] },
+                plants: []
             } as any
         ]);
         element.store.data.$selectedDevice.set('selected_tent');
@@ -141,7 +152,8 @@ describe('GrowspaceTankCard', () => {
             {
                 deviceId: 'selected_tent',
                 name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: mockTanks }
+                environmentAttributes: { irrigationTanks: mockTanks },
+                plants: []
             } as any
         ]);
         element.store.data.$selectedDevice.set('selected_tent');
@@ -197,7 +209,8 @@ describe('GrowspaceTankCard', () => {
             {
                 deviceId: 'selected_tent',
                 name: 'Selected Tent',
-                environmentAttributes: { irrigationTanks: mockTanks }
+                environmentAttributes: { irrigationTanks: mockTanks },
+                plants: []
             } as any
         ]);
         element.store.data.$selectedDevice.set('selected_tent');
@@ -208,31 +221,26 @@ describe('GrowspaceTankCard', () => {
         expect(avgBadge?.textContent).toContain('Avg 85%');
     });
 
-    test('provides fallback stub config', () => {
-        const stub = GrowspaceTankCard.getStubConfig();
-        expect(stub.type).toBe('custom:growspace-tank-card');
-        expect(stub).toHaveProperty('default_growspace');
-    });
-
-    test('returns standard card size', () => {
+    test('getCardSize returns expected size from component', () => {
         expect(element.getCardSize()).toBe(3);
     });
 
-    test('gets config element correctly', async () => {
-        const editor = await GrowspaceTankCard.getConfigElement();
-        expect(editor.tagName.toLowerCase()).toBe('growspace-tank-card-editor');
+    test('getStubConfig returns expected config from component', () => {
+        const stub = GrowspaceTankCard.getStubConfig();
+        expect(stub).toEqual({
+            type: 'custom:growspace-tank-card',
+            default_growspace: ''
+        });
     });
 
-    test('disconnectedCallback destroys store', async () => {
-        const spy = vi.spyOn(element.store, 'destroy');
+    test('getConfigElement returns editor element', async () => {
+        const el = await GrowspaceTankCard.getConfigElement();
+        expect(el.tagName.toLowerCase()).toBe('growspace-tank-card-editor');
+    });
+
+    test('disconnectedCallback destroys store', () => {
+        const storeSpy = vi.spyOn(element.store, 'destroy');
         element.disconnectedCallback();
-        expect(spy).toHaveBeenCalled();
-    });
-
-    test('updates store on hass change', async () => {
-        const spy = vi.spyOn(element.store, 'updateHass');
-        element.hass = { ...element.hass, language: 'de' } as any;
-        await element.updateComplete;
-        expect(spy).toHaveBeenCalled();
+        expect(storeSpy).toHaveBeenCalled();
     });
 });

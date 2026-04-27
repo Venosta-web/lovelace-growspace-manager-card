@@ -1,6 +1,7 @@
-import { LitElement, html, css, CSSResultGroup, PropertyValues, TemplateResult } from 'lit';
+import { LitElement, html, css, svg, CSSResultGroup, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
+import { mdiCog } from '@mdi/js';
 
 import { hassContext, configContext, storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
@@ -8,6 +9,9 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import type { Subarea } from '../services/types';
 import { DataService } from '../services/data-service';
+import { ConfigTab } from '../features/environment/constants';
+import { ChartUtils } from '../utils/chart-utils';
+import '../dialogs/config-dialog';
 
 import '../components/error-boundary';
 import '../features/ui/containers/growspace-header.container';
@@ -26,6 +30,13 @@ export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
     growspace_id: string;
     subarea_id: string;
 }
+
+const SENSOR_LABEL_TO_METRIC: Record<string, string> = {
+    Temperature: 'temperature',
+    Humidity: 'humidity',
+    VPD: 'vpd',
+    CO2: 'co2',
+};
 
 @customElement('growspace-subarea-card')
 export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
@@ -49,6 +60,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
     private _dataService: DataService | null = null;
+    private _analyticsStateController: StoreController<any> | null = null;
 
     @provide({ context: hassContext })
     @property({ attribute: false })
@@ -62,6 +74,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     @state() private _loading = true;
     @state() private _error: string | null = null;
     @state() private _parentGrowspaceName = '';
+    @state() private _showConfigDialog = false;
+    @state() private _historyCache: Record<string, any[]> = {};
 
     static styles: CSSResultGroup = [
         variables,
@@ -69,16 +83,47 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         uiStyles,
         growspaceCardStyles,
         css`
-            ha-card {
-                padding: 0;
-            }
-
-            .subarea-card-wrapper {
-                padding: 16px;
+            .subarea-inner {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
             }
 
             .subarea-header {
-                padding: 16px 16px 8px;
+                padding: 0 0 4px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+            }
+
+            .subarea-header-text {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .config-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--secondary-text-color);
+                padding: 4px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: color 0.2s, background 0.2s;
+                flex-shrink: 0;
+            }
+
+            .config-button:hover {
+                color: var(--primary-text-color);
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+            }
+
+            .config-button svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
             }
 
             .subarea-title {
@@ -97,25 +142,125 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 gap: 6px;
             }
 
-            .env-config-section {
-                padding: 0 16px 16px;
+            /* Device strip — horizontal scrollable row above hero sensors */
+            .device-strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-height: 0;
             }
 
+            .device-chip {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+                border-radius: 20px;
+                padding: 5px 14px;
+                font-size: 0.82rem;
+                color: var(--primary-text-color);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                cursor: pointer;
+                transition:
+                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1);
+                user-select: none;
+            }
+
+            .device-chip:hover {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
+            }
+
+            .device-chip.active {
+                background: color-mix(
+                    in srgb,
+                    var(--primary-color, #2196f3) 15%,
+                    var(--glass-bg, rgba(255, 255, 255, 0.05))
+                );
+                border-color: var(--primary-color, #2196f3);
+                color: var(--primary-text-color);
+            }
+
+            .device-chip-state {
+                font-size: 0.75rem;
+                color: var(--secondary-text-color);
+                opacity: 0.85;
+            }
+
+            /* Hero sensor grid */
             .env-config-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
                 gap: 12px;
-                margin-top: 12px;
             }
 
             .env-sensor-item {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 12px;
-                padding: 12px;
+                border-radius: 16px;
+                padding: 14px 16px;
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
+                cursor: pointer;
+                transition:
+                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+                user-select: none;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .sensor-sparkline {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 50%;
+                pointer-events: none;
+                z-index: 0;
+                opacity: 0.6;
+            }
+
+            .sensor-sparkline path {
+                transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .env-sensor-label,
+            .env-sensor-value,
+            .env-sensor-entity {
+                position: relative;
+                z-index: 1;
+            }
+
+            .env-sensor-item:hover {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.18));
+                transform: translateY(-1px);
+            }
+
+            .env-sensor-item.active {
+                background: color-mix(
+                    in srgb,
+                    var(--primary-color, #2196f3) 15%,
+                    var(--glass-bg, rgba(255, 255, 255, 0.05))
+                );
+                border-color: var(--primary-color, #2196f3);
+            }
+
+            .env-sensor-item.non-interactive {
+                cursor: default;
+            }
+
+            .env-sensor-item.non-interactive:hover {
+                transform: none;
+                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.1));
             }
 
             .env-sensor-label {
@@ -126,13 +271,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             }
 
             .env-sensor-value {
-                font-size: 1.1rem;
-                font-weight: 500;
+                font-size: 1.5rem;
+                font-weight: 400;
                 color: var(--primary-text-color);
+                line-height: 1.1;
             }
 
             .env-sensor-entity {
-                font-size: 0.75rem;
+                font-size: 0.72rem;
                 color: var(--secondary-text-color);
                 opacity: 0.7;
                 white-space: nowrap;
@@ -140,52 +286,59 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 text-overflow: ellipsis;
             }
 
-            .device-chips-section {
-                padding: 0 16px 12px;
-            }
-
-            .device-chips-label {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: var(--secondary-text-color);
-                margin-bottom: 8px;
-            }
-
-            .device-chips-grid {
-                display: flex;
-                flex-wrap: wrap;
+            /* Additional sensors — compact secondary grid */
+            .secondary-sensors-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
                 gap: 8px;
             }
 
-            .device-chip {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 20px;
-                padding: 4px 12px;
-                font-size: 0.82rem;
-                color: var(--primary-text-color);
+            .secondary-sensor-item {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.03));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.07));
+                border-radius: 12px;
+                padding: 10px 12px;
                 display: flex;
-                align-items: center;
-                gap: 6px;
+                flex-direction: column;
+                gap: 2px;
             }
 
-            .section-title {
-                font-size: 0.8rem;
+            .secondary-sensor-label {
+                font-size: 0.7rem;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 color: var(--secondary-text-color);
-                padding: 8px 16px 4px;
+                opacity: 0.8;
+            }
+
+            .secondary-sensor-value {
+                font-size: 1rem;
+                font-weight: 500;
+                color: var(--primary-text-color);
             }
 
             .no-sensors {
-                padding: 8px 16px;
                 color: var(--secondary-text-color);
                 font-size: 0.875rem;
                 opacity: 0.7;
             }
         `,
     ];
+
+    private _initAnalyticsController(): void {
+        if (this.store?.history && !this._analyticsStateController) {
+            this._analyticsStateController = new StoreController(
+                this,
+                this.store.history.$analyticsViewState
+            );
+            this.store.history.startAutoRefresh();
+        }
+    }
+
+    connectedCallback(): void {
+        super.connectedCallback();
+        this._initAnalyticsController();
+    }
 
     protected firstUpdated(): void {
         if (this.hass) {
@@ -202,10 +355,15 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         if (!this._subarea && !this._loading) {
             this._loadSubarea();
         }
+        this._initAnalyticsController();
+        if (this.store?.history && !this._analyticsStateController?.value?.historyLoaded) {
+            this.store.history.loadHistoryOnDemand();
+        }
     }
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
+        this.store.history?.stopAutoRefresh();
         this.store.destroy();
     }
 
@@ -231,7 +389,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             this._loadSubarea();
         }
 
-        // Keep parent growspace name in sync
         const devices = this._viewController.value?.grid?.devices ?? [];
         if (devices.length && this._config?.growspace_id) {
             const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
@@ -259,12 +416,55 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
             } else {
                 this._subarea = found;
+                this._loadHistory(found);
             }
         } catch (err) {
             console.error('[GrowspaceSubareaCard] Failed to load subarea:', err);
             this._error = 'Failed to load subarea data.';
         } finally {
             this._loading = false;
+        }
+    }
+
+    private async _loadHistory(subarea: Subarea): Promise<void> {
+        if (!this._dataService) return;
+
+        const ec = subarea.environment_config;
+        const end = new Date();
+        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+
+        const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
+
+        const tempIds = ec.temperature_sensors?.length ? ec.temperature_sensors : ec.temperature_sensor ? [ec.temperature_sensor] : [];
+        const humIds = ec.humidity_sensors?.length ? ec.humidity_sensors : ec.humidity_sensor ? [ec.humidity_sensor] : [];
+        const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
+
+        if (tempIds.length) metricEntities.push({ metric: 'temperature', entityIds: tempIds });
+        if (humIds.length) metricEntities.push({ metric: 'humidity', entityIds: humIds });
+        if (vpdIds.length) metricEntities.push({ metric: 'vpd', entityIds: vpdIds });
+        if (co2Ids.length) metricEntities.push({ metric: 'co2', entityIds: co2Ids });
+
+        const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
+        if (!allEntityIds.length) return;
+
+        try {
+            const batchResults = await this._dataService.getBatchHistory(allEntityIds, start, end);
+            const cache: Record<string, any[]> = {};
+
+            for (const { metric, entityIds } of metricEntities) {
+                if (entityIds.length === 1) {
+                    cache[metric] = batchResults[entityIds[0]] || [];
+                } else {
+                    entityIds.forEach((id) => {
+                        cache[`${metric}:${id}`] = batchResults[id] || [];
+                    });
+                }
+            }
+
+            this._historyCache = cache;
+        } catch (err) {
+            console.error('[GrowspaceSubareaCard] Failed to load history:', err);
         }
     }
 
@@ -293,6 +493,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
     public getCardSize(): number {
         return 4;
+    }
+
+    private _isMetricActive(metric: string): boolean {
+        return this._analyticsStateController?.value?.activeEnvGraphs?.has(metric) ?? false;
+    }
+
+    private _toggleMetricGraph(metric: string): void {
+        this.store?.toggleEnvGraph(metric);
     }
 
     protected render(): TemplateResult {
@@ -339,33 +547,92 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const { devices } = this._viewController.value.grid;
         const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
 
+        const growspaceOptions: Record<string, string> = Object.fromEntries(
+            devices.map((d: any) => [d.deviceId, d.name])
+        );
+
+        const parentEnvAttrs = parentDevice?.environmentAttributes;
+        const configEnvData = {
+            selectedGrowspaceId: this._config.growspace_id,
+            temperatureSensor: parentEnvAttrs?.temperatureSensor || '',
+            humiditySensor: parentEnvAttrs?.humiditySensor || '',
+            vpdSensor: parentEnvAttrs?.vpdSensor || '',
+            co2Sensor: parentEnvAttrs?.co2Sensor || '',
+            circulationFanEntity: parentEnvAttrs?.circulationFanEntity || '',
+            circulationFanEntities: parentEnvAttrs?.circulationFanEntities || [],
+            stressThreshold: 0.8,
+            moldThreshold: 0.8,
+            lightSensor: parentEnvAttrs?.lightSensor || '',
+            lightSensors: parentEnvAttrs?.lightSensors || [],
+            exhaustEntity: parentEnvAttrs?.exhaustEntity || '',
+            exhaustFanEntities: parentEnvAttrs?.exhaustFanEntities || [],
+            humidifierEntity: parentEnvAttrs?.humidifierEntity || '',
+            humidifierEntities: parentEnvAttrs?.humidifierEntities || [],
+            dehumidifierEntity: parentEnvAttrs?.dehumidifierEntity || '',
+            dehumidifierEntities: parentEnvAttrs?.dehumidifierEntities || [],
+            soilMoistureSensor: parentEnvAttrs?.soilMoistureSensor || '',
+            dehumidifierControlEnabled: parentEnvAttrs?.dehumidifierControlEnabled || false,
+            dehumidifierThresholds: parentEnvAttrs?.dehumidifierThresholds || {},
+            sensorGroups: parentEnvAttrs?.sensorGroups || [],
+            sensorCoordinates: parentEnvAttrs?.sensorCoordinates || {},
+            irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
+            cameraEntities: parentEnvAttrs?.cameraEntities || [],
+        };
+
         return html`
             <error-boundary
                 .fallbackMessage=${'Failed to load Subarea Card'}
                 .onError=${this._handleError}
             >
-                <ha-card class="unified-growspace-card glass-surface glass-panel">
-                    <div class="subarea-header">
-                        <h2 class="subarea-title">${this._subarea.name}</h2>
-                        <p class="subarea-subtitle">
-                            <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
-                            ${parentName}
-                        </p>
-                    </div>
+                <ha-card>
+                    <div class="unified-growspace-card glass-surface glass-panel">
+                        <div class="subarea-inner">
+                            <div class="subarea-header">
+                                <div class="subarea-header-text">
+                                    <h2 class="subarea-title">${this._subarea.name}</h2>
+                                    <p class="subarea-subtitle">
+                                        <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                                        ${parentName}
+                                    </p>
+                                </div>
+                                <button
+                                    class="config-button"
+                                    title="Configure subareas"
+                                    @click=${() => { this._showConfigDialog = true; }}
+                                >
+                                    <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                                </button>
+                            </div>
 
-                    ${this._renderHeroSensors(ec)}
-                    ${this._renderDeviceChips(ec)}
-                    ${this._renderAdditionalSensors(ec)}
-                    ${parentDevice
-                        ? html`<growspace-analytics .device=${parentDevice}></growspace-analytics>`
-                        : ''}
+                            ${this._renderDeviceChips(ec)}
+                            ${this._renderHeroSensors(ec)}
+                            ${this._renderAdditionalSensors(ec)}
+
+                            ${parentDevice
+                                ? html`<growspace-analytics .device=${parentDevice}></growspace-analytics>`
+                                : ''}
+                        </div>
+                    </div>
                 </ha-card>
+
+                ${this._showConfigDialog ? html`
+                    <config-dialog
+                        .open=${true}
+                        .hass=${this.hass}
+                        .devices=${devices}
+                        .growspaceOptions=${growspaceOptions}
+                        .initialTab=${ConfigTab.SUBAREAS}
+                        .allowedTabs=${[ConfigTab.SUBAREAS]}
+                        .environmentData=${configEnvData}
+                        @close=${() => { this._showConfigDialog = false; }}
+                    ></config-dialog>
+                ` : nothing}
             </error-boundary>
         `;
     }
 
     private _renderHeroSensors(ec: Subarea['environment_config']): TemplateResult {
-        const heroSensors: Array<{ label: string; entityIds: string[] }> = [];
+        const heroSensors: Array<{ label: string; metric: string; entityIds: string[] }> = [];
 
         const tempSensors = ec.temperature_sensors?.length
             ? ec.temperature_sensors
@@ -384,30 +651,28 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
               : [];
         const co2Sensors = [ec.co2_sensor].filter(Boolean) as string[];
 
-        if (tempSensors.length) heroSensors.push({ label: 'Temperature', entityIds: tempSensors });
-        if (humSensors.length) heroSensors.push({ label: 'Humidity', entityIds: humSensors });
-        if (vpdSensors.length) heroSensors.push({ label: 'VPD', entityIds: vpdSensors });
-        if (co2Sensors.length) heroSensors.push({ label: 'CO2', entityIds: co2Sensors });
+        if (tempSensors.length) heroSensors.push({ label: 'Temperature', metric: 'temperature', entityIds: tempSensors });
+        if (humSensors.length) heroSensors.push({ label: 'Humidity', metric: 'humidity', entityIds: humSensors });
+        if (vpdSensors.length) heroSensors.push({ label: 'VPD', metric: 'vpd', entityIds: vpdSensors });
+        if (co2Sensors.length) heroSensors.push({ label: 'CO2', metric: 'co2', entityIds: co2Sensors });
 
         if (!heroSensors.length) {
             return html`<div class="no-sensors">No environment sensors configured for this subarea.</div>`;
         }
 
         return html`
-            <div class="env-config-section">
-                <div class="env-config-grid">
-                    ${heroSensors.map((s) => this._renderSensorCard(s.label, s.entityIds))}
-                </div>
+            <div class="env-config-grid">
+                ${heroSensors.map((s) => this._renderHeroCard(s.label, s.metric, s.entityIds))}
             </div>
         `;
     }
 
-    private _renderSensorCard(label: string, entityIds: string[]): TemplateResult {
+    private _renderHeroCard(label: string, metric: string, entityIds: string[]): TemplateResult {
         const values = entityIds
             .map((id) => {
-                const state = this.hass?.states[id];
-                return state
-                    ? `${parseFloat(state.state).toFixed(1)} ${state.attributes?.unit_of_measurement || ''}`
+                const st = this.hass?.states[id];
+                return st
+                    ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
                     : '—';
             })
             .filter(Boolean);
@@ -415,9 +680,71 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const displayValue = values.length ? values.join(' / ') : '—';
         const primaryEntityId = entityIds[0] || '';
         const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
+        const isActive = this._isMetricActive(metric);
+
+        const sparklineWidth = 140;
+        const sparklineHeight = 60;
+        const sparklineColor = ChartUtils.getSparklineColor(metric);
+        const sparklinePaths: Array<{ d: string; color: string }> = [];
+
+        if (entityIds.length > 1) {
+            entityIds.forEach((id, idx) => {
+                const path = ChartUtils.generateSparklinePath(
+                    this._historyCache[`${metric}:${id}`],
+                    sparklineWidth,
+                    sparklineHeight
+                );
+                if (path) {
+                    const color = idx === 0
+                        ? sparklineColor
+                        : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
+                    sparklinePaths.push({ d: path, color });
+                }
+            });
+        } else {
+            const path = ChartUtils.generateSparklinePath(
+                this._historyCache[metric],
+                sparklineWidth,
+                sparklineHeight
+            );
+            if (path) sparklinePaths.push({ d: path, color: sparklineColor });
+        }
 
         return html`
-            <div class="env-sensor-item">
+            <div
+                class="env-sensor-item ${isActive ? 'active' : ''}"
+                @click=${() => this._toggleMetricGraph(metric)}
+                title="Click to toggle ${label} graph"
+            >
+                ${sparklinePaths.length > 0 ? html`
+                    <svg
+                        class="sensor-sparkline"
+                        viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                        preserveAspectRatio="none"
+                    >
+                        <defs>
+                            <linearGradient id="sg-${metric}" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.25" />
+                                <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                            </linearGradient>
+                        </defs>
+                        ${sparklinePaths.map((p) => svg`
+                            <path
+                                d="${p.d}"
+                                fill="none"
+                                stroke="${p.color}"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                style="opacity: ${p.color === sparklineColor ? '1' : '0.6'}"
+                            />
+                        `)}
+                        <path
+                            d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
+                            fill="url(#sg-${metric})"
+                        />
+                    </svg>
+                ` : nothing}
                 <span class="env-sensor-label">${label}</span>
                 <span class="env-sensor-value">${displayValue}</span>
                 ${entityIds.length === 1
@@ -428,67 +755,92 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     private _renderDeviceChips(ec: Subarea['environment_config']): TemplateResult {
-        const deviceGroups: Array<{ label: string; icon: string; entities: string[] }> = [];
+        const deviceGroups: Array<{ label: string; icon: string; metric: string; entities: string[] }> = [];
 
-        if (ec.circulation_fan_entities?.length) {
-            deviceGroups.push({ label: 'Fans', icon: 'mdi:fan', entities: ec.circulation_fan_entities });
-        }
-        if (ec.humidifier_entities?.length) {
-            deviceGroups.push({ label: 'Humidifiers', icon: 'mdi:water-percent', entities: ec.humidifier_entities });
-        }
-        if (ec.dehumidifier_entities?.length) {
-            deviceGroups.push({ label: 'Dehumidifiers', icon: 'mdi:water-off', entities: ec.dehumidifier_entities });
+        if (ec.light_sensors?.length) {
+            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', metric: 'light', entities: ec.light_sensors });
         }
         if (ec.exhaust_fan_entities?.length) {
-            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', entities: ec.exhaust_fan_entities });
+            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', metric: 'exhaust', entities: ec.exhaust_fan_entities });
         }
-        if (ec.light_sensors?.length) {
-            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', entities: ec.light_sensors });
+        if (ec.circulation_fan_entities?.length) {
+            deviceGroups.push({ label: 'Fan', icon: 'mdi:fan', metric: 'circulation_fan', entities: ec.circulation_fan_entities });
+        }
+        if (ec.humidifier_entities?.length) {
+            deviceGroups.push({ label: 'Humidifier', icon: 'mdi:water-percent', metric: 'humidifier', entities: ec.humidifier_entities });
+        }
+        if (ec.dehumidifier_entities?.length) {
+            deviceGroups.push({ label: 'Dehumidifier', icon: 'mdi:water-off', metric: 'dehumidifier', entities: ec.dehumidifier_entities });
         }
 
         if (!deviceGroups.length) return html``;
 
         return html`
-            <div class="device-chips-section">
-                <div class="device-chips-label">Devices</div>
-                <div class="device-chips-grid">
-                    ${deviceGroups.map(
-                        (g) => html`
-                            <div class="device-chip">
-                                <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
-                                ${g.label} (${g.entities.length})
-                            </div>
-                        `
-                    )}
-                </div>
+            <div class="device-strip">
+                ${deviceGroups.map((g) => {
+                    const states = g.entities.map((id) => this.hass?.states[id]?.state ?? '');
+                    const onCount = states.filter((s) => s === 'on').length;
+                    const stateLabel = g.entities.length === 1
+                        ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0] || '—')
+                        : `${onCount}/${g.entities.length}`;
+                    const isActive = this._isMetricActive(g.metric);
+                    return html`
+                        <div
+                            class="device-chip ${isActive ? 'active' : ''}"
+                            @click=${() => this._toggleMetricGraph(g.metric)}
+                            title="Click to toggle ${g.label} graph"
+                        >
+                            <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
+                            ${g.label}
+                            <span class="device-chip-state">${stateLabel}</span>
+                        </div>
+                    `;
+                })}
             </div>
         `;
     }
 
     private _renderAdditionalSensors(ec: Subarea['environment_config']): TemplateResult {
-        const additionalGroups: Array<{ label: string; entities: string[] }> = [];
+        const groups: Array<{ label: string; entities: string[] }> = [];
 
         if (ec.substrate_temperature_sensors?.length) {
-            additionalGroups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
+            groups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
         }
         if (ec.ph_sensors?.length) {
-            additionalGroups.push({ label: 'pH', entities: ec.ph_sensors });
+            groups.push({ label: 'pH', entities: ec.ph_sensors });
         }
         if (ec.feed_ec_sensors?.length) {
-            additionalGroups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
+            groups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
         }
         if (ec.substrate_ec_sensors?.length) {
-            additionalGroups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
+            groups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
         }
 
-        if (!additionalGroups.length) return html``;
+        if (!groups.length) return html``;
 
         return html`
-            <div class="section-title">Additional Sensors</div>
-            <div class="env-config-section">
-                <div class="env-config-grid">
-                    ${additionalGroups.map((g) => this._renderSensorCard(g.label, g.entities))}
-                </div>
+            <div class="secondary-sensors-grid">
+                ${groups.map((g) => this._renderSecondaryCard(g.label, g.entities))}
+            </div>
+        `;
+    }
+
+    private _renderSecondaryCard(label: string, entityIds: string[]): TemplateResult {
+        const values = entityIds
+            .map((id) => {
+                const st = this.hass?.states[id];
+                return st
+                    ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
+                    : '—';
+            })
+            .filter(Boolean);
+
+        const displayValue = values.length ? values.join(' / ') : '—';
+
+        return html`
+            <div class="secondary-sensor-item">
+                <span class="secondary-sensor-label">${label}</span>
+                <span class="secondary-sensor-value">${displayValue}</span>
             </div>
         `;
     }

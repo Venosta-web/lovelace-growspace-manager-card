@@ -14748,7 +14748,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     willUpdate(changedProperties) {
         if (changedProperties.has('environmentData') && this.environmentData) {
-            this.setInitialState(this.currentTab, this.environmentData);
+            this.setInitialState(this.initialTab, this.environmentData);
         }
     }
     updated(changedProperties) {
@@ -14772,9 +14772,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // Provide initial state setting from parent
     setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
         this.currentTab = currentTab;
-        if (this.currentTab === ConfigTab.SUBAREAS) {
-            this._loadSubareas();
-        }
         if (environmentData) {
             this.envSelectedId = environmentData.selectedGrowspaceId;
             this.envTemperatureSensor = environmentData.temperatureSensor;
@@ -14810,6 +14807,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             if (environmentData.selectedGrowspaceId) {
                 this._populateEditFields(environmentData.selectedGrowspaceId);
             }
+        }
+        if (this.currentTab === ConfigTab.SUBAREAS) {
+            this._loadSubareas();
         }
     }
     _close() {
@@ -15056,48 +15056,54 @@ let ConfigDialog = class ConfigDialog extends i$3 {
 
           <!--Tabs -->
           <div class="config-tabs">
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.ADD_GROWSPACE) ? x `
             <div
               class="config-tab ${this.currentTab === ConfigTab.ADD_GROWSPACE ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.ADD_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
               Add Growspace
-            </div>
+            </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.EDIT_GROWSPACE) ? x `
             <div
               class="config-tab ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.EDIT_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
               Edit Growspace
-            </div>
+            </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.ENVIRONMENT) ? x `
             <div
               class="config-tab ${this.currentTab === ConfigTab.ENVIRONMENT ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.ENVIRONMENT)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
-            </div>
+            </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.DEHUMIDIFIER) ? x `
             <div
               class="config-tab ${this.currentTab === ConfigTab.DEHUMIDIFIER ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.DEHUMIDIFIER)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
-            </div>
+            </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SENSOR_GROUPS) ? x `
             <div
               class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.SENSOR_GROUPS)}
             >
                <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
               3D Heatmap
-            </div>
+            </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SUBAREAS) ? x `
             <div
               class="config-tab ${this.currentTab === ConfigTab.SUBAREAS ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.SUBAREAS)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewGrid}"></path></svg>
               Subareas
-            </div>
+            </div>` : E}
           </div>
 
           <!--Content -->
@@ -16241,6 +16247,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], ConfigDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ attribute: false })
+], ConfigDialog.prototype, "allowedTabs", void 0);
 __decorate([
     n$5({ type: String })
 ], ConfigDialog.prototype, "currentTab", void 0);
@@ -108524,10 +108533,13 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         });
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._dataService = null;
+        this._analyticsStateController = null;
         this._subarea = null;
         this._loading = true;
         this._error = null;
         this._parentGrowspaceName = '';
+        this._showConfigDialog = false;
+        this._historyCache = {};
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Subarea Card caught error:', error, errorInfo);
             if (this.hass) {
@@ -108538,6 +108550,16 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 });
             }
         };
+    }
+    _initAnalyticsController() {
+        if (this.store?.history && !this._analyticsStateController) {
+            this._analyticsStateController = new libExports.StoreController(this, this.store.history.$analyticsViewState);
+            this.store.history.startAutoRefresh();
+        }
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._initAnalyticsController();
     }
     firstUpdated() {
         if (this.hass) {
@@ -108554,9 +108576,14 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         if (!this._subarea && !this._loading) {
             this._loadSubarea();
         }
+        this._initAnalyticsController();
+        if (this.store?.history && !this._analyticsStateController?.value?.historyLoaded) {
+            this.store.history.loadHistoryOnDemand();
+        }
     }
     disconnectedCallback() {
         super.disconnectedCallback();
+        this.store.history?.stopAutoRefresh();
         this.store.destroy();
     }
     updated(changedProps) {
@@ -108579,7 +108606,6 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             this.store.initializeSelectedDevice(syntheticConfig);
             this._loadSubarea();
         }
-        // Keep parent growspace name in sync
         const devices = this._viewController.value?.grid?.devices ?? [];
         if (devices.length && this._config?.growspace_id) {
             const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
@@ -108606,6 +108632,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             }
             else {
                 this._subarea = found;
+                this._loadHistory(found);
             }
         }
         catch (err) {
@@ -108614,6 +108641,47 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         }
         finally {
             this._loading = false;
+        }
+    }
+    async _loadHistory(subarea) {
+        if (!this._dataService)
+            return;
+        const ec = subarea.environment_config;
+        const end = new Date();
+        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        const metricEntities = [];
+        const tempIds = ec.temperature_sensors?.length ? ec.temperature_sensors : ec.temperature_sensor ? [ec.temperature_sensor] : [];
+        const humIds = ec.humidity_sensors?.length ? ec.humidity_sensors : ec.humidity_sensor ? [ec.humidity_sensor] : [];
+        const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
+        if (tempIds.length)
+            metricEntities.push({ metric: 'temperature', entityIds: tempIds });
+        if (humIds.length)
+            metricEntities.push({ metric: 'humidity', entityIds: humIds });
+        if (vpdIds.length)
+            metricEntities.push({ metric: 'vpd', entityIds: vpdIds });
+        if (co2Ids.length)
+            metricEntities.push({ metric: 'co2', entityIds: co2Ids });
+        const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
+        if (!allEntityIds.length)
+            return;
+        try {
+            const batchResults = await this._dataService.getBatchHistory(allEntityIds, start, end);
+            const cache = {};
+            for (const { metric, entityIds } of metricEntities) {
+                if (entityIds.length === 1) {
+                    cache[metric] = batchResults[entityIds[0]] || [];
+                }
+                else {
+                    entityIds.forEach((id) => {
+                        cache[`${metric}:${id}`] = batchResults[id] || [];
+                    });
+                }
+            }
+            this._historyCache = cache;
+        }
+        catch (err) {
+            console.error('[GrowspaceSubareaCard] Failed to load history:', err);
         }
     }
     static async getConfigElement() {
@@ -108639,6 +108707,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     }
     getCardSize() {
         return 4;
+    }
+    _isMetricActive(metric) {
+        return this._analyticsStateController?.value?.activeEnvGraphs?.has(metric) ?? false;
+    }
+    _toggleMetricGraph(metric) {
+        this.store?.toggleEnvGraph(metric);
     }
     render() {
         if (!this.hass) {
@@ -108678,27 +108752,82 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         const parentName = this._parentGrowspaceName || this._config.growspace_id;
         const { devices } = this._viewController.value.grid;
         const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
+        const growspaceOptions = Object.fromEntries(devices.map((d) => [d.deviceId, d.name]));
+        const parentEnvAttrs = parentDevice?.environmentAttributes;
+        const configEnvData = {
+            selectedGrowspaceId: this._config.growspace_id,
+            temperatureSensor: parentEnvAttrs?.temperatureSensor || '',
+            humiditySensor: parentEnvAttrs?.humiditySensor || '',
+            vpdSensor: parentEnvAttrs?.vpdSensor || '',
+            co2Sensor: parentEnvAttrs?.co2Sensor || '',
+            circulationFanEntity: parentEnvAttrs?.circulationFanEntity || '',
+            circulationFanEntities: parentEnvAttrs?.circulationFanEntities || [],
+            stressThreshold: 0.8,
+            moldThreshold: 0.8,
+            lightSensor: parentEnvAttrs?.lightSensor || '',
+            lightSensors: parentEnvAttrs?.lightSensors || [],
+            exhaustEntity: parentEnvAttrs?.exhaustEntity || '',
+            exhaustFanEntities: parentEnvAttrs?.exhaustFanEntities || [],
+            humidifierEntity: parentEnvAttrs?.humidifierEntity || '',
+            humidifierEntities: parentEnvAttrs?.humidifierEntities || [],
+            dehumidifierEntity: parentEnvAttrs?.dehumidifierEntity || '',
+            dehumidifierEntities: parentEnvAttrs?.dehumidifierEntities || [],
+            soilMoistureSensor: parentEnvAttrs?.soilMoistureSensor || '',
+            dehumidifierControlEnabled: parentEnvAttrs?.dehumidifierControlEnabled || false,
+            dehumidifierThresholds: parentEnvAttrs?.dehumidifierThresholds || {},
+            sensorGroups: parentEnvAttrs?.sensorGroups || [],
+            sensorCoordinates: parentEnvAttrs?.sensorCoordinates || {},
+            irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
+            cameraEntities: parentEnvAttrs?.cameraEntities || [],
+        };
         return x `
             <error-boundary
                 .fallbackMessage=${'Failed to load Subarea Card'}
                 .onError=${this._handleError}
             >
-                <ha-card class="unified-growspace-card glass-surface glass-panel">
-                    <div class="subarea-header">
-                        <h2 class="subarea-title">${this._subarea.name}</h2>
-                        <p class="subarea-subtitle">
-                            <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
-                            ${parentName}
-                        </p>
-                    </div>
+                <ha-card>
+                    <div class="unified-growspace-card glass-surface glass-panel">
+                        <div class="subarea-inner">
+                            <div class="subarea-header">
+                                <div class="subarea-header-text">
+                                    <h2 class="subarea-title">${this._subarea.name}</h2>
+                                    <p class="subarea-subtitle">
+                                        <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                                        ${parentName}
+                                    </p>
+                                </div>
+                                <button
+                                    class="config-button"
+                                    title="Configure subareas"
+                                    @click=${() => { this._showConfigDialog = true; }}
+                                >
+                                    <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                                </button>
+                            </div>
 
-                    ${this._renderHeroSensors(ec)}
-                    ${this._renderDeviceChips(ec)}
-                    ${this._renderAdditionalSensors(ec)}
-                    ${parentDevice
+                            ${this._renderDeviceChips(ec)}
+                            ${this._renderHeroSensors(ec)}
+                            ${this._renderAdditionalSensors(ec)}
+
+                            ${parentDevice
             ? x `<growspace-analytics .device=${parentDevice}></growspace-analytics>`
             : ''}
+                        </div>
+                    </div>
                 </ha-card>
+
+                ${this._showConfigDialog ? x `
+                    <config-dialog
+                        .open=${true}
+                        .hass=${this.hass}
+                        .devices=${devices}
+                        .growspaceOptions=${growspaceOptions}
+                        .initialTab=${ConfigTab.SUBAREAS}
+                        .allowedTabs=${[ConfigTab.SUBAREAS]}
+                        .environmentData=${configEnvData}
+                        @close=${() => { this._showConfigDialog = false; }}
+                    ></config-dialog>
+                ` : E}
             </error-boundary>
         `;
     }
@@ -108721,38 +108850,90 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 : [];
         const co2Sensors = [ec.co2_sensor].filter(Boolean);
         if (tempSensors.length)
-            heroSensors.push({ label: 'Temperature', entityIds: tempSensors });
+            heroSensors.push({ label: 'Temperature', metric: 'temperature', entityIds: tempSensors });
         if (humSensors.length)
-            heroSensors.push({ label: 'Humidity', entityIds: humSensors });
+            heroSensors.push({ label: 'Humidity', metric: 'humidity', entityIds: humSensors });
         if (vpdSensors.length)
-            heroSensors.push({ label: 'VPD', entityIds: vpdSensors });
+            heroSensors.push({ label: 'VPD', metric: 'vpd', entityIds: vpdSensors });
         if (co2Sensors.length)
-            heroSensors.push({ label: 'CO2', entityIds: co2Sensors });
+            heroSensors.push({ label: 'CO2', metric: 'co2', entityIds: co2Sensors });
         if (!heroSensors.length) {
             return x `<div class="no-sensors">No environment sensors configured for this subarea.</div>`;
         }
         return x `
-            <div class="env-config-section">
-                <div class="env-config-grid">
-                    ${heroSensors.map((s) => this._renderSensorCard(s.label, s.entityIds))}
-                </div>
+            <div class="env-config-grid">
+                ${heroSensors.map((s) => this._renderHeroCard(s.label, s.metric, s.entityIds))}
             </div>
         `;
     }
-    _renderSensorCard(label, entityIds) {
+    _renderHeroCard(label, metric, entityIds) {
         const values = entityIds
             .map((id) => {
-            const state = this.hass?.states[id];
-            return state
-                ? `${parseFloat(state.state).toFixed(1)} ${state.attributes?.unit_of_measurement || ''}`
+            const st = this.hass?.states[id];
+            return st
+                ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
                 : '—';
         })
             .filter(Boolean);
         const displayValue = values.length ? values.join(' / ') : '—';
         const primaryEntityId = entityIds[0] || '';
         const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
+        const isActive = this._isMetricActive(metric);
+        const sparklineWidth = 140;
+        const sparklineHeight = 60;
+        const sparklineColor = ChartUtils.getSparklineColor(metric);
+        const sparklinePaths = [];
+        if (entityIds.length > 1) {
+            entityIds.forEach((id, idx) => {
+                const path = ChartUtils.generateSparklinePath(this._historyCache[`${metric}:${id}`], sparklineWidth, sparklineHeight);
+                if (path) {
+                    const color = idx === 0
+                        ? sparklineColor
+                        : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
+                    sparklinePaths.push({ d: path, color });
+                }
+            });
+        }
+        else {
+            const path = ChartUtils.generateSparklinePath(this._historyCache[metric], sparklineWidth, sparklineHeight);
+            if (path)
+                sparklinePaths.push({ d: path, color: sparklineColor });
+        }
         return x `
-            <div class="env-sensor-item">
+            <div
+                class="env-sensor-item ${isActive ? 'active' : ''}"
+                @click=${() => this._toggleMetricGraph(metric)}
+                title="Click to toggle ${label} graph"
+            >
+                ${sparklinePaths.length > 0 ? x `
+                    <svg
+                        class="sensor-sparkline"
+                        viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                        preserveAspectRatio="none"
+                    >
+                        <defs>
+                            <linearGradient id="sg-${metric}" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.25" />
+                                <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                            </linearGradient>
+                        </defs>
+                        ${sparklinePaths.map((p) => b `
+                            <path
+                                d="${p.d}"
+                                fill="none"
+                                stroke="${p.color}"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                style="opacity: ${p.color === sparklineColor ? '1' : '0.6'}"
+                            />
+                        `)}
+                        <path
+                            d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
+                            fill="url(#sg-${metric})"
+                        />
+                    </svg>
+                ` : E}
                 <span class="env-sensor-label">${label}</span>
                 <span class="env-sensor-value">${displayValue}</span>
                 ${entityIds.length === 1
@@ -108763,59 +108944,83 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     }
     _renderDeviceChips(ec) {
         const deviceGroups = [];
-        if (ec.circulation_fan_entities?.length) {
-            deviceGroups.push({ label: 'Fans', icon: 'mdi:fan', entities: ec.circulation_fan_entities });
-        }
-        if (ec.humidifier_entities?.length) {
-            deviceGroups.push({ label: 'Humidifiers', icon: 'mdi:water-percent', entities: ec.humidifier_entities });
-        }
-        if (ec.dehumidifier_entities?.length) {
-            deviceGroups.push({ label: 'Dehumidifiers', icon: 'mdi:water-off', entities: ec.dehumidifier_entities });
+        if (ec.light_sensors?.length) {
+            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', metric: 'light', entities: ec.light_sensors });
         }
         if (ec.exhaust_fan_entities?.length) {
-            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', entities: ec.exhaust_fan_entities });
+            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', metric: 'exhaust', entities: ec.exhaust_fan_entities });
         }
-        if (ec.light_sensors?.length) {
-            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', entities: ec.light_sensors });
+        if (ec.circulation_fan_entities?.length) {
+            deviceGroups.push({ label: 'Fan', icon: 'mdi:fan', metric: 'circulation_fan', entities: ec.circulation_fan_entities });
+        }
+        if (ec.humidifier_entities?.length) {
+            deviceGroups.push({ label: 'Humidifier', icon: 'mdi:water-percent', metric: 'humidifier', entities: ec.humidifier_entities });
+        }
+        if (ec.dehumidifier_entities?.length) {
+            deviceGroups.push({ label: 'Dehumidifier', icon: 'mdi:water-off', metric: 'dehumidifier', entities: ec.dehumidifier_entities });
         }
         if (!deviceGroups.length)
             return x ``;
         return x `
-            <div class="device-chips-section">
-                <div class="device-chips-label">Devices</div>
-                <div class="device-chips-grid">
-                    ${deviceGroups.map((g) => x `
-                            <div class="device-chip">
-                                <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
-                                ${g.label} (${g.entities.length})
-                            </div>
-                        `)}
-                </div>
+            <div class="device-strip">
+                ${deviceGroups.map((g) => {
+            const states = g.entities.map((id) => this.hass?.states[id]?.state ?? '');
+            const onCount = states.filter((s) => s === 'on').length;
+            const stateLabel = g.entities.length === 1
+                ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0] || '—')
+                : `${onCount}/${g.entities.length}`;
+            const isActive = this._isMetricActive(g.metric);
+            return x `
+                        <div
+                            class="device-chip ${isActive ? 'active' : ''}"
+                            @click=${() => this._toggleMetricGraph(g.metric)}
+                            title="Click to toggle ${g.label} graph"
+                        >
+                            <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
+                            ${g.label}
+                            <span class="device-chip-state">${stateLabel}</span>
+                        </div>
+                    `;
+        })}
             </div>
         `;
     }
     _renderAdditionalSensors(ec) {
-        const additionalGroups = [];
+        const groups = [];
         if (ec.substrate_temperature_sensors?.length) {
-            additionalGroups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
+            groups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
         }
         if (ec.ph_sensors?.length) {
-            additionalGroups.push({ label: 'pH', entities: ec.ph_sensors });
+            groups.push({ label: 'pH', entities: ec.ph_sensors });
         }
         if (ec.feed_ec_sensors?.length) {
-            additionalGroups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
+            groups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
         }
         if (ec.substrate_ec_sensors?.length) {
-            additionalGroups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
+            groups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
         }
-        if (!additionalGroups.length)
+        if (!groups.length)
             return x ``;
         return x `
-            <div class="section-title">Additional Sensors</div>
-            <div class="env-config-section">
-                <div class="env-config-grid">
-                    ${additionalGroups.map((g) => this._renderSensorCard(g.label, g.entities))}
-                </div>
+            <div class="secondary-sensors-grid">
+                ${groups.map((g) => this._renderSecondaryCard(g.label, g.entities))}
+            </div>
+        `;
+    }
+    _renderSecondaryCard(label, entityIds) {
+        const values = entityIds
+            .map((id) => {
+            const st = this.hass?.states[id];
+            return st
+                ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
+                : '—';
+        })
+            .filter(Boolean);
+        const displayValue = values.length ? values.join(' / ') : '—';
+        return x `
+            <div class="secondary-sensor-item">
+                <span class="secondary-sensor-label">${label}</span>
+                <span class="secondary-sensor-value">${displayValue}</span>
             </div>
         `;
     }
@@ -108826,16 +109031,47 @@ GrowspaceSubareaCard.styles = [
     uiStyles,
     growspaceCardStyles,
     i$6 `
-            ha-card {
-                padding: 0;
-            }
-
-            .subarea-card-wrapper {
-                padding: 16px;
+            .subarea-inner {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
             }
 
             .subarea-header {
-                padding: 16px 16px 8px;
+                padding: 0 0 4px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+            }
+
+            .subarea-header-text {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .config-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--secondary-text-color);
+                padding: 4px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: color 0.2s, background 0.2s;
+                flex-shrink: 0;
+            }
+
+            .config-button:hover {
+                color: var(--primary-text-color);
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+            }
+
+            .config-button svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
             }
 
             .subarea-title {
@@ -108854,25 +109090,125 @@ GrowspaceSubareaCard.styles = [
                 gap: 6px;
             }
 
-            .env-config-section {
-                padding: 0 16px 16px;
+            /* Device strip — horizontal scrollable row above hero sensors */
+            .device-strip {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-height: 0;
             }
 
+            .device-chip {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+                border-radius: 20px;
+                padding: 5px 14px;
+                font-size: 0.82rem;
+                color: var(--primary-text-color);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                cursor: pointer;
+                transition:
+                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1);
+                user-select: none;
+            }
+
+            .device-chip:hover {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
+            }
+
+            .device-chip.active {
+                background: color-mix(
+                    in srgb,
+                    var(--primary-color, #2196f3) 15%,
+                    var(--glass-bg, rgba(255, 255, 255, 0.05))
+                );
+                border-color: var(--primary-color, #2196f3);
+                color: var(--primary-text-color);
+            }
+
+            .device-chip-state {
+                font-size: 0.75rem;
+                color: var(--secondary-text-color);
+                opacity: 0.85;
+            }
+
+            /* Hero sensor grid */
             .env-config-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
                 gap: 12px;
-                margin-top: 12px;
             }
 
             .env-sensor-item {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 12px;
-                padding: 12px;
+                border-radius: 16px;
+                padding: 14px 16px;
                 display: flex;
                 flex-direction: column;
                 gap: 4px;
+                cursor: pointer;
+                transition:
+                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+                    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+                user-select: none;
+                overflow: hidden;
+                position: relative;
+            }
+
+            .sensor-sparkline {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 50%;
+                pointer-events: none;
+                z-index: 0;
+                opacity: 0.6;
+            }
+
+            .sensor-sparkline path {
+                transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .env-sensor-label,
+            .env-sensor-value,
+            .env-sensor-entity {
+                position: relative;
+                z-index: 1;
+            }
+
+            .env-sensor-item:hover {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.18));
+                transform: translateY(-1px);
+            }
+
+            .env-sensor-item.active {
+                background: color-mix(
+                    in srgb,
+                    var(--primary-color, #2196f3) 15%,
+                    var(--glass-bg, rgba(255, 255, 255, 0.05))
+                );
+                border-color: var(--primary-color, #2196f3);
+            }
+
+            .env-sensor-item.non-interactive {
+                cursor: default;
+            }
+
+            .env-sensor-item.non-interactive:hover {
+                transform: none;
+                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.1));
             }
 
             .env-sensor-label {
@@ -108883,13 +109219,14 @@ GrowspaceSubareaCard.styles = [
             }
 
             .env-sensor-value {
-                font-size: 1.1rem;
-                font-weight: 500;
+                font-size: 1.5rem;
+                font-weight: 400;
                 color: var(--primary-text-color);
+                line-height: 1.1;
             }
 
             .env-sensor-entity {
-                font-size: 0.75rem;
+                font-size: 0.72rem;
                 color: var(--secondary-text-color);
                 opacity: 0.7;
                 white-space: nowrap;
@@ -108897,46 +109234,38 @@ GrowspaceSubareaCard.styles = [
                 text-overflow: ellipsis;
             }
 
-            .device-chips-section {
-                padding: 0 16px 12px;
-            }
-
-            .device-chips-label {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: var(--secondary-text-color);
-                margin-bottom: 8px;
-            }
-
-            .device-chips-grid {
-                display: flex;
-                flex-wrap: wrap;
+            /* Additional sensors — compact secondary grid */
+            .secondary-sensors-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
                 gap: 8px;
             }
 
-            .device-chip {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 20px;
-                padding: 4px 12px;
-                font-size: 0.82rem;
-                color: var(--primary-text-color);
+            .secondary-sensor-item {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.03));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.07));
+                border-radius: 12px;
+                padding: 10px 12px;
                 display: flex;
-                align-items: center;
-                gap: 6px;
+                flex-direction: column;
+                gap: 2px;
             }
 
-            .section-title {
-                font-size: 0.8rem;
+            .secondary-sensor-label {
+                font-size: 0.7rem;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 color: var(--secondary-text-color);
-                padding: 8px 16px 4px;
+                opacity: 0.8;
+            }
+
+            .secondary-sensor-value {
+                font-size: 1rem;
+                font-weight: 500;
+                color: var(--primary-text-color);
             }
 
             .no-sensors {
-                padding: 8px 16px;
                 color: var(--secondary-text-color);
                 font-size: 0.875rem;
                 opacity: 0.7;
@@ -108966,6 +109295,12 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceSubareaCard.prototype, "_parentGrowspaceName", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_showConfigDialog", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_historyCache", void 0);
 GrowspaceSubareaCard = __decorate([
     t$2('growspace-subarea-card')
 ], GrowspaceSubareaCard);

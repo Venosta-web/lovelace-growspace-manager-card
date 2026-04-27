@@ -53,6 +53,8 @@ export class ConfigDialog extends LitElement {
 
   @property({ type: String }) initialTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
+  @property({ attribute: false }) allowedTabs?: ConfigTab[];
+
   @property({ type: String })
   public currentTab: ConfigTab = ConfigTab.ENVIRONMENT;
 
@@ -333,7 +335,7 @@ export class ConfigDialog extends LitElement {
 
   protected willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('environmentData') && this.environmentData) {
-      this.setInitialState(this.currentTab, this.environmentData);
+      this.setInitialState(this.initialTab, this.environmentData);
     }
   }
 
@@ -363,9 +365,6 @@ export class ConfigDialog extends LitElement {
     environmentData?: EnvironmentConfigData
   ) {
     this.currentTab = currentTab;
-    if (this.currentTab === ConfigTab.SUBAREAS) {
-      this._loadSubareas();
-    }
     if (environmentData) {
       this.envSelectedId = environmentData.selectedGrowspaceId;
       this.envTemperatureSensor = environmentData.temperatureSensor;
@@ -402,6 +401,9 @@ export class ConfigDialog extends LitElement {
       if (environmentData.selectedGrowspaceId) {
         this._populateEditFields(environmentData.selectedGrowspaceId);
       }
+    }
+    if (this.currentTab === ConfigTab.SUBAREAS) {
+      this._loadSubareas();
     }
   }
 
@@ -680,48 +682,54 @@ export class ConfigDialog extends LitElement {
 
           <!--Tabs -->
           <div class="config-tabs">
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.ADD_GROWSPACE) ? html`
             <div
               class="config-tab ${this.currentTab === ConfigTab.ADD_GROWSPACE ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.ADD_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewDashboard}"></path></svg>
               Add Growspace
-            </div>
+            </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.EDIT_GROWSPACE) ? html`
             <div
               class="config-tab ${this.currentTab === ConfigTab.EDIT_GROWSPACE ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.EDIT_GROWSPACE)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
               Edit Growspace
-            </div>
+            </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.ENVIRONMENT) ? html`
             <div
               class="config-tab ${this.currentTab === ConfigTab.ENVIRONMENT ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.ENVIRONMENT)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiThermometer}"></path></svg>
               Environment
-            </div>
+            </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.DEHUMIDIFIER) ? html`
             <div
               class="config-tab ${this.currentTab === ConfigTab.DEHUMIDIFIER ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.DEHUMIDIFIER)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
-            </div>
+            </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SENSOR_GROUPS) ? html`
             <div
               class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.SENSOR_GROUPS)}
             >
                <svg viewBox="0 0 24 24"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z"></path></svg>
               3D Heatmap
-            </div>
+            </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SUBAREAS) ? html`
             <div
               class="config-tab ${this.currentTab === ConfigTab.SUBAREAS ? 'active' : ''}"
               @click=${() => this._switchTab(ConfigTab.SUBAREAS)}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiViewGrid}"></path></svg>
               Subareas
-            </div>
+            </div>` : nothing}
           </div>
 
           <!--Content -->

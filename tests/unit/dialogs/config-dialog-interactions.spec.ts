@@ -30,7 +30,8 @@ describe('ConfigDialog Interactions', () => {
             ConfigTab.EDIT_GROWSPACE,
             ConfigTab.ENVIRONMENT,
             ConfigTab.DEHUMIDIFIER,
-            ConfigTab.SENSOR_GROUPS
+            ConfigTab.SENSOR_GROUPS,
+            ConfigTab.SUBAREAS
         ];
 
         if (buttons) {
