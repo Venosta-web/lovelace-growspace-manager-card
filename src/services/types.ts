@@ -347,6 +347,47 @@ export interface GrowspaceStats {
   totalPlants: number;
 }
 
+export interface EnvironmentConfig {
+  temperature_sensor?: string | null;
+  humidity_sensor?: string | null;
+  vpd_sensor?: string | null;
+  co2_sensor?: string | null;
+  soil_moisture_sensor?: string | null;
+  veg_day_hours?: number;
+  flower_day_hours?: number;
+  temperature_sensors?: string[];
+  humidity_sensors?: string[];
+  vpd_sensors?: string[];
+  light_sensors?: string[];
+  exhaust_fan_entities?: string[];
+  circulation_fan_entities?: string[];
+  humidifier_entities?: string[];
+  dehumidifier_entities?: string[];
+  sensor_coordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+  sensor_groups?: SensorGroup[];
+  substrate_temperature_sensors?: string[];
+  camera_entities?: string[];
+  ph_sensors?: string[];
+  feed_ec_sensors?: string[];
+  substrate_ec_sensors?: string[];
+  runoff_ec_sensors?: string[];
+  drain_volume_sensors?: string[];
+  irrigation_flow_sensors?: string[];
+  energy_sensors?: string[];
+  electricity_cost_per_kwh?: number;
+  dli_target_veg?: number;
+  dli_target_flower?: number;
+  control_dehumidifier?: boolean;
+  stress_threshold?: number;
+  mold_threshold?: number;
+}
+
+export interface Subarea {
+  id: string;
+  name: string;
+  environment_config: EnvironmentConfig;
+}
+
 export interface GrowspaceDevice {
   deviceId: string;
   overviewEntityId?: string;
@@ -373,6 +414,7 @@ export interface GrowspaceDevice {
   drainConfig?: DrainConfig | null;
   energyTracking?: EnergyTracking | null;
   waterUsage?: WaterUsage | null;
+  subareas?: Subarea[];
 }
 
 // --- Utils ---

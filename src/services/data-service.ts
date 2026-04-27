@@ -15,7 +15,9 @@ import { CameraAPI } from './api/camera-api';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
 import { GeneticsAPI } from './api/genetics-api';
+import { SubareaAPI } from './api/subarea-api';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
+import type { Subarea, EnvironmentConfig } from './types';
 
 /**
  * DataService - Thin facade coordinating domain-specific API services.
@@ -44,6 +46,7 @@ export class DataService {
   private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
   private _geneticsAPI: GeneticsAPI;
+  private _subareaAPI: SubareaAPI;
 
   constructor(hass?: HomeAssistant) {
     // Initialize all API services
@@ -58,6 +61,7 @@ export class DataService {
     this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
     this._geneticsAPI = new GeneticsAPI(hass);
+    this._subareaAPI = new SubareaAPI(hass);
 
     if (hass) {
       this.hass = hass;
@@ -81,6 +85,7 @@ export class DataService {
       this._visionAPI,
       this._reportAPI,
       this._geneticsAPI,
+      this._subareaAPI,
     ].forEach((api) => api.updateHass(hass));
   }
 
@@ -506,6 +511,26 @@ export class DataService {
 
   harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
     this._geneticsAPI.harvestSeeds(data);
+
+  // ========================================
+  // Subarea API Delegations
+  // ========================================
+
+  getSubareas = (growspaceId: string): Promise<Subarea[]> =>
+    this._subareaAPI.getSubareas(growspaceId);
+
+  addSubarea = (growspaceId: string, name: string): Promise<Subarea> =>
+    this._subareaAPI.addSubarea(growspaceId, name);
+
+  updateSubarea = (
+    growspaceId: string,
+    subareaId: string,
+    environmentConfig: Partial<EnvironmentConfig>
+  ): Promise<Subarea> =>
+    this._subareaAPI.updateSubarea(growspaceId, subareaId, environmentConfig);
+
+  removeSubarea = (growspaceId: string, subareaId: string): Promise<void> =>
+    this._subareaAPI.removeSubarea(growspaceId, subareaId);
 
   // ========================================
   // Legacy/Generic Service Call Support
