@@ -25,8 +25,10 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     }
 
     protected firstUpdated(): void {
-        this._loadGrowspaces();
-        if (this._config?.growspace_id) {
+        if (this._growspaces.length === 0) {
+            this._loadGrowspaces();
+        }
+        if (this._config?.growspace_id && this._subareas.length === 0) {
             this._loadSubareas(this._config.growspace_id);
         }
     }

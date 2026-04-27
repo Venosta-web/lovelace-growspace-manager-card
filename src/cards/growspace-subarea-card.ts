@@ -199,7 +199,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             };
             this.store.initializeSelectedDevice(syntheticConfig);
         }
-        this._loadSubarea();
+        if (!this._subarea && !this._loading) {
+            this._loadSubarea();
+        }
     }
 
     disconnectedCallback(): void {
@@ -281,6 +283,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
     public setConfig(config: GrowspaceSubareaCardConfig): void {
         if (!config) throw new Error('Invalid configuration');
+        if (!config.growspace_id) throw new Error('growspace_id is required');
+        if (!config.subarea_id) throw new Error('subarea_id is required');
         this._config = config;
         if (config.growspace_id) {
             const syntheticConfig: GrowspaceManagerCardConfig = {
@@ -336,6 +340,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
         const ec = this._subarea.environment_config;
         const parentName = this._parentGrowspaceName || this._config.growspace_id;
+        const { devices } = this._viewController.value.grid;
+        const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
 
         return html`
             <error-boundary
@@ -354,6 +360,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                     ${this._renderHeroSensors(ec)}
                     ${this._renderDeviceChips(ec)}
                     ${this._renderAdditionalSensors(ec)}
+                    ${parentDevice
+                        ? html`<growspace-analytics .device=${parentDevice}></growspace-analytics>`
+                        : ''}
                 </ha-card>
             </error-boundary>
         `;
