@@ -13,6 +13,7 @@ export { GrowspaceGridCard } from './cards/growspace-grid-card';
 export { GrowspaceAnalyticsCard } from './cards/growspace-analytics-card';
 export { GrowspaceAiInsightCard } from './cards/growspace-ai-insight-card';
 export { GrowspaceTankCard } from './cards/growspace-tank-card';
+export { GrowspaceSubareaCard } from './cards/growspace-subarea-card';
 
 // Register cards in the Home Assistant card picker
 declare global {
@@ -56,6 +57,12 @@ window.customCards.push(
     type: 'growspace-tank-card',
     name: 'Growspace Tank',
     description: 'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
+    preview: false,
+  },
+  {
+    type: 'growspace-subarea-card',
+    name: 'Growspace Subarea',
+    description: 'Environment sensors and device status for a specific subarea within a growspace.',
     preview: false,
   },
 );

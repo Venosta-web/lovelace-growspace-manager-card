@@ -5332,6 +5332,10 @@ const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
 const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
 const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
 const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
+const WS_TYPE_GET_SUBAREAS = 'growspace_manager/get_subareas';
+const WS_TYPE_ADD_SUBAREA = 'growspace_manager/add_subarea';
+const WS_TYPE_UPDATE_SUBAREA = 'growspace_manager/update_subarea';
+const WS_TYPE_REMOVE_SUBAREA = 'growspace_manager/remove_subarea';
 // Home Assistant services
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
@@ -6919,6 +6923,84 @@ class GeneticsAPI extends BaseAPI {
     }
 }
 
+class SubareaAPI extends BaseAPI {
+    /**
+     * Fetches all subareas for a growspace.
+     */
+    async getSubareas(growspaceId) {
+        if (!this.hass)
+            return [];
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_GET_SUBAREAS,
+                growspace_id: growspaceId,
+            });
+            return response;
+        }
+        catch (error) {
+            console.error(`[SubareaAPI] Failed to get subareas for ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Adds a new subarea to a growspace.
+     */
+    async addSubarea(growspaceId, name) {
+        if (!this.hass)
+            throw new Error('[SubareaAPI] Hass instance is missing');
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_ADD_SUBAREA,
+                growspace_id: growspaceId,
+                name,
+            });
+            return response;
+        }
+        catch (error) {
+            console.error(`[SubareaAPI] Failed to add subarea to ${growspaceId}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Updates the environment config of an existing subarea.
+     */
+    async updateSubarea(growspaceId, subareaId, environmentConfig) {
+        if (!this.hass)
+            throw new Error('[SubareaAPI] Hass instance is missing');
+        try {
+            const response = await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_UPDATE_SUBAREA,
+                growspace_id: growspaceId,
+                subarea_id: subareaId,
+                environment_config: environmentConfig,
+            });
+            return response;
+        }
+        catch (error) {
+            console.error(`[SubareaAPI] Failed to update subarea ${subareaId}:`, error);
+            throw error;
+        }
+    }
+    /**
+     * Removes a subarea from a growspace.
+     */
+    async removeSubarea(growspaceId, subareaId) {
+        if (!this.hass)
+            throw new Error('[SubareaAPI] Hass instance is missing');
+        try {
+            await this.hass.connection.sendMessagePromise({
+                type: WS_TYPE_REMOVE_SUBAREA,
+                growspace_id: growspaceId,
+                subarea_id: subareaId,
+            });
+        }
+        catch (error) {
+            console.error(`[SubareaAPI] Failed to remove subarea ${subareaId}:`, error);
+            throw error;
+        }
+    }
+}
+
 // Import all API services
 /**
  * DataService - Thin facade coordinating domain-specific API services.
@@ -7040,6 +7122,13 @@ let DataService$1 = class DataService {
         this.updatePollination = (data) => this._geneticsAPI.updatePollination(data);
         this.deletePollination = (event_id) => this._geneticsAPI.deletePollination(event_id);
         this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
+        // ========================================
+        // Subarea API Delegations
+        // ========================================
+        this.getSubareas = (growspaceId) => this._subareaAPI.getSubareas(growspaceId);
+        this.addSubarea = (growspaceId, name) => this._subareaAPI.addSubarea(growspaceId, name);
+        this.updateSubarea = (growspaceId, subareaId, environmentConfig) => this._subareaAPI.updateSubarea(growspaceId, subareaId, environmentConfig);
+        this.removeSubarea = (growspaceId, subareaId) => this._subareaAPI.removeSubarea(growspaceId, subareaId);
         // Initialize all API services
         this._growspaceAPI = new GrowspaceAPI(hass);
         this._strainAPI = new StrainAPI(hass);
@@ -7052,6 +7141,7 @@ let DataService$1 = class DataService {
         this._visionAPI = new VisionAPI(hass);
         this._reportAPI = new ReportAPI(hass);
         this._geneticsAPI = new GeneticsAPI(hass);
+        this._subareaAPI = new SubareaAPI(hass);
         if (hass) {
             this.hass = hass;
         }
@@ -7073,6 +7163,7 @@ let DataService$1 = class DataService {
             this._visionAPI,
             this._reportAPI,
             this._geneticsAPI,
+            this._subareaAPI,
         ].forEach((api) => api.updateHass(hass));
     }
     /**
@@ -17511,14 +17602,14 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         if (hasTanks) {
             tabs.push('tanks');
         }
-        // Water Analytics: when there's actual usage data
+        // Water Analytics: when there's data to show (tanks, usage, or drain readings)
         const hasWaterUsage = (this.device?.waterUsage?.litersToday ?? 0) > 0;
-        if (hasWaterUsage) {
+        const hasDrainReadings = (this.device?.drainConfig?.readings?.length ?? 0) > 0;
+        if (hasTanks || hasWaterUsage || hasDrainReadings) {
             tabs.push('water_analytics');
         }
         // Drain EC: when drain monitoring is configured/active OR EC sensors exist
         const drainEnabled = !!this.device?.drainConfig?.enabled;
-        const hasDrainReadings = (this.device?.drainConfig?.readings?.length ?? 0) > 0;
         const hasEcSensors = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
             (env?.substrateEcSensors?.length ?? 0) > 0 ||
@@ -18208,7 +18299,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
     `;
     }
     _getEntities(domains) {
-        if (!this.hass)
+        if (!this.hass?.states)
             return [];
         return Object.values(this.hass.states)
             .filter((stateObj) => {
@@ -107824,6 +107915,462 @@ GrowspaceTankCard = __decorate([
     t$2('growspace-tank-card')
 ], GrowspaceTankCard);
 
+let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.store = new GrowspaceStore();
+        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
+            if (this.hass) {
+                this.store.updateHass(this.hass);
+            }
+            if (refresh) {
+                this.store.refreshData(true);
+                this._loadSubarea();
+            }
+        });
+        this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
+        this._dataService = null;
+        this._subarea = null;
+        this._loading = true;
+        this._error = null;
+        this._parentGrowspaceName = '';
+        this._handleError = (error, errorInfo) => {
+            console.error('Growspace Subarea Card caught error:', error, errorInfo);
+            if (this.hass) {
+                this.hass.callService('system_log', 'write', {
+                    message: `Growspace Subarea Card Error: ${error.message}`,
+                    level: 'error',
+                    logger: 'lovelace_growspace_manager_card',
+                });
+            }
+        };
+    }
+    firstUpdated() {
+        if (this.hass) {
+            this.store.updateHass(this.hass);
+            this._dataService = new DataService$1(this.hass);
+        }
+        if (this._config?.growspace_id) {
+            const syntheticConfig = {
+                ...this._config,
+                default_growspace: this._config.growspace_id,
+            };
+            this.store.initializeSelectedDevice(syntheticConfig);
+        }
+        this._loadSubarea();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.store.destroy();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass') && this.hass) {
+            this.store.updateHass(this.hass);
+            this._subscriptionController.updateHass(this.hass);
+            if (!this._dataService) {
+                this._dataService = new DataService$1(this.hass);
+            }
+            else {
+                this._dataService.updateHass(this.hass);
+            }
+        }
+        if (changedProps.has('_config') && this._config?.growspace_id) {
+            const syntheticConfig = {
+                ...this._config,
+                default_growspace: this._config.growspace_id,
+            };
+            this.store.initializeSelectedDevice(syntheticConfig);
+            this._loadSubarea();
+        }
+        // Keep parent growspace name in sync
+        const { devices } = this._viewController.value.grid;
+        if (devices.length && this._config?.growspace_id) {
+            const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
+            if (parent && parent.name !== this._parentGrowspaceName) {
+                this._parentGrowspaceName = parent.name;
+            }
+        }
+    }
+    async _loadSubarea() {
+        if (!this._config?.growspace_id || !this._config?.subarea_id)
+            return;
+        if (!this.hass)
+            return;
+        if (!this._dataService) {
+            this._dataService = new DataService$1(this.hass);
+        }
+        this._loading = true;
+        this._error = null;
+        try {
+            const subareas = await this._dataService.getSubareas(this._config.growspace_id);
+            const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
+            if (!found) {
+                this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
+            }
+            else {
+                this._subarea = found;
+            }
+        }
+        catch (err) {
+            console.error('[GrowspaceSubareaCard] Failed to load subarea:', err);
+            this._error = 'Failed to load subarea data.';
+        }
+        finally {
+            this._loading = false;
+        }
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceSubareaCardEditor; });
+        return document.createElement('growspace-subarea-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-subarea-card',
+            growspace_id: '',
+            subarea_id: '',
+        };
+    }
+    setConfig(config) {
+        if (!config)
+            throw new Error('Invalid configuration');
+        this._config = config;
+        if (config.growspace_id) {
+            const syntheticConfig = {
+                ...config,
+                default_growspace: config.growspace_id,
+            };
+            this.store.initializeSelectedDevice(syntheticConfig);
+        }
+    }
+    getCardSize() {
+        return 4;
+    }
+    render() {
+        if (!this.hass) {
+            return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
+        }
+        if (!this._config?.growspace_id || !this._config?.subarea_id) {
+            return x `
+                <ha-card>
+                    <div class="no-data">Please configure a growspace and subarea.</div>
+                </ha-card>
+            `;
+        }
+        if (this._loading) {
+            return x `
+                <ha-card>
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </ha-card>
+            `;
+        }
+        if (this._error) {
+            return x `
+                <ha-card>
+                    <div class="error">${this._error}</div>
+                </ha-card>
+            `;
+        }
+        if (!this._subarea) {
+            return x `
+                <ha-card>
+                    <div class="no-data">Subarea not found.</div>
+                </ha-card>
+            `;
+        }
+        const ec = this._subarea.environment_config;
+        const parentName = this._parentGrowspaceName || this._config.growspace_id;
+        return x `
+            <error-boundary
+                .fallbackMessage=${'Failed to load Subarea Card'}
+                .onError=${this._handleError}
+            >
+                <ha-card class="unified-growspace-card glass-surface glass-panel">
+                    <div class="subarea-header">
+                        <h2 class="subarea-title">${this._subarea.name}</h2>
+                        <p class="subarea-subtitle">
+                            <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                            ${parentName}
+                        </p>
+                    </div>
+
+                    ${this._renderHeroSensors(ec)}
+                    ${this._renderDeviceChips(ec)}
+                    ${this._renderAdditionalSensors(ec)}
+                </ha-card>
+            </error-boundary>
+        `;
+    }
+    _renderHeroSensors(ec) {
+        const heroSensors = [];
+        const tempSensors = ec.temperature_sensors?.length
+            ? ec.temperature_sensors
+            : ec.temperature_sensor
+                ? [ec.temperature_sensor]
+                : [];
+        const humSensors = ec.humidity_sensors?.length
+            ? ec.humidity_sensors
+            : ec.humidity_sensor
+                ? [ec.humidity_sensor]
+                : [];
+        const vpdSensors = ec.vpd_sensors?.length
+            ? ec.vpd_sensors
+            : ec.vpd_sensor
+                ? [ec.vpd_sensor]
+                : [];
+        const co2Sensors = [ec.co2_sensor].filter(Boolean);
+        if (tempSensors.length)
+            heroSensors.push({ label: 'Temperature', entityIds: tempSensors });
+        if (humSensors.length)
+            heroSensors.push({ label: 'Humidity', entityIds: humSensors });
+        if (vpdSensors.length)
+            heroSensors.push({ label: 'VPD', entityIds: vpdSensors });
+        if (co2Sensors.length)
+            heroSensors.push({ label: 'CO2', entityIds: co2Sensors });
+        if (!heroSensors.length) {
+            return x `<div class="no-sensors">No environment sensors configured for this subarea.</div>`;
+        }
+        return x `
+            <div class="env-config-section">
+                <div class="env-config-grid">
+                    ${heroSensors.map((s) => this._renderSensorCard(s.label, s.entityIds))}
+                </div>
+            </div>
+        `;
+    }
+    _renderSensorCard(label, entityIds) {
+        const values = entityIds
+            .map((id) => {
+            const state = this.hass?.states[id];
+            return state
+                ? `${parseFloat(state.state).toFixed(1)} ${state.attributes?.unit_of_measurement || ''}`
+                : '—';
+        })
+            .filter(Boolean);
+        const displayValue = values.length ? values.join(' / ') : '—';
+        const primaryEntityId = entityIds[0] || '';
+        const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
+        return x `
+            <div class="env-sensor-item">
+                <span class="env-sensor-label">${label}</span>
+                <span class="env-sensor-value">${displayValue}</span>
+                ${entityIds.length === 1
+            ? x `<span class="env-sensor-entity" title="${primaryEntityId}">${friendlyName}</span>`
+            : x `<span class="env-sensor-entity">${entityIds.length} sensors</span>`}
+            </div>
+        `;
+    }
+    _renderDeviceChips(ec) {
+        const deviceGroups = [];
+        if (ec.circulation_fan_entities?.length) {
+            deviceGroups.push({ label: 'Fans', icon: 'mdi:fan', entities: ec.circulation_fan_entities });
+        }
+        if (ec.humidifier_entities?.length) {
+            deviceGroups.push({ label: 'Humidifiers', icon: 'mdi:water-percent', entities: ec.humidifier_entities });
+        }
+        if (ec.dehumidifier_entities?.length) {
+            deviceGroups.push({ label: 'Dehumidifiers', icon: 'mdi:water-off', entities: ec.dehumidifier_entities });
+        }
+        if (ec.exhaust_fan_entities?.length) {
+            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', entities: ec.exhaust_fan_entities });
+        }
+        if (ec.light_sensors?.length) {
+            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', entities: ec.light_sensors });
+        }
+        if (!deviceGroups.length)
+            return x ``;
+        return x `
+            <div class="device-chips-section">
+                <div class="device-chips-label">Devices</div>
+                <div class="device-chips-grid">
+                    ${deviceGroups.map((g) => x `
+                            <div class="device-chip">
+                                <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
+                                ${g.label} (${g.entities.length})
+                            </div>
+                        `)}
+                </div>
+            </div>
+        `;
+    }
+    _renderAdditionalSensors(ec) {
+        const additionalGroups = [];
+        if (ec.substrate_temperature_sensors?.length) {
+            additionalGroups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
+        }
+        if (ec.ph_sensors?.length) {
+            additionalGroups.push({ label: 'pH', entities: ec.ph_sensors });
+        }
+        if (ec.feed_ec_sensors?.length) {
+            additionalGroups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
+        }
+        if (ec.substrate_ec_sensors?.length) {
+            additionalGroups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
+        }
+        if (!additionalGroups.length)
+            return x ``;
+        return x `
+            <div class="section-title">Additional Sensors</div>
+            <div class="env-config-section">
+                <div class="env-config-grid">
+                    ${additionalGroups.map((g) => this._renderSensorCard(g.label, g.entities))}
+                </div>
+            </div>
+        `;
+    }
+};
+GrowspaceSubareaCard.styles = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    i$6 `
+            ha-card {
+                padding: 0;
+            }
+
+            .subarea-card-wrapper {
+                padding: 16px;
+            }
+
+            .subarea-header {
+                padding: 16px 16px 8px;
+            }
+
+            .subarea-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--primary-text-color);
+                margin: 0 0 4px 0;
+            }
+
+            .subarea-subtitle {
+                font-size: 0.875rem;
+                color: var(--secondary-text-color);
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .env-config-section {
+                padding: 0 16px 16px;
+            }
+
+            .env-config-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+                margin-top: 12px;
+            }
+
+            .env-sensor-item {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+                border-radius: 12px;
+                padding: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .env-sensor-label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--secondary-text-color);
+            }
+
+            .env-sensor-value {
+                font-size: 1.1rem;
+                font-weight: 500;
+                color: var(--primary-text-color);
+            }
+
+            .env-sensor-entity {
+                font-size: 0.75rem;
+                color: var(--secondary-text-color);
+                opacity: 0.7;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .device-chips-section {
+                padding: 0 16px 12px;
+            }
+
+            .device-chips-label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--secondary-text-color);
+                margin-bottom: 8px;
+            }
+
+            .device-chips-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .device-chip {
+                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+                border-radius: 20px;
+                padding: 4px 12px;
+                font-size: 0.82rem;
+                color: var(--primary-text-color);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .section-title {
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--secondary-text-color);
+                padding: 8px 16px 4px;
+            }
+
+            .no-sensors {
+                padding: 8px 16px;
+                color: var(--secondary-text-color);
+                font-size: 0.875rem;
+                opacity: 0.7;
+            }
+        `,
+];
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceSubareaCard.prototype, "store", void 0);
+__decorate([
+    e$3({ context: hassContext }),
+    n$5({ attribute: false })
+], GrowspaceSubareaCard.prototype, "hass", void 0);
+__decorate([
+    e$3({ context: configContext }),
+    n$5({ attribute: false })
+], GrowspaceSubareaCard.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_subarea", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_loading", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_error", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCard.prototype, "_parentGrowspaceName", void 0);
+GrowspaceSubareaCard = __decorate([
+    t$2('growspace-subarea-card')
+], GrowspaceSubareaCard);
+
 // Export all types
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -107850,6 +108397,11 @@ window.customCards.push({
     type: 'growspace-tank-card',
     name: 'Growspace Tank',
     description: 'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
+    preview: false,
+}, {
+    type: 'growspace-subarea-card',
+    name: 'Growspace Subarea',
+    description: 'Environment sensors and device status for a specific subarea within a growspace.',
     preview: false,
 });
 
@@ -109449,5 +110001,227 @@ var growspaceTankCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceTankCardEditor () { return GrowspaceTankCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceManagerCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._growspaces = [];
+        this._subareas = [];
+        this._loadingSubareas = false;
+        this._dataService = null;
+    }
+    setConfig(config) {
+        this._config = config;
+        this._loadGrowspaces();
+        if (config.growspace_id) {
+            this._loadSubareas(config.growspace_id);
+        }
+    }
+    firstUpdated() {
+        this._loadGrowspaces();
+        if (this._config?.growspace_id) {
+            this._loadSubareas(this._config.growspace_id);
+        }
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._loadGrowspaces();
+            if (this._config?.growspace_id) {
+                this._loadSubareas(this._config.growspace_id);
+            }
+        }
+    }
+    _loadGrowspaces() {
+        if (!this.hass)
+            return;
+        const entity = this.hass.states['sensor.growspaces_list'];
+        if (entity?.attributes?.growspaces) {
+            const raw = entity.attributes.growspaces;
+            if (Array.isArray(raw)) {
+                this._growspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
+            }
+            else {
+                this._growspaces = Object.entries(raw).map(([id, name]) => ({
+                    id,
+                    name: String(name) || id,
+                }));
+            }
+        }
+    }
+    async _loadSubareas(growspaceId) {
+        if (!growspaceId || !this.hass)
+            return;
+        if (!this._dataService) {
+            this._dataService = new DataService$1(this.hass);
+        }
+        else {
+            this._dataService.updateHass(this.hass);
+        }
+        this._loadingSubareas = true;
+        this._subareas = [];
+        try {
+            this._subareas = await this._dataService.getSubareas(growspaceId);
+        }
+        catch (err) {
+            console.error('[GrowspaceSubareaCardEditor] Failed to load subareas:', err);
+            this._subareas = [];
+        }
+        finally {
+            this._loadingSubareas = false;
+        }
+    }
+    _onGrowspaceChanged(ev) {
+        if (!this._config || !this.hass)
+            return;
+        const growspaceId = ev.target.value;
+        if (this._config.growspace_id === growspaceId)
+            return;
+        this._config = { ...this._config, growspace_id: growspaceId, subarea_id: '' };
+        this._dispatchConfigChanged();
+        this._loadSubareas(growspaceId);
+    }
+    _onSubareaChanged(ev) {
+        if (!this._config || !this.hass)
+            return;
+        const subareaId = ev.target.value;
+        if (this._config.subarea_id === subareaId)
+            return;
+        this._config = { ...this._config, subarea_id: subareaId };
+        this._dispatchConfigChanged();
+    }
+    _dispatchConfigChanged() {
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.hass || !this._config) {
+            return x ``;
+        }
+        const growspaceId = this._config.growspace_id || '';
+        const subareaId = this._config.subarea_id || '';
+        return x `
+            <div class="card-config">
+                <div class="select-group">
+                    <label>Parent Growspace</label>
+                    <select .value=${growspaceId} @change=${this._onGrowspaceChanged}>
+                        <option value="" disabled ?selected=${growspaceId === ''}>
+                            Select a growspace...
+                        </option>
+                        ${this._growspaces.map((gs) => x `
+                                <option value=${gs.id} ?selected=${growspaceId === gs.id}>
+                                    ${gs.name}
+                                </option>
+                            `)}
+                    </select>
+                </div>
+
+                <div class="select-group">
+                    <label>Subarea</label>
+                    ${this._loadingSubareas
+            ? x `<span class="loading-text">Loading subareas...</span>`
+            : x `
+                              <select
+                                  .value=${subareaId}
+                                  ?disabled=${!growspaceId}
+                                  @change=${this._onSubareaChanged}
+                              >
+                                  <option value="" disabled ?selected=${subareaId === ''}>
+                                      ${growspaceId
+                ? this._subareas.length
+                    ? 'Select a subarea...'
+                    : 'No subareas found'
+                : 'Select a growspace first'}
+                                  </option>
+                                  ${this._subareas.map((sa) => x `
+                                          <option value=${sa.id} ?selected=${subareaId === sa.id}>
+                                              ${sa.name}
+                                          </option>
+                                      `)}
+                              </select>
+                          `}
+                </div>
+
+                <div class="info-text">
+                    Displays environment sensors and device status for the selected subarea within a growspace.
+                </div>
+            </div>
+        `;
+    }
+};
+GrowspaceSubareaCardEditor.styles = [
+    sharedStyles,
+    i$6 `
+            .card-config {
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .select-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            label {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: var(--secondary-text-color);
+            }
+
+            select {
+                padding: 8px;
+                border: 1px solid var(--divider-color);
+                border-radius: 4px;
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+                font-size: 0.9rem;
+            }
+
+            select:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .info-text {
+                font-size: 0.85rem;
+                color: var(--secondary-text-color);
+                line-height: 1.4;
+            }
+
+            .loading-text {
+                font-size: 0.85rem;
+                color: var(--secondary-text-color);
+                font-style: italic;
+            }
+        `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceSubareaCardEditor.prototype, "hass", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCardEditor.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCardEditor.prototype, "_growspaces", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCardEditor.prototype, "_subareas", void 0);
+__decorate([
+    r$2()
+], GrowspaceSubareaCardEditor.prototype, "_loadingSubareas", void 0);
+GrowspaceSubareaCardEditor = __decorate([
+    t$2('growspace-subarea-card-editor')
+], GrowspaceSubareaCardEditor);
+
+var growspaceSubareaCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceSubareaCardEditor () { return GrowspaceSubareaCardEditor; }
+});
+
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
