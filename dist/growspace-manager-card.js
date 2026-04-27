@@ -14753,6 +14753,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     updated(changedProperties) {
         super.updated(changedProperties);
+        if (changedProperties.has('hass') && this.hass) {
+            this._dataService = new DataService$1(this.hass);
+        }
         // Apply initial tab state only once when dialog opens
         if (changedProperties.has('open')) {
             if (this.open) {
@@ -14769,6 +14772,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // Provide initial state setting from parent
     setInitialState(currentTab = ConfigTab.ENVIRONMENT, environmentData) {
         this.currentTab = currentTab;
+        if (this.currentTab === ConfigTab.SUBAREAS) {
+            this._loadSubareas();
+        }
         if (environmentData) {
             this.envSelectedId = environmentData.selectedGrowspaceId;
             this.envTemperatureSensor = environmentData.temperatureSensor;
@@ -108624,10 +108630,6 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     setConfig(config) {
         if (!config)
             throw new Error('Invalid configuration');
-        if (!config.growspace_id)
-            throw new Error('growspace_id is required');
-        if (!config.subarea_id)
-            throw new Error('subarea_id is required');
         this._config = config;
         if (config.growspace_id) {
             const syntheticConfig = {

@@ -283,8 +283,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
     public setConfig(config: GrowspaceSubareaCardConfig): void {
         if (!config) throw new Error('Invalid configuration');
-        if (!config.growspace_id) throw new Error('growspace_id is required');
-        if (!config.subarea_id) throw new Error('subarea_id is required');
         this._config = config;
         if (config.growspace_id) {
             const syntheticConfig: GrowspaceManagerCardConfig = {
