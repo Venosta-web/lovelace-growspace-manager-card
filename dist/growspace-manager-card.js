@@ -108518,7 +108518,8 @@ GrowspaceTankCard = __decorate([
     t$2('growspace-tank-card')
 ], GrowspaceTankCard);
 
-let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
+var GrowspaceSubareaCard_1;
+let GrowspaceSubareaCard = GrowspaceSubareaCard_1 = class GrowspaceSubareaCard extends i$3 {
     constructor() {
         super(...arguments);
         this.store = new GrowspaceStore();
@@ -108867,20 +108868,16 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         `;
     }
     _renderHeroCard(label, metric, entityIds) {
-        const values = entityIds
-            .map((id) => {
+        const rawValues = entityIds.map((id) => {
             const st = this.hass?.states[id];
-            return st
-                ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
-                : '—';
-        })
-            .filter(Boolean);
-        const displayValue = values.length ? values.join(' / ') : '—';
+            return st ? { val: parseFloat(st.state).toFixed(1), unit: st.attributes?.unit_of_measurement || '' } : null;
+        }).filter(Boolean);
         const primaryEntityId = entityIds[0] || '';
         const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
         const isActive = this._isMetricActive(metric);
+        const icon = GrowspaceSubareaCard_1._METRIC_ICONS[metric];
         const sparklineWidth = 140;
-        const sparklineHeight = 60;
+        const sparklineHeight = 80;
         const sparklineColor = ChartUtils.getSparklineColor(metric);
         const sparklinePaths = [];
         if (entityIds.length > 1) {
@@ -108899,6 +108896,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             if (path)
                 sparklinePaths.push({ d: path, color: sparklineColor });
         }
+        const singleUnit = rawValues.length === 1 ? rawValues[0].unit : (rawValues[0]?.unit || '');
+        const allSameUnit = rawValues.every((v) => v.unit === singleUnit);
+        const displayVal = rawValues.length
+            ? rawValues.map((v) => v.val).join(' / ')
+            : '—';
+        const displayUnit = rawValues.length && allSameUnit ? singleUnit : '';
         return x `
             <div
                 class="env-sensor-item ${isActive ? 'active' : ''}"
@@ -108913,7 +108916,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                     >
                         <defs>
                             <linearGradient id="sg-${metric}" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.25" />
+                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
                                 <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
                             </linearGradient>
                         </defs>
@@ -108922,7 +108925,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                                 d="${p.d}"
                                 fill="none"
                                 stroke="${p.color}"
-                                stroke-width="2"
+                                stroke-width="2.5"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 style="opacity: ${p.color === sparklineColor ? '1' : '0.6'}"
@@ -108934,8 +108937,14 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                         />
                     </svg>
                 ` : E}
-                <span class="env-sensor-label">${label}</span>
-                <span class="env-sensor-value">${displayValue}</span>
+                <div class="sensor-header">
+                    ${icon ? b `<svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0;fill:currentColor"><path d="${icon}"></path></svg>` : E}
+                    <span class="env-sensor-label">${label}</span>
+                </div>
+                <div class="env-sensor-value-group">
+                    <span class="env-sensor-value">${displayVal}</span>
+                    ${displayUnit ? x `<span class="env-sensor-unit">${displayUnit}</span>` : E}
+                </div>
                 ${entityIds.length === 1
             ? x `<span class="env-sensor-entity" title="${primaryEntityId}">${friendlyName}</span>`
             : x `<span class="env-sensor-entity">${entityIds.length} sensors</span>`}
@@ -109141,55 +109150,97 @@ GrowspaceSubareaCard.styles = [
             /* Hero sensor grid */
             .env-config-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-                gap: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 16px;
             }
 
             .env-sensor-item {
                 background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 16px;
-                padding: 14px 16px;
+                backdrop-filter: var(--glass-blur);
+                box-shadow:
+                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+                border-radius: 24px;
+                padding: 20px 24px;
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
+                gap: 8px;
                 cursor: pointer;
-                transition:
-                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
-                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
-                    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+                transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
                 user-select: none;
                 overflow: hidden;
                 position: relative;
+                min-height: 110px;
             }
 
             .sensor-sparkline {
                 position: absolute;
-                bottom: 0;
+                top: 50%;
                 left: 0;
                 right: 0;
+                bottom: 0;
                 width: 100%;
                 height: 50%;
                 pointer-events: none;
                 z-index: 0;
-                opacity: 0.6;
+                opacity: 0.7;
             }
 
             .sensor-sparkline path {
-                transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                transition:
+                    d 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                    stroke 0.3s ease,
+                    fill 0.3s ease;
             }
 
-            .env-sensor-label,
-            .env-sensor-value,
+            .sensor-header,
+            .env-sensor-value-group,
             .env-sensor-entity {
                 position: relative;
                 z-index: 1;
             }
 
+            .sensor-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+            }
+
+            .env-sensor-label {
+                font-size: 0.9rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .env-sensor-value-group {
+                display: flex;
+                align-items: baseline;
+                gap: 4px;
+            }
+
+            .env-sensor-value {
+                font-size: 2rem;
+                font-weight: 400;
+                color: var(--primary-text-color);
+                line-height: 1;
+            }
+
+            .env-sensor-unit {
+                font-size: 1rem;
+                color: var(--secondary-text-color);
+                font-weight: 500;
+            }
+
             .env-sensor-item:hover {
                 background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-                border-color: var(--divider-color, rgba(255, 255, 255, 0.18));
-                transform: translateY(-1px);
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
+                box-shadow:
+                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+                transform: translateY(-2px);
             }
 
             .env-sensor-item.active {
@@ -109199,6 +109250,9 @@ GrowspaceSubareaCard.styles = [
                     var(--glass-bg, rgba(255, 255, 255, 0.05))
                 );
                 border-color: var(--primary-color, #2196f3);
+                box-shadow:
+                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px var(--primary-color, #2196f3) inset;
             }
 
             .env-sensor-item.non-interactive {
@@ -109209,20 +109263,9 @@ GrowspaceSubareaCard.styles = [
                 transform: none;
                 background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border-color: var(--divider-color, rgba(255, 255, 255, 0.1));
-            }
-
-            .env-sensor-label {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: var(--secondary-text-color);
-            }
-
-            .env-sensor-value {
-                font-size: 1.5rem;
-                font-weight: 400;
-                color: var(--primary-text-color);
-                line-height: 1.1;
+                box-shadow:
+                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
             }
 
             .env-sensor-entity {
@@ -109232,6 +109275,8 @@ GrowspaceSubareaCard.styles = [
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                position: relative;
+                z-index: 1;
             }
 
             /* Additional sensors — compact secondary grid */
@@ -109272,6 +109317,12 @@ GrowspaceSubareaCard.styles = [
             }
         `,
 ];
+GrowspaceSubareaCard._METRIC_ICONS = {
+    temperature: mdiThermometer,
+    humidity: mdiWaterPercent,
+    vpd: mdiCloudOutline,
+    co2: mdiWeatherCloudy,
+};
 __decorate([
     e$3({ context: storeContext })
 ], GrowspaceSubareaCard.prototype, "store", void 0);
@@ -109301,7 +109352,7 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceSubareaCard.prototype, "_historyCache", void 0);
-GrowspaceSubareaCard = __decorate([
+GrowspaceSubareaCard = GrowspaceSubareaCard_1 = __decorate([
     t$2('growspace-subarea-card')
 ], GrowspaceSubareaCard);
 
@@ -110842,9 +110893,17 @@ let GrowspaceTankCardEditor = class GrowspaceTankCardEditor extends i$3 {
                 this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
             }
         }
+        else {
+            this._sensorGrowspaces = [];
+        }
     }
     firstUpdated() {
         this._loadGrowspaces();
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass')) {
+            this._loadGrowspaces();
+        }
     }
     get _default_growspace() {
         return this._config?.default_growspace || '';

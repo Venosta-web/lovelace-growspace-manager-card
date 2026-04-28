@@ -1,7 +1,7 @@
 import { LitElement, html, css, svg, CSSResultGroup, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
-import { mdiCog } from '@mdi/js';
+import { mdiCog, mdiThermometer, mdiWaterPercent, mdiCloudOutline, mdiWeatherCloudy } from '@mdi/js';
 
 import { hassContext, configContext, storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
@@ -193,55 +193,97 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             /* Hero sensor grid */
             .env-config-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-                gap: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 16px;
             }
 
             .env-sensor-item {
                 background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 16px;
-                padding: 14px 16px;
+                backdrop-filter: var(--glass-blur);
+                box-shadow:
+                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+                border-radius: 24px;
+                padding: 20px 24px;
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
+                gap: 8px;
                 cursor: pointer;
-                transition:
-                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
-                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1),
-                    transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+                transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
                 user-select: none;
                 overflow: hidden;
                 position: relative;
+                min-height: 110px;
             }
 
             .sensor-sparkline {
                 position: absolute;
-                bottom: 0;
+                top: 50%;
                 left: 0;
                 right: 0;
+                bottom: 0;
                 width: 100%;
                 height: 50%;
                 pointer-events: none;
                 z-index: 0;
-                opacity: 0.6;
+                opacity: 0.7;
             }
 
             .sensor-sparkline path {
-                transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+                transition:
+                    d 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                    stroke 0.3s ease,
+                    fill 0.3s ease;
             }
 
-            .env-sensor-label,
-            .env-sensor-value,
+            .sensor-header,
+            .env-sensor-value-group,
             .env-sensor-entity {
                 position: relative;
                 z-index: 1;
             }
 
+            .sensor-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+            }
+
+            .env-sensor-label {
+                font-size: 0.9rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .env-sensor-value-group {
+                display: flex;
+                align-items: baseline;
+                gap: 4px;
+            }
+
+            .env-sensor-value {
+                font-size: 2rem;
+                font-weight: 400;
+                color: var(--primary-text-color);
+                line-height: 1;
+            }
+
+            .env-sensor-unit {
+                font-size: 1rem;
+                color: var(--secondary-text-color);
+                font-weight: 500;
+            }
+
             .env-sensor-item:hover {
                 background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-                border-color: var(--divider-color, rgba(255, 255, 255, 0.18));
-                transform: translateY(-1px);
+                border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
+                box-shadow:
+                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+                transform: translateY(-2px);
             }
 
             .env-sensor-item.active {
@@ -251,6 +293,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                     var(--glass-bg, rgba(255, 255, 255, 0.05))
                 );
                 border-color: var(--primary-color, #2196f3);
+                box-shadow:
+                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
+                    0 0 0 1px var(--primary-color, #2196f3) inset;
             }
 
             .env-sensor-item.non-interactive {
@@ -261,20 +306,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 transform: none;
                 background: var(--glass-bg, rgba(255, 255, 255, 0.05));
                 border-color: var(--divider-color, rgba(255, 255, 255, 0.1));
-            }
-
-            .env-sensor-label {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: var(--secondary-text-color);
-            }
-
-            .env-sensor-value {
-                font-size: 1.5rem;
-                font-weight: 400;
-                color: var(--primary-text-color);
-                line-height: 1.1;
+                box-shadow:
+                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
             }
 
             .env-sensor-entity {
@@ -284,6 +318,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                position: relative;
+                z-index: 1;
             }
 
             /* Additional sensors — compact secondary grid */
@@ -667,23 +703,26 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         `;
     }
 
-    private _renderHeroCard(label: string, metric: string, entityIds: string[]): TemplateResult {
-        const values = entityIds
-            .map((id) => {
-                const st = this.hass?.states[id];
-                return st
-                    ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
-                    : '—';
-            })
-            .filter(Boolean);
+    private static readonly _METRIC_ICONS: Record<string, string> = {
+        temperature: mdiThermometer,
+        humidity: mdiWaterPercent,
+        vpd: mdiCloudOutline,
+        co2: mdiWeatherCloudy,
+    };
 
-        const displayValue = values.length ? values.join(' / ') : '—';
+    private _renderHeroCard(label: string, metric: string, entityIds: string[]): TemplateResult {
+        const rawValues = entityIds.map((id) => {
+            const st = this.hass?.states[id];
+            return st ? { val: parseFloat(st.state).toFixed(1), unit: st.attributes?.unit_of_measurement || '' } : null;
+        }).filter(Boolean) as Array<{ val: string; unit: string }>;
+
         const primaryEntityId = entityIds[0] || '';
         const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
         const isActive = this._isMetricActive(metric);
+        const icon = GrowspaceSubareaCard._METRIC_ICONS[metric];
 
         const sparklineWidth = 140;
-        const sparklineHeight = 60;
+        const sparklineHeight = 80;
         const sparklineColor = ChartUtils.getSparklineColor(metric);
         const sparklinePaths: Array<{ d: string; color: string }> = [];
 
@@ -710,6 +749,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             if (path) sparklinePaths.push({ d: path, color: sparklineColor });
         }
 
+        const singleUnit = rawValues.length === 1 ? rawValues[0].unit : (rawValues[0]?.unit || '');
+        const allSameUnit = rawValues.every((v) => v.unit === singleUnit);
+        const displayVal = rawValues.length
+            ? rawValues.map((v) => v.val).join(' / ')
+            : '—';
+        const displayUnit = rawValues.length && allSameUnit ? singleUnit : '';
+
         return html`
             <div
                 class="env-sensor-item ${isActive ? 'active' : ''}"
@@ -724,7 +770,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                     >
                         <defs>
                             <linearGradient id="sg-${metric}" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.25" />
+                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
                                 <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
                             </linearGradient>
                         </defs>
@@ -733,7 +779,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                                 d="${p.d}"
                                 fill="none"
                                 stroke="${p.color}"
-                                stroke-width="2"
+                                stroke-width="2.5"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 style="opacity: ${p.color === sparklineColor ? '1' : '0.6'}"
@@ -745,8 +791,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                         />
                     </svg>
                 ` : nothing}
-                <span class="env-sensor-label">${label}</span>
-                <span class="env-sensor-value">${displayValue}</span>
+                <div class="sensor-header">
+                    ${icon ? svg`<svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0;fill:currentColor"><path d="${icon}"></path></svg>` : nothing}
+                    <span class="env-sensor-label">${label}</span>
+                </div>
+                <div class="env-sensor-value-group">
+                    <span class="env-sensor-value">${displayVal}</span>
+                    ${displayUnit ? html`<span class="env-sensor-unit">${displayUnit}</span>` : nothing}
+                </div>
                 ${entityIds.length === 1
                     ? html`<span class="env-sensor-entity" title="${primaryEntityId}">${friendlyName}</span>`
                     : html`<span class="env-sensor-entity">${entityIds.length} sensors</span>`}
