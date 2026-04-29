@@ -10,6 +10,7 @@ export interface GrowspaceManagerCardConfig extends LovelaceCardConfig {
   auto_select_growspace?: boolean;
   keyboard_rotate_enabled?: boolean;
   keyboard_rotate_speed?: number;
+  default_view?: 'list' | 'timeline';
 }
 
 export type GrowspaceViewMode = ViewMode;

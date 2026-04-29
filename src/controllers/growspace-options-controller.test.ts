@@ -17,8 +17,8 @@ const makeHost = (): ReactiveControllerHost & { requestUpdate: ReturnType<typeof
   const controllers: any[] = [];
   return {
     addController: (c: any) => controllers.push(c),
-    removeController: vi.fn(),
-    requestUpdate: vi.fn(),
+    removeController: vi.fn() as unknown as any,
+    requestUpdate: vi.fn() as unknown as any,
     updateComplete: Promise.resolve(true),
   };
 };

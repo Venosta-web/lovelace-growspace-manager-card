@@ -14,6 +14,7 @@ export { GrowspaceAnalyticsCard } from './cards/growspace-analytics-card';
 export { GrowspaceAiInsightCard } from './cards/growspace-ai-insight-card';
 export { GrowspaceTankCard } from './cards/growspace-tank-card';
 export { GrowspaceSubareaCard } from './cards/growspace-subarea-card';
+export { GrowspaceLogbookCard } from './cards/growspace-logbook-card';
 
 // Register cards in the Home Assistant card picker
 declare global {
@@ -63,6 +64,12 @@ window.customCards.push(
     type: 'growspace-subarea-card',
     name: 'Growspace Subarea',
     description: 'Environment sensors and device status for a specific subarea within a growspace.',
+    preview: false,
+  },
+  {
+    type: 'growspace-logbook-card',
+    name: 'Growspace Logbook',
+    description: 'Events logbook with list and timeline views for a growspace.',
     preview: false,
   },
 );

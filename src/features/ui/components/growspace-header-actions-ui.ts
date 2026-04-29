@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HeaderChip } from '../../../utils/metrics-utils';
 import { ViewMode } from '../../../constants';
+import { GrowspaceDevice } from '../../../types';
 import '../../../components/ui/scroll-container';
 import '../../../components/growspace-chip';
 import '../../../components/ui/gs-help-tooltip';
@@ -36,6 +37,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   @property({ type: Boolean }) public isEditMode = false;
   @property({ attribute: false }) public selectedPlants = new Set<string>();
   @property() public selectedDevice: string | null = null;
+  @property({ attribute: false }) public device?: GrowspaceDevice;
 
   @state() private _draggedMetric: string | null = null;
 
@@ -390,10 +392,14 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
           <span class="menu-item-label">Nutrients</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-          <span class="menu-item-label">EC Ramp Curves</span>
-        </div>
+        ${this._showECRamp()
+          ? html`
+              <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
+                <span class="menu-item-label">EC Ramp Curves</span>
+              </div>
+            `
+          : ''}
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
           <span class="menu-item-label">Strains</span>
@@ -420,5 +426,20 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private _showECRamp(): boolean {
+    if (!this.device) return false;
+
+    const hasPump =
+      !!this.device.irrigationConfig?.irrigationPumpEntity ||
+      !!this.device.irrigationConfig?.drainPumpEntity;
+    const hasSchedule = (this.device.irrigationConfig?.irrigationTimes?.length || 0) > 0;
+    const hasECSensor =
+      (this.device.environmentAttributes?.feedEcSensors?.length || 0) > 0 ||
+      (this.device.environmentAttributes?.runoffEcSensors?.length || 0) > 0 ||
+      (this.device.environmentAttributes?.substrateEcSensors?.length || 0) > 0;
+
+    return hasPump && hasSchedule && hasECSensor;
   }
 }

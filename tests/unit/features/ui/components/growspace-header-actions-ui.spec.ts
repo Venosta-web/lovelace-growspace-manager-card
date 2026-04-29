@@ -19,6 +19,16 @@ const mockChip: HeaderChip = {
   groupIndex: 0,
 };
 
+const mockDeviceFull = {
+  irrigationConfig: {
+    irrigationPumpEntity: 'switch.pump',
+    irrigationTimes: ['08:00'],
+  },
+  environmentAttributes: {
+    feedEcSensors: ['sensor.ec'],
+  }
+} as any;
+
 describe('GrowspaceHeaderActionsUI', () => {
   it('is defined as a custom element', () => {
     expect(customElements.get('growspace-header-actions-ui')).toBeDefined();
@@ -335,17 +345,14 @@ describe('GrowspaceHeaderActionsUI', () => {
       it(`triggers action: ${action}`, async () => {
         const handler = vi.fn();
         const el = await fixture<GrowspaceHeaderActionsUI>(html`
-          <growspace-header-actions-ui @action-triggered=${handler}></growspace-header-actions-ui>
+          <growspace-header-actions-ui 
+            .device=${mockDeviceFull}
+            @action-triggered=${handler}
+          ></growspace-header-actions-ui>
         `);
         
         // Find the menu item with the action
-        // For menu items, we can find by checking labels or checking if we can click them all
         const menuItems = Array.from(el.shadowRoot!.querySelectorAll('.menu-item')) as HTMLElement[];
-        
-        // This is a bit lazy, but we want to make sure every menu item works.
-        // Let's find by action if possible? The click handler calls _triggerAction(action)
-        // Since we can't easily see the action from the DOM, we'll just click them by index
-        // but we'll try to match the index to our action list.
         
         const index = actions.indexOf(action);
         if (menuItems[index]) {
@@ -354,6 +361,57 @@ describe('GrowspaceHeaderActionsUI', () => {
           expect(handler.mock.calls[0][0].detail.action).toBe(action);
         }
       });
+    });
+
+    it('hides EC Ramp Curves when requirements are not met', async () => {
+      const deviceNoPump = {
+        irrigationConfig: { irrigationPumpEntity: null, drainPumpEntity: null, irrigationTimes: ['08:00'] },
+        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
+      } as any;
+      
+      const el = await fixture<GrowspaceHeaderActionsUI>(html`
+        <growspace-header-actions-ui .device=${deviceNoPump}></growspace-header-actions-ui>
+      `);
+      
+      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+      expect(labels).not.toContain('EC Ramp Curves');
+    });
+
+    it('shows EC Ramp Curves when all requirements are met', async () => {
+      const el = await fixture<GrowspaceHeaderActionsUI>(html`
+        <growspace-header-actions-ui .device=${mockDeviceFull}></growspace-header-actions-ui>
+      `);
+      
+      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+      expect(labels).toContain('EC Ramp Curves');
+    });
+
+    it('hides EC Ramp Curves when no schedule is defined', async () => {
+      const deviceNoSchedule = {
+        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: [] },
+        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
+      } as any;
+      
+      const el = await fixture<GrowspaceHeaderActionsUI>(html`
+        <growspace-header-actions-ui .device=${deviceNoSchedule}></growspace-header-actions-ui>
+      `);
+      
+      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+      expect(labels).not.toContain('EC Ramp Curves');
+    });
+
+    it('hides EC Ramp Curves when no EC sensor is defined', async () => {
+      const deviceNoEC = {
+        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: ['08:00'] },
+        environmentAttributes: { feedEcSensors: [], runoffEcSensors: [], substrateEcSensors: [] }
+      } as any;
+      
+      const el = await fixture<GrowspaceHeaderActionsUI>(html`
+        <growspace-header-actions-ui .device=${deviceNoEC}></growspace-header-actions-ui>
+      `);
+      
+      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
+      expect(labels).not.toContain('EC Ramp Curves');
     });
 
     it('hides popover when action is triggered', async () => {

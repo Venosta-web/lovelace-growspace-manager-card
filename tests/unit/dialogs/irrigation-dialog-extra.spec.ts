@@ -71,6 +71,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             waterEfficiency: 0.85
         } as any,
         irrigationConfig: {
+            irrigationPumpEntity: 'switch.pump1',
             irrigationTimes: [{ time: '08:00', duration: 30 }],
             drainTimes: [{ time: '09:00', duration: 45 }]
         } as any,
@@ -93,7 +94,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
         vi.clearAllMocks();
         element = new IrrigationDialog();
         element.device = JSON.parse(JSON.stringify(mockDevice));
-        element.hass = { states: {} } as any;
+        element.hass = { states: { 'switch.pump1': { state: 'on' } } } as any;
+        (element as any)._drainPumpEntity = 'switch.pump1';
         element.open = true;
         document.body.appendChild(element);
         await element.updateComplete;
@@ -107,7 +109,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
     describe('Analytics Tab', () => {
         beforeEach(async () => {
             const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const analyticsTab = Array.from(tabs || []).find(t => t.textContent?.includes('Water Analytics'));
+            (analyticsTab as HTMLElement)?.click();
             await element.updateComplete;
         });
 
@@ -134,7 +137,26 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect(text).toContain('09:00');
         });
 
-        it('should render volume history table', () => {
+        it('should render volume history table', async () => {
+            // Volume history requires _drainPumpEntity to be set and readings to exist
+            (element as any)._drainPumpEntity = 'switch.pump1';
+            element.device = {
+                ...JSON.parse(JSON.stringify(mockDevice)),
+                drainConfig: {
+                    enabled: true,
+                    readings: [
+                        {
+                            timestamp: new Date(Date.now() - 3600000).toISOString(),
+                            feedEc: 1.5,
+                            drainEc: 1.8,
+                            feedVolumeMl: 1000,
+                            drainVolumeMl: 200
+                        }
+                    ]
+                }
+            } as any;
+            await element.updateComplete;
+
             const rows = element.shadowRoot?.querySelectorAll('tbody tr');
             expect(rows?.length).toBe(1);
             expect(rows?.[0].textContent).toContain('20.0%');
@@ -893,7 +915,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
-            expect(text).toContain('No events scheduled');
+            expect(text).not.toContain('Schedule Summary');
         });
 
         it('should render medium water efficiency (0.7) label', async () => {
@@ -950,7 +972,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
-            expect(text).toContain('No events scheduled');
+            expect(text).not.toContain('Schedule Summary');
         });
 
         it('should render with no tanks hiding tank levels section', async () => {
@@ -1183,6 +1205,20 @@ describe('IrrigationDialog - Extra Coverage', () => {
                 await element.updateComplete;
                 expect((element as any)._editingIrrigationTime?.duration).toBe(30);
             }
+        });
+    });
+
+    describe('Tab Visibility with missing components', () => {
+        it('should hide steering tab when no pump is configured', async () => {
+            element.device = {
+                ...JSON.parse(JSON.stringify(mockDevice)),
+                irrigationConfig: { irrigationPumpEntity: '', drainPumpEntity: '' }
+            } as any;
+            await element.updateComplete;
+
+            const tabs = Array.from(element.shadowRoot?.querySelectorAll('.tab-item') || []);
+            const tabTexts = tabs.map(t => t.textContent?.trim());
+            expect(tabTexts).not.toContain('Crop Steering');
         });
     });
 

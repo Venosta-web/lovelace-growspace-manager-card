@@ -18192,10 +18192,12 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         const tabs = ['schedules'];
         const env = this.device?.environmentAttributes;
         // Crop Steering (VWC): requires soil moisture sensor or active strategy
+        // AND at least one pump (irrigation or drain) to be defined
         const hasSoilMoisture = !!(env?.soilMoistureSensor)
             || (env?.soilMoistureSensors?.length ?? 0) > 0;
         const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
-        if (hasSoilMoisture || hasStrategy) {
+        const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+        if ((hasSoilMoisture || hasStrategy) && hasPump) {
             tabs.push('steering');
         }
         // Configuration: always shown
@@ -18231,10 +18233,19 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         this.device?.environmentAttributes;
         const visible = this._visibleTabs;
         if (!visible.includes('steering')) {
-            hints.push({
-                icon: '🌱',
-                text: 'Configure a soil moisture sensor in Environment Settings to enable VWC Crop Steering.',
-            });
+            const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+            if (!hasPump) {
+                hints.push({
+                    icon: '🚰',
+                    text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
+                });
+            }
+            else {
+                hints.push({
+                    icon: '🌱',
+                    text: 'Configure a soil moisture sensor in Environment Settings to enable VWC Crop Steering.',
+                });
+            }
         }
         if (!visible.includes('tanks')) {
             hints.push({
@@ -41373,10 +41384,14 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
           <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
           <span class="menu-item-label">Nutrients</span>
         </div>
-        <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-          <span class="menu-item-label">EC Ramp Curves</span>
-        </div>
+        ${this._showECRamp()
+            ? x `
+              <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
+                <span class="menu-item-label">EC Ramp Curves</span>
+              </div>
+            `
+            : ''}
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
           <span class="menu-item-label">Strains</span>
@@ -41403,6 +41418,17 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
         </div>
       </div>
     `;
+    }
+    _showECRamp() {
+        if (!this.device)
+            return false;
+        const hasPump = !!this.device.irrigationConfig?.irrigationPumpEntity ||
+            !!this.device.irrigationConfig?.drainPumpEntity;
+        const hasSchedule = (this.device.irrigationConfig?.irrigationTimes?.length || 0) > 0;
+        const hasECSensor = (this.device.environmentAttributes?.feedEcSensors?.length || 0) > 0 ||
+            (this.device.environmentAttributes?.runoffEcSensors?.length || 0) > 0 ||
+            (this.device.environmentAttributes?.substrateEcSensors?.length || 0) > 0;
+        return hasPump && hasSchedule && hasECSensor;
     }
 };
 GrowspaceHeaderActionsUI.styles = i$6 `
@@ -41569,6 +41595,9 @@ __decorate([
 __decorate([
     n$5()
 ], GrowspaceHeaderActionsUI.prototype, "selectedDevice", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderActionsUI.prototype, "device", void 0);
 __decorate([
     r$2()
 ], GrowspaceHeaderActionsUI.prototype, "_draggedMetric", void 0);
@@ -42196,6 +42225,7 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
           <!-- Row 1 Right: Actions & Device Chips -->
           <growspace-header-actions-ui
             class="header-actions"
+            .device=${this.device}
             .deviceChips=${this.deviceChips}
             .isMobile=${this._resizeController.isMobile}
             .mobileLink=${this._mobileLink}
@@ -109129,6 +109159,215 @@ GrowspaceSubareaCard = __decorate([
     t$2('growspace-subarea-card')
 ], GrowspaceSubareaCard);
 
+let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._activeTab = 'list';
+        this._store = new GrowspaceStore();
+        this._hassContext = this.hass;
+        this._configContext = this._config;
+        this._subscriptionController = new SubscriptionController(this, this._store.data, (refresh) => {
+            if (this.hass) {
+                this._store.updateHass(this.hass);
+            }
+            if (refresh) {
+                this._store.refreshData(true);
+            }
+        });
+        this._viewController = new libExports.StoreController(this, this._store.$sharedCardViewState);
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceLogbookCardEditor; });
+        return document.createElement('growspace-logbook-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-logbook-card',
+            default_growspace: '',
+            default_view: 'list'
+        };
+    }
+    setConfig(config) {
+        if (!config) {
+            throw new Error('Invalid configuration');
+        }
+        this._config = config;
+        this._configContext = config;
+        this._activeTab = config.default_view || 'list';
+        this._store.initializeSelectedDevice(config);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._store.destroy();
+    }
+    updated(changedProps) {
+        super.updated(changedProps);
+        if (changedProps.has('hass') && this.hass) {
+            this._hassContext = this.hass;
+            this._store.updateHass(this.hass);
+            this._subscriptionController.updateHass(this.hass);
+        }
+    }
+    getCardSize() {
+        return 5;
+    }
+    _handleTabClick(tab) {
+        this._activeTab = tab;
+    }
+    render() {
+        if (!this.hass || !this._config) {
+            return x ``;
+        }
+        const { devices, selectedDevice } = this._viewController.value.grid;
+        const { isLoading } = this._viewController.value.ui;
+        if (isLoading && !devices.length) {
+            return x `<ha-card class="loading">Loading...</ha-card>`;
+        }
+        const device = devices.find((d) => d.deviceId === selectedDevice);
+        if (!device) {
+            return x `
+        <ha-card class="error">
+          <p>Please select a growspace in the card configuration.</p>
+        </ha-card>
+      `;
+        }
+        return x `
+      <ha-card>
+        <div class="card-content">
+          <div class="tab-bar">
+            <button 
+              class="tab ${this._activeTab === 'list' ? 'active' : ''}" 
+              @click=${() => this._handleTabClick('list')}
+            >
+              <svg viewBox="0 0 24 24"><path d="M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z" /></svg>
+              List View
+            </button>
+            <button 
+              class="tab ${this._activeTab === 'timeline' ? 'active' : ''}" 
+              @click=${() => this._handleTabClick('timeline')}
+            >
+              <svg viewBox="0 0 24 24"><path d="M2,2H4V20H22V22H2V2M7,10H17V13H7V10M11,15H21V18H11V15M6,4H22V8H6V4Z" /></svg>
+              Timeline
+            </button>
+          </div>
+
+          <div class="tab-content">
+            ${this._activeTab === 'list'
+            ? x `<growspace-logbook .hass=${this.hass}></growspace-logbook>`
+            : x `<growspace-timeline .hass=${this.hass}></growspace-timeline>`}
+          </div>
+        </div>
+      </ha-card>
+    `;
+    }
+};
+GrowspaceLogbookCard.styles = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+
+      ha-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: var(--ha-card-background, var(--card-background-color, rgba(20, 20, 20, 0.8)));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .card-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 400px;
+      }
+
+      .tab-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        padding-bottom: 2px;
+      }
+
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+      }
+
+      .tab svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+      }
+
+      .tab:hover {
+        color: var(--primary-text-color, #fff);
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+      }
+
+      .tab.active {
+        color: var(--primary-color, #4caf50);
+        border-bottom-color: var(--primary-color, #4caf50);
+      }
+
+      .tab-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      growspace-logbook, growspace-timeline {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .loading, .error {
+        padding: 24px;
+        text-align: center;
+        color: var(--secondary-text-color);
+      }
+    `
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceLogbookCard.prototype, "hass", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbookCard.prototype, "_config", void 0);
+__decorate([
+    r$2()
+], GrowspaceLogbookCard.prototype, "_activeTab", void 0);
+__decorate([
+    e$3({ context: storeContext })
+], GrowspaceLogbookCard.prototype, "_store", void 0);
+__decorate([
+    e$3({ context: hassContext })
+], GrowspaceLogbookCard.prototype, "_hassContext", void 0);
+__decorate([
+    e$3({ context: configContext })
+], GrowspaceLogbookCard.prototype, "_configContext", void 0);
+GrowspaceLogbookCard = __decorate([
+    t$2('growspace-logbook-card')
+], GrowspaceLogbookCard);
+
 // Export all types
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -109160,6 +109399,11 @@ window.customCards.push({
     type: 'growspace-subarea-card',
     name: 'Growspace Subarea',
     description: 'Environment sensors and device status for a specific subarea within a growspace.',
+    preview: false,
+}, {
+    type: 'growspace-logbook-card',
+    name: 'Growspace Logbook',
+    description: 'Events logbook with list and timeline views for a growspace.',
     preview: false,
 });
 
@@ -110157,6 +110401,7 @@ const FIELD_LABELS = {
     initial_view_mode: 'Initial View Mode',
     keyboard_rotate_enabled: 'Keyboard Rotation (3D View)',
     keyboard_rotate_speed: 'Rotation Speed',
+    default_view: 'Default View',
 };
 const computeEditorLabel = (schema) => FIELD_LABELS[schema.name] ?? schema.name;
 
@@ -110775,5 +111020,95 @@ var growspaceSubareaCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceSubareaCardEditor () { return GrowspaceSubareaCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+let GrowspaceLogbookCardEditor = class GrowspaceLogbookCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._gsController = new GrowspaceOptionsController(this);
+    }
+    setConfig(config) {
+        this._config = config;
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._gsController.update(this.hass);
+        }
+    }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'default_view',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'List View', value: 'list' },
+                            { label: 'Timeline', value: 'timeline' },
+                        ],
+                    },
+                },
+            },
+        ];
+    }
+    _valueChanged(ev) {
+        if (!this._config || !this.hass)
+            return;
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.hass || !this._config)
+            return x ``;
+        return x `
+      <div class="card-config">
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${this._computeSchema()}
+          .computeLabel=${computeEditorLabel}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+        <div class="info-text">
+          Displays the growspace events logbook with switchable List and Timeline views.
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspaceLogbookCardEditor.styles = [
+    sharedStyles,
+    i$6 `
+      .card-config { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+      .info-text { font-size: 0.9em; color: var(--secondary-text-color); margin-top: 8px; }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceLogbookCardEditor.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceLogbookCardEditor.prototype, "_config", void 0);
+GrowspaceLogbookCardEditor = __decorate([
+    t$2('growspace-logbook-card-editor')
+], GrowspaceLogbookCardEditor);
+
+var growspaceLogbookCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceLogbookCardEditor () { return GrowspaceLogbookCardEditor; }
+});
+
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

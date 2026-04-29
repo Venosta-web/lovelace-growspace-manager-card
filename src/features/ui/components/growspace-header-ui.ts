@@ -126,6 +126,7 @@ export class GrowspaceHeaderUI extends LitElement {
           <!-- Row 1 Right: Actions & Device Chips -->
           <growspace-header-actions-ui
             class="header-actions"
+            .device=${this.device}
             .deviceChips=${this.deviceChips}
             .isMobile=${this._resizeController.isMobile}
             .mobileLink=${this._mobileLink}

@@ -534,10 +534,13 @@ export class IrrigationDialog extends LitElement {
     const env = this.device?.environmentAttributes;
 
     // Crop Steering (VWC): requires soil moisture sensor or active strategy
+    // AND at least one pump (irrigation or drain) to be defined
     const hasSoilMoisture = !!(env?.soilMoistureSensor)
       || (env?.soilMoistureSensors?.length ?? 0) > 0;
     const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
-    if (hasSoilMoisture || hasStrategy) {
+    const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+
+    if ((hasSoilMoisture || hasStrategy) && hasPump) {
       tabs.push('steering');
     }
 
@@ -581,10 +584,18 @@ export class IrrigationDialog extends LitElement {
     const visible = this._visibleTabs;
 
     if (!visible.includes('steering')) {
-      hints.push({
-        icon: '🌱',
-        text: 'Configure a soil moisture sensor in Environment Settings to enable VWC Crop Steering.',
-      });
+      const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+      if (!hasPump) {
+        hints.push({
+          icon: '🚰',
+          text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Crop Steering features.',
+        });
+      } else {
+        hints.push({
+          icon: '🌱',
+          text: 'Configure a soil moisture sensor in Environment Settings to enable VWC Crop Steering.',
+        });
+      }
     }
 
     if (!visible.includes('tanks')) {
