@@ -726,27 +726,70 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const sparklineColor = ChartUtils.getSparklineColor(metric);
         const sparklinePaths: Array<{ d: string; color: string }> = [];
 
-        if (entityIds.length > 1) {
-            entityIds.forEach((id, idx) => {
+        const isVpd = metric === 'vpd';
+        let vpdSegments: Array<{ path: string; color: string }> = [];
+
+        if (isVpd) {
+            const { devices } = this._viewController.value.grid;
+            const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
+            const overviewEntity = parentDevice?.overviewEntityId
+                ? this.hass?.states[parentDevice.overviewEntityId]
+                : null;
+
+            const attrs = overviewEntity?.attributes || {};
+            const day = {
+                targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+                targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+                dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+                dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+            };
+            const night = {
+                targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+                targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+                dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+                dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+            };
+
+            const parentHistory = this._analyticsStateController?.value?.combinedHistory || {};
+            const lightHistory = parentHistory.light || [];
+            
+            const vpdHistory = entityIds.length > 1 ? this._historyCache[`${metric}:${entityIds[0]}`] : this._historyCache[metric];
+
+            vpdSegments = ChartUtils.generateVpdSparklineSegments(
+                vpdHistory,
+                sparklineWidth,
+                sparklineHeight,
+                { day, night },
+                lightHistory,
+                '24h' as any
+            );
+        }
+
+        const useVpdSegments = isVpd && vpdSegments.length > 0;
+
+        if (!useVpdSegments) {
+            if (entityIds.length > 1) {
+                entityIds.forEach((id, idx) => {
+                    const path = ChartUtils.generateSparklinePath(
+                        this._historyCache[`${metric}:${id}`],
+                        sparklineWidth,
+                        sparklineHeight
+                    );
+                    if (path) {
+                        const color = idx === 0
+                            ? sparklineColor
+                            : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
+                        sparklinePaths.push({ d: path, color });
+                    }
+                });
+            } else {
                 const path = ChartUtils.generateSparklinePath(
-                    this._historyCache[`${metric}:${id}`],
+                    this._historyCache[metric],
                     sparklineWidth,
                     sparklineHeight
                 );
-                if (path) {
-                    const color = idx === 0
-                        ? sparklineColor
-                        : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
-                    sparklinePaths.push({ d: path, color });
-                }
-            });
-        } else {
-            const path = ChartUtils.generateSparklinePath(
-                this._historyCache[metric],
-                sparklineWidth,
-                sparklineHeight
-            );
-            if (path) sparklinePaths.push({ d: path, color: sparklineColor });
+                if (path) sparklinePaths.push({ d: path, color: sparklineColor });
+            }
         }
 
         const singleUnit = rawValues.length === 1 ? rawValues[0].unit : (rawValues[0]?.unit || '');
@@ -762,7 +805,32 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 @click=${() => this._toggleMetricGraph(metric)}
                 title="Click to toggle ${label} graph"
             >
-                ${sparklinePaths.length > 0 ? html`
+                ${useVpdSegments ? html`
+                    <svg
+                        class="sensor-sparkline"
+                        viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                        preserveAspectRatio="none"
+                        style="overflow: visible;"
+                    >
+                        <rect
+                            x="0"
+                            y="0"
+                            width="${sparklineWidth}"
+                            height="${sparklineHeight}"
+                            fill="transparent"
+                        />
+                        ${vpdSegments.map((seg) => svg`
+                            <path
+                                d="${seg.path}"
+                                fill="none"
+                                stroke="${seg.color}"
+                                stroke-width="2.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+                        `)}
+                    </svg>
+                ` : sparklinePaths.length > 0 ? html`
                     <svg
                         class="sensor-sparkline"
                         viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
