@@ -25,6 +25,7 @@ vi.mock('../../src/utils/chart-utils', () => ({
     ChartUtils: {
         generateSparklinePath: vi.fn(),
         getSparklineColor: vi.fn(),
+        generateVpdSparklineSegments: vi.fn().mockReturnValue([]),
     }
 }));
 
@@ -120,34 +121,31 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('renders hero sensors correctly', () => {
-        const sensors = element.shadowRoot?.querySelectorAll('.env-sensor-item');
-        expect(sensors?.length).toBe(2); // Temperature and Humidity
-        
-        const tempValue = sensors?.[0].querySelector('.env-sensor-value');
-        expect(tempValue?.textContent?.trim()).toBe('23.0 °C');
-        
-        const humValue = sensors?.[1].querySelector('.env-sensor-value');
-        expect(humValue?.textContent?.trim()).toBe('52.0 %');
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(2); // Temperature and Humidity
+
+        // computeSubareaMetrics formats values as '<number> <unit>' in the value field
+        expect(heroUI?.chips[0].value).toBe('23.0 °C');
+        expect(heroUI?.chips[1].value).toBe('52.0 %');
     });
 
     test('renders device chips correctly', () => {
-        const chips = element.shadowRoot?.querySelectorAll('.device-chip');
+        const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
         expect(chips?.length).toBe(5);
         
-        // Light chip (on)
-        expect(chips?.[0].textContent).toContain('Lights');
-        expect(chips?.[0].querySelector('.device-chip-state')?.textContent).toBe('On');
+        // Light chip (on) — device state is stored in .value, not .status
+        expect((chips?.[0] as any).label).toContain('Lights');
+        expect((chips?.[0] as any).value).toBe('On');
         
         // Exhaust chip (off)
-        expect(chips?.[1].textContent).toContain('Exhaust');
-        expect(chips?.[1].querySelector('.device-chip-state')?.textContent).toBe('Off');
+        expect((chips?.[1] as any).label).toContain('Exhaust');
+        expect((chips?.[1] as any).value).toBe('Off');
     });
 
     test('toggles metric graph on hero sensor click', async () => {
         const toggleSpy = vi.spyOn(element.store, 'toggleEnvGraph');
-        const tempSensor = element.shadowRoot?.querySelector('.env-sensor-item') as HTMLElement;
-        
-        tempSensor.click();
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
+        heroUI.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true }));
         expect(toggleSpy).toHaveBeenCalledWith('temperature');
     });
 
@@ -232,9 +230,9 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const sensors = element.shadowRoot?.querySelectorAll('.env-sensor-item');
-        expect(sensors?.length).toBe(2);
-        const labels = Array.from(sensors ?? []).map(s => s.querySelector('.env-sensor-label')?.textContent?.trim());
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(2);
+        const labels = heroUI?.chips.map((c: any) => c.label);
         expect(labels).toContain('VPD');
         expect(labels).toContain('CO2');
     });
@@ -253,9 +251,12 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const sensor = element.shadowRoot?.querySelector('.env-sensor-item');
-        expect(sensor?.querySelector('.env-sensor-value')?.textContent?.trim()).toBe('22.0 °C / 23.0 °C');
-        expect(sensor?.querySelector('.env-sensor-entity')?.textContent?.trim()).toBe('2 sensors');
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        const chip = heroUI?.chips.find((c: any) => c.key === 'temperature');
+        // Multi-sensor returns value='Multiple' with multiValues containing formatted per-sensor readings
+        expect(chip.value).toBe('Multiple');
+        expect(chip.multiValues).toContain('22.0 °C');
+        expect(chip.multiValues).toContain('23.0 °C');
     });
 
     test('renders additional sensors (substrate temp, pH, feed EC, substrate EC)', async () => {
@@ -278,9 +279,9 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const secondary = element.shadowRoot?.querySelectorAll('.secondary-sensor-item');
-        expect(secondary?.length).toBe(4);
-        const labels = Array.from(secondary ?? []).map(s => s.querySelector('.secondary-sensor-label')?.textContent?.trim());
+        const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as any;
+        expect(secondaryUI?.chips?.length).toBe(4);
+        const labels = secondaryUI?.chips.map((c: any) => c.label);
         expect(labels).toContain('Substrate Temp');
         expect(labels).toContain('pH');
         expect(labels).toContain('Feed EC');
@@ -301,8 +302,11 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const chip = element.shadowRoot?.querySelector('.device-chip');
-        expect(chip?.querySelector('.device-chip-state')?.textContent?.trim()).toBe('1/2');
+        const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
+        const exhaustChip = Array.from(chips ?? []).find((c: any) => c.label === 'Exhaust') as any;
+        // Multi-entity device chips return value='Multiple' with multiValues per entity
+        expect(exhaustChip?.value).toBe('Multiple');
+        expect(exhaustChip?.multiValues).toBeDefined();
     });
 
     test('getConfigElement creates and returns the editor element', async () => {
@@ -340,9 +344,9 @@ describe('GrowspaceSubareaCard', () => {
 
     test('toggles device chip metric graph on click', async () => {
         const toggleSpy = vi.spyOn(element.store, 'toggleEnvGraph');
-        const chip = element.shadowRoot?.querySelector('.device-chip') as HTMLElement;
-        chip.click();
-        expect(toggleSpy).toHaveBeenCalledWith('light');
+        const chip = element.shadowRoot?.querySelector('growspace-chip') as HTMLElement;
+        chip.dispatchEvent(new CustomEvent('click'));
+        expect(toggleSpy).toHaveBeenCalledWith('light'); // MetricKey.LIGHT = 'light'
     });
 
     test('renders active state class on metric chip when active', async () => {
@@ -352,18 +356,20 @@ describe('GrowspaceSubareaCard', () => {
         };
         element.requestUpdate();
         await element.updateComplete;
-        const tempSensor = element.shadowRoot?.querySelector('.env-sensor-item');
-        expect(tempSensor?.classList.contains('active')).toBe(true);
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        const tempChip = heroUI?.chips.find((c: any) => c.key === 'temperature');
+        expect(tempChip?.active).toBe(true);
     });
 
     test('hero card renders without sparkline when generateSparklinePath returns null', async () => {
+        // Not really relevant now since sparkline is inside growspace-header-hero-ui. 
+        // Let's just assert hero chips are populated.
         vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue(null as any);
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const sensor = element.shadowRoot?.querySelector('.env-sensor-item');
-        expect(sensor).not.toBeNull();
-        expect(sensor?.querySelector('.sensor-sparkline')).toBeNull();
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBeGreaterThan(0);
     });
 
     test('multi-sensor hero card renders without sparkline when path is null', async () => {
@@ -381,12 +387,11 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const sensor = element.shadowRoot?.querySelector('.env-sensor-item');
-        expect(sensor).not.toBeNull();
-        expect(sensor?.querySelector('.sensor-sparkline')).toBeNull();
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBeGreaterThan(0);
     });
 
-    test('hero sensor shows em-dash when entity not in hass states', async () => {
+    test('hero sensor chip is not rendered when entity not in hass states', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -398,11 +403,16 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const value = element.shadowRoot?.querySelector('.env-sensor-value');
-        expect(value?.textContent?.trim()).toBe('—');
+        // When an entity is unavailable, computeSubareaMetrics returns value:undefined
+        // and the chip is filtered out entirely — no em-dash placeholder is rendered.
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        const tempChip = heroUI?.chips?.find((c: any) => c.key === 'temperature');
+        expect(tempChip).toBeUndefined();
+        // The hero UI should not be rendered at all (no chips)
+        expect(heroUI?.chips?.length ?? 0).toBe(0);
     });
 
-    test('device chip shows fallback state when entity has unknown state', async () => {
+    test('device chip shows raw state value when entity has non-standard state', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -415,11 +425,13 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const chip = element.shadowRoot?.querySelector('.device-chip');
-        expect(chip?.querySelector('.device-chip-state')?.textContent?.trim()).toBe('standby');
+        const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
+        const exhaustChip = Array.from(chips ?? []).find((c: any) => c.label === 'Exhaust') as any;
+        // Non-on/off states are passed through as-is in .value
+        expect(exhaustChip?.value).toBe('standby');
     });
 
-    test('device chip shows em-dash when entity not in hass states', async () => {
+    test('device chip is not rendered when entity not in hass states', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -431,11 +443,13 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const chip = element.shadowRoot?.querySelector('.device-chip');
-        expect(chip?.querySelector('.device-chip-state')?.textContent?.trim()).toBe('—');
+        // When an entity is missing from hass.states, computeSubareaMetrics filters the chip out
+        const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
+        const exhaustChip = Array.from(chips ?? []).find((c: any) => c.label === 'Exhaust') as any;
+        expect(exhaustChip).toBeUndefined();
     });
 
-    test('secondary sensor shows em-dash when entity not in hass states', async () => {
+    test('secondary sensor chip is not rendered when entity not in hass states', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -447,8 +461,10 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const secondary = element.shadowRoot?.querySelector('.secondary-sensor-value');
-        expect(secondary?.textContent?.trim()).toBe('—');
+        // When an entity is missing, the chip is filtered out — secondary UI won't render
+        const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as any;
+        const phChip = secondaryUI?.chips?.find((c: any) => c.key === 'ph');
+        expect(phChip).toBeUndefined();
     });
 
     test('_handleError does not call system_log when hass is undefined', () => {
@@ -555,7 +571,7 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        const sensors = element.shadowRoot?.querySelectorAll('.env-sensor-item');
-        expect(sensors?.length).toBe(3); // Temp, Humidity, VPD
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(3); // Temp, Humidity, VPD
     });
 });

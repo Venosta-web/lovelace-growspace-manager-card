@@ -40795,6 +40795,109 @@ class MetricsUtils {
         ].filter((c) => c !== null);
         return { mainChips, deviceChips, dominant, envAttrs };
     }
+    static computeSubareaMetrics(hass, ec, activeEnvGraphs) {
+        const createChipData = (key, icon, value, multiValues, entityIds, label, status, tooltip) => {
+            if (value === undefined && (!multiValues || multiValues.length === 0))
+                return null;
+            const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
+            const active = activeEnvGraphs.has(key) || hasCompositeActive;
+            return {
+                key,
+                icon,
+                value: value || '',
+                multiValues,
+                entityIds,
+                label,
+                status,
+                tooltip,
+                active,
+                linked: false,
+                groupIndex: -1,
+            };
+        };
+        const getAggregateState = (single, multi, unit = '') => {
+            const ids = new Set();
+            if (multi && multi.length > 0)
+                multi.forEach((id) => ids.add(id));
+            else if (single)
+                ids.add(single);
+            if (ids.size === 0)
+                return { value: undefined, entityIds: [] };
+            const states = [];
+            const entityIds = Array.from(ids);
+            ids.forEach((id) => {
+                const s = hass.states[id];
+                if (s &&
+                    s.state &&
+                    s.state !== EntityState.UNAVAILABLE &&
+                    s.state !== EntityState.UNKNOWN) {
+                    const fVal = parseFloat(s.state);
+                    if (!isNaN(fVal) || s.state === '') {
+                        states.push(unit ? `${parseFloat(s.state).toFixed(1)} ${unit}`.trim() : s.state);
+                    }
+                    else {
+                        states.push('-');
+                    }
+                }
+                else {
+                    states.push('-');
+                }
+            });
+            if (ids.size > 1) {
+                return { value: 'Multiple', multiValues: states, entityIds };
+            }
+            return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
+        };
+        const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
+        const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
+        const vpdAgg = getAggregateState(ec.vpd_sensor, ec.vpd_sensors, 'kPa');
+        const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
+        const heroChips = [
+            createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, 'Temperature'),
+            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, 'Humidity'),
+            createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, 'VPD'),
+            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, 'CO2'),
+        ].filter((c) => c !== null);
+        const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
+        const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
+        const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
+        const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+        const secondaryChips = [
+            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
+            createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
+            createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
+            createChipData('substrate_ec', '', subEcAgg.value, subEcAgg.multiValues, subEcAgg.entityIds, 'Substrate EC'),
+        ].filter((c) => c !== null);
+        const getAggregateDeviceState = (entities) => {
+            const ids = new Set();
+            if (entities && entities.length > 0)
+                entities.forEach((id) => ids.add(id));
+            if (ids.size === 0)
+                return { value: undefined, entityIds: [] };
+            const states = [];
+            const entityIds = Array.from(ids);
+            ids.forEach((id) => {
+                const s = hass.states[id];
+                states.push(s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN ? s.state : '-');
+            });
+            if (ids.size > 1)
+                return { value: 'Multiple', multiValues: states, entityIds };
+            return { value: states[0] !== '-' ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0]) : undefined, entityIds };
+        };
+        const lightState = getAggregateDeviceState(ec.light_sensors);
+        const exhaustState = getAggregateDeviceState(ec.exhaust_fan_entities);
+        const circFanState = getAggregateDeviceState(ec.circulation_fan_entities);
+        const humState = getAggregateDeviceState(ec.humidifier_entities);
+        const dehumState = getAggregateDeviceState(ec.dehumidifier_entities);
+        const deviceChips = [
+            createChipData(MetricKey.LIGHT, mdiLightbulbOn, lightState.value, lightState.multiValues, lightState.entityIds, 'Lights'),
+            createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
+            createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circFanState.value, circFanState.multiValues, circFanState.entityIds, 'Fan'),
+            createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humState.value, humState.multiValues, humState.entityIds, 'Humidifier'),
+            createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumState.value, dehumState.multiValues, dehumState.entityIds, 'Dehumidifier'),
+        ].filter((c) => c !== null);
+        return { heroChips, secondaryChips, deviceChips };
+    }
 }
 
 const headerStyles = i$6 `
@@ -108518,8 +108621,7 @@ GrowspaceTankCard = __decorate([
     t$2('growspace-tank-card')
 ], GrowspaceTankCard);
 
-var GrowspaceSubareaCard_1;
-let GrowspaceSubareaCard = GrowspaceSubareaCard_1 = class GrowspaceSubareaCard extends i$3 {
+let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     constructor() {
         super(...arguments);
         this.store = new GrowspaceStore();
@@ -108806,9 +108908,7 @@ let GrowspaceSubareaCard = GrowspaceSubareaCard_1 = class GrowspaceSubareaCard e
                                 </button>
                             </div>
 
-                            ${this._renderDeviceChips(ec)}
-                            ${this._renderHeroSensors(ec)}
-                            ${this._renderAdditionalSensors(ec)}
+                            ${this._renderHeaderMetrics(ec, parentDevice)}
 
                             ${parentDevice
             ? x `<growspace-analytics .device=${parentDevice}></growspace-analytics>`
@@ -108832,204 +108932,50 @@ let GrowspaceSubareaCard = GrowspaceSubareaCard_1 = class GrowspaceSubareaCard e
             </error-boundary>
         `;
     }
-    _renderHeroSensors(ec) {
-        const heroSensors = [];
-        const tempSensors = ec.temperature_sensors?.length
-            ? ec.temperature_sensors
-            : ec.temperature_sensor
-                ? [ec.temperature_sensor]
-                : [];
-        const humSensors = ec.humidity_sensors?.length
-            ? ec.humidity_sensors
-            : ec.humidity_sensor
-                ? [ec.humidity_sensor]
-                : [];
-        const vpdSensors = ec.vpd_sensors?.length
-            ? ec.vpd_sensors
-            : ec.vpd_sensor
-                ? [ec.vpd_sensor]
-                : [];
-        const co2Sensors = [ec.co2_sensor].filter(Boolean);
-        if (tempSensors.length)
-            heroSensors.push({ label: 'Temperature', metric: 'temperature', entityIds: tempSensors });
-        if (humSensors.length)
-            heroSensors.push({ label: 'Humidity', metric: 'humidity', entityIds: humSensors });
-        if (vpdSensors.length)
-            heroSensors.push({ label: 'VPD', metric: 'vpd', entityIds: vpdSensors });
-        if (co2Sensors.length)
-            heroSensors.push({ label: 'CO2', metric: 'co2', entityIds: co2Sensors });
-        if (!heroSensors.length) {
-            return x `<div class="no-sensors">No environment sensors configured for this subarea.</div>`;
-        }
+    _renderHeaderMetrics(ec, parentDevice) {
+        const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set());
+        const hasAny = metrics.heroChips.length > 0 || metrics.secondaryChips.length > 0 || metrics.deviceChips.length > 0;
         return x `
-            <div class="env-config-grid">
-                ${heroSensors.map((s) => this._renderHeroCard(s.label, s.metric, s.entityIds))}
-            </div>
-        `;
-    }
-    _renderHeroCard(label, metric, entityIds) {
-        const rawValues = entityIds.map((id) => {
-            const st = this.hass?.states[id];
-            return st ? { val: parseFloat(st.state).toFixed(1), unit: st.attributes?.unit_of_measurement || '' } : null;
-        }).filter(Boolean);
-        const primaryEntityId = entityIds[0] || '';
-        const friendlyName = this.hass?.states[primaryEntityId]?.attributes?.friendly_name || primaryEntityId;
-        const isActive = this._isMetricActive(metric);
-        const icon = GrowspaceSubareaCard_1._METRIC_ICONS[metric];
-        const sparklineWidth = 140;
-        const sparklineHeight = 80;
-        const sparklineColor = ChartUtils.getSparklineColor(metric);
-        const sparklinePaths = [];
-        if (entityIds.length > 1) {
-            entityIds.forEach((id, idx) => {
-                const path = ChartUtils.generateSparklinePath(this._historyCache[`${metric}:${id}`], sparklineWidth, sparklineHeight);
-                if (path) {
-                    const color = idx === 0
-                        ? sparklineColor
-                        : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
-                    sparklinePaths.push({ d: path, color });
-                }
-            });
-        }
-        else {
-            const path = ChartUtils.generateSparklinePath(this._historyCache[metric], sparklineWidth, sparklineHeight);
-            if (path)
-                sparklinePaths.push({ d: path, color: sparklineColor });
-        }
-        const singleUnit = rawValues.length === 1 ? rawValues[0].unit : (rawValues[0]?.unit || '');
-        const allSameUnit = rawValues.every((v) => v.unit === singleUnit);
-        const displayVal = rawValues.length
-            ? rawValues.map((v) => v.val).join(' / ')
-            : '—';
-        const displayUnit = rawValues.length && allSameUnit ? singleUnit : '';
-        return x `
-            <div
-                class="env-sensor-item ${isActive ? 'active' : ''}"
-                @click=${() => this._toggleMetricGraph(metric)}
-                title="Click to toggle ${label} graph"
-            >
-                ${sparklinePaths.length > 0 ? x `
-                    <svg
-                        class="sensor-sparkline"
-                        viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
-                        preserveAspectRatio="none"
-                    >
-                        <defs>
-                            <linearGradient id="sg-${metric}" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
-                                <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
-                            </linearGradient>
-                        </defs>
-                        ${sparklinePaths.map((p) => b `
-                            <path
-                                d="${p.d}"
-                                fill="none"
-                                stroke="${p.color}"
-                                stroke-width="2.5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                style="opacity: ${p.color === sparklineColor ? '1' : '0.6'}"
-                            />
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
+                ${!hasAny ? x `
+                    <div class="no-sensors">No environment sensors configured for this subarea.</div>
+                ` : ''}
+
+                ${metrics.deviceChips.length > 0 ? x `
+                    <div style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto;">
+                        ${metrics.deviceChips.map((chip) => x `
+                            <growspace-chip
+                                .icon=${chip.icon}
+                                .label=${chip.label}
+                                .value=${chip.value}
+                                .multiValues=${chip.multiValues}
+                                .status=${chip.status}
+                                .active=${chip.active}
+                                .linked=${chip.linked}
+                                .tooltip=${chip.tooltip}
+                                @click=${() => this._toggleMetricGraph(chip.key)}
+                            ></growspace-chip>
                         `)}
-                        <path
-                            d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
-                            fill="url(#sg-${metric})"
-                        />
-                    </svg>
-                ` : E}
-                <div class="sensor-header">
-                    ${icon ? b `<svg viewBox="0 0 24 24" style="width:20px;height:20px;flex-shrink:0;fill:currentColor"><path d="${icon}"></path></svg>` : E}
-                    <span class="env-sensor-label">${label}</span>
-                </div>
-                <div class="env-sensor-value-group">
-                    <span class="env-sensor-value">${displayVal}</span>
-                    ${displayUnit ? x `<span class="env-sensor-unit">${displayUnit}</span>` : E}
-                </div>
-                ${entityIds.length === 1
-            ? x `<span class="env-sensor-entity" title="${primaryEntityId}">${friendlyName}</span>`
-            : x `<span class="env-sensor-entity">${entityIds.length} sensors</span>`}
-            </div>
-        `;
-    }
-    _renderDeviceChips(ec) {
-        const deviceGroups = [];
-        if (ec.light_sensors?.length) {
-            deviceGroups.push({ label: 'Lights', icon: 'mdi:lightbulb', metric: 'light', entities: ec.light_sensors });
-        }
-        if (ec.exhaust_fan_entities?.length) {
-            deviceGroups.push({ label: 'Exhaust', icon: 'mdi:air-filter', metric: 'exhaust', entities: ec.exhaust_fan_entities });
-        }
-        if (ec.circulation_fan_entities?.length) {
-            deviceGroups.push({ label: 'Fan', icon: 'mdi:fan', metric: 'circulation_fan', entities: ec.circulation_fan_entities });
-        }
-        if (ec.humidifier_entities?.length) {
-            deviceGroups.push({ label: 'Humidifier', icon: 'mdi:water-percent', metric: 'humidifier', entities: ec.humidifier_entities });
-        }
-        if (ec.dehumidifier_entities?.length) {
-            deviceGroups.push({ label: 'Dehumidifier', icon: 'mdi:water-off', metric: 'dehumidifier', entities: ec.dehumidifier_entities });
-        }
-        if (!deviceGroups.length)
-            return x ``;
-        return x `
-            <div class="device-strip">
-                ${deviceGroups.map((g) => {
-            const states = g.entities.map((id) => this.hass?.states[id]?.state ?? '');
-            const onCount = states.filter((s) => s === 'on').length;
-            const stateLabel = g.entities.length === 1
-                ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0] || '—')
-                : `${onCount}/${g.entities.length}`;
-            const isActive = this._isMetricActive(g.metric);
-            return x `
-                        <div
-                            class="device-chip ${isActive ? 'active' : ''}"
-                            @click=${() => this._toggleMetricGraph(g.metric)}
-                            title="Click to toggle ${g.label} graph"
-                        >
-                            <ha-icon icon="${g.icon}" style="--mdi-icon-size: 16px;"></ha-icon>
-                            ${g.label}
-                            <span class="device-chip-state">${stateLabel}</span>
-                        </div>
-                    `;
-        })}
-            </div>
-        `;
-    }
-    _renderAdditionalSensors(ec) {
-        const groups = [];
-        if (ec.substrate_temperature_sensors?.length) {
-            groups.push({ label: 'Substrate Temp', entities: ec.substrate_temperature_sensors });
-        }
-        if (ec.ph_sensors?.length) {
-            groups.push({ label: 'pH', entities: ec.ph_sensors });
-        }
-        if (ec.feed_ec_sensors?.length) {
-            groups.push({ label: 'Feed EC', entities: ec.feed_ec_sensors });
-        }
-        if (ec.substrate_ec_sensors?.length) {
-            groups.push({ label: 'Substrate EC', entities: ec.substrate_ec_sensors });
-        }
-        if (!groups.length)
-            return x ``;
-        return x `
-            <div class="secondary-sensors-grid">
-                ${groups.map((g) => this._renderSecondaryCard(g.label, g.entities))}
-            </div>
-        `;
-    }
-    _renderSecondaryCard(label, entityIds) {
-        const values = entityIds
-            .map((id) => {
-            const st = this.hass?.states[id];
-            return st
-                ? `${parseFloat(st.state).toFixed(1)} ${st.attributes?.unit_of_measurement || ''}`
-                : '—';
-        })
-            .filter(Boolean);
-        const displayValue = values.length ? values.join(' / ') : '—';
-        return x `
-            <div class="secondary-sensor-item">
-                <span class="secondary-sensor-label">${label}</span>
-                <span class="secondary-sensor-value">${displayValue}</span>
+                    </div>
+                ` : ''}
+                
+                ${metrics.heroChips.length > 0 ? x `
+                    <growspace-header-hero-ui
+                        .chips=${metrics.heroChips}
+                        .historyCache=${this._historyCache}
+                        .device=${parentDevice}
+                        .hass=${this.hass}
+                        .timeRange=${this._analyticsStateController?.value?.timeRange || '24h'}
+                        @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
+                    ></growspace-header-hero-ui>
+                ` : ''}
+                
+                ${metrics.secondaryChips.length > 0 ? x `
+                    <growspace-header-secondary-ui
+                        .chips=${metrics.secondaryChips}
+                        @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
+                    ></growspace-header-secondary-ui>
+                ` : ''}
             </div>
         `;
     }
@@ -109098,177 +109044,6 @@ GrowspaceSubareaCard.styles = [
                 align-items: center;
                 gap: 6px;
             }
-
-            /* Device strip — horizontal scrollable row above hero sensors */
-            .device-strip {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                min-height: 0;
-            }
-
-            .device-chip {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                border-radius: 20px;
-                padding: 5px 14px;
-                font-size: 0.82rem;
-                color: var(--primary-text-color);
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                white-space: nowrap;
-                flex-shrink: 0;
-                cursor: pointer;
-                transition:
-                    background 0.2s cubic-bezier(0.2, 0, 0, 1),
-                    border-color 0.2s cubic-bezier(0.2, 0, 0, 1);
-                user-select: none;
-            }
-
-            .device-chip:hover {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-                border-color: var(--divider-color, rgba(255, 255, 255, 0.2));
-            }
-
-            .device-chip.active {
-                background: color-mix(
-                    in srgb,
-                    var(--primary-color, #2196f3) 15%,
-                    var(--glass-bg, rgba(255, 255, 255, 0.05))
-                );
-                border-color: var(--primary-color, #2196f3);
-                color: var(--primary-text-color);
-            }
-
-            .device-chip-state {
-                font-size: 0.75rem;
-                color: var(--secondary-text-color);
-                opacity: 0.85;
-            }
-
-            /* Hero sensor grid */
-            .env-config-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-                gap: 16px;
-            }
-
-            .env-sensor-item {
-                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
-                border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-                backdrop-filter: var(--glass-blur);
-                box-shadow:
-                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-                border-radius: 24px;
-                padding: 20px 24px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                cursor: pointer;
-                transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-                user-select: none;
-                overflow: hidden;
-                position: relative;
-                min-height: 110px;
-            }
-
-            .sensor-sparkline {
-                position: absolute;
-                top: 50%;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100%;
-                height: 50%;
-                pointer-events: none;
-                z-index: 0;
-                opacity: 0.7;
-            }
-
-            .sensor-sparkline path {
-                transition:
-                    d 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                    stroke 0.3s ease,
-                    fill 0.3s ease;
-            }
-
-            .sensor-header,
-            .env-sensor-value-group,
-            .env-sensor-entity {
-                position: relative;
-                z-index: 1;
-            }
-
-            .sensor-header {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-            }
-
-            .env-sensor-label {
-                font-size: 0.9rem;
-                font-weight: 500;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-
-            .env-sensor-value-group {
-                display: flex;
-                align-items: baseline;
-                gap: 4px;
-            }
-
-            .env-sensor-value {
-                font-size: 2rem;
-                font-weight: 400;
-                color: var(--primary-text-color);
-                line-height: 1;
-            }
-
-            .env-sensor-unit {
-                font-size: 1rem;
-                color: var(--secondary-text-color);
-                font-weight: 500;
-            }
-
-            .env-sensor-item:hover {
-                background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-                border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
-                box-shadow:
-                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
-                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-                transform: translateY(-2px);
-            }
-
-            .env-sensor-item.active {
-                background: color-mix(
-                    in srgb,
-                    var(--primary-color, #2196f3) 15%,
-                    var(--glass-bg, rgba(255, 255, 255, 0.05))
-                );
-                border-color: var(--primary-color, #2196f3);
-                box-shadow:
-                    0 8px 32px -4px rgba(0, 0, 0, 0.3),
-                    0 0 0 1px var(--primary-color, #2196f3) inset;
-            }
-
-            .env-sensor-item.non-interactive {
-                cursor: default;
-            }
-
-            .env-sensor-item.non-interactive:hover {
-                transform: none;
-                background: var(--glass-bg, rgba(255, 255, 255, 0.05));
-                border-color: var(--divider-color, rgba(255, 255, 255, 0.1));
-                box-shadow:
-                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-                    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
-            }
-
-            .env-sensor-entity {
                 font-size: 0.72rem;
                 color: var(--secondary-text-color);
                 opacity: 0.7;
@@ -109317,12 +109092,6 @@ GrowspaceSubareaCard.styles = [
             }
         `,
 ];
-GrowspaceSubareaCard._METRIC_ICONS = {
-    temperature: mdiThermometer,
-    humidity: mdiWaterPercent,
-    vpd: mdiCloudOutline,
-    co2: mdiWeatherCloudy,
-};
 __decorate([
     e$3({ context: storeContext })
 ], GrowspaceSubareaCard.prototype, "store", void 0);
@@ -109352,7 +109121,7 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceSubareaCard.prototype, "_historyCache", void 0);
-GrowspaceSubareaCard = GrowspaceSubareaCard_1 = __decorate([
+GrowspaceSubareaCard = __decorate([
     t$2('growspace-subarea-card')
 ], GrowspaceSubareaCard);
 
@@ -110325,158 +110094,152 @@ class HassSubscriptionController {
     }
 }
 
-let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
-    constructor() {
-        super(...arguments);
-        this._growspaceOptions = [];
-        this._subscriptionController = new HassSubscriptionController(this);
-        this._hasSubscription = false;
+class GrowspaceOptionsController {
+    constructor(host) {
+        this._subscribed = false;
+        this.options = [];
+        this._host = host;
+        this._subscriptionController = new HassSubscriptionController(host);
+        host.addController(this);
     }
-    setConfig(config) {
-        this._config = config;
-        this._loadGrowspaces();
+    hostConnected() { }
+    hostDisconnected() {
+        this._subscriptionController.unsubscribeAll();
+        this._subscribed = false;
     }
-    updated(changedProps) {
-        if (changedProps.has('hass') && this.hass) {
-            this._loadGrowspaces();
-            this._subscribeToSensorUpdates();
-        }
+    update(hass) {
+        this._loadFromState(hass);
+        this._subscribe(hass);
     }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._hasSubscription = false;
-    }
-    async _subscribeToSensorUpdates() {
-        if (!this.hass || this._hasSubscription)
-            return;
-        this._hasSubscription = true;
-        await this._subscriptionController.subscribeEvents(this.hass, (event) => {
-            const customEvent = event;
-            const newState = customEvent.data?.new_state;
-            if (newState?.entity_id === 'sensor.growspaces_list') {
-                const gsObj = newState.attributes?.growspaces;
-                if (gsObj) {
-                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                        id,
-                        name: String(name),
-                    }));
-                }
-                else {
-                    this._growspaceOptions = [];
-                }
-            }
-        }, 'state_changed');
-    }
-    _loadGrowspaces() {
-        if (!this.hass)
-            return;
-        const entity = this.hass.states['sensor.growspaces_list'];
-        if (entity && entity.attributes?.growspaces) {
-            const gsObj = entity.attributes.growspaces;
-            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
+    _loadFromState(hass) {
+        const entity = hass.states['sensor.growspaces_list'];
+        const raw = entity?.attributes?.growspaces;
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+            this.options = Object.entries(raw).map(([id, name]) => ({
                 id,
                 name: String(name),
             }));
         }
         else {
-            this._growspaceOptions = [];
+            this.options = [];
         }
+        this._host.requestUpdate();
+    }
+    async _subscribe(hass) {
+        if (this._subscribed)
+            return;
+        this._subscribed = true;
+        await this._subscriptionController.subscribeEvents(hass, (event) => {
+            const e = event;
+            if (e.data?.new_state?.entity_id !== 'sensor.growspaces_list')
+                return;
+            const raw = e.data.new_state.attributes?.growspaces;
+            if (raw) {
+                this.options = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) }));
+            }
+            else {
+                this.options = [];
+            }
+            this._host.requestUpdate();
+        }, 'state_changed');
+    }
+}
+
+const FIELD_LABELS = {
+    default_growspace: 'Default Growspace',
+    growspace_id: 'Parent Growspace',
+    subarea_id: 'Subarea',
+    theme: 'Theme',
+    initial_view_mode: 'Initial View Mode',
+    keyboard_rotate_enabled: 'Keyboard Rotation (3D View)',
+    keyboard_rotate_speed: 'Rotation Speed',
+};
+const computeEditorLabel = (schema) => FIELD_LABELS[schema.name] ?? schema.name;
+
+let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._gsController = new GrowspaceOptionsController(this);
+    }
+    setConfig(config) {
+        this._config = config;
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._gsController.update(this.hass);
+        }
+    }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'theme',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Default', value: 'default' },
+                            { label: 'Dark', value: 'dark' },
+                            { label: 'Green', value: 'green' },
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'initial_view_mode',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Standard', value: 'standard' },
+                            { label: 'Compact (Grid Only)', value: 'compact' },
+                            { label: 'Header Only', value: 'header' },
+                        ],
+                    },
+                },
+            },
+            { name: 'keyboard_rotate_enabled', selector: { boolean: {} } },
+            { name: 'keyboard_rotate_speed', selector: { number: { min: 0.1, max: 5.0, step: 0.1 } } },
+        ];
     }
     render() {
         if (!this._config)
             return x ``;
         return x `
-      <div class="card-config">
-        <div class="form-group">
-          <label>Initial View Mode</label>
-          <select
-            .value=${this._config.initial_view_mode || 'standard'}
-            @change=${(e) => this._valueChanged('initial_view_mode', e.target.value)}
-          >
-            <option value="standard">Standard</option>
-            <option value="compact">Compact (Grid Only)</option>
-            <option value="header">Header Only (Collapsed)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Default Growspace</label>
-          <select
-            .value=${this._config.default_growspace ?? ''}
-            @change=${(e) => this._valueChanged('default_growspace', e.target.value)}
-          >
-            <option value="">Select a growspace</option>
-            ${this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Keyboard Rotation (3D View)</label>
-          <ha-form-switch
-            .checked=${this._config.keyboard_rotate_enabled || false}
-            @change=${(e) => this._valueChanged('keyboard_rotate_enabled', e.target.checked)}
-          ></ha-form-switch>
-        </div>
-
-        <div class="form-group">
-          <label>Rotation Speed (${(this._config.keyboard_rotate_speed || 1.0).toFixed(1)}x)</label>
-          <input
-            type="range"
-            min="0.1"
-            max="5.0"
-            step="0.1"
-            .value=${this._config.keyboard_rotate_speed || 1.0}
-            @change=${(e) => this._valueChanged('keyboard_rotate_speed', parseFloat(e.target.value))}
-          />
-        </div>
-      </div>
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${this._computeSchema()}
+        .computeLabel=${computeEditorLabel}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
     `;
     }
-    _valueChanged(key, value) {
+    _valueChanged(ev) {
         if (!this._config)
             return;
-        const newConfig = { ...this._config, [key]: value };
+        this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent('config-changed', {
-            detail: { config: newConfig },
+            detail: { config: this._config },
             bubbles: true,
             composed: true,
         }));
     }
 };
-GrowspaceManagerCardEditor.styles = i$6 `
-    .card-config {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    label {
-      font-weight: 500;
-      color: var(--secondary-text-color);
-    }
-    select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color);
-      font-size: 1rem;
-    }
-  `;
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceManagerCardEditor.prototype, "hass", void 0);
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceManagerCardEditor.prototype, "_config", void 0);
-__decorate([
-    r$2()
-], GrowspaceManagerCardEditor.prototype, "_growspaceOptions", void 0);
 GrowspaceManagerCardEditor = __decorate([
     t$2('growspace-manager-card-editor')
 ], GrowspaceManagerCardEditor);
@@ -110489,58 +110252,14 @@ var growspaceManagerCardEditor = /*#__PURE__*/Object.freeze({
 let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
     constructor() {
         super(...arguments);
-        this._growspaceOptions = [];
-        this._subscriptionController = new HassSubscriptionController(this);
-        this._hasSubscription = false;
+        this._gsController = new GrowspaceOptionsController(this);
     }
     setConfig(config) {
         this._config = config;
-        this._loadGrowspaces();
     }
     updated(changedProps) {
         if (changedProps.has('hass') && this.hass) {
-            this._loadGrowspaces();
-            this._subscribeToSensorUpdates();
-        }
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this._hasSubscription = false;
-    }
-    async _subscribeToSensorUpdates() {
-        if (!this.hass || this._hasSubscription)
-            return;
-        this._hasSubscription = true;
-        await this._subscriptionController.subscribeEvents(this.hass, (event) => {
-            const customEvent = event;
-            const newState = customEvent.data?.new_state;
-            if (newState?.entity_id === 'sensor.growspaces_list') {
-                const gsObj = newState.attributes?.growspaces;
-                if (gsObj) {
-                    this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                        id,
-                        name: String(name),
-                    }));
-                }
-                else {
-                    this._growspaceOptions = [];
-                }
-            }
-        }, 'state_changed');
-    }
-    _loadGrowspaces() {
-        if (!this.hass)
-            return;
-        const entity = this.hass.states['sensor.growspaces_list'];
-        if (entity && entity.attributes?.growspaces) {
-            const gsObj = entity.attributes.growspaces;
-            this._growspaceOptions = Object.entries(gsObj).map(([id, name]) => ({
-                id,
-                name: String(name),
-            }));
-        }
-        else {
-            this._growspaceOptions = [];
+            this._gsController.update(this.hass);
         }
     }
     _computeSchema() {
@@ -110551,7 +110270,7 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
                     select: {
                         options: [
                             { label: 'Select a growspace...', value: '' },
-                            ...this._growspaceOptions.map((gs) => ({ label: gs.name, value: gs.id }))
+                            ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
                         ],
                     },
                 },
@@ -110564,14 +110283,14 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
         return x `
       <div class="card-config">
         <div class="info-box">
-          The Grid Card is a localized view locked to the Standard tracking interface. Environment headers and charts are removed.
+          The Grid Card is a localized view locked to the Standard tracking interface.
+          Environment headers and charts are removed.
         </div>
-
         <ha-form
           .hass=${this.hass}
           .data=${this._config}
           .schema=${this._computeSchema()}
-          .computeLabel=${(s) => s.name === 'default_growspace' ? 'Default Growspace' : s.name}
+          .computeLabel=${computeEditorLabel}
           @value-changed=${this._valueChanged}
         ></ha-form>
       </div>
@@ -110589,11 +110308,7 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
     }
 };
 GrowspaceGridCardEditor.styles = i$6 `
-    .card-config {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+    .card-config { display: flex; flex-direction: column; gap: 16px; }
     .info-box {
       background: rgba(var(--rgb-primary-color), 0.1);
       color: var(--primary-text-color);
@@ -110609,9 +110324,6 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceGridCardEditor.prototype, "_config", void 0);
-__decorate([
-    r$2()
-], GrowspaceGridCardEditor.prototype, "_growspaceOptions", void 0);
 GrowspaceGridCardEditor = __decorate([
     t$2('growspace-grid-card-editor')
 ], GrowspaceGridCardEditor);
@@ -110624,31 +110336,15 @@ var growspaceGridCardEditor = /*#__PURE__*/Object.freeze({
 let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$3 {
     constructor() {
         super(...arguments);
-        this._sensorGrowspaces = [];
+        this._gsController = new GrowspaceOptionsController(this);
     }
     setConfig(config) {
         this._config = config;
-        this._loadGrowspaces();
     }
-    _loadGrowspaces() {
-        if (!this.hass)
-            return;
-        const growspaceListSensor = this.hass.states['sensor.growspaces_list'];
-        if (growspaceListSensor && growspaceListSensor.attributes.growspaces) {
-            const raw = growspaceListSensor.attributes.growspaces;
-            if (Array.isArray(raw)) {
-                this._sensorGrowspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
-            }
-            else {
-                this._sensorGrowspaces = Object.entries(raw).map(([id, name]) => ({ id, name: String(name) || id }));
-            }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._gsController.update(this.hass);
         }
-    }
-    firstUpdated() {
-        this._loadGrowspaces();
-    }
-    get _default_growspace() {
-        return this._config?.default_growspace || '';
     }
     _computeSchema() {
         return [
@@ -110658,7 +110354,7 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
                     select: {
                         options: [
                             { label: 'Select a growspace...', value: '' },
-                            ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                            ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
                         ],
                     },
                 },
@@ -110676,51 +110372,37 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
         }));
     }
     render() {
-        if (!this.hass || !this._config) {
+        if (!this.hass || !this._config)
             return x ``;
-        }
         return x `
-            <div class="card-config">
-                <ha-form
-                    .hass=${this.hass}
-                    .data=${this._config}
-                    .schema=${this._computeSchema()}
-                    .computeLabel=${(s) => s.name === 'default_growspace' ? 'Target Growspace' : s.name}
-                    @value-changed=${this._valueChanged}
-                ></ha-form>
-
-                <div class="info-text">
-                    This card will permanently display the analytics charts and history for the selected growspace.
-                </div>
-            </div>
-        `;
+      <div class="card-config">
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${this._computeSchema()}
+          .computeLabel=${computeEditorLabel}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+        <div class="info-text">
+          This card will permanently display the analytics charts and history for the selected growspace.
+        </div>
+      </div>
+    `;
     }
 };
 GrowspaceAnalyticsCardEditor.styles = [
     sharedStyles,
     i$6 `
-            .card-config {
-                padding: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            .info-text {
-                font-size: 0.9em;
-                color: var(--secondary-text-color);
-                margin-top: 8px;
-            }
-        `
+      .card-config { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+      .info-text { font-size: 0.9em; color: var(--secondary-text-color); margin-top: 8px; }
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceAnalyticsCardEditor.prototype, "hass", void 0);
 __decorate([
-    r$2()
+    n$5({ attribute: false })
 ], GrowspaceAnalyticsCardEditor.prototype, "_config", void 0);
-__decorate([
-    r$2()
-], GrowspaceAnalyticsCardEditor.prototype, "_sensorGrowspaces", void 0);
 GrowspaceAnalyticsCardEditor = __decorate([
     t$2('growspace-analytics-card-editor')
 ], GrowspaceAnalyticsCardEditor);
@@ -110959,52 +110641,23 @@ var growspaceTankCardEditor = /*#__PURE__*/Object.freeze({
 let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
     constructor() {
         super(...arguments);
-        this._growspaces = [];
         this._subareas = [];
         this._loadingSubareas = false;
+        this._gsController = new GrowspaceOptionsController(this);
         this._dataService = null;
     }
     setConfig(config) {
         this._config = config;
-        this._loadGrowspaces();
         if (config.growspace_id) {
             this._loadSubareas(config.growspace_id);
         }
     }
-    firstUpdated() {
-        if (this._growspaces.length === 0) {
-            this._loadGrowspaces();
-        }
-        if (this._config?.growspace_id && this._subareas.length === 0) {
-            this._loadSubareas(this._config.growspace_id);
-        }
-    }
     updated(changedProps) {
         if (changedProps.has('hass') && this.hass) {
-            this._loadGrowspaces();
+            this._gsController.update(this.hass);
             if (this._config?.growspace_id) {
                 this._loadSubareas(this._config.growspace_id);
             }
-        }
-    }
-    _loadGrowspaces() {
-        if (!this.hass)
-            return;
-        const entity = this.hass.states['sensor.growspaces_list'];
-        if (entity?.attributes?.growspaces) {
-            const raw = entity.attributes.growspaces;
-            if (Array.isArray(raw)) {
-                this._growspaces = raw.map((g) => ({ id: g.id, name: g.name || g.id }));
-            }
-            else {
-                this._growspaces = Object.entries(raw).map(([id, name]) => ({
-                    id,
-                    name: String(name) || id,
-                }));
-            }
-        }
-        else {
-            this._growspaces = [];
         }
     }
     async _loadSubareas(growspaceId) {
@@ -111031,8 +110684,13 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
     }
     _computeSchema() {
         const subareaOptions = [
-            { label: this._config?.growspace_id ? (this._subareas.length ? 'Select a subarea...' : 'No subareas found') : 'Select a growspace first', value: '' },
-            ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id }))
+            {
+                label: this._config?.growspace_id
+                    ? (this._subareas.length ? 'Select a subarea...' : 'No subareas found')
+                    : 'Select a growspace first',
+                value: '',
+            },
+            ...this._subareas.map(sa => ({ label: sa.name, value: sa.id })),
         ];
         return [
             {
@@ -111041,27 +110699,19 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                     select: {
                         options: [
                             { label: 'Select a growspace...', value: '' },
-                            ...this._growspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                            ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
                         ],
                     },
                 },
             },
-            {
-                name: 'subarea_id',
-                selector: {
-                    select: {
-                        options: subareaOptions,
-                    },
-                },
-            },
+            { name: 'subarea_id', selector: { select: { options: subareaOptions } } },
         ];
     }
     _valueChanged(ev) {
         if (!this._config || !this.hass)
             return;
         const newConfig = ev.detail.value;
-        const growspaceChanged = newConfig.growspace_id !== this._config.growspace_id;
-        if (growspaceChanged) {
+        if (newConfig.growspace_id !== this._config.growspace_id) {
             newConfig.subarea_id = '';
             this._loadSubareas(newConfig.growspace_id);
         }
@@ -111073,49 +110723,32 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
         }));
     }
     render() {
-        if (!this.hass || !this._config) {
+        if (!this.hass || !this._config)
             return x ``;
-        }
         return x `
-            <div class="card-config">
-                ${this._loadingSubareas ? x `<span class="loading-text">Loading subareas...</span>` : ''}
-                <ha-form
-                    .hass=${this.hass}
-                    .data=${this._config}
-                    .schema=${this._computeSchema()}
-                    .computeLabel=${(s) => s.name === 'growspace_id' ? 'Parent Growspace' : 'Subarea'}
-                    @value-changed=${this._valueChanged}
-                ></ha-form>
-
-                <div class="info-text">
-                    Displays environment sensors and device status for the selected subarea within a growspace.
-                </div>
-            </div>
-        `;
+      <div class="card-config">
+        ${this._loadingSubareas ? x `<span class="loading-text">Loading subareas...</span>` : ''}
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${this._computeSchema()}
+          .computeLabel=${computeEditorLabel}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+        <div class="info-text">
+          Displays environment sensors and device status for the selected subarea within a growspace.
+        </div>
+      </div>
+    `;
     }
 };
 GrowspaceSubareaCardEditor.styles = [
     sharedStyles,
     i$6 `
-            .card-config {
-                padding: 16px;
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-
-            .info-text {
-                font-size: 0.85rem;
-                color: var(--secondary-text-color);
-                line-height: 1.4;
-            }
-
-            .loading-text {
-                font-size: 0.85rem;
-                color: var(--secondary-text-color);
-                font-style: italic;
-            }
-        `,
+      .card-config { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+      .info-text { font-size: 0.85rem; color: var(--secondary-text-color); line-height: 1.4; }
+      .loading-text { font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic; }
+    `,
 ];
 __decorate([
     n$5({ attribute: false })
@@ -111123,9 +110756,6 @@ __decorate([
 __decorate([
     r$2()
 ], GrowspaceSubareaCardEditor.prototype, "_config", void 0);
-__decorate([
-    r$2()
-], GrowspaceSubareaCardEditor.prototype, "_growspaces", void 0);
 __decorate([
     r$2()
 ], GrowspaceSubareaCardEditor.prototype, "_subareas", void 0);

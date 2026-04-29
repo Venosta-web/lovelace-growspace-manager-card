@@ -26,24 +26,23 @@ describe('GrowspaceSubareaCardEditor', () => {
             states: {
                 'sensor.growspaces_list': {
                     attributes: {
-                        growspaces: [
-                            { id: 'gs1', name: 'Tent 1' },
-                            { id: 'gs2', name: 'Tent 2' }
-                        ]
+                        growspaces: {
+                            'gs1': 'Tent 1',
+                            'gs2': 'Tent 2',
+                        }
                     }
                 }
             },
             callService: vi.fn(),
             connection: {
                 sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn(),
+                subscribeEvents: vi.fn().mockResolvedValue(vi.fn()),
             },
             language: 'en',
         };
 
-        element = await fixture<GrowspaceSubareaCardEditor>(html`
-            <growspace-subarea-card-editor .hass=${mockHass}></growspace-subarea-card-editor>
-        `);
+        element = new GrowspaceSubareaCardEditor();
+        element.hass = mockHass;
         element.setConfig({
             type: 'custom:growspace-subarea-card'
         } as any);
@@ -57,137 +56,128 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(element).toBeInstanceOf(GrowspaceSubareaCardEditor);
     });
 
-    test('setConfig updates config and loads data', async () => {
+    test('setConfig updates config and loads subareas when growspace_id set', async () => {
         const config = {
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1',
             subarea_id: 'sa1'
         };
-        
-        // Spy on _loadSubareas
+
         const loadSubareasSpy = vi.spyOn(element as any, '_loadSubareas');
-        
         element.setConfig(config as any);
-        
+
         expect((element as any)._config).toEqual(config);
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });
 
-    test('renders growspace dropdown correctly', async () => {
-        await element.updateComplete;
-        
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        const options = Array.from(select.querySelectorAll('option'));
-        
-        expect(options.length).toBe(3); // placeholder + 2 growspaces
-        expect(options[1].textContent?.trim()).toBe('Tent 1');
-        expect(options[2].textContent?.trim()).toBe('Tent 2');
+    test('loads growspaces via controller after updated(hass)', () => {
+        element.updated(new Map([['hass', null]]));
+        const controller = (element as any)._gsController;
+        expect(controller.options.length).toBe(2);
+        expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Tent 1' });
+        expect(controller.options[1]).toEqual({ id: 'gs2', name: 'Tent 2' });
     });
 
-    test('renders subareas dropdown after growspace selection', async () => {
+    test('handles growspace change via _valueChanged', () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1'
         } as any);
-        
-        await element.updateComplete;
-        // Wait for subareas to load
-        await new Promise(r => setTimeout(r, 10));
-        await element.updateComplete;
-        
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const subareaSelect = selects?.[1] as HTMLSelectElement;
-        const options = Array.from(subareaSelect.querySelectorAll('option'));
-        
-        expect(options.length).toBe(3); // placeholder + 2 subareas
-        expect(options[1].textContent?.trim()).toBe('Veg Area');
-    });
-
-    test('handles growspace change', async () => {
-        element.setConfig({
-            type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1'
-        } as any);
-        await element.updateComplete;
 
         const configChangedSpy = vi.fn();
         element.addEventListener('config-changed', configChangedSpy);
-        
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        select.value = 'gs2';
-        select.dispatchEvent(new Event('change'));
-        
+
+        (element as any)._valueChanged({
+            detail: {
+                value: {
+                    type: 'custom:growspace-subarea-card',
+                    growspace_id: 'gs2',
+                    subarea_id: 'sa1'
+                }
+            }
+        } as any);
+
         expect(configChangedSpy).toHaveBeenCalled();
-        expect(configChangedSpy.mock.calls[0][0].detail.config.growspace_id).toBe('gs2');
-        expect(configChangedSpy.mock.calls[0][0].detail.config.subarea_id).toBe('');
+        const detail = configChangedSpy.mock.calls[0][0].detail;
+        expect(detail.config.growspace_id).toBe('gs2');
+        expect(detail.config.subarea_id).toBe('');
     });
 
-    test('handles subarea change', async () => {
+    test('handles subarea change via _valueChanged (same growspace)', () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1',
             subarea_id: 'sa1'
         } as any);
-        
-        // Manual setup of subareas to avoid waiting for async load in this test
-        (element as any)._subareas = [{ id: 'sa1', name: 'Veg' }, { id: 'sa2', name: 'Flower' }];
-        (element as any)._loadingSubareas = false;
-        await element.updateComplete;
 
         const configChangedSpy = vi.fn();
         element.addEventListener('config-changed', configChangedSpy);
-        
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const subareaSelect = selects?.[1] as HTMLSelectElement;
-        subareaSelect.value = 'sa2';
-        subareaSelect.dispatchEvent(new Event('change'));
-        
+
+        (element as any)._valueChanged({
+            detail: {
+                value: {
+                    type: 'custom:growspace-subarea-card',
+                    growspace_id: 'gs1',
+                    subarea_id: 'sa2'
+                }
+            }
+        } as any);
+
         expect(configChangedSpy).toHaveBeenCalled();
         expect(configChangedSpy.mock.calls[0][0].detail.config.subarea_id).toBe('sa2');
     });
 
-    test('handles missing growspaces list entity', async () => {
+    test('handles missing growspaces list entity - controller options empty', () => {
         element.hass = { ...mockHass, states: {} };
-        await element.updateComplete;
-        await element.updateComplete;
-        
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        expect(select.querySelectorAll('option').length).toBe(1); // Only placeholder
+        element.updated(new Map([['hass', null]]));
+        expect((element as any)._gsController.options).toEqual([]);
     });
 
-    test('handles growspaces list as object instead of array', async () => {
-        element.hass = {
-            ...mockHass,
-            states: {
-                'sensor.growspaces_list': {
-                    attributes: {
-                        growspaces: {
-                            'gs3': 'Tent 3',
-                            'gs4': 'Tent 4'
-                        }
-                    }
-                }
-            }
-        };
-        await element.updateComplete;
-        await element.updateComplete;
-        
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        const options = Array.from(select.querySelectorAll('option'));
-        expect(options[1].textContent?.trim()).toBe('Tent 3');
+    test('setConfig loads subareas when growspace_id is set', async () => {
+        const loadSubareasSpy = vi.spyOn(element as any, '_loadSubareas');
+
+        element.setConfig({
+            type: 'custom:growspace-subarea-card',
+            growspace_id: 'gs1',
+            subarea_id: ''
+        } as any);
+
+        expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });
 
-    test('handles loadSubareas error', async () => {
+    test('_loadSubareas sets subareas from DataService', async () => {
+        element.hass = mockHass;
+        await (element as any)._loadSubareas('gs1');
+        expect((element as any)._subareas.length).toBe(2);
+        expect((element as any)._subareas[0].name).toBe('Veg Area');
+    });
+
+    test('_loadSubareas catches errors and sets empty subareas', async () => {
         const dataServiceMock = (element as any)._dataService || new DataService(mockHass);
         (element as any)._dataService = dataServiceMock;
         vi.spyOn(dataServiceMock, 'getSubareas').mockRejectedValue(new Error('API Error'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        
+
         await (element as any)._loadSubareas('gs1');
-        
+
         expect((element as any)._subareas).toEqual([]);
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
+    });
+
+    test('_valueChanged guard: does not dispatch when config is undefined', () => {
+        (element as any)._config = undefined;
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        (element as any)._valueChanged({ detail: { value: {} } } as any);
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('_valueChanged guard: does not dispatch when hass is undefined', () => {
+        element.setConfig({ type: 'custom:growspace-subarea-card' } as any);
+        element.hass = undefined as any;
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        (element as any)._valueChanged({ detail: { value: {} } } as any);
+        expect(spy).not.toHaveBeenCalled();
     });
 
     test('updated: loads subareas when hass changes and growspace_id is set', async () => {
@@ -196,118 +186,44 @@ describe('GrowspaceSubareaCardEditor', () => {
             growspace_id: 'gs1',
             subarea_id: 'sa1'
         } as any);
-        await element.updateComplete;
 
         const loadSubareasSpy = vi.spyOn(element as any, '_loadSubareas');
-        // Changing hass triggers updated() with changedProps.has('hass')
         element.hass = { ...mockHass };
-        await element.updateComplete;
+        element.updated(new Map([['hass', null]]));
 
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });
 
-    test('firstUpdated loads subareas when growspace_id is set and subareas empty', async () => {
-        // Create a fresh element with config pre-set including growspace_id
-        const freshElement = await fixture<GrowspaceSubareaCardEditor>(html`
-            <growspace-subarea-card-editor .hass=${mockHass}></growspace-subarea-card-editor>
-        `);
-
-        // Set config with growspace_id before first update completes (simulate pre-config)
-        (freshElement as any)._config = {
-            type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
-            subarea_id: ''
-        };
-        (freshElement as any)._growspaces = [];
-        (freshElement as any)._subareas = [];
-
-        const loadSubareasSpy = vi.spyOn(freshElement as any, '_loadSubareas');
-        await (freshElement as any).firstUpdated();
-
-        expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
-    });
-
-    test('does not dispatch event when same growspace is selected again', async () => {
-        element.setConfig({
-            type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
-            subarea_id: 'sa1'
-        } as any);
-        await element.updateComplete;
-
-        const configChangedSpy = vi.fn();
-        element.addEventListener('config-changed', configChangedSpy);
-
-        const select = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
-        select.value = 'gs1'; // same value
-        select.dispatchEvent(new Event('change'));
-
-        expect(configChangedSpy).not.toHaveBeenCalled();
-    });
-
-    test('does not dispatch event when same subarea is selected again', async () => {
-        element.setConfig({
-            type: 'custom:growspace-subarea-card',
-            growspace_id: 'gs1',
-            subarea_id: 'sa1'
-        } as any);
-        (element as any)._subareas = [{ id: 'sa1', name: 'Veg' }];
-        (element as any)._loadingSubareas = false;
-        await element.updateComplete;
-
-        const configChangedSpy = vi.fn();
-        element.addEventListener('config-changed', configChangedSpy);
-
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const subareaSelect = selects?.[1] as HTMLSelectElement;
-        subareaSelect.value = 'sa1'; // same value
-        subareaSelect.dispatchEvent(new Event('change'));
-
-        expect(configChangedSpy).not.toHaveBeenCalled();
-    });
-
-    test('renders empty when hass or config is missing', async () => {
-        const emptyElement = await fixture<GrowspaceSubareaCardEditor>(html`
+    test('render returns empty template when hass or config missing', async () => {
+        const el = await fixture<GrowspaceSubareaCardEditor>(html`
             <growspace-subarea-card-editor></growspace-subarea-card-editor>
         `);
-        await emptyElement.updateComplete;
-        expect(emptyElement.shadowRoot?.querySelector('.card-config')).toBeNull();
+        await el.updateComplete;
+        expect(el.shadowRoot?.querySelector('.card-config')).toBeNull();
     });
 
-    test('shows loading-text while subareas are loading', async () => {
-        element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs1' } as any);
-        (element as any)._loadingSubareas = true;
-        await element.updateComplete;
-
-        expect(element.shadowRoot?.querySelector('.loading-text')?.textContent?.trim()).toBe('Loading subareas...');
-    });
-
-    test('displays "Select a growspace first" when no growspace selected', async () => {
-        element.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: '' } as any);
-        (element as any)._loadingSubareas = false;
-        await element.updateComplete;
-
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const subareaSelect = selects?.[1] as HTMLSelectElement;
-        expect(subareaSelect?.querySelector('option')?.textContent?.trim()).toBe('Select a growspace first');
-        expect(subareaSelect?.disabled).toBe(true);
-    });
-
-    test('displays "No subareas found" when list is empty', async () => {
-        const dataServiceMock = (element as any)._dataService || new DataService(mockHass);
-        (element as any)._dataService = dataServiceMock;
-        vi.spyOn(dataServiceMock, 'getSubareas').mockResolvedValue([]);
-        
-        element.setConfig({
+    test('displays "No subareas found" when list is empty via _computeSchema', async () => {
+        (element as any)._config = {
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1'
-        } as any);
-        
-        await (element as any)._loadSubareas('gs1');
-        await element.updateComplete;
-        
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const subareaSelect = selects?.[1] as HTMLSelectElement;
-        expect(subareaSelect.querySelector('option')?.textContent?.trim()).toBe('No subareas found');
+        };
+        (element as any)._subareas = [];
+        (element as any)._loadingSubareas = false;
+
+        const schema = (element as any)._computeSchema();
+        const subareaField = schema.find((s: any) => s.name === 'subarea_id');
+        const firstOption = subareaField?.selector?.select?.options?.[0];
+        expect(firstOption?.label).toBe('No subareas found');
+    });
+
+    test('displays "Select a growspace first" when no growspace selected via _computeSchema', () => {
+        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: '' };
+        (element as any)._subareas = [];
+        (element as any)._loadingSubareas = false;
+
+        const schema = (element as any)._computeSchema();
+        const subareaField = schema.find((s: any) => s.name === 'subarea_id');
+        const firstOption = subareaField?.selector?.select?.options?.[0];
+        expect(firstOption?.label).toBe('Select a growspace first');
     });
 });

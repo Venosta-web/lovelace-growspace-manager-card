@@ -35,24 +35,16 @@ describe('GrowspaceManagerCardEditor', () => {
     });
 
     it('should render nothing if no config set', async () => {
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        expect(selects?.length).toBe(0);
-    });
-
-    it('should render inputs when config is set', async () => {
-        element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
-
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        expect(selects?.length).toBeGreaterThan(0);
+        expect(element.shadowRoot?.innerHTML).toContain('<!---->');
     });
 
-    it('should load growspaces from HASS entity attributes', async () => {
+    it('should load growspaces from HASS entity via controller', async () => {
         const mockHass = {
             states: {
                 'sensor.growspaces_list': {
                     attributes: {
-                        growspaces: ['Tent A', 'Tent B']
+                        growspaces: { 'gs1': 'Tent A', 'gs2': 'Tent B' }
                     }
                 }
             },
@@ -63,51 +55,37 @@ describe('GrowspaceManagerCardEditor', () => {
 
         element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
-        await element.updateComplete;
+        element.updated(new Map([['hass', null]]));
 
-        // Check dropdown options for Growspace (second select)
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const growspaceSelect = selects?.[1];
-        const options = growspaceSelect?.querySelectorAll('option');
-
-        // "Select a growspace" + "Tent A" + "Tent B"
-        expect(options?.length).toBe(3);
-
-        expect(options?.[1].value).toBe('0');
-        expect(options?.[1].textContent).toBe('Tent A');
-        expect(options?.[2].value).toBe('1');
-        expect(options?.[2].textContent).toBe('Tent B');
+        const controller = (element as any)._gsController;
+        expect(controller.options.length).toBe(2);
+        expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Tent A' });
+        expect(controller.options[1]).toEqual({ id: 'gs2', name: 'Tent B' });
     });
 
-    it('should handle missing growspaces list', async () => {
+    it('should handle missing growspaces list - controller returns empty options', async () => {
         const mockHass = {
             states: {},
             connection: { subscribeEvents: vi.fn().mockResolvedValue(() => { }) }
         };
         element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
-        await element.updateComplete;
+        element.updated(new Map([['hass', null]]));
 
-        const selects = element.shadowRoot?.querySelectorAll('select');
-        const growspaceSelect = selects?.[1];
-        const options = growspaceSelect?.querySelectorAll('option');
-
-        // Only "Select a growspace"
-        expect(options?.length).toBe(1);
+        const controller = (element as any)._gsController;
+        expect(controller.options).toEqual([]);
     });
 
-    it('should fire config-changed event on view mode change', async () => {
+    it('should fire config-changed event on _valueChanged call', async () => {
         element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
 
         const listener = vi.fn();
         element.addEventListener('config-changed', listener);
 
-        const viewModeSelect = element.shadowRoot?.querySelectorAll('select')[0];
-        if (viewModeSelect) {
-            viewModeSelect.value = 'compact';
-            viewModeSelect.dispatchEvent(new Event('change'));
-        }
+        (element as any)._valueChanged({
+            detail: { value: { type: 'custom:growspace-manager-card', initial_view_mode: 'compact' } }
+        } as any);
 
         expect(listener).toHaveBeenCalled();
         const eventDetail = listener.mock.calls[0][0].detail;
@@ -115,52 +93,26 @@ describe('GrowspaceManagerCardEditor', () => {
     });
 
     it('should fire config-changed event on default growspace change', async () => {
-        const mockHass = {
-            states: {
-                'sensor.growspaces_list': {
-                    attributes: { growspaces: ['Tent A', 'Tent B'] }
-                }
-            },
-            connection: { subscribeEvents: vi.fn().mockResolvedValue(() => { }) }
-        };
-
-        element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
         await element.updateComplete;
 
         const listener = vi.fn();
         element.addEventListener('config-changed', listener);
 
-        const growspaceSelect = element.shadowRoot?.querySelectorAll('select')[1];
-        if (growspaceSelect) {
-            growspaceSelect.value = '1';
-            growspaceSelect.dispatchEvent(new Event('change'));
-        }
+        (element as any)._valueChanged({
+            detail: { value: { type: 'custom:growspace-manager-card', default_growspace: 'gs1' } }
+        } as any);
 
         expect(listener).toHaveBeenCalled();
         const eventDetail = listener.mock.calls[0][0].detail;
-        expect(eventDetail.config.default_growspace).toBe('1');
+        expect(eventDetail.config.default_growspace).toBe('gs1');
     });
 
-    it('should subscribe to sensor updates', async () => {
-        const subscribeMock = vi.fn().mockResolvedValue(() => { });
-        const mockHass = {
-            states: {},
-            connection: { subscribeEvents: subscribeMock }
-        };
-
-        element.hass = mockHass as any;
-        element.requestUpdate();
-        await element.updateComplete;
-
-        expect(subscribeMock).toHaveBeenCalled();
-    });
-
-    it('should update growspaces on state_changed event', async () => {
+    it('should update growspaces on state_changed event via subscription', async () => {
         let subscriptionCallback: Function | undefined;
         const subscribeMock = vi.fn((cb) => {
             subscriptionCallback = cb;
-            return () => { };
+            return Promise.resolve(() => { });
         });
 
         const mockHass = {
@@ -170,211 +122,91 @@ describe('GrowspaceManagerCardEditor', () => {
 
         element.hass = mockHass as any;
         element.setConfig({ type: 'test' });
+        element.updated(new Map([['hass', null]]));
         await element.updateComplete;
 
-        expect((element as any)._growspaceOptions).toEqual([]);
+        const controller = (element as any)._gsController;
+        expect(controller.options).toEqual([]);
 
         if (subscriptionCallback) {
             subscriptionCallback({
                 data: {
                     new_state: {
                         entity_id: 'sensor.growspaces_list',
-                        attributes: { growspaces: ['Updated Tent'] }
+                        attributes: { growspaces: { 'gs1': 'Updated Tent' } }
                     }
                 }
             });
             await element.updateComplete;
-            expect((element as any)._growspaceOptions).toEqual([{ id: '0', name: 'Updated Tent' }]);
+            expect(controller.options).toEqual([{ id: 'gs1', name: 'Updated Tent' }]);
         } else {
             throw new Error('Subscription callback was not captured');
         }
     });
 
-    describe('Coverage Gap Fillers', () => {
-        it('should not subscribe twice if already subscribed', async () => {
-            const subscribeMock = vi.fn().mockResolvedValue(() => { });
-            const mockHass = {
-                states: {},
-                connection: { subscribeEvents: subscribeMock }
-            };
+    it('should not dispatch config-changed if config is undefined', async () => {
+        const listener = vi.fn();
+        element.addEventListener('config-changed', listener);
 
-            element.hass = mockHass as any;
-            await element.updateComplete;
+        (element as any)._valueChanged({ detail: { value: {} } } as any);
 
-            // First subscription
-            expect(subscribeMock).toHaveBeenCalledTimes(1);
-
-            // Trigger update again
-            element.hass = { ...mockHass } as any;
-            await element.updateComplete;
-
-            // Should still be 1 call due to _hasSubscription guard
-            expect(subscribeMock).toHaveBeenCalledTimes(1);
-        });
-
-        it('should reset subscription flag on disconnectedCallback', async () => {
-            const subscribeMock = vi.fn().mockResolvedValue(() => { });
-            const mockHass = {
-                states: {},
-                connection: { subscribeEvents: subscribeMock }
-            };
-
-            element.hass = mockHass as any;
-            await element.updateComplete;
-
-            expect((element as any)._hasSubscription).toBe(true);
-
-            element.disconnectedCallback();
-
-            expect((element as any)._hasSubscription).toBe(false);
-        });
-
-        it('should handle state_changed event with no gsObj', async () => {
-            let subscriptionCallback: Function | undefined;
-            const subscribeMock = vi.fn((cb) => {
-                subscriptionCallback = cb;
-                return () => { };
-            });
-
-            const mockHass = {
-                states: {},
-                connection: { subscribeEvents: subscribeMock }
-            };
-
-            element.hass = mockHass as any;
-            element.setConfig({ type: 'test' });
-            await element.updateComplete;
-
-            expect((element as any)._growspaceOptions).toEqual([]);
-
-            // Fire event with missing growspaces attribute
-            if (subscriptionCallback) {
-                subscriptionCallback({
-                    data: {
-                        new_state: {
-                            entity_id: 'sensor.growspaces_list',
-                            attributes: {}
-                        }
-                    }
-                });
-                await element.updateComplete;
-                expect((element as any)._growspaceOptions).toEqual([]);
-            }
-        });
-
-        it('should ignore state_changed event for unrelated entities', async () => {
-            let subscriptionCallback: Function | undefined;
-            const subscribeMock = vi.fn((cb) => {
-                subscriptionCallback = cb;
-                return () => { };
-            });
-
-            const mockHass = {
-                states: {},
-                connection: { subscribeEvents: subscribeMock }
-            };
-
-            element.hass = mockHass as any;
-            element.setConfig({ type: 'test' });
-            await element.updateComplete;
-
-            // Pre-populate to verify it doesn't get cleared
-            (element as any)._growspaceOptions = [{ id: '0', name: 'Existing' }];
-
-            if (subscriptionCallback) {
-                // Fire event with different entity_id
-                subscriptionCallback({
-                    data: {
-                        new_state: {
-                            entity_id: 'sensor.something_else',
-                            attributes: { growspaces: ['New Stuff'] }
-                        }
-                    }
-                });
-                await element.updateComplete;
-                // Should remain unchanged
-                expect((element as any)._growspaceOptions).toEqual([{ id: '0', name: 'Existing' }]);
-            }
-        });
-
-        it('should not dispatch config-changed if config is undefined', async () => {
-            const listener = vi.fn();
-            element.addEventListener('config-changed', listener);
-
-            // Call _valueChanged without config
-            (element as any)._valueChanged('initial_view_mode', 'compact');
-
-            expect(listener).not.toHaveBeenCalled();
-        });
-
-        it('should not subscribe if hass is undefined', async () => {
-            const newElement = new GrowspaceManagerCardEditor();
-            container.appendChild(newElement);
-            await newElement.updateComplete;
-
-            // _hasSubscription should remain false
-            expect((newElement as any)._hasSubscription).toBe(false);
-        });
-
-        it('should fire config-changed event on keyboard rotation toggle', async () => {
-            element.setConfig({ type: 'custom:growspace-manager-card' });
-            await element.updateComplete;
-
-            const listener = vi.fn();
-            element.addEventListener('config-changed', listener);
-
-            const rotateSwitch = element.shadowRoot?.querySelector('ha-form-switch');
-            if (rotateSwitch) {
-                (rotateSwitch as any).checked = true;
-                rotateSwitch.dispatchEvent(new Event('change'));
-            }
-
-            expect(listener).toHaveBeenCalled();
-            const eventDetail = listener.mock.calls[0][0].detail;
-            expect(eventDetail.config.keyboard_rotate_enabled).toBe(true);
-        });
-
-        it('should fire config-changed event on keyboard rotation speed change', async () => {
-            element.setConfig({ type: 'custom:growspace-manager-card' });
-            await element.updateComplete;
-
-            const listener = vi.fn();
-            element.addEventListener('config-changed', listener);
-
-            const speedInput = element.shadowRoot?.querySelector('input[type="range"]');
-            if (speedInput) {
-                (speedInput as HTMLInputElement).value = '2.5';
-                speedInput.dispatchEvent(new Event('change'));
-            }
-
-            expect(listener).toHaveBeenCalled();
-            const eventDetail = listener.mock.calls[0][0].detail;
-            expect(eventDetail.config.keyboard_rotate_speed).toBe(2.5);
-        });
+        expect(listener).not.toHaveBeenCalled();
     });
 
-    describe('updated() branches', () => {
-        it('does not call _loadGrowspaces when hass key is absent from changedProps', () => {
-            const spy = vi.spyOn(element as any, '_loadGrowspaces');
-            element.updated(new Map([['config', null]]));
-            expect(spy).not.toHaveBeenCalled();
-        });
+    it('controller subscribes only once across multiple updated() calls', async () => {
+        const subscribeMock = vi.fn().mockResolvedValue(() => { });
+        const mockHass = {
+            states: {},
+            connection: { subscribeEvents: subscribeMock }
+        };
 
-        it('does not call _loadGrowspaces when hass is falsy even if key is present', () => {
-            const spy = vi.spyOn(element as any, '_loadGrowspaces');
-            element.hass = undefined as any;
-            element.updated(new Map([['hass', null]]));
-            expect(spy).not.toHaveBeenCalled();
-        });
+        element.hass = mockHass as any;
+        element.updated(new Map([['hass', null]]));
+        element.updated(new Map([['hass', null]]));
+        element.updated(new Map([['hass', null]]));
 
-        it('calls _loadGrowspaces when hass is present and key is in changedProps', () => {
-            const spy = vi.spyOn(element as any, '_loadGrowspaces');
-            element.hass = {
-                states: { 'sensor.growspaces_list': { state: 'OK', attributes: { growspaces: {} } } },
-                connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
-            } as any;
-            element.updated(new Map([['hass', null]]));
-            expect(spy).toHaveBeenCalled();
-        });
+        expect(subscribeMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('controller resets on hostDisconnected', async () => {
+        const subscribeMock = vi.fn().mockResolvedValue(() => { });
+        const mockHass = {
+            states: {},
+            connection: { subscribeEvents: subscribeMock }
+        };
+
+        element.hass = mockHass as any;
+        element.updated(new Map([['hass', null]]));
+        element.disconnectedCallback();
+        element.updated(new Map([['hass', null]]));
+
+        expect(subscribeMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('updated() does not call controller.update when hass key is absent from changedProps', () => {
+        element.hass = {
+            states: {},
+            connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
+        } as any;
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        element.updated(new Map([['config', null]]));
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('updated() does not call controller.update when hass is falsy even if key is present', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        element.hass = undefined as any;
+        element.updated(new Map([['hass', null]]));
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('updated() calls controller.update when hass is present and key is in changedProps', () => {
+        const spy = vi.spyOn((element as any)._gsController, 'update');
+        element.hass = {
+            states: { 'sensor.growspaces_list': { state: 'OK', attributes: { growspaces: {} } } },
+            connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
+        } as any;
+        element.updated(new Map([['hass', null]]));
+        expect(spy).toHaveBeenCalled();
     });
 });

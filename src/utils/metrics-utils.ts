@@ -704,4 +704,140 @@ export class MetricsUtils {
 
     return { mainChips, deviceChips, dominant, envAttrs };
   }
+
+  static computeSubareaMetrics(
+    hass: HomeAssistant,
+    ec: import('../services/types').EnvironmentConfig,
+    activeEnvGraphs: Set<string>
+  ): {
+    heroChips: HeaderChip[];
+    secondaryChips: HeaderChip[];
+    deviceChips: HeaderChip[];
+  } {
+    const createChipData = (
+      key: string,
+      icon: string,
+      value: string | undefined,
+      multiValues: string[] | undefined,
+      entityIds?: string[],
+      label?: string,
+      status?: string,
+      tooltip?: string
+    ) => {
+      if (value === undefined && (!multiValues || multiValues.length === 0)) return null;
+      const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
+      const active = activeEnvGraphs.has(key) || hasCompositeActive;
+      return {
+        key,
+        icon,
+        value: value || '',
+        multiValues,
+        entityIds,
+        label,
+        status,
+        tooltip,
+        active,
+        linked: false,
+        groupIndex: -1,
+      };
+    };
+
+    const getAggregateState = (
+      single: string | undefined | null,
+      multi: string[] | undefined | null,
+      unit: string = ''
+    ): { value: string | undefined; multiValues?: string[]; entityIds?: string[] } => {
+      const ids = new Set<string>();
+      if (multi && multi.length > 0) multi.forEach((id) => ids.add(id));
+      else if (single) ids.add(single);
+
+      if (ids.size === 0) return { value: undefined, entityIds: [] };
+
+      const states: string[] = [];
+      const entityIds: string[] = Array.from(ids);
+
+      ids.forEach((id) => {
+        const s = hass.states[id];
+        if (
+          s &&
+          s.state &&
+          s.state !== EntityState.UNAVAILABLE &&
+          s.state !== EntityState.UNKNOWN
+        ) {
+          const fVal = parseFloat(s.state);
+          if (!isNaN(fVal) || s.state === '') {
+            states.push(unit ? `${parseFloat(s.state).toFixed(1)} ${unit}`.trim() : s.state);
+          } else {
+            states.push('-');
+          }
+        } else {
+          states.push('-');
+        }
+      });
+
+      if (ids.size > 1) {
+        return { value: 'Multiple', multiValues: states, entityIds };
+      }
+
+      return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
+    };
+
+    const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
+    const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
+    const vpdAgg = getAggregateState(ec.vpd_sensor, ec.vpd_sensors, 'kPa');
+    const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
+
+    const heroChips = [
+      createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, 'Temperature'),
+      createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, 'Humidity'),
+      createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, 'VPD'),
+      createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, 'CO2'),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
+    const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
+    const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
+    const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+
+    const secondaryChips = [
+      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
+      createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
+      createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
+      createChipData('substrate_ec', '', subEcAgg.value, subEcAgg.multiValues, subEcAgg.entityIds, 'Substrate EC'),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    const getAggregateDeviceState = (
+      entities: string[] | undefined | null
+    ): { value: string | undefined; multiValues?: string[]; entityIds?: string[] } => {
+      const ids = new Set<string>();
+      if (entities && entities.length > 0) entities.forEach((id) => ids.add(id));
+      if (ids.size === 0) return { value: undefined, entityIds: [] };
+
+      const states: string[] = [];
+      const entityIds: string[] = Array.from(ids);
+      ids.forEach((id) => {
+        const s = hass.states[id];
+        states.push(s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN ? s.state : '-');
+      });
+
+      if (ids.size > 1) return { value: 'Multiple', multiValues: states, entityIds };
+      return { value: states[0] !== '-' ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0]) : undefined, entityIds };
+    };
+
+    const lightState = getAggregateDeviceState(ec.light_sensors);
+    const exhaustState = getAggregateDeviceState(ec.exhaust_fan_entities);
+    const circFanState = getAggregateDeviceState(ec.circulation_fan_entities);
+    const humState = getAggregateDeviceState(ec.humidifier_entities);
+    const dehumState = getAggregateDeviceState(ec.dehumidifier_entities);
+
+    const deviceChips = [
+      createChipData(MetricKey.LIGHT, mdiLightbulbOn, lightState.value, lightState.multiValues, lightState.entityIds, 'Lights'),
+      createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
+      createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circFanState.value, circFanState.multiValues, circFanState.entityIds, 'Fan'),
+      createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humState.value, humState.multiValues, humState.entityIds, 'Humidifier'),
+      createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumState.value, dehumState.multiValues, dehumState.entityIds, 'Dehumidifier'),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    return { heroChips, secondaryChips, deviceChips };
+  }
 }

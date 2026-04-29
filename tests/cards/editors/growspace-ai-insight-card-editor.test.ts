@@ -1,6 +1,4 @@
-import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, beforeEach, vi } from 'vitest';
-import { html } from 'lit';
 import { GrowspaceAiInsightCardEditor } from '../../../src/cards/editors/growspace-ai-insight-card-editor';
 import type { GrowspaceManagerCardConfig } from '../../../src/lib/types/config';
 
@@ -42,65 +40,16 @@ describe('GrowspaceAiInsightCardEditor', () => {
         expect(element._default_growspace).toBe('gs1');
     });
 
-    test('renders options based on sensor.growspaces_list', async () => {
-        const config: GrowspaceManagerCardConfig = {
-            type: 'custom:growspace-ai-insight-card',
-            default_growspace: 'gs1',
-        };
-
-        const el = await fixture<GrowspaceAiInsightCardEditor>(html`<growspace-ai-insight-card-editor></growspace-ai-insight-card-editor>`);
-        el.hass = element.hass;
-        el.setConfig(config);
-        await el.updateComplete;
-
-        expect(el).toBeTruthy();
-
-        const select = el.shadowRoot?.querySelector('select');
-        expect(select).toBeTruthy();
-
-        // Should have 4 options: Default "Select", plus 'all', 'gs1', and 'gs2'
-        const options = select?.querySelectorAll('option');
-        expect(options?.length).toBe(4);
-
-        if (options) {
-            expect(options[1].value).toBe('all');
-            expect(options[1].textContent?.trim()).toBe('All Growspaces');
-
-            // GS1 should be the selected option based on config
-            expect((options[2] as HTMLOptionElement).selected).toBe(true);
-        }
-    });
-
-    test('dispatches config-changed event when selection changes', async () => {
-        const config: GrowspaceManagerCardConfig = {
-            type: 'custom:growspace-ai-insight-card',
-            default_growspace: '',
-        };
-
-        const el = await fixture<GrowspaceAiInsightCardEditor>(html`<growspace-ai-insight-card-editor></growspace-ai-insight-card-editor>`);
-        el.hass = element.hass;
-        el.setConfig(config);
-        await el.updateComplete;
-
-        const dispatchEventSpy = vi.spyOn(el, 'dispatchEvent');
-
-        const select = el.shadowRoot?.querySelector('select');
-
-        if (select) {
-            // Simulate user changing select to gs2
-            select.value = 'gs2';
-            select.dispatchEvent(new Event('change'));
-        }
-
-        expect(dispatchEventSpy).toHaveBeenCalled();
-        const eventArg = dispatchEventSpy.mock.calls[0][0] as CustomEvent;
-        expect(eventArg.type).toBe('config-changed');
-        expect(eventArg.detail.config.default_growspace).toBe('gs2');
+    test('loads growspaces from array format via _loadGrowspaces', () => {
+        (element as any)._loadGrowspaces();
+        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
+        expect(opts.length).toBe(3);
+        expect(opts[0]).toEqual({ id: 'all', name: 'All Growspaces' });
+        expect(opts[1]).toEqual({ id: 'gs1', name: 'Test Tent' });
     });
 
     test('loads growspaces from object (record) format', () => {
-        const el = new GrowspaceAiInsightCardEditor();
-        el.hass = {
+        element.hass = {
             states: {
                 'sensor.growspaces_list': {
                     state: '2',
@@ -113,8 +62,8 @@ describe('GrowspaceAiInsightCardEditor', () => {
                 },
             },
         } as any;
-        (el as any)._loadGrowspaces();
-        const opts = (el as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
+        (element as any)._loadGrowspaces();
+        const opts = (element as any)._sensorGrowspaces as Array<{ id: string; name: string }>;
         expect(opts.length).toBe(2);
         expect(opts[0].id).toBe('gs1');
         expect(opts[0].name).toBe('Tent 1');
@@ -148,8 +97,8 @@ describe('GrowspaceAiInsightCardEditor', () => {
                 'sensor.growspaces_list': {
                     attributes: {
                         growspaces: [
-                            { id: 'gs1' }, // Missing name
-                            { id: 'gs2', name: '' } // Empty name
+                            { id: 'gs1' },
+                            { id: 'gs2', name: '' }
                         ]
                     }
                 }
@@ -178,61 +127,56 @@ describe('GrowspaceAiInsightCardEditor', () => {
         expect(opts[0].name).toBe('gs1');
     });
 
-    test('_valueChanged guard (missing config or hass)', () => {
+    test('_valueChanged dispatches config-changed', () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-ai-insight-card',
+            default_growspace: 'gs1',
+        };
+        element.setConfig(config);
         const spy = vi.spyOn(element, 'dispatchEvent');
-        
-        (element as any)._config = undefined;
-        (element as any)._valueChanged(new Event('change'));
-        expect(spy).not.toHaveBeenCalled();
 
-        (element as any)._config = { type: 'custom:growspace-ai-insight-card' };
-        element.hass = undefined as any;
-        (element as any)._valueChanged(new Event('change'));
+        (element as any)._valueChanged({
+            detail: { value: { ...config, default_growspace: 'gs2' } }
+        } as any);
+
+        expect(spy).toHaveBeenCalled();
+        const eventArg = spy.mock.calls[0][0] as CustomEvent;
+        expect(eventArg.type).toBe('config-changed');
+        expect(eventArg.detail.config.default_growspace).toBe('gs2');
+    });
+
+    test('_valueChanged guard: no dispatch when config is undefined', () => {
+        const spy = vi.spyOn(element, 'dispatchEvent');
+        (element as any)._config = undefined;
+        (element as any)._valueChanged({ detail: { value: {} } } as any);
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('_valueChanged does nothing if value is the same', () => {
-        (element as any)._config = { 
-            type: 'custom:growspace-ai-insight-card',
-            default_growspace: 'gs1'
-        };
+    test('_valueChanged guard: no dispatch when hass is undefined', () => {
+        element.setConfig({ type: 'custom:growspace-ai-insight-card' });
+        element.hass = undefined as any;
         const spy = vi.spyOn(element, 'dispatchEvent');
-        
-        const event = { target: { value: 'gs1' } } as any;
-        (element as any)._valueChanged(event);
+        (element as any)._valueChanged({ detail: { value: {} } } as any);
         expect(spy).not.toHaveBeenCalled();
     });
 
     test('render returns empty template if hass or config is missing', async () => {
-        const el = await fixture<GrowspaceAiInsightCardEditor>(html`<growspace-ai-insight-card-editor></growspace-ai-insight-card-editor>`);
-        
-        el.hass = undefined as any;
-        (el as any)._config = undefined;
-        await el.updateComplete;
-        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        div.appendChild(element);
+        await element.updateComplete;
 
-        el.hass = element.hass;
-        (el as any)._config = undefined;
-        await el.updateComplete;
-        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
-
-        el.hass = undefined as any;
-        (el as any)._config = { type: 'test' };
-        await el.updateComplete;
-        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+        // Config not set, should render empty
+        expect(element.shadowRoot?.innerHTML).toContain('<!---->');
+        document.body.removeChild(div);
     });
 
     test('firstUpdated calls _loadGrowspaces', async () => {
-        const el = new GrowspaceAiInsightCardEditor();
-        const spy = vi.spyOn(el as any, '_loadGrowspaces');
-        el.hass = element.hass;
-        
-        // Use document.createElement to avoid fixture rendering immediately
+        const spy = vi.spyOn(element as any, '_loadGrowspaces');
         const div = document.createElement('div');
-        div.appendChild(el);
+        div.appendChild(element);
         document.body.appendChild(div);
-        
-        await el.updateComplete;
+        await element.updateComplete;
         expect(spy).toHaveBeenCalled();
         document.body.removeChild(div);
     });
