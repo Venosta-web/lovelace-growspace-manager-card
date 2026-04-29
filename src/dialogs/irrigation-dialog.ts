@@ -1835,6 +1835,8 @@ export class IrrigationDialog extends LitElement {
     const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
     const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
     const readings = this.device?.drainConfig?.readings || [];
+    const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+    const hasTankSensors = tanks.some(t => t.sensorEntity);
 
     // Compute volume totals from logged EC readings (last 30)
     const recentReadings = readings.slice(-30).reverse();
@@ -1911,7 +1913,8 @@ export class IrrigationDialog extends LitElement {
     `;
 
     return html`
-      <!-- Today's Usage -->
+      <!-- Today's Usage (only shown when a pump is configured) -->
+      ${hasPump ? html`
       <div class="detail-card">
         <h3 style="margin-top: 0; margin-bottom: 16px;">Today's Usage</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
@@ -1938,6 +1941,7 @@ export class IrrigationDialog extends LitElement {
         : kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
         </div>
       </div>
+      ` : nothing}
 
       <!-- Tank Overview -->
       ${tanks.length > 0 ? html`
@@ -1995,8 +1999,8 @@ export class IrrigationDialog extends LitElement {
         </div>
       ` : nothing}
 
-      <!-- Tank-Derived Water Analysis -->
-      ${tanksWithHistory.length > 0 ? html`
+      <!-- Tank-Derived Water Analysis (only shown when tank sensors are configured) -->
+      ${hasTankSensors && tanksWithHistory.length > 0 ? html`
         <div class="detail-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h3 style="margin: 0;">Tank-Derived Water Usage</h3>
