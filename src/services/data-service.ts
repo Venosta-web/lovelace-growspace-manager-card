@@ -147,6 +147,8 @@ export class DataService {
     exhaustFanEntities?: string[];
     humidifierEntity?: string;
     humidifierEntities?: string[];
+    humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+    controlHumidifier?: boolean;
     dehumidifierEntity?: string;
     dehumidifierEntities?: string[];
     dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;

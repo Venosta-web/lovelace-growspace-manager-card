@@ -110,6 +110,8 @@ export class GrowspaceAdapter {
       dehumidifierState: wsData.dehumidifier_state,
       humidifierEntity: wsData.humidifier_entity,
       humidifierEntities: wsData.humidifier_entities,
+      humidifierControlEnabled: wsData.humidifier_control_enabled,
+      humidifierThresholds: wsData.humidifier_thresholds,
       exhaustEntity: wsData.exhaust_entity,
       exhaustFanEntities: wsData.exhaust_fan_entities,
       circulationFanEntity: wsData.circulation_fan_entity,

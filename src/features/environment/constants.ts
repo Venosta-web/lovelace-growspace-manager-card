@@ -204,6 +204,7 @@ export enum ConfigTab {
   EDIT_GROWSPACE = 'edit_growspace',
   ENVIRONMENT = 'environment',
   DEHUMIDIFIER = 'dehumidifier',
+  HUMIDIFIER = 'humidifier',
   SENSOR_GROUPS = 'sensor_groups',
   SUBAREAS = 'subareas',
 }

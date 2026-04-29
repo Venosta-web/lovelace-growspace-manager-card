@@ -667,6 +667,8 @@ export class GrowspaceDialogHost extends LitElement {
         lightSensor: lightSensor || undefined,
         exhaustEntity: exhaustEntity || undefined,
         humidifierEntity: humidifierEntity || undefined,
+        humidifierThresholds: detail.humidifierThresholds,
+        controlHumidifier: detail.humidifierControlEnabled,
         dehumidifierEntity: dehumidifierEntity || undefined,
         dehumidifierThresholds,
         soilMoistureSensor: soilMoistureSensor || undefined,

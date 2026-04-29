@@ -194,6 +194,8 @@ export interface SerializedEnvironmentAttributes {
   dehumidifier_state?: string;
   humidifier_entity?: string;
   humidifier_entities?: string[];
+  humidifier_control_enabled?: boolean;
+  humidifier_thresholds?: Record<string, Record<string, { on: number; off: number }>>;
   exhaust_entity?: string;
   exhaust_fan_entities?: string[];
   circulation_fan_entity?: string;
@@ -307,6 +309,8 @@ export interface EnvironmentAttributes {
   dehumidifierState?: string;
   humidifierEntity?: string;
   humidifierEntities?: string[];
+  humidifierControlEnabled?: boolean;
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   exhaustEntity?: string;
   exhaustFanEntities?: string[];
   circulationFanEntity?: string;

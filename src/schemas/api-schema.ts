@@ -111,6 +111,7 @@ export const GrowspaceAPIResponseSchema = z
     light_sensor: z.string().optional(),
     exhaust_entity: z.string().optional(),
     humidifier_entity: z.string().optional(),
+    humidifier_control_enabled: z.boolean().optional(),
     dehumidifier_entity: z.string().optional(),
     dehumidifier_control_enabled: z.boolean().optional(),
     circulation_fan_entity: z.string().optional(),
@@ -122,6 +123,10 @@ export const GrowspaceAPIResponseSchema = z
     vpd: z.string().nullable().optional(),
     soil_moisture_value: z.string().nullable().optional(),
     dehumidifier_state: z.string().nullable().optional(),
+    humidifier_thresholds: z
+      .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
+      .optional()
+      .default({}),
     dehumidifier_thresholds: z
       .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
       .optional()

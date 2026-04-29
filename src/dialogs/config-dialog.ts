@@ -17,6 +17,7 @@ import {
   mdiEye,
   mdiViewGrid,
   mdiPlus,
+  mdiAirHumidifier,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -30,6 +31,7 @@ import './subarea-config-dialog';
 import {
   GrowspaceDevice,
   DehumidifierStage,
+  HumidifierStage,
   EnvironmentConfigData,
   EnvironmentConfigEventDetail,
 } from '../types';
@@ -114,6 +116,14 @@ export class ConfigDialog extends LitElement {
   @state() private envVisionCameraEntities: string[] = [];
 
   @state() private _activeDehumidifierStage: DehumidifierStage = DehumidifierStage.SEEDLING;
+
+  // Humidifier Control
+  @state() private envHumidifierControlEnabled = false;
+  @state() private envHumidifierThresholds: Record<
+    string,
+    Record<string, { on: number; off: number }>
+  > = {};
+  @state() private _activeHumidifierStage: HumidifierStage = HumidifierStage.SEEDLING;
 
   // Sensor Groups
   @state() private envSensorGroups: import('../types').SensorGroup[] = [];
@@ -386,6 +396,8 @@ export class ConfigDialog extends LitElement {
       this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
       this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
       this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
+      this.envHumidifierControlEnabled = environmentData.humidifierControlEnabled;
+      this.envHumidifierThresholds = environmentData.humidifierThresholds || {};
       this.envSensorGroups = environmentData.sensorGroups || [];
       this.envSensorCoordinates = environmentData.sensorCoordinates || {};
       this.envIrrigationTanks = environmentData.irrigationTanks || [];
@@ -456,6 +468,8 @@ export class ConfigDialog extends LitElement {
           exhaustFanEntities: this.envExhaustFanEntities, // Multi
           humidifierEntity: this.envHumidifierEntity,
           humidifierEntities: this.envHumidifierEntities, // Multi
+          humidifierThresholds: this.envHumidifierThresholds,
+          humidifierControlEnabled: this.envHumidifierControlEnabled,
           dehumidifierEntity: this.envDehumidifierEntity,
           dehumidifierEntities: this.envDehumidifierEntities, // Multi
           dehumidifierThresholds: this.envDehumidifierThresholds,
@@ -714,6 +728,14 @@ export class ConfigDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
             </div>` : nothing}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.HUMIDIFIER) ? html`
+            <div
+              class="config-tab ${this.currentTab === ConfigTab.HUMIDIFIER ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.HUMIDIFIER)}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>
+              Humidifier
+            </div>` : nothing}
             ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SENSOR_GROUPS) ? html`
             <div
               class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
@@ -741,6 +763,7 @@ export class ConfigDialog extends LitElement {
       }
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : nothing}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : nothing}
+            ${this.currentTab === ConfigTab.HUMIDIFIER ? this.renderHumidifierTab() : nothing}
             ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : nothing}
             ${this.currentTab === ConfigTab.SUBAREAS ? this.renderSubareasTab() : nothing}
           </div>
@@ -756,7 +779,7 @@ export class ConfigDialog extends LitElement {
                 `
         : nothing
       }
-            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.HUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
         ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
@@ -1538,6 +1561,8 @@ export class ConfigDialog extends LitElement {
       this.envSoilMoistureSensor = attrs.soilMoistureSensor || '';
       this.envDehumidifierControlEnabled = attrs.dehumidifierControlEnabled || false;
       this.envDehumidifierThresholds = attrs.dehumidifierThresholds || {};
+      this.envHumidifierControlEnabled = attrs.humidifierControlEnabled || false;
+      this.envHumidifierThresholds = attrs.humidifierThresholds || {};
 
       // Multi-device handling with backward compatibility
       this.envLightSensor = attrs.lightSensor || '';
@@ -1615,6 +1640,8 @@ export class ConfigDialog extends LitElement {
       this.envSoilMoistureSensor = '';
       this.envDehumidifierControlEnabled = false;
       this.envDehumidifierThresholds = {};
+      this.envHumidifierControlEnabled = false;
+      this.envHumidifierThresholds = {};
       this.envVisionEnabled = false;
       this.envVisionEarlyOffset = 60;
       this.envVisionMidHours = 6;
@@ -1778,7 +1805,6 @@ export class ConfigDialog extends LitElement {
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
     if (isNaN(value)) return;
 
-    // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref
     const newThresholds = JSON.parse(JSON.stringify(this.envDehumidifierThresholds || {}));
 
     if (!newThresholds[stage]) newThresholds[stage] = {};
@@ -1787,5 +1813,181 @@ export class ConfigDialog extends LitElement {
     newThresholds[stage][cycle][point] = value;
 
     this.envDehumidifierThresholds = newThresholds;
+  }
+
+  private renderHumidifierTab() {
+    const stages = [
+      { id: HumidifierStage.SEEDLING, label: 'Seedling' },
+      { id: HumidifierStage.MOTHER, label: 'Mother' },
+      { id: HumidifierStage.VEG, label: 'Vegetative' },
+      { id: HumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
+      { id: HumidifierStage.MID_FLOWER, label: 'Mid Flower' },
+      { id: HumidifierStage.LATE_FLOWER, label: 'Late Flower' },
+      { id: HumidifierStage.DRY, label: 'Drying' },
+      { id: HumidifierStage.CURE, label: 'Curing' },
+    ];
+
+    const activeStage = stages.find((s) => s.id === this._activeHumidifierStage) || stages[0];
+
+    return html`
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label"> Growspace </label>
+            <select
+              class="md3-input"
+              .value=${this.envSelectedId}
+              @change=${this._handleEnvGrowspaceChange}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(
+                ([id, name]) =>
+                  html`<option value="${id}" ?selected=${id === this.envSelectedId}>
+                    ${name}
+                  </option>`
+              )}
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Humidifier Thresholds (VPD / kPa)</h3>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.envHumidifierControlEnabled}
+                @change=${(e: Event) =>
+                  (this.envHumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
+              />
+              Enable Control
+            </label>
+          </div>
+
+          <!--Sub-navigation for Stages-->
+          <div
+            class="config-tabs sub-tabs"
+            style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;"
+          >
+            ${stages.map(
+              (stage) => html`
+                <div
+                  class="config-tab ${this._activeHumidifierStage === stage.id ? 'active' : ''}"
+                  @click=${() => (this._activeHumidifierStage = stage.id)}
+                  style="padding: 12px 16px; font-size: 0.9rem;"
+                >
+                  ${stage.label}
+                </div>
+              `
+            )}
+          </div>
+
+          <div style="padding-top: 24px;">
+            <!--Info Box-->
+            <div
+              style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;"
+            >
+              <svg
+                style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiInformation}"></path>
+              </svg>
+              <div style="opacity: 0.8;">
+                Configuring <strong>${activeStage.label}</strong> stage.<br />
+                Humidifier turns <strong>On</strong> when VPD exceeds the On threshold (air is too dry).
+                It turns <strong>Off</strong> when VPD drops below the Off threshold.
+              </div>
+            </div>
+
+            <div class="row-col-grid">
+              <!--Day Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24">
+                    <path d="${mdiWhiteBalanceSunny}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
+                </div>
+
+                <md3-number-input
+                  label="On"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'day', 'on')}
+                  @change=${(e: CustomEvent) =>
+                    this._updateHumidifierThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'day', 'off')}
+                  @change=${(e: CustomEvent) =>
+                    this._updateHumidifierThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
+
+              <!--Night Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24">
+                    <path d="${mdiWeatherNight}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
+                </div>
+
+                <md3-number-input
+                  label="On"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'night', 'on')}
+                  @change=${(e: CustomEvent) =>
+                    this._updateHumidifierThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'night', 'off')}
+                  @change=${(e: CustomEvent) =>
+                    this._updateHumidifierThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _getHumidifierThresholdValue(stage: string, cycle: string, point: 'on' | 'off'): number {
+    return this.envHumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+  }
+
+  private _updateHumidifierThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
+    if (isNaN(value)) return;
+
+    const newThresholds = JSON.parse(JSON.stringify(this.envHumidifierThresholds || {}));
+
+    if (!newThresholds[stage]) newThresholds[stage] = {};
+    if (!newThresholds[stage][cycle]) newThresholds[stage][cycle] = { on: 0, off: 0 };
+
+    newThresholds[stage][cycle][point] = value;
+
+    this.envHumidifierThresholds = newThresholds;
   }
 }

@@ -22,6 +22,17 @@ export enum DehumidifierStage {
   CURING = 'curing',
 }
 
+export enum HumidifierStage {
+  SEEDLING = 'seedling',
+  MOTHER = 'mother',
+  VEG = 'veg',
+  EARLY_FLOWER = 'early_flower',
+  MID_FLOWER = 'mid_flower',
+  LATE_FLOWER = 'late_flower',
+  DRY = 'dry',
+  CURE = 'cure',
+}
+
 export enum GrowspaceType {
   NORMAL = 'normal',
   MOTHER = 'mother',

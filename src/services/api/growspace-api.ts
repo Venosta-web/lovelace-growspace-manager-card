@@ -201,6 +201,8 @@ export class GrowspaceAPI extends BaseAPI {
     exhaustFanEntities?: string[];
     humidifierEntity?: string;
     humidifierEntities?: string[];
+    humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+    controlHumidifier?: boolean;
     dehumidifierEntity?: string;
     dehumidifierEntities?: string[];
     dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
@@ -237,6 +239,8 @@ export class GrowspaceAPI extends BaseAPI {
       if (data.exhaustFanEntities) payload.exhaust_fan_entities = data.exhaustFanEntities;
       if (data.humidifierEntity) payload.humidifier_entity = data.humidifierEntity;
       if (data.humidifierEntities) payload.humidifier_entities = data.humidifierEntities;
+      if (data.humidifierThresholds) payload.humidifier_thresholds = data.humidifierThresholds;
+      if (data.controlHumidifier !== undefined) payload.control_humidifier = data.controlHumidifier;
       if (data.dehumidifierEntity) payload.dehumidifier_entity = data.dehumidifierEntity;
       if (data.dehumidifierEntities) payload.dehumidifier_entities = data.dehumidifierEntities;
       if (data.dehumidifierThresholds)

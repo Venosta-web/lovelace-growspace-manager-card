@@ -78,6 +78,8 @@ export interface EnvironmentConfigData {
   // Humidifier
   humidifierEntity: string;
   humidifierEntities: string[];
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
 
   // Dehumidifier
   dehumidifierEntity: string;
@@ -131,6 +133,8 @@ export interface EnvironmentConfigEventDetail {
   exhaustFanEntities?: string[];
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
