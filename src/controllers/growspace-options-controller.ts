@@ -2,12 +2,14 @@ import { ReactiveController, ReactiveControllerHost } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassSubscriptionController } from './hass-subscription-controller';
 
+export type GrowspaceOption = { id: string; name: string };
+
 export class GrowspaceOptionsController implements ReactiveController {
   private _host: ReactiveControllerHost;
   private _subscriptionController: HassSubscriptionController;
   private _subscribed = false;
 
-  options: { id: string; name: string }[] = [];
+  options: GrowspaceOption[] = [];
 
   constructor(host: ReactiveControllerHost) {
     this._host = host;
@@ -18,6 +20,7 @@ export class GrowspaceOptionsController implements ReactiveController {
   hostConnected() {}
 
   hostDisconnected() {
+    this._subscriptionController.unsubscribeAll();
     this._subscribed = false;
   }
 

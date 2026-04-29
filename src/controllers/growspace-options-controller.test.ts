@@ -65,10 +65,14 @@ describe('GrowspaceOptionsController', () => {
     expect(hass.connection.subscribeEvents).toHaveBeenCalledTimes(1);
   });
 
-  it('resets subscribed flag on hostDisconnected()', () => {
+  it('resets subscribed flag on hostDisconnected()', async () => {
+    const unsubSpy = vi.fn();
     const hass = makeHass({ 'gs-1': 'Tent A' }) as any;
+    hass.connection.subscribeEvents.mockResolvedValue(unsubSpy);
     controller.update(hass);
+    await Promise.resolve();
     controller.hostDisconnected();
+    expect(unsubSpy).toHaveBeenCalledTimes(1);
     controller.update(hass);
     expect(hass.connection.subscribeEvents).toHaveBeenCalledTimes(2);
   });
