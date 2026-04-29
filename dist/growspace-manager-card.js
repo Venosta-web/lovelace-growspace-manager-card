@@ -19554,7 +19554,8 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         </div>
       ` : E}
 
-      <!-- Irrigation Schedule Summary -->
+      <!-- Irrigation Schedule Summary (only when at least one schedule is defined) -->
+      ${(totalIrrig > 0 || totalDrain > 0) ? x `
       <div class="detail-card">
         <h3 style="margin-top: 0; margin-bottom: 16px;">Schedule Summary</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -19611,8 +19612,10 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
           </div>
         </div>
       </div>
+      ` : E}
 
-      <!-- Volume History from EC readings -->
+      <!-- Volume History from EC readings (only when a drain sensor is configured) -->
+      ${this._drainPumpEntity ? x `
       <div class="detail-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
           <h3 style="margin: 0;">Volume History</h3>
@@ -19687,6 +19690,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
           </div>
         `}
       </div>
+      ` : E}
 
       <!-- Maintenance -->
       <div class="detail-card" style="border: 1px dashed rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); margin-top: 20px;">

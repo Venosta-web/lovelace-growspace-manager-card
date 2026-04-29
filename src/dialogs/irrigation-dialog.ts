@@ -2051,7 +2051,8 @@ export class IrrigationDialog extends LitElement {
         </div>
       ` : nothing}
 
-      <!-- Irrigation Schedule Summary -->
+      <!-- Irrigation Schedule Summary (only when at least one schedule is defined) -->
+      ${(totalIrrig > 0 || totalDrain > 0) ? html`
       <div class="detail-card">
         <h3 style="margin-top: 0; margin-bottom: 16px;">Schedule Summary</h3>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -2108,8 +2109,10 @@ export class IrrigationDialog extends LitElement {
           </div>
         </div>
       </div>
+      ` : nothing}
 
-      <!-- Volume History from EC readings -->
+      <!-- Volume History from EC readings (only when a drain sensor is configured) -->
+      ${this._drainPumpEntity ? html`
       <div class="detail-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
           <h3 style="margin: 0;">Volume History</h3>
@@ -2184,6 +2187,7 @@ export class IrrigationDialog extends LitElement {
           </div>
         `}
       </div>
+      ` : nothing}
 
       <!-- Maintenance -->
       <div class="detail-card" style="border: 1px dashed rgba(244, 67, 54, 0.3); background: rgba(244, 67, 54, 0.05); margin-top: 20px;">
