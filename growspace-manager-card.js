@@ -109290,7 +109290,7 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
             <div class="tab-content">
               ${this._activeTab === 'list'
             ? x `<growspace-logbook .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-logbook>`
-            : x `<growspace-timeline .hass=${this.hass}></growspace-timeline>`}
+            : x `<growspace-timeline .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-timeline>`}
             </div>
           </div>
         </ha-card>

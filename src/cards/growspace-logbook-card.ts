@@ -144,7 +144,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
             <div class="tab-content">
               ${this._activeTab === 'list' 
                 ? html`<growspace-logbook .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-logbook>`
-                : html`<growspace-timeline .hass=${this.hass}></growspace-timeline>`
+                : html`<growspace-timeline .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-timeline>`
               }
             </div>
           </div>
