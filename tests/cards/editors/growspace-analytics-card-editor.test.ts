@@ -1,4 +1,6 @@
 import { expect, test, describe, beforeEach, vi } from 'vitest';
+import { fixture, html } from '@open-wc/testing-helpers';
+
 import { GrowspaceAnalyticsCardEditor } from '../../../src/cards/editors/growspace-analytics-card-editor';
 import type { GrowspaceManagerCardConfig } from '../../../src/lib/types/config';
 
@@ -131,5 +133,56 @@ describe('GrowspaceAnalyticsCardEditor', () => {
         element.hass = undefined as any;
         element.updated(new Map([['hass', null]]));
         expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('renders form when hass and config are provided', async () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-analytics-card',
+            default_growspace: 'gs1',
+        };
+        const el = await fixture<GrowspaceAnalyticsCardEditor>(html`
+            <growspace-analytics-card-editor></growspace-analytics-card-editor>
+        `);
+        el.hass = element.hass;
+        el.setConfig(config);
+        await el.updateComplete;
+        
+        const form = el.shadowRoot?.querySelector('ha-form');
+        expect(form).not.toBeNull();
+    });
+
+    test('render returns empty template when hass is missing', async () => {
+        const config: GrowspaceManagerCardConfig = {
+            type: 'custom:growspace-analytics-card',
+        };
+        const el = await fixture<GrowspaceAnalyticsCardEditor>(html`
+            <growspace-analytics-card-editor></growspace-analytics-card-editor>
+        `);
+        el.setConfig(config);
+        el.hass = undefined as any;
+        await el.updateComplete;
+        
+        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+    });
+
+    test('render returns empty template when config is missing', async () => {
+        const el = await fixture<GrowspaceAnalyticsCardEditor>(html`
+            <growspace-analytics-card-editor></growspace-analytics-card-editor>
+        `);
+        el.hass = element.hass;
+        await el.updateComplete;
+        
+        expect(el.shadowRoot?.innerHTML).toContain('<!---->');
+    });
+
+    test('_computeSchema returns correct schema structure', () => {
+        (element as any).updated(new Map([['hass', null]]));
+        const schema = (element as any)._computeSchema();
+        expect(schema).toBeDefined();
+        expect(Array.isArray(schema)).toBe(true);
+        expect(schema[0].name).toBe('default_growspace');
+        expect(schema[0].selector.select.options.length).toBe(4); // 1 default + 3 from mock
+        expect(schema[0].selector.select.options[0].label).toBe('Select a growspace...');
+        expect(schema[0].selector.select.options[1].value).toBe('all');
     });
 });

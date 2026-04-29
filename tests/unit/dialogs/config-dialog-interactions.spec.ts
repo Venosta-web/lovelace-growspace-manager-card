@@ -30,6 +30,7 @@ describe('ConfigDialog Interactions', () => {
             ConfigTab.EDIT_GROWSPACE,
             ConfigTab.ENVIRONMENT,
             ConfigTab.DEHUMIDIFIER,
+            ConfigTab.HUMIDIFIER,
             ConfigTab.SENSOR_GROUPS,
             ConfigTab.SUBAREAS
         ];

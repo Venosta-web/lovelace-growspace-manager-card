@@ -34,6 +34,13 @@ describe('configureEnvironment', () => {
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('env-err'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
+
+  it('handles non-Error exceptions', async () => {
+    ctx.dataService.configureEnvironment.mockRejectedValue('string-error');
+
+    await expect(configureEnvironment(ctx, baseConfig)).rejects.toBe('string-error');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('removeEnvironment', () => {
@@ -57,6 +64,13 @@ describe('removeEnvironment', () => {
     await expect(removeEnvironment(ctx, 'gs-1')).rejects.toThrow('remove-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('remove-err'), 'error');
   });
+
+  it('handles non-Error exceptions', async () => {
+    ctx.dataService.removeEnvironment.mockRejectedValue('string-error');
+
+    await expect(removeEnvironment(ctx, 'gs-1')).rejects.toBe('string-error');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('resetWaterTracking', () => {
@@ -79,5 +93,12 @@ describe('resetWaterTracking', () => {
 
     await expect(resetWaterTracking(ctx, 'gs-1')).rejects.toThrow('reset-err');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('reset-err'), 'error');
+  });
+
+  it('handles non-Error exceptions', async () => {
+    ctx.dataService.resetWaterTracking.mockRejectedValue('string-error');
+
+    await expect(resetWaterTracking(ctx, 'gs-1')).rejects.toBe('string-error');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
