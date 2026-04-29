@@ -40800,9 +40800,25 @@ class MetricsUtils {
         const dehumidifierState = getAggregateState(envAttrs.dehumidifierEntity, envAttrs.dehumidifierEntities, undefined);
         const circulationFanState = getAggregateState(envAttrs.circulationFanEntity, envAttrs.circulationFanEntities, undefined);
         const lightState = getAggregateState(envAttrs.lightSensor, envAttrs.lightSensors, undefined);
+        // Determine light chip value: prefer numeric sensor value over On/Off
+        let lightChipValue;
+        let lightChipIcon = isLightsOn ? mdiLightbulbOn : mdiLightbulbOff;
+        if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
+            const numVal = parseFloat(lightState.value);
+            if (!isNaN(numVal)) {
+                const lightEnt = hass.states[lightState.entityIds[0]];
+                const dc = lightEnt?.attributes?.device_class;
+                const unit = lightEnt?.attributes?.unit_of_measurement;
+                lightChipValue = (dc === 'power_factor' || unit === '%') ? `${numVal}%` : lightState.value;
+                lightChipIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+            }
+        }
+        if (!lightChipValue) {
+            lightChipValue = hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined;
+        }
         const deviceChips = [
             // Moved light chip here per request
-            createChipData(MetricKey.LIGHT, isLightsOn ? mdiLightbulbOn : mdiLightbulbOff, hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined, lightState.multiValues, lightState.entityIds),
+            createChipData(MetricKey.LIGHT, lightChipIcon, lightChipValue, lightState.multiValues, lightState.entityIds),
             createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
             createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circulationFanState.value, circulationFanState.multiValues, circulationFanState.entityIds, 'Fan'),
             createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humidifierState.value, humidifierState.multiValues, humidifierState.entityIds, 'Humidifier'),
@@ -40904,8 +40920,21 @@ class MetricsUtils {
         const circFanState = getAggregateDeviceState(ec.circulation_fan_entities);
         const humState = getAggregateDeviceState(ec.humidifier_entities);
         const dehumState = getAggregateDeviceState(ec.dehumidifier_entities);
+        // Format light sensor value with % for power_factor/% unit sensors
+        let subareaLightValue = lightState.value;
+        let subareaLightIcon = mdiLightbulbOn;
+        if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
+            const numVal = parseFloat(lightState.value);
+            if (!isNaN(numVal)) {
+                const lightEnt = hass.states[lightState.entityIds[0]];
+                const dc = lightEnt?.attributes?.device_class;
+                const unit = lightEnt?.attributes?.unit_of_measurement;
+                subareaLightValue = (dc === 'power_factor' || unit === '%') ? `${numVal}%` : lightState.value;
+                subareaLightIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+            }
+        }
         const deviceChips = [
-            createChipData(MetricKey.LIGHT, mdiLightbulbOn, lightState.value, lightState.multiValues, lightState.entityIds, 'Lights'),
+            createChipData(MetricKey.LIGHT, subareaLightIcon, subareaLightValue, lightState.multiValues, lightState.entityIds, 'Lights'),
             createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
             createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circFanState.value, circFanState.multiValues, circFanState.entityIds, 'Fan'),
             createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humState.value, humState.multiValues, humState.entityIds, 'Humidifier'),
