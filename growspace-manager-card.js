@@ -110543,6 +110543,21 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
             this._growspaceOptions = [];
         }
     }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._growspaceOptions.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+        ];
+    }
     render() {
         if (!this._config)
             return x ``;
@@ -110552,25 +110567,22 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
           The Grid Card is a localized view locked to the Standard tracking interface. Environment headers and charts are removed.
         </div>
 
-        <div class="form-group">
-          <label>Default Growspace</label>
-          <select
-            .value=${this._config.default_growspace ?? ''}
-            @change=${(e) => this._valueChanged('default_growspace', e.target.value)}
-          >
-            <option value="">Select a growspace</option>
-            ${this._growspaceOptions.map((gs) => x `<option value="${gs.id}">${gs.name}</option>`)}
-          </select>
-        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${this._computeSchema()}
+          .computeLabel=${(s) => s.name === 'default_growspace' ? 'Default Growspace' : s.name}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
       </div>
     `;
     }
-    _valueChanged(key, value) {
+    _valueChanged(ev) {
         if (!this._config)
             return;
-        const newConfig = { ...this._config, [key]: value };
+        this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent('config-changed', {
-            detail: { config: newConfig },
+            detail: { config: this._config },
             bubbles: true,
             composed: true,
         }));
@@ -110581,24 +110593,6 @@ GrowspaceGridCardEditor.styles = i$6 `
       display: flex;
       flex-direction: column;
       gap: 16px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    label {
-      font-weight: 500;
-      color: var(--secondary-text-color);
-    }
-    select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color);
-      font-size: 1rem;
     }
     .info-box {
       background: rgba(var(--rgb-primary-color), 0.1);
@@ -110656,22 +110650,30 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
     get _default_growspace() {
         return this._config?.default_growspace || '';
     }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+        ];
+    }
     _valueChanged(ev) {
         if (!this._config || !this.hass)
             return;
-        const target = ev.target;
-        const value = target.value;
-        if (this._default_growspace !== value) {
-            this._config = {
-                ...this._config,
-                default_growspace: value,
-            };
-            this.dispatchEvent(new CustomEvent('config-changed', {
-                detail: { config: this._config },
-                bubbles: true,
-                composed: true,
-            }));
-        }
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+        }));
     }
     render() {
         if (!this.hass || !this._config) {
@@ -110679,22 +110681,13 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
         }
         return x `
             <div class="card-config">
-                <div class="select-group">
-                    <label>Target Growspace</label>
-                    <select
-                        .value=${this._default_growspace}
-                        @change=${this._valueChanged}
-                    >
-                        <option value="" disabled selected=${this._default_growspace === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._sensorGrowspaces.map((gs) => x `
-                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `)}
-                    </select>
-                </div>
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s) => s.name === 'default_growspace' ? 'Target Growspace' : s.name}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     This card will permanently display the analytics charts and history for the selected growspace.
@@ -110711,18 +110704,6 @@ GrowspaceAnalyticsCardEditor.styles = [
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
             }
             .info-text {
                 font-size: 0.9em;
@@ -110778,22 +110759,30 @@ let GrowspaceAiInsightCardEditor = class GrowspaceAiInsightCardEditor extends i$
     get _default_growspace() {
         return this._config?.default_growspace || '';
     }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+        ];
+    }
     _valueChanged(ev) {
         if (!this._config || !this.hass)
             return;
-        const target = ev.target;
-        const value = target.value;
-        if (this._default_growspace !== value) {
-            this._config = {
-                ...this._config,
-                default_growspace: value,
-            };
-            this.dispatchEvent(new CustomEvent('config-changed', {
-                detail: { config: this._config },
-                bubbles: true,
-                composed: true,
-            }));
-        }
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+        }));
     }
     render() {
         if (!this.hass || !this._config) {
@@ -110801,22 +110790,13 @@ let GrowspaceAiInsightCardEditor = class GrowspaceAiInsightCardEditor extends i$
         }
         return x `
             <div class="card-config">
-                <div class="select-group">
-                    <label>Target Growspace</label>
-                    <select
-                        .value=${this._default_growspace}
-                        @change=${this._valueChanged}
-                    >
-                        <option value="" disabled selected=${this._default_growspace === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._sensorGrowspaces.map((gs) => x `
-                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `)}
-                    </select>
-                </div>
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s) => s.name === 'default_growspace' ? 'Target Growspace' : s.name}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     This card will provide AI insights and chat functionality targeted toward the selected growspace.
@@ -110833,18 +110813,6 @@ GrowspaceAiInsightCardEditor.styles = [
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
             }
             .info-text {
                 font-size: 0.9em;
@@ -110908,13 +110876,25 @@ let GrowspaceTankCardEditor = class GrowspaceTankCardEditor extends i$3 {
     get _default_growspace() {
         return this._config?.default_growspace || '';
     }
+    _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+        ];
+    }
     _valueChanged(ev) {
         if (!this._config || !this.hass)
             return;
-        const value = ev.target.value;
-        if (this._default_growspace === value)
-            return;
-        this._config = { ...this._config, default_growspace: value };
+        this._config = ev.detail.value;
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: this._config },
             bubbles: true,
@@ -110927,19 +110907,13 @@ let GrowspaceTankCardEditor = class GrowspaceTankCardEditor extends i$3 {
         }
         return x `
             <div class="card-config">
-                <div class="select-group">
-                    <label>Target Growspace</label>
-                    <select .value=${this._default_growspace} @change=${this._valueChanged}>
-                        <option value="" disabled ?selected=${this._default_growspace === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._sensorGrowspaces.map((gs) => x `
-                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `)}
-                    </select>
-                </div>
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s) => s.name === 'default_growspace' ? 'Target Growspace' : s.name}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     Displays all irrigation tanks configured for the selected growspace with live fill levels,
@@ -110957,18 +110931,6 @@ GrowspaceTankCardEditor.styles = [
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
             }
             .info-text {
                 font-size: 0.9em;
@@ -111067,26 +111029,43 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
             this._loadingSubareas = false;
         }
     }
-    _onGrowspaceChanged(ev) {
+    _computeSchema() {
+        const subareaOptions = [
+            { label: this._config?.growspace_id ? (this._subareas.length ? 'Select a subarea...' : 'No subareas found') : 'Select a growspace first', value: '' },
+            ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id }))
+        ];
+        return [
+            {
+                name: 'growspace_id',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._growspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'subarea_id',
+                selector: {
+                    select: {
+                        options: subareaOptions,
+                    },
+                },
+            },
+        ];
+    }
+    _valueChanged(ev) {
         if (!this._config || !this.hass)
             return;
-        const growspaceId = ev.target.value;
-        if (this._config.growspace_id === growspaceId)
-            return;
-        this._config = { ...this._config, growspace_id: growspaceId, subarea_id: '' };
-        this._dispatchConfigChanged();
-        this._loadSubareas(growspaceId);
-    }
-    _onSubareaChanged(ev) {
-        if (!this._config || !this.hass)
-            return;
-        const subareaId = ev.target.value;
-        if (this._config.subarea_id === subareaId)
-            return;
-        this._config = { ...this._config, subarea_id: subareaId };
-        this._dispatchConfigChanged();
-    }
-    _dispatchConfigChanged() {
+        const newConfig = ev.detail.value;
+        const growspaceChanged = newConfig.growspace_id !== this._config.growspace_id;
+        if (growspaceChanged) {
+            newConfig.subarea_id = '';
+            this._loadSubareas(newConfig.growspace_id);
+        }
+        this._config = newConfig;
         this.dispatchEvent(new CustomEvent('config-changed', {
             detail: { config: this._config },
             bubbles: true,
@@ -111097,49 +111076,16 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
         if (!this.hass || !this._config) {
             return x ``;
         }
-        const growspaceId = this._config.growspace_id || '';
-        const subareaId = this._config.subarea_id || '';
         return x `
             <div class="card-config">
-                <div class="select-group">
-                    <label>Parent Growspace</label>
-                    <select .value=${growspaceId} @change=${this._onGrowspaceChanged}>
-                        <option value="" disabled ?selected=${growspaceId === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._growspaces.map((gs) => x `
-                                <option value=${gs.id} ?selected=${growspaceId === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `)}
-                    </select>
-                </div>
-
-                <div class="select-group">
-                    <label>Subarea</label>
-                    ${this._loadingSubareas
-            ? x `<span class="loading-text">Loading subareas...</span>`
-            : x `
-                              <select
-                                  .value=${subareaId}
-                                  ?disabled=${!growspaceId}
-                                  @change=${this._onSubareaChanged}
-                              >
-                                  <option value="" disabled ?selected=${subareaId === ''}>
-                                      ${growspaceId
-                ? this._subareas.length
-                    ? 'Select a subarea...'
-                    : 'No subareas found'
-                : 'Select a growspace first'}
-                                  </option>
-                                  ${this._subareas.map((sa) => x `
-                                          <option value=${sa.id} ?selected=${subareaId === sa.id}>
-                                              ${sa.name}
-                                          </option>
-                                      `)}
-                              </select>
-                          `}
-                </div>
+                ${this._loadingSubareas ? x `<span class="loading-text">Loading subareas...</span>` : ''}
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s) => s.name === 'growspace_id' ? 'Parent Growspace' : 'Subarea'}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     Displays environment sensors and device status for the selected subarea within a growspace.
@@ -111156,32 +111102,6 @@ GrowspaceSubareaCardEditor.styles = [
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            label {
-                font-size: 0.875rem;
-                font-weight: 500;
-                color: var(--secondary-text-color);
-            }
-
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-                font-size: 0.9rem;
-            }
-
-            select:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
             }
 
             .info-text {

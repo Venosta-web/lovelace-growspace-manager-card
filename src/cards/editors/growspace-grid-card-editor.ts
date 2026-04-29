@@ -77,24 +77,6 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
       flex-direction: column;
       gap: 16px;
     }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    label {
-      font-weight: 500;
-      color: var(--secondary-text-color);
-    }
-    select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      border: 1px solid var(--divider-color);
-      background: var(--card-background-color, white);
-      color: var(--primary-text-color);
-      font-size: 1rem;
-    }
     .info-box {
       background: rgba(var(--rgb-primary-color), 0.1);
       color: var(--primary-text-color);
@@ -105,6 +87,22 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
     }
   `;
 
+  private _computeSchema() {
+    return [
+      {
+        name: 'default_growspace',
+        selector: {
+          select: {
+            options: [
+              { label: 'Select a growspace...', value: '' },
+              ...this._growspaceOptions.map((gs) => ({ label: gs.name, value: gs.id }))
+            ],
+          },
+        },
+      },
+    ];
+  }
+
   render() {
     if (!this._config) return html``;
 
@@ -114,29 +112,23 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
           The Grid Card is a localized view locked to the Standard tracking interface. Environment headers and charts are removed.
         </div>
 
-        <div class="form-group">
-          <label>Default Growspace</label>
-          <select
-            .value=${this._config.default_growspace ?? ''}
-            @change=${(e: Event) =>
-        this._valueChanged('default_growspace', (e.target as HTMLSelectElement).value)}
-          >
-            <option value="">Select a growspace</option>
-            ${this._growspaceOptions.map(
-          (gs) => html`<option value="${gs.id}">${gs.name}</option>`
-        )}
-          </select>
-        </div>
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${this._computeSchema()}
+          .computeLabel=${(s: any) => s.name === 'default_growspace' ? 'Default Growspace' : s.name}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
       </div>
     `;
   }
 
-  private _valueChanged(key: string, value: unknown) {
+  private _valueChanged(ev: CustomEvent) {
     if (!this._config) return;
-    const newConfig = { ...this._config, [key]: value };
+    this._config = ev.detail.value;
     this.dispatchEvent(
       new CustomEvent('config-changed', {
-        detail: { config: newConfig },
+        detail: { config: this._config },
         bubbles: true,
         composed: true,
       })

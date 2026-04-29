@@ -83,28 +83,48 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
         }
     }
 
-    private _onGrowspaceChanged(ev: Event): void {
-        if (!this._config || !this.hass) return;
+    private _computeSchema() {
+        const subareaOptions = [
+            { label: this._config?.growspace_id ? (this._subareas.length ? 'Select a subarea...' : 'No subareas found') : 'Select a growspace first', value: '' },
+            ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id }))
+        ];
 
-        const growspaceId = (ev.target as HTMLSelectElement).value;
-        if (this._config.growspace_id === growspaceId) return;
-
-        this._config = { ...this._config, growspace_id: growspaceId, subarea_id: '' };
-        this._dispatchConfigChanged();
-        this._loadSubareas(growspaceId);
+        return [
+            {
+                name: 'growspace_id',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._growspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+            {
+                name: 'subarea_id',
+                selector: {
+                    select: {
+                        options: subareaOptions,
+                    },
+                },
+            },
+        ];
     }
 
-    private _onSubareaChanged(ev: Event): void {
+    private _valueChanged(ev: CustomEvent): void {
         if (!this._config || !this.hass) return;
 
-        const subareaId = (ev.target as HTMLSelectElement).value;
-        if (this._config.subarea_id === subareaId) return;
+        const newConfig = ev.detail.value;
+        const growspaceChanged = newConfig.growspace_id !== this._config.growspace_id;
 
-        this._config = { ...this._config, subarea_id: subareaId };
-        this._dispatchConfigChanged();
-    }
+        if (growspaceChanged) {
+            newConfig.subarea_id = '';
+            this._loadSubareas(newConfig.growspace_id);
+        }
 
-    private _dispatchConfigChanged(): void {
+        this._config = newConfig;
+
         this.dispatchEvent(
             new CustomEvent('config-changed', {
                 detail: { config: this._config },
@@ -122,32 +142,6 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            label {
-                font-size: 0.875rem;
-                font-weight: 500;
-                color: var(--secondary-text-color);
-            }
-
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
-                font-size: 0.9rem;
-            }
-
-            select:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
             }
 
             .info-text {
@@ -169,54 +163,16 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
             return html``;
         }
 
-        const growspaceId = this._config.growspace_id || '';
-        const subareaId = this._config.subarea_id || '';
-
         return html`
             <div class="card-config">
-                <div class="select-group">
-                    <label>Parent Growspace</label>
-                    <select .value=${growspaceId} @change=${this._onGrowspaceChanged}>
-                        <option value="" disabled ?selected=${growspaceId === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._growspaces.map(
-                            (gs) => html`
-                                <option value=${gs.id} ?selected=${growspaceId === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `
-                        )}
-                    </select>
-                </div>
-
-                <div class="select-group">
-                    <label>Subarea</label>
-                    ${this._loadingSubareas
-                        ? html`<span class="loading-text">Loading subareas...</span>`
-                        : html`
-                              <select
-                                  .value=${subareaId}
-                                  ?disabled=${!growspaceId}
-                                  @change=${this._onSubareaChanged}
-                              >
-                                  <option value="" disabled ?selected=${subareaId === ''}>
-                                      ${growspaceId
-                                          ? this._subareas.length
-                                              ? 'Select a subarea...'
-                                              : 'No subareas found'
-                                          : 'Select a growspace first'}
-                                  </option>
-                                  ${this._subareas.map(
-                                      (sa) => html`
-                                          <option value=${sa.id} ?selected=${subareaId === sa.id}>
-                                              ${sa.name}
-                                          </option>
-                                      `
-                                  )}
-                              </select>
-                          `}
-                </div>
+                ${this._loadingSubareas ? html`<span class="loading-text">Loading subareas...</span>` : ''}
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s: any) => s.name === 'growspace_id' ? 'Parent Growspace' : 'Subarea'}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     Displays environment sensors and device status for the selected subarea within a growspace.

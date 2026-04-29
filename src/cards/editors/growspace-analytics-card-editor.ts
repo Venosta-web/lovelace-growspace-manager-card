@@ -37,25 +37,33 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
         return this._config?.default_growspace || '';
     }
 
-    private _valueChanged(ev: Event): void {
+    private _computeSchema() {
+        return [
+            {
+                name: 'default_growspace',
+                selector: {
+                    select: {
+                        options: [
+                            { label: 'Select a growspace...', value: '' },
+                            ...this._sensorGrowspaces.map((gs) => ({ label: gs.name, value: gs.id }))
+                        ],
+                    },
+                },
+            },
+        ];
+    }
+
+    private _valueChanged(ev: CustomEvent): void {
         if (!this._config || !this.hass) return;
 
-        const target = ev.target as HTMLSelectElement;
-        const value = target.value;
-
-        if (this._default_growspace !== value) {
-            this._config = {
-                ...this._config,
-                default_growspace: value,
-            };
-            this.dispatchEvent(
-                new CustomEvent('config-changed', {
-                    detail: { config: this._config },
-                    bubbles: true,
-                    composed: true,
-                })
-            );
-        }
+        this._config = ev.detail.value;
+        this.dispatchEvent(
+            new CustomEvent('config-changed', {
+                detail: { config: this._config },
+                bubbles: true,
+                composed: true,
+            })
+        );
     }
 
     static styles: CSSResultGroup = [
@@ -66,18 +74,6 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
-            }
-            .select-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            select {
-                padding: 8px;
-                border: 1px solid var(--divider-color);
-                border-radius: 4px;
-                background: var(--card-background-color);
-                color: var(--primary-text-color);
             }
             .info-text {
                 font-size: 0.9em;
@@ -94,24 +90,13 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
 
         return html`
             <div class="card-config">
-                <div class="select-group">
-                    <label>Target Growspace</label>
-                    <select
-                        .value=${this._default_growspace}
-                        @change=${this._valueChanged}
-                    >
-                        <option value="" disabled selected=${this._default_growspace === ''}>
-                            Select a growspace...
-                        </option>
-                        ${this._sensorGrowspaces.map(
-            (gs) => html`
-                                <option value=${gs.id} ?selected=${this._default_growspace === gs.id}>
-                                    ${gs.name}
-                                </option>
-                            `
-        )}
-                    </select>
-                </div>
+                <ha-form
+                    .hass=${this.hass}
+                    .data=${this._config}
+                    .schema=${this._computeSchema()}
+                    .computeLabel=${(s: any) => s.name === 'default_growspace' ? 'Target Growspace' : s.name}
+                    @value-changed=${this._valueChanged}
+                ></ha-form>
 
                 <div class="info-text">
                     This card will permanently display the analytics charts and history for the selected growspace.
