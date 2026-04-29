@@ -100,7 +100,7 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
     }
 
     public static async getConfigElement(): Promise<LovelaceCardEditor> {
-        await import('./editors/growspace-analytics-card-editor');
+        await import('./editors/growspace-analytics-card-editor.js');
         return document.createElement('growspace-analytics-card-editor') as unknown as LovelaceCardEditor;
     }
 

@@ -395,7 +395,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
     }
 
     public static async getConfigElement(): Promise<LovelaceCardEditor> {
-        await import('./editors/growspace-tank-card-editor');
+        await import('./editors/growspace-tank-card-editor.js');
         return document.createElement('growspace-tank-card-editor') as unknown as LovelaceCardEditor;
     }
 

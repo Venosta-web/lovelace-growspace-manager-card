@@ -11,6 +11,9 @@ import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
+import '../components/ui/growspace-logbook';
+import '../components/ui/growspace-timeline';
+import '../components/error-boundary';
 
 @customElement('growspace-logbook-card')
 export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
@@ -44,7 +47,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   private _viewController = new StoreController(this, this._store.$sharedCardViewState);
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-logbook-card-editor');
+    await import('./editors/growspace-logbook-card-editor.js');
     return document.createElement('growspace-logbook-card-editor') as unknown as LovelaceCardEditor;
   }
 
@@ -89,6 +92,10 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     this._activeTab = tab;
   }
 
+  private _handleError(err: Error): void {
+    console.error('Growspace Logbook Card Error:', err);
+  }
+
   protected render(): TemplateResult {
     if (!this.hass || !this._config) {
       return html``;
@@ -111,33 +118,38 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     }
 
     return html`
-      <ha-card>
-        <div class="card-content">
-          <div class="tab-bar">
-            <button 
-              class="tab ${this._activeTab === 'list' ? 'active' : ''}" 
-              @click=${() => this._handleTabClick('list')}
-            >
-              <svg viewBox="0 0 24 24"><path d="M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z" /></svg>
-              List View
-            </button>
-            <button 
-              class="tab ${this._activeTab === 'timeline' ? 'active' : ''}" 
-              @click=${() => this._handleTabClick('timeline')}
-            >
-              <svg viewBox="0 0 24 24"><path d="M2,2H4V20H22V22H2V2M7,10H17V13H7V10M11,15H21V18H11V15M6,4H22V8H6V4Z" /></svg>
-              Timeline
-            </button>
-          </div>
+      <error-boundary
+        .fallbackMessage=${'Failed to load Growspace Logbook Card'}
+        .onError=${this._handleError}
+      >
+        <ha-card>
+          <div class="card-content">
+            <div class="tab-bar">
+              <button 
+                class="tab ${this._activeTab === 'list' ? 'active' : ''}" 
+                @click=${() => this._handleTabClick('list')}
+              >
+                <svg viewBox="0 0 24 24"><path d="M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z" /></svg>
+                List View
+              </button>
+              <button 
+                class="tab ${this._activeTab === 'timeline' ? 'active' : ''}" 
+                @click=${() => this._handleTabClick('timeline')}
+              >
+                <svg viewBox="0 0 24 24"><path d="M2,2H4V20H22V22H2V2M7,10H17V13H7V10M11,15H21V18H11V15M6,4H22V8H6V4Z" /></svg>
+                Timeline
+              </button>
+            </div>
 
-          <div class="tab-content">
-            ${this._activeTab === 'list' 
-              ? html`<growspace-logbook .hass=${this.hass}></growspace-logbook>`
-              : html`<growspace-timeline .hass=${this.hass}></growspace-timeline>`
-            }
+            <div class="tab-content">
+              ${this._activeTab === 'list' 
+                ? html`<growspace-logbook .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-logbook>`
+                : html`<growspace-timeline .hass=${this.hass}></growspace-timeline>`
+              }
+            </div>
           </div>
-        </div>
-      </ha-card>
+        </ha-card>
+      </error-boundary>
     `;
   }
 
