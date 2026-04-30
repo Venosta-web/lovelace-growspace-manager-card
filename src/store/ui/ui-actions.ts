@@ -346,6 +346,11 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
       currentTab: ConfigTab.ENVIRONMENT,
       environmentData: {
         selectedGrowspaceId: device?.deviceId || '',
+        // Multi sensors (preferred)
+        temperatureSensors: device?.environmentAttributes?.temperatureSensors || [],
+        humiditySensors: device?.environmentAttributes?.humiditySensors || [],
+        vpdSensors: device?.environmentAttributes?.vpdSensors || [],
+        // Legacy singular (backward compat)
         temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
         humiditySensor: device?.environmentAttributes?.humiditySensor || '',
         vpdSensor: device?.environmentAttributes?.vpdSensor || '',
@@ -360,6 +365,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
         humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
         humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+        humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
         dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
         dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
         dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
@@ -371,6 +377,15 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
         cameraEntities: device?.environmentAttributes?.cameraEntities || [],
         visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+        substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
+        phSensors: device?.environmentAttributes?.phSensors || [],
+        feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
+        substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
+        runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
+        drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
+        irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
+        powerSensors: [],
+        energySensors: device?.environmentAttributes?.energySensors || [],
       } as EnvironmentConfigData,
     },
   });

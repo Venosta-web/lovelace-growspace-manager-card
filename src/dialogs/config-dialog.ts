@@ -81,23 +81,36 @@ export class ConfigDialog extends LitElement {
   // Environment Data
   @state() private envSelectedId = '';
   @state() private envTemperatureSensor = '';
+  @state() private envTemperatureSensors: string[] = [];
   @state() private envHumiditySensor = '';
+  @state() private envHumiditySensors: string[] = [];
   @state() private envVpdSensor = '';
+  @state() private envVpdSensors: string[] = [];
   @state() private envCo2Sensor = '';
   @state() private envCirculationFan = '';
-  @state() private envCirculationFanEntities: string[] = []; // Multi-device
+  @state() private envCirculationFanEntities: string[] = [];
   @state() private envStressThreshold = 0.8;
   @state() private envMoldThreshold = 0.8;
   @state() private envLightSensor = '';
-  @state() private envLightSensors: string[] = []; // Multi-device
+  @state() private envLightSensors: string[] = [];
   @state() private envExhaustEntity = '';
-  @state() private envExhaustFanEntities: string[] = []; // Multi-device
+  @state() private envExhaustFanEntities: string[] = [];
   @state() private envHumidifierEntity = '';
-  @state() private envHumidifierEntities: string[] = []; // Multi-device
+  @state() private envHumidifierEntities: string[] = [];
   @state() private envDehumidifierEntity = '';
-  @state() private envDehumidifierEntities: string[] = []; // Multi-device
+  @state() private envDehumidifierEntities: string[] = [];
   @state() private envSoilMoistureSensor = '';
   @state() private envDehumidifierControlEnabled = false;
+  // Advanced / irrigation monitoring
+  @state() private envSubstrateTemperatureSensors: string[] = [];
+  @state() private envPhSensors: string[] = [];
+  @state() private envFeedEcSensors: string[] = [];
+  @state() private envSubstrateEcSensors: string[] = [];
+  @state() private envRunoffEcSensors: string[] = [];
+  @state() private envDrainVolumeSensors: string[] = [];
+  @state() private envIrrigationFlowSensors: string[] = [];
+  @state() private envPowerSensors: string[] = [];
+  @state() private envEnergySensors: string[] = [];
   @state() private envDehumidifierThresholds: Record<
     string,
     Record<string, { on: number; off: number }>
@@ -377,6 +390,17 @@ export class ConfigDialog extends LitElement {
     this.currentTab = currentTab;
     if (environmentData) {
       this.envSelectedId = environmentData.selectedGrowspaceId;
+      // Multi sensors
+      this.envTemperatureSensors = environmentData.temperatureSensors?.length
+        ? environmentData.temperatureSensors
+        : (environmentData.temperatureSensor ? [environmentData.temperatureSensor] : []);
+      this.envHumiditySensors = environmentData.humiditySensors?.length
+        ? environmentData.humiditySensors
+        : (environmentData.humiditySensor ? [environmentData.humiditySensor] : []);
+      this.envVpdSensors = environmentData.vpdSensors?.length
+        ? environmentData.vpdSensors
+        : (environmentData.vpdSensor ? [environmentData.vpdSensor] : []);
+      // Legacy singular
       this.envTemperatureSensor = environmentData.temperatureSensor;
       this.envHumiditySensor = environmentData.humiditySensor;
       this.envVpdSensor = environmentData.vpdSensor;
@@ -402,6 +426,16 @@ export class ConfigDialog extends LitElement {
       this.envSensorCoordinates = environmentData.sensorCoordinates || {};
       this.envIrrigationTanks = environmentData.irrigationTanks || [];
       this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+      // Advanced sensors
+      this.envSubstrateTemperatureSensors = environmentData.substrateTemperatureSensors || [];
+      this.envPhSensors = environmentData.phSensors || [];
+      this.envFeedEcSensors = environmentData.feedEcSensors || [];
+      this.envSubstrateEcSensors = environmentData.substrateEcSensors || [];
+      this.envRunoffEcSensors = environmentData.runoffEcSensors || [];
+      this.envDrainVolumeSensors = environmentData.drainVolumeSensors || [];
+      this.envIrrigationFlowSensors = environmentData.irrigationFlowSensors || [];
+      this.envPowerSensors = environmentData.powerSensors || [];
+      this.envEnergySensors = environmentData.energySensors || [];
       if (environmentData.visionCheckupConfig) {
         this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
         this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
@@ -454,30 +488,35 @@ export class ConfigDialog extends LitElement {
       new CustomEvent('configure-environment-submit', {
         detail: {
           selectedGrowspaceId: this.envSelectedId,
-          temperatureSensor: this.envTemperatureSensor,
-          humiditySensor: this.envHumiditySensor,
-          vpdSensor: this.envVpdSensor,
+          temperatureSensors: this.envTemperatureSensors,
+          humiditySensors: this.envHumiditySensors,
+          vpdSensors: this.envVpdSensors,
           co2Sensor: this.envCo2Sensor,
-          circulationFanEntity: this.envCirculationFan,
-          circulationFanEntities: this.envCirculationFanEntities, // Multi
+          circulationFanEntities: this.envCirculationFanEntities,
           stressThreshold: this.envStressThreshold,
           moldThreshold: this.envMoldThreshold,
-          lightSensor: this.envLightSensor,
-          lightSensors: this.envLightSensors, // Multi
-          exhaustEntity: this.envExhaustEntity,
-          exhaustFanEntities: this.envExhaustFanEntities, // Multi
-          humidifierEntity: this.envHumidifierEntity,
-          humidifierEntities: this.envHumidifierEntities, // Multi
+          lightSensors: this.envLightSensors,
+          exhaustFanEntities: this.envExhaustFanEntities,
+          humidifierEntities: this.envHumidifierEntities,
           humidifierThresholds: this.envHumidifierThresholds,
           humidifierControlEnabled: this.envHumidifierControlEnabled,
-          dehumidifierEntity: this.envDehumidifierEntity,
-          dehumidifierEntities: this.envDehumidifierEntities, // Multi
+          dehumidifierEntities: this.envDehumidifierEntities,
           dehumidifierThresholds: this.envDehumidifierThresholds,
           soilMoistureSensor: this.envSoilMoistureSensor,
           dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
           sensorGroups: this.envSensorGroups,
           sensorCoordinates: this.envSensorCoordinates,
           irrigationTanks: this.envIrrigationTanks,
+          cameraEntities: this.envVisionCameraEntities,
+          substrateTemperatureSensors: this.envSubstrateTemperatureSensors,
+          phSensors: this.envPhSensors,
+          feedEcSensors: this.envFeedEcSensors,
+          substrateEcSensors: this.envSubstrateEcSensors,
+          runoffEcSensors: this.envRunoffEcSensors,
+          drainVolumeSensors: this.envDrainVolumeSensors,
+          irrigationFlowSensors: this.envIrrigationFlowSensors,
+          powerSensors: this.envPowerSensors,
+          energySensors: this.envEnergySensors,
         } as EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
@@ -1344,28 +1383,28 @@ export class ConfigDialog extends LitElement {
 
           <div class="form-section">
             <div class="row-col-grid">
-              ${this._renderEntitySelect(
-      'Temperature Sensor',
-      this.envTemperatureSensor,
+              ${this._renderMultiEntitySelect(
+      'Temperature Sensors',
+      this.envTemperatureSensors,
       ['sensor', 'input_number'],
       'temperature',
-      (e: CustomEvent) => (this.envTemperatureSensor = e.detail.value)
+      (values: string[]) => (this.envTemperatureSensors = values)
     )}
-              ${this._renderEntitySelect(
-      'Humidity Sensor',
-      this.envHumiditySensor,
+              ${this._renderMultiEntitySelect(
+      'Humidity Sensors',
+      this.envHumiditySensors,
       ['sensor', 'input_number'],
       'humidity',
-      (e: CustomEvent) => (this.envHumiditySensor = e.detail.value)
+      (values: string[]) => (this.envHumiditySensors = values)
     )}
             </div>
             <div class="row-col-grid">
-              ${this._renderEntitySelect(
-      'VPD Sensor (Optional)',
-      this.envVpdSensor,
+              ${this._renderMultiEntitySelect(
+      'VPD Sensors (Optional)',
+      this.envVpdSensors,
       ['sensor', 'input_number'],
       'pressure',
-      (e: CustomEvent) => (this.envVpdSensor = e.detail.value)
+      (values: string[]) => (this.envVpdSensors = values)
     )}
               ${this._renderEntitySelect(
       'Soil Moisture Sensor',
@@ -1391,6 +1430,13 @@ export class ConfigDialog extends LitElement {
       (values: string[]) => (this.envLightSensors = values)
     )}
             </div>
+            ${this._renderMultiEntitySelect(
+      'Substrate Temperature Sensors',
+      this.envSubstrateTemperatureSensors,
+      ['sensor', 'input_number'],
+      'temperature',
+      (values: string[]) => (this.envSubstrateTemperatureSensors = values)
+    )}
           </div>
         </div>
 
@@ -1491,6 +1537,84 @@ export class ConfigDialog extends LitElement {
           </div>
         </div>
 
+        <!--Advanced / Irrigation Monitoring-->
+        <div class="detail-card">
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24">
+              <path d="${mdiGauge}"></path>
+            </svg>
+            <h3 style="margin:0; border:none; padding:0;">Advanced / Irrigation Monitoring</h3>
+          </div>
+          <div class="form-section">
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
+      'pH Sensors',
+      this.envPhSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envPhSensors = values)
+    )}
+              ${this._renderMultiEntitySelect(
+      'Feed EC Sensors',
+      this.envFeedEcSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envFeedEcSensors = values)
+    )}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
+      'Substrate EC Sensors',
+      this.envSubstrateEcSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envSubstrateEcSensors = values)
+    )}
+              ${this._renderMultiEntitySelect(
+      'Runoff EC Sensors',
+      this.envRunoffEcSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envRunoffEcSensors = values)
+    )}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
+      'Drain Volume Sensors',
+      this.envDrainVolumeSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envDrainVolumeSensors = values)
+    )}
+              ${this._renderMultiEntitySelect(
+      'Irrigation Flow Sensors',
+      this.envIrrigationFlowSensors,
+      ['sensor', 'input_number', 'number'],
+      null,
+      (values: string[]) => (this.envIrrigationFlowSensors = values)
+    )}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect(
+      'Power Sensors',
+      this.envPowerSensors,
+      ['sensor', 'input_number', 'number'],
+      'power',
+      (values: string[]) => (this.envPowerSensors = values)
+    )}
+              ${this._renderMultiEntitySelect(
+      'Energy Sensors',
+      this.envEnergySensors,
+      ['sensor', 'input_number', 'number'],
+      'energy',
+      (values: string[]) => (this.envEnergySensors = values)
+    )}
+            </div>
+          </div>
+        </div>
+
         <!--Vision Checkup Section-->
         <div class="detail-card vision-checkup-section">
           <div
@@ -1554,6 +1678,17 @@ export class ConfigDialog extends LitElement {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device && device.environmentAttributes) {
       const attrs = device.environmentAttributes;
+
+      // Multi sensors with backward compat
+      this.envTemperatureSensors = attrs.temperatureSensors?.length
+        ? attrs.temperatureSensors
+        : attrs.temperatureSensor ? [attrs.temperatureSensor] : [];
+      this.envHumiditySensors = attrs.humiditySensors?.length
+        ? attrs.humiditySensors
+        : attrs.humiditySensor ? [attrs.humiditySensor] : [];
+      this.envVpdSensors = attrs.vpdSensors?.length
+        ? attrs.vpdSensors
+        : attrs.vpdSensor ? [attrs.vpdSensor] : [];
       this.envTemperatureSensor = attrs.temperatureSensor || '';
       this.envHumiditySensor = attrs.humiditySensor || '';
       this.envVpdSensor = attrs.vpdSensor || '';
@@ -1564,48 +1699,31 @@ export class ConfigDialog extends LitElement {
       this.envHumidifierControlEnabled = attrs.humidifierControlEnabled || false;
       this.envHumidifierThresholds = attrs.humidifierThresholds || {};
 
-      // Multi-device handling with backward compatibility
       this.envLightSensor = attrs.lightSensor || '';
-      this.envLightSensors =
-        attrs.lightSensors && attrs.lightSensors.length > 0
-          ? attrs.lightSensors
-          : attrs.lightSensor
-            ? [attrs.lightSensor]
-            : [];
+      this.envLightSensors = attrs.lightSensors?.length
+        ? attrs.lightSensors
+        : attrs.lightSensor ? [attrs.lightSensor] : [];
 
       this.envExhaustEntity = attrs.exhaustEntity || '';
-      this.envExhaustFanEntities =
-        attrs.exhaustFanEntities && attrs.exhaustFanEntities.length > 0
-          ? attrs.exhaustFanEntities
-          : attrs.exhaustEntity
-            ? [attrs.exhaustEntity]
-            : [];
+      this.envExhaustFanEntities = attrs.exhaustFanEntities?.length
+        ? attrs.exhaustFanEntities
+        : attrs.exhaustEntity ? [attrs.exhaustEntity] : [];
 
       this.envCirculationFan = attrs.circulationFanEntity || '';
-      this.envCirculationFanEntities =
-        attrs.circulationFanEntities && attrs.circulationFanEntities.length > 0
-          ? attrs.circulationFanEntities
-          : attrs.circulationFanEntity
-            ? [attrs.circulationFanEntity]
-            : [];
+      this.envCirculationFanEntities = attrs.circulationFanEntities?.length
+        ? attrs.circulationFanEntities
+        : attrs.circulationFanEntity ? [attrs.circulationFanEntity] : [];
 
       this.envHumidifierEntity = attrs.humidifierEntity || '';
-      this.envHumidifierEntities =
-        attrs.humidifierEntities && attrs.humidifierEntities.length > 0
-          ? attrs.humidifierEntities
-          : attrs.humidifierEntity
-            ? [attrs.humidifierEntity]
-            : [];
+      this.envHumidifierEntities = attrs.humidifierEntities?.length
+        ? attrs.humidifierEntities
+        : attrs.humidifierEntity ? [attrs.humidifierEntity] : [];
 
       this.envDehumidifierEntity = attrs.dehumidifierEntity || '';
-      this.envDehumidifierEntities =
-        attrs.dehumidifierEntities && attrs.dehumidifierEntities.length > 0
-          ? attrs.dehumidifierEntities
-          : attrs.dehumidifierEntity
-            ? [attrs.dehumidifierEntity]
-            : [];
+      this.envDehumidifierEntities = attrs.dehumidifierEntities?.length
+        ? attrs.dehumidifierEntities
+        : attrs.dehumidifierEntity ? [attrs.dehumidifierEntity] : [];
 
-      // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
       this.envStressThreshold = 0.8;
       this.envMoldThreshold = 0.8;
 
@@ -1621,8 +1739,22 @@ export class ConfigDialog extends LitElement {
         this.envVisionMidHours = 6;
         this.envVisionLateOffset = 60;
       }
+
+      // Advanced sensors
+      this.envSubstrateTemperatureSensors = attrs.substrateTemperatureSensors || [];
+      this.envPhSensors = attrs.phSensors || [];
+      this.envFeedEcSensors = attrs.feedEcSensors || [];
+      this.envSubstrateEcSensors = attrs.substrateEcSensors || [];
+      this.envRunoffEcSensors = attrs.runoffEcSensors || [];
+      this.envDrainVolumeSensors = attrs.drainVolumeSensors || [];
+      this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
+      this.envPowerSensors = [];
+      this.envEnergySensors = attrs.energySensors || [];
     } else {
       // Reset if no device or no attributes
+      this.envTemperatureSensors = [];
+      this.envHumiditySensors = [];
+      this.envVpdSensors = [];
       this.envTemperatureSensor = '';
       this.envHumiditySensor = '';
       this.envVpdSensor = '';
@@ -1647,6 +1779,15 @@ export class ConfigDialog extends LitElement {
       this.envVisionMidHours = 6;
       this.envVisionLateOffset = 60;
       this.envVisionCameraEntities = [];
+      this.envSubstrateTemperatureSensors = [];
+      this.envPhSensors = [];
+      this.envFeedEcSensors = [];
+      this.envSubstrateEcSensors = [];
+      this.envRunoffEcSensors = [];
+      this.envDrainVolumeSensors = [];
+      this.envIrrigationFlowSensors = [];
+      this.envPowerSensors = [];
+      this.envEnergySensors = [];
     }
   }
 

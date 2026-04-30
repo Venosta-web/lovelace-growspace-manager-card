@@ -133,9 +133,9 @@ export class DataService {
 
   configureEnvironment = (data: {
     growspaceId: string;
-    temperatureSensor: string;
-    humiditySensor: string;
-    vpdSensor?: string;
+    temperatureSensors?: string[];
+    humiditySensors?: string[];
+    vpdSensors?: string[];
     co2Sensor?: string;
     circulationFanEntity?: string;
     circulationFanEntities?: string[];
@@ -162,6 +162,16 @@ export class DataService {
     sensorGroups?: SensorGroup[];
     sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
     irrigationTanks?: any[];
+    cameraEntities?: string[];
+    substrateTemperatureSensors?: string[];
+    phSensors?: string[];
+    feedEcSensors?: string[];
+    substrateEcSensors?: string[];
+    runoffEcSensors?: string[];
+    drainVolumeSensors?: string[];
+    irrigationFlowSensors?: string[];
+    powerSensors?: string[];
+    energySensors?: string[];
   }) => this._growspaceAPI.configureEnvironment(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>

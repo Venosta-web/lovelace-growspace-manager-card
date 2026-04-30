@@ -40,6 +40,17 @@ var DehumidifierStage;
     DehumidifierStage["DRYING"] = "drying";
     DehumidifierStage["CURING"] = "curing";
 })(DehumidifierStage || (DehumidifierStage = {}));
+var HumidifierStage;
+(function (HumidifierStage) {
+    HumidifierStage["SEEDLING"] = "seedling";
+    HumidifierStage["MOTHER"] = "mother";
+    HumidifierStage["VEG"] = "veg";
+    HumidifierStage["EARLY_FLOWER"] = "early_flower";
+    HumidifierStage["MID_FLOWER"] = "mid_flower";
+    HumidifierStage["LATE_FLOWER"] = "late_flower";
+    HumidifierStage["DRY"] = "dry";
+    HumidifierStage["CURE"] = "cure";
+})(HumidifierStage || (HumidifierStage = {}));
 var GrowspaceType;
 (function (GrowspaceType) {
     GrowspaceType["NORMAL"] = "normal";
@@ -348,6 +359,7 @@ var ConfigTab;
     ConfigTab["EDIT_GROWSPACE"] = "edit_growspace";
     ConfigTab["ENVIRONMENT"] = "environment";
     ConfigTab["DEHUMIDIFIER"] = "dehumidifier";
+    ConfigTab["HUMIDIFIER"] = "humidifier";
     ConfigTab["SENSOR_GROUPS"] = "sensor_groups";
     ConfigTab["SUBAREAS"] = "subareas";
 })(ConfigTab || (ConfigTab = {}));
@@ -4909,6 +4921,7 @@ const GrowspaceAPIResponseSchema = objectType({
     light_sensor: stringType().optional(),
     exhaust_entity: stringType().optional(),
     humidifier_entity: stringType().optional(),
+    humidifier_control_enabled: booleanType().optional(),
     dehumidifier_entity: stringType().optional(),
     dehumidifier_control_enabled: booleanType().optional(),
     circulation_fan_entity: stringType().optional(),
@@ -4920,6 +4933,9 @@ const GrowspaceAPIResponseSchema = objectType({
     vpd: stringType().nullable().optional(),
     soil_moisture_value: stringType().nullable().optional(),
     dehumidifier_state: stringType().nullable().optional(),
+    humidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
+        .optional()
+        .default({}),
     dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
         .optional()
         .default({}),
@@ -5161,6 +5177,8 @@ class GrowspaceAdapter {
             dehumidifierState: wsData.dehumidifier_state,
             humidifierEntity: wsData.humidifier_entity,
             humidifierEntities: wsData.humidifier_entities,
+            humidifierControlEnabled: wsData.humidifier_control_enabled,
+            humidifierThresholds: wsData.humidifier_thresholds,
             exhaustEntity: wsData.exhaust_entity,
             exhaustFanEntities: wsData.exhaust_fan_entities,
             circulationFanEntity: wsData.circulation_fan_entity,
@@ -5560,11 +5578,13 @@ class GrowspaceAPI extends BaseAPI {
             // Map camelCase to snake_case for API
             const payload = {
                 growspace_id: data.growspaceId,
-                temperature_sensor: data.temperatureSensor,
-                humidity_sensor: data.humiditySensor,
             };
-            if (data.vpdSensor)
-                payload.vpd_sensor = data.vpdSensor;
+            if (data.temperatureSensors?.length)
+                payload.temperature_sensors = data.temperatureSensors;
+            if (data.humiditySensors?.length)
+                payload.humidity_sensors = data.humiditySensors;
+            if (data.vpdSensors?.length)
+                payload.vpd_sensors = data.vpdSensors;
             if (data.co2Sensor)
                 payload.co2_sensor = data.co2Sensor;
             if (data.circulationFanEntity)
@@ -5587,6 +5607,10 @@ class GrowspaceAPI extends BaseAPI {
                 payload.humidifier_entity = data.humidifierEntity;
             if (data.humidifierEntities)
                 payload.humidifier_entities = data.humidifierEntities;
+            if (data.humidifierThresholds)
+                payload.humidifier_thresholds = data.humidifierThresholds;
+            if (data.controlHumidifier !== undefined)
+                payload.control_humidifier = data.controlHumidifier;
             if (data.dehumidifierEntity)
                 payload.dehumidifier_entity = data.dehumidifierEntity;
             if (data.dehumidifierEntities)
@@ -5619,6 +5643,26 @@ class GrowspaceAPI extends BaseAPI {
                     ...(t.volumeLiters != null ? { volume_liters: t.volumeLiters } : {}),
                 }));
             }
+            if (data.cameraEntities)
+                payload.camera_entities = data.cameraEntities;
+            if (data.substrateTemperatureSensors?.length)
+                payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
+            if (data.phSensors?.length)
+                payload.ph_sensors = data.phSensors;
+            if (data.feedEcSensors?.length)
+                payload.feed_ec_sensors = data.feedEcSensors;
+            if (data.substrateEcSensors?.length)
+                payload.substrate_ec_sensors = data.substrateEcSensors;
+            if (data.runoffEcSensors?.length)
+                payload.runoff_ec_sensors = data.runoffEcSensors;
+            if (data.drainVolumeSensors?.length)
+                payload.drain_volume_sensors = data.drainVolumeSensors;
+            if (data.irrigationFlowSensors?.length)
+                payload.irrigation_flow_sensors = data.irrigationFlowSensors;
+            if (data.powerSensors?.length)
+                payload.power_sensors = data.powerSensors;
+            if (data.energySensors?.length)
+                payload.energy_sensors = data.energySensors;
             await this.callService(DOMAIN$1, SERVICES.CONFIGURE_ENVIRONMENT, payload);
             console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
@@ -14706,23 +14750,36 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         // Environment Data
         this.envSelectedId = '';
         this.envTemperatureSensor = '';
+        this.envTemperatureSensors = [];
         this.envHumiditySensor = '';
+        this.envHumiditySensors = [];
         this.envVpdSensor = '';
+        this.envVpdSensors = [];
         this.envCo2Sensor = '';
         this.envCirculationFan = '';
-        this.envCirculationFanEntities = []; // Multi-device
+        this.envCirculationFanEntities = [];
         this.envStressThreshold = 0.8;
         this.envMoldThreshold = 0.8;
         this.envLightSensor = '';
-        this.envLightSensors = []; // Multi-device
+        this.envLightSensors = [];
         this.envExhaustEntity = '';
-        this.envExhaustFanEntities = []; // Multi-device
+        this.envExhaustFanEntities = [];
         this.envHumidifierEntity = '';
-        this.envHumidifierEntities = []; // Multi-device
+        this.envHumidifierEntities = [];
         this.envDehumidifierEntity = '';
-        this.envDehumidifierEntities = []; // Multi-device
+        this.envDehumidifierEntities = [];
         this.envSoilMoistureSensor = '';
         this.envDehumidifierControlEnabled = false;
+        // Advanced / irrigation monitoring
+        this.envSubstrateTemperatureSensors = [];
+        this.envPhSensors = [];
+        this.envFeedEcSensors = [];
+        this.envSubstrateEcSensors = [];
+        this.envRunoffEcSensors = [];
+        this.envDrainVolumeSensors = [];
+        this.envIrrigationFlowSensors = [];
+        this.envPowerSensors = [];
+        this.envEnergySensors = [];
         this.envDehumidifierThresholds = {};
         this.envSensorCoordinates = {};
         this.envIrrigationTanks = [];
@@ -14733,6 +14790,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envVisionLateOffset = 60;
         this.envVisionCameraEntities = [];
         this._activeDehumidifierStage = DehumidifierStage.SEEDLING;
+        // Humidifier Control
+        this.envHumidifierControlEnabled = false;
+        this.envHumidifierThresholds = {};
+        this._activeHumidifierStage = HumidifierStage.SEEDLING;
         // Sensor Groups
         this.envSensorGroups = [];
         this._showGroupDialog = false;
@@ -14774,6 +14835,17 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.currentTab = currentTab;
         if (environmentData) {
             this.envSelectedId = environmentData.selectedGrowspaceId;
+            // Multi sensors
+            this.envTemperatureSensors = environmentData.temperatureSensors?.length
+                ? environmentData.temperatureSensors
+                : (environmentData.temperatureSensor ? [environmentData.temperatureSensor] : []);
+            this.envHumiditySensors = environmentData.humiditySensors?.length
+                ? environmentData.humiditySensors
+                : (environmentData.humiditySensor ? [environmentData.humiditySensor] : []);
+            this.envVpdSensors = environmentData.vpdSensors?.length
+                ? environmentData.vpdSensors
+                : (environmentData.vpdSensor ? [environmentData.vpdSensor] : []);
+            // Legacy singular
             this.envTemperatureSensor = environmentData.temperatureSensor;
             this.envHumiditySensor = environmentData.humiditySensor;
             this.envVpdSensor = environmentData.vpdSensor;
@@ -14793,10 +14865,22 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
             this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
             this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
+            this.envHumidifierControlEnabled = environmentData.humidifierControlEnabled;
+            this.envHumidifierThresholds = environmentData.humidifierThresholds || {};
             this.envSensorGroups = environmentData.sensorGroups || [];
             this.envSensorCoordinates = environmentData.sensorCoordinates || {};
             this.envIrrigationTanks = environmentData.irrigationTanks || [];
             this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+            // Advanced sensors
+            this.envSubstrateTemperatureSensors = environmentData.substrateTemperatureSensors || [];
+            this.envPhSensors = environmentData.phSensors || [];
+            this.envFeedEcSensors = environmentData.feedEcSensors || [];
+            this.envSubstrateEcSensors = environmentData.substrateEcSensors || [];
+            this.envRunoffEcSensors = environmentData.runoffEcSensors || [];
+            this.envDrainVolumeSensors = environmentData.drainVolumeSensors || [];
+            this.envIrrigationFlowSensors = environmentData.irrigationFlowSensors || [];
+            this.envPowerSensors = environmentData.powerSensors || [];
+            this.envEnergySensors = environmentData.energySensors || [];
             if (environmentData.visionCheckupConfig) {
                 this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
                 this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
@@ -14841,28 +14925,35 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('configure-environment-submit', {
             detail: {
                 selectedGrowspaceId: this.envSelectedId,
-                temperatureSensor: this.envTemperatureSensor,
-                humiditySensor: this.envHumiditySensor,
-                vpdSensor: this.envVpdSensor,
+                temperatureSensors: this.envTemperatureSensors,
+                humiditySensors: this.envHumiditySensors,
+                vpdSensors: this.envVpdSensors,
                 co2Sensor: this.envCo2Sensor,
-                circulationFanEntity: this.envCirculationFan,
-                circulationFanEntities: this.envCirculationFanEntities, // Multi
+                circulationFanEntities: this.envCirculationFanEntities,
                 stressThreshold: this.envStressThreshold,
                 moldThreshold: this.envMoldThreshold,
-                lightSensor: this.envLightSensor,
-                lightSensors: this.envLightSensors, // Multi
-                exhaustEntity: this.envExhaustEntity,
-                exhaustFanEntities: this.envExhaustFanEntities, // Multi
-                humidifierEntity: this.envHumidifierEntity,
-                humidifierEntities: this.envHumidifierEntities, // Multi
-                dehumidifierEntity: this.envDehumidifierEntity,
-                dehumidifierEntities: this.envDehumidifierEntities, // Multi
+                lightSensors: this.envLightSensors,
+                exhaustFanEntities: this.envExhaustFanEntities,
+                humidifierEntities: this.envHumidifierEntities,
+                humidifierThresholds: this.envHumidifierThresholds,
+                humidifierControlEnabled: this.envHumidifierControlEnabled,
+                dehumidifierEntities: this.envDehumidifierEntities,
                 dehumidifierThresholds: this.envDehumidifierThresholds,
                 soilMoistureSensor: this.envSoilMoistureSensor,
                 dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
                 sensorGroups: this.envSensorGroups,
                 sensorCoordinates: this.envSensorCoordinates,
                 irrigationTanks: this.envIrrigationTanks,
+                cameraEntities: this.envVisionCameraEntities,
+                substrateTemperatureSensors: this.envSubstrateTemperatureSensors,
+                phSensors: this.envPhSensors,
+                feedEcSensors: this.envFeedEcSensors,
+                substrateEcSensors: this.envSubstrateEcSensors,
+                runoffEcSensors: this.envRunoffEcSensors,
+                drainVolumeSensors: this.envDrainVolumeSensors,
+                irrigationFlowSensors: this.envIrrigationFlowSensors,
+                powerSensors: this.envPowerSensors,
+                energySensors: this.envEnergySensors,
             },
             bubbles: true,
             composed: true,
@@ -15088,6 +15179,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               <svg viewBox="0 0 24 24"><path d="${mdiWaterPercent}"></path></svg>
               Dehumidifier
             </div>` : E}
+            ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.HUMIDIFIER) ? x `
+            <div
+              class="config-tab ${this.currentTab === ConfigTab.HUMIDIFIER ? 'active' : ''}"
+              @click=${() => this._switchTab(ConfigTab.HUMIDIFIER)}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiAirHumidifier}"></path></svg>
+              Humidifier
+            </div>` : E}
             ${!this.allowedTabs || this.allowedTabs.includes(ConfigTab.SENSOR_GROUPS) ? x `
             <div
               class="config-tab sensor-groups-tab ${this.currentTab === ConfigTab.SENSOR_GROUPS ? 'active' : ''}"
@@ -15114,6 +15213,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             : E}
             ${this.currentTab === ConfigTab.ENVIRONMENT ? this.renderEnvironmentTab() : E}
             ${this.currentTab === ConfigTab.DEHUMIDIFIER ? this.renderDehumidifierTab() : E}
+            ${this.currentTab === ConfigTab.HUMIDIFIER ? this.renderHumidifierTab() : E}
             ${this.currentTab === ConfigTab.SENSOR_GROUPS ? this.renderSensorGroupsTab() : E}
             ${this.currentTab === ConfigTab.SUBAREAS ? this.renderSubareasTab() : E}
           </div>
@@ -15128,7 +15228,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   </button>
                 `
             : E}
-            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
+            ${[ConfigTab.ENVIRONMENT, ConfigTab.DEHUMIDIFIER, ConfigTab.HUMIDIFIER, ConfigTab.SENSOR_GROUPS].includes(this.currentTab)
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
@@ -15648,17 +15748,18 @@ let ConfigDialog = class ConfigDialog extends i$3 {
 
           <div class="form-section">
             <div class="row-col-grid">
-              ${this._renderEntitySelect('Temperature Sensor', this.envTemperatureSensor, ['sensor', 'input_number'], 'temperature', (e) => (this.envTemperatureSensor = e.detail.value))}
-              ${this._renderEntitySelect('Humidity Sensor', this.envHumiditySensor, ['sensor', 'input_number'], 'humidity', (e) => (this.envHumiditySensor = e.detail.value))}
+              ${this._renderMultiEntitySelect('Temperature Sensors', this.envTemperatureSensors, ['sensor', 'input_number'], 'temperature', (values) => (this.envTemperatureSensors = values))}
+              ${this._renderMultiEntitySelect('Humidity Sensors', this.envHumiditySensors, ['sensor', 'input_number'], 'humidity', (values) => (this.envHumiditySensors = values))}
             </div>
             <div class="row-col-grid">
-              ${this._renderEntitySelect('VPD Sensor (Optional)', this.envVpdSensor, ['sensor', 'input_number'], 'pressure', (e) => (this.envVpdSensor = e.detail.value))}
+              ${this._renderMultiEntitySelect('VPD Sensors (Optional)', this.envVpdSensors, ['sensor', 'input_number'], 'pressure', (values) => (this.envVpdSensors = values))}
               ${this._renderEntitySelect('Soil Moisture Sensor', this.envSoilMoistureSensor, ['sensor', 'input_number'], 'moisture', (e) => (this.envSoilMoistureSensor = e.detail.value))}
             </div>
             <div class="row-col-grid">
               ${this._renderEntitySelect('CO2 Sensor', this.envCo2Sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.envCo2Sensor = e.detail.value))}
               ${this._renderMultiEntitySelect('Light Source / Sensor', this.envLightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (values) => (this.envLightSensors = values))}
             </div>
+            ${this._renderMultiEntitySelect('Substrate Temperature Sensors', this.envSubstrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (values) => (this.envSubstrateTemperatureSensors = values))}
           </div>
         </div>
 
@@ -15734,6 +15835,36 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
         </div>
 
+        <!--Advanced / Irrigation Monitoring-->
+        <div class="detail-card">
+          <div
+            style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); padding-bottom: 8px;"
+          >
+            <svg style="width:20px;height:20px;fill:var(--primary-color, #4caf50);" viewBox="0 0 24 24">
+              <path d="${mdiGauge}"></path>
+            </svg>
+            <h3 style="margin:0; border:none; padding:0;">Advanced / Irrigation Monitoring</h3>
+          </div>
+          <div class="form-section">
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect('pH Sensors', this.envPhSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envPhSensors = values))}
+              ${this._renderMultiEntitySelect('Feed EC Sensors', this.envFeedEcSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envFeedEcSensors = values))}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect('Substrate EC Sensors', this.envSubstrateEcSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envSubstrateEcSensors = values))}
+              ${this._renderMultiEntitySelect('Runoff EC Sensors', this.envRunoffEcSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envRunoffEcSensors = values))}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect('Drain Volume Sensors', this.envDrainVolumeSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envDrainVolumeSensors = values))}
+              ${this._renderMultiEntitySelect('Irrigation Flow Sensors', this.envIrrigationFlowSensors, ['sensor', 'input_number', 'number'], null, (values) => (this.envIrrigationFlowSensors = values))}
+            </div>
+            <div class="row-col-grid">
+              ${this._renderMultiEntitySelect('Power Sensors', this.envPowerSensors, ['sensor', 'input_number', 'number'], 'power', (values) => (this.envPowerSensors = values))}
+              ${this._renderMultiEntitySelect('Energy Sensors', this.envEnergySensors, ['sensor', 'input_number', 'number'], 'energy', (values) => (this.envEnergySensors = values))}
+            </div>
+          </div>
+        </div>
+
         <!--Vision Checkup Section-->
         <div class="detail-card vision-checkup-section">
           <div
@@ -15794,6 +15925,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         const device = this.devices.find((d) => d.deviceId === growspaceId);
         if (device && device.environmentAttributes) {
             const attrs = device.environmentAttributes;
+            // Multi sensors with backward compat
+            this.envTemperatureSensors = attrs.temperatureSensors?.length
+                ? attrs.temperatureSensors
+                : attrs.temperatureSensor ? [attrs.temperatureSensor] : [];
+            this.envHumiditySensors = attrs.humiditySensors?.length
+                ? attrs.humiditySensors
+                : attrs.humiditySensor ? [attrs.humiditySensor] : [];
+            this.envVpdSensors = attrs.vpdSensors?.length
+                ? attrs.vpdSensors
+                : attrs.vpdSensor ? [attrs.vpdSensor] : [];
             this.envTemperatureSensor = attrs.temperatureSensor || '';
             this.envHumiditySensor = attrs.humiditySensor || '';
             this.envVpdSensor = attrs.vpdSensor || '';
@@ -15801,43 +15942,28 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = attrs.soilMoistureSensor || '';
             this.envDehumidifierControlEnabled = attrs.dehumidifierControlEnabled || false;
             this.envDehumidifierThresholds = attrs.dehumidifierThresholds || {};
-            // Multi-device handling with backward compatibility
+            this.envHumidifierControlEnabled = attrs.humidifierControlEnabled || false;
+            this.envHumidifierThresholds = attrs.humidifierThresholds || {};
             this.envLightSensor = attrs.lightSensor || '';
-            this.envLightSensors =
-                attrs.lightSensors && attrs.lightSensors.length > 0
-                    ? attrs.lightSensors
-                    : attrs.lightSensor
-                        ? [attrs.lightSensor]
-                        : [];
+            this.envLightSensors = attrs.lightSensors?.length
+                ? attrs.lightSensors
+                : attrs.lightSensor ? [attrs.lightSensor] : [];
             this.envExhaustEntity = attrs.exhaustEntity || '';
-            this.envExhaustFanEntities =
-                attrs.exhaustFanEntities && attrs.exhaustFanEntities.length > 0
-                    ? attrs.exhaustFanEntities
-                    : attrs.exhaustEntity
-                        ? [attrs.exhaustEntity]
-                        : [];
+            this.envExhaustFanEntities = attrs.exhaustFanEntities?.length
+                ? attrs.exhaustFanEntities
+                : attrs.exhaustEntity ? [attrs.exhaustEntity] : [];
             this.envCirculationFan = attrs.circulationFanEntity || '';
-            this.envCirculationFanEntities =
-                attrs.circulationFanEntities && attrs.circulationFanEntities.length > 0
-                    ? attrs.circulationFanEntities
-                    : attrs.circulationFanEntity
-                        ? [attrs.circulationFanEntity]
-                        : [];
+            this.envCirculationFanEntities = attrs.circulationFanEntities?.length
+                ? attrs.circulationFanEntities
+                : attrs.circulationFanEntity ? [attrs.circulationFanEntity] : [];
             this.envHumidifierEntity = attrs.humidifierEntity || '';
-            this.envHumidifierEntities =
-                attrs.humidifierEntities && attrs.humidifierEntities.length > 0
-                    ? attrs.humidifierEntities
-                    : attrs.humidifierEntity
-                        ? [attrs.humidifierEntity]
-                        : [];
+            this.envHumidifierEntities = attrs.humidifierEntities?.length
+                ? attrs.humidifierEntities
+                : attrs.humidifierEntity ? [attrs.humidifierEntity] : [];
             this.envDehumidifierEntity = attrs.dehumidifierEntity || '';
-            this.envDehumidifierEntities =
-                attrs.dehumidifierEntities && attrs.dehumidifierEntities.length > 0
-                    ? attrs.dehumidifierEntities
-                    : attrs.dehumidifierEntity
-                        ? [attrs.dehumidifierEntity]
-                        : [];
-            // Default or fetch if available (currently not in env attrs commonly exposed, or defaults are fine)
+            this.envDehumidifierEntities = attrs.dehumidifierEntities?.length
+                ? attrs.dehumidifierEntities
+                : attrs.dehumidifierEntity ? [attrs.dehumidifierEntity] : [];
             this.envStressThreshold = 0.8;
             this.envMoldThreshold = 0.8;
             this.envVisionCameraEntities = attrs.cameraEntities ?? [];
@@ -15853,9 +15979,22 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 this.envVisionMidHours = 6;
                 this.envVisionLateOffset = 60;
             }
+            // Advanced sensors
+            this.envSubstrateTemperatureSensors = attrs.substrateTemperatureSensors || [];
+            this.envPhSensors = attrs.phSensors || [];
+            this.envFeedEcSensors = attrs.feedEcSensors || [];
+            this.envSubstrateEcSensors = attrs.substrateEcSensors || [];
+            this.envRunoffEcSensors = attrs.runoffEcSensors || [];
+            this.envDrainVolumeSensors = attrs.drainVolumeSensors || [];
+            this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
+            this.envPowerSensors = [];
+            this.envEnergySensors = attrs.energySensors || [];
         }
         else {
             // Reset if no device or no attributes
+            this.envTemperatureSensors = [];
+            this.envHumiditySensors = [];
+            this.envVpdSensors = [];
             this.envTemperatureSensor = '';
             this.envHumiditySensor = '';
             this.envVpdSensor = '';
@@ -15873,11 +16012,22 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSoilMoistureSensor = '';
             this.envDehumidifierControlEnabled = false;
             this.envDehumidifierThresholds = {};
+            this.envHumidifierControlEnabled = false;
+            this.envHumidifierThresholds = {};
             this.envVisionEnabled = false;
             this.envVisionEarlyOffset = 60;
             this.envVisionMidHours = 6;
             this.envVisionLateOffset = 60;
             this.envVisionCameraEntities = [];
+            this.envSubstrateTemperatureSensors = [];
+            this.envPhSensors = [];
+            this.envFeedEcSensors = [];
+            this.envSubstrateEcSensors = [];
+            this.envRunoffEcSensors = [];
+            this.envDrainVolumeSensors = [];
+            this.envIrrigationFlowSensors = [];
+            this.envPowerSensors = [];
+            this.envEnergySensors = [];
         }
     }
     renderDehumidifierTab() {
@@ -16022,7 +16172,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     _updateThreshold(stage, cycle, point, value) {
         if (isNaN(value))
             return;
-        // Deep clone to trigger reactivity if needed, or just mutable update but assign new ref
         const newThresholds = JSON.parse(JSON.stringify(this.envDehumidifierThresholds || {}));
         if (!newThresholds[stage])
             newThresholds[stage] = {};
@@ -16030,6 +16179,166 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             newThresholds[stage][cycle] = { on: 0, off: 0 };
         newThresholds[stage][cycle][point] = value;
         this.envDehumidifierThresholds = newThresholds;
+    }
+    renderHumidifierTab() {
+        const stages = [
+            { id: HumidifierStage.SEEDLING, label: 'Seedling' },
+            { id: HumidifierStage.MOTHER, label: 'Mother' },
+            { id: HumidifierStage.VEG, label: 'Vegetative' },
+            { id: HumidifierStage.EARLY_FLOWER, label: 'Early Flower' },
+            { id: HumidifierStage.MID_FLOWER, label: 'Mid Flower' },
+            { id: HumidifierStage.LATE_FLOWER, label: 'Late Flower' },
+            { id: HumidifierStage.DRY, label: 'Drying' },
+            { id: HumidifierStage.CURE, label: 'Curing' },
+        ];
+        const activeStage = stages.find((s) => s.id === this._activeHumidifierStage) || stages[0];
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="detail-card">
+          <h3>Select Target</h3>
+          <div class="md3-input-group">
+            <label class="md3-label"> Growspace </label>
+            <select
+              class="md3-input"
+              .value=${this.envSelectedId}
+              @change=${this._handleEnvGrowspaceChange}
+            >
+              <option value="">Select...</option>
+              ${Object.entries(this.growspaceOptions).map(([id, name]) => x `<option value="${id}" ?selected=${id === this.envSelectedId}>
+                    ${name}
+                  </option>`)}
+            </select>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Humidifier Thresholds (VPD / kPa)</h3>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.envHumidifierControlEnabled}
+                @change=${(e) => (this.envHumidifierControlEnabled = e.target.checked)}
+              />
+              Enable Control
+            </label>
+          </div>
+
+          <!--Sub-navigation for Stages-->
+          <div
+            class="config-tabs sub-tabs"
+            style="margin: 0 -16px; padding: 0 16px; overflow-x: auto; justify-content: flex-start;"
+          >
+            ${stages.map((stage) => x `
+                <div
+                  class="config-tab ${this._activeHumidifierStage === stage.id ? 'active' : ''}"
+                  @click=${() => (this._activeHumidifierStage = stage.id)}
+                  style="padding: 12px 16px; font-size: 0.9rem;"
+                >
+                  ${stage.label}
+                </div>
+              `)}
+          </div>
+
+          <div style="padding-top: 24px;">
+            <!--Info Box-->
+            <div
+              style="display: flex; gap: 12px; padding: 12px; background: var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; line-height: 1.4; align-items: flex-start;"
+            >
+              <svg
+                style="width:20px; height:20px; flex-shrink: 0; fill: var(--primary-color, #4caf50);"
+                viewBox="0 0 24 24"
+              >
+                <path d="${mdiInformation}"></path>
+              </svg>
+              <div style="opacity: 0.8;">
+                Configuring <strong>${activeStage.label}</strong> stage.<br />
+                Humidifier turns <strong>On</strong> when VPD exceeds the On threshold (air is too dry).
+                It turns <strong>Off</strong> when VPD drops below the Off threshold.
+              </div>
+            </div>
+
+            <div class="row-col-grid">
+              <!--Day Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#ff9800;" viewBox="0 0 24 24">
+                    <path d="${mdiWhiteBalanceSunny}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Day Cycle</h5>
+                </div>
+
+                <md3-number-input
+                  label="On"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'day', 'on')}
+                  @change=${(e) => this._updateHumidifierThreshold(activeStage.id, 'day', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'day', 'off')}
+                  @change=${(e) => this._updateHumidifierThreshold(activeStage.id, 'day', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
+
+              <!--Night Cycle-->
+              <div
+                style="display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.1); padding: 16px; border-radius: 12px;"
+              >
+                <div
+                  style="display:flex; align-items:center; gap:8px; margin-bottom:4px; color: var(--primary-text-color);"
+                >
+                  <svg style="width:20px;height:20px;fill:#7986cb;" viewBox="0 0 24 24">
+                    <path d="${mdiWeatherNight}"></path>
+                  </svg>
+                  <h5 style="margin:0; font-size:1rem;">Night Cycle</h5>
+                </div>
+
+                <md3-number-input
+                  label="On"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'night', 'on')}
+                  @change=${(e) => this._updateHumidifierThreshold(activeStage.id, 'night', 'on', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+                <md3-number-input
+                  label="Off"
+                  .value=${this._getHumidifierThresholdValue(activeStage.id, 'night', 'off')}
+                  @change=${(e) => this._updateHumidifierThreshold(activeStage.id, 'night', 'off', parseFloat(e.detail))}
+                  step="0.01"
+                  .unit=${'kPa'}
+                >
+                </md3-number-input>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _getHumidifierThresholdValue(stage, cycle, point) {
+        return this.envHumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+    }
+    _updateHumidifierThreshold(stage, cycle, point, value) {
+        if (isNaN(value))
+            return;
+        const newThresholds = JSON.parse(JSON.stringify(this.envHumidifierThresholds || {}));
+        if (!newThresholds[stage])
+            newThresholds[stage] = {};
+        if (!newThresholds[stage][cycle])
+            newThresholds[stage][cycle] = { on: 0, off: 0 };
+        newThresholds[stage][cycle][point] = value;
+        this.envHumidifierThresholds = newThresholds;
     }
 };
 ConfigDialog.styles = [
@@ -16291,10 +16600,19 @@ __decorate([
 ], ConfigDialog.prototype, "envTemperatureSensor", void 0);
 __decorate([
     r$2()
+], ConfigDialog.prototype, "envTemperatureSensors", void 0);
+__decorate([
+    r$2()
 ], ConfigDialog.prototype, "envHumiditySensor", void 0);
 __decorate([
     r$2()
+], ConfigDialog.prototype, "envHumiditySensors", void 0);
+__decorate([
+    r$2()
 ], ConfigDialog.prototype, "envVpdSensor", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envVpdSensors", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envCo2Sensor", void 0);
@@ -16342,6 +16660,33 @@ __decorate([
 ], ConfigDialog.prototype, "envDehumidifierControlEnabled", void 0);
 __decorate([
     r$2()
+], ConfigDialog.prototype, "envSubstrateTemperatureSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envPhSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envFeedEcSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envSubstrateEcSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envRunoffEcSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envDrainVolumeSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envIrrigationFlowSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envPowerSensors", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envEnergySensors", void 0);
+__decorate([
+    r$2()
 ], ConfigDialog.prototype, "envDehumidifierThresholds", void 0);
 __decorate([
     r$2()
@@ -16367,6 +16712,15 @@ __decorate([
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "_activeDehumidifierStage", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envHumidifierControlEnabled", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "envHumidifierThresholds", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_activeHumidifierStage", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envSensorGroups", void 0);
@@ -19347,6 +19701,8 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
         const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
         const readings = this.device?.drainConfig?.readings || [];
+        const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity || this.device?.irrigationConfig?.drainPumpEntity);
+        const hasTankSensors = tanks.some(t => t.sensorEntity);
         // Compute volume totals from logged EC readings (last 30)
         const recentReadings = readings.slice(-30).reverse();
         const readingsWithVolumes = recentReadings.filter(r => r.feedVolumeMl && r.drainVolumeMl);
@@ -19420,7 +19776,8 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
       </div>
     `;
         return x `
-      <!-- Today's Usage -->
+      <!-- Today's Usage (only shown when a pump is configured) -->
+      ${hasPump ? x `
       <div class="detail-card">
         <h3 style="margin-top: 0; margin-bottom: 16px;">Today's Usage</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
@@ -19441,6 +19798,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             : kpiCard('Avg runoff', '—', '', 'rgba(255,255,255,0.4)', 'Log volumes in Drain EC tab')}
         </div>
       </div>
+      ` : E}
 
       <!-- Tank Overview -->
       ${tanks.length > 0 ? x `
@@ -19498,8 +19856,8 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         </div>
       ` : E}
 
-      <!-- Tank-Derived Water Analysis -->
-      ${tanksWithHistory.length > 0 ? x `
+      <!-- Tank-Derived Water Analysis (only shown when tank sensors are configured) -->
+      ${hasTankSensors && tanksWithHistory.length > 0 ? x `
         <div class="detail-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h3 style="margin: 0;">Tank-Derived Water Usage</h3>
@@ -31427,37 +31785,44 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         }
     }
     async _handleEnvironmentConfig(detail) {
-        const { selectedGrowspaceId, temperatureSensor, humiditySensor, vpdSensor, co2Sensor, circulationFanEntity, stressThreshold, moldThreshold, lightSensor, exhaustEntity, humidifierEntity, dehumidifierEntity, dehumidifierThresholds, soilMoistureSensor, dehumidifierControlEnabled, } = detail;
-        if (!selectedGrowspaceId || !temperatureSensor || !humiditySensor) {
+        const temperatureSensors = detail.temperatureSensors || [];
+        const humiditySensors = detail.humiditySensors || [];
+        if (!detail.selectedGrowspaceId || !temperatureSensors.length || !humiditySensors.length) {
             this.store?.actions.ui.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
             return;
         }
         try {
             await this.store?.actions.environment.configure({
-                growspaceId: selectedGrowspaceId,
-                temperatureSensor,
-                humiditySensor,
-                vpdSensor: vpdSensor || undefined,
-                co2Sensor: co2Sensor || undefined,
-                circulationFanEntity: circulationFanEntity || undefined,
-                stressThreshold,
-                moldThreshold,
-                lightSensor: lightSensor || undefined,
-                exhaustEntity: exhaustEntity || undefined,
-                humidifierEntity: humidifierEntity || undefined,
-                dehumidifierEntity: dehumidifierEntity || undefined,
-                dehumidifierThresholds,
-                soilMoistureSensor: soilMoistureSensor || undefined,
-                controlDehumidifier: dehumidifierControlEnabled,
-                // Multi-device fields
+                growspaceId: detail.selectedGrowspaceId,
+                temperatureSensors,
+                humiditySensors,
+                vpdSensors: detail.vpdSensors,
+                co2Sensor: detail.co2Sensor || undefined,
                 circulationFanEntities: detail.circulationFanEntities,
+                stressThreshold: detail.stressThreshold,
+                moldThreshold: detail.moldThreshold,
                 lightSensors: detail.lightSensors,
                 exhaustFanEntities: detail.exhaustFanEntities,
                 humidifierEntities: detail.humidifierEntities,
+                humidifierThresholds: detail.humidifierThresholds,
+                controlHumidifier: detail.humidifierControlEnabled,
                 dehumidifierEntities: detail.dehumidifierEntities,
+                dehumidifierThresholds: detail.dehumidifierThresholds,
+                soilMoistureSensor: detail.soilMoistureSensor || undefined,
+                controlDehumidifier: detail.dehumidifierControlEnabled,
                 sensorGroups: detail.sensorGroups,
                 sensorCoordinates: detail.sensorCoordinates,
                 irrigationTanks: detail.irrigationTanks,
+                cameraEntities: detail.cameraEntities,
+                substrateTemperatureSensors: detail.substrateTemperatureSensors,
+                phSensors: detail.phSensors,
+                feedEcSensors: detail.feedEcSensors,
+                substrateEcSensors: detail.substrateEcSensors,
+                runoffEcSensors: detail.runoffEcSensors,
+                drainVolumeSensors: detail.drainVolumeSensors,
+                irrigationFlowSensors: detail.irrigationFlowSensors,
+                powerSensors: detail.powerSensors,
+                energySensors: detail.energySensors,
             });
             this.store?.actions.ui.closeDialog();
         }
@@ -105630,6 +105995,11 @@ function openConfigDialog(ctx, device) {
             currentTab: ConfigTab.ENVIRONMENT,
             environmentData: {
                 selectedGrowspaceId: device?.deviceId || '',
+                // Multi sensors (preferred)
+                temperatureSensors: device?.environmentAttributes?.temperatureSensors || [],
+                humiditySensors: device?.environmentAttributes?.humiditySensors || [],
+                vpdSensors: device?.environmentAttributes?.vpdSensors || [],
+                // Legacy singular (backward compat)
                 temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
                 humiditySensor: device?.environmentAttributes?.humiditySensor || '',
                 vpdSensor: device?.environmentAttributes?.vpdSensor || '',
@@ -105644,6 +106014,7 @@ function openConfigDialog(ctx, device) {
                 exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
                 humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
                 humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+                humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
                 dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
                 dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
                 dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
@@ -105654,6 +106025,15 @@ function openConfigDialog(ctx, device) {
                 irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
                 cameraEntities: device?.environmentAttributes?.cameraEntities || [],
                 visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+                substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
+                phSensors: device?.environmentAttributes?.phSensors || [],
+                feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
+                substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
+                runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
+                drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
+                irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
+                powerSensors: [],
+                energySensors: device?.environmentAttributes?.energySensors || [],
             },
         },
     });
@@ -111147,5 +111527,5 @@ var growspaceLogbookCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceLogbookCardEditor () { return GrowspaceLogbookCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

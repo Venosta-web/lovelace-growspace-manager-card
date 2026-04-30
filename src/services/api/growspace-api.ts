@@ -187,9 +187,9 @@ export class GrowspaceAPI extends BaseAPI {
 
   async configureEnvironment(data: {
     growspaceId: string;
-    temperatureSensor: string;
-    humiditySensor: string;
-    vpdSensor?: string;
+    temperatureSensors?: string[];
+    humiditySensors?: string[];
+    vpdSensors?: string[];
     co2Sensor?: string;
     circulationFanEntity?: string;
     circulationFanEntities?: string[];
@@ -216,17 +216,27 @@ export class GrowspaceAPI extends BaseAPI {
     sensorGroups?: import('../../types').SensorGroup[];
     sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
     irrigationTanks?: any[];
+    cameraEntities?: string[];
+    substrateTemperatureSensors?: string[];
+    phSensors?: string[];
+    feedEcSensors?: string[];
+    substrateEcSensors?: string[];
+    runoffEcSensors?: string[];
+    drainVolumeSensors?: string[];
+    irrigationFlowSensors?: string[];
+    powerSensors?: string[];
+    energySensors?: string[];
   }): Promise<void> {
     console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
     try {
       // Map camelCase to snake_case for API
       const payload: Record<string, unknown> = {
         growspace_id: data.growspaceId,
-        temperature_sensor: data.temperatureSensor,
-        humidity_sensor: data.humiditySensor,
       };
 
-      if (data.vpdSensor) payload.vpd_sensor = data.vpdSensor;
+      if (data.temperatureSensors?.length) payload.temperature_sensors = data.temperatureSensors;
+      if (data.humiditySensors?.length) payload.humidity_sensors = data.humiditySensors;
+      if (data.vpdSensors?.length) payload.vpd_sensors = data.vpdSensors;
       if (data.co2Sensor) payload.co2_sensor = data.co2Sensor;
       if (data.circulationFanEntity) payload.circulation_fan_entity = data.circulationFanEntity;
       if (data.circulationFanEntities)
@@ -264,6 +274,18 @@ export class GrowspaceAPI extends BaseAPI {
           ...(t.volumeLiters != null ? { volume_liters: t.volumeLiters } : {}),
         }));
       }
+      if (data.cameraEntities) payload.camera_entities = data.cameraEntities;
+      if (data.substrateTemperatureSensors?.length)
+        payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
+      if (data.phSensors?.length) payload.ph_sensors = data.phSensors;
+      if (data.feedEcSensors?.length) payload.feed_ec_sensors = data.feedEcSensors;
+      if (data.substrateEcSensors?.length) payload.substrate_ec_sensors = data.substrateEcSensors;
+      if (data.runoffEcSensors?.length) payload.runoff_ec_sensors = data.runoffEcSensors;
+      if (data.drainVolumeSensors?.length) payload.drain_volume_sensors = data.drainVolumeSensors;
+      if (data.irrigationFlowSensors?.length)
+        payload.irrigation_flow_sensors = data.irrigationFlowSensors;
+      if (data.powerSensors?.length) payload.power_sensors = data.powerSensors;
+      if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
 
       await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
       console.log('[GrowspaceAPI:configureEnvironment] Service Called');

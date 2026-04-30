@@ -81,8 +81,8 @@ describe('GrowspaceAPI Extra Coverage', () => {
     describe('configureEnvironment gaps', () => {
         const config = {
             growspaceId: 'gs1',
-            temperatureSensor: 'sensor.t',
-            humiditySensor: 'sensor.h'
+            temperatureSensors: ['sensor.t'],
+            humiditySensors: ['sensor.h']
         };
 
         it('should call service on success', async () => {
@@ -90,8 +90,8 @@ describe('GrowspaceAPI Extra Coverage', () => {
             await service.configureEnvironment(config);
             expect(mockHass.callService).toHaveBeenCalledWith('growspace_manager', 'configure_environment', {
                 growspace_id: 'gs1',
-                temperature_sensor: 'sensor.t',
-                humidity_sensor: 'sensor.h'
+                temperature_sensors: ['sensor.t'],
+                humidity_sensors: ['sensor.h']
             });
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Service Called'));
         });
@@ -162,9 +162,9 @@ describe('GrowspaceAPI Extra Coverage', () => {
         it('should configure environment with all options', async () => {
             await service.configureEnvironment({
                 growspaceId: 'g1',
-                temperatureSensor: 's.t',
-                humiditySensor: 's.h',
-                vpdSensor: 's.vpd',
+                temperatureSensors: ['s.t'],
+                humiditySensors: ['s.h'],
+                vpdSensors: ['s.vpd'],
                 co2Sensor: 's.co2',
                 circulationFanEntity: 's.fan',
                 circulationFanEntities: ['s.fan1', 's.fan2'],
@@ -185,7 +185,15 @@ describe('GrowspaceAPI Extra Coverage', () => {
                 flowerEarlyDayHours: 12,
                 flowerMidDayHours: 12,
                 flowerLateDayHours: 12,
-                minimumSourceAirTemperature: 20
+                minimumSourceAirTemperature: 20,
+                phSensors: ['s.ph'],
+                feedEcSensors: ['s.feed_ec'],
+                substrateEcSensors: ['s.sub_ec'],
+                runoffEcSensors: ['s.runoff'],
+                drainVolumeSensors: ['s.drain'],
+                irrigationFlowSensors: ['s.flow'],
+                powerSensors: ['s.power'],
+                energySensors: ['s.energy'],
             });
 
             expect(mockHass.callService).toHaveBeenCalledWith(
@@ -193,7 +201,9 @@ describe('GrowspaceAPI Extra Coverage', () => {
                 'configure_environment',
                 expect.objectContaining({
                     growspace_id: 'g1',
-                    vpd_sensor: 's.vpd',
+                    temperature_sensors: ['s.t'],
+                    humidity_sensors: ['s.h'],
+                    vpd_sensors: ['s.vpd'],
                     co2_sensor: 's.co2',
                     circulation_fan_entity: 's.fan',
                     circulation_fan_entities: ['s.fan1', 's.fan2'],
@@ -214,7 +224,15 @@ describe('GrowspaceAPI Extra Coverage', () => {
                     flower_early_day_hours: 12,
                     flower_mid_day_hours: 12,
                     flower_late_day_hours: 12,
-                    minimum_source_air_temperature: 20
+                    minimum_source_air_temperature: 20,
+                    ph_sensors: ['s.ph'],
+                    feed_ec_sensors: ['s.feed_ec'],
+                    substrate_ec_sensors: ['s.sub_ec'],
+                    runoff_ec_sensors: ['s.runoff'],
+                    drain_volume_sensors: ['s.drain'],
+                    irrigation_flow_sensors: ['s.flow'],
+                    power_sensors: ['s.power'],
+                    energy_sensors: ['s.energy'],
                 })
             );
         });

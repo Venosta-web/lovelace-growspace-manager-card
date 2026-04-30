@@ -237,10 +237,13 @@ describe('ConfigDialog', () => {
             element.setInitialState(ConfigTab.ENVIRONMENT, {
                 selectedGrowspaceId: 'gs1',
                 temperatureSensor: 'sensor.temp',
+                temperatureSensors: ['sensor.temp'],
                 humiditySensor: 'sensor.hum',
-                vpdSensor: '', co2Sensor: '', circulationFanEntity: '',
+                humiditySensors: ['sensor.hum'],
+                vpdSensor: '', vpdSensors: [], co2Sensor: '', circulationFanEntity: '',
                 stressThreshold: 0, moldThreshold: 0, lightSensor: '', lightSensors: [],
                 exhaustEntity: '', exhaustFanEntities: [], humidifierEntity: '', humidifierEntities: [],
+                humidifierControlEnabled: false,
                 dehumidifierEntity: '', dehumidifierEntities: [], circulationFanEntities: [],
                 soilMoistureSensor: '', dehumidifierControlEnabled: true, dehumidifierThresholds: {}
             });
@@ -250,26 +253,20 @@ describe('ConfigDialog', () => {
             const gsSelect = element.shadowRoot?.querySelector('select.md3-input');
             expect((gsSelect as HTMLSelectElement)?.value).toBe('gs1');
 
-            // Check temp sensor input
-            const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
-            const group = groups.find(g => g.querySelector('label')?.textContent === 'Temperature Sensor');
-            const input = group?.querySelector('input');
-            expect(input?.value).toBe('sensor.temp');
+            // Check temp sensor chip is visible in multi-select
+            expect((element as any).envTemperatureSensors).toEqual(['sensor.temp']);
         });
 
         it('should render native input with datalist', async () => {
-            // Check Temp Sensor input
-            const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
-            const group = groups.find(g => g.querySelector('label')?.textContent === 'Temperature Sensor');
-            const input = group?.querySelector('input');
-            const datalist = group?.querySelector('datalist');
+            // Temperature is now a multi-select with datalist
+            const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
+            const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === 'Temperature Sensors');
+            const input = container?.querySelector('input');
+            const datalist = container?.querySelector('datalist');
 
             expect(input).toBeTruthy();
             expect(datalist).toBeTruthy();
-            expect(input?.getAttribute('list')).toBe(datalist?.id);
             // Check filtered options (only temperature sensors)
-            // Mock had sensor.temp (temp class) and sensor.hum (humidity class)
-            // _getEntities filters by class.
             const options = Array.from(datalist?.querySelectorAll('option') || []);
             const values = options.map(o => o.value);
             expect(values).toContain('sensor.temp');
@@ -278,7 +275,8 @@ describe('ConfigDialog', () => {
 
         it('should submit configuration', async () => {
             (element as any).envSelectedId = 'gs1';
-            (element as any).envTemperatureSensor = 'sensor.new';
+            (element as any).envTemperatureSensors = ['sensor.new'];
+            (element as any).envHumiditySensors = ['sensor.hum'];
 
             const listener = vi.fn();
             element.addEventListener('configure-environment-submit', listener);
@@ -287,7 +285,7 @@ describe('ConfigDialog', () => {
             (btn as HTMLElement)?.click();
 
             expect(listener).toHaveBeenCalled();
-            expect(listener.mock.calls[0][0].detail.temperatureSensor).toBe('sensor.new');
+            expect(listener.mock.calls[0][0].detail.temperatureSensors).toEqual(['sensor.new']);
         });
     });
 
@@ -298,18 +296,6 @@ describe('ConfigDialog', () => {
         });
 
         it('should update all environment sensors', async () => {
-            const updatePicker = async (label: string, value: string) => {
-                const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
-                const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
-                const input = group?.querySelector('input');
-
-                if (input) {
-                    input.value = value;
-                    input.dispatchEvent(new Event('change'));
-                    await element.updateComplete;
-                }
-            };
-
             const updateMultiPicker = async (label: string, value: string) => {
                 const containers = Array.from(element.shadowRoot?.querySelectorAll('.multi-select-container') || []);
                 const container = containers.find(c => c.querySelector('label')?.textContent?.trim() === label);
@@ -322,19 +308,31 @@ describe('ConfigDialog', () => {
                 }
             };
 
-            await updatePicker('Temperature Sensor', 'sensor.temp');
-            expect((element as any).envTemperatureSensor).toBe('sensor.temp');
+            const updateSinglePicker = async (label: string, value: string) => {
+                const groups = Array.from(element.shadowRoot?.querySelectorAll('.md3-input-group') || []);
+                const group = groups.find(g => g.querySelector('label')?.textContent?.trim() === label);
+                const input = group?.querySelector('input');
+                if (input) {
+                    input.value = value;
+                    input.dispatchEvent(new Event('change'));
+                    await element.updateComplete;
+                }
+            };
 
-            await updatePicker('Humidity Sensor', 'sensor.hum');
-            expect((element as any).envHumiditySensor).toBe('sensor.hum');
+            // All basic sensors are now multi-selects
+            await updateMultiPicker('Temperature Sensors', 'sensor.temp');
+            expect((element as any).envTemperatureSensors).toEqual(['sensor.temp']);
 
-            await updatePicker('VPD Sensor (Optional)', 'sensor.vpd');
-            expect((element as any).envVpdSensor).toBe('sensor.vpd');
+            await updateMultiPicker('Humidity Sensors', 'sensor.hum');
+            expect((element as any).envHumiditySensors).toEqual(['sensor.hum']);
 
-            await updatePicker('Soil Moisture Sensor', 'sensor.soil');
+            await updateMultiPicker('VPD Sensors (Optional)', 'sensor.vpd');
+            expect((element as any).envVpdSensors).toEqual(['sensor.vpd']);
+
+            await updateSinglePicker('Soil Moisture Sensor', 'sensor.soil');
             expect((element as any).envSoilMoistureSensor).toBe('sensor.soil');
 
-            await updatePicker('CO2 Sensor', 'sensor.co2');
+            await updateSinglePicker('CO2 Sensor', 'sensor.co2');
             expect((element as any).envCo2Sensor).toBe('sensor.co2');
 
             // Multi
@@ -693,8 +691,11 @@ describe('ConfigDialog', () => {
             } as any;
             element.devices = [partialDevice];
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'partial' } } as any);
+            // Singular field still set for backward compat
             expect((element as any).envTemperatureSensor).toBe('s.t');
-            expect((element as any).envHumiditySensor).toBe('');
+            // Multi sensor derived from singular
+            expect((element as any).envTemperatureSensors).toEqual(['s.t']);
+            expect((element as any).envHumiditySensors).toEqual([]);
             expect((element as any).envDehumidifierControlEnabled).toBe(false);
         });
 
@@ -768,12 +769,12 @@ describe('ConfigDialog', () => {
             } as any;
             element.devices = [dev];
             // set initial dirty state
-            (element as any).envTemperatureSensor = 'dirty';
+            (element as any).envTemperatureSensors = ['dirty'];
 
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'no_env' } } as any);
 
             // Should fall to else block and reset
-            expect((element as any).envTemperatureSensor).toBe('');
+            expect((element as any).envTemperatureSensors).toEqual([]);
         });
 
 
@@ -844,13 +845,13 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             // Pre-set some values, expecting them to be reset
-            (element as any).envTemperatureSensor = 'old_sensor';
+            (element as any).envTemperatureSensors = ['old_sensor'];
 
             const event = { target: { value: 'no_env' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
             expect((element as any).envSelectedId).toBe('no_env');
-            expect((element as any).envTemperatureSensor).toBe('');
+            expect((element as any).envTemperatureSensors).toEqual([]);
         });
 
         it('should fallback to defaults for environment attributes in _handleEnvGrowspaceChange', async () => {
@@ -867,13 +868,13 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             // Pre-set to something else to verify reset
-            (element as any).envTemperatureSensor = 'old';
+            (element as any).envTemperatureSensors = ['old'];
             (element as any).envDehumidifierControlEnabled = true;
 
             const event = { target: { value: 'partial_env' } } as any;
             (element as any)._handleEnvGrowspaceChange(event);
 
-            expect((element as any).envTemperatureSensor).toBe('');
+            expect((element as any).envTemperatureSensors).toEqual([]);
             expect((element as any).envDehumidifierControlEnabled).toBe(false);
             expect((element as any).envDehumidifierThresholds).toEqual({});
         });

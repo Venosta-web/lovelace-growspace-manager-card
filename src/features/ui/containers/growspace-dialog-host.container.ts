@@ -631,57 +631,46 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private async _handleEnvironmentConfig(detail: any) {
-    const {
-      selectedGrowspaceId,
-      temperatureSensor,
-      humiditySensor,
-      vpdSensor,
-      co2Sensor,
-      circulationFanEntity,
-      stressThreshold,
-      moldThreshold,
-      lightSensor,
-      exhaustEntity,
-      humidifierEntity,
-      dehumidifierEntity,
-      dehumidifierThresholds,
-      soilMoistureSensor,
-      dehumidifierControlEnabled,
-    } = detail;
+    const temperatureSensors: string[] = detail.temperatureSensors || [];
+    const humiditySensors: string[] = detail.humiditySensors || [];
 
-    if (!selectedGrowspaceId || !temperatureSensor || !humiditySensor) {
+    if (!detail.selectedGrowspaceId || !temperatureSensors.length || !humiditySensors.length) {
       this.store?.actions.ui.showToast('Growspace, Temperature, and Humidity sensors are mandatory', 'error');
       return;
     }
 
     try {
       await this.store?.actions.environment.configure({
-        growspaceId: selectedGrowspaceId,
-        temperatureSensor,
-        humiditySensor,
-        vpdSensor: vpdSensor || undefined,
-        co2Sensor: co2Sensor || undefined,
-        circulationFanEntity: circulationFanEntity || undefined,
-        stressThreshold,
-        moldThreshold,
-        lightSensor: lightSensor || undefined,
-        exhaustEntity: exhaustEntity || undefined,
-        humidifierEntity: humidifierEntity || undefined,
-        humidifierThresholds: detail.humidifierThresholds,
-        controlHumidifier: detail.humidifierControlEnabled,
-        dehumidifierEntity: dehumidifierEntity || undefined,
-        dehumidifierThresholds,
-        soilMoistureSensor: soilMoistureSensor || undefined,
-        controlDehumidifier: dehumidifierControlEnabled,
-        // Multi-device fields
+        growspaceId: detail.selectedGrowspaceId,
+        temperatureSensors,
+        humiditySensors,
+        vpdSensors: detail.vpdSensors,
+        co2Sensor: detail.co2Sensor || undefined,
         circulationFanEntities: detail.circulationFanEntities,
+        stressThreshold: detail.stressThreshold,
+        moldThreshold: detail.moldThreshold,
         lightSensors: detail.lightSensors,
         exhaustFanEntities: detail.exhaustFanEntities,
         humidifierEntities: detail.humidifierEntities,
+        humidifierThresholds: detail.humidifierThresholds,
+        controlHumidifier: detail.humidifierControlEnabled,
         dehumidifierEntities: detail.dehumidifierEntities,
+        dehumidifierThresholds: detail.dehumidifierThresholds,
+        soilMoistureSensor: detail.soilMoistureSensor || undefined,
+        controlDehumidifier: detail.dehumidifierControlEnabled,
         sensorGroups: detail.sensorGroups,
         sensorCoordinates: detail.sensorCoordinates,
         irrigationTanks: detail.irrigationTanks,
+        cameraEntities: detail.cameraEntities,
+        substrateTemperatureSensors: detail.substrateTemperatureSensors,
+        phSensors: detail.phSensors,
+        feedEcSensors: detail.feedEcSensors,
+        substrateEcSensors: detail.substrateEcSensors,
+        runoffEcSensors: detail.runoffEcSensors,
+        drainVolumeSensors: detail.drainVolumeSensors,
+        irrigationFlowSensors: detail.irrigationFlowSensors,
+        powerSensors: detail.powerSensors,
+        energySensors: detail.energySensors,
       });
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {

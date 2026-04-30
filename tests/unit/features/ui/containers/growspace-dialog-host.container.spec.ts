@@ -845,10 +845,10 @@ describe('GrowspaceDialogHostContainer', () => {
         try {
             await element._handleEnvironmentConfig({
                 selectedGrowspaceId: 'g1',
-                temperatureSensor: 't1',
-                humiditySensor: 'h1'
+                temperatureSensors: ['t1'],
+                humiditySensors: ['h1']
             } as any);
-        } catch (e) {
+        } catch (_e) {
             // Error is expected to be rethrown by action but handled by action's toast
         }
 
@@ -1880,8 +1880,8 @@ describe('GrowspaceDialogHostContainer', () => {
             dialog?.dispatchEvent(new CustomEvent('configure-environment-submit', {
                 detail: {
                     selectedGrowspaceId: 'g1',
-                    temperatureSensor: 'sensor.temp',
-                    humiditySensor: 'sensor.humidity',
+                    temperatureSensors: ['sensor.temp'],
+                    humiditySensors: ['sensor.humidity'],
                 }
             }));
             await vi.waitFor(() => {
@@ -1893,7 +1893,7 @@ describe('GrowspaceDialogHostContainer', () => {
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('configure-environment-submit', {
-                detail: { selectedGrowspaceId: '', temperatureSensor: '', humiditySensor: '' }
+                detail: { selectedGrowspaceId: '', temperatureSensors: [], humiditySensors: [] }
             }));
             await vi.waitFor(() => {
                 expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(

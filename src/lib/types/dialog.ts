@@ -57,10 +57,18 @@ export interface EnvironmentConfigDialogState {
 
 export interface EnvironmentConfigData {
   selectedGrowspaceId: string;
+
+  // Basic sensors (multi)
+  temperatureSensors: string[];
+  humiditySensors: string[];
+  vpdSensors: string[];
+  co2Sensor: string;
+  soilMoistureSensor: string;
+
+  // Legacy singular (backward compat)
   temperatureSensor: string;
   humiditySensor: string;
   vpdSensor: string;
-  co2Sensor: string;
 
   // Fans
   circulationFanEntity: string;
@@ -87,12 +95,22 @@ export interface EnvironmentConfigData {
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
 
-  soilMoistureSensor: string;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
   cameraEntities?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
+
+  // Advanced / irrigation monitoring sensors
+  substrateTemperatureSensors?: string[];
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  substrateEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
+  powerSensors?: string[];
+  energySensors?: string[];
 }
 
 export interface VisionCheckupConfig {
@@ -119,30 +137,45 @@ export interface VisionCheckupConfigEventDetail {
 
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor?: string | null;
+  // Multi sensors
+  temperatureSensors: string[];
+  humiditySensors: string[];
+  vpdSensors?: string[];
   co2Sensor?: string | null;
+  soilMoistureSensor?: string | null;
+  // Fans
   circulationFanEntity?: string | null;
   circulationFanEntities?: string[];
+  exhaustEntity?: string | null;
+  exhaustFanEntities?: string[];
   stressThreshold: number;
   moldThreshold: number;
   lightSensor?: string | null;
   lightSensors?: string[];
-  exhaustEntity?: string | null;
-  exhaustFanEntities?: string[];
+  // Humidifier
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
   humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   humidifierControlEnabled: boolean;
+  // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  soilMoistureSensor?: string | null;
   dehumidifierControlEnabled: boolean;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
+  cameraEntities?: string[];
+  // Advanced / irrigation monitoring
+  substrateTemperatureSensors?: string[];
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  substrateEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
+  powerSensors?: string[];
+  energySensors?: string[];
 }
 
 export interface ConfigDialogState {

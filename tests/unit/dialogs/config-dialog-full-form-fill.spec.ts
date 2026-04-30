@@ -284,10 +284,10 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             // Select growspace
             (element as any).envSelectedId = 'gs1';
 
-            // Fill out ALL monitoring sensors
-            (element as any).envTemperatureSensor = 'sensor.temp_main';
-            (element as any).envHumiditySensor = 'sensor.humidity_main';
-            (element as any).envVpdSensor = 'sensor.vpd_main';
+            // Fill out ALL monitoring sensors (now multi-selects)
+            (element as any).envTemperatureSensors = ['sensor.temp_main', 'sensor.temp_backup'];
+            (element as any).envHumiditySensors = ['sensor.humidity_main'];
+            (element as any).envVpdSensors = ['sensor.vpd_main'];
             (element as any).envCo2Sensor = 'sensor.co2_main';
             (element as any).envSoilMoistureSensor = 'sensor.soil_moisture_1';
 
@@ -297,6 +297,15 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             (element as any).envCirculationFanEntities = ['fan.circulation_top', 'fan.circulation_bottom', 'switch.circulation_wall'];
             (element as any).envHumidifierEntities = ['humidifier.main', 'switch.humidifier_backup'];
             (element as any).envDehumidifierEntities = ['humidifier.dehumidifier_main', 'switch.dehumidifier_backup'];
+
+            // Advanced sensors
+            (element as any).envPhSensors = ['sensor.ph_main'];
+            (element as any).envFeedEcSensors = ['sensor.ec_feed'];
+            (element as any).envSubstrateEcSensors = ['sensor.ec_substrate'];
+            (element as any).envRunoffEcSensors = ['sensor.ec_runoff'];
+            (element as any).envDrainVolumeSensors = ['sensor.drain'];
+            (element as any).envIrrigationFlowSensors = ['sensor.flow'];
+            (element as any).envEnergySensors = ['sensor.energy'];
 
             // Enable dehumidifier control
             (element as any).envDehumidifierControlEnabled = true;
@@ -313,9 +322,9 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             expect(listener).toHaveBeenCalledWith(expect.objectContaining({
                 detail: expect.objectContaining({
                     selectedGrowspaceId: 'gs1',
-                    temperatureSensor: 'sensor.temp_main',
-                    humiditySensor: 'sensor.humidity_main',
-                    vpdSensor: 'sensor.vpd_main',
+                    temperatureSensors: expect.arrayContaining(['sensor.temp_main', 'sensor.temp_backup']),
+                    humiditySensors: expect.arrayContaining(['sensor.humidity_main']),
+                    vpdSensors: expect.arrayContaining(['sensor.vpd_main']),
                     co2Sensor: 'sensor.co2_main',
                     soilMoistureSensor: 'sensor.soil_moisture_1',
                     lightSensors: expect.arrayContaining(['switch.light_main', 'switch.light_side', 'sensor.light_intensity']),
@@ -323,6 +332,9 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
                     circulationFanEntities: expect.arrayContaining(['fan.circulation_top', 'fan.circulation_bottom', 'switch.circulation_wall']),
                     humidifierEntities: expect.arrayContaining(['humidifier.main', 'switch.humidifier_backup']),
                     dehumidifierEntities: expect.arrayContaining(['humidifier.dehumidifier_main', 'switch.dehumidifier_backup']),
+                    phSensors: expect.arrayContaining(['sensor.ph_main']),
+                    feedEcSensors: expect.arrayContaining(['sensor.ec_feed']),
+                    energySensors: expect.arrayContaining(['sensor.energy']),
                     dehumidifierControlEnabled: true,
                     stressThreshold: 0.75,
                     moldThreshold: 0.85
@@ -336,8 +348,8 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
 
             // Configure with backup sensors everywhere
             (element as any).envSelectedId = 'gs2';
-            (element as any).envTemperatureSensor = 'sensor.temp_backup';
-            (element as any).envHumiditySensor = 'sensor.humidity_backup';
+            (element as any).envTemperatureSensors = ['sensor.temp_backup'];
+            (element as any).envHumiditySensors = ['sensor.humidity_backup'];
             (element as any).envSoilMoistureSensor = 'sensor.soil_moisture_2';
             (element as any).envLightSensors = ['switch.light_main', 'switch.light_side'];
             (element as any).envExhaustFanEntities = ['fan.exhaust_main', 'switch.exhaust_backup'];
@@ -352,7 +364,7 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             expect(listener).toHaveBeenCalledWith(expect.objectContaining({
                 detail: expect.objectContaining({
                     selectedGrowspaceId: 'gs2',
-                    temperatureSensor: 'sensor.temp_backup',
+                    temperatureSensors: expect.arrayContaining(['sensor.temp_backup']),
                     lightSensors: expect.arrayContaining(['switch.light_main', 'switch.light_side'])
                 })
             }));
