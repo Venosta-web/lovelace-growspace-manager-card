@@ -36,8 +36,8 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import '../components/plant-dashboard-tab';
 import '../components/plant-actions-tab';
 import '../components/plant-timeline-tab';
-import '../../../components/ui/md3-select';
-import '../../../components/ui/md3-number-input';
+import '../../shared/ui/md3-select';
+import '../../shared/ui/md3-number-input';
 
 /**
  * Container component for plant overview dialog

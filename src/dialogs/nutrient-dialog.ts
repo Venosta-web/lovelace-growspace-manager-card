@@ -9,7 +9,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import '../features/ui/components/growspace-nutrient-inventory-dialog-ui';
 import '../features/ui/containers/growspace-nutrient-presets-editor.container';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 type Tab = 'inventory' | 'presets';
 

@@ -10,7 +10,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiPencil } from '@mdi/js';
 import type { PlantOverviewEditedAttributes } from '../../../types';
 import { sharedStyles } from '../../../styles/shared.styles';
-import '../../../components/ui/md3-date-input';
+import '../../shared/ui/md3-date-input';
 
 @customElement('plant-lifecycle-dates-card')
 export class PlantLifecycleDatesCard extends LitElement {

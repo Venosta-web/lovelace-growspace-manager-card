@@ -19,8 +19,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import type { ECRampCurve, ECRampPoint } from '../schemas/api-schema';
-import '../components/ui';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui';
 
 @customElement('ec-ramp-editor-dialog')
 export class ECRampEditorDialog extends LitElement {

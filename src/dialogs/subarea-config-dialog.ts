@@ -5,7 +5,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import type { Subarea, EnvironmentConfig } from '../services/types';
 import { DataService } from '../services/data-service';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('subarea-config-dialog')
 export class SubareaConfigDialog extends LitElement {

@@ -5,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { hassContext } from '../context';
 import { mdiClose, mdiCheck, mdiDumbbell } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui'; // Ensure MD3 components are registered
+import '../features/shared/ui'; // Ensure MD3 components are registered
 import { TrainingTechnique } from '../types';
 import { GrowspaceStore } from '../store/core/growspace-store';
 

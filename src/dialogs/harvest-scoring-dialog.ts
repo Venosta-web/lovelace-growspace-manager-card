@@ -7,7 +7,7 @@ import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 /** Score dimension descriptor */
 interface ScoreDimension {

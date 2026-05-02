@@ -22,10 +22,10 @@ import {
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/gs-help-tooltip';
 import './sensor-group-dialog';
 import './subarea-config-dialog';
 import {

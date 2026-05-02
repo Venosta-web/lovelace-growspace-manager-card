@@ -4,7 +4,7 @@ import { mdiClose, mdiPencil, mdiDelete, mdiChartTree } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { SensorGroup } from '../types';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('sensor-group-dialog')
 export class SensorGroupDialog extends LitElement {

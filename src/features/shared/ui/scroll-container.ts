@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { mdiChevronLeft, mdiChevronRight } from '@mdi/js';
-import { ResizeController } from '../../controllers/resize-controller';
+import { ResizeController } from '../../../controllers/resize-controller';
 
 @customElement('scroll-container')
 export class ScrollContainer extends LitElement {

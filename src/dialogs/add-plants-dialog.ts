@@ -6,11 +6,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiInformationOutline, mdiDna } from '@mdi/js';
 import { StrainEntry, GrowspaceDevice } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/md3-date-input';
-import '../components/ui/md3-switch';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/md3-date-input';
+import '../features/shared/ui/md3-switch';
 
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {

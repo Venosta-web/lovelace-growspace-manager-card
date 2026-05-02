@@ -3,9 +3,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HeaderChip } from '../../../utils/metrics-utils';
 import { ViewMode } from '../../../constants';
 import { GrowspaceDevice } from '../../../types';
-import '../../../components/ui/scroll-container';
+import '../../shared/ui/scroll-container';
 import '../../../components/growspace-chip';
-import '../../../components/ui/gs-help-tooltip';
+import '../../shared/ui/gs-help-tooltip';
 
 // Icons
 import {

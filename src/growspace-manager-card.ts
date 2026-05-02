@@ -19,7 +19,7 @@ import './features/ui/containers/growspace-toast.container';
 
 import { LibraryExportReadyEvent } from './lib/events';
 import './components/growspace-view-switcher';
-import './components/ui'; // Register MD3 components
+import './features/shared/ui'; // Register MD3 components
 import './components/error-boundary';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';

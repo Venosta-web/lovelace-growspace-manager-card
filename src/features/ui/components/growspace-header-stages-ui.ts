@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { DominantStageInfo } from '../../../utils/metrics-utils';
-import '../../../components/ui/scroll-container';
+import '../../shared/ui/scroll-container';
 
 @customElement('growspace-header-stages-ui')
 export class GrowspaceHeaderStagesUI extends LitElement {

@@ -10,7 +10,7 @@ import {
 } from '@mdi/js';
 import { NutrientInventory, NutrientStock } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import '../../../components/ui'; // Ensure MD3 components are registered
+import '../../shared/ui'; // Ensure MD3 components are registered
 
 @customElement('growspace-nutrient-inventory-dialog-ui')
 export class GrowspaceNutrientInventoryDialogUI extends LitElement {

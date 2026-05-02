@@ -7,7 +7,7 @@ import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import { mdiCamera, mdiClose, mdiRefresh } from '@mdi/js';
 import { Snapshot } from '../services/api/camera-api';
-import '../components/ui';
+import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { VisionCheckupResult } from '../lib/types/dialog';
 

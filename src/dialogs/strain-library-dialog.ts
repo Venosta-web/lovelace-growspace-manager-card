@@ -29,9 +29,9 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {

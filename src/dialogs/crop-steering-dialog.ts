@@ -6,8 +6,7 @@ import { hassContext, storeContext } from '../context';
 import { CropSteeringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import { mdiChartTimelineVariantShimmer, mdiClose, mdiWaterPercent, mdiSprout, mdiArrowUp, mdiArrowDown, mdiMinus, mdiCompassOutline } from '@mdi/js';
-import '../components/ui';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 
 @customElement('crop-steering-dialog')

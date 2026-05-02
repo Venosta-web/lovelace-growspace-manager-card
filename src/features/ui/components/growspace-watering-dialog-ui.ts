@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { mdiWaterPlus, mdiClose, mdiPlus, mdiDelete, mdiCheck, mdiInformation } from '@mdi/js';
 import { NutrientEntry } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import '../../../components/ui'; // Ensure MD3 components are registered
+import '../../shared/ui'; // Ensure MD3 components are registered
 
 @customElement('growspace-watering-dialog-ui')
 export class GrowspaceWateringDialogUI extends LitElement {

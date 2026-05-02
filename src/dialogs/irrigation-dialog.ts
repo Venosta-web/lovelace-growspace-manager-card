@@ -7,10 +7,10 @@ import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
 import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading, TankWaterEvent } from '../types';
 import { DataService } from '../data-service';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-switch';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-switch';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('irrigation-dialog')
 export class IrrigationDialog extends LitElement {

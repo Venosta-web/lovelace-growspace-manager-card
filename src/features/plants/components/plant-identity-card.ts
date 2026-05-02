@@ -9,8 +9,8 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { PlantEntity, PlantOverviewEditedAttributes } from '../../../types';
 import { sharedStyles } from '../../../styles/shared.styles';
-import '../../../components/ui/md3-text-input';
-import '../../../components/ui/md3-number-input';
+import '../../shared/ui/md3-text-input';
+import '../../shared/ui/md3-number-input';
 
 @customElement('plant-identity-card')
 export class PlantIdentityCard extends LitElement {

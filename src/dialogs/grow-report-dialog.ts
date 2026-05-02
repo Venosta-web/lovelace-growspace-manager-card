@@ -5,7 +5,7 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { GrowReportDialogState } from '../lib/types/dialog';
 import { GrowReportData } from '../services/api/report-api';
 import { mdiClose, mdiFilePdfBox, mdiCodeJson } from '@mdi/js';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('grow-report-dialog')
 export class GrowReportDialog extends LitElement {

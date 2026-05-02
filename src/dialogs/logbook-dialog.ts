@@ -6,7 +6,7 @@ import { dialogStyles } from '../styles/dialog.styles';
 import '../components/ui/growspace-logbook';
 import '../components/ui/growspace-timeline';
 import '../components/ui/vpd-heatmap';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';

@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { dialogStyles } from '../../styles/dialog.styles';
+import { dialogStyles } from '../../../styles/dialog.styles';
 
 @customElement('md3-number-input')
 export class Md3NumberInput extends LitElement {

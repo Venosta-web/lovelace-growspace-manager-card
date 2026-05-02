@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { dialogStyles } from '../../styles/dialog.styles';
-import { PlantUtils } from '../../utils/plant-utils';
+import { dialogStyles } from '../../../styles/dialog.styles';
+import { PlantUtils } from '../../../utils/plant-utils';
 
 @customElement('md3-date-input')
 export class Md3DateInput extends LitElement {

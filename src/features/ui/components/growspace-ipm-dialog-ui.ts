@@ -12,7 +12,7 @@ import {
 } from '@mdi/js';
 import { IPMPreset, IPMItem, IPMType } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import '../../../components/ui'; // Ensure MD3 components are registered
+import '../../shared/ui'; // Ensure MD3 components are registered
 
 @customElement('growspace-ipm-dialog-ui')
 export class GrowspaceIPMDialogUI extends LitElement {

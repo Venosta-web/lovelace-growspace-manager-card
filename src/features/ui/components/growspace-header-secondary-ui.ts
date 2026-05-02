@@ -2,9 +2,9 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HeaderChip } from '../../../utils/metrics-utils';
 import { NutrientInventory } from '../../../types';
-import '../../../components/ui/scroll-container';
+import '../../shared/ui/scroll-container';
 import '../../../components/growspace-chip';
-import '../../../components/ui/nutrient-stock-chip';
+import '../../shared/ui/nutrient-stock-chip';
 
 @customElement('growspace-header-secondary-ui')
 export class GrowspaceHeaderSecondaryUI extends LitElement {

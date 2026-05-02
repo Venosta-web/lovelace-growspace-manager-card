@@ -6,12 +6,12 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiDna, mdiContentCopy } from '@mdi/js';
 import { StrainEntry, PlantEntity } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/md3-date-input';
-import '../components/ui/md3-switch';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/md3-date-input';
+import '../features/shared/ui/md3-switch';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('add-plant-dialog')
 export class AddPlantDialog extends LitElement {

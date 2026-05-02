@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { dialogStyles } from '../../styles/dialog.styles';
+import { dialogStyles } from '../../../styles/dialog.styles';
 
 export type SelectOption = string | { label: string; value: string };
 
