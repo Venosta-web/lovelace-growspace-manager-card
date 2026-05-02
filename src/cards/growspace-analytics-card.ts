@@ -10,7 +10,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
 import '../features/ui/containers/growspace-analytics.container';
-import '../components/error-boundary';
+import '../features/shared/ui/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';

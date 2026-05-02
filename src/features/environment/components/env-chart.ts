@@ -23,7 +23,7 @@ import { BINARY_ON_STATES } from '../../../lib/types/hass';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../../../lib/context';
-import '../../../components/error-boundary';
+import '../../shared/ui/error-boundary';
 
 @customElement('growspace-env-chart')
 export class GrowspaceEnvChart extends LitElement {

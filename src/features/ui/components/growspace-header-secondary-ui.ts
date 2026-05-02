@@ -3,7 +3,7 @@ import { customElement, property } from 'lit/decorators.js';
 import { HeaderChip } from '../../../utils/metrics-utils';
 import { NutrientInventory } from '../../../types';
 import '../../shared/ui/scroll-container';
-import '../../../components/growspace-chip';
+import '../../shared/ui/growspace-chip';
 import '../../../components/ui/nutrient-stock-chip';
 
 @customElement('growspace-header-secondary-ui')

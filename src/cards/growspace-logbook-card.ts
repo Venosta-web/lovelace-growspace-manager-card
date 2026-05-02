@@ -13,7 +13,7 @@ import { uiStyles } from '../styles/ui.styles';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import '../components/ui/growspace-logbook';
 import '../components/ui/growspace-timeline';
-import '../components/error-boundary';
+import '../features/shared/ui/error-boundary';
 
 @customElement('growspace-logbook-card')
 export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {

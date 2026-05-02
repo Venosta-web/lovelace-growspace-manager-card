@@ -20,7 +20,7 @@ import './features/ui/containers/growspace-toast.container';
 import { LibraryExportReadyEvent } from './lib/events';
 import './components/growspace-view-switcher';
 import './features/shared/ui'; // Register MD3 components
-import './components/error-boundary';
+import './features/shared/ui/error-boundary';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';

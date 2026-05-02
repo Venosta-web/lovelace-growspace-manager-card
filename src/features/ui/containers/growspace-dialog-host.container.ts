@@ -39,7 +39,7 @@ import '../../../dialogs/snapshots-dialog';
 import '../../../dialogs/strain-library-dialog';
 import '../../../dialogs/strain-recommendation-dialog';
 import '../../../dialogs/training-dialog';
-import '../../../components/error-boundary';
+import '../../shared/ui/error-boundary';
 
 import '../components/growspace-ipm-dialog-ui';
 import '../components/growspace-watering-dialog-ui';

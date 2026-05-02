@@ -13,7 +13,7 @@ import { SubscriptionController } from '../controllers/subscription-controller';
 import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../components/growspace-view-switcher';
-import '../components/error-boundary';
+import '../features/shared/ui/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';

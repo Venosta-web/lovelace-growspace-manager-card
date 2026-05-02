@@ -11,7 +11,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import type { GrowAdviceResponse } from '../types';
 
 import { SubscriptionController } from '../controllers/subscription-controller';
-import '../components/error-boundary';
+import '../features/shared/ui/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';

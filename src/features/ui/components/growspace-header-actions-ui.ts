@@ -4,7 +4,7 @@ import { HeaderChip } from '../../../utils/metrics-utils';
 import { ViewMode } from '../../../constants';
 import { GrowspaceDevice } from '../../../types';
 import '../../shared/ui/scroll-container';
-import '../../../components/growspace-chip';
+import '../../shared/ui/growspace-chip';
 import '../../shared/ui/gs-help-tooltip';
 
 // Icons

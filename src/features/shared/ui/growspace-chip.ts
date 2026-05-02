@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiLink } from '@mdi/js';
-import { sharedStyles } from '../styles/shared.styles';
+import { sharedStyles } from '../../../styles/shared.styles';
 
 @customElement('growspace-chip')
 export class GrowspaceChip extends LitElement {

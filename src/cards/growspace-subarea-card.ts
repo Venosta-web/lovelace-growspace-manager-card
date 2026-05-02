@@ -13,13 +13,13 @@ import { ConfigTab } from '../features/environment/constants';
 import { ChartUtils } from '../utils/chart-utils';
 import '../dialogs/config-dialog';
 
-import '../components/error-boundary';
+import '../features/shared/ui/error-boundary';
 import '../features/ui/containers/growspace-header.container';
 import '../features/ui/containers/growspace-analytics.container';
 
 import '../features/ui/components/growspace-header-hero-ui';
 import '../features/ui/components/growspace-header-secondary-ui';
-import '../components/growspace-chip';
+import '../features/shared/ui/growspace-chip';
 import { MetricsUtils } from '../utils/metrics-utils';
 
 import { sharedStyles } from '../styles/shared.styles';
