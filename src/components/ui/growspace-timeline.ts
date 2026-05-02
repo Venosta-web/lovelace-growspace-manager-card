@@ -39,7 +39,7 @@ export class GrowspaceTimeline extends LitElement {
         overflow: hidden;
         position: relative;
         background: rgba(0, 0, 0, 0.2);
-        border-radius: 12px;
+        border-radius: var(--border-radius-md);
       }
 
       .timeline-container {
@@ -161,7 +161,7 @@ export class GrowspaceTimeline extends LitElement {
         background: var(--ha-card-background, #1c1c1c);
         border: 1px solid var(--divider-color);
         padding: 12px;
-        border-radius: 8px;
+        border-radius: var(--border-radius-sm);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         z-index: 1000;
         min-width: 200px;
@@ -205,7 +205,7 @@ export class GrowspaceTimeline extends LitElement {
         color: white;
         width: 32px;
         height: 32px;
-        border-radius: 4px;
+        border-radius: var(--border-radius-xs);
         cursor: pointer;
         display: flex;
         align-items: center;

@@ -24,7 +24,7 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | null = null;
   @property({ type: Boolean }) compact = false;
-  @property({ attribute: false }) historyCache: any = {};
+  @property({ attribute: false }) historyCache: Record<string, unknown[]> = {};
   @property() timeRange = '24h';
   @property() viewMode = '';
   @property({ type: Boolean }) isEditMode = false;
@@ -134,11 +134,11 @@ export class GrowspaceHeaderUI extends LitElement {
             .isEditMode=${this.isEditMode}
             .selectedPlants=${this.selectedPlants}
             .selectedDevice=${this.deviceId}
-            @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
-            @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
-            @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
+            @toggle-graph=${(e: CustomEvent) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
+            @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
             @toggle-mobile-link=${() => this._handleToggleMobileLink()}
-            @action-triggered=${(e: any) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('action-triggered', { detail: e.detail, bubbles: true, composed: true })); }}
+            @action-triggered=${(e: CustomEvent) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('action-triggered', { detail: e.detail, bubbles: true, composed: true })); }}
           ></growspace-header-actions-ui>
 
           <!-- Row 2 Left: Stages -->
@@ -157,12 +157,12 @@ export class GrowspaceHeaderUI extends LitElement {
               .chips=${this.secondaryChips}
               .inventory=${this.inventory}
               @open-nutrients=${() => this._openNutrients()}
-              @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
-              @chip-drag-start=${(e: any) =>
+              @toggle-graph=${(e: CustomEvent) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
+              @chip-drag-start=${(e: CustomEvent) =>
                 this._handleChipDragStart(e.detail.event, e.detail.metric)}
-              @chip-drop=${(e: any) =>
+              @chip-drop=${(e: CustomEvent) =>
                 this._handleChipDrop(e.detail.event, e.detail.targetMetric)}
-              @unlink-graphs=${(e: any) => this._unlinkGraphs(e.detail.groupIndex)}
+              @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
             ></growspace-header-secondary-ui>
           </div>
         </div>
@@ -176,9 +176,9 @@ export class GrowspaceHeaderUI extends LitElement {
           .mobileLink=${this._mobileLink}
           .historyCache=${this.historyCache}
           .timeRange=${this.timeRange}
-          @toggle-graph=${(e: any) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
-          @chip-drag-start=${(e: any) => this._handleChipDragStart(null, e.detail.metric)}
-          @chip-drop=${(e: any) => this._handleChipDrop(null, e.detail.targetMetric)}
+          @toggle-graph=${(e: CustomEvent) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
+          @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+          @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero-ui>
       </div>
     `;

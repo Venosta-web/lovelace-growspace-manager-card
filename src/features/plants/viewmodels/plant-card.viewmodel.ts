@@ -6,7 +6,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type { PlantEntity, PlantDisplayData, StrainEntry } from '../../../types';
+import type { PlantEntity, PlantDisplayData, StrainEntry, NutrientPreset, GrowspaceDevice } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { calculateGrowthDeviation } from '../../../utils/analytics-utils';
@@ -62,8 +62,8 @@ function isRecentlyWatered(plant: PlantEntity): boolean {
  */
 function hasRecommendedPreset(
   plant: PlantEntity,
-  nutrientPresets: Record<string, any>,
-  devices: any[]
+  nutrientPresets: Record<string, NutrientPreset>,
+  devices: GrowspaceDevice[]
 ): boolean {
   const growspaceId = plant.attributes.growspace_id;
   const device = devices.find((d) => d.deviceId === growspaceId);
@@ -73,7 +73,7 @@ function hasRecommendedPreset(
   const daysInStage = plant.attributes.days_in_stage || 0;
 
   return Object.values(nutrientPresets).some(
-    (preset: any) =>
+    (preset) =>
       preset.stage === currentStage &&
       (!preset.min_days_in_stage || daysInStage >= preset.min_days_in_stage)
   );

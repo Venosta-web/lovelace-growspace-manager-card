@@ -6,7 +6,7 @@
  */
 
 import { LitElement, html, nothing, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import {
@@ -47,15 +47,16 @@ export class PlantCardUI extends LitElement {
   @property() ariaLabel = '';
   @property() checkboxAriaLabel = '';
 
+  @query('.plant-card-rich') private _card?: HTMLElement;
+
   static styles = [sharedStyles, plantCardStyles];
 
   /**
    * Focus the card element
    */
   public focus(options?: FocusOptions): void {
-    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-    if (card) {
-      card.focus(options);
+    if (this._card) {
+      this._card.focus(options);
     } else {
       super.focus(options);
     }

@@ -88,6 +88,14 @@ export const variables: CSSResult = css`
     --error-bg: rgba(244, 67, 54, 0.1);
     --error-border: rgba(244, 67, 54, 0.3);
 
+    /* Semantic color aliases (HASS-integrated, used by log/timeline/plant-card) */
+    --gm-primary-color: var(--primary-color, #4caf50);
+    --gm-warning-color: var(--warning-color, #ff9800);
+    --gm-info-color: var(--info-color, #2196f3);
+    --gm-error-color: var(--error-color, #f44336);
+    --gm-ipm-color: #9c27b0;
+    --gm-phi-color: #ff9800;
+
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
     --strain-dialog-color: var(--primary-text-color, #fff);

@@ -1,18 +1,19 @@
 
 import * as THREE from 'three';
-import { GrowspaceDevice } from '../../../types';
+import type { HomeAssistant } from 'custom-card-helpers';
+import { GrowspaceDevice, StrainEntry } from '../../../types';
 
 export interface RendererContext {
     scene: THREE.Scene;
     volatileGroup: THREE.Group;
     device: GrowspaceDevice;
-    hass: any; // Home Assistant object
+    hass: HomeAssistant;
     selectedMetric: string;
     timelineIndex: number;
-    historyData: Record<string, any[]>;
+    historyData: Record<string, unknown[]>;
     requestUpdate?: () => void;
     getSensorValue?: (entityId: string, metric: string) => number | null;
-    strainLibrary?: any[]; // Should be StrainEntry[] but avoiding circular deps for now
+    strainLibrary?: StrainEntry[];
     sensorMeshes: Map<string, THREE.Object3D>;
     visibility: {
         plants: boolean;
@@ -72,7 +73,7 @@ export abstract class BaseRenderer {
     }
 
     protected disposeObject(obj: THREE.Object3D) {
-        obj.traverse((child: any) => {
+        obj.traverse((child: THREE.Object3D & { isCSS2DObject?: boolean; element?: Element }) => {
             if (child.isCSS2DObject && child.element) {
                 child.element.remove();
             }

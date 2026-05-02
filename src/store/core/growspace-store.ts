@@ -569,7 +569,7 @@ export class GrowspaceStore {
     keyboardActions.handleKeyboardNavigation(this.context, key);
   }
 
-  async addNutrientPreset(preset: any) {
+  async addNutrientPreset(preset: NutrientPreset) {
     await this.dataService.saveNutrientPreset(preset);
     await this.refreshData();
   }

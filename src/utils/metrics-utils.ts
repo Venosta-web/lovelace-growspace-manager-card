@@ -667,9 +667,8 @@ export class MetricsUtils {
       const numVal = parseFloat(lightState.value);
       if (!isNaN(numVal)) {
         const lightEnt = hass.states[lightState.entityIds[0]];
-        const dc = lightEnt?.attributes?.device_class;
         const unit = lightEnt?.attributes?.unit_of_measurement;
-        lightChipValue = (dc === 'power_factor' || unit === '%') ? `${numVal}%` : lightState.value;
+        lightChipValue = unit === '%' ? `${numVal}%` : lightState.value;
         lightChipIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
       }
     }
@@ -855,9 +854,8 @@ export class MetricsUtils {
       const numVal = parseFloat(lightState.value);
       if (!isNaN(numVal)) {
         const lightEnt = hass.states[lightState.entityIds[0]];
-        const dc = lightEnt?.attributes?.device_class;
         const unit = lightEnt?.attributes?.unit_of_measurement;
-        subareaLightValue = (dc === 'power_factor' || unit === '%') ? `${numVal}%` : lightState.value;
+        subareaLightValue = unit === '%' ? `${numVal}%` : lightState.value;
         subareaLightIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
       }
     }

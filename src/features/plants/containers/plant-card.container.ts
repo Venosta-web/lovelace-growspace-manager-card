@@ -6,7 +6,7 @@
  */
 
 import { LitElement, html, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import type { ReadableAtom } from 'nanostores';
@@ -18,6 +18,7 @@ import {
   createPlantCardViewModel,
   type PlantCardViewModel,
 } from '../viewmodels/plant-card.viewmodel';
+import { PlantCardUI } from '../components/plant-card-ui';
 import '../components/plant-card-ui';
 
 /**
@@ -30,6 +31,8 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
   @property({ type: Number }) row!: number;
   @property({ type: Number }) col!: number;
   @property({ type: Boolean }) forceDraggable = false;
+
+  @query('plant-card-ui') private _cardUI?: PlantCardUI;
 
   // Store access
   @consume({ context: storeContext, subscribe: true })
@@ -66,9 +69,8 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
    * Focus the card
    */
   public focus(options?: FocusOptions): void {
-    const cardUI = this.shadowRoot?.querySelector('plant-card-ui') as any;
-    if (cardUI && typeof cardUI.focus === 'function') {
-      cardUI.focus(options);
+    if (this._cardUI && typeof this._cardUI.focus === 'function') {
+      this._cardUI.focus(options);
     } else {
       super.focus(options);
     }

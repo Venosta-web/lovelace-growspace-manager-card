@@ -19,12 +19,12 @@ export class QuickNoteInput extends LitElement {
   static styles = css`
     :host {
       display: block;
-      margin-bottom: 24px;
+      margin-bottom: var(--spacing-lg);
     }
 
     .container {
       padding: 12px;
-      border-radius: 12px;
+      border-radius: var(--border-radius-md);
       background: rgba(255, 255, 255, 0.03);
       border: 1px dashed var(--divider-color);
     }
@@ -43,7 +43,7 @@ export class QuickNoteInput extends LitElement {
       font-size: 0.9rem;
       font-family: inherit;
       resize: none;
-      padding: 4px;
+      padding: var(--spacing-xs);
       outline: none;
       min-height: 40px;
     }
@@ -57,7 +57,7 @@ export class QuickNoteInput extends LitElement {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 8px;
+      margin-top: var(--spacing-sm);
     }
 
     .action-buttons {
@@ -69,7 +69,7 @@ export class QuickNoteInput extends LitElement {
       background: transparent;
       border: none;
       cursor: pointer;
-      padding: 8px;
+      padding: var(--spacing-sm);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -103,8 +103,8 @@ export class QuickNoteInput extends LitElement {
 
     .image-previews {
       display: flex;
-      gap: 8px;
-      margin-top: 8px;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-sm);
       overflow-x: auto;
       scrollbar-width: thin;
     }
@@ -120,7 +120,7 @@ export class QuickNoteInput extends LitElement {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 4px;
+      border-radius: var(--border-radius-xs);
       border: 1px solid var(--divider-color);
     }
 

@@ -52,7 +52,7 @@ export class GrowspaceAdapter {
     const sensorCoordinates = { ...wsData.sensor_coordinates };
 
     // 1. Merge Group Coordinates
-    wsData.sensor_groups?.forEach((g: any) => {
+    wsData.sensor_groups?.forEach((g) => {
       const groupCoords = { x: g.x, y: g.y, z: g.z };
       [...(g.temperature_sensors || []), ...(g.humidity_sensors || []), ...(g.vpd_sensors || [])].forEach(id => {
         if (!sensorCoordinates[id]) {
@@ -122,7 +122,7 @@ export class GrowspaceAdapter {
       humidifierSensor: wsData.humidifier_sensor,
       irrigationPumpState: wsData.irrigation_pump_state,
       drainPumpState: wsData.drain_pump_state,
-      irrigationTanks: wsData.irrigation_tanks?.map((t: any) => ({
+      irrigationTanks: wsData.irrigation_tanks?.map((t) => ({
         sensorEntity: t.sensor_entity,
         name: t.name,
         warningLevel: t.warning_level,

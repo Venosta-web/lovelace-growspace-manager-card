@@ -7,7 +7,7 @@
  */
 
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, queryAll } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -52,9 +52,18 @@ export class GrowspaceGridUI extends LitElement {
   @property({ type: Boolean }) isLoading = false;
   @property() overlayMode: GridOverlayMode = GridOverlayMode.NONE;
 
+  @queryAll('plant-card-container') private _plantCards!: NodeListOf<HTMLElement>;
+
   // Drag state (managed internally by UI component)
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
+
+  public focusCard(index: number): void {
+    const cards = this._plantCards;
+    if (cards && cards[index]) {
+      cards[index].focus();
+    }
+  }
 
   static styles = [
     variables,

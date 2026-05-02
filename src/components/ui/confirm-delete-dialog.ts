@@ -35,9 +35,9 @@ export class ConfirmDeleteDialog extends LitElement {
     .dialog {
       width: 90%;
       max-width: 420px;
-      padding: 24px;
+      padding: var(--spacing-lg);
       background: var(--card-background-color, #1c1c1c);
-      border-radius: 16px;
+      border-radius: var(--border-radius-lg);
       border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       box-shadow: var(--ha-card-box-shadow, 0 4px 24px rgba(0, 0, 0, 0.4));
     }
@@ -49,7 +49,7 @@ export class ConfirmDeleteDialog extends LitElement {
     }
 
     p {
-      margin: 0 0 24px 0;
+      margin: 0 0 var(--spacing-lg) 0;
       color: var(--secondary-text-color);
       font-size: 0.95rem;
       line-height: 1.5;
@@ -66,7 +66,7 @@ export class ConfirmDeleteDialog extends LitElement {
       align-items: center;
       gap: 6px;
       padding: 10px 20px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm);
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;

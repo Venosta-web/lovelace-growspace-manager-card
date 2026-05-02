@@ -14783,6 +14783,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envDehumidifierThresholds = {};
         this.envSensorCoordinates = {};
         this.envIrrigationTanks = [];
+        // Tank editor form state
+        this._showTankForm = false;
+        this._editingTankIndex = null;
+        this._tankDraft = {
+            sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30
+        };
         // Vision Checkup Config
         this.envVisionEnabled = false;
         this.envVisionEarlyOffset = 60;
@@ -15276,6 +15282,154 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
       </ha-dialog>
     `;
+    }
+    _renderIrrigationTanksSection() {
+        const entities = this._getEntities(['sensor', 'input_number'], null);
+        const listId = 'list-tank-sensor-entity';
+        return x `
+      <div style="margin-top:16px; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); padding-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <span style="font-weight:500;">Irrigation Tanks</span>
+          <button class="md3-button tonal" @click=${this._openAddTank} style="padding:6px 12px;">
+            <svg style="width:16px;height:16px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+            Add Tank
+          </button>
+        </div>
+
+        ${this.envIrrigationTanks.length === 0 && !this._showTankForm
+            ? x `<div style="font-size:0.85rem; color:var(--secondary-text-color); padding:8px 0;">No tanks configured.</div>`
+            : E}
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          ${this.envIrrigationTanks.map((tank, i) => x `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px 12px; border-radius:8px;">
+              <div>
+                <div style="font-weight:500;">${tank.name || 'Tank ' + (i + 1)}</div>
+                <div style="font-size:0.78rem; color:var(--secondary-text-color);">
+                  ${tank.sensorEntity}
+                  ${tank.volumeLiters != null ? x ` · ${tank.volumeLiters} L` : E}
+                   · warn at ${tank.warningLevel ?? 30}%
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="md3-button text" @click=${() => this._editTank(i)} style="padding:6px; min-width:auto;">
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPencil}"></path></svg>
+                </button>
+                <button class="md3-button text error" @click=${() => this._deleteTank(i)} style="padding:6px; min-width:auto;">
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                </button>
+              </div>
+            </div>
+          `)}
+        </div>
+
+        ${this._showTankForm ? x `
+          <div style="margin-top:12px; background:rgba(255,255,255,0.04); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+            <div class="md3-input-group">
+              <label class="md3-label">Sensor Entity *</label>
+              <input
+                class="md3-input"
+                list="${listId}"
+                .value=${this._tankDraft.sensorEntity}
+                @input=${(e) => { this._tankDraft = { ...this._tankDraft, sensorEntity: e.target.value }; }}
+                placeholder="Search entity..."
+              />
+              <datalist id="${listId}">
+                ${entities.map(eid => x `<option value="${eid}"></option>`)}
+              </datalist>
+            </div>
+            <div class="md3-input-group">
+              <label class="md3-label">Name</label>
+              <input
+                class="md3-input"
+                type="text"
+                .value=${this._tankDraft.name}
+                @input=${(e) => { this._tankDraft = { ...this._tankDraft, name: e.target.value }; }}
+                placeholder="e.g. Main Tank"
+              />
+            </div>
+            <div class="row-col-grid">
+              <div class="md3-input-group">
+                <label class="md3-label">Volume (L, optional)</label>
+                <input
+                  class="md3-input"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  .value=${this._tankDraft.volumeLiters != null ? String(this._tankDraft.volumeLiters) : ''}
+                  @input=${(e) => {
+            const v = e.target.value;
+            this._tankDraft = { ...this._tankDraft, volumeLiters: v === '' ? null : parseFloat(v) };
+        }}
+                  placeholder="e.g. 100"
+                />
+              </div>
+              <div class="md3-input-group">
+                <label class="md3-label">Warning Level (%)</label>
+                <input
+                  class="md3-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  .value=${String(this._tankDraft.warningLevel)}
+                  @input=${(e) => {
+            this._tankDraft = { ...this._tankDraft, warningLevel: parseFloat(e.target.value) || 30 };
+        }}
+                />
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+              <button class="md3-button tonal" @click=${this._cancelTank}>Cancel</button>
+              <button class="md3-button primary" @click=${this._saveTank}>Save Tank</button>
+            </div>
+          </div>
+        ` : E}
+      </div>
+    `;
+    }
+    _openAddTank() {
+        this._tankDraft = { sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 };
+        this._editingTankIndex = null;
+        this._showTankForm = true;
+    }
+    _editTank(index) {
+        const tank = this.envIrrigationTanks[index];
+        this._tankDraft = {
+            sensorEntity: tank.sensorEntity || '',
+            name: tank.name || '',
+            volumeLiters: tank.volumeLiters ?? null,
+            warningLevel: tank.warningLevel ?? 30,
+        };
+        this._editingTankIndex = index;
+        this._showTankForm = true;
+    }
+    _deleteTank(index) {
+        this.envIrrigationTanks = this.envIrrigationTanks.filter((_, i) => i !== index);
+    }
+    _saveTank() {
+        if (!this._tankDraft.sensorEntity.trim())
+            return;
+        const tank = {
+            sensorEntity: this._tankDraft.sensorEntity.trim(),
+            name: this._tankDraft.name.trim() || 'Tank',
+            volumeLiters: this._tankDraft.volumeLiters,
+            warningLevel: this._tankDraft.warningLevel,
+        };
+        if (this._editingTankIndex !== null) {
+            const updated = [...this.envIrrigationTanks];
+            updated[this._editingTankIndex] = tank;
+            this.envIrrigationTanks = updated;
+        }
+        else {
+            this.envIrrigationTanks = [...this.envIrrigationTanks, tank];
+        }
+        this._showTankForm = false;
+        this._editingTankIndex = null;
+    }
+    _cancelTank() {
+        this._showTankForm = false;
+        this._editingTankIndex = null;
     }
     renderSensorGroupsTab() {
         return x `
@@ -15862,6 +16016,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               ${this._renderMultiEntitySelect('Power Sensors', this.envPowerSensors, ['sensor', 'input_number', 'number'], 'power', (values) => (this.envPowerSensors = values))}
               ${this._renderMultiEntitySelect('Energy Sensors', this.envEnergySensors, ['sensor', 'input_number', 'number'], 'energy', (values) => (this.envEnergySensors = values))}
             </div>
+            ${this._renderIrrigationTanksSection()}
           </div>
         </div>
 
@@ -15989,6 +16144,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
             this.envPowerSensors = [];
             this.envEnergySensors = attrs.energySensors || [];
+            this.envIrrigationTanks = (attrs.irrigationTanks || []).map((t) => ({
+                sensorEntity: t.sensorEntity || '',
+                name: t.name || 'Tank',
+                volumeLiters: t.volumeLiters ?? null,
+                warningLevel: t.warningLevel ?? 30,
+            }));
+            this._showTankForm = false;
+            this._editingTankIndex = null;
         }
         else {
             // Reset if no device or no attributes
@@ -16028,6 +16191,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envIrrigationFlowSensors = [];
             this.envPowerSensors = [];
             this.envEnergySensors = [];
+            this.envIrrigationTanks = [];
+            this._showTankForm = false;
+            this._editingTankIndex = null;
         }
     }
     renderDehumidifierTab() {
@@ -16694,6 +16860,15 @@ __decorate([
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envIrrigationTanks", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_showTankForm", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_editingTankIndex", void 0);
+__decorate([
+    r$2()
+], ConfigDialog.prototype, "_tankDraft", void 0);
 __decorate([
     r$2()
 ], ConfigDialog.prototype, "envVisionEnabled", void 0);

@@ -3,8 +3,10 @@ import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
+import type { HomeAssistant } from 'custom-card-helpers';
 
-import { RendererContext } from './renderers/base-renderer';
+import { BaseRenderer, RendererContext } from './renderers/base-renderer';
+import { GrowspaceDevice, StrainEntry } from '../../types';
 import { FrameRenderer } from './renderers/frame-renderer';
 import { SensorRenderer } from './renderers/sensor-renderer';
 import { FanRenderer } from './renderers/fan-renderer';
@@ -23,16 +25,16 @@ export class SceneManager {
     public volatileGroup: THREE.Group;
     public sensorMeshes: Map<string, THREE.Group> = new Map();
 
-    public renderers: any[] = [];
+    public renderers: BaseRenderer[] = [];
     private animationId?: number;
-    private resizeTimeoutId?: any;
+    private resizeTimeoutId?: ReturnType<typeof setTimeout>;
     private container: HTMLElement;
 
     // Context needs to be mutable or updated?
     // We pass the same context object reference to all renderers.
     private context: RendererContext;
 
-    constructor(container: HTMLElement, device: any, hass: any, config: any = {}) {
+    constructor(container: HTMLElement, device: GrowspaceDevice, hass: HomeAssistant, config: { strainLibrary?: StrainEntry[] } = {}) {
         this.container = container;
 
         const width = container.clientWidth || 400;
@@ -83,7 +85,7 @@ export class SceneManager {
             volatileGroup: this.volatileGroup,
             sensorMeshes: this.sensorMeshes,
             selectedMetric: 'temperature', // Default
-            historyData: {},
+            historyData: {} as Record<string, unknown[]>,
             timelineIndex: -1,
             strainLibrary: config.strainLibrary || [],
             visibility: {
@@ -123,8 +125,7 @@ export class SceneManager {
         ];
     }
 
-    // Called when props change (lit updated)
-    public update(device: any, hass: any, selectedMetric: string, historyData: any, timelineIndex: number, strainLibrary: any[], visibility: any) {
+    public update(device: GrowspaceDevice, hass: HomeAssistant, selectedMetric: string, historyData: Record<string, unknown[]>, timelineIndex: number, strainLibrary: StrainEntry[], visibility: RendererContext['visibility']) {
         this.context.device = device;
         this.context.hass = hass;
         this.context.selectedMetric = selectedMetric;

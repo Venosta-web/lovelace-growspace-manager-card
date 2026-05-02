@@ -9,7 +9,7 @@
  */
 
 import { LitElement, html } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import type { ReadableAtom } from 'nanostores';
@@ -18,6 +18,7 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { storeContext } from '../../../context';
 import { createGrowspaceGridViewModel, type GrowspaceGridViewModel } from '../viewmodels/growspace-grid.viewmodel';
 import type { GridCellClickEvent, GridDropEvent, GridMobileDropEvent } from '../components/growspace-grid-ui';
+import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
 
@@ -26,6 +27,8 @@ export class GrowspaceGridContainer extends LitElement {
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
   public store!: GrowspaceStore;
+
+  @query('growspace-grid-ui') private _gridUI?: GrowspaceGridUI;
 
   /** 2D array of plants in grid layout */
   @property({ type: Array }) plants: (PlantEntity | null)[][] = [];
@@ -176,16 +179,7 @@ export class GrowspaceGridContainer extends LitElement {
     }
   }
 
-  /**
-   * Public method to focus a specific plant card
-   */
-  public focusPlant(index: number) {
-    const gridUI = this.shadowRoot?.querySelector('growspace-grid-ui');
-    if (gridUI) {
-      const cards = gridUI.shadowRoot?.querySelectorAll('plant-card-container');
-      if (cards && cards[index]) {
-        (cards[index] as HTMLElement).focus();
-      }
-    }
+  public focusPlant(index: number): void {
+    this._gridUI?.focusCard(index);
   }
 }
