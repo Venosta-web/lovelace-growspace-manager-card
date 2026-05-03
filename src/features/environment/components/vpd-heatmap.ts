@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { sharedStyles } from '../../styles/shared.styles';
+import { sharedStyles } from '../../../styles/shared.styles';
 
 @customElement('vpd-heatmap')
 export class VPDHeatmap extends LitElement {

@@ -1,9 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { PlantEntity } from '../types';
-import { sharedStyles } from '../styles/shared.styles';
-import { variables } from '../styles/variables';
-import '../features/plants/containers/plant-card.container';
+import { PlantEntity } from '../../../types';
+import { sharedStyles } from '../../../styles/shared.styles';
+import { variables } from '../../../styles/variables';
+import '../containers/plant-card.container';
 
 @customElement('transplant-source-panel')
 export class TransplantSourcePanel extends LitElement {

@@ -9,7 +9,7 @@ import { LitElement, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { PlantTimelineEvent } from '../../../types';
-import '../../../components/plant/plant-timeline';
+import './plant-timeline';
 
 @customElement('plant-timeline-tab')
 export class PlantTimelineTab extends LitElement {

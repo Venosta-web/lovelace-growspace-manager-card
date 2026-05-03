@@ -2,8 +2,8 @@ import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { StageDisplay } from '../../types';
-import { plantStatsStyles } from '../../styles/plant-stats.styles';
+import { StageDisplay } from '../../../types';
+import { plantStatsStyles } from '../../../styles/plant-stats.styles';
 
 @customElement('growspace-plant-stats')
 export class GrowspacePlantStats extends LitElement {

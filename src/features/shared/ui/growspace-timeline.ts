@@ -1,10 +1,10 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceEvent } from '../../types';
-import { getTimelineService } from '../../services/timeline-service';
-import { getEventTimestamp, formatDateTime, formatShortDate } from '../../utils/date-utils';
-import { sharedStyles } from '../../styles/shared.styles';
+import { GrowspaceEvent } from '../../../types';
+import { getTimelineService } from '../../../services/timeline-service';
+import { getEventTimestamp, formatDateTime, formatShortDate } from '../../../utils/date-utils';
+import { sharedStyles } from '../../../styles/shared.styles';
 import {
   mdiWater,
   mdiAlertCircle,
@@ -15,7 +15,7 @@ import {
   mdiGauge,
   mdiDumbbell,
 } from '@mdi/js';
-import '../error-boundary';
+import './error-boundary';
 
 @customElement('growspace-timeline')
 export class GrowspaceTimeline extends LitElement {

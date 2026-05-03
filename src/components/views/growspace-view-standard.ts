@@ -9,7 +9,7 @@ import type { GrowspaceStore } from '../../store/core/growspace-store';
 import '../../features/ui/containers/growspace-header.container';
 import '../../features/ui/containers/growspace-analytics.container';
 import '../../features/ui/components/growspace-edit-mode-banner-ui';
-import '../transplant-source-panel';
+import '../../features/plants/components/transplant-source-panel';
 import '../../features/plants/containers/growspace-grid.container';
 import { growspaceCardStyles } from '../../styles/growspace-card.styles';
 import { sharedStyles } from '../../styles/shared.styles';

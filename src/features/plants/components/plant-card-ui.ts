@@ -25,7 +25,7 @@ import type { PlantStatusIndicators } from '../viewmodels/plant-card.viewmodel';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { plantCardStyles } from '../../../styles/plant-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
-import '../../../components/plant/plant-stats';
+import './plant-stats';
 
 /**
  * Pure presentational plant card component

@@ -1,13 +1,13 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { PlantTimelineEvent, TimelineEventMetadata } from '../../types';
-import { getTimelineService } from '../../services/timeline-service';
-import { formatRelativeDay, formatTime, getDateKey } from '../../utils/date-utils';
-import { sharedStyles } from '../../styles/shared.styles';
-import '../ui/quick-note-input';
-import '../ui/vpd-heatmap';
-import '../ui/confirm-delete-dialog';
+import { PlantTimelineEvent, TimelineEventMetadata } from '../../../types';
+import { getTimelineService } from '../../../services/timeline-service';
+import { formatRelativeDay, formatTime, getDateKey } from '../../../utils/date-utils';
+import { sharedStyles } from '../../../styles/shared.styles';
+import '../../shared/ui/quick-note-input';
+import '../../environment/components/vpd-heatmap';
+import '../../shared/ui/confirm-delete-dialog';
 import {
   mdiAlertCircle,
   mdiDelete,

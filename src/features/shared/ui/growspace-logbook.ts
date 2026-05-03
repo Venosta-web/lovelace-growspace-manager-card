@@ -1,20 +1,20 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceEvent } from '../../types';
-import { getTimelineService } from '../../services/timeline-service';
+import { GrowspaceEvent } from '../../../types';
+import { getTimelineService } from '../../../services/timeline-service';
 import {
   getEventTimestamp,
   formatDateTime,
   formatDuration,
   formatProbability,
-} from '../../utils/date-utils';
-import { dialogStyles } from '../../styles/dialog.styles';
+} from '../../../utils/date-utils';
+import { dialogStyles } from '../../../styles/dialog.styles';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 
 import { consume } from '@lit/context';
-import { hassContext } from '../../context';
+import { hassContext } from '../../../context';
 
 @customElement('growspace-logbook')
 export class GrowspaceLogbook extends LitElement {
