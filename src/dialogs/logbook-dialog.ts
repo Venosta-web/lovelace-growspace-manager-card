@@ -3,9 +3,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { mdiClose, mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/growspace-logbook';
-import '../components/ui/growspace-timeline';
-import '../components/ui/vpd-heatmap';
+import '../features/shared/ui/growspace-logbook';
+import '../features/shared/ui/growspace-timeline';
+import '../features/environment/components/vpd-heatmap';
 import '../features/shared/ui/gs-help-tooltip';
 
 import { consume } from '@lit/context';

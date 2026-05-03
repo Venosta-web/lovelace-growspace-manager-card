@@ -11,8 +11,8 @@ import { variables } from '../styles/variables';
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
 import { growspaceCardStyles } from '../styles/growspace-card.styles';
-import '../components/ui/growspace-logbook';
-import '../components/ui/growspace-timeline';
+import '../features/shared/ui/growspace-logbook';
+import '../features/shared/ui/growspace-timeline';
 import '../features/shared/ui/error-boundary';
 
 @customElement('growspace-logbook-card')
