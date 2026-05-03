@@ -1,12 +1,12 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiFullscreenExit } from '@mdi/js';
-import { PlantEntity } from '../../types';
-import '../../features/plants/containers/growspace-grid.container';
-import { growspaceCardStyles } from '../../styles/growspace-card.styles';
-import { sharedStyles } from '../../styles/shared.styles';
-import { uiStyles } from '../../styles/ui.styles';
-import { variables } from '../../styles/variables';
+import { PlantEntity } from '../../../types';
+import '../../plants/containers/growspace-grid.container';
+import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
+import { sharedStyles } from '../../../styles/shared.styles';
+import { uiStyles } from '../../../styles/ui.styles';
+import { variables } from '../../../styles/variables';
 
 @customElement('growspace-view-compact')
 export class GrowspaceViewCompact extends LitElement {

@@ -1,14 +1,14 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../types';
-import { ViewMode } from '../constants';
+import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../../types';
+import { ViewMode } from '../../../constants';
 
 // Import Views
-import './views/growspace-view-compact';
-import './views/growspace-view-header';
-import './views/growspace-view-standard';
-import './views/growspace-view-heatmap';
-import './error-boundary';
+import './growspace-view-compact';
+import './growspace-view-header';
+import './growspace-view-standard';
+import './growspace-view-heatmap';
+import '../ui/error-boundary';
 
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {

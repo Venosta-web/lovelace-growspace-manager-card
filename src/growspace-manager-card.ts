@@ -18,7 +18,7 @@ import './features/ui/containers/growspace-header.container';
 import './features/ui/containers/growspace-toast.container';
 
 import { LibraryExportReadyEvent } from './lib/events';
-import './components/growspace-view-switcher';
+import './features/shared/layouts/growspace-view-switcher';
 import './features/shared/ui'; // Register MD3 components
 import './features/shared/ui/error-boundary';
 import { sharedStyles } from './styles/shared.styles';

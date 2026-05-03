@@ -1,12 +1,12 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiChevronDown } from '@mdi/js';
-import { GrowspaceDevice } from '../../types';
-import '../../features/ui/containers/growspace-header.container';
-import { growspaceCardStyles } from '../../styles/growspace-card.styles';
-import { sharedStyles } from '../../styles/shared.styles';
-import { uiStyles } from '../../styles/ui.styles';
-import { variables } from '../../styles/variables';
+import { GrowspaceDevice } from '../../../types';
+import '../../ui/containers/growspace-header.container';
+import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
+import { sharedStyles } from '../../../styles/shared.styles';
+import { uiStyles } from '../../../styles/ui.styles';
+import { variables } from '../../../styles/variables';
 
 @customElement('growspace-view-header')
 export class GrowspaceViewHeader extends LitElement {

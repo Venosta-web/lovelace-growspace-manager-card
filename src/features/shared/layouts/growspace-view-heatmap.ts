@@ -1,8 +1,8 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { GrowspaceDevice } from '../../types';
-import '../../features/ui/containers/growspace-header.container';
-import '../heatmap-3d';
+import { GrowspaceDevice } from '../../../types';
+import '../../ui/containers/growspace-header.container';
+import '../../environment/components/heatmap-3d';
 
 /**
  * Wrapper view for the 3D Heatmap that includes the growspace header.

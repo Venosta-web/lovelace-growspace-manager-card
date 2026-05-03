@@ -12,7 +12,7 @@ import { ViewMode } from '../features/environment/constants';
 import { SubscriptionController } from '../controllers/subscription-controller';
 import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
-import '../components/growspace-view-switcher';
+import '../features/shared/layouts/growspace-view-switcher';
 import '../features/shared/ui/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';
