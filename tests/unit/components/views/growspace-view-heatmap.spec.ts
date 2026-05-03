@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
-import '../../../../src/components/views/growspace-view-heatmap';
-import { GrowspaceViewHeatmap } from '../../../../src/components/views/growspace-view-heatmap';
+import '../../../../src/features/shared/layouts/growspace-view-heatmap';
+import { GrowspaceViewHeatmap } from '../../../../src/features/shared/layouts/growspace-view-heatmap';
 
 // Mock child components
-vi.mock('../../../../src/components/growspace-header', () => ({
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({
     GrowspaceHeader: class extends HTMLElement { }
 }));
 
-vi.mock('../../../../src/components/heatmap-3d', () => ({
+vi.mock('../../../../src/features/environment/components/heatmap-3d', () => ({
     Heatmap3D: class extends HTMLElement { }
 }));
 

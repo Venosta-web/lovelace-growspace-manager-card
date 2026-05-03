@@ -1,17 +1,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
-import { GrowspaceViewSwitcher } from '../../../src/components/growspace-view-switcher';
+import { GrowspaceViewSwitcher } from '../../../src/features/shared/layouts/growspace-view-switcher';
 import { GrowspaceDevice } from '../../../src/types';
 
 // Mock child components to avoid deep rendering issues in unit tests
-vi.mock('../../../src/components/views/growspace-view-standard', () => ({
+vi.mock('../../../src/features/shared/layouts/growspace-view-standard', () => ({
     GrowspaceViewStandard: class extends HTMLElement { }
 }));
-vi.mock('../../../src/components/views/growspace-view-compact', () => ({
+vi.mock('../../../src/features/shared/layouts/growspace-view-compact', () => ({
     GrowspaceViewCompact: class extends HTMLElement { }
 }));
-vi.mock('../../../src/components/views/growspace-view-header', () => ({
+vi.mock('../../../src/features/shared/layouts/growspace-view-header', () => ({
     GrowspaceViewHeader: class extends HTMLElement { }
 }));
 

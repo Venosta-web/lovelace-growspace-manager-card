@@ -10,10 +10,10 @@ if (!customElements.get('growspace-logbook-card')) {
 }
 
 // Mock sub-components
-vi.mock('../../src/components/ui/growspace-logbook', () => ({
+vi.mock('../../src/features/shared/ui/growspace-logbook', () => ({
   GrowspaceLogbook: class extends HTMLElement { }
 }));
-vi.mock('../../src/components/ui/growspace-timeline', () => ({
+vi.mock('../../src/features/shared/ui/growspace-timeline', () => ({
   GrowspaceTimeline: class extends HTMLElement { }
 }));
 vi.mock('../../src/cards/editors/growspace-logbook-card-editor', () => ({

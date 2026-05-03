@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
-import '../../../../src/components/views/growspace-view-header';
-import { GrowspaceViewHeader } from '../../../../src/components/views/growspace-view-header';
+import '../../../../src/features/shared/layouts/growspace-view-header';
+import { GrowspaceViewHeader } from '../../../../src/features/shared/layouts/growspace-view-header';
 
 // Mock child components
 vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({

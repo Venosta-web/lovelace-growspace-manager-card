@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, nothing } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
 import * as THREE from 'three';
-import '../../../src/components/heatmap-3d';
-import { Heatmap3D } from '../../../src/components/heatmap-3d';
+import '../../../src/features/environment/components/heatmap-3d';
+import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
 
 // --- Mocks ---

@@ -23,19 +23,19 @@ class HaEntityPickerMock extends HTMLElement {
 }
 
 // Mock Dependencies
-vi.mock('../../../src/components/ui/md3-text-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-number-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
     Md3NumberInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-select', () => ({
+vi.mock('../../../src/features/shared/ui/md3-select', () => ({
     Md3Select: class extends HTMLElement { }
 }));
 

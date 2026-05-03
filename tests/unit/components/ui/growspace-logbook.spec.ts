@@ -1,6 +1,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GrowspaceLogbook } from '../../../../src/components/ui/growspace-logbook';
+import { GrowspaceLogbook } from '../../../../src/features/shared/ui/growspace-logbook';
 import { GrowspaceEvent } from '../../../../src/types';
 
 // Mock virtualizer

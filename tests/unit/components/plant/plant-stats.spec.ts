@@ -1,5 +1,5 @@
 import { fixture, html } from '@open-wc/testing-helpers';
-import { GrowspacePlantStats } from '../../../../src/components/plant/plant-stats';
+import { GrowspacePlantStats } from '../../../../src/features/plants/components/plant-stats';
 import { PlantStage } from '../../../../src/features/plants/types';
 import { describe, it, expect } from 'vitest';
 

@@ -11,7 +11,7 @@ if (!customElements.get('growspace-tank-card')) {
 }
 
 // Mock sub-components
-vi.mock('../../src/components/error-boundary', () => ({
+vi.mock('../../src/features/shared/ui/error-boundary', () => ({
     ErrorBoundary: class extends HTMLElement {
         constructor() {
             super();

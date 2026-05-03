@@ -11,7 +11,7 @@ if (!customElements.get('growspace-ai-insight-card')) {
 }
 
 // Mock sub-components
-vi.mock('../../src/components/error-boundary', () => ({
+vi.mock('../../src/features/shared/ui/error-boundary', () => ({
     ErrorBoundary: class extends HTMLElement { }
 }));
 vi.mock('../../src/cards/editors/growspace-ai-insight-card-editor', () => ({

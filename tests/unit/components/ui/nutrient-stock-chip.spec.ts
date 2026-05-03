@@ -1,8 +1,8 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { html, fixture, elementUpdated } from '@open-wc/testing-helpers';
-import '../../../../src/components/ui/nutrient-stock-chip';
-import { NutrientStockChip } from '../../../../src/components/ui/nutrient-stock-chip';
+import '../../../../src/features/shared/ui/nutrient-stock-chip';
+import { NutrientStockChip } from '../../../../src/features/shared/ui/nutrient-stock-chip';
 
 describe('NutrientStockChip', () => {
     let element: NutrientStockChip;

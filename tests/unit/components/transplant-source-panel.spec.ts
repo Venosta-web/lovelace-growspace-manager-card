@@ -25,8 +25,8 @@ class MockPlantCard extends LitElement {
     }
 }
 
-import '../../../src/components/transplant-source-panel';
-import { TransplantSourcePanel } from '../../../src/components/transplant-source-panel';
+import '../../../src/features/plants/components/transplant-source-panel';
+import { TransplantSourcePanel } from '../../../src/features/plants/components/transplant-source-panel';
 
 describe('TransplantSourcePanel', () => {
     let element: TransplantSourcePanel;

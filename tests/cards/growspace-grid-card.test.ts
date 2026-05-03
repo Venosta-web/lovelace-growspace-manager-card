@@ -12,9 +12,9 @@ if (!customElements.get('growspace-grid-card')) {
 
 // Mock sub-components so they don't throw or interfere
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
-vi.mock('../../src/components/growspace-toast', () => ({}));
-vi.mock('../../src/components/growspace-view-switcher', () => ({}));
-vi.mock('../../src/components/error-boundary', () => ({
+vi.mock('../../src/features/ui/containers/growspace-toast.container', () => ({}));
+vi.mock('../../src/features/shared/layouts/growspace-view-switcher', () => ({}));
+vi.mock('../../src/features/shared/ui/error-boundary', () => ({
     ErrorBoundary: class extends HTMLElement {
         // Stub the class
     }

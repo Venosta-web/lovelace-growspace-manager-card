@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
-import '../../../../src/components/views/growspace-view-compact';
-import { GrowspaceViewCompact } from '../../../../src/components/views/growspace-view-compact';
+import '../../../../src/features/shared/layouts/growspace-view-compact';
+import { GrowspaceViewCompact } from '../../../../src/features/shared/layouts/growspace-view-compact';
 
 import { customElement } from 'lit/decorators.js';
 

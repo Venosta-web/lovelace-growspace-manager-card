@@ -9,10 +9,10 @@ if (!customElements.get('growspace-manager-card')) {
   customElements.define('growspace-manager-card', GrowspaceManagerCard);
 }
 
-vi.mock('../../src/components/manager/dialog-host', () => ({}));
-vi.mock('../../src/components/growspace-toast', () => ({}));
-vi.mock('../../src/components/growspace-view-switcher', () => ({}));
-vi.mock('../../src/components/error-boundary', () => ({
+vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
+vi.mock('../../src/features/ui/containers/growspace-toast.container', () => ({}));
+vi.mock('../../src/features/shared/layouts/growspace-view-switcher', () => ({}));
+vi.mock('../../src/features/shared/ui/error-boundary', () => ({
   ErrorBoundary: class extends HTMLElement {},
 }));
 vi.mock('../../src/growspace-manager-card-editor.js', () => ({}));

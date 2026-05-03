@@ -1,8 +1,8 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GrowspaceTimeline } from '../../../../src/components/ui/growspace-timeline';
+import { GrowspaceTimeline } from '../../../../src/features/shared/ui/growspace-timeline';
 import { HomeAssistant } from 'custom-card-helpers';
-import '../../../../src/components/ui/growspace-timeline';
+import '../../../../src/features/shared/ui/growspace-timeline';
 
 describe('GrowspaceTimeline', () => {
     let element: GrowspaceTimeline;

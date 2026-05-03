@@ -4,14 +4,14 @@ import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
 
 // Mock imports — include both legacy paths (for old imports still in the view) and new container paths
-vi.mock('../../../../src/components/growspace-header', () => ({}));
 vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
-vi.mock('../../../../src/components/growspace-analytics', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
 vi.mock('../../../../src/features/ui/containers/growspace-analytics.container', () => ({}));
-vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-analytics.container', () => ({}));
 vi.mock('../../../../src/features/ui/components/growspace-edit-mode-banner-ui', () => ({}));
-vi.mock('../../../../src/components/transplant-source-panel', () => ({}));
-vi.mock('../../../../src/components/growspace-grid', () => ({}));
+vi.mock('../../../../src/features/ui/components/growspace-edit-mode-banner-ui', () => ({}));
+vi.mock('../../../../src/features/plants/components/transplant-source-panel', () => ({}));
+vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 
 // Defines mocks
@@ -47,7 +47,7 @@ class MockGridContainer extends LitElement {
 // Grid container is always used unconditionally
 const getGridSelector = () => 'growspace-grid-container';
 
-import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
+import { GrowspaceViewStandard } from '../../../../src/features/shared/layouts/growspace-view-standard';
 
 describe('GrowspaceViewStandard', () => {
     let element: GrowspaceViewStandard;

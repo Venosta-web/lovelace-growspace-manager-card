@@ -4,7 +4,7 @@ import { LogbookDialog } from '../../../src/dialogs/logbook-dialog';
 import '../../../src/dialogs/logbook-dialog';
 
 // Mock dependencies
-vi.mock('../../../src/components/ui/growspace-logbook', () => ({
+vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
     GrowspaceLogbook: class extends HTMLElement {
         hass: any;
         growspaceId: any;

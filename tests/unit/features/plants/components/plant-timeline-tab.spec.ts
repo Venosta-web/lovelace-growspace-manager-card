@@ -4,7 +4,7 @@ import '../../../../../src/features/plants/components/plant-timeline-tab';
 import type { PlantTimelineTab } from '../../../../../src/features/plants/components/plant-timeline-tab';
 
 // plant-timeline is a complex component; mock it so the tab tests stay unit-level
-vi.mock('../../../../../src/components/plant/plant-timeline', () => ({ default: class {} }));
+vi.mock('../../../../../src/features/plants/components/plant-timeline', () => ({ default: class {} }));
 
 describe('PlantTimelineTab', () => {
   let element: PlantTimelineTab;

@@ -5,19 +5,19 @@ import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 
 // Mock dependencies
-vi.mock('../../../src/components/ui/md3-text-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-number-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
     Md3NumberInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-switch', () => ({
+vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
     Md3Switch: class extends HTMLElement {
         get checked() { return this.hasAttribute('checked'); }
         set checked(v) { v ? this.setAttribute('checked', '') : this.removeAttribute('checked'); }

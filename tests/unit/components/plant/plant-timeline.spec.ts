@@ -1,5 +1,5 @@
 import { fixture, html, waitUntil } from '@open-wc/testing-helpers';
-import { PlantTimeline } from '../../../../src/components/plant/plant-timeline';
+import { PlantTimeline } from '../../../../src/features/plants/components/plant-timeline';
 import { PlantTimelineEvent } from '../../../../src/features/plants/types';
 import {
   mdiAlertCircle,

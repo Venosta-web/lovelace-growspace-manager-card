@@ -10,7 +10,7 @@ import { atom, computed } from 'nanostores';
 // Mock dependencies
 vi.mock('../../src/features/ui/containers/growspace-header.container', () => ({}));
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
-vi.mock('../../src/components/growspace-view-switcher', () => ({}));
+vi.mock('../../src/features/shared/layouts/growspace-view-switcher', () => ({}));
 
 export const mockSubscriptionCallback = { fn: undefined as ((refresh: boolean) => void) | undefined };
 
