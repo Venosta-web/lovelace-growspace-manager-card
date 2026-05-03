@@ -1,8 +1,8 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiBottleTonicPlus } from '@mdi/js';
-import { NutrientStock } from '../../types';
-import '../growspace-chip';
+import { NutrientStock } from '../../../types';
+import './growspace-chip';
 
 @customElement('nutrient-stock-chip')
 export class NutrientStockChip extends LitElement {

@@ -1,3 +1,4 @@
+import './nutrient-stock-chip';
 export * from './md3-text-input';
 export * from './md3-number-input';
 export * from './md3-select';
