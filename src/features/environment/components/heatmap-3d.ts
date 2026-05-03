@@ -4,14 +4,14 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 
-import { GrowspaceDevice, PlantEntity, StrainEntry } from '../types';
-import { PlantUtils } from '../utils/plant-utils';
-import { strainLibraryContext, storeContext } from '../context';
-import type { GrowspaceStore } from '../store/core/growspace-store';
-import { SceneManager } from '../utils/three/scene-manager';
-import { InteractionManager } from '../utils/three/interaction-manager';
-import { DataService } from '../utils/data-service';
-import { SensorTypeUtils } from '../utils/sensor-type-utils';
+import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../../types';
+import { PlantUtils } from '../../../utils/plant-utils';
+import { strainLibraryContext, storeContext } from '../../../context';
+import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { SceneManager } from '../../../utils/three/scene-manager';
+import { InteractionManager } from '../../../utils/three/interaction-manager';
+import { DataService } from '../../../utils/data-service';
+import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 
 @customElement('heatmap-3d')
 export class Heatmap3D extends LitElement {
