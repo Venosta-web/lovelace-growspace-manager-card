@@ -150,7 +150,7 @@ export class SensorRenderer extends BaseRenderer {
         const { timelineIndex, historyData, hass } = this.context;
         if (timelineIndex >= 0 && historyData[entityId]) {
             // History fetch
-            const point = historyData[entityId][timelineIndex];
+            const point = historyData[entityId][timelineIndex] as any;
             return point ? parseFloat(point.s) : 0;
         }
         const state = hass?.states[entityId];

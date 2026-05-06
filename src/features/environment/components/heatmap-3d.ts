@@ -496,23 +496,27 @@ export class Heatmap3D extends LitElement {
         this.dataService = new DataService(this.hass);
 
         // Initialize Scene Manager
-        this.sceneManager = new SceneManager(this.container, this.device, this.hass, { strainLibrary: this.strainLibrary });
+        if (this.device) {
+            this.sceneManager = new SceneManager(this.container, this.device, this.hass, { strainLibrary: this.strainLibrary });
+        }
 
-        // Expose element for renderers to dispatch events back
-        this.sceneManager.scene.userData.element = this.container;
+        if (this.sceneManager) {
+            // Expose element for renderers to dispatch events back
+            this.sceneManager.scene.userData.element = this.container;
 
-        this.container.addEventListener('unlink', (e: any) => {
-            if (e.detail?.entityId) this._handleUnlink(e.detail.entityId);
-        });
-        this.sceneManager.setCallbacks({
-            requestUpdate: () => this.requestUpdate(),
-            getSensorValue: (id, metric) => this.getSensorValue(id, metric)
-        });
+            this.container.addEventListener('unlink', (e: any) => {
+                if (e.detail?.entityId) this._handleUnlink(e.detail.entityId);
+            });
+            this.sceneManager.setCallbacks({
+                requestUpdate: () => this.requestUpdate(),
+                getSensorValue: (id, metric) => this.getSensorValue(id, metric)
+            });
 
-        // Initialize Interaction Manager
-        this.interactionManager = new InteractionManager(this.sceneManager, this.container);
-        this.interactionManager.setEditMode(this.editMode3DCords);
-        this.interactionManager.setCallback((event, data) => this.handleInteraction(event, data));
+            // Initialize Interaction Manager
+            this.interactionManager = new InteractionManager(this.sceneManager, this.container);
+            this.interactionManager.setEditMode(this.editMode3DCords);
+            this.interactionManager.setCallback((event, data) => this.handleInteraction(event, data));
+        }
 
         this.resizeObserver?.observe(this.container);
 
@@ -757,10 +761,8 @@ export class Heatmap3D extends LitElement {
         // Used by renderers
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
-            if (history && history[this.timelineIndex]) {
-                const val = parseFloat(history[this.timelineIndex].s);
-                return isNaN(val) ? 0 : val;
-            }
+            const point = history && history[this.timelineIndex] as any;
+            return point ? parseFloat(point.s) : 0;
         }
         if (!this.hass || !entityId) return 0;
         const state = this.hass.states[entityId];

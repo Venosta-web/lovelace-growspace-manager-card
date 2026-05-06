@@ -102690,21 +102690,25 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             return;
         this.dataService = new DataService(this.hass);
         // Initialize Scene Manager
-        this.sceneManager = new SceneManager(this.container, this.device, this.hass, { strainLibrary: this.strainLibrary });
-        // Expose element for renderers to dispatch events back
-        this.sceneManager.scene.userData.element = this.container;
-        this.container.addEventListener('unlink', (e) => {
-            if (e.detail?.entityId)
-                this._handleUnlink(e.detail.entityId);
-        });
-        this.sceneManager.setCallbacks({
-            requestUpdate: () => this.requestUpdate(),
-            getSensorValue: (id, metric) => this.getSensorValue(id, metric)
-        });
-        // Initialize Interaction Manager
-        this.interactionManager = new InteractionManager(this.sceneManager, this.container);
-        this.interactionManager.setEditMode(this.editMode3DCords);
-        this.interactionManager.setCallback((event, data) => this.handleInteraction(event, data));
+        if (this.device) {
+            this.sceneManager = new SceneManager(this.container, this.device, this.hass, { strainLibrary: this.strainLibrary });
+        }
+        if (this.sceneManager) {
+            // Expose element for renderers to dispatch events back
+            this.sceneManager.scene.userData.element = this.container;
+            this.container.addEventListener('unlink', (e) => {
+                if (e.detail?.entityId)
+                    this._handleUnlink(e.detail.entityId);
+            });
+            this.sceneManager.setCallbacks({
+                requestUpdate: () => this.requestUpdate(),
+                getSensorValue: (id, metric) => this.getSensorValue(id, metric)
+            });
+            // Initialize Interaction Manager
+            this.interactionManager = new InteractionManager(this.sceneManager, this.container);
+            this.interactionManager.setEditMode(this.editMode3DCords);
+            this.interactionManager.setCallback((event, data) => this.handleInteraction(event, data));
+        }
         this.resizeObserver?.observe(this.container);
         // Initial History Fetch
         this.fetchHistory();
@@ -102904,10 +102908,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         // Used by renderers
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
-            if (history && history[this.timelineIndex]) {
-                const val = parseFloat(history[this.timelineIndex].s);
-                return isNaN(val) ? 0 : val;
-            }
+            const point = history && history[this.timelineIndex];
+            return point ? parseFloat(point.s) : 0;
         }
         if (!this.hass || !entityId)
             return 0;
