@@ -551,6 +551,7 @@ export class MetricsUtils {
         soilAgg.entityIds,
         'Moisture'
       ),
+      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
       createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
       createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
       envEntity
@@ -584,7 +585,6 @@ export class MetricsUtils {
         undefined,
         'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'
       ),
-      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
       createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
       createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
     ].filter((c): c is NonNullable<typeof c> => c !== null);

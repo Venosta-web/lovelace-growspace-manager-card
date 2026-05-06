@@ -39,7 +39,7 @@ export class EditModeBanner extends LitElement {
         display: block;
       }
       .edit-mode-banner {
-        background: rgba(var(--rgb-card-background-color, 32, 33, 36), 0.8);
+        background: var(--card-background-color, rgba(32, 33, 36, 0.8));
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
