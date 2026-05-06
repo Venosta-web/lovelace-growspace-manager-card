@@ -7,9 +7,11 @@ import '../features/shared/ui/growspace-logbook';
 import '../features/shared/ui/growspace-timeline';
 import '../features/environment/components/vpd-heatmap';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/quick-note-input';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
+import { getTimelineService } from '../services/timeline-service';
 
 type LogbookTab = 'list' | 'timeline' | 'vpd';
 
@@ -97,10 +99,23 @@ export class LogbookDialog extends LitElement {
         border-bottom-color: var(--primary-color, #4caf50);
       }
 
+      .list-view-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
       growspace-logbook {
         flex: 1;
         min-height: 0;
         overflow: hidden;
+      }
+
+      quick-note-input {
+        flex-shrink: 0;
+        padding-top: 8px;
       }
 
       .timeline-placeholder {
@@ -117,6 +132,26 @@ export class LogbookDialog extends LitElement {
 
   private _close() {
     this.dispatchEvent(new CustomEvent('close'));
+  }
+
+  private async _handleNoteSubmit(e: CustomEvent) {
+    const noteInput = this.shadowRoot?.querySelector('quick-note-input') as any;
+    if (!noteInput) return;
+
+    noteInput.setSaving(true);
+    try {
+      const service = getTimelineService(this.hass);
+      await service.addGrowspaceNote(this.growspaceId, {
+        notes: e.detail.text,
+        images: e.detail.images,
+      });
+      noteInput.clear();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+    } catch (err) {
+      console.error('Error adding growspace note:', err);
+      noteInput.setSaving(false);
+    }
   }
 
   render() {
@@ -182,10 +217,16 @@ export class LogbookDialog extends LitElement {
           <!-- Content -->
           ${this._activeTab === 'list'
         ? html`
-                <growspace-logbook
-                  .hass=${this.hass}
-                  .growspaceId=${this.growspaceId}
-                ></growspace-logbook>
+                <div class="list-view-container">
+                  <growspace-logbook
+                    .hass=${this.hass}
+                    .growspaceId=${this.growspaceId}
+                  ></growspace-logbook>
+                  <quick-note-input
+                    placeholder="Add a growspace note..."
+                    @submit=${this._handleNoteSubmit}
+                  ></quick-note-input>
+                </div>
               `
         : this._activeTab === 'timeline'
           ? html`
