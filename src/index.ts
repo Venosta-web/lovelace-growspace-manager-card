@@ -15,6 +15,7 @@ export { GrowspaceAiInsightCard } from './cards/growspace-ai-insight-card';
 export { GrowspaceTankCard } from './cards/growspace-tank-card';
 export { GrowspaceSubareaCard } from './cards/growspace-subarea-card';
 export { GrowspaceLogbookCard } from './cards/growspace-logbook-card';
+export { GrowspaceCarouselCard } from './cards/growspace-carousel-card';
 
 // Register cards in the Home Assistant card picker
 declare global {
@@ -70,6 +71,12 @@ window.customCards.push(
     type: 'growspace-logbook-card',
     name: 'Growspace Logbook',
     description: 'Events logbook with list and timeline views for a growspace.',
+    preview: false,
+  },
+  {
+    type: 'growspace-carousel-card',
+    name: 'Growspace Carousel',
+    description: 'Automatically cycles through multiple selected growspaces.',
     preview: false,
   },
 );

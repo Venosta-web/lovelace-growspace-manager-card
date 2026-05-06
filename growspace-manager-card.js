@@ -110026,6 +110026,156 @@ GrowspaceLogbookCard = __decorate([
     t$2('growspace-logbook-card')
 ], GrowspaceLogbookCard);
 
+let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._currentIndex = 0;
+        this._isAnimating = false;
+    }
+    setConfig(config) {
+        if (!config.growspaces || config.growspaces.length === 0) {
+            throw new Error("You need to define at least one growspace");
+        }
+        this._config = {
+            interval: 15,
+            ...config
+        };
+    }
+    getCardSize() {
+        return 4;
+    }
+    static async getConfigElement() {
+        await Promise.resolve().then(function () { return growspaceCarouselCardEditor; });
+        return document.createElement('growspace-carousel-card-editor');
+    }
+    static getStubConfig() {
+        return {
+            type: 'custom:growspace-carousel-card',
+            growspaces: [],
+            interval: 15
+        };
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._startTimer();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._stopTimer();
+    }
+    _startTimer() {
+        this._stopTimer();
+        if (this._config && this._config.growspaces && this._config.growspaces.length > 1) {
+            this._timer = window.setInterval(() => this._nextSlide(), (this._config.interval || 15) * 1000);
+        }
+    }
+    _stopTimer() {
+        if (this._timer) {
+            window.clearInterval(this._timer);
+            this._timer = undefined;
+        }
+    }
+    _handleMouseEnter() {
+        this._stopTimer();
+    }
+    _handleMouseLeave() {
+        this._startTimer();
+    }
+    async _nextSlide() {
+        if (!this._config || !this._config.growspaces || this._config.growspaces.length <= 1 || this._isAnimating)
+            return;
+        this._isAnimating = true;
+        // Slide out to the left
+        this._wrapper.classList.add('slide-out');
+        // Wait for slide out animation (matches CSS transition duration)
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Update active growspace index
+        this._currentIndex = (this._currentIndex + 1) % this._config.growspaces.length;
+        const nextDeviceId = this._config.growspaces[this._currentIndex];
+        // Instruct the inner manager card to switch context
+        if (this._managerCard && this._managerCard.store) {
+            this._managerCard.store.handleDeviceChange(nextDeviceId);
+        }
+        // Jump to the right side seamlessly (prepare for slide in)
+        this._wrapper.classList.remove('slide-out');
+        this._wrapper.classList.add('slide-in-prepare');
+        // eslint-disable-next-line no-void
+        void this._wrapper.offsetWidth;
+        // Slide in from the right
+        this._wrapper.classList.remove('slide-in-prepare');
+        // Wait for slide in animation
+        await new Promise(resolve => setTimeout(resolve, 300));
+        this._isAnimating = false;
+    }
+    render() {
+        if (!this._config || !this._config.growspaces || this._config.growspaces.length === 0) {
+            return x ``;
+        }
+        // Use current growspace as default for the inner card config
+        const currentDeviceId = this._config.growspaces[this._currentIndex];
+        const managerConfig = {
+            type: 'custom:growspace-manager-card',
+            default_growspace: currentDeviceId,
+        };
+        return x `
+      <div 
+        class="carousel-container"
+        @mouseenter=${this._handleMouseEnter}
+        @mouseleave=${this._handleMouseLeave}
+      >
+        <div class="carousel-wrapper">
+          <growspace-manager-card
+            .hass=${this.hass}
+            ._config=${managerConfig}
+          ></growspace-manager-card>
+        </div>
+      </div>
+    `;
+    }
+};
+GrowspaceCarouselCard.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .carousel-container {
+      overflow: hidden;
+      position: relative;
+      width: 100%;
+      /* Avoid layout jumps during animation */
+      min-height: 200px; 
+    }
+    .carousel-wrapper {
+      width: 100%;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .carousel-wrapper.slide-out {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    .carousel-wrapper.slide-in-prepare {
+      transition: none;
+      transform: translateX(30px);
+      opacity: 0;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceCarouselCard.prototype, "hass", void 0);
+__decorate([
+    r$3()
+], GrowspaceCarouselCard.prototype, "_config", void 0);
+__decorate([
+    e$6('.carousel-wrapper')
+], GrowspaceCarouselCard.prototype, "_wrapper", void 0);
+__decorate([
+    e$6('growspace-manager-card')
+], GrowspaceCarouselCard.prototype, "_managerCard", void 0);
+GrowspaceCarouselCard = __decorate([
+    t$2('growspace-carousel-card')
+], GrowspaceCarouselCard);
+
 // Export all types
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -110062,6 +110212,11 @@ window.customCards.push({
     type: 'growspace-logbook-card',
     name: 'Growspace Logbook',
     description: 'Events logbook with list and timeline views for a growspace.',
+    preview: false,
+}, {
+    type: 'growspace-carousel-card',
+    name: 'Growspace Carousel',
+    description: 'Automatically cycles through multiple selected growspaces.',
     preview: false,
 });
 
@@ -111768,5 +111923,88 @@ var growspaceLogbookCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceLogbookCardEditor () { return GrowspaceLogbookCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+let GrowspaceCarouselCardEditor = class GrowspaceCarouselCardEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._gsController = new GrowspaceOptionsController(this);
+    }
+    setConfig(config) {
+        this._config = config;
+    }
+    updated(changedProps) {
+        if (changedProps.has('hass') && this.hass) {
+            this._gsController.update(this.hass);
+        }
+    }
+    _computeSchema() {
+        return [
+            {
+                name: 'growspaces',
+                selector: {
+                    select: {
+                        multiple: true,
+                        custom_value: true,
+                        options: this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
+                    },
+                },
+            },
+            {
+                name: 'interval',
+                selector: {
+                    number: {
+                        min: 5,
+                        max: 300,
+                        step: 1,
+                        unit_of_measurement: 'seconds',
+                    },
+                },
+            },
+        ];
+    }
+    render() {
+        if (!this._config)
+            return x ``;
+        return x `
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${this._computeSchema()}
+        .computeLabel=${computeEditorLabel}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
+    `;
+    }
+    _valueChanged(ev) {
+        if (!this._config)
+            return;
+        this._config = ev.detail.value;
+        this.dispatchEvent(new CustomEvent('config-changed', {
+            detail: { config: this._config },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+GrowspaceCarouselCardEditor.styles = i$6 `
+    ha-form {
+      display: block;
+      margin-bottom: 24px;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceCarouselCardEditor.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceCarouselCardEditor.prototype, "_config", void 0);
+GrowspaceCarouselCardEditor = __decorate([
+    t$2('growspace-carousel-card-editor')
+], GrowspaceCarouselCardEditor);
+
+var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
+});
+
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
