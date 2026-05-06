@@ -10728,6 +10728,14 @@ class TimelineService {
             transition_date: payload.transitionDate || new Date().toISOString(),
         });
     }
+    async addGrowspaceNote(growspaceId, payload) {
+        await this.hass.callWS({
+            type: 'growspace_manager/add_growspace_note',
+            growspace_id: growspaceId,
+            notes: payload.notes,
+            images: payload.images || [],
+        });
+    }
     /**
      * Delete a timeline event
      * @param eventId - The event ID to delete
@@ -21782,6 +21790,353 @@ VPDHeatmap = __decorate([
     t$2('vpd-heatmap')
 ], VPDHeatmap);
 
+/**
+ * Quick note input component with image upload support
+ * Extracted from plant-timeline for reusability
+ */
+let QuickNoteInput = class QuickNoteInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.placeholder = 'Add a cultivation note...';
+        this.allowImages = true;
+        this.disabled = false;
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Resize and compress an image file
+     */
+    async _resizeImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error('Could not get canvas context'));
+                        return;
+                    }
+                    // Max dimensions
+                    const MAX_WIDTH = 1024;
+                    const MAX_HEIGHT = 1024;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    }
+                    else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // Compress to JPEG 0.8
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    resolve(dataUrl);
+                };
+                img.onerror = (e) => reject(e);
+                img.src = e.target?.result;
+            };
+            reader.onerror = (e) => reject(e);
+            reader.readAsDataURL(file);
+        });
+    }
+    async _handleFileSelect(e) {
+        const input = e.target;
+        if (!input.files)
+            return;
+        const files = Array.from(input.files);
+        for (const file of files) {
+            try {
+                const resized = await this._resizeImage(file);
+                this._images = [...this._images, resized];
+            }
+            catch (err) {
+                console.error('Error processing image:', err);
+            }
+        }
+        // Clear input to allow re-selecting same file
+        input.value = '';
+    }
+    _removeImage(index) {
+        this._images = this._images.filter((_, i) => i !== index);
+    }
+    async _submit() {
+        if (!this._text.trim() && !this._images.length)
+            return;
+        this._isSaving = true;
+        // Dispatch event with note data
+        this.dispatchEvent(new CustomEvent('submit', {
+            detail: {
+                text: this._text.trim(),
+                images: this._images,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        // Note: The parent component should handle the actual submission
+        // and call clear() method on success
+    }
+    /**
+     * Public method to clear the input after successful submission
+     */
+    clear() {
+        this._text = '';
+        this._images = [];
+        this._isSaving = false;
+    }
+    /**
+     * Public method to set saving state (called by parent during submission)
+     */
+    setSaving(saving) {
+        this._isSaving = saving;
+    }
+    render() {
+        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
+        return x `
+      <div class="container">
+        <div class="input-wrapper">
+          <textarea
+            placeholder="${this.placeholder}"
+            .value=${this._text}
+            @input=${(e) => (this._text = e.target.value)}
+            rows="2"
+            ?disabled=${this.disabled || this._isSaving}
+          ></textarea>
+        </div>
+
+        ${this._images.length > 0
+            ? x `
+              <div class="image-previews">
+                ${this._images.map((img, i) => x `
+                    <div class="preview-item">
+                      <img src=${img} alt="Preview ${i + 1}" />
+                      <button
+                        class="remove-img"
+                        @click=${() => this._removeImage(i)}
+                        ?disabled=${this._isSaving}
+                        aria-label="Remove image"
+                      >
+                        <svg viewBox="0 0 24 24">
+                          <path d="${mdiClose}" />
+                        </svg>
+                      </button>
+                    </div>
+                  `)}
+              </div>
+            `
+            : E}
+
+        <div class="actions">
+          <div class="action-buttons">
+            ${this.allowImages
+            ? x `
+                    <input
+                      type="file"
+                      id="fileInput"
+                      @change=${this._handleFileSelect}
+                      multiple
+                      accept="image/*"
+                    />
+                  <button
+                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
+                    ?disabled=${this.disabled || this._isSaving}
+                    aria-label="Add image"
+                    title="Add image"
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="${mdiCameraPlus}" />
+                    </svg>
+                  </button>
+                `
+            : E}
+          </div>
+          <button
+            class="submit-btn"
+            @click=${this._submit}
+            ?disabled=${!canSubmit || this.disabled}
+            aria-label="Submit note"
+            title="Submit note"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="${mdiSend}" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+QuickNoteInput.styles = i$6 `
+    :host {
+      display: block;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .container {
+      padding: 12px;
+      border-radius: var(--border-radius-md);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--divider-color);
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--primary-text-color);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: none;
+      padding: var(--spacing-xs);
+      outline: none;
+      min-height: 40px;
+    }
+
+    textarea::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: var(--spacing-sm);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: var(--spacing-sm);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.submit-btn {
+      background: var(--primary-color, #03a9f4);
+      color: white;
+    }
+
+    button.submit-btn:hover:not(:disabled) {
+      background: var(--primary-color-dark, #0288d1);
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    .image-previews {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-top: var(--spacing-sm);
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .preview-item {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--border-radius-xs);
+      border: 1px solid var(--divider-color);
+    }
+
+    .remove-img {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--error-color, #f44336);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .remove-img svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .remove-img:hover {
+      background: var(--error-color-dark, #d32f2f);
+    }
+
+    input[type='file'] {
+      display: none;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], QuickNoteInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "allowImages", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], QuickNoteInput.prototype, "disabled", void 0);
+__decorate([
+    r$3()
+], QuickNoteInput.prototype, "_text", void 0);
+__decorate([
+    r$3()
+], QuickNoteInput.prototype, "_images", void 0);
+__decorate([
+    r$3()
+], QuickNoteInput.prototype, "_isSaving", void 0);
+QuickNoteInput = __decorate([
+    t$2('quick-note-input')
+], QuickNoteInput);
+
 let LogbookDialog = class LogbookDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -21791,6 +22146,26 @@ let LogbookDialog = class LogbookDialog extends i$3 {
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
+    }
+    async _handleNoteSubmit(e) {
+        const noteInput = this.shadowRoot?.querySelector('quick-note-input');
+        if (!noteInput)
+            return;
+        noteInput.setSaving(true);
+        try {
+            const service = getTimelineService(this.hass);
+            await service.addGrowspaceNote(this.growspaceId, {
+                notes: e.detail.text,
+                images: e.detail.images,
+            });
+            noteInput.clear();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+        }
+        catch (err) {
+            console.error('Error adding growspace note:', err);
+            noteInput.setSaving(false);
+        }
     }
     render() {
         if (!this.open)
@@ -21855,10 +22230,16 @@ let LogbookDialog = class LogbookDialog extends i$3 {
           <!-- Content -->
           ${this._activeTab === 'list'
             ? x `
-                <growspace-logbook
-                  .hass=${this.hass}
-                  .growspaceId=${this.growspaceId}
-                ></growspace-logbook>
+                <div class="list-view-container">
+                  <growspace-logbook
+                    .hass=${this.hass}
+                    .growspaceId=${this.growspaceId}
+                  ></growspace-logbook>
+                  <quick-note-input
+                    placeholder="Add a growspace note..."
+                    @submit=${this._handleNoteSubmit}
+                  ></quick-note-input>
+                </div>
               `
             : this._activeTab === 'timeline'
                 ? x `
@@ -21967,10 +22348,23 @@ LogbookDialog.styles = [
         border-bottom-color: var(--primary-color, #4caf50);
       }
 
+      .list-view-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
       growspace-logbook {
         flex: 1;
         min-height: 0;
         overflow: hidden;
+      }
+
+      quick-note-input {
+        flex-shrink: 0;
+        padding-top: 8px;
       }
 
       .timeline-placeholder {
@@ -29073,353 +29467,6 @@ PlantActionsTab = __decorate([
 ], PlantActionsTab);
 
 /**
- * Quick note input component with image upload support
- * Extracted from plant-timeline for reusability
- */
-let QuickNoteInput = class QuickNoteInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.placeholder = 'Add a cultivation note...';
-        this.allowImages = true;
-        this.disabled = false;
-        this._text = '';
-        this._images = [];
-        this._isSaving = false;
-    }
-    /**
-     * Resize and compress an image file
-     */
-    async _resizeImage(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        reject(new Error('Could not get canvas context'));
-                        return;
-                    }
-                    // Max dimensions
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > height) {
-                        if (width > MAX_WIDTH) {
-                            height *= MAX_WIDTH / width;
-                            width = MAX_WIDTH;
-                        }
-                    }
-                    else {
-                        if (height > MAX_HEIGHT) {
-                            width *= MAX_HEIGHT / height;
-                            height = MAX_HEIGHT;
-                        }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    // Compress to JPEG 0.8
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(dataUrl);
-                };
-                img.onerror = (e) => reject(e);
-                img.src = e.target?.result;
-            };
-            reader.onerror = (e) => reject(e);
-            reader.readAsDataURL(file);
-        });
-    }
-    async _handleFileSelect(e) {
-        const input = e.target;
-        if (!input.files)
-            return;
-        const files = Array.from(input.files);
-        for (const file of files) {
-            try {
-                const resized = await this._resizeImage(file);
-                this._images = [...this._images, resized];
-            }
-            catch (err) {
-                console.error('Error processing image:', err);
-            }
-        }
-        // Clear input to allow re-selecting same file
-        input.value = '';
-    }
-    _removeImage(index) {
-        this._images = this._images.filter((_, i) => i !== index);
-    }
-    async _submit() {
-        if (!this._text.trim() && !this._images.length)
-            return;
-        this._isSaving = true;
-        // Dispatch event with note data
-        this.dispatchEvent(new CustomEvent('submit', {
-            detail: {
-                text: this._text.trim(),
-                images: this._images,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-        // Note: The parent component should handle the actual submission
-        // and call clear() method on success
-    }
-    /**
-     * Public method to clear the input after successful submission
-     */
-    clear() {
-        this._text = '';
-        this._images = [];
-        this._isSaving = false;
-    }
-    /**
-     * Public method to set saving state (called by parent during submission)
-     */
-    setSaving(saving) {
-        this._isSaving = saving;
-    }
-    render() {
-        const canSubmit = (this._text.trim() || this._images.length > 0) && !this._isSaving;
-        return x `
-      <div class="container">
-        <div class="input-wrapper">
-          <textarea
-            placeholder="${this.placeholder}"
-            .value=${this._text}
-            @input=${(e) => (this._text = e.target.value)}
-            rows="2"
-            ?disabled=${this.disabled || this._isSaving}
-          ></textarea>
-        </div>
-
-        ${this._images.length > 0
-            ? x `
-              <div class="image-previews">
-                ${this._images.map((img, i) => x `
-                    <div class="preview-item">
-                      <img src=${img} alt="Preview ${i + 1}" />
-                      <button
-                        class="remove-img"
-                        @click=${() => this._removeImage(i)}
-                        ?disabled=${this._isSaving}
-                        aria-label="Remove image"
-                      >
-                        <svg viewBox="0 0 24 24">
-                          <path d="${mdiClose}" />
-                        </svg>
-                      </button>
-                    </div>
-                  `)}
-              </div>
-            `
-            : E}
-
-        <div class="actions">
-          <div class="action-buttons">
-            ${this.allowImages
-            ? x `
-                    <input
-                      type="file"
-                      id="fileInput"
-                      @change=${this._handleFileSelect}
-                      multiple
-                      accept="image/*"
-                    />
-                  <button
-                    @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
-                    ?disabled=${this.disabled || this._isSaving}
-                    aria-label="Add image"
-                    title="Add image"
-                  >
-                    <svg viewBox="0 0 24 24">
-                      <path d="${mdiCameraPlus}" />
-                    </svg>
-                  </button>
-                `
-            : E}
-          </div>
-          <button
-            class="submit-btn"
-            @click=${this._submit}
-            ?disabled=${!canSubmit || this.disabled}
-            aria-label="Submit note"
-            title="Submit note"
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="${mdiSend}" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    `;
-    }
-};
-QuickNoteInput.styles = i$6 `
-    :host {
-      display: block;
-      margin-bottom: var(--spacing-lg);
-    }
-
-    .container {
-      padding: 12px;
-      border-radius: var(--border-radius-md);
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px dashed var(--divider-color);
-    }
-
-    .input-wrapper {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-    }
-
-    textarea {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--primary-text-color);
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: none;
-      padding: var(--spacing-xs);
-      outline: none;
-      min-height: 40px;
-    }
-
-    textarea::placeholder {
-      color: var(--secondary-text-color);
-      opacity: 0.6;
-    }
-
-    .actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: var(--spacing-sm);
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: var(--spacing-sm);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s;
-    }
-
-    button:hover:not(:disabled) {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    button.submit-btn {
-      background: var(--primary-color, #03a9f4);
-      color: white;
-    }
-
-    button.submit-btn:hover:not(:disabled) {
-      background: var(--primary-color-dark, #0288d1);
-    }
-
-    svg {
-      width: 24px;
-      height: 24px;
-      fill: currentColor;
-    }
-
-    .image-previews {
-      display: flex;
-      gap: var(--spacing-sm);
-      margin-top: var(--spacing-sm);
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-
-    .preview-item {
-      position: relative;
-      width: 60px;
-      height: 60px;
-      flex-shrink: 0;
-    }
-
-    .preview-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: var(--border-radius-xs);
-      border: 1px solid var(--divider-color);
-    }
-
-    .remove-img {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      background: var(--error-color, #f44336);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      padding: 0;
-      border: none;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .remove-img svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    .remove-img:hover {
-      background: var(--error-color-dark, #d32f2f);
-    }
-
-    input[type='file'] {
-      display: none;
-    }
-  `;
-__decorate([
-    n$5({ type: String })
-], QuickNoteInput.prototype, "placeholder", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], QuickNoteInput.prototype, "allowImages", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], QuickNoteInput.prototype, "disabled", void 0);
-__decorate([
-    r$3()
-], QuickNoteInput.prototype, "_text", void 0);
-__decorate([
-    r$3()
-], QuickNoteInput.prototype, "_images", void 0);
-__decorate([
-    r$3()
-], QuickNoteInput.prototype, "_isSaving", void 0);
-QuickNoteInput = __decorate([
-    t$2('quick-note-input')
-], QuickNoteInput);
-
-/**
  * Reusable confirmation dialog for delete operations
  * Used by plant-timeline and potentially other components
  */
@@ -32616,7 +32663,7 @@ EditModeBanner.styles = [
         display: block;
       }
       .edit-mode-banner {
-        background: rgba(var(--rgb-card-background-color, 32, 33, 36), 0.8);
+        background: var(--card-background-color, rgba(32, 33, 36, 0.8));
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -41296,6 +41343,7 @@ class MetricsUtils {
             createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, undefined, undefined, 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.'),
             createChipData(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, tankLevelValue, tankMultiValues, tankEntityIds, 'Tank', tankStatus, tankTooltip),
             createChipData(MetricKey.SOIL_MOISTURE, mdiWaterPercent, soilAgg.value, soilAgg.multiValues, soilAgg.entityIds, 'Moisture'),
+            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
             createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
             createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
             envEntity
@@ -41303,7 +41351,6 @@ class MetricsUtils {
                 : null,
             createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId], undefined, undefined, 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'),
             createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId], undefined, undefined, 'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'),
-            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
             createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
             createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
         ].filter((c) => c !== null);

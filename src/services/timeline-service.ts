@@ -112,6 +112,15 @@ export class TimelineService {
     });
   }
 
+  async addGrowspaceNote(growspaceId: string, payload: NotePayload): Promise<void> {
+    await this.hass.callWS({
+      type: 'growspace_manager/add_growspace_note',
+      growspace_id: growspaceId,
+      notes: payload.notes,
+      images: payload.images || [],
+    });
+  }
+
   /**
    * Delete a timeline event
    * @param eventId - The event ID to delete
