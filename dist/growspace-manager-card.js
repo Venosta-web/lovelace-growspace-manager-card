@@ -31861,9 +31861,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             <button class="md3-button text" style="font-size:11px;"
               @click=${() => {
             const strainName = this.plant?.attributes?.strain;
+            const phenotype = this.plant?.attributes?.phenotype;
             if (strainName) {
                 this.dispatchEvent(new CustomEvent('open-strain-editor', {
-                    detail: { strain: strainName, focusLineage: true },
+                    detail: { strain: strainName, phenotype, focusLineage: true },
                     bubbles: true,
                     composed: true,
                 }));
