@@ -2051,7 +2051,10 @@ export class StrainLibraryDialog extends LitElement {
               ${this._lineageEditMode
                 ? html`<lineage-tree-editor
                     .node=${this._lineageTree}
-                    .strainNames=${(this.strains ?? []).map((st: StrainEntry) => st.strain || (st as unknown as Record<string, string>)['strain_name']).filter(Boolean)}
+                    .strainEntries=${(this.strains ?? []).map((st: StrainEntry) => ({
+                      name: st.strain || (st as unknown as Record<string, string>)['strain_name'] || '',
+                      phenotype: st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
+                    })).filter(e => !!e.name)}
                     @lineage-change=${async (e: CustomEvent) => {
                       const { parents } = e.detail;
                       if (!s.strain || !this.store) return;

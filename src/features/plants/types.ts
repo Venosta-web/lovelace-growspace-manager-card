@@ -232,8 +232,10 @@ export interface PlantDisplayData {
 export interface LineageNode {
   /** plant_id or seed_batch_id of this node */
   id: string;
-  /** Display name (strain + phenotype or batch name) — matches backend 'name' field */
+  /** Display name (strain name) */
   name: string;
+  /** Phenotype name — present when not 'default'; shown alongside name in the tree */
+  phenotype?: string;
   /** 'plant' | 'seed_batch' | 'strain' */
   type: 'plant' | 'seed_batch' | 'strain';
   /** Generation designation, e.g. F1, S1, BX1 */

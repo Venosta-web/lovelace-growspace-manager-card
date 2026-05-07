@@ -24189,10 +24189,12 @@ let LineageTree = class LineageTree extends i$3 {
     _renderNode(node, depth = 0) {
         const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
         const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
+        const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
         return x `
       <div class="tree-level">
         <div class="node-card ${node.type}">
           <div class="node-label">${node.name}</div>
+          ${phenotype ? x `<div class="node-phenotype">${phenotype}</div>` : E}
           <div class="node-meta">
             ${sexSymbol ? x `<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : E}
             ${node.generation ? x `<span class="gen-badge">${node.generation}</span>` : E}
@@ -24307,6 +24309,11 @@ LineageTree.styles = i$6 `
       font-size: 12px;
       word-break: break-word;
     }
+    .node-phenotype {
+      font-size: 10px;
+      color: var(--secondary-text-color);
+      font-style: italic;
+    }
     .node-meta {
       display: flex;
       align-items: center;
@@ -24360,7 +24367,7 @@ let LineageTreeEditor = class LineageTreeEditor extends i$3 {
     constructor() {
         super(...arguments);
         this.node = null;
-        this.strainNames = [];
+        this.strainEntries = [];
         this._activeSlot = null;
         this._query = ['', ''];
     }
@@ -24374,6 +24381,7 @@ let LineageTreeEditor = class LineageTreeEditor extends i$3 {
     _currentParents() {
         return (this.node?.parents ?? []).map(p => ({
             name: p.name,
+            phenotype: p.phenotype,
             source: ((p['source']) ?? 'manual'),
         }));
     }
@@ -24382,26 +24390,32 @@ let LineageTreeEditor = class LineageTreeEditor extends i$3 {
         parents.splice(index, 1);
         this._fireChange(parents);
     }
-    _selectSuggestion(index, name, source) {
+    _displayLabel(entry) {
+        return entry.phenotype ? `${entry.name} (${entry.phenotype})` : entry.name;
+    }
+    _selectEntry(index, entry, source) {
         const parents = this._currentParents();
-        parents[index] = { name, source };
+        parents[index] = { name: entry.name, phenotype: entry.phenotype, source };
         this._activeSlot = null;
         this._fireChange(parents);
     }
     _getSuggestions(index) {
         const q = (this._query[index] ?? '').toLowerCase().trim();
         if (!q)
-            return this.strainNames.slice(0, 8);
-        return this.strainNames.filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+            return this.strainEntries.slice(0, 8);
+        return this.strainEntries
+            .filter(e => this._displayLabel(e).toLowerCase().includes(q))
+            .slice(0, 8);
     }
     _renderSlot(index) {
         const parents = this._currentParents();
         const existing = parents[index];
         const isOpen = this._activeSlot === index;
         if (existing) {
+            const parentLabel = existing.phenotype ? `${existing.name} (${existing.phenotype})` : existing.name;
             return x `
         <div class="lte-parent-node">
-          <span class="lte-parent-name ${existing.source}">${existing.name}</span>
+          <span class="lte-parent-name ${existing.source}">${parentLabel}</span>
           <button class="lte-remove" @click=${() => this._removeParent(index)}>×</button>
           ${existing.source === 'library' && this.node?.parents?.[index]?.parents?.length
                 ? x `<div class="lte-preview"><lineage-tree .node=${this.node.parents[index]}></lineage-tree></div>`
@@ -24410,6 +24424,7 @@ let LineageTreeEditor = class LineageTreeEditor extends i$3 {
         }
         const suggestions = this._getSuggestions(index);
         const query = this._query[index] ?? '';
+        const queryMatchesEntry = this.strainEntries.some(e => this._displayLabel(e) === query);
         return x `
       <div class="lte-add-slot">
         ${isOpen ? x `
@@ -24430,11 +24445,13 @@ let LineageTreeEditor = class LineageTreeEditor extends i$3 {
         }}
             />
             <div class="lte-suggestions">
-              ${suggestions.map(name => x `
-                <div class="lte-suggestion" @click=${() => this._selectSuggestion(index, name, 'library')}>${name}</div>
+              ${suggestions.map(entry => x `
+                <div class="lte-suggestion" @click=${() => this._selectEntry(index, entry, 'library')}>
+                  ${this._displayLabel(entry)}
+                </div>
               `)}
-              ${query && !this.strainNames.includes(query) ? x `
-                <div class="lte-suggestion manual" @click=${() => this._selectSuggestion(index, query, 'manual')}>
+              ${query && !queryMatchesEntry ? x `
+                <div class="lte-suggestion manual" @click=${() => this._selectEntry(index, { name: query }, 'manual')}>
                   Use "${query}" (not in library)
                 </div>` : E}
             </div>
@@ -24507,7 +24524,7 @@ __decorate([
 ], LineageTreeEditor.prototype, "node", void 0);
 __decorate([
     n$5({ attribute: false })
-], LineageTreeEditor.prototype, "strainNames", void 0);
+], LineageTreeEditor.prototype, "strainEntries", void 0);
 __decorate([
     r$3()
 ], LineageTreeEditor.prototype, "_activeSlot", void 0);
@@ -25543,7 +25560,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               ${this._lineageEditMode
             ? x `<lineage-tree-editor
                     .node=${this._lineageTree}
-                    .strainNames=${(this.strains ?? []).map((st) => st.strain || st['strain_name']).filter(Boolean)}
+                    .strainEntries=${(this.strains ?? []).map((st) => ({
+                name: st.strain || st['strain_name'] || '',
+                phenotype: st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
+            })).filter(e => !!e.name)}
                     @lineage-change=${async (e) => {
                 const { parents } = e.detail;
                 if (!s.strain || !this.store)

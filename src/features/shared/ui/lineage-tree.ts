@@ -94,6 +94,11 @@ export class LineageTree extends LitElement {
       font-size: 12px;
       word-break: break-word;
     }
+    .node-phenotype {
+      font-size: 10px;
+      color: var(--secondary-text-color);
+      font-style: italic;
+    }
     .node-meta {
       display: flex;
       align-items: center;
@@ -138,11 +143,13 @@ export class LineageTree extends LitElement {
   private _renderNode(node: LineageNode, depth = 0): TemplateResult {
     const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
     const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
+    const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
 
     return html`
       <div class="tree-level">
         <div class="node-card ${node.type}">
           <div class="node-label">${node.name}</div>
+          ${phenotype ? html`<div class="node-phenotype">${phenotype}</div>` : nothing}
           <div class="node-meta">
             ${sexSymbol ? html`<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : nothing}
             ${node.generation ? html`<span class="gen-badge">${node.generation}</span>` : nothing}
@@ -192,13 +199,19 @@ declare global {
 
 export type LineageParent = {
   name: string;
+  phenotype?: string;
   source: 'library' | 'manual';
+};
+
+export type StrainEntry = {
+  name: string;
+  phenotype?: string;
 };
 
 @customElement('lineage-tree-editor')
 export class LineageTreeEditor extends LitElement {
   @property({ attribute: false }) node: LineageNode | null = null;
-  @property({ attribute: false }) strainNames: string[] = [];
+  @property({ attribute: false }) strainEntries: StrainEntry[] = [];
 
   @state() private _activeSlot: number | null = null;
   @state() private _query: [string, string] = ['', ''];
@@ -261,6 +274,7 @@ export class LineageTreeEditor extends LitElement {
   private _currentParents(): LineageParent[] {
     return (this.node?.parents ?? []).map(p => ({
       name: p.name,
+      phenotype: p.phenotype,
       source: (((p as unknown as Record<string, unknown>)['source']) ?? 'manual') as 'library' | 'manual',
     }));
   }
@@ -271,17 +285,23 @@ export class LineageTreeEditor extends LitElement {
     this._fireChange(parents);
   }
 
-  private _selectSuggestion(index: number, name: string, source: 'library' | 'manual') {
+  private _displayLabel(entry: StrainEntry): string {
+    return entry.phenotype ? `${entry.name} (${entry.phenotype})` : entry.name;
+  }
+
+  private _selectEntry(index: number, entry: StrainEntry, source: 'library' | 'manual') {
     const parents = this._currentParents();
-    parents[index] = { name, source };
+    parents[index] = { name: entry.name, phenotype: entry.phenotype, source };
     this._activeSlot = null;
     this._fireChange(parents);
   }
 
-  private _getSuggestions(index: number): string[] {
+  private _getSuggestions(index: number): StrainEntry[] {
     const q = (this._query[index] ?? '').toLowerCase().trim();
-    if (!q) return this.strainNames.slice(0, 8);
-    return this.strainNames.filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+    if (!q) return this.strainEntries.slice(0, 8);
+    return this.strainEntries
+      .filter(e => this._displayLabel(e).toLowerCase().includes(q))
+      .slice(0, 8);
   }
 
   private _renderSlot(index: number): TemplateResult {
@@ -290,9 +310,10 @@ export class LineageTreeEditor extends LitElement {
     const isOpen = this._activeSlot === index;
 
     if (existing) {
+      const parentLabel = existing.phenotype ? `${existing.name} (${existing.phenotype})` : existing.name;
       return html`
         <div class="lte-parent-node">
-          <span class="lte-parent-name ${existing.source}">${existing.name}</span>
+          <span class="lte-parent-name ${existing.source}">${parentLabel}</span>
           <button class="lte-remove" @click=${() => this._removeParent(index)}>×</button>
           ${existing.source === 'library' && this.node?.parents?.[index]?.parents?.length
             ? html`<div class="lte-preview"><lineage-tree .node=${this.node.parents[index]}></lineage-tree></div>`
@@ -302,6 +323,7 @@ export class LineageTreeEditor extends LitElement {
 
     const suggestions = this._getSuggestions(index);
     const query = this._query[index] ?? '';
+    const queryMatchesEntry = this.strainEntries.some(e => this._displayLabel(e) === query);
 
     return html`
       <div class="lte-add-slot">
@@ -321,11 +343,13 @@ export class LineageTreeEditor extends LitElement {
               }}
             />
             <div class="lte-suggestions">
-              ${suggestions.map(name => html`
-                <div class="lte-suggestion" @click=${() => this._selectSuggestion(index, name, 'library')}>${name}</div>
+              ${suggestions.map(entry => html`
+                <div class="lte-suggestion" @click=${() => this._selectEntry(index, entry, 'library')}>
+                  ${this._displayLabel(entry)}
+                </div>
               `)}
-              ${query && !this.strainNames.includes(query) ? html`
-                <div class="lte-suggestion manual" @click=${() => this._selectSuggestion(index, query, 'manual')}>
+              ${query && !queryMatchesEntry ? html`
+                <div class="lte-suggestion manual" @click=${() => this._selectEntry(index, { name: query }, 'manual')}>
                   Use "${query}" (not in library)
                 </div>` : nothing}
             </div>
