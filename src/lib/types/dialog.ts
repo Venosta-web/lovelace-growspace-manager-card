@@ -33,6 +33,7 @@ export interface AddPlantsDialogState {
   dry_start?: string;
   cure_start?: string;
   addToLibrary?: boolean;
+  generation?: string;
 }
 
 export interface PlantOverviewDialogState {

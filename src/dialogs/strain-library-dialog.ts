@@ -99,12 +99,19 @@ export class StrainLibraryDialog extends LitElement {
     event_id: string; date?: string; donor_plant_id?: string; receiver_plant_id?: string; notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onDeletePollination?: (event_id: string) => Promise<void>;
+  @property({ attribute: false }) onDeleteSeedBatch?: (batch_id: string) => Promise<void>;
+  @property({ attribute: false }) onSowSeeds?: (data: { growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string }) => Promise<void>;
 
   @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
   @state() private _editingBatchId: string | null = null;
   @state() private _editingEventId: string | null = null;
   @state() private _confirmDeleteEventId: string | null = null;
+  @state() private _confirmDeleteBatchId: string | null = null;
+  @state() private _sowBatchId: string | null = null;
+  @state() private _sowGrowspaceId = '';
+  @state() private _sowQuantity = 1;
+  @state() private _sowSubmitting = false;
   @state() private _submitError: string | null = null;
   @state() private _selectedEventId: string | null = null;
   @state() private _batchForm = {
@@ -902,6 +909,43 @@ export class StrainLibraryDialog extends LitElement {
         font-size: 0.8rem;
         color: var(--secondary-text-color);
         font-style: italic;
+      }
+      .seed-batch-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .sow-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, rgba(0,0,0,0.04));
+        border-radius: 8px;
+      }
+      .sow-select {
+        flex: 1;
+        min-width: 120px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .sow-qty {
+        width: 64px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
       }
       .pollination-card {
         background: var(--secondary-background-color, rgba(255,255,255,0.05));
@@ -2675,6 +2719,83 @@ export class StrainLibraryDialog extends LitElement {
                 ` : nothing}
                 ${b.lineage ? html`<div class="seed-batch-lineage">${b.lineage}</div>` : nothing}
                 ${b.notes ? html`<div class="seed-batch-notes">${b.notes}</div>` : nothing}
+                <div class="seed-batch-actions">
+                  <button class="md3-button tonal" style="font-size:12px;" @click=${() => {
+                    if (this._sowBatchId === b.batch_id) {
+                      this._sowBatchId = null;
+                    } else {
+                      this._sowBatchId = b.batch_id;
+                      this._sowQuantity = 1;
+                      this._sowGrowspaceId = this.plants[0]?.deviceId ?? '';
+                    }
+                    this._confirmDeleteBatchId = null;
+                  }}>🌱 Sow seeds</button>
+                  ${this._confirmDeleteBatchId === b.batch_id
+                    ? html`
+                        <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
+                        <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                          await this.onDeleteSeedBatch?.(b.batch_id);
+                          this._confirmDeleteBatchId = null;
+                          this.onSeedDataChanged?.();
+                        }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                        </button>
+                        <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                        </button>
+                      `
+                    : html`
+                        <button class="icon-btn danger" title="Delete batch" @click=${() => { this._confirmDeleteBatchId = b.batch_id; this._sowBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                        </button>
+                      `
+                  }
+                </div>
+                ${this._sowBatchId === b.batch_id ? html`
+                  <div class="sow-form">
+                    <select
+                      class="sow-select"
+                      .value=${this._sowGrowspaceId}
+                      @change=${(e: Event) => { this._sowGrowspaceId = (e.target as HTMLSelectElement).value; }}
+                    >
+                      ${this.plants.map(g => html`
+                        <option value=${g.deviceId} ?selected=${g.deviceId === this._sowGrowspaceId}>${g.name}</option>
+                      `)}
+                    </select>
+                    <input
+                      type="number"
+                      class="sow-qty"
+                      min="1"
+                      max=${b.quantity}
+                      .value=${String(this._sowQuantity)}
+                      @input=${(e: Event) => { this._sowQuantity = Number((e.target as HTMLInputElement).value); }}
+                      placeholder="Seeds"
+                    />
+                    <button
+                      class="md3-button filled"
+                      style="font-size:12px;"
+                      ?disabled=${this._sowSubmitting || !this._sowGrowspaceId}
+                      @click=${async () => {
+                        if (!this._sowGrowspaceId) return;
+                        this._sowSubmitting = true;
+                        try {
+                          await this.onSowSeeds?.({
+                            growspace_id: this._sowGrowspaceId,
+                            strain: b.strain_name,
+                            amount: this._sowQuantity,
+                            seed_batch_id: b.batch_id,
+                            generation: b.generation,
+                          });
+                          this._sowBatchId = null;
+                          this.onSeedDataChanged?.();
+                        } finally {
+                          this._sowSubmitting = false;
+                        }
+                      }}
+                    >${this._sowSubmitting ? 'Planting…' : 'Plant'}</button>
+                    <button class="md3-button text" style="font-size:12px;" @click=${() => { this._sowBatchId = null; }}>Cancel</button>
+                  </div>
+                ` : nothing}
               </div>
             `)
         }

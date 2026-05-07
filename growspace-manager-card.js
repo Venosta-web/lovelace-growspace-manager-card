@@ -6985,11 +6985,11 @@ class GeneticsAPI extends BaseAPI {
     }
     async getStrainLineageTree(strain_name) {
         const result = await this.sendWebSocket(`${DOMAIN}/get_strain_lineage_tree`, { strain_name });
-        return result;
+        return result ?? null;
     }
     async updateStrainLineageTree(strain_name, parents) {
         const result = await this.sendWebSocket(`${DOMAIN}/update_strain_lineage_tree`, { strain_name, parents });
-        return result;
+        return result ?? { lineage: '' };
     }
     async scorePlant(data) {
         const payload = Object.fromEntries(Object.entries(data).filter(([, v]) => v != null));
@@ -107304,6 +107304,29 @@ async function getLineageTree(ctx, plantId) {
         throw e;
     }
 }
+/** Fetch the lineage tree for a strain */
+async function getStrainLineageTree(ctx, strainName) {
+    try {
+        return await ctx.dataService.getStrainLineageTree(strainName);
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Update the lineage tree for a strain */
+async function updateStrainLineageTree(ctx, strainName, parents) {
+    try {
+        const result = await ctx.dataService.updateStrainLineageTree(strainName, parents);
+        return result;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
+        throw e;
+    }
+}
 
 /**
  * IPM Actions - Unified business logic for Integrated Pest Management operations.
@@ -107464,6 +107487,8 @@ class ActionDispatcher {
             setPlantSex: (plantId, sex) => setPlantSex(this.ctx, plantId, sex),
             sowSeed: (batchId, plantId) => sowSeed(this.ctx, batchId, plantId),
             getLineageTree: (plantId) => getLineageTree(this.ctx, plantId),
+            getStrainLineageTree: (strainName) => getStrainLineageTree(this.ctx, strainName),
+            updateStrainLineageTree: (strainName, parents) => updateStrainLineageTree(this.ctx, strainName, parents),
         };
         this.ipm = {
             apply: (detail) => applyIPM(this.ctx, detail),

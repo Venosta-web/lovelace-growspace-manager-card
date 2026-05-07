@@ -5,6 +5,7 @@
  * All follow the standard wrap-and-toast pattern.
  */
 
+import type { LineageNode } from '../../features/plants/types';
 import { ActionContext } from '../core/action-context';
 
 type AddSeedBatchData = Parameters<ActionContext['dataService']['addSeedBatch']>[0];
@@ -107,6 +108,97 @@ export async function fetchGeneticsData(ctx: ActionContext) {
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     ctx.showToast(`Failed to fetch genetics data: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Delete a seed batch by ID */
+export async function deleteSeedBatch(ctx: ActionContext, batchId: string): Promise<void> {
+  try {
+    await ctx.dataService.deleteSeedBatch(batchId);
+    ctx.showToast('Seed batch deleted', 'success');
+    await ctx.refreshData();
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to delete seed batch: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Set the sex of a plant */
+export async function setPlantSex(
+  ctx: ActionContext,
+  plantId: string,
+  sex: string
+): Promise<void> {
+  try {
+    await ctx.dataService.setPlantSex(plantId, sex);
+    ctx.showToast('Plant sex updated', 'success');
+    await ctx.refreshData();
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to set plant sex: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Link a plant to its origin seed batch (decrements batch quantity) */
+export async function sowSeed(
+  ctx: ActionContext,
+  batchId: string,
+  plantId: string
+): Promise<void> {
+  try {
+    await ctx.dataService.sowSeed(batchId, plantId);
+    ctx.showToast('Seed sown — plant linked to batch', 'success');
+    await ctx.refreshData();
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to sow seed: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Fetch the lineage tree for a plant */
+export async function getLineageTree(
+  ctx: ActionContext,
+  plantId: string
+): Promise<LineageNode | null> {
+  try {
+    return await ctx.dataService.getLineageTree(plantId);
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Fetch the lineage tree for a strain */
+export async function getStrainLineageTree(
+  ctx: ActionContext,
+  strainName: string
+): Promise<LineageNode | null> {
+  try {
+    return await ctx.dataService.getStrainLineageTree(strainName);
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Update the lineage tree for a strain */
+export async function updateStrainLineageTree(
+  ctx: ActionContext,
+  strainName: string,
+  parents: Array<{ name: string; source: 'library' | 'manual' }>
+): Promise<{ lineage: string }> {
+  try {
+    const result = await ctx.dataService.updateStrainLineageTree(strainName, parents);
+    return result;
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
     throw e;
   }
 }

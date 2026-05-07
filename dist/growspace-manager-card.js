@@ -30,6 +30,13 @@ var PlantStage;
     PlantStage["DRY"] = "dry";
     PlantStage["CURE"] = "cure";
 })(PlantStage || (PlantStage = {}));
+var PlantSex;
+(function (PlantSex) {
+    PlantSex["UNKNOWN"] = "unknown";
+    PlantSex["FEMALE"] = "female";
+    PlantSex["MALE"] = "male";
+    PlantSex["HERMAPHRODITE"] = "hermaphrodite";
+})(PlantSex || (PlantSex = {}));
 var DehumidifierStage;
 (function (DehumidifierStage) {
     DehumidifierStage["SEEDLING"] = "seedling";
@@ -6963,6 +6970,27 @@ class GeneticsAPI extends BaseAPI {
     async harvestSeeds(data) {
         await this.callService(DOMAIN, 'harvest_seeds', data);
     }
+    async deleteSeedBatch(batch_id) {
+        await this.callService(DOMAIN, 'delete_seed_batch', { batch_id });
+    }
+    async setPlantSex(plant_id, sex) {
+        await this.callService(DOMAIN, 'set_plant_sex', { plant_id, sex });
+    }
+    async sowSeed(batch_id, plant_id) {
+        await this.callService(DOMAIN, 'sow_seed', { batch_id, plant_id });
+    }
+    async getLineageTree(plant_id) {
+        const result = await this.sendWebSocket(`${DOMAIN}/get_lineage_tree`, { plant_id });
+        return result ?? null;
+    }
+    async getStrainLineageTree(strain_name) {
+        const result = await this.sendWebSocket(`${DOMAIN}/get_strain_lineage_tree`, { strain_name });
+        return result ?? null;
+    }
+    async updateStrainLineageTree(strain_name, parents) {
+        const result = await this.sendWebSocket(`${DOMAIN}/update_strain_lineage_tree`, { strain_name, parents });
+        return result ?? { lineage: '' };
+    }
     async scorePlant(data) {
         const payload = Object.fromEntries(Object.entries(data).filter(([, v]) => v != null));
         await this.callService(DOMAIN, 'score_plant', payload);
@@ -7168,6 +7196,12 @@ let DataService$1 = class DataService {
         this.updatePollination = (data) => this._geneticsAPI.updatePollination(data);
         this.deletePollination = (event_id) => this._geneticsAPI.deletePollination(event_id);
         this.harvestSeeds = (data) => this._geneticsAPI.harvestSeeds(data);
+        this.deleteSeedBatch = (batch_id) => this._geneticsAPI.deleteSeedBatch(batch_id);
+        this.setPlantSex = (plant_id, sex) => this._geneticsAPI.setPlantSex(plant_id, sex);
+        this.sowSeed = (batch_id, plant_id) => this._geneticsAPI.sowSeed(batch_id, plant_id);
+        this.getLineageTree = (plant_id) => this._geneticsAPI.getLineageTree(plant_id);
+        this.getStrainLineageTree = (strain_name) => this._geneticsAPI.getStrainLineageTree(strain_name);
+        this.updateStrainLineageTree = (strain_name, parents) => this._geneticsAPI.updateStrainLineageTree(strain_name, parents);
         // ========================================
         // Subarea API Delegations
         // ========================================
@@ -24163,6 +24197,11 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._editingBatchId = null;
         this._editingEventId = null;
         this._confirmDeleteEventId = null;
+        this._confirmDeleteBatchId = null;
+        this._sowBatchId = null;
+        this._sowGrowspaceId = '';
+        this._sowQuantity = 1;
+        this._sowSubmitting = false;
         this._submitError = null;
         this._selectedEventId = null;
         this._batchForm = {
@@ -25789,6 +25828,85 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 ` : E}
                 ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
                 ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
+                <div class="seed-batch-actions">
+                  <button class="md3-button tonal" style="font-size:12px;" @click=${() => {
+                if (this._sowBatchId === b.batch_id) {
+                    this._sowBatchId = null;
+                }
+                else {
+                    this._sowBatchId = b.batch_id;
+                    this._sowQuantity = 1;
+                    this._sowGrowspaceId = this.plants[0]?.deviceId ?? '';
+                }
+                this._confirmDeleteBatchId = null;
+            }}>🌱 Sow seeds</button>
+                  ${this._confirmDeleteBatchId === b.batch_id
+                ? x `
+                        <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
+                        <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                    await this.onDeleteSeedBatch?.(b.batch_id);
+                    this._confirmDeleteBatchId = null;
+                    this.onSeedDataChanged?.();
+                }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                        </button>
+                        <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                        </button>
+                      `
+                : x `
+                        <button class="icon-btn danger" title="Delete batch" @click=${() => { this._confirmDeleteBatchId = b.batch_id; this._sowBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                        </button>
+                      `}
+                </div>
+                ${this._sowBatchId === b.batch_id ? x `
+                  <div class="sow-form">
+                    <select
+                      class="sow-select"
+                      .value=${this._sowGrowspaceId}
+                      @change=${(e) => { this._sowGrowspaceId = e.target.value; }}
+                    >
+                      ${this.plants.map(g => x `
+                        <option value=${g.deviceId} ?selected=${g.deviceId === this._sowGrowspaceId}>${g.name}</option>
+                      `)}
+                    </select>
+                    <input
+                      type="number"
+                      class="sow-qty"
+                      min="1"
+                      max=${b.quantity}
+                      .value=${String(this._sowQuantity)}
+                      @input=${(e) => { this._sowQuantity = Number(e.target.value); }}
+                      placeholder="Seeds"
+                    />
+                    <button
+                      class="md3-button filled"
+                      style="font-size:12px;"
+                      ?disabled=${this._sowSubmitting || !this._sowGrowspaceId}
+                      @click=${async () => {
+                if (!this._sowGrowspaceId)
+                    return;
+                this._sowSubmitting = true;
+                try {
+                    await this.onSowSeeds?.({
+                        growspace_id: this._sowGrowspaceId,
+                        strain: b.strain_name,
+                        amount: this._sowQuantity,
+                        seed_batch_id: b.batch_id,
+                        generation: b.generation,
+                    });
+                    this._sowBatchId = null;
+                    this.onSeedDataChanged?.();
+                }
+                finally {
+                    this._sowSubmitting = false;
+                }
+            }}
+                    >${this._sowSubmitting ? 'Planting…' : 'Plant'}</button>
+                    <button class="md3-button text" style="font-size:12px;" @click=${() => { this._sowBatchId = null; }}>Cancel</button>
+                  </div>
+                ` : E}
               </div>
             `)}
 
@@ -26852,6 +26970,43 @@ StrainLibraryDialog.styles = [
         color: var(--secondary-text-color);
         font-style: italic;
       }
+      .seed-batch-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .sow-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, rgba(0,0,0,0.04));
+        border-radius: 8px;
+      }
+      .sow-select {
+        flex: 1;
+        min-width: 120px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .sow-qty {
+        width: 64px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+      }
       .pollination-card {
         background: var(--secondary-background-color, rgba(255,255,255,0.05));
         border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
@@ -27068,6 +27223,12 @@ __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "onDeletePollination", void 0);
 __decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onDeleteSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "onSowSeeds", void 0);
+__decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
 __decorate([
@@ -27082,6 +27243,21 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_confirmDeleteEventId", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_confirmDeleteBatchId", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_sowBatchId", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_sowGrowspaceId", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_sowQuantity", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_sowSubmitting", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_submitError", void 0);
@@ -30419,6 +30595,193 @@ PlantTimelineTab = __decorate([
     t$2('plant-timeline-tab')
 ], PlantTimelineTab);
 
+const SEX_SYMBOLS = {
+    female: '♀',
+    male: '♂',
+    hermaphrodite: '⚥',
+};
+const SEX_COLORS = {
+    female: '#4caf50',
+    male: '#2196f3',
+    hermaphrodite: '#ff9800',
+};
+let LineageTree = class LineageTree extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.node = null;
+        this.loading = false;
+    }
+    _renderNode(node, depth = 0) {
+        const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
+        const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
+        return x `
+      <div class="tree-level">
+        <div class="node-card ${node.type}">
+          <div class="node-label">${node.name}</div>
+          <div class="node-meta">
+            ${sexSymbol ? x `<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : E}
+            ${node.generation ? x `<span class="gen-badge">${node.generation}</span>` : E}
+          </div>
+        </div>
+
+        ${node.parents && node.parents.length > 0 && depth < 4 ? x `
+          <div class="v-line"></div>
+          ${node.parents.length === 1 ? x `
+            ${this._renderNode(node.parents[0], depth + 1)}
+          ` : x `
+            <div class="cross-label">${node.parents.map(p => p.name).join(' × ')}</div>
+            <div class="parents-row">
+              ${node.parents.map(p => x `
+                <div class="parent-connector">
+                  ${this._renderNode(p, depth + 1)}
+                </div>
+              `)}
+            </div>
+          `}
+        ` : E}
+      </div>
+    `;
+    }
+    render() {
+        if (this.loading) {
+            return x `
+        <div class="tree-loading">
+          <div class="skeleton"></div>
+          <div class="skeleton narrow"></div>
+        </div>
+      `;
+        }
+        if (!this.node) {
+            return x `<div class="tree-empty">No lineage data available.</div>`;
+        }
+        return this._renderNode(this.node);
+    }
+};
+LineageTree.styles = i$6 `
+    :host {
+      display: block;
+      font-size: 13px;
+    }
+    .tree-empty {
+      color: var(--secondary-text-color);
+      font-style: italic;
+      padding: 8px 0;
+    }
+    .tree-loading {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+      padding: 8px 0;
+    }
+    .skeleton {
+      height: 36px;
+      border-radius: 8px;
+      background: var(--divider-color, #e0e0e0);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .skeleton.narrow { width: 60%; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .tree-level {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .tree-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .connector-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+    }
+    .connector-row::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 12px;
+      background: var(--divider-color, #ccc);
+    }
+    .node-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--card-background-color, #fff);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      min-width: 80px;
+      text-align: center;
+    }
+    .node-card.plant { border-color: var(--primary-color); }
+    .node-card.seed_batch { border-color: #8bc34a; }
+    .node-card.strain { border-color: #9c27b0; border-style: dashed; }
+    .node-label {
+      font-weight: 500;
+      color: var(--primary-text-color);
+      font-size: 12px;
+      word-break: break-word;
+    }
+    .node-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--secondary-text-color);
+    }
+    .sex-badge {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .gen-badge {
+      background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 10px;
+    }
+    .cross-label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin: 4px 0;
+    }
+    .parents-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 0;
+    }
+    .parent-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .v-line {
+      width: 2px;
+      height: 12px;
+      background: var(--divider-color, #ccc);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], LineageTree.prototype, "node", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], LineageTree.prototype, "loading", void 0);
+LineageTree = __decorate([
+    t$2('lineage-tree')
+], LineageTree);
+
 /**
  * Plant Overview Container - Smart Component
  *
@@ -30448,6 +30811,12 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         // Score Phenotype in actions tab
         this._showScoringForm = false;
         this._savingScore = false;
+        // Genetics tab state
+        this._lineageTree = null;
+        this._lineageLoading = false;
+        this._sexSaving = false;
+        this._seedBatchSearchOpen = false;
+        this._seedBatchSearchQuery = '';
         // ViewModel state managed via atoms
         this._plantAtom = atom(null);
         this._editedAttributesAtom = atom({});
@@ -30592,6 +30961,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             ${this._activeTab === 'actions' ? this._renderActions(vm) : E}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : E}
             ${this._activeTab === 'harvest' ? this._renderHarvestTab() : E}
+            ${this._activeTab === 'genetics' ? this._renderGeneticsTab() : E}
           </div>
 
           <!-- ACTIONS -->
@@ -30688,6 +31058,18 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             Scoring & Harvest
           </button>
         ` : E}
+        <button
+          class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
+          @click=${() => {
+            this._activeTab = 'genetics';
+            this._loadLineageTree();
+        }}
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="${mdiDna}"></path>
+          </svg>
+          Genetics
+        </button>
       </div>
     `;
     }
@@ -31153,6 +31535,122 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
       </div>
     `;
     }
+    async _loadLineageTree() {
+        const plantId = this.plant?.attributes?.plant_id;
+        if (!plantId || !this.store)
+            return;
+        this._lineageLoading = true;
+        this._lineageTree = null;
+        try {
+            const tree = await this.store.actions.genetics.getLineageTree(plantId);
+            this._lineageTree = tree;
+        }
+        catch {
+            this._lineageTree = null;
+        }
+        finally {
+            this._lineageLoading = false;
+        }
+    }
+    _renderGeneticsTab() {
+        const plant = this.plant;
+        const attrs = plant?.attributes ?? {};
+        const sex = attrs.sex ?? 'unknown';
+        const seedBatchId = attrs.seed_batch_id ?? null;
+        const generation = attrs.generation ?? '';
+        const sexOptions = [
+            { value: 'unknown', label: 'Unknown' },
+            { value: 'female', label: '♀ Female' },
+            { value: 'male', label: '♂ Male' },
+            { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
+        ];
+        return x `
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Identity -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${sexOptions.map(opt => x `
+              <button
+                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
+                style="
+                  padding: 6px 14px;
+                  border-radius: 20px;
+                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
+                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
+                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                  font-size: 13px;
+                  cursor: pointer;
+                "
+                ?disabled=${this._sexSaving}
+                @click=${async () => {
+            if (sex === opt.value)
+                return;
+            this._sexSaving = true;
+            try {
+                await this.store?.actions.genetics.setPlantSex(attrs.plant_id, opt.value);
+            }
+            finally {
+                this._sexSaving = false;
+            }
+        }}
+              >${opt.label}</button>
+            `)}
+          </div>
+        </div>
+
+        <!-- Seed batch origin -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
+          ${seedBatchId
+            ? x `
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="
+                    background: rgba(139,195,74,0.15);
+                    border: 1px solid #8bc34a;
+                    border-radius: 16px;
+                    padding: 4px 12px;
+                    font-size: 13px;
+                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
+                  <button
+                    class="md3-button text"
+                    style="font-size: 12px; color: var(--secondary-text-color);"
+                    @click=${async () => {
+                await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id);
+            }}
+                  >Unlink</button>
+                </div>
+              `
+            : x `
+                <div>
+                  <button
+                    class="md3-button tonal"
+                    style="font-size: 13px;"
+                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
+                  >🔗 Link to seed batch</button>
+                  ${this._seedBatchSearchOpen ? x `
+                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
+                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
+                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
+                      </p>
+                    </div>
+                  ` : E}
+                </div>
+              `}
+        </div>
+
+        <!-- Lineage tree -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Lineage</h4>
+          <lineage-tree
+            .node=${this._lineageTree}
+            .loading=${this._lineageLoading}
+          ></lineage-tree>
+        </div>
+      </div>
+    `;
+    }
     _renderHarvestTab() {
         const SCORE_DIMENSIONS = [
             { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
@@ -31513,6 +32011,21 @@ __decorate([
 __decorate([
     r$3()
 ], PlantOverviewContainer.prototype, "_savingScore", void 0);
+__decorate([
+    r$3()
+], PlantOverviewContainer.prototype, "_lineageTree", void 0);
+__decorate([
+    r$3()
+], PlantOverviewContainer.prototype, "_lineageLoading", void 0);
+__decorate([
+    r$3()
+], PlantOverviewContainer.prototype, "_sexSaving", void 0);
+__decorate([
+    r$3()
+], PlantOverviewContainer.prototype, "_seedBatchSearchOpen", void 0);
+__decorate([
+    r$3()
+], PlantOverviewContainer.prototype, "_seedBatchSearchQuery", void 0);
 PlantOverviewContainer = __decorate([
     t$2('plant-overview-container')
 ], PlantOverviewContainer);
@@ -31867,6 +32380,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .onHarvestSeeds=${(data) => this.store?.actions.genetics.harvestSeeds(data)}
         .onUpdatePollination=${(data) => this.store?.actions.genetics.updatePollination(data)}
         .onDeletePollination=${(event_id) => this.store?.actions.genetics.deletePollination(event_id)}
+        .onDeleteSeedBatch=${async (batch_id) => { await this.store?.actions.genetics.deleteSeedBatch(batch_id); this._refreshGeneticsData(); }}
+        .onSowSeeds=${async (data) => {
+            await this.store?.dataService.addPlants({
+                growspace_id: data.growspace_id,
+                strain: data.strain,
+                amount: data.amount,
+                seed_batch_id: data.seed_batch_id,
+            });
+            this.store?.refreshData();
+        }}
         @close=${() => this._closeDialogIfActive('STRAIN_LIBRARY')}
         @strain-created-at-source=${(e) => {
             const { source, returnPayload } = e.detail;
@@ -44956,12 +45479,33 @@ let PlantCardUI = class PlantCardUI extends i$3 {
     _renderStatusIcons() {
         return x `
       <div class="status-icons">
+        ${this._renderSexBadge()}
         ${this._renderTrainingIcon()}
         ${this._renderIPMIcon()}
         ${this._renderWateringIcon()}
         ${this._renderProblemIcon()}
         ${this._renderGrowthDeviationIcon()}
       </div>
+    `;
+    }
+    _renderSexBadge() {
+        const sex = this.plant?.attributes?.sex;
+        if (!sex || sex === 'unknown')
+            return E;
+        const symbols = { female: '♀', male: '♂', hermaphrodite: '⚥' };
+        const colors = { female: '#4caf50', male: '#2196f3', hermaphrodite: '#ff9800' };
+        const symbol = symbols[sex];
+        const color = colors[sex];
+        if (!symbol)
+            return E;
+        return x `
+      <span
+        class="status-icon"
+        style="font-size:13px; font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
+        title="Sex: ${sex}"
+        role="img"
+        aria-label="Sex: ${sex}"
+      >${symbol}</span>
     `;
     }
     _renderTrainingIcon() {
@@ -106710,6 +107254,79 @@ async function fetchGeneticsData(ctx) {
         throw e;
     }
 }
+/** Delete a seed batch by ID */
+async function deleteSeedBatch(ctx, batchId) {
+    try {
+        await ctx.dataService.deleteSeedBatch(batchId);
+        ctx.showToast('Seed batch deleted', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to delete seed batch: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Set the sex of a plant */
+async function setPlantSex(ctx, plantId, sex) {
+    try {
+        await ctx.dataService.setPlantSex(plantId, sex);
+        ctx.showToast('Plant sex updated', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to set plant sex: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Link a plant to its origin seed batch (decrements batch quantity) */
+async function sowSeed(ctx, batchId, plantId) {
+    try {
+        await ctx.dataService.sowSeed(batchId, plantId);
+        ctx.showToast('Seed sown — plant linked to batch', 'success');
+        await ctx.refreshData();
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to sow seed: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Fetch the lineage tree for a plant */
+async function getLineageTree(ctx, plantId) {
+    try {
+        return await ctx.dataService.getLineageTree(plantId);
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Fetch the lineage tree for a strain */
+async function getStrainLineageTree(ctx, strainName) {
+    try {
+        return await ctx.dataService.getStrainLineageTree(strainName);
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Update the lineage tree for a strain */
+async function updateStrainLineageTree(ctx, strainName, parents) {
+    try {
+        const result = await ctx.dataService.updateStrainLineageTree(strainName, parents);
+        return result;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
+        throw e;
+    }
+}
 
 /**
  * IPM Actions - Unified business logic for Integrated Pest Management operations.
@@ -106866,6 +107483,12 @@ class ActionDispatcher {
             deletePollination: (eventId) => deletePollination(this.ctx, eventId),
             fetchData: () => fetchGeneticsData(this.ctx),
             harvestSeeds: (data) => harvestSeeds(this.ctx, data),
+            deleteSeedBatch: (batchId) => deleteSeedBatch(this.ctx, batchId),
+            setPlantSex: (plantId, sex) => setPlantSex(this.ctx, plantId, sex),
+            sowSeed: (batchId, plantId) => sowSeed(this.ctx, batchId, plantId),
+            getLineageTree: (plantId) => getLineageTree(this.ctx, plantId),
+            getStrainLineageTree: (strainName) => getStrainLineageTree(this.ctx, strainName),
+            updateStrainLineageTree: (strainName, parents) => updateStrainLineageTree(this.ctx, strainName, parents),
         };
         this.ipm = {
             apply: (detail) => applyIPM(this.ctx, detail),
@@ -112008,5 +112631,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

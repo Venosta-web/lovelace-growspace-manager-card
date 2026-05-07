@@ -152,12 +152,32 @@ export class PlantCardUI extends LitElement {
   private _renderStatusIcons(): TemplateResult {
     return html`
       <div class="status-icons">
+        ${this._renderSexBadge()}
         ${this._renderTrainingIcon()}
         ${this._renderIPMIcon()}
         ${this._renderWateringIcon()}
         ${this._renderProblemIcon()}
         ${this._renderGrowthDeviationIcon()}
       </div>
+    `;
+  }
+
+  private _renderSexBadge(): TemplateResult | typeof nothing {
+    const sex = this.plant?.attributes?.sex;
+    if (!sex || sex === 'unknown') return nothing;
+    const symbols: Record<string, string> = { female: '♀', male: '♂', hermaphrodite: '⚥' };
+    const colors: Record<string, string> = { female: '#4caf50', male: '#2196f3', hermaphrodite: '#ff9800' };
+    const symbol = symbols[sex];
+    const color = colors[sex];
+    if (!symbol) return nothing;
+    return html`
+      <span
+        class="status-icon"
+        style="font-size:13px; font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
+        title="Sex: ${sex}"
+        role="img"
+        aria-label="Sex: ${sex}"
+      >${symbol}</span>
     `;
   }
 

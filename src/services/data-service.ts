@@ -336,6 +336,7 @@ export class DataService {
     strain: string;
     amount: number;
     start_number?: number;
+    seed_batch_id?: string;
     veg_start?: string;
     flower_start?: string;
     mother_start?: string;
@@ -523,6 +524,26 @@ export class DataService {
 
   harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
     this._geneticsAPI.harvestSeeds(data);
+
+  deleteSeedBatch = (batch_id: string) =>
+    this._geneticsAPI.deleteSeedBatch(batch_id);
+
+  setPlantSex = (plant_id: string, sex: string) =>
+    this._geneticsAPI.setPlantSex(plant_id, sex);
+
+  sowSeed = (batch_id: string, plant_id: string) =>
+    this._geneticsAPI.sowSeed(batch_id, plant_id);
+
+  getLineageTree = (plant_id: string) =>
+    this._geneticsAPI.getLineageTree(plant_id);
+
+  getStrainLineageTree = (strain_name: string) =>
+    this._geneticsAPI.getStrainLineageTree(strain_name);
+
+  updateStrainLineageTree = (
+    strain_name: string,
+    parents: Array<{ name: string; source: 'library' | 'manual' }>
+  ) => this._geneticsAPI.updateStrainLineageTree(strain_name, parents);
 
   // ========================================
   // Subarea API Delegations

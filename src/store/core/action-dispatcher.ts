@@ -259,6 +259,20 @@ export class ActionDispatcher {
     fetchData: () => geneticsActions.fetchGeneticsData(this.ctx),
     harvestSeeds: (data: Parameters<typeof geneticsActions.harvestSeeds>[1]) =>
       geneticsActions.harvestSeeds(this.ctx, data),
+    deleteSeedBatch: (batchId: string) =>
+      geneticsActions.deleteSeedBatch(this.ctx, batchId),
+    setPlantSex: (plantId: string, sex: string) =>
+      geneticsActions.setPlantSex(this.ctx, plantId, sex),
+    sowSeed: (batchId: string, plantId: string) =>
+      geneticsActions.sowSeed(this.ctx, batchId, plantId),
+    getLineageTree: (plantId: string) =>
+      geneticsActions.getLineageTree(this.ctx, plantId),
+    getStrainLineageTree: (strainName: string) =>
+      geneticsActions.getStrainLineageTree(this.ctx, strainName),
+    updateStrainLineageTree: (
+      strainName: string,
+      parents: Array<{ name: string; source: 'library' | 'manual' }>
+    ) => geneticsActions.updateStrainLineageTree(this.ctx, strainName, parents),
   };
 
   public readonly ipm = {

@@ -38,6 +38,7 @@ import '../components/plant-actions-tab';
 import '../components/plant-timeline-tab';
 import '../../shared/ui/md3-select';
 import '../../shared/ui/md3-number-input';
+import '../../shared/ui/lineage-tree';
 
 /**
  * Container component for plant overview dialog
@@ -57,7 +58,7 @@ export class PlantOverviewContainer extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
 
   // Local UI state
-  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' = 'dashboard';
+  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics' = 'dashboard';
   @state() private _isEditing = true;
   @state() private _showAllDates = false;
   @state() private _showDeleteConfirmation = false;
@@ -76,11 +77,18 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _showScoringForm = false;
   @state() private _savingScore = false;
 
+  // Genetics tab state
+  @state() private _lineageTree: import('../types').LineageNode | null = null;
+  @state() private _lineageLoading = false;
+  @state() private _sexSaving = false;
+  @state() private _seedBatchSearchOpen = false;
+  @state() private _seedBatchSearchQuery = '';
+
   // ViewModel state managed via atoms
   private _plantAtom = atom<PlantEntity | null>(null);
   private _editedAttributesAtom = atom<PlantOverviewEditedAttributes>({} as PlantOverviewEditedAttributes);
   private _uiStateAtom = atom<{
-    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
@@ -340,6 +348,7 @@ export class PlantOverviewContainer extends LitElement {
             ${this._activeTab === 'actions' ? this._renderActions(vm) : nothing}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : nothing}
             ${this._activeTab === 'harvest' ? this._renderHarvestTab() : nothing}
+            ${this._activeTab === 'genetics' ? this._renderGeneticsTab() : nothing}
           </div>
 
           <!-- ACTIONS -->
@@ -438,6 +447,18 @@ export class PlantOverviewContainer extends LitElement {
             Scoring & Harvest
           </button>
         ` : nothing}
+        <button
+          class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
+          @click=${() => {
+            this._activeTab = 'genetics';
+            this._loadLineageTree();
+          }}
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="${mdiDna}"></path>
+          </svg>
+          Genetics
+        </button>
       </div>
     `;
   }
@@ -945,6 +966,122 @@ export class PlantOverviewContainer extends LitElement {
               ?disabled=${this._savingHarvest}
             >⭐</button>
           `)}
+        </div>
+      </div>
+    `;
+  }
+
+  private async _loadLineageTree(): Promise<void> {
+    const plantId = this.plant?.attributes?.plant_id;
+    if (!plantId || !this.store) return;
+    this._lineageLoading = true;
+    this._lineageTree = null;
+    try {
+      const tree = await this.store.actions.genetics.getLineageTree(plantId);
+      this._lineageTree = tree;
+    } catch {
+      this._lineageTree = null;
+    } finally {
+      this._lineageLoading = false;
+    }
+  }
+
+  private _renderGeneticsTab(): TemplateResult {
+    const plant = this.plant;
+    const attrs = plant?.attributes ?? {};
+    const sex = (attrs.sex as string) ?? 'unknown';
+    const seedBatchId = attrs.seed_batch_id as string | null ?? null;
+    const generation = (attrs.generation as string) ?? '';
+
+    const sexOptions = [
+      { value: 'unknown', label: 'Unknown' },
+      { value: 'female', label: '♀ Female' },
+      { value: 'male', label: '♂ Male' },
+      { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
+    ];
+
+    return html`
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Identity -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${sexOptions.map(opt => html`
+              <button
+                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
+                style="
+                  padding: 6px 14px;
+                  border-radius: 20px;
+                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
+                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
+                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                  font-size: 13px;
+                  cursor: pointer;
+                "
+                ?disabled=${this._sexSaving}
+                @click=${async () => {
+                  if (sex === opt.value) return;
+                  this._sexSaving = true;
+                  try {
+                    await this.store?.actions.genetics.setPlantSex(attrs.plant_id as string, opt.value);
+                  } finally {
+                    this._sexSaving = false;
+                  }
+                }}
+              >${opt.label}</button>
+            `)}
+          </div>
+        </div>
+
+        <!-- Seed batch origin -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
+          ${seedBatchId
+            ? html`
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="
+                    background: rgba(139,195,74,0.15);
+                    border: 1px solid #8bc34a;
+                    border-radius: 16px;
+                    padding: 4px 12px;
+                    font-size: 13px;
+                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
+                  <button
+                    class="md3-button text"
+                    style="font-size: 12px; color: var(--secondary-text-color);"
+                    @click=${async () => {
+                      await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id as string);
+                    }}
+                  >Unlink</button>
+                </div>
+              `
+            : html`
+                <div>
+                  <button
+                    class="md3-button tonal"
+                    style="font-size: 13px;"
+                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
+                  >🔗 Link to seed batch</button>
+                  ${this._seedBatchSearchOpen ? html`
+                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
+                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
+                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
+                      </p>
+                    </div>
+                  ` : nothing}
+                </div>
+              `
+          }
+        </div>
+
+        <!-- Lineage tree -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Lineage</h4>
+          <lineage-tree
+            .node=${this._lineageTree}
+            .loading=${this._lineageLoading}
+          ></lineage-tree>
         </div>
       </div>
     `;

@@ -12,6 +12,13 @@ export enum PlantStage {
   CURE = 'cure',
 }
 
+export enum PlantSex {
+  UNKNOWN = 'unknown',
+  FEMALE = 'female',
+  MALE = 'male',
+  HERMAPHRODITE = 'hermaphrodite',
+}
+
 export enum DehumidifierStage {
   SEEDLING = 'seedling',
   VEG = 'veg',
@@ -123,6 +130,11 @@ export interface RawPlantData {
   phi_days_remaining?: number | null;
   days_since_last_watering: number | null;
   events?: PlantTimelineEvent[];
+
+  // Breeding / genetics
+  sex?: PlantSex | string;
+  seed_batch_id?: string | null;
+  generation?: string;
 }
 
 export interface PlantAttributes extends RawPlantData {
@@ -213,4 +225,21 @@ export interface PlantDisplayData {
   imageCropMeta?: CropMeta;
   breederLogo?: string;
   stages: StageDisplay[];
+}
+
+// --- Lineage / Breeding ---
+
+export interface LineageNode {
+  /** plant_id or seed_batch_id of this node */
+  id: string;
+  /** Display name (strain + phenotype or batch name) — matches backend 'name' field */
+  name: string;
+  /** 'plant' | 'seed_batch' | 'strain' */
+  type: 'plant' | 'seed_batch' | 'strain';
+  /** Generation designation, e.g. F1, S1, BX1 */
+  generation?: string;
+  /** Sex of the plant (only for plant nodes) */
+  sex?: PlantSex | string;
+  /** Parent nodes (up to 2) */
+  parents?: LineageNode[];
 }

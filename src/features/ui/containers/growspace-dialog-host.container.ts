@@ -481,6 +481,16 @@ export class GrowspaceDialogHost extends LitElement {
         .onHarvestSeeds=${(data: Parameters<typeof this.store.actions.genetics.harvestSeeds>[0]) => this.store?.actions.genetics.harvestSeeds(data)}
         .onUpdatePollination=${(data: Parameters<typeof this.store.actions.genetics.updatePollination>[0]) => this.store?.actions.genetics.updatePollination(data)}
         .onDeletePollination=${(event_id: string) => this.store?.actions.genetics.deletePollination(event_id)}
+        .onDeleteSeedBatch=${async (batch_id: string) => { await this.store?.actions.genetics.deleteSeedBatch(batch_id); this._refreshGeneticsData(); }}
+        .onSowSeeds=${async (data: { growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string }) => {
+          await this.store?.dataService.addPlants({
+            growspace_id: data.growspace_id,
+            strain: data.strain,
+            amount: data.amount,
+            seed_batch_id: data.seed_batch_id,
+          } as Parameters<typeof this.store.dataService.addPlants>[0]);
+          this.store?.refreshData();
+        }}
         @close=${() => this._closeDialogIfActive('STRAIN_LIBRARY')}
         @strain-created-at-source=${(e: CustomEvent) => {
         const { source, returnPayload } = e.detail;
