@@ -14,7 +14,6 @@ import {
 import {
   type TreeNode,
   type LayoutResult,
-  type LayoutNode,
   NODE_W,
   NODE_H,
   layoutTopDown,
@@ -78,7 +77,6 @@ export class GeneticsTreeView extends LitElement {
           this._viewW = entry.contentRect.width;
           this._viewH = entry.contentRect.height;
           changed = true;
-          console.log(`[GeneticsTreeView] View dimensions updated: ${this._viewW}x${this._viewH}`);
         }
       }
       if (changed) {
@@ -142,26 +140,18 @@ export class GeneticsTreeView extends LitElement {
 
   private _recompute(): void {
     const visible = this._visibleNodes();
-    console.log('[GeneticsTreeView] _recompute: nodes count =', this.nodes?.length, 'visible count =', visible.length, 'focalId =', this.focalId);
-    
+
     if (visible.length === 0) {
       this._computed = null;
-      console.warn('[GeneticsTreeView] No nodes visible, layout skipped.');
       return;
     }
-    
-    try {
-      if (this._layout === 'radial' && this.focalId) {
-        this._computed = layoutRadial(visible, this.focalId);
-      } else if (this._layout === 'radial' && visible.length > 0) {
-        this._computed = layoutRadial(visible, visible[0].id);
-      } else {
-        this._computed = layoutTopDown(visible);
-      }
-      console.log('[GeneticsTreeView] Layout computed:', this._computed ? 'SUCCESS' : 'EMPTY');
-    } catch (err) {
-      console.error('[GeneticsTreeView] Layout engine failed:', err);
-      this._computed = null;
+
+    if (this._layout === 'radial' && this.focalId) {
+      this._computed = layoutRadial(visible, this.focalId);
+    } else if (this._layout === 'radial' && visible.length > 0) {
+      this._computed = layoutRadial(visible, visible[0].id);
+    } else {
+      this._computed = layoutTopDown(visible);
     }
   }
 
@@ -195,36 +185,17 @@ export class GeneticsTreeView extends LitElement {
     const scaleX = (this._viewW - pad * 2) / treeW;
     const scaleY = (this._viewH - pad * 2) / treeH;
     
-    // Calculate scale - Allow much smaller scale to ensure huge trees fit
-    let scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
+    const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
     this._scale = scale;
-    
-    const treeWVal = (maxX - minX);
-    const treeHVal = (maxY - minY);
-    
-    console.log(`[GeneticsTreeView] FitToScreen: tree=${treeWVal}x${treeHVal}, view=${this._viewW}x${this._viewH}, scale=${scale}`);
 
-    // If we have a focalId, center on it. Otherwise center the whole tree.
     const focalNode = this.focalId ? nodes[this.focalId] : null;
-    
     if (focalNode) {
-      // Center on focal node
       this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
       this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
     } else {
-      // Center the entire bounds
       this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
       this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
     }
-
-    // Diagnostic log
-    console.log('[GeneticsTreeView] Fit to screen:', {
-      view: `${this._viewW}x${this._viewH}`,
-      tree: `${treeW.toFixed(0)}x${treeH.toFixed(0)}`,
-      scale: scale.toFixed(2),
-      pan: `${this._panX.toFixed(0)},${this._panY.toFixed(0)}`,
-      focal: this.focalId
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -594,7 +565,6 @@ export class GeneticsTreeView extends LitElement {
     const visible = this._visibleNodes();
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
-    const ml = this._motherLineSet;
     const searchLc = this._search.toLowerCase();
 
     return html`
