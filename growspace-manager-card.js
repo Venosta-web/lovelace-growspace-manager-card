@@ -24523,6 +24523,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.strains = [];
+        this.focusLineage = false;
         this._view = 'browse';
         this._searchQuery = '';
         this._editorState = {};
@@ -24604,6 +24605,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Auto-open editor if editingStrain is provided
         if (changedProps.has('editingStrain') && this.editingStrain) {
             this._startEdit(this.editingStrain);
+            if (this.focusLineage && this.editingStrain.strain) {
+                this._lineageEditMode = true;
+                void this._loadStrainLineageTree(this.editingStrain.strain);
+            }
         }
     }
     updated(changedProperties) {
@@ -27534,6 +27539,9 @@ __decorate([
 __decorate([
     n$5({ type: Object })
 ], StrainLibraryDialog.prototype, "editingStrain", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], StrainLibraryDialog.prototype, "focusLineage", void 0);
 __decorate([
     n$5({ type: String })
 ], StrainLibraryDialog.prototype, "source", void 0);
@@ -32447,7 +32455,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         }
     }
     _handleOpenStrainEditor(e) {
-        const { strain, phenotype } = e.detail;
+        const { strain, phenotype, focusLineage } = e.detail;
         const strainLibrary = this._dialogHostController.value.strainLibrary;
         const normalizedPhenotype = phenotype || '';
         let strainEntry = strainLibrary.find((s) => {
@@ -32476,7 +32484,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             type: 'STRAIN_LIBRARY',
             payload: {
                 view: 'editor',
-                editingStrain: strainEntry
+                editingStrain: strainEntry,
+                focusLineage: !!focusLineage,
             },
         });
     }
@@ -32588,6 +32597,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}
+        .focusLineage=${!!payload?.focusLineage}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}

@@ -43,6 +43,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
+  @property({ type: Boolean }) focusLineage = false;
   @property({ type: String }) source?: string;
   @property({ type: Object }) returnPayload?: unknown;
 
@@ -175,6 +176,10 @@ export class StrainLibraryDialog extends LitElement {
     // Auto-open editor if editingStrain is provided
     if (changedProps.has('editingStrain') && this.editingStrain) {
       this._startEdit(this.editingStrain);
+      if (this.focusLineage && this.editingStrain.strain) {
+        this._lineageEditMode = true;
+        void this._loadStrainLineageTree(this.editingStrain.strain);
+      }
     }
   }
 

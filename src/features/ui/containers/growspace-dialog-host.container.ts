@@ -303,7 +303,7 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private _handleOpenStrainEditor(e: CustomEvent) {
-    const { strain, phenotype } = e.detail;
+    const { strain, phenotype, focusLineage } = e.detail;
     const strainLibrary = this._dialogHostController.value.strainLibrary;
 
     const normalizedPhenotype = phenotype || '';
@@ -335,7 +335,8 @@ export class GrowspaceDialogHost extends LitElement {
       type: 'STRAIN_LIBRARY',
       payload: {
         view: 'editor',
-        editingStrain: strainEntry
+        editingStrain: strainEntry,
+        focusLineage: !!focusLineage,
       },
     });
   }
@@ -469,6 +470,7 @@ export class GrowspaceDialogHost extends LitElement {
         .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}
+        .focusLineage=${!!payload?.focusLineage}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
         .seedBatches=${Object.values(this._seedBatches)}
