@@ -35,6 +35,8 @@ import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/lineage-tree';
+import '../features/shared/ui/genetics-tree-view';
+import type { TreeNode } from '../features/shared/ui/genetics-tree-layout';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
@@ -68,7 +70,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Array }) seedBatches: SeedBatch[] = [];
   @property({ type: Array }) pollinationEvents: PollinationEvent[] = [];
   @property({ type: Array }) plants: GrowspaceDevice[] = [];
-  @property({ type: String }) initialTab: 'strains' | 'seeds' = 'strains';
+  @property({ type: String }) initialTab: 'strains' | 'seeds' | 'tree' = 'strains';
   @property({ type: Function }) onSeedDataChanged?: () => void;
   @property({ attribute: false }) onAddSeedBatch?: (data: {
     strain_name: string;
@@ -109,7 +111,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ attribute: false }) onDeleteSeedBatch?: (batch_id: string) => Promise<void>;
   @property({ attribute: false }) onSowSeeds?: (data: { growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string }) => Promise<void>;
 
-  @state() private _activeMainTab: 'strains' | 'seeds' = 'strains';
+  @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
   @state() private _editingBatchId: string | null = null;
   @state() private _editingEventId: string | null = null;
@@ -204,11 +206,17 @@ export class StrainLibraryDialog extends LitElement {
       .glass-dialog-container {
         width: 100%;
         max-width: 100%;
-        min-height: 0;
+        min-height: 500px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         background: transparent;
+      }
+
+      @media (min-width: 601px) {
+        .glass-dialog-container {
+          height: 85vh;
+        }
       }
 
       @media (min-width: 601px) {
@@ -794,6 +802,14 @@ export class StrainLibraryDialog extends LitElement {
         flex-shrink: 0;
       }
 
+      .tab-content-tree {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
       /* Main tab bar */
       .main-tab-bar {
         display: flex;
@@ -1288,9 +1304,11 @@ export class StrainLibraryDialog extends LitElement {
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
-          ${this._activeMainTab === 'seeds'
-            ? this._renderSeedsTab()
-            : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())
+          ${this._activeMainTab === 'tree'
+            ? this._renderTreeViewTab()
+            : this._activeMainTab === 'seeds'
+              ? this._renderSeedsTab()
+              : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())
           }
         </div>
 
@@ -2677,6 +2695,10 @@ export class StrainLibraryDialog extends LitElement {
           class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
           @click=${() => { this._activeMainTab = 'seeds'; }}
         >Seeds &amp; Genetics</button>
+        <button
+          class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'tree'; }}
+        >Tree View</button>
       </div>
     `;
   }
@@ -2686,6 +2708,92 @@ export class StrainLibraryDialog extends LitElement {
     if (this._seedSubView === 'log-pollination') return this._renderLogPollinationForm();
     if (this._seedSubView === 'harvest') return this._renderHarvestForm();
     return this._renderSeedList();
+  }
+
+  private _buildTreeNodes(): TreeNode[] {
+    const nodes: TreeNode[] = [];
+    const strainNameToKey = new Map<string, string>();
+
+    // Case-insensitive mapping for better matching
+    this.strains.forEach((s) => {
+      const strainLc = s.strain.toLowerCase();
+      strainNameToKey.set(strainLc, s.key);
+      if (s.phenotype) {
+        // Match "Strain Pheno" and "StrainPheno"
+        strainNameToKey.set(`${strainLc} ${s.phenotype.toLowerCase()}`, s.key);
+        strainNameToKey.set(`${strainLc}${s.phenotype.toLowerCase()}`.replace(/\s+/g, ''), s.key);
+      }
+    });
+
+    // Helper to resolve a strain name to its key, or return the name if not found
+    const resolve = (name: string | undefined | null): string | null => {
+      if (!name) return null;
+      // Strip common wrapper characters like quotes and brackets, then trim
+      const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
+      const lower = clean.toLowerCase();
+      return strainNameToKey.get(lower) || clean;
+    };
+
+    // 1. Add strains
+    this.strains.forEach((strain) => {
+      let mother: string | null = null;
+      let father: string | null = null;
+
+      // Try to parse legacy lineage string (e.g. "Mother x Father" or "Mother × Father")
+      const lineage = strain.lineage?.trim();
+      if (lineage) {
+        // Handle various splitters: x, X, ×, * with optional spaces
+        const parts = lineage.split(/\s*[xX×*]\s*/);
+
+        if (parts.length >= 2) {
+          mother = resolve(parts[0]);
+          father = resolve(parts[1]);
+        }
+      }
+
+      nodes.push({
+        id: strain.key,
+        name: strain.strain,
+        strain: strain.strain,
+        breeder: strain.breeder || '',
+        pheno: strain.phenotype || '',
+        gen: '',
+        type: 'strain',
+        parents: { mother, father },
+      });
+    });
+
+    // 2. Add seed batches
+    this.seedBatches.forEach((batch) => {
+      nodes.push({
+        id: batch.batch_id,
+        name: `${batch.strain_name} (${batch.batch_id})`,
+        strain: batch.strain_name,
+        breeder: batch.breeder || '',
+        pheno: '',
+        gen: batch.generation || '',
+        type: 'batch',
+        parents: {
+          mother: resolve(batch.parent_1_strain),
+          father: resolve(batch.parent_2_strain),
+        },
+      });
+    });
+
+    console.log('[GeneticsTreeView] Generated nodes:', nodes);
+    return nodes;
+  }
+
+  private _renderTreeViewTab(): TemplateResult {
+    const nodes = this._buildTreeNodes();
+    return html`
+      <div class="tab-content-tree">
+        <genetics-tree-view
+          .nodes=${nodes}
+          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : ''}
+        ></genetics-tree-view>
+      </div>
+    `;
   }
 
   private _renderSeedList(): TemplateResult {

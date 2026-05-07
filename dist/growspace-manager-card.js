@@ -114,6 +114,7 @@ var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
 var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
+var mdiCompare = "M19,3H14V5H19V18L14,12V21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M10,18H5L10,12M10,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H10V23H12V1H10V3Z";
 var mdiCompassOutline = "M7,17L10.2,10.2L17,7L13.8,13.8L7,17M12,11.1A0.9,0.9 0 0,0 11.1,12A0.9,0.9 0 0,0 12,12.9A0.9,0.9 0 0,0 12.9,12A0.9,0.9 0 0,0 12,11.1M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z";
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
 var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
@@ -129,6 +130,7 @@ var mdiEye = "M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,
 var mdiFan = "M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11M12.5,2C17,2 17.11,5.57 14.75,6.75C13.76,7.24 13.32,8.29 13.13,9.22C13.61,9.42 14.03,9.73 14.35,10.13C18.05,8.13 22.03,8.92 22.03,12.5C22.03,17 18.46,17.1 17.28,14.73C16.78,13.74 15.72,13.3 14.79,13.11C14.59,13.59 14.28,14 13.88,14.34C15.87,18.03 15.08,22 11.5,22C7,22 6.91,18.42 9.27,17.24C10.25,16.75 10.69,15.71 10.89,14.79C10.4,14.59 9.97,14.27 9.65,13.87C5.96,15.85 2,15.07 2,11.5C2,7 5.56,6.89 6.74,9.26C7.24,10.25 8.29,10.68 9.22,10.87C9.41,10.39 9.73,9.97 10.14,9.65C8.15,5.96 8.94,2 12.5,2Z";
 var mdiFileChart = "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22 4,21.1 4,20V4C4,2.89 4.89,2 6,2M7,20H9V14H7V20M11,20H13V12H11V20M15,20H17V16H15V20Z";
 var mdiFileUpload = "M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19H10.5V16H8L12,12L16,16H13.5M13,9V3.5L18.5,9H13Z";
+var mdiFitToPageOutline = "M20,2H4C2.89,2 2,2.89 2,4V20C2,21.11 2.89,22 4,22H20C21.11,22 22,21.11 22,20V4C22,2.89 21.11,2 20,2M20,20H4V4H20M13,8V10H11V8H9L12,5L15,8M16,15V13H14V11H16V9L19,12M10,13H8V15L5,12L8,9V11H10M15,16L12,19L9,16H11V14H13V16";
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
@@ -24535,6 +24537,1933 @@ LineageTreeEditor = __decorate([
     t$2('lineage-tree-editor')
 ], LineageTreeEditor);
 
+// Pure layout computation for genetics lineage tree views.
+// No DOM, no LitElement — only position math and graph traversal.
+const NODE_W = 200;
+const NODE_H = 76;
+const COL_GAP = 36;
+const ROW_GAP = 130;
+// ---------------------------------------------------------------------------
+// Private helper: build lookup maps
+// ---------------------------------------------------------------------------
+function buildIndex(plants) {
+    const byId = {};
+    const childrenOf = {};
+    for (const p of plants) {
+        byId[p.id] = p;
+    }
+    for (const p of plants) {
+        const { mother, father } = p.parents;
+        if (mother) {
+            if (!childrenOf[mother])
+                childrenOf[mother] = [];
+            childrenOf[mother].push(p.id);
+        }
+        if (father && father !== mother) {
+            if (!childrenOf[father])
+                childrenOf[father] = [];
+            childrenOf[father].push(p.id);
+        }
+    }
+    return { byId, childrenOf };
+}
+// ---------------------------------------------------------------------------
+// layoutTopDown
+// ---------------------------------------------------------------------------
+function layoutTopDown(plants) {
+    if (plants.length === 0) {
+        return {
+            nodes: {},
+            edges: [],
+            bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
+        };
+    }
+    const { byId } = buildIndex(plants);
+    // Rank = longest path from a root (node with no parents in the set).
+    const rankCache = {};
+    const visiting = {};
+    function rankOf(id) {
+        if (rankCache[id] !== undefined)
+            return rankCache[id];
+        if (visiting[id])
+            return 0; // cycle guard
+        visiting[id] = true;
+        const node = byId[id];
+        if (!node) {
+            visiting[id] = false;
+            return (rankCache[id] = 0);
+        }
+        const { mother, father } = node.parents;
+        let rank = 0;
+        if (mother && byId[mother])
+            rank = Math.max(rank, rankOf(mother) + 1);
+        if (father && byId[father])
+            rank = Math.max(rank, rankOf(father) + 1);
+        visiting[id] = false;
+        return (rankCache[id] = rank);
+    }
+    for (const p of plants)
+        rankOf(p.id);
+    // Group by rank
+    const byRank = {};
+    for (const p of plants) {
+        const r = rankCache[p.id];
+        if (!byRank[r])
+            byRank[r] = [];
+        byRank[r].push(p);
+    }
+    // Sort each rank: family group key first, then name
+    for (const r of Object.keys(byRank)) {
+        byRank[+r].sort((a, b) => {
+            const keyA = [a.parents.mother, a.parents.father]
+                .filter(Boolean)
+                .sort()
+                .join('|');
+            const keyB = [b.parents.mother, b.parents.father]
+                .filter(Boolean)
+                .sort()
+                .join('|');
+            if (keyA !== keyB)
+                return keyA.localeCompare(keyB);
+            return a.name.localeCompare(b.name);
+        });
+    }
+    const ranks = Object.keys(byRank)
+        .map(Number)
+        .sort((a, b) => a - b);
+    // Find max row width for centering
+    const maxRowWidth = Math.max(...ranks.map((r) => {
+        const count = byRank[r].length;
+        return count * NODE_W + (count - 1) * COL_GAP;
+    }));
+    // Assign positions
+    const nodes = {};
+    for (const r of ranks) {
+        const row = byRank[r];
+        const rowWidth = row.length * NODE_W + (row.length - 1) * COL_GAP;
+        const startX = (maxRowWidth - rowWidth) / 2;
+        const y = r * (NODE_H + ROW_GAP);
+        row.forEach((p, i) => {
+            nodes[p.id] = {
+                x: startX + i * (NODE_W + COL_GAP),
+                y,
+                w: NODE_W,
+                h: NODE_H,
+                rank: r,
+            };
+        });
+    }
+    // Build edges
+    const edges = [];
+    for (const p of plants) {
+        const { mother, father } = p.parents;
+        if (mother && nodes[mother] && nodes[p.id]) {
+            edges.push({ from: mother, to: p.id, kind: 'mother' });
+        }
+        if (father && father !== mother && nodes[father] && nodes[p.id]) {
+            edges.push({ from: father, to: p.id, kind: 'father' });
+        }
+    }
+    // Compute bounds with 40px padding
+    const pad = 40;
+    const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
+    const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
+    const bounds = {
+        minX: Math.min(...xs) - pad,
+        maxX: Math.max(...xs) + pad,
+        minY: Math.min(...ys) - pad,
+        maxY: Math.max(...ys) + pad,
+    };
+    return { nodes, edges, bounds };
+}
+// ---------------------------------------------------------------------------
+// layoutRadial
+// ---------------------------------------------------------------------------
+function layoutRadial(plants, focalId) {
+    if (plants.length === 0) {
+        return {
+            nodes: {},
+            edges: [],
+            bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
+        };
+    }
+    const { byId, childrenOf } = buildIndex(plants);
+    // BFS to assign relative ranks from focal node
+    const relRank = {};
+    relRank[focalId] = 0;
+    const queue = [{ id: focalId, rank: 0 }];
+    const visited = new Set([focalId]);
+    while (queue.length > 0) {
+        const { id, rank } = queue.shift();
+        const node = byId[id];
+        if (!node)
+            continue;
+        // Walk ancestors (negative ranks)
+        const { mother, father } = node.parents;
+        for (const parentId of [mother, father]) {
+            if (parentId && byId[parentId] && !visited.has(parentId)) {
+                visited.add(parentId);
+                relRank[parentId] = rank - 1;
+                queue.push({ id: parentId, rank: rank - 1 });
+            }
+        }
+        // Walk descendants (positive ranks)
+        for (const childId of childrenOf[id] ?? []) {
+            if (byId[childId] && !visited.has(childId)) {
+                visited.add(childId);
+                relRank[childId] = rank + 1;
+                queue.push({ id: childId, rank: rank + 1 });
+            }
+        }
+    }
+    // Group by rank
+    const byRank = {};
+    for (const [id, r] of Object.entries(relRank)) {
+        if (!byRank[r])
+            byRank[r] = [];
+        byRank[r].push(id);
+    }
+    // Place focal at origin
+    const cx = 0;
+    const cy = 0;
+    const nodes = {};
+    // Focal node
+    nodes[focalId] = {
+        x: cx - NODE_W / 2,
+        y: cy - NODE_H / 2,
+        w: NODE_W,
+        h: NODE_H,
+        rank: 0,
+    };
+    const DEG = Math.PI / 180;
+    for (const [rankStr, ids] of Object.entries(byRank)) {
+        const rank = Number(rankStr);
+        if (rank === 0)
+            continue;
+        const radius = Math.abs(rank) * 200;
+        const isAncestor = rank < 0;
+        // Ancestor arc: -160deg to -20deg (upper half, i.e. negative y)
+        // Descendant arc: 20deg to 160deg (lower half)
+        const startDeg = isAncestor ? -160 : 20;
+        const endDeg = isAncestor ? -20 : 160;
+        const count = ids.length;
+        ids.forEach((id, i) => {
+            const t = count === 1 ? 0.5 : i / (count - 1);
+            const angleDeg = startDeg + t * (endDeg - startDeg);
+            const angleRad = angleDeg * DEG;
+            const nx = cx + radius * Math.cos(angleRad) - NODE_W / 2;
+            const ny = cy + radius * Math.sin(angleRad) - NODE_H / 2;
+            nodes[id] = {
+                x: nx,
+                y: ny,
+                w: NODE_W,
+                h: NODE_H,
+                rank,
+            };
+        });
+    }
+    // Build edges — only between nodes present in the layout
+    const edges = [];
+    for (const id of Object.keys(nodes)) {
+        const node = byId[id];
+        if (!node)
+            continue;
+        const { mother, father } = node.parents;
+        if (mother && nodes[mother]) {
+            edges.push({ from: mother, to: id, kind: 'mother' });
+        }
+        if (father && father !== mother && nodes[father]) {
+            edges.push({ from: father, to: id, kind: 'father' });
+        }
+    }
+    // Bounds with 60px padding
+    const pad = 60;
+    const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
+    const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
+    const bounds = {
+        minX: Math.min(...xs) - pad,
+        maxX: Math.max(...xs) + pad,
+        minY: Math.min(...ys) - pad,
+        maxY: Math.max(...ys) + pad,
+    };
+    return { nodes, edges, bounds };
+}
+// ---------------------------------------------------------------------------
+// Graph traversal utilities
+// ---------------------------------------------------------------------------
+function ancestorsOf(plants, focalId) {
+    const { byId } = buildIndex(plants);
+    const result = new Set();
+    const queue = [focalId];
+    while (queue.length > 0) {
+        const id = queue.shift();
+        const node = byId[id];
+        if (!node)
+            continue;
+        for (const parentId of [node.parents.mother, node.parents.father]) {
+            if (parentId && byId[parentId] && !result.has(parentId)) {
+                result.add(parentId);
+                queue.push(parentId);
+            }
+        }
+    }
+    return result;
+}
+function descendantsOf(plants, focalId) {
+    const { childrenOf } = buildIndex(plants);
+    const result = new Set();
+    const queue = [focalId];
+    while (queue.length > 0) {
+        const id = queue.shift();
+        for (const childId of childrenOf[id] ?? []) {
+            if (!result.has(childId)) {
+                result.add(childId);
+                queue.push(childId);
+            }
+        }
+    }
+    return result;
+}
+function motherLineOf(plants, focalId) {
+    const { byId } = buildIndex(plants);
+    const result = new Set();
+    let current = focalId;
+    while (true) {
+        const node = byId[current];
+        if (!node)
+            break;
+        const { mother } = node.parents;
+        if (!mother || !byId[mother] || result.has(mother))
+            break;
+        result.add(mother);
+        current = mother;
+    }
+    return result;
+}
+// ---------------------------------------------------------------------------
+// Edge path generators
+// ---------------------------------------------------------------------------
+function edgePath(from, to) {
+    const x1 = from.x + from.w / 2;
+    const y1 = from.y + from.h;
+    const x2 = to.x + to.w / 2;
+    const y2 = to.y;
+    const dy = (y2 - y1) / 2;
+    return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
+}
+function edgePathRadial(from, to) {
+    const x1 = from.x + from.w / 2;
+    const y1 = from.y + from.h / 2;
+    const x2 = to.x + to.w / 2;
+    const y2 = to.y + to.h / 2;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    return `M ${x1} ${y1} Q ${mx} ${my}, ${x2} ${y2}`;
+}
+
+const GEN_COLORS = {
+    P1: '#9e9e9e',
+    F1: '#4caf50',
+    F2: '#8bc34a',
+    BX1: '#ff9800',
+    BX2: '#f57c00',
+    S1: '#2196f3',
+    CL: '#e91e63',
+};
+function genColor(gen) {
+    return GEN_COLORS[gen] ?? '#555';
+}
+let GeneticsTreeView = class GeneticsTreeView extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.nodes = [];
+        this.focalId = null;
+        this._layout = 'topdown';
+        this._focusMode = false;
+        this._highlightMother = false;
+        this._search = '';
+        this._genFilter = null;
+        this._collapsed = new Set();
+        this._selectedId = null;
+        this._compareIds = [];
+        this._panX = 0;
+        this._panY = 0;
+        this._scale = 0.9;
+        this._viewW = 0;
+        this._viewH = 0;
+        this._dragging = null;
+        this._computed = null;
+        this._childrenOf = {};
+    }
+    // ---------------------------------------------------------------------------
+    // Lifecycle
+    // ---------------------------------------------------------------------------
+    connectedCallback() {
+        super.connectedCallback();
+        this._resizeObs = new ResizeObserver((entries) => {
+            let changed = false;
+            for (const entry of entries) {
+                // Observe host element dimensions
+                if (this._viewW !== entry.contentRect.width || this._viewH !== entry.contentRect.height) {
+                    this._viewW = entry.contentRect.width;
+                    this._viewH = entry.contentRect.height;
+                    changed = true;
+                    console.log(`[GeneticsTreeView] View dimensions updated: ${this._viewW}x${this._viewH}`);
+                }
+            }
+            if (changed) {
+                this._fitToScreen();
+                this.requestUpdate();
+            }
+        });
+        // Observe host instead of child to avoid race condition with conditional rendering
+        this._resizeObs.observe(this);
+        // Fallback trigger for initial render
+        this.updateComplete.then(() => {
+            if (this._viewW === 0) {
+                const rect = this.getBoundingClientRect();
+                if (rect.width > 0) {
+                    this._viewW = rect.width;
+                    this._viewH = rect.height;
+                    this._fitToScreen();
+                    this.requestUpdate();
+                }
+            }
+        });
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._resizeObs?.disconnect();
+    }
+    updated(changed) {
+        if (changed.has('nodes')) {
+            this._childrenOf = {};
+            for (const n of this.nodes) {
+                const { mother, father } = n.parents;
+                if (mother) {
+                    if (!this._childrenOf[mother])
+                        this._childrenOf[mother] = [];
+                    if (!this._childrenOf[mother].includes(n.id))
+                        this._childrenOf[mother].push(n.id);
+                }
+                if (father && father !== mother) {
+                    if (!this._childrenOf[father])
+                        this._childrenOf[father] = [];
+                    if (!this._childrenOf[father].includes(n.id))
+                        this._childrenOf[father].push(n.id);
+                }
+            }
+        }
+        if (changed.has('nodes') ||
+            changed.has('_layout') ||
+            changed.has('focalId') ||
+            changed.has('_collapsed')) {
+            this._recompute();
+            this._fitToScreen();
+        }
+    }
+    // ---------------------------------------------------------------------------
+    // Compute
+    // ---------------------------------------------------------------------------
+    _recompute() {
+        const visible = this._visibleNodes();
+        console.log('[GeneticsTreeView] _recompute: nodes count =', this.nodes?.length, 'visible count =', visible.length, 'focalId =', this.focalId);
+        if (visible.length === 0) {
+            this._computed = null;
+            console.warn('[GeneticsTreeView] No nodes visible, layout skipped.');
+            return;
+        }
+        try {
+            if (this._layout === 'radial' && this.focalId) {
+                this._computed = layoutRadial(visible, this.focalId);
+            }
+            else if (this._layout === 'radial' && visible.length > 0) {
+                this._computed = layoutRadial(visible, visible[0].id);
+            }
+            else {
+                this._computed = layoutTopDown(visible);
+            }
+            console.log('[GeneticsTreeView] Layout computed:', this._computed ? 'SUCCESS' : 'EMPTY');
+        }
+        catch (err) {
+            console.error('[GeneticsTreeView] Layout engine failed:', err);
+            this._computed = null;
+        }
+    }
+    _visibleNodes() {
+        if (this._collapsed.size === 0)
+            return this.nodes;
+        const hidden = new Set();
+        const queue = [...this._collapsed];
+        while (queue.length > 0) {
+            const id = queue.shift();
+            for (const childId of this._childrenOf[id] ?? []) {
+                if (!hidden.has(childId)) {
+                    hidden.add(childId);
+                    queue.push(childId);
+                }
+            }
+        }
+        return this.nodes.filter((n) => !hidden.has(n.id));
+    }
+    _fitToScreen() {
+        if (!this._computed || this._viewW <= 0 || this._viewH <= 0)
+            return;
+        const { nodes, bounds } = this._computed;
+        const { minX, maxX, minY, maxY } = bounds;
+        const treeW = maxX - minX;
+        const treeH = maxY - minY;
+        const pad = 60;
+        const scaleX = (this._viewW - pad * 2) / treeW;
+        const scaleY = (this._viewH - pad * 2) / treeH;
+        // Calculate scale - Allow much smaller scale to ensure huge trees fit
+        let scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
+        this._scale = scale;
+        const treeWVal = (maxX - minX);
+        const treeHVal = (maxY - minY);
+        console.log(`[GeneticsTreeView] FitToScreen: tree=${treeWVal}x${treeHVal}, view=${this._viewW}x${this._viewH}, scale=${scale}`);
+        // If we have a focalId, center on it. Otherwise center the whole tree.
+        const focalNode = this.focalId ? nodes[this.focalId] : null;
+        if (focalNode) {
+            // Center on focal node
+            this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
+            this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
+        }
+        else {
+            // Center the entire bounds
+            this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
+            this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
+        }
+        // Diagnostic log
+        console.log('[GeneticsTreeView] Fit to screen:', {
+            view: `${this._viewW}x${this._viewH}`,
+            tree: `${treeW.toFixed(0)}x${treeH.toFixed(0)}`,
+            scale: scale.toFixed(2),
+            pan: `${this._panX.toFixed(0)},${this._panY.toFixed(0)}`,
+            focal: this.focalId
+        });
+    }
+    // ---------------------------------------------------------------------------
+    // Derived sets
+    // ---------------------------------------------------------------------------
+    get _ancestorSet() {
+        if (!this.focalId)
+            return new Set();
+        return ancestorsOf(this.nodes, this.focalId);
+    }
+    get _descendantSet() {
+        if (!this.focalId)
+            return new Set();
+        return descendantsOf(this.nodes, this.focalId);
+    }
+    get _motherLineSet() {
+        if (!this.focalId)
+            return new Set();
+        return motherLineOf(this.nodes, this.focalId);
+    }
+    // ---------------------------------------------------------------------------
+    // Pan / zoom handlers
+    // ---------------------------------------------------------------------------
+    _onWheel(e) {
+        e.preventDefault();
+        const delta = -e.deltaY * 0.0015;
+        const newScale = Math.min(Math.max(this._scale + delta * this._scale, 0.2), 2.0);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        this._panX = mx - (mx - this._panX) * (newScale / this._scale);
+        this._panY = my - (my - this._panY) * (newScale / this._scale);
+        this._scale = newScale;
+    }
+    _onMouseDown(e) {
+        if (e.button !== 0)
+            return;
+        const target = e.target;
+        if (target.closest('.tree-node') ||
+            target.closest('.minimap') ||
+            target.closest('.compare-drawer') ||
+            target.closest('.detail-panel'))
+            return;
+        this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
+    }
+    _onMouseMove(e) {
+        if (!this._dragging)
+            return;
+        this._panX = this._dragging.ox + (e.clientX - this._dragging.sx);
+        this._panY = this._dragging.oy + (e.clientY - this._dragging.sy);
+    }
+    _onMouseUp() {
+        this._dragging = null;
+    }
+    // ---------------------------------------------------------------------------
+    // Node interaction
+    // ---------------------------------------------------------------------------
+    _onNodeClick(p) {
+        this._selectedId = this._selectedId === p.id ? null : p.id;
+        if (this._focusMode || this._layout === 'radial') {
+            this.focalId = p.id;
+        }
+    }
+    _toggleCollapse(id) {
+        const next = new Set(this._collapsed);
+        if (next.has(id)) {
+            next.delete(id);
+        }
+        else {
+            next.add(id);
+        }
+        this._collapsed = next;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: main
+    // ---------------------------------------------------------------------------
+    render() {
+        const c = this._computed;
+        const visible = this._visibleNodes();
+        if (!c) {
+            return x `<div class="empty">No lineage data.</div>`;
+        }
+        return x `
+      <div
+        class="shell"
+        @wheel=${this._onWheel}
+        @mousedown=${this._onMouseDown}
+        @mousemove=${this._onMouseMove}
+        @mouseup=${this._onMouseUp}
+        @mouseleave=${this._onMouseUp}
+      >
+        ${this._renderToolbar(visible)}
+        ${this._renderFilterRow()}
+        <div class="canvas-wrap">
+          <div class="bg-grid"></div>
+          <div
+            class="canvas"
+            style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._scale})"
+          >
+            ${this._renderEdges(c)}
+            ${this._layout === 'topdown' ? this._renderGenLabels(c) : E}
+            ${this._renderNodes(c)}
+          </div>
+          ${this._renderZoomControls()}
+          ${this._renderLegend()}
+          ${this._renderMinimap(c, visible)}
+          ${this._renderCompareDrawer()}
+        </div>
+        ${this._renderDetailPanel()}
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: toolbar
+    // ---------------------------------------------------------------------------
+    _renderToolbar(visible) {
+        return x `
+      <div class="toolbar-row">
+        <div class="search-bar">
+          <svg class="icon" viewBox="0 0 24 24"><path d="${mdiMagnify}" /></svg>
+          <input
+            type="text"
+            placeholder="Search…"
+            .value=${this._search}
+            @input=${(e) => {
+            this._search = e.target.value;
+        }}
+          />
+          ${this._search
+            ? x `
+                <button
+                  class="icon-btn"
+                  @click=${() => {
+                this._search = '';
+            }}
+                >
+                  <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+                </button>
+              `
+            : E}
+        </div>
+
+        <div class="layout-toggle">
+          <button
+            class=${this._layout === 'topdown' ? 'active' : ''}
+            @click=${() => {
+            this._layout = 'topdown';
+        }}
+          >
+            Top-Down
+          </button>
+          <button
+            class=${this._layout === 'radial' ? 'active' : ''}
+            @click=${() => {
+            this._layout = 'radial';
+            if (!this.focalId && this.nodes.length > 0) {
+                this.focalId = this.nodes[0].id;
+            }
+        }}
+          >
+            Radial
+          </button>
+        </div>
+
+        <button
+          class="pill-btn ${this._focusMode ? 'active' : ''}"
+          @click=${() => {
+            this._focusMode = !this._focusMode;
+        }}
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
+          Focus
+        </button>
+
+        <button
+          class="pill-btn ${this._highlightMother ? 'active' : ''}"
+          @click=${() => {
+            this._highlightMother = !this._highlightMother;
+        }}
+        >
+          Mother Line
+        </button>
+
+        <button
+          class="pill-btn"
+          @click=${() => {
+            this._fitToScreen();
+        }}
+          title="Fit to Screen"
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
+          Fit
+        </button>
+
+        <button
+          class="pill-btn"
+          @click=${() => {
+            this._scale = 1.0;
+            this._fitToScreen();
+        }}
+          title="Reset Zoom & Center"
+        >
+          Reset
+        </button>
+
+        <span class="count-badge">${visible.length} / ${this.nodes.length}</span>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: filter row
+    // ---------------------------------------------------------------------------
+    _renderFilterRow() {
+        const gens = [...new Set(this.nodes.map((n) => n.gen))].sort();
+        const showClear = this.focalId || this._focusMode || this._collapsed.size > 0;
+        return x `
+      <div class="filter-row">
+        <button
+          class="gen-chip ${this._genFilter === null ? 'active' : ''}"
+          @click=${() => {
+            this._genFilter = null;
+        }}
+        >
+          All
+        </button>
+        ${gens.map((g) => x `
+            <button
+              class="gen-chip ${this._genFilter === g ? 'active' : ''}"
+              style="--chip-c: ${genColor(g)}"
+              @click=${() => {
+            this._genFilter = g;
+        }}
+            >
+              ${g}
+            </button>
+          `)}
+        ${showClear
+            ? x `
+              <button
+                class="clear-btn"
+                @click=${() => {
+                this.focalId = null;
+                this._focusMode = false;
+                this._collapsed = new Set();
+            }}
+              >
+                Clear
+              </button>
+            `
+            : E}
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: edges
+    // ---------------------------------------------------------------------------
+    _renderEdges(c) {
+        const { minX, minY, maxX, maxY } = c.bounds;
+        const w = maxX - minX;
+        const h = maxY - minY;
+        const anc = this._ancestorSet;
+        const desc = this._descendantSet;
+        const ml = this._motherLineSet;
+        return x `
+      <svg
+        class="edges-svg"
+        style="left:${minX}px;top:${minY}px;width:${w}px;height:${h}px"
+        viewBox="${minX} ${minY} ${w} ${h}"
+      >
+        ${c.edges.map((e) => {
+            const fromNode = c.nodes[e.from];
+            const toNode = c.nodes[e.to];
+            if (!fromNode || !toNode)
+                return E;
+            const d = this._layout === 'radial'
+                ? edgePathRadial(fromNode, toNode)
+                : edgePath(fromNode, toNode);
+            const isMotherLine = ml.has(e.from) &&
+                (e.to === this.focalId || ml.has(e.to));
+            const dimmed = this._focusMode &&
+                this.focalId &&
+                !anc.has(e.from) &&
+                !anc.has(e.to) &&
+                !desc.has(e.from) &&
+                !desc.has(e.to) &&
+                e.from !== this.focalId &&
+                e.to !== this.focalId;
+            const classes = [
+                'edge',
+                `edge-${e.kind}`,
+                dimmed ? 'dimmed' : '',
+                isMotherLine && this._highlightMother ? 'mother-line' : '',
+            ]
+                .filter(Boolean)
+                .join(' ');
+            return b `<path class="${classes}" d="${d}" />`;
+        })}
+      </svg>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: gen labels (topdown only)
+    // ---------------------------------------------------------------------------
+    _renderGenLabels(c) {
+        const { minX } = c.bounds;
+        const byRank = {};
+        for (const n of this._visibleNodes()) {
+            const ln = c.nodes[n.id];
+            if (!ln)
+                continue;
+            if (!byRank[ln.rank])
+                byRank[ln.rank] = [];
+            byRank[ln.rank].push(n);
+        }
+        return x `
+      ${Object.entries(byRank).map(([rankStr, rowNodes]) => {
+            const rank = Number(rankStr);
+            const ln = c.nodes[rowNodes[0].id];
+            if (!ln)
+                return E;
+            const gens = [...new Set(rowNodes.map((n) => n.gen))].join(' · ');
+            return x `
+          <div
+            class="gen-label"
+            style="left:${minX - 100}px;top:${ln.y}px"
+          >
+            <div class="gen-eyebrow">Gen ${rank}</div>
+            <div class="gen-tags">${gens}</div>
+          </div>
+        `;
+        })}
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: nodes
+    // ---------------------------------------------------------------------------
+    _renderNodes(c) {
+        const visible = this._visibleNodes();
+        const anc = this._ancestorSet;
+        const desc = this._descendantSet;
+        this._motherLineSet;
+        const searchLc = this._search.toLowerCase();
+        return x `
+      ${visible.map((p) => {
+            const ln = c.nodes[p.id];
+            if (!ln)
+                return E;
+            const isSelected = this._selectedId === p.id;
+            const isCompare = this._compareIds.includes(p.id);
+            const isFocal = this.focalId === p.id;
+            const inLineage = anc.has(p.id) || desc.has(p.id) || isFocal;
+            const highlighted = isFocal || inLineage;
+            const searchMatch = !searchLc ||
+                p.name.toLowerCase().includes(searchLc) ||
+                p.strain.toLowerCase().includes(searchLc) ||
+                p.breeder.toLowerCase().includes(searchLc);
+            const genMatch = !this._genFilter || p.gen === this._genFilter;
+            const dimmed = (this._focusMode && this.focalId && !highlighted) ||
+                !searchMatch ||
+                !genMatch;
+            const hasChildren = (this._childrenOf[p.id] ?? []).length > 0;
+            const isCollapsed = this._collapsed.has(p.id);
+            const descCount = isCollapsed
+                ? this._countDescendants(p.id)
+                : 0;
+            const classes = [
+                'tree-node',
+                dimmed ? 'dimmed' : '',
+                highlighted ? 'highlighted' : '',
+                isSelected ? 'selected' : '',
+                isCompare ? 'compare' : '',
+            ]
+                .filter(Boolean)
+                .join(' ');
+            const stageColor = genColor(p.gen);
+            return x `
+          <div
+            class="${classes}"
+            style="
+              left:${ln.x}px;
+              top:${ln.y}px;
+              width:${NODE_W}px;
+              height:${NODE_H}px;
+              --stage-c:${stageColor}
+            "
+            @click=${() => {
+                this._onNodeClick(p);
+            }}
+          >
+            <div class="pn-body">
+              <div class="pn-row1">
+                <span class="gen-badge" style="background:${stageColor}">${p.gen}</span>
+                <span class="pn-name">${p.name}</span>
+              </div>
+              <div class="pn-row2">${p.strain}${p.breeder ? ` · ${p.breeder}` : ''}</div>
+              <div class="pn-row3">
+                <span class="type-badge ${p.type}">${p.type}</span>
+                ${p.pheno ? x `<span class="pheno-badge">${p.pheno}</span>` : E}
+              </div>
+            </div>
+            ${isCompare
+                ? x `<span class="compare-badge">${this._compareIds.indexOf(p.id) + 1}</span>`
+                : E}
+            ${hasChildren
+                ? x `
+                  <button
+                    class="fold-btn ${isCollapsed ? 'collapsed' : ''}"
+                    @click=${(e) => {
+                    e.stopPropagation();
+                    this._toggleCollapse(p.id);
+                }}
+                  >
+                    <svg viewBox="0 0 24 24">
+                      <path d="${isCollapsed ? mdiChevronDown : mdiChevronUp}" />
+                    </svg>
+                    ${isCollapsed && descCount > 0
+                    ? x `<span class="desc-count">${descCount}</span>`
+                    : E}
+                  </button>
+                `
+                : E}
+          </div>
+        `;
+        })}
+    `;
+    }
+    _countDescendants(id) {
+        const seen = new Set();
+        const queue = [id];
+        while (queue.length > 0) {
+            const curr = queue.shift();
+            for (const child of this._childrenOf[curr] ?? []) {
+                if (!seen.has(child)) {
+                    seen.add(child);
+                    queue.push(child);
+                }
+            }
+        }
+        return seen.size;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: zoom controls
+    // ---------------------------------------------------------------------------
+    _renderZoomControls() {
+        return x `
+      <div class="zoom-controls">
+        <button
+          class="icon-btn"
+          @click=${() => {
+            this._scale = Math.min(this._scale * 1.2, 2.0);
+        }}
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
+        </button>
+        <span class="zoom-pct">${Math.round(this._scale * 100)}%</span>
+        <button
+          class="icon-btn"
+          @click=${() => {
+            this._scale = Math.max(this._scale / 1.2, 0.2);
+        }}
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiMinus}" /></svg>
+        </button>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: legend
+    // ---------------------------------------------------------------------------
+    _renderLegend() {
+        return x `
+      <div class="legend">
+        <div class="legend-row">
+          <div class="legend-line solid"></div>
+          <span>Mother</span>
+        </div>
+        <div class="legend-row">
+          <div class="legend-line dashed"></div>
+          <span>Father</span>
+        </div>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: minimap
+    // ---------------------------------------------------------------------------
+    _renderMinimap(c, visible) {
+        const mmW = 180;
+        const mmH = 120;
+        const { minX, maxX, minY, maxY } = c.bounds;
+        const treeW = maxX - minX || 1;
+        const treeH = maxY - minY || 1;
+        const scaleX = mmW / treeW;
+        const scaleY = mmH / treeH;
+        const vpX = (-this._panX / this._scale - minX) * scaleX;
+        const vpY = (-this._panY / this._scale - minY) * scaleY;
+        const vpW = (this._viewW / this._scale) * scaleX;
+        const vpH = (this._viewH / this._scale) * scaleY;
+        return x `
+      <svg
+        class="minimap"
+        width="${mmW}"
+        height="${mmH}"
+        @click=${(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const wx = (e.clientX - rect.left) / scaleX + minX;
+            const wy = (e.clientY - rect.top) / scaleY + minY;
+            this._panX = this._viewW / 2 - wx * this._scale;
+            this._panY = this._viewH / 2 - wy * this._scale;
+        }}
+      >
+        ${visible.map((p) => {
+            const ln = c.nodes[p.id];
+            if (!ln)
+                return E;
+            const rx = (ln.x - minX) * scaleX;
+            const ry = (ln.y - minY) * scaleY;
+            const rw = ln.w * scaleX;
+            const rh = ln.h * scaleY;
+            return b `<rect
+            x="${rx}" y="${ry}" width="${Math.max(rw, 2)}" height="${Math.max(rh, 2)}"
+            rx="1"
+            fill="${genColor(p.gen)}"
+            opacity="0.7"
+          />`;
+        })}
+        <rect
+          x="${vpX}"
+          y="${vpY}"
+          width="${vpW}"
+          height="${vpH}"
+          fill="none"
+          stroke="#4caf50"
+          stroke-width="1.5"
+          rx="2"
+        />
+      </svg>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: compare drawer
+    // ---------------------------------------------------------------------------
+    _renderCompareDrawer() {
+        if (this._compareIds.length === 0)
+            return x `${E}`;
+        const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
+        const renderCol = (id, slot) => {
+            if (!id) {
+                return x `
+          <div class="cd-col cd-empty">
+            <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
+            <span>Click a node to compare</span>
+          </div>
+        `;
+            }
+            const n = byId[id];
+            if (!n)
+                return x `${E}`;
+            return x `
+        <div class="cd-col">
+          <div class="cd-header">
+            <span class="cd-name">${n.name}</span>
+            <button
+              class="icon-btn"
+              @click=${() => {
+                this._compareIds = this._compareIds.filter((_, i) => i !== slot);
+            }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+            </button>
+          </div>
+          <div class="cd-row"><span class="cd-k">Gen</span><span class="cd-v">${n.gen}</span></div>
+          <div class="cd-row"><span class="cd-k">Strain</span><span class="cd-v">${n.strain}</span></div>
+          <div class="cd-row"><span class="cd-k">Breeder</span><span class="cd-v">${n.breeder}</span></div>
+          <div class="cd-row"><span class="cd-k">Pheno</span><span class="cd-v">${n.pheno || '—'}</span></div>
+          <div class="cd-row"><span class="cd-k">Type</span><span class="cd-v">${n.type}</span></div>
+        </div>
+      `;
+        };
+        return x `
+      <div class="compare-drawer">
+        <div class="cd-title">
+          <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
+          Compare
+          <button
+            class="icon-btn"
+            style="margin-left:auto"
+            @click=${() => {
+            this._compareIds = [];
+        }}
+          >
+            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+          </button>
+        </div>
+        <div class="cd-cols">
+          ${renderCol(this._compareIds[0], 0)}
+          ${renderCol(this._compareIds[1], 1)}
+        </div>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: detail panel
+    // ---------------------------------------------------------------------------
+    _renderDetailPanel() {
+        if (!this._selectedId)
+            return x `${E}`;
+        const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
+        const n = byId[this._selectedId];
+        if (!n)
+            return x `${E}`;
+        const motherNode = n.parents.mother ? byId[n.parents.mother] : null;
+        const fatherNode = n.parents.father ? byId[n.parents.father] : null;
+        return x `
+      <div class="detail-panel">
+        <div class="dp-header">
+          <span class="dp-title">${n.name}</span>
+          <button
+            class="icon-btn"
+            @click=${() => {
+            this._selectedId = null;
+        }}
+          >
+            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+          </button>
+        </div>
+        <div class="dp-body">
+          <div class="dp-row"><span class="dp-k">Generation</span><span class="dp-v">${n.gen}</span></div>
+          <div class="dp-row"><span class="dp-k">Strain</span><span class="dp-v">${n.strain}</span></div>
+          <div class="dp-row"><span class="dp-k">Breeder</span><span class="dp-v">${n.breeder}</span></div>
+          <div class="dp-row"><span class="dp-k">Phenotype</span><span class="dp-v">${n.pheno || '—'}</span></div>
+          <div class="dp-row">
+            <span class="dp-k">Mother</span>
+            <span
+              class="dp-v ${motherNode ? 'dp-link' : ''}"
+              @click=${() => {
+            if (motherNode) {
+                this.focalId = motherNode.id;
+                this._selectedId = motherNode.id;
+            }
+        }}
+            >
+              ${motherNode ? motherNode.name : '—'}
+            </span>
+          </div>
+          <div class="dp-row">
+            <span class="dp-k">Father</span>
+            <span class="dp-v">${fatherNode ? fatherNode.name : '—'}</span>
+          </div>
+        </div>
+        <div class="dp-footer">
+          <button
+            class="pill-btn active"
+            @click=${() => {
+            this.focalId = n.id;
+            this._focusMode = true;
+        }}
+          >
+            Focus Lineage
+          </button>
+          <button
+            class="pill-btn"
+            @click=${() => {
+            if (!this._compareIds.includes(n.id) && this._compareIds.length < 2) {
+                this._compareIds = [...this._compareIds, n.id];
+            }
+        }}
+          >
+            <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
+            Compare
+          </button>
+        </div>
+      </div>
+    `;
+    }
+};
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+GeneticsTreeView.styles = i$6 `
+    :host {
+      display: block;
+      height: 100%;
+      font-family: var(--font-sans, 'Roboto', sans-serif);
+      color: var(--primary-text-color, #fff);
+      --bg-app: #101010;
+      --bg-card: #1e1e1e;
+      --bg-card-elev: #252525;
+      --bg-input: #2a2a2a;
+      --bg-input-border: #3a3a3a;
+      --bg-glass: rgba(20, 20, 24, 0.8);
+      --fg-1: #fff;
+      --fg-2: rgba(255, 255, 255, 0.7);
+      --fg-3: rgba(255, 255, 255, 0.5);
+      --divider-faint: rgba(255, 255, 255, 0.05);
+      --gv-primary: #4caf50;
+      --gv-secondary: #2196f3;
+      --gv-mother: #e91e63;
+      --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.37);
+    }
+
+    /* ---- Shell ---- */
+    .shell {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--bg-app);
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* ---- Toolbar ---- */
+    .toolbar-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--divider-faint);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--bg-input-border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      flex: 1;
+      min-width: 140px;
+      max-width: 260px;
+    }
+    .search-bar:focus-within {
+      border-color: var(--gv-primary);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+    }
+    .search-bar .icon {
+      width: 16px;
+      height: 16px;
+      fill: var(--fg-3);
+      flex-shrink: 0;
+    }
+    .search-bar input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--fg-1);
+      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+    }
+    .search-bar input::placeholder {
+      color: var(--fg-3);
+    }
+
+    .layout-toggle {
+      display: flex;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--bg-input-border);
+    }
+    .layout-toggle button {
+      background: var(--bg-input);
+      color: var(--fg-2);
+      border: none;
+      padding: 5px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .layout-toggle button:first-child {
+      border-right: 1px solid var(--bg-input-border);
+    }
+    .layout-toggle button.active {
+      background: linear-gradient(135deg, #4caf50, #45a049);
+      color: #fff;
+    }
+    .layout-toggle button:hover:not(.active) {
+      background: var(--bg-card-elev);
+    }
+
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-input);
+      color: var(--fg-2);
+      border: 1px solid var(--bg-input-border);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .pill-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .pill-btn:hover {
+      border-color: var(--gv-primary);
+      color: var(--fg-1);
+    }
+    .pill-btn.active {
+      background: rgba(76, 175, 80, 0.15);
+      border-color: var(--gv-primary);
+      color: var(--gv-primary);
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--fg-2);
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+    .icon-btn:hover {
+      background: var(--bg-card-elev);
+      color: var(--fg-1);
+    }
+
+    .count-badge {
+      font-size: 11px;
+      color: var(--fg-3);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    /* ---- Filter row ---- */
+    .filter-row {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--divider-faint);
+      flex-shrink: 0;
+    }
+
+    .gen-chip {
+      background: var(--bg-input);
+      border: 1px solid var(--chip-c, var(--bg-input-border));
+      color: var(--fg-2);
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .gen-chip:hover {
+      background: var(--bg-card-elev);
+      color: var(--fg-1);
+    }
+    .gen-chip.active {
+      background: var(--chip-c, var(--gv-primary));
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .clear-btn {
+      background: rgba(229, 57, 53, 0.1);
+      border: 1px solid rgba(229, 57, 53, 0.4);
+      color: #ef5350;
+      border-radius: 999px;
+      padding: 3px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    .clear-btn:hover {
+      background: rgba(229, 57, 53, 0.2);
+    }
+
+    /* ---- Canvas area ---- */
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+    .canvas-wrap:active {
+      cursor: grabbing;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 1px
+      );
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    .canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    /* ---- Edges SVG ---- */
+    .edges-svg {
+      position: absolute;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .edge {
+      fill: none;
+      stroke-width: 1.6;
+    }
+    .edge-mother {
+      stroke: rgba(255, 255, 255, 0.55);
+    }
+    .edge-father {
+      stroke: rgba(255, 255, 255, 0.3);
+      stroke-dasharray: 5 3;
+    }
+    .edge-clone {
+      stroke: rgba(233, 30, 99, 0.5);
+      stroke-dasharray: 2 2;
+    }
+    .edge.dimmed {
+      opacity: 0.1;
+    }
+    .edge.mother-line {
+      stroke: var(--gv-mother);
+      stroke-width: 2.2;
+      filter: drop-shadow(0 0 4px var(--gv-mother));
+    }
+
+    /* ---- Tree nodes ---- */
+    .tree-node {
+      position: absolute;
+      background: var(--bg-card-elev);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: opacity 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .tree-node::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--stage-c, #555);
+      border-radius: 12px 0 0 12px;
+    }
+    .tree-node:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    .tree-node.dimmed {
+      opacity: 0.25;
+    }
+    .tree-node.highlighted {
+      border-color: var(--gv-primary);
+      box-shadow: 0 0 0 1px var(--gv-primary), var(--elev-glass);
+    }
+    .tree-node.selected {
+      border-color: var(--gv-secondary);
+      box-shadow: 0 0 0 2px var(--gv-secondary), var(--elev-glass);
+    }
+    .tree-node.compare {
+      border-color: #9c27b0;
+      box-shadow: 0 0 0 1px #9c27b0;
+    }
+
+    /* ---- Node body ---- */
+    .pn-body {
+      padding: 6px 8px 6px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    .pn-row1 {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .gen-badge {
+      font-size: 9px;
+      font-weight: 700;
+      color: #fff;
+      border-radius: 4px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+      letter-spacing: 0.4px;
+    }
+    .pn-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+    .pn-row2 {
+      font-size: 10px;
+      color: var(--fg-3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pn-row3 {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .type-badge {
+      font-size: 9px;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-weight: 500;
+    }
+    .type-badge.strain {
+      background: rgba(156, 39, 176, 0.3);
+      color: #ce93d8;
+    }
+    .type-badge.batch {
+      background: rgba(33, 150, 243, 0.2);
+      color: #90caf9;
+    }
+    .pheno-badge {
+      font-size: 9px;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--fg-3);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-style: italic;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 80px;
+    }
+
+    .compare-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #9c27b0;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fold-btn {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 2px 4px;
+      cursor: pointer;
+      color: var(--fg-3);
+      font-size: 9px;
+    }
+    .fold-btn svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+    .fold-btn:hover {
+      color: var(--fg-1);
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .fold-btn.collapsed {
+      color: var(--gv-primary);
+      border-color: var(--gv-primary);
+    }
+    .desc-count {
+      font-size: 9px;
+      font-weight: 600;
+    }
+
+    /* ---- Gen labels ---- */
+    .gen-label {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      pointer-events: none;
+    }
+    .gen-eyebrow {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--fg-3);
+    }
+    .gen-tags {
+      font-size: 10px;
+      color: var(--fg-2);
+    }
+
+    /* ---- Zoom controls ---- */
+    .zoom-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      padding: 4px 8px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(8px);
+    }
+    .zoom-pct {
+      font-size: 11px;
+      color: var(--fg-2);
+      width: 36px;
+      text-align: center;
+    }
+
+    /* ---- Legend ---- */
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      left: 110px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 8px 12px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(8px);
+    }
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--fg-2);
+    }
+    .legend-line {
+      width: 24px;
+      height: 2px;
+      border-radius: 1px;
+    }
+    .legend-line.solid {
+      background: rgba(255, 255, 255, 0.55);
+    }
+    .legend-line.dashed {
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.3) 0,
+        rgba(255, 255, 255, 0.3) 5px,
+        transparent 5px,
+        transparent 8px
+      );
+    }
+
+    /* ---- Minimap ---- */
+    .minimap {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(8px);
+      cursor: crosshair;
+    }
+
+    /* ---- Compare drawer ---- */
+    .compare-drawer {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 340px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .cd-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-1);
+      border-bottom: 1px solid var(--divider-faint);
+    }
+    .cd-title svg {
+      width: 16px;
+      height: 16px;
+      fill: var(--gv-primary);
+      flex-shrink: 0;
+    }
+    .cd-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .cd-col {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-right: 1px solid var(--divider-faint);
+    }
+    .cd-col:last-child {
+      border-right: none;
+    }
+    .cd-col.cd-empty {
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 80px;
+      color: var(--fg-3);
+      font-size: 11px;
+      font-style: italic;
+    }
+    .cd-col.cd-empty svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--fg-3);
+    }
+    .cd-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .cd-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-1);
+      flex: 1;
+      word-break: break-word;
+    }
+    .cd-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .cd-k {
+      font-size: 10px;
+      color: var(--fg-3);
+    }
+    .cd-v {
+      font-size: 11px;
+      color: var(--fg-2);
+      text-align: right;
+      word-break: break-word;
+    }
+
+    /* ---- Detail panel ---- */
+    .detail-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-glass);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      z-index: 10;
+    }
+    .dp-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--divider-faint);
+    }
+    .dp-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg-1);
+      flex: 1;
+    }
+    .dp-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      padding: 8px 16px;
+    }
+    .dp-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 16px 4px 0;
+      min-width: 100px;
+    }
+    .dp-k {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-3);
+    }
+    .dp-v {
+      font-size: 12px;
+      color: var(--fg-2);
+    }
+    .dp-link {
+      color: var(--gv-primary);
+      cursor: pointer;
+      text-decoration: underline dotted;
+    }
+    .dp-footer {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px 12px;
+      border-top: 1px solid var(--divider-faint);
+    }
+
+    /* ---- Empty state ---- */
+    .empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-style: italic;
+      color: var(--fg-3);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GeneticsTreeView.prototype, "nodes", void 0);
+__decorate([
+    n$5({ type: String })
+], GeneticsTreeView.prototype, "focalId", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_layout", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_focusMode", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_highlightMother", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_search", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_genFilter", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_collapsed", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_selectedId", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_compareIds", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_panX", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_panY", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_scale", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_viewW", void 0);
+__decorate([
+    r$3()
+], GeneticsTreeView.prototype, "_viewH", void 0);
+GeneticsTreeView = __decorate([
+    t$2('genetics-tree-view')
+], GeneticsTreeView);
+
 let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -24812,9 +26741,11 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
-          ${this._activeMainTab === 'seeds'
-            ? this._renderSeedsTab()
-            : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())}
+          ${this._activeMainTab === 'tree'
+            ? this._renderTreeViewTab()
+            : this._activeMainTab === 'seeds'
+                ? this._renderSeedsTab()
+                : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())}
         </div>
 
         ${this._isCropping ? this.renderCropOverlay() : E}
@@ -26148,6 +28079,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
           @click=${() => { this._activeMainTab = 'seeds'; }}
         >Seeds &amp; Genetics</button>
+        <button
+          class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
+          @click=${() => { this._activeMainTab = 'tree'; }}
+        >Tree View</button>
       </div>
     `;
     }
@@ -26159,6 +28094,83 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         if (this._seedSubView === 'harvest')
             return this._renderHarvestForm();
         return this._renderSeedList();
+    }
+    _buildTreeNodes() {
+        const nodes = [];
+        const strainNameToKey = new Map();
+        // Case-insensitive mapping for better matching
+        this.strains.forEach((s) => {
+            const strainLc = s.strain.toLowerCase();
+            strainNameToKey.set(strainLc, s.key);
+            if (s.phenotype) {
+                // Match "Strain Pheno" and "StrainPheno"
+                strainNameToKey.set(`${strainLc} ${s.phenotype.toLowerCase()}`, s.key);
+                strainNameToKey.set(`${strainLc}${s.phenotype.toLowerCase()}`.replace(/\s+/g, ''), s.key);
+            }
+        });
+        // Helper to resolve a strain name to its key, or return the name if not found
+        const resolve = (name) => {
+            if (!name)
+                return null;
+            // Strip common wrapper characters like quotes and brackets, then trim
+            const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
+            const lower = clean.toLowerCase();
+            return strainNameToKey.get(lower) || clean;
+        };
+        // 1. Add strains
+        this.strains.forEach((strain) => {
+            let mother = null;
+            let father = null;
+            // Try to parse legacy lineage string (e.g. "Mother x Father" or "Mother × Father")
+            const lineage = strain.lineage?.trim();
+            if (lineage) {
+                // Handle various splitters: x, X, ×, * with optional spaces
+                const parts = lineage.split(/\s*[xX×*]\s*/);
+                if (parts.length >= 2) {
+                    mother = resolve(parts[0]);
+                    father = resolve(parts[1]);
+                }
+            }
+            nodes.push({
+                id: strain.key,
+                name: strain.strain,
+                strain: strain.strain,
+                breeder: strain.breeder || '',
+                pheno: strain.phenotype || '',
+                gen: '',
+                type: 'strain',
+                parents: { mother, father },
+            });
+        });
+        // 2. Add seed batches
+        this.seedBatches.forEach((batch) => {
+            nodes.push({
+                id: batch.batch_id,
+                name: `${batch.strain_name} (${batch.batch_id})`,
+                strain: batch.strain_name,
+                breeder: batch.breeder || '',
+                pheno: '',
+                gen: batch.generation || '',
+                type: 'batch',
+                parents: {
+                    mother: resolve(batch.parent_1_strain),
+                    father: resolve(batch.parent_2_strain),
+                },
+            });
+        });
+        console.log('[GeneticsTreeView] Generated nodes:', nodes);
+        return nodes;
+    }
+    _renderTreeViewTab() {
+        const nodes = this._buildTreeNodes();
+        return x `
+      <div class="tab-content-tree">
+        <genetics-tree-view
+          .nodes=${nodes}
+          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : ''}
+        ></genetics-tree-view>
+      </div>
+    `;
     }
     _renderSeedList() {
         return x `
@@ -26662,11 +28674,17 @@ StrainLibraryDialog.styles = [
       .glass-dialog-container {
         width: 100%;
         max-width: 100%;
-        min-height: 0;
+        min-height: 500px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
         background: transparent;
+      }
+
+      @media (min-width: 601px) {
+        .glass-dialog-container {
+          height: 85vh;
+        }
       }
 
       @media (min-width: 601px) {
@@ -27250,6 +29268,14 @@ StrainLibraryDialog.styles = [
         display: flex;
         gap: 8px;
         flex-shrink: 0;
+      }
+
+      .tab-content-tree {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
 
       /* Main tab bar */
