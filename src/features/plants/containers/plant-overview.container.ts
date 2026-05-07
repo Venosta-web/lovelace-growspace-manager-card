@@ -1077,7 +1077,21 @@ export class PlantOverviewContainer extends LitElement {
 
         <!-- Lineage tree -->
         <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Lineage</h4>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
+            Lineage
+            <button class="md3-button text" style="font-size:11px;"
+              @click=${() => {
+                const strainName = this.plant?.attributes?.strain;
+                if (strainName) {
+                  this.dispatchEvent(new CustomEvent('open-strain-editor', {
+                    detail: { strain: strainName, focusLineage: true },
+                    bubbles: true,
+                    composed: true,
+                  }));
+                }
+              }}
+            >Edit lineage</button>
+          </h4>
           <lineage-tree
             .node=${this._lineageTree}
             .loading=${this._lineageLoading}

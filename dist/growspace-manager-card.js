@@ -24170,6 +24170,354 @@ SnapshotsDialog = __decorate([
     t$2('snapshots-dialog')
 ], SnapshotsDialog);
 
+const SEX_SYMBOLS = {
+    female: '♀',
+    male: '♂',
+    hermaphrodite: '⚥',
+};
+const SEX_COLORS = {
+    female: '#4caf50',
+    male: '#2196f3',
+    hermaphrodite: '#ff9800',
+};
+let LineageTree = class LineageTree extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.node = null;
+        this.loading = false;
+    }
+    _renderNode(node, depth = 0) {
+        const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
+        const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
+        return x `
+      <div class="tree-level">
+        <div class="node-card ${node.type}">
+          <div class="node-label">${node.name}</div>
+          <div class="node-meta">
+            ${sexSymbol ? x `<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : E}
+            ${node.generation ? x `<span class="gen-badge">${node.generation}</span>` : E}
+          </div>
+        </div>
+
+        ${node.parents && node.parents.length > 0 && depth < 4 ? x `
+          <div class="v-line"></div>
+          ${node.parents.length === 1 ? x `
+            ${this._renderNode(node.parents[0], depth + 1)}
+          ` : x `
+            <div class="cross-label">${node.parents.map(p => p.name).join(' × ')}</div>
+            <div class="parents-row">
+              ${node.parents.map(p => x `
+                <div class="parent-connector">
+                  ${this._renderNode(p, depth + 1)}
+                </div>
+              `)}
+            </div>
+          `}
+        ` : E}
+      </div>
+    `;
+    }
+    render() {
+        if (this.loading) {
+            return x `
+        <div class="tree-loading">
+          <div class="skeleton"></div>
+          <div class="skeleton narrow"></div>
+        </div>
+      `;
+        }
+        if (!this.node) {
+            return x `<div class="tree-empty">No lineage data available.</div>`;
+        }
+        return this._renderNode(this.node);
+    }
+};
+LineageTree.styles = i$6 `
+    :host {
+      display: block;
+      font-size: 13px;
+    }
+    .tree-empty {
+      color: var(--secondary-text-color);
+      font-style: italic;
+      padding: 8px 0;
+    }
+    .tree-loading {
+      display: flex;
+      gap: 8px;
+      flex-direction: column;
+      padding: 8px 0;
+    }
+    .skeleton {
+      height: 36px;
+      border-radius: 8px;
+      background: var(--divider-color, #e0e0e0);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .skeleton.narrow { width: 60%; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .tree-level {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .tree-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    .connector-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+    }
+    .connector-row::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 12px;
+      background: var(--divider-color, #ccc);
+    }
+    .node-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--card-background-color, #fff);
+      border: 1px solid var(--divider-color, #e0e0e0);
+      min-width: 80px;
+      text-align: center;
+    }
+    .node-card.plant { border-color: var(--primary-color); }
+    .node-card.seed_batch { border-color: #8bc34a; }
+    .node-card.strain { border-color: #9c27b0; border-style: dashed; }
+    .node-label {
+      font-weight: 500;
+      color: var(--primary-text-color);
+      font-size: 12px;
+      word-break: break-word;
+    }
+    .node-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--secondary-text-color);
+    }
+    .sex-badge {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .gen-badge {
+      background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 10px;
+    }
+    .cross-label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      margin: 4px 0;
+    }
+    .parents-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 0;
+    }
+    .parent-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .v-line {
+      width: 2px;
+      height: 12px;
+      background: var(--divider-color, #ccc);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], LineageTree.prototype, "node", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], LineageTree.prototype, "loading", void 0);
+LineageTree = __decorate([
+    t$2('lineage-tree')
+], LineageTree);
+let LineageTreeEditor = class LineageTreeEditor extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.node = null;
+        this.strainNames = [];
+        this._activeSlot = null;
+        this._query = ['', ''];
+    }
+    _fireChange(parents) {
+        this.dispatchEvent(new CustomEvent('lineage-change', {
+            detail: { parents },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _currentParents() {
+        return (this.node?.parents ?? []).map(p => ({
+            name: p.name,
+            source: ((p['source']) ?? 'manual'),
+        }));
+    }
+    _removeParent(index) {
+        const parents = this._currentParents();
+        parents.splice(index, 1);
+        this._fireChange(parents);
+    }
+    _selectSuggestion(index, name, source) {
+        const parents = this._currentParents();
+        parents[index] = { name, source };
+        this._activeSlot = null;
+        this._fireChange(parents);
+    }
+    _getSuggestions(index) {
+        const q = (this._query[index] ?? '').toLowerCase().trim();
+        if (!q)
+            return this.strainNames.slice(0, 8);
+        return this.strainNames.filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+    }
+    _renderSlot(index) {
+        const parents = this._currentParents();
+        const existing = parents[index];
+        const isOpen = this._activeSlot === index;
+        if (existing) {
+            return x `
+        <div class="lte-parent-node">
+          <span class="lte-parent-name ${existing.source}">${existing.name}</span>
+          <button class="lte-remove" @click=${() => this._removeParent(index)}>×</button>
+          ${existing.source === 'library' && this.node?.parents?.[index]?.parents?.length
+                ? x `<div class="lte-preview"><lineage-tree .node=${this.node.parents[index]}></lineage-tree></div>`
+                : E}
+        </div>`;
+        }
+        const suggestions = this._getSuggestions(index);
+        const query = this._query[index] ?? '';
+        return x `
+      <div class="lte-add-slot">
+        ${isOpen ? x `
+          <div class="lte-autocomplete">
+            <input
+              class="lte-search"
+              placeholder="Type strain name…"
+              .value=${query}
+              @input=${(e) => {
+            const q = [...this._query];
+            q[index] = e.target.value;
+            this._query = q;
+        }}
+              @keydown=${(e) => {
+            if (e.key === 'Escape') {
+                this._activeSlot = null;
+            }
+        }}
+            />
+            <div class="lte-suggestions">
+              ${suggestions.map(name => x `
+                <div class="lte-suggestion" @click=${() => this._selectSuggestion(index, name, 'library')}>${name}</div>
+              `)}
+              ${query && !this.strainNames.includes(query) ? x `
+                <div class="lte-suggestion manual" @click=${() => this._selectSuggestion(index, query, 'manual')}>
+                  Use "${query}" (not in library)
+                </div>` : E}
+            </div>
+          </div>` : x `
+          <button class="lte-add-btn" @click=${() => { this._activeSlot = index; }}>＋ Add parent</button>`}
+      </div>`;
+    }
+    render() {
+        const name = this.node?.name ?? '—';
+        const parents = this._currentParents();
+        return x `
+      <div class="lte-root">
+        <div class="lte-root-label">${name}</div>
+        <div class="lte-v-line"></div>
+        <div class="lte-parents-row">
+          ${this._renderSlot(0)}
+          ${parents[0] ? this._renderSlot(1) : E}
+        </div>
+      </div>`;
+    }
+};
+LineageTreeEditor.styles = i$6 `
+    :host { display: block; font-size: 13px; }
+    .lte-root { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .lte-root-label {
+      font-weight: 600; font-size: 14px; padding: 8px 16px;
+      border-radius: 8px; background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+    }
+    .lte-v-line { width: 2px; height: 16px; background: var(--divider-color, #ccc); }
+    .lte-parents-row { display: flex; gap: 12px; justify-content: center; }
+    .lte-parent-node {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 8px 12px; border-radius: 8px;
+      border: 1px solid var(--divider-color); position: relative; min-width: 100px;
+    }
+    .lte-parent-name { font-weight: 500; font-size: 12px; }
+    .lte-parent-name.library { color: var(--primary-color); }
+    .lte-parent-name.manual { color: var(--secondary-text-color); font-style: italic; }
+    .lte-remove {
+      position: absolute; top: 2px; right: 4px;
+      background: none; border: none; cursor: pointer;
+      font-size: 14px; color: var(--error-color, #e53935); padding: 0;
+    }
+    .lte-add-slot { display: flex; flex-direction: column; align-items: center; }
+    .lte-add-btn {
+      padding: 6px 12px; border-radius: 6px; border: 1px dashed var(--divider-color);
+      background: transparent; cursor: pointer; font-size: 12px;
+      color: var(--secondary-text-color);
+    }
+    .lte-add-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+    .lte-autocomplete { position: relative; width: 200px; }
+    .lte-search {
+      width: 100%; padding: 6px 8px; border-radius: 6px;
+      border: 1px solid var(--primary-color); font-size: 12px; box-sizing: border-box;
+    }
+    .lte-suggestions {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      background: var(--card-background-color, #fff);
+      border: 1px solid var(--divider-color); border-radius: 6px;
+      max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .lte-suggestion { padding: 8px 12px; cursor: pointer; font-size: 12px; }
+    .lte-suggestion:hover { background: var(--primary-color); color: var(--text-primary-color, #fff); }
+    .lte-suggestion.manual { font-style: italic; color: var(--secondary-text-color); }
+    .lte-preview { margin-top: 4px; opacity: 0.45; pointer-events: none; font-size: 11px; }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], LineageTreeEditor.prototype, "node", void 0);
+__decorate([
+    n$5({ attribute: false })
+], LineageTreeEditor.prototype, "strainNames", void 0);
+__decorate([
+    r$3()
+], LineageTreeEditor.prototype, "_activeSlot", void 0);
+__decorate([
+    r$3()
+], LineageTreeEditor.prototype, "_query", void 0);
+LineageTreeEditor = __decorate([
+    t$2('lineage-tree-editor')
+], LineageTreeEditor);
+
 let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -24180,6 +24528,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._editorState = {};
         this._isCropping = false;
         this._isImageSelectorOpen = false;
+        this._lineageEditMode = false;
+        this._lineageTree = null;
         this._importDialogOpen = false;
         this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
@@ -24283,6 +24633,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             };
         }
         this._view = 'editor';
+        this._lineageEditMode = false;
+        this._lineageTree = null;
     }
     _handleSave() {
         if (!this._editorState.strain)
@@ -24316,6 +24668,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     _cancelDelete() {
         this._pendingDeleteKey = null;
+    }
+    async _loadStrainLineageTree(strainName) {
+        if (!this.store)
+            return;
+        try {
+            this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
+        }
+        catch {
+            this._lineageTree = null;
+        }
     }
     _handleEditorChange(field, value) {
         let newState = { ...this._editorState, [field]: value };
@@ -25162,13 +25524,35 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             </div>
 
             <div class="sd-form-group">
-              <label class="sd-label">Lineage</label>
-              <input
-                type="text"
-                class="sd-input"
-                .value=${s.lineage || ''}
-                @input=${(e) => this._handleEditorChange('lineage', e.target.value)}
-              />
+              <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
+                Lineage
+                <button class="sd-btn-text" @click=${async () => {
+            this._lineageEditMode = !this._lineageEditMode;
+            if (this._lineageEditMode && s.strain) {
+                await this._loadStrainLineageTree(s.strain);
+            }
+        }}>
+                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                </button>
+              </label>
+              ${this._lineageEditMode
+            ? x `<lineage-tree-editor
+                    .node=${this._lineageTree}
+                    .strainNames=${(this.strains ?? []).map((st) => st.strain || st['strain_name']).filter(Boolean)}
+                    @lineage-change=${async (e) => {
+                const { parents } = e.detail;
+                if (!s.strain || !this.store)
+                    return;
+                const result = await this.store.actions.genetics.updateStrainLineageTree(s.strain, parents);
+                this._handleEditorChange('lineage', result.lineage);
+                await this._loadStrainLineageTree(s.strain);
+            }}
+                  ></lineage-tree-editor>`
+            : x `
+                    ${this._lineageTree?.parents?.length
+                ? x `<lineage-tree .node=${this._lineageTree}></lineage-tree>`
+                : x `<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
+                  `}
             </div>
 
             <div class="sd-form-group">
@@ -27139,6 +27523,9 @@ __decorate([
     n$5({ attribute: false })
 ], StrainLibraryDialog.prototype, "hass", void 0);
 __decorate([
+    n$5({ attribute: false })
+], StrainLibraryDialog.prototype, "store", void 0);
+__decorate([
     n$5({ type: Boolean })
 ], StrainLibraryDialog.prototype, "open", void 0);
 __decorate([
@@ -27168,6 +27555,12 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_lineageEditMode", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_lineageTree", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
@@ -30595,193 +30988,6 @@ PlantTimelineTab = __decorate([
     t$2('plant-timeline-tab')
 ], PlantTimelineTab);
 
-const SEX_SYMBOLS = {
-    female: '♀',
-    male: '♂',
-    hermaphrodite: '⚥',
-};
-const SEX_COLORS = {
-    female: '#4caf50',
-    male: '#2196f3',
-    hermaphrodite: '#ff9800',
-};
-let LineageTree = class LineageTree extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.node = null;
-        this.loading = false;
-    }
-    _renderNode(node, depth = 0) {
-        const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
-        const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
-        return x `
-      <div class="tree-level">
-        <div class="node-card ${node.type}">
-          <div class="node-label">${node.name}</div>
-          <div class="node-meta">
-            ${sexSymbol ? x `<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : E}
-            ${node.generation ? x `<span class="gen-badge">${node.generation}</span>` : E}
-          </div>
-        </div>
-
-        ${node.parents && node.parents.length > 0 && depth < 4 ? x `
-          <div class="v-line"></div>
-          ${node.parents.length === 1 ? x `
-            ${this._renderNode(node.parents[0], depth + 1)}
-          ` : x `
-            <div class="cross-label">${node.parents.map(p => p.name).join(' × ')}</div>
-            <div class="parents-row">
-              ${node.parents.map(p => x `
-                <div class="parent-connector">
-                  ${this._renderNode(p, depth + 1)}
-                </div>
-              `)}
-            </div>
-          `}
-        ` : E}
-      </div>
-    `;
-    }
-    render() {
-        if (this.loading) {
-            return x `
-        <div class="tree-loading">
-          <div class="skeleton"></div>
-          <div class="skeleton narrow"></div>
-        </div>
-      `;
-        }
-        if (!this.node) {
-            return x `<div class="tree-empty">No lineage data available.</div>`;
-        }
-        return this._renderNode(this.node);
-    }
-};
-LineageTree.styles = i$6 `
-    :host {
-      display: block;
-      font-size: 13px;
-    }
-    .tree-empty {
-      color: var(--secondary-text-color);
-      font-style: italic;
-      padding: 8px 0;
-    }
-    .tree-loading {
-      display: flex;
-      gap: 8px;
-      flex-direction: column;
-      padding: 8px 0;
-    }
-    .skeleton {
-      height: 36px;
-      border-radius: 8px;
-      background: var(--divider-color, #e0e0e0);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    .skeleton.narrow { width: 60%; }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-    .tree-level {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-    }
-    .tree-row {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-    }
-    .connector-row {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      position: relative;
-    }
-    .connector-row::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 2px;
-      height: 12px;
-      background: var(--divider-color, #ccc);
-    }
-    .node-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color, #e0e0e0);
-      min-width: 80px;
-      text-align: center;
-    }
-    .node-card.plant { border-color: var(--primary-color); }
-    .node-card.seed_batch { border-color: #8bc34a; }
-    .node-card.strain { border-color: #9c27b0; border-style: dashed; }
-    .node-label {
-      font-weight: 500;
-      color: var(--primary-text-color);
-      font-size: 12px;
-      word-break: break-word;
-    }
-    .node-meta {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: var(--secondary-text-color);
-    }
-    .sex-badge {
-      font-size: 12px;
-      font-weight: bold;
-    }
-    .gen-badge {
-      background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
-      border-radius: 4px;
-      padding: 0 4px;
-      font-size: 10px;
-    }
-    .cross-label {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-      margin: 4px 0;
-    }
-    .parents-row {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 0;
-    }
-    .parent-connector {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .v-line {
-      width: 2px;
-      height: 12px;
-      background: var(--divider-color, #ccc);
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], LineageTree.prototype, "node", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], LineageTree.prototype, "loading", void 0);
-LineageTree = __decorate([
-    t$2('lineage-tree')
-], LineageTree);
-
 /**
  * Plant Overview Container - Smart Component
  *
@@ -31642,7 +31848,21 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
 
         <!-- Lineage tree -->
         <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Lineage</h4>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
+            Lineage
+            <button class="md3-button text" style="font-size:11px;"
+              @click=${() => {
+            const strainName = this.plant?.attributes?.strain;
+            if (strainName) {
+                this.dispatchEvent(new CustomEvent('open-strain-editor', {
+                    detail: { strain: strainName, focusLineage: true },
+                    bubbles: true,
+                    composed: true,
+                }));
+            }
+        }}
+            >Edit lineage</button>
+          </h4>
           <lineage-tree
             .node=${this._lineageTree}
             .loading=${this._lineageLoading}
@@ -32365,6 +32585,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         return x `
       <strain-library-dialog
         .open=${true}
+        .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}
         .source=${payload?.source}

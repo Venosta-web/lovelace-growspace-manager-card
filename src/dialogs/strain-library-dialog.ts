@@ -27,15 +27,19 @@ import {
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
+import type { LineageNode } from '../features/plants/types';
+import type { GrowspaceStore } from '../store/core/growspace-store';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/lineage-tree';
 
 @customElement('strain-library-dialog')
 export class StrainLibraryDialog extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) store?: GrowspaceStore;
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
@@ -47,6 +51,8 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _editorState: Partial<StrainEntry> = {};
   @state() private _isCropping = false;
   @state() private _isImageSelectorOpen = false;
+  @state() private _lineageEditMode = false;
+  @state() private _lineageTree: LineageNode | null = null;
   @state() private _importDialogOpen = false;
   @state() private _mobileMenuOpen = false;
   @state() private _pendingDeleteKey: string | null = null;
@@ -1097,6 +1103,8 @@ export class StrainLibraryDialog extends LitElement {
       };
     }
     this._view = 'editor';
+    this._lineageEditMode = false;
+    this._lineageTree = null;
   }
 
   private _handleSave() {
@@ -1138,6 +1146,15 @@ export class StrainLibraryDialog extends LitElement {
 
   private _cancelDelete() {
     this._pendingDeleteKey = null;
+  }
+
+  private async _loadStrainLineageTree(strainName: string) {
+    if (!this.store) return;
+    try {
+      this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
+    } catch {
+      this._lineageTree = null;
+    }
   }
 
   private _handleEditorChange(field: string, value: string | number | CropMeta | undefined) {
@@ -2015,13 +2032,34 @@ export class StrainLibraryDialog extends LitElement {
             </div>
 
             <div class="sd-form-group">
-              <label class="sd-label">Lineage</label>
-              <input
-                type="text"
-                class="sd-input"
-                .value=${s.lineage || ''}
-                @input=${(e: InputEvent) => this._handleEditorChange('lineage', (e.target as HTMLInputElement).value)}
-              />
+              <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
+                Lineage
+                <button class="sd-btn-text" @click=${async () => {
+                  this._lineageEditMode = !this._lineageEditMode;
+                  if (this._lineageEditMode && s.strain) {
+                    await this._loadStrainLineageTree(s.strain);
+                  }
+                }}>
+                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                </button>
+              </label>
+              ${this._lineageEditMode
+                ? html`<lineage-tree-editor
+                    .node=${this._lineageTree}
+                    .strainNames=${(this.strains ?? []).map((st: StrainEntry) => st.strain || (st as unknown as Record<string, string>)['strain_name']).filter(Boolean)}
+                    @lineage-change=${async (e: CustomEvent) => {
+                      const { parents } = e.detail;
+                      if (!s.strain || !this.store) return;
+                      const result = await this.store.actions.genetics.updateStrainLineageTree(s.strain, parents);
+                      this._handleEditorChange('lineage', result.lineage);
+                      await this._loadStrainLineageTree(s.strain);
+                    }}
+                  ></lineage-tree-editor>`
+                : html`
+                    ${this._lineageTree?.parents?.length
+                      ? html`<lineage-tree .node=${this._lineageTree}></lineage-tree>`
+                      : html`<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
+                  `}
             </div>
 
             <div class="sd-form-group">
