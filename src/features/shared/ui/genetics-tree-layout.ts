@@ -81,7 +81,7 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     };
   }
 
-  const { byId, childrenOf } = buildIndex(plants);
+  const { byId } = buildIndex(plants);
 
   // Rank = longest path from a root (node with no parents in the set).
   const rankCache: Record<string, number> = {};
@@ -388,9 +388,8 @@ export function edgePath(from: LayoutNode, to: LayoutNode): string {
   const y1 = from.y + from.h;
   const x2 = to.x + to.w / 2;
   const y2 = to.y;
-  const cy1 = y1 + (y2 - y1) / 2;
-  const cy2 = y1 + (y2 - y1) / 2;
-  return `M ${x1} ${y1} C ${x1} ${cy1}, ${x2} ${cy2}, ${x2} ${y2}`;
+  const dy = (y2 - y1) / 2;
+  return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
 }
 
 export function edgePathRadial(from: LayoutNode, to: LayoutNode): string {
