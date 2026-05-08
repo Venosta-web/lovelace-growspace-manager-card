@@ -110,10 +110,11 @@ describe('PlantOverviewContainer', () => {
 
     // Verify tabs are present
     const tabs = element.shadowRoot!.querySelectorAll('.tab-btn');
-    expect(tabs.length).toBe(3);
+    expect(tabs.length).toBe(4);
     expect(tabs[0].textContent).toContain('Overview');
     expect(tabs[1].textContent).toContain('Actions');
     expect(tabs[2].textContent).toContain('Timeline');
+    expect(tabs[3].textContent).toContain('Genetics');
   });
 
   it('should switch tabs', async () => {
