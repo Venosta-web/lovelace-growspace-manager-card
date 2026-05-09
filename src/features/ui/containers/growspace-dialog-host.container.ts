@@ -467,6 +467,7 @@ export class GrowspaceDialogHost extends LitElement {
     return html`
       <strain-library-dialog
         .open=${true}
+        .hass=${this.hass}
         .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}

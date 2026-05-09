@@ -97,6 +97,8 @@ var mdiCalculator = "M7,2H17A2,2 0 0,1 19,4V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V
 var mdiCamera = "M4,4H7L9,2H15L17,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z";
 var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 23 6.9 23 8V20C23 21.1 22.1 22 21 22H5C3.9 22 3 21.1 3 20V10M13 19C17.45 19 19.69 13.62 16.54 10.46C13.39 7.31 8 9.55 8 14C8 16.76 10.24 19 13 19M9.8 14C9.8 16.85 13.25 18.28 15.26 16.26C17.28 14.25 15.85 10.8 13 10.8C11.24 10.8 9.8 12.24 9.8 14Z";
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
+var mdiChartBar = "M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z";
+var mdiChartDonut = "M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19A7,7 0 0,1 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z";
 var mdiChartLine = "M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z";
 var mdiChartTimelineVariant = "M3,14L3.5,14.07L8.07,9.5C7.89,8.85 8.06,8.11 8.59,7.59C9.37,6.8 10.63,6.8 11.41,7.59C11.94,8.11 12.11,8.85 11.93,9.5L14.5,12.07L15,12C15.18,12 15.35,12 15.5,12.07L19.07,8.5C19,8.35 19,8.18 19,8A2,2 0 0,1 21,6A2,2 0 0,1 23,8A2,2 0 0,1 21,10C20.82,10 20.65,10 20.5,9.93L16.93,13.5C17,13.65 17,13.82 17,14A2,2 0 0,1 15,16A2,2 0 0,1 13,14L13.07,13.5L10.5,10.93C10.18,11 9.82,11 9.5,10.93L4.93,15.5L5,16A2,2 0 0,1 3,18A2,2 0 0,1 1,16A2,2 0 0,1 3,14Z";
 var mdiChartTimelineVariantShimmer = "M21 8C19.5 8 18.7 9.4 19.1 10.5L15.5 14.1C15.2 14 14.8 14 14.5 14.1L11.9 11.5C12.3 10.4 11.5 9 10 9C8.6 9 7.7 10.4 8.1 11.5L3.5 16C2.4 15.7 1 16.5 1 18C1 19.1 1.9 20 3 20C4.4 20 5.3 18.6 4.9 17.5L9.4 12.9C9.7 13 10.1 13 10.4 12.9L13 15.5C12.7 16.5 13.5 18 15 18C16.5 18 17.3 16.6 16.9 15.5L20.5 11.9C21.6 12.2 23 11.4 23 10C23 8.9 22.1 8 21 8M15 9L15.9 6.9L18 6L15.9 5.1L15 3L14.1 5.1L12 6L14.1 6.9L15 9M3.5 11L4 9L6 8.5L4 8L3.5 6L3 8L1 8.5L3 9L3.5 11Z";
@@ -110,6 +112,7 @@ var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.5
 var mdiChevronUp = "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z";
 var mdiClipboardList = "M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M7 8H9V12H8V9H7V8M10 17V18H7V17.08L9 15H7V14H9.25C9.66 14 10 14.34 10 14.75C10 14.95 9.92 15.14 9.79 15.27L8.12 17H10M11 4C11 3.45 11.45 3 12 3S13 3.45 13 4 12.55 5 12 5 11 4.55 11 4M17 17H12V15H17V17M17 11H12V9H17V11Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
+var mdiClockOutline = "M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
@@ -157,6 +160,7 @@ var mdiRadioboxBlank = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8
 var mdiRadioboxMarked = "M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7Z";
 var mdiRefresh = "M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z";
 var mdiRestart = "M12,4C14.1,4 16.1,4.8 17.6,6.3C20.7,9.4 20.7,14.5 17.6,17.6C15.8,19.5 13.3,20.2 10.9,19.9L11.4,17.9C13.1,18.1 14.9,17.5 16.2,16.2C18.5,13.9 18.5,10.1 16.2,7.7C15.1,6.6 13.5,6 12,6V10.6L7,5.6L12,0.6V4M6.3,17.6C3.7,15 3.3,11 5.1,7.9L6.6,9.4C5.5,11.6 5.9,14.4 7.8,16.2C8.3,16.7 8.9,17.1 9.6,17.4L9,19.4C8,19 7.1,18.4 6.3,17.6Z";
+var mdiSeed = "M20.7,3.3C20.7,3.3 19.3,3 17.2,3C11.7,3 1.6,5.1 3.2,20.8C4.3,20.9 5.4,21 6.4,21C24.3,21 20.7,3.3 20.7,3.3M7,17C7,17 7,7 17,7C17,7 11,9 7,17Z";
 var mdiSelectAll = "M9,9H15V15H9M7,17H17V7H7M15,5H17V3H15M15,21H17V19H15M19,17H21V15H19M19,9H21V7H19M19,21A2,2 0 0,0 21,19H19M19,13H21V11H19M11,21H13V19H11M9,3H7V5H9M3,17H5V15H3M5,21V19H3A2,2 0 0,0 5,21M19,3V5H21A2,2 0 0,0 19,3M13,3H11V5H13M3,9H5V7H3M7,21H9V19H7M3,13H5V11H3M3,5H5V3A2,2 0 0,0 3,5Z";
 var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.27L3.73,7H2V5.27L0.5,3.77M4,2H7V4H5.82L3.83,2H4M22,4V7H20V4H17V2H20A2,2 0 0,1 22,4M20,17H22V20L22,20.17L20,18.18V17M2,20V17H4V20H7V22H4A2,2 0 0,1 2,20M10,2H14V4H10V2M10,20H14V22H10V20M20,10H22V14H20V10M2,10H4V14H2V10Z";
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
@@ -164,9 +168,11 @@ var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
 var mdiSwapHorizontal = "M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z";
 var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
+var mdiText = "M21,6V8H3V6H21M3,18H12V16H3V18M3,13H21V11H3V13Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
 var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
+var mdiTrophy = "M18 2C17.1 2 16 3 16 4H8C8 3 6.9 2 6 2H2V11C2 12 3 13 4 13H6.2C6.6 15 7.9 16.7 11 17V19.08C8 19.54 8 22 8 22H16C16 22 16 19.54 13 19.08V17C16.1 16.7 17.4 15 17.8 13H20C21 13 22 12 22 11V2H18M6 11H4V4H6V11M20 11H18V4H20V11Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
 var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
@@ -177,6 +183,7 @@ var mdiWaterPlus = "M12 18C12 18.7 12.12 19.36 12.34 20C12.23 20 12.12 20 12 20C
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
+var mdiWeb = "M16.36,14C16.44,13.34 16.5,12.68 16.5,12C16.5,11.32 16.44,10.66 16.36,10H19.74C19.9,10.64 20,11.31 20,12C20,12.69 19.9,13.36 19.74,14M14.59,19.56C15.19,18.45 15.65,17.25 15.97,16H18.92C17.96,17.65 16.43,18.93 14.59,19.56M14.34,14H9.66C9.56,13.34 9.5,12.68 9.5,12C9.5,11.32 9.56,10.65 9.66,10H14.34C14.43,10.65 14.5,11.32 14.5,12C14.5,12.68 14.43,13.34 14.34,14M12,19.96C11.17,18.76 10.5,17.43 10.09,16H13.91C13.5,17.43 12.83,18.76 12,19.96M8,8H5.08C6.03,6.34 7.57,5.06 9.4,4.44C8.8,5.55 8.35,6.75 8,8M5.08,16H8C8.35,17.25 8.8,18.45 9.4,19.56C7.57,18.93 6.03,17.65 5.08,16M4.26,14C4.1,13.36 4,12.69 4,12C4,11.31 4.1,10.64 4.26,10H7.64C7.56,10.66 7.5,11.32 7.5,12C7.5,12.68 7.56,13.34 7.64,14M12,4.03C12.83,5.23 13.5,6.57 13.91,8H10.09C10.5,6.57 11.17,5.23 12,4.03M18.92,8H15.97C15.65,6.75 15.19,5.55 14.59,4.44C16.43,5.07 17.96,6.34 18.92,8M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiWhiteBalanceSunny = "M3.55 19.09L4.96 20.5L6.76 18.71L5.34 17.29M12 6C8.69 6 6 8.69 6 12S8.69 18 12 18 18 15.31 18 12C18 8.68 15.31 6 12 6M20 13H23V11H20M17.24 18.71L19.04 20.5L20.45 19.09L18.66 17.29M20.45 5L19.04 3.6L17.24 5.39L18.66 6.81M13 1H11V4H13M6.76 5.39L4.96 3.6L3.55 5L5.34 6.81L6.76 5.39M1 13H4V11H1M13 20H11V23H13";
 
 const STAGE_CONFIG = {
@@ -4999,22 +5006,22 @@ const GrowspaceAPIResponseSchema = objectType({
     .passthrough(); // Allow extra fields at root
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
 const StrainPhenotypeSchema = objectType({
-    description: stringType().optional(),
-    image_path: stringType().optional(),
-    image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() }).optional(),
-    flower_days_min: numberType().optional(),
-    flower_days_max: numberType().optional(),
+    description: stringType().nullable().optional().transform(v => v ?? undefined),
+    image_path: stringType().nullable().optional().transform(v => v ?? undefined),
+    image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() }).nullable().optional().transform(v => v ?? undefined),
+    flower_days_min: numberType().nullable().optional().transform(v => v ?? undefined),
+    flower_days_max: numberType().nullable().optional().transform(v => v ?? undefined),
 })
     .catchall(unknownType());
 const StrainDataSchema = objectType({
     meta: objectType({
-        breeder: stringType().optional(),
-        breeder_logo: stringType().optional(),
-        type: stringType().optional(),
-        lineage: stringType().optional(),
-        sex: stringType().optional(),
-        sativa_percentage: numberType().optional(),
-        indica_percentage: numberType().optional(),
+        breeder: stringType().nullable().optional().transform(v => v ?? undefined),
+        breeder_logo: stringType().nullable().optional().transform(v => v ?? undefined),
+        type: stringType().nullable().optional().transform(v => v ?? undefined),
+        lineage: stringType().nullable().optional().transform(v => v ?? undefined),
+        sex: stringType().nullable().optional().transform(v => v ?? undefined),
+        sativa_percentage: numberType().nullable().optional().transform(v => v ?? undefined),
+        indica_percentage: numberType().nullable().optional().transform(v => v ?? undefined),
     })
         .passthrough()
         .optional()
@@ -24172,6 +24179,522 @@ SnapshotsDialog = __decorate([
     t$2('snapshots-dialog')
 ], SnapshotsDialog);
 
+let StrainImportDialog = class StrainImportDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.initialStrain = '';
+        this.initialPheno = '';
+        this._searchQuery = '';
+        this._searching = false;
+        this._results = [];
+        this._selectedUrl = null;
+        this._fetchingDetails = false;
+        this._details = null;
+        this._error = null;
+        this._importFields = new Set([
+            'name', 'breeder', 'type', 'composition', 'flowering', 'description', 'lineage', 'image', 'yield', 'height', 'thc', 'awards'
+        ]);
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('open') && this.open) {
+            this._searchQuery = this.initialStrain + (this.initialPheno ? ` ${this.initialPheno}` : '');
+            this._results = [];
+            this._selectedUrl = null;
+            this._details = null;
+            this._error = null;
+            if (this._searchQuery) {
+                this._search();
+            }
+        }
+    }
+    async _search() {
+        if (!this._searchQuery)
+            return;
+        this._searching = true;
+        this._error = null;
+        this._results = [];
+        this._selectedUrl = null;
+        this._details = null;
+        if (!this.hass) {
+            this._error = 'Home Assistant connection not available';
+            this._searching = false;
+            return;
+        }
+        try {
+            const response = await this.hass.callWS({
+                type: 'growspace_manager/query_external_strain',
+                query: this._searchQuery,
+            });
+            this._results = response;
+        }
+        catch (err) {
+            this._error = err.message || 'Search failed';
+        }
+        finally {
+            this._searching = false;
+        }
+    }
+    async _selectResult(result) {
+        this._selectedUrl = result.url;
+        this._fetchingDetails = true;
+        this._error = null;
+        this._details = null;
+        if (!this.hass) {
+            this._error = 'Home Assistant connection not available';
+            this._fetchingDetails = false;
+            return;
+        }
+        try {
+            const response = await this.hass.callWS({
+                type: 'growspace_manager/get_external_strain_details',
+                url: result.url,
+            });
+            this._details = response;
+        }
+        catch (err) {
+            this._error = err.message || 'Failed to fetch details';
+        }
+        finally {
+            this._fetchingDetails = false;
+        }
+    }
+    _toggleField(field) {
+        const newFields = new Set(this._importFields);
+        if (newFields.has(field)) {
+            newFields.delete(field);
+        }
+        else {
+            newFields.add(field);
+        }
+        this._importFields = newFields;
+    }
+    _import() {
+        if (!this._details)
+            return;
+        const result = {};
+        if (this._importFields.has('name'))
+            result.name = this._details.name;
+        if (this._importFields.has('breeder'))
+            result.breeder = this._details.breeder;
+        if (this._importFields.has('type'))
+            result.type = this._details.type;
+        if (this._importFields.has('composition')) {
+            result.indica_percentage = this._details.indica_percentage;
+            result.sativa_percentage = this._details.sativa_percentage;
+        }
+        if (this._importFields.has('flowering'))
+            result.flowering_days = this._details.flowering_days;
+        if (this._importFields.has('description'))
+            result.description = this._details.description;
+        if (this._importFields.has('image'))
+            result.image = this._details.image;
+        if (this._importFields.has('yield'))
+            result.yield_potential = this._details.yield_potential;
+        if (this._importFields.has('height'))
+            result.height = this._details.height;
+        if (this._importFields.has('thc'))
+            result.thc = this._details.thc;
+        if (this._importFields.has('awards'))
+            result.awards = this._details.awards;
+        if (this._importFields.has('lineage'))
+            result.parents = this._details.parents;
+        this.dispatchEvent(new CustomEvent('import', {
+            detail: result
+        }));
+        this._close();
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        heading="Import from Seedfinder"
+        .scrimClickAction=${''}
+      >
+        <div class="glass-dialog-container" style="width: 600px; max-width: 95vw;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiWeb}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Seedfinder Import</h2>
+              <div class="dialog-subtitle">Fetch detailed strain data and lineage</div>
+            </div>
+            <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="content">
+            <div class="search-box">
+              <md3-text-input
+                style="flex: 1;"
+                placeholder="Strain Name..."
+                .value=${this._searchQuery}
+                @change=${(e) => this._searchQuery = e.detail}
+                @keydown=${(e) => e.key === 'Enter' && this._search()}
+              ></md3-text-input>
+              <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
+                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                  <path d="${mdiMagnify}"></path>
+                </svg>
+                Search
+              </button>
+            </div>
+
+            ${this._error ? x `<div class="error-box">${this._error}</div>` : E}
+
+            ${this._searching
+            ? x `
+                  <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <span>Searching Seedfinder...</span>
+                  </div>
+                `
+            : this._details
+                ? this._renderDetails()
+                : this._results.length > 0
+                    ? x `
+                      <div class="results-list">
+                        <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
+                        ${this._results.map(r => x `
+                          <div class="result-item" @click=${() => this._selectResult(r)}>
+                            <div class="result-info">
+                              <div class="result-name">${r.name}</div>
+                              <div class="result-breeder">${r.breeder}</div>
+                            </div>
+                            <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
+                              <path d="${mdiChevronRight}"></path>
+                            </svg>
+                          </div>
+                        `)}
+                      </div>
+                    `
+                    : this._searchQuery && !this._searching
+                        ? x `<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No results found for "${this._searchQuery}"</div>`
+                        : E}
+          </div>
+
+          <div class="sd-footer">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            ${this._details ? x `
+              <button class="md3-button filled" @click=${this._import}>
+                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                  <path d="${mdiCheck}"></path>
+                </svg>
+                Import Selected
+              </button>
+            ` : E}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderDetails() {
+        if (!this._details)
+            return E;
+        const d = this._details;
+        return x `
+      <div class="details-preview">
+        <div class="preview-header">
+          <svg style="width:24px;height:24px;fill:var(--accent-green);" viewBox="0 0 24 24">
+            <path d="${mdiInformationOutline}"></path>
+          </svg>
+          <span style="font-weight:700;">Select fields to import:</span>
+        </div>
+
+        <div class="preview-grid">
+          ${d.image ? x `
+            <div class="field-row full-width" @click=${() => this._toggleField('image')}>
+              <div class="field-checkbox ${this._importFields.has('image') ? 'checked' : ''}">
+                ${this._importFields.has('image') ? x `<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>` : E}
+              </div>
+              <div class="field-content">
+                <div class="field-label">
+                  <svg viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                  Image
+                </div>
+                <img class="preview-image" src="${d.image}" />
+              </div>
+            </div>
+          ` : E}
+          ${this._renderFieldRow('name', 'Name', d.name, mdiSeed)}
+          ${this._renderFieldRow('breeder', 'Breeder', d.breeder, mdiAccountGroup)}
+          ${this._renderFieldRow('type', 'Type', d.type, mdiLeaf)}
+          ${this._renderFieldRow('composition', 'Composition', d.indica_percentage !== undefined ? `${d.indica_percentage}% Indica / ${d.sativa_percentage}% Sativa` : 'Unknown', mdiChartDonut)}
+          ${this._renderFieldRow('flowering', 'Flowering', d.flowering_days ? `${d.flowering_days} days` : 'Unknown', mdiClockOutline)}
+          ${this._renderFieldRow('thc', 'THC', d.thc ? `${d.thc}%` : 'Unknown', mdiChartBar)}
+          ${this._renderFieldRow('yield', 'Yield Potential', d.yield_potential || 'Unknown', mdiChartBar)}
+          ${this._renderFieldRow('height', 'Height', d.height || 'Unknown', mdiArrowUp)}
+          ${this._renderFieldRow('awards', 'Awards', d.awards && d.awards.length > 0 ? x `
+              <div class="awards-list">
+                ${d.awards.map(a => x `<div class="award-tag"><svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiTrophy}"></path></svg>${a}</div>`)}
+              </div>
+            ` : 'None', mdiTrophy)}
+          ${this._renderFieldRow('description', 'Description', d.description ? x `<div class="description-text">${d.description}</div>` : 'None', mdiText)}
+          ${this._renderFieldRow('lineage', 'Genetic Lineage', d.parents ? 'Full lineage tree detected' : 'None', mdiDna)}
+        </div>
+      </div>
+    `;
+    }
+    _renderFieldRow(id, label, value, icon) {
+        const checked = this._importFields.has(id);
+        return x `
+      <div class="field-row" @click=${() => this._toggleField(id)}>
+        <div class="field-checkbox ${checked ? 'checked' : ''}">
+          ${checked ? x `<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>` : E}
+        </div>
+        <div class="field-content">
+          <div class="field-label">
+            <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+            ${label}
+          </div>
+          <div class="field-value">${value}</div>
+        </div>
+      </div>
+    `;
+    }
+};
+StrainImportDialog.styles = [
+    dialogStyles,
+    i$6 `
+      .content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 24px;
+        min-height: 400px;
+        max-height: 70vh;
+        overflow-y: auto;
+      }
+      .search-box {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .result-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .result-item:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent-green, #4caf50);
+      }
+      .result-item.selected {
+        background: rgba(76, 175, 80, 0.1);
+        border-color: var(--accent-green, #4caf50);
+      }
+      .result-info {
+        flex: 1;
+      }
+      .result-name {
+        font-weight: 700;
+        font-size: 1rem;
+      }
+      .result-breeder {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+      }
+      .details-preview {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 16px;
+      }
+      .field-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .field-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .field-checkbox {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 2px solid var(--divider-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+      .field-checkbox.checked {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+      }
+      .field-checkbox svg {
+        width: 14px;
+        height: 14px;
+        fill: white;
+      }
+      .field-content {
+        flex: 1;
+      }
+      .field-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .field-label svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+      .field-value {
+        font-size: 0.95rem;
+        word-break: break-word;
+      }
+      .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        gap: 16px;
+        color: var(--secondary-text-color);
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--accent-green);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .error-box {
+        padding: 12px 16px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        color: #ff5252;
+        border-radius: 8px;
+        font-size: 0.9rem;
+      }
+      .description-text {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        max-height: 100px;
+        overflow-y: auto;
+        padding-right: 8px;
+      }
+      .preview-image {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .awards-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .award-tag {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        background: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+    `
+];
+__decorate([
+    n$5({ attribute: false })
+], StrainImportDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], StrainImportDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainImportDialog.prototype, "initialStrain", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainImportDialog.prototype, "initialPheno", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_searchQuery", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_searching", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_results", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_selectedUrl", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_fetchingDetails", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_details", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_error", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_importFields", void 0);
+StrainImportDialog = __decorate([
+    t$2('strain-import-dialog')
+], StrainImportDialog);
+
 const SEX_SYMBOLS = {
     female: '♀',
     male: '♂',
@@ -24908,7 +25431,6 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
                     this._viewW = entry.contentRect.width;
                     this._viewH = entry.contentRect.height;
                     changed = true;
-                    console.log(`[GeneticsTreeView] View dimensions updated: ${this._viewW}x${this._viewH}`);
                 }
             }
             if (changed) {
@@ -24967,27 +25489,18 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // ---------------------------------------------------------------------------
     _recompute() {
         const visible = this._visibleNodes();
-        console.log('[GeneticsTreeView] _recompute: nodes count =', this.nodes?.length, 'visible count =', visible.length, 'focalId =', this.focalId);
         if (visible.length === 0) {
             this._computed = null;
-            console.warn('[GeneticsTreeView] No nodes visible, layout skipped.');
             return;
         }
-        try {
-            if (this._layout === 'radial' && this.focalId) {
-                this._computed = layoutRadial(visible, this.focalId);
-            }
-            else if (this._layout === 'radial' && visible.length > 0) {
-                this._computed = layoutRadial(visible, visible[0].id);
-            }
-            else {
-                this._computed = layoutTopDown(visible);
-            }
-            console.log('[GeneticsTreeView] Layout computed:', this._computed ? 'SUCCESS' : 'EMPTY');
+        if (this._layout === 'radial' && this.focalId) {
+            this._computed = layoutRadial(visible, this.focalId);
         }
-        catch (err) {
-            console.error('[GeneticsTreeView] Layout engine failed:', err);
-            this._computed = null;
+        else if (this._layout === 'radial' && visible.length > 0) {
+            this._computed = layoutRadial(visible, visible[0].id);
+        }
+        else {
+            this._computed = layoutTopDown(visible);
         }
     }
     _visibleNodes() {
@@ -25016,32 +25529,17 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         const pad = 60;
         const scaleX = (this._viewW - pad * 2) / treeW;
         const scaleY = (this._viewH - pad * 2) / treeH;
-        // Calculate scale - Allow much smaller scale to ensure huge trees fit
-        let scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
+        const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
         this._scale = scale;
-        const treeWVal = (maxX - minX);
-        const treeHVal = (maxY - minY);
-        console.log(`[GeneticsTreeView] FitToScreen: tree=${treeWVal}x${treeHVal}, view=${this._viewW}x${this._viewH}, scale=${scale}`);
-        // If we have a focalId, center on it. Otherwise center the whole tree.
         const focalNode = this.focalId ? nodes[this.focalId] : null;
         if (focalNode) {
-            // Center on focal node
             this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
             this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
         }
         else {
-            // Center the entire bounds
             this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
             this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
         }
-        // Diagnostic log
-        console.log('[GeneticsTreeView] Fit to screen:', {
-            view: `${this._viewW}x${this._viewH}`,
-            tree: `${treeW.toFixed(0)}x${treeH.toFixed(0)}`,
-            scale: scale.toFixed(2),
-            pan: `${this._panX.toFixed(0)},${this._panY.toFixed(0)}`,
-            focal: this.focalId
-        });
     }
     // ---------------------------------------------------------------------------
     // Derived sets
@@ -25381,7 +25879,6 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         const visible = this._visibleNodes();
         const anc = this._ancestorSet;
         const desc = this._descendantSet;
-        this._motherLineSet;
         const searchLc = this._search.toLowerCase();
         return x `
       ${visible.map((p) => {
@@ -26480,6 +26977,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._importDialogOpen = false;
         this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
+        this._seedfinderDialogOpen = false;
         this._importReplace = false;
         this._breederDialogOpen = false;
         this._breederEditorState = null;
@@ -26747,14 +27245,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 ? this._renderSeedsTab()
                 : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())}
         </div>
-
-        ${this._isCropping ? this.renderCropOverlay() : E}
-        ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
-        ${this._importDialogOpen ? this.renderImportDialog() : E}
-        ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
-        ${this._breederDialogOpen ? this.renderBreederDialog() : E}
-        ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
       </ha-dialog>
+
+      ${this._isCropping ? this.renderCropOverlay() : E}
+      ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
+      ${this._importDialogOpen ? this.renderImportDialog() : E}
+      ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
+      ${this._breederDialogOpen ? this.renderBreederDialog() : E}
+      ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
+      ${this._seedfinderDialogOpen ? this.renderSeedfinderDialog() : E}
     `;
     }
     renderBrowseView() {
@@ -27247,7 +27746,22 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             </div>
 
             <div class="sd-form-group">
-              <label class="sd-label">Strain Name *</label>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
+                <button
+                  class="md3-button text"
+                  style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
+                  @click=${() => (this._seedfinderDialogOpen = true)}
+                >
+                  <svg
+                    style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiWeb}"></path>
+                  </svg>
+                  Seedfinder
+                </button>
+              </div>
               <input
                 type="text"
                 class="sd-input"
@@ -28137,7 +28651,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 strain: strain.strain,
                 breeder: strain.breeder || '',
                 pheno: strain.phenotype || '',
-                gen: '',
+                gen: 'P1',
                 type: 'strain',
                 parents: { mother, father },
             });
@@ -28150,7 +28664,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 strain: batch.strain_name,
                 breeder: batch.breeder || '',
                 pheno: '',
-                gen: batch.generation || '',
+                gen: batch.generation || 'F1',
                 type: 'batch',
                 parents: {
                     mother: resolve(batch.parent_1_strain),
@@ -28158,7 +28672,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 },
             });
         });
-        console.log('[GeneticsTreeView] Generated nodes:', nodes);
         return nodes;
     }
     _renderTreeViewTab() {
@@ -28167,7 +28680,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       <div class="tab-content-tree">
         <genetics-tree-view
           .nodes=${nodes}
-          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : ''}
+          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
         ></genetics-tree-view>
       </div>
     `;
@@ -28657,6 +29170,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </div>
     `;
+    }
+    renderSeedfinderDialog() {
+        return x `
+      <strain-import-dialog
+        .hass=${this.hass}
+        .open=${this._seedfinderDialogOpen}
+        .initialStrain=${this._editorState.strain}
+        .initialPheno=${this._editorState.phenotype}
+        @close=${() => (this._seedfinderDialogOpen = false)}
+        @import=${this._handleSeedfinderImport}
+      ></strain-import-dialog>
+    `;
+    }
+    _handleSeedfinderImport(e) {
+        const data = e.detail;
+        this._editorState = {
+            ...this._editorState,
+            ...data,
+        };
+        this._seedfinderDialogOpen = false;
+        this.requestUpdate();
     }
 };
 StrainLibraryDialog.styles = [
@@ -29624,6 +30158,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_seedfinderDialogOpen", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_importReplace", void 0);
@@ -34641,6 +35178,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         return x `
       <strain-library-dialog
         .open=${true}
+        .hass=${this.hass}
         .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}

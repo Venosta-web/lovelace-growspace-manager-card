@@ -24,7 +24,9 @@ import {
   mdiDotsVertical,
   mdiAccountGroup,
   mdiFileUpload,
+  mdiWeb,
 } from '@mdi/js';
+import './strain-import-dialog';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, CropMeta, SeedBatch, PollinationEvent } from '../types';
 import type { LineageNode } from '../features/plants/types';
@@ -59,6 +61,7 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _importDialogOpen = false;
   @state() private _mobileMenuOpen = false;
   @state() private _pendingDeleteKey: string | null = null;
+  @state() private _seedfinderDialogOpen = false;
 
   @state() private _importReplace = false;
 
@@ -1311,14 +1314,15 @@ export class StrainLibraryDialog extends LitElement {
               : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())
           }
         </div>
-
-        ${this._isCropping ? this.renderCropOverlay() : nothing}
-        ${this._isImageSelectorOpen ? this.renderImageSelector() : nothing}
-        ${this._importDialogOpen ? this.renderImportDialog() : nothing}
-        ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : nothing}
-        ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
-        ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
       </ha-dialog>
+
+      ${this._isCropping ? this.renderCropOverlay() : nothing}
+      ${this._isImageSelectorOpen ? this.renderImageSelector() : nothing}
+      ${this._importDialogOpen ? this.renderImportDialog() : nothing}
+      ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : nothing}
+      ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
+      ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
+      ${this._seedfinderDialogOpen ? this.renderSeedfinderDialog() : nothing}
     `;
   }
 
@@ -1829,13 +1833,29 @@ export class StrainLibraryDialog extends LitElement {
             </div>
 
             <div class="sd-form-group">
-              <label class="sd-label">Strain Name *</label>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
+                <button
+                  class="md3-button text"
+                  style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
+                  @click=${() => (this._seedfinderDialogOpen = true)}
+                >
+                  <svg
+                    style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiWeb}"></path>
+                  </svg>
+                  Seedfinder
+                </button>
+              </div>
               <input
                 type="text"
                 class="sd-input"
                 list="strain-suggestions"
                 .value=${s.strain || ''}
-                @input=${(e: InputEvent) => this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
+                @input=${(e: InputEvent) =>
+        this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -3289,5 +3309,28 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private renderSeedfinderDialog(): TemplateResult {
+    return html`
+      <strain-import-dialog
+        .hass=${this.hass}
+        .open=${this._seedfinderDialogOpen}
+        .initialStrain=${this._editorState.strain}
+        .initialPheno=${this._editorState.phenotype}
+        @close=${() => (this._seedfinderDialogOpen = false)}
+        @import=${this._handleSeedfinderImport}
+      ></strain-import-dialog>
+    `;
+  }
+
+  private _handleSeedfinderImport(e: CustomEvent): void {
+    const data = e.detail;
+    this._editorState = {
+      ...this._editorState,
+      ...data,
+    };
+    this._seedfinderDialogOpen = false;
+    this.requestUpdate();
   }
 }

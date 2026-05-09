@@ -196,11 +196,11 @@ export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema
 
 export const StrainPhenotypeSchema = z
   .object({
-    description: z.string().optional(),
-    image_path: z.string().optional(),
-    image_crop_meta: z.object({ x: z.number(), y: z.number(), scale: z.number() }).optional(),
-    flower_days_min: z.number().optional(),
-    flower_days_max: z.number().optional(),
+    description: z.string().nullable().optional().transform(v => v ?? undefined),
+    image_path: z.string().nullable().optional().transform(v => v ?? undefined),
+    image_crop_meta: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional().transform(v => v ?? undefined),
+    flower_days_min: z.number().nullable().optional().transform(v => v ?? undefined),
+    flower_days_max: z.number().nullable().optional().transform(v => v ?? undefined),
   })
   .catchall(z.unknown());
 
@@ -208,13 +208,13 @@ export const StrainDataSchema = z
   .object({
     meta: z
       .object({
-        breeder: z.string().optional(),
-        breeder_logo: z.string().optional(),
-        type: z.string().optional(),
-        lineage: z.string().optional(),
-        sex: z.string().optional(),
-        sativa_percentage: z.number().optional(),
-        indica_percentage: z.number().optional(),
+        breeder: z.string().nullable().optional().transform(v => v ?? undefined),
+        breeder_logo: z.string().nullable().optional().transform(v => v ?? undefined),
+        type: z.string().nullable().optional().transform(v => v ?? undefined),
+        lineage: z.string().nullable().optional().transform(v => v ?? undefined),
+        sex: z.string().nullable().optional().transform(v => v ?? undefined),
+        sativa_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
+        indica_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
       })
       .passthrough()
       .optional()

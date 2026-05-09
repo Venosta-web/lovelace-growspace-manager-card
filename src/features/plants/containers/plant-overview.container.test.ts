@@ -392,7 +392,8 @@ describe('PlantOverviewContainer – rendering branches', () => {
     const plant = makeMockPlant({ harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } }, 'dry');
     await attachElement(plant);
 
-    const harvestBtn = el.shadowRoot?.querySelector('.tab-btn:last-of-type') as HTMLButtonElement;
+    const harvestBtn = Array.from(el.shadowRoot?.querySelectorAll('.tab-btn') ?? [])
+      .find(btn => btn.textContent?.includes('Scoring')) as HTMLButtonElement;
     harvestBtn?.click();
     await el.updateComplete;
 

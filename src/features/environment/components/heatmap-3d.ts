@@ -762,7 +762,8 @@ export class Heatmap3D extends LitElement {
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
             const point = history && history[this.timelineIndex] as any;
-            return point ? parseFloat(point.s) : 0;
+            const v = point ? parseFloat(point.s) : 0;
+            return isNaN(v) ? 0 : v;
         }
         if (!this.hass || !entityId) return 0;
         const state = this.hass.states[entityId];

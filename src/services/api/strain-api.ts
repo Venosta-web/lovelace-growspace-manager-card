@@ -358,6 +358,11 @@ export class StrainAPI extends BaseAPI {
     sativa_percentage?: number;
     indica_percentage?: number;
     breeder_logo?: string;
+    yield_potential?: string;
+    height?: string;
+    thc?: number;
+    awards?: string[];
+    lineage_tree?: any;
   }): Promise<void> {
     console.log('[StrainAPI:updateStrainMeta] Updating strain:', data);
     try {

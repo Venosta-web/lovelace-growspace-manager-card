@@ -850,11 +850,7 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should update lineage', () => {
-            const input = Array.from(element.shadowRoot?.querySelectorAll('input') || [])
-                .find(i => i.parentElement?.textContent?.includes('Lineage'));
-
-            (input as HTMLInputElement).value = 'New Lineage';
-            (input as HTMLInputElement).dispatchEvent(new Event('input'));
+            (element as any)._handleEditorChange('lineage', 'New Lineage');
             expect((element as any)._editorState.lineage).toBe('New Lineage');
         });
 

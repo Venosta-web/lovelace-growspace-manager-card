@@ -204,6 +204,10 @@ export interface StrainEntry {
   sativa_percentage?: number;
   indica_percentage?: number;
   breeder_logo?: string;
+  height?: string;
+  thc?: number;
+  awards?: string[];
+  parents?: any;
 }
 
 // --- Display Models ---

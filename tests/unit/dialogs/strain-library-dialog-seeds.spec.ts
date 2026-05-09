@@ -73,9 +73,10 @@ describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
     describe('Tab bar', () => {
         it('renders both tab buttons', async () => {
             const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
-            expect(tabs?.length).toBe(2);
+            expect(tabs?.length).toBe(3);
             expect(tabs?.[0].textContent).toContain('Strains');
             expect(tabs?.[1].textContent).toContain('Seeds');
+            expect(tabs?.[2].textContent).toContain('Tree');
         });
 
         it('defaults to strains tab', async () => {
