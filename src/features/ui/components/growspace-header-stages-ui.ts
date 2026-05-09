@@ -6,7 +6,6 @@ import '../../shared/ui/scroll-container';
 @customElement('growspace-header-stages-ui')
 export class GrowspaceHeaderStagesUI extends LitElement {
   @property({ attribute: false }) public dominant: DominantStageInfo | undefined;
-  @property({ type: Boolean }) public lightOn: boolean | undefined;
   @property({ attribute: false }) public problemPlants: string[] = [];
 
   static styles = css`
@@ -35,30 +34,10 @@ export class GrowspaceHeaderStagesUI extends LitElement {
       flex-shrink: 0;
     }
 
-    .gs-stage-pill.light-on {
-      background: rgba(255, 235, 59, 0.08);
-      border-color: rgba(255, 235, 59, 0.25);
-      color: #fff176;
-    }
-
-    .gs-stage-pill.light-off {
-      background: rgba(100, 100, 100, 0.08);
-      border-color: rgba(255, 255, 255, 0.12);
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
-    }
-
     .gs-stage-pill.alert {
       background: rgba(244, 67, 54, 0.08);
       border-color: rgba(244, 67, 54, 0.3);
       color: #ff8a80;
-    }
-
-    .light-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 6px currentColor;
     }
 
     .stages-wrapper {
@@ -72,15 +51,6 @@ export class GrowspaceHeaderStagesUI extends LitElement {
     return html`
       <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
         <div class="stages-wrapper">
-          ${this.lightOn !== undefined
-            ? html`
-                <div class="gs-stage-pill ${this.lightOn ? 'light-on' : 'light-off'}">
-                  <span class="light-dot"></span>
-                  ${this.lightOn ? 'Lights ON' : 'Lights OFF'}
-                </div>
-              `
-            : nothing}
-
           ${this.dominant
             ? html`
                 <div class="gs-stage-pill">

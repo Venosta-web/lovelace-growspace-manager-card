@@ -225,10 +225,6 @@ export class GrowspaceHeaderContainer extends LitElement {
     }
   }
 
-  private get _lightOn(): boolean | undefined {
-    return this.device?.biologicalMetrics?.isDay;
-  }
-
   private get _problemPlants(): string[] {
     return (this.device?.plants || [])
       .filter((p) => !!p.attributes?.problem)
@@ -258,7 +254,6 @@ export class GrowspaceHeaderContainer extends LitElement {
         .viewMode=${this._actionsController?.value?.viewMode || 'standard'}
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
-        .lightOn=${this._lightOn}
         .problemPlants=${this._problemPlants}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
