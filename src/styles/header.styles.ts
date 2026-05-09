@@ -24,22 +24,22 @@ export const headerStyles = css`
   /* The visible text element that drives width */
   .select-sizer {
     font-family: 'Roboto', sans-serif;
-    font-size: 3.5rem;
-    font-weight: 300;
+    font-size: 1.75rem;
+    font-weight: 400;
     margin: 0;
     line-height: 1.1;
+    letter-spacing: -0.01em;
     text-transform: capitalize;
     background: linear-gradient(
       135deg,
       var(--primary-text-color, #ffffff) 0%,
-      var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     white-space: pre;
-    pointer-events: none; /* Let clicks pass through to select */
-    visibility: visible; /* Ensure it is seen */
+    pointer-events: none;
+    visibility: visible;
   }
 
   /* The functional select element, invisible but clickable */
@@ -75,7 +75,53 @@ export const headerStyles = css`
     grid-column: 1;
     grid-row: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .header-title-row {
+    display: flex;
     align-items: center;
+    gap: 10px;
+  }
+
+  .gs-title {
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    background: linear-gradient(
+      135deg,
+      var(--primary-text-color, #ffffff) 0%,
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .header-meta-stat .num {
+    color: var(--primary-text-color, #fff);
+    font-weight: 500;
+    margin-right: 3px;
+  }
+
+  .header-meta-stat.alert {
+    color: #ffb74d;
+  }
+
+  .header-meta-stat.alert .num {
+    color: #ffb74d;
   }
 
   /* New component slots */
@@ -124,7 +170,11 @@ export const headerStyles = css`
   /* --- Mobile & Responsive --- */
   @media (max-width: 600px) {
     .gs-title {
-      font-size: 2rem;
+      font-size: 1.4rem;
+    }
+
+    .select-sizer {
+      font-size: 1.4rem;
     }
     .header-title-area {
       max-width: 70%;

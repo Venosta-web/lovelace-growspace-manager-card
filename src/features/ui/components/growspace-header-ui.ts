@@ -1,4 +1,4 @@
-import { LitElement, html } from 'lit';
+import { LitElement, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 
@@ -92,6 +92,32 @@ export class GrowspaceHeaderUI extends LitElement {
     this._mobileLink = !this._mobileLink;
   }
 
+  private _renderMetaRow() {
+    const plants = this.device?.plants || [];
+    const plantCount = plants.length;
+    if (plantCount === 0 && !this.dominant) return nothing;
+
+    const alertCount = this.problemPlants.length;
+
+    return html`
+      <div class="header-meta-row">
+        ${plantCount > 0 ? html`
+          <span class="header-meta-stat">
+            <span class="num">${plantCount}</span>plant${plantCount !== 1 ? 's' : ''}
+          </span>
+        ` : nothing}
+        ${this.dominant?.daysLabel ? html`
+          <span class="header-meta-stat">${this.dominant.daysLabel}</span>
+        ` : nothing}
+        ${alertCount > 0 ? html`
+          <span class="header-meta-stat alert">
+            <span class="num">${alertCount}</span>need${alertCount !== 1 ? '' : 's'} attention
+          </span>
+        ` : nothing}
+      </div>
+    `;
+  }
+
   private _openNutrients() {
     this.dispatchEvent(
       new CustomEvent('open-nutrients', {
@@ -108,20 +134,23 @@ export class GrowspaceHeaderUI extends LitElement {
       <div class="gs-stats-container">
         <!-- TOP HEADER GRID -->
         <div class="gs-header-top">
-          <!-- Row 1 Left: Title/Select -->
+          <!-- Row 1 Left: Title/Select + Meta -->
           <div class="header-title-area">
-            ${!this.config?.default_growspace
-              ? html` <div class="select-wrapper">
-                  <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
-                  <select
-                    class="growspace-select-header"
-                    .value=${this.deviceId}
-                    @change=${this._handleDeviceChange}
-                  >
-                    ${this.devices.map((d) => html`<option value="${d.deviceId}">${d.name}</option>`)}
-                  </select>
-                </div>`
-              : html`<h1 class="gs-title">${this.device.name}</h1>`}
+            <div class="header-title-row">
+              ${!this.config?.default_growspace
+                ? html`<div class="select-wrapper">
+                    <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                    <select
+                      class="growspace-select-header"
+                      .value=${this.deviceId}
+                      @change=${this._handleDeviceChange}
+                    >
+                      ${this.devices.map((d) => html`<option value="${d.deviceId}">${d.name}</option>`)}
+                    </select>
+                  </div>`
+                : html`<h1 class="gs-title">${this.device.name}</h1>`}
+            </div>
+            ${this._renderMetaRow()}
           </div>
 
           <!-- Row 1 Right: Actions & Device Chips -->

@@ -151,6 +151,22 @@ export class PlantOverviewContainer extends LitElement {
         color: var(--primary-color, #4caf50);
       }
 
+      .tab-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        line-height: 1;
+        margin-left: 2px;
+      }
+
       .tab-btn svg {
         width: 20px;
         height: 20px;
@@ -393,7 +409,7 @@ export class PlantOverviewContainer extends LitElement {
           ${this._renderQuickbar()}
 
           <!-- TABS -->
-          ${this._renderTabs()}
+          ${this._renderTabs(vm)}
 
           <!-- CONTENT -->
           <div class="overview-grid">
@@ -495,9 +511,10 @@ export class PlantOverviewContainer extends LitElement {
     `;
   }
 
-  private _renderTabs(): TemplateResult {
+  private _renderTabs(vm: PlantOverviewViewModel): TemplateResult {
     const stage = (this.plant?.state || '').toLowerCase();
     const showHarvestTab = ['dry', 'drying', 'cure', 'curing'].includes(stage);
+    const enabledActionCount = vm.availableActions.filter((a) => a.enabled).length;
     return html`
       <div class="tabs-container">
         <button
@@ -521,6 +538,9 @@ export class PlantOverviewContainer extends LitElement {
             ></path>
           </svg>
           Actions
+          ${enabledActionCount > 0
+            ? html`<span class="tab-badge">${enabledActionCount}</span>`
+            : nothing}
         </button>
         <button
           class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}"
@@ -565,6 +585,7 @@ export class PlantOverviewContainer extends LitElement {
 
   private _renderDashboard(vm: PlantOverviewViewModel): TemplateResult {
     return html`
+      ${this._renderLifecycleTrack(vm)}
       <plant-dashboard-tab
         .plant=${vm.plant}
         .editedAttributes=${vm.editedAttributes}
@@ -574,6 +595,69 @@ export class PlantOverviewContainer extends LitElement {
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
       ></plant-dashboard-tab>
+    `;
+  }
+
+  private _renderLifecycleTrack(vm: PlantOverviewViewModel): TemplateResult | typeof nothing {
+    const attrs = vm.plant?.attributes;
+    if (!attrs) return nothing;
+    const currentStage = (vm.plant.state || '').toLowerCase();
+
+    const stages: Array<{ key: string; label: string; daysAttr: string }> = [
+      { key: 'seedling', label: 'Seed', daysAttr: 'seedling_days' },
+      { key: 'clone',    label: 'Clone', daysAttr: 'clone_days' },
+      { key: 'veg',      label: 'Veg', daysAttr: 'veg_days' },
+      { key: 'mother',   label: 'Mother', daysAttr: 'mother_days' },
+      { key: 'flower',   label: 'Flower', daysAttr: 'flower_days' },
+      { key: 'dry',      label: 'Dry', daysAttr: 'dry_days' },
+      { key: 'cure',     label: 'Cure', daysAttr: 'cure_days' },
+    ];
+
+    // Only show stages that have been entered or are next
+    const stageOrder = stages.map((s) => s.key);
+    const currentIdx = stageOrder.indexOf(currentStage);
+    const visible = stages.filter((s, i) => {
+      const days = (attrs as any)[s.daysAttr];
+      return (days !== undefined && days !== null) || i === currentIdx || i === currentIdx + 1;
+    });
+
+    if (visible.length < 2) return nothing;
+
+    return html`
+      <div style="
+        display: flex; align-items: stretch; gap: 0;
+        background: rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+        padding: 4px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      ">
+        ${visible.map((s) => {
+          const days = (attrs as any)[s.daysAttr];
+          const isCurrentStage = s.key === currentStage ||
+            (currentStage === 'vegetative' && s.key === 'veg') ||
+            (currentStage === 'flowering' && s.key === 'flower') ||
+            (currentStage === 'drying' && s.key === 'dry') ||
+            (currentStage === 'curing' && s.key === 'cure');
+          const isDone = days !== undefined && days !== null && !isCurrentStage;
+
+          return html`
+            <div style="
+              flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px;
+              font-size: 0.7rem; line-height: 1.3;
+              background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
+              color: ${isCurrentStage ? '#ffb74d' : isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'};
+              font-weight: ${isCurrentStage ? '600' : '400'};
+            ">
+              <div>${s.label}</div>
+              <div style="font-variant-numeric: tabular-nums; font-size: 0.85rem; margin-top: 1px;">
+                ${days !== undefined && days !== null ? `D${days}` : '—'}
+              </div>
+            </div>
+          `;
+        })}
+      </div>
     `;
   }
 

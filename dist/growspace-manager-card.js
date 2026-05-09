@@ -33755,7 +33755,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
           ${this._renderQuickbar()}
 
           <!-- TABS -->
-          ${this._renderTabs()}
+          ${this._renderTabs(vm)}
 
           <!-- CONTENT -->
           <div class="overview-grid">
@@ -33849,9 +33849,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
       </div>
     `;
     }
-    _renderTabs() {
+    _renderTabs(vm) {
         const stage = (this.plant?.state || '').toLowerCase();
         const showHarvestTab = ['dry', 'drying', 'cure', 'curing'].includes(stage);
+        const enabledActionCount = vm.availableActions.filter((a) => a.enabled).length;
         return x `
       <div class="tabs-container">
         <button
@@ -33875,6 +33876,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             ></path>
           </svg>
           Actions
+          ${enabledActionCount > 0
+            ? x `<span class="tab-badge">${enabledActionCount}</span>`
+            : E}
         </button>
         <button
           class="tab-btn ${this._activeTab === 'timeline' ? 'active' : ''}"
@@ -33918,6 +33922,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     _renderDashboard(vm) {
         return x `
+      ${this._renderLifecycleTrack(vm)}
       <plant-dashboard-tab
         .plant=${vm.plant}
         .editedAttributes=${vm.editedAttributes}
@@ -33927,6 +33932,65 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
       ></plant-dashboard-tab>
+    `;
+    }
+    _renderLifecycleTrack(vm) {
+        const attrs = vm.plant?.attributes;
+        if (!attrs)
+            return E;
+        const currentStage = (vm.plant.state || '').toLowerCase();
+        const stages = [
+            { key: 'seedling', label: 'Seed', daysAttr: 'seedling_days' },
+            { key: 'clone', label: 'Clone', daysAttr: 'clone_days' },
+            { key: 'veg', label: 'Veg', daysAttr: 'veg_days' },
+            { key: 'mother', label: 'Mother', daysAttr: 'mother_days' },
+            { key: 'flower', label: 'Flower', daysAttr: 'flower_days' },
+            { key: 'dry', label: 'Dry', daysAttr: 'dry_days' },
+            { key: 'cure', label: 'Cure', daysAttr: 'cure_days' },
+        ];
+        // Only show stages that have been entered or are next
+        const stageOrder = stages.map((s) => s.key);
+        const currentIdx = stageOrder.indexOf(currentStage);
+        const visible = stages.filter((s, i) => {
+            const days = attrs[s.daysAttr];
+            return (days !== undefined && days !== null) || i === currentIdx || i === currentIdx + 1;
+        });
+        if (visible.length < 2)
+            return E;
+        return x `
+      <div style="
+        display: flex; align-items: stretch; gap: 0;
+        background: rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 10px;
+        padding: 4px;
+        margin-bottom: 16px;
+        overflow: hidden;
+      ">
+        ${visible.map((s) => {
+            const days = attrs[s.daysAttr];
+            const isCurrentStage = s.key === currentStage ||
+                (currentStage === 'vegetative' && s.key === 'veg') ||
+                (currentStage === 'flowering' && s.key === 'flower') ||
+                (currentStage === 'drying' && s.key === 'dry') ||
+                (currentStage === 'curing' && s.key === 'cure');
+            const isDone = days !== undefined && days !== null && !isCurrentStage;
+            return x `
+            <div style="
+              flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px;
+              font-size: 0.7rem; line-height: 1.3;
+              background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
+              color: ${isCurrentStage ? '#ffb74d' : isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'};
+              font-weight: ${isCurrentStage ? '600' : '400'};
+            ">
+              <div>${s.label}</div>
+              <div style="font-variant-numeric: tabular-nums; font-size: 0.85rem; margin-top: 1px;">
+                ${days !== undefined && days !== null ? `D${days}` : '—'}
+              </div>
+            </div>
+          `;
+        })}
+      </div>
     `;
     }
     _renderActions(vm) {
@@ -34791,6 +34855,22 @@ PlantOverviewContainer.styles = [
       .tab-btn.active {
         border-bottom-color: var(--primary-color, #4caf50);
         color: var(--primary-color, #4caf50);
+      }
+
+      .tab-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        line-height: 1;
+        margin-left: 2px;
       }
 
       .tab-btn svg {
@@ -45007,22 +45087,22 @@ const headerStyles = i$6 `
   /* The visible text element that drives width */
   .select-sizer {
     font-family: 'Roboto', sans-serif;
-    font-size: 3.5rem;
-    font-weight: 300;
+    font-size: 1.75rem;
+    font-weight: 400;
     margin: 0;
     line-height: 1.1;
+    letter-spacing: -0.01em;
     text-transform: capitalize;
     background: linear-gradient(
       135deg,
       var(--primary-text-color, #ffffff) 0%,
-      var(--secondary-text-color, rgba(255, 255, 255, 0.9)) 100%
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     white-space: pre;
-    pointer-events: none; /* Let clicks pass through to select */
-    visibility: visible; /* Ensure it is seen */
+    pointer-events: none;
+    visibility: visible;
   }
 
   /* The functional select element, invisible but clickable */
@@ -45058,7 +45138,53 @@ const headerStyles = i$6 `
     grid-column: 1;
     grid-row: 1;
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .header-title-row {
+    display: flex;
     align-items: center;
+    gap: 10px;
+  }
+
+  .gs-title {
+    font-size: 1.75rem;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    background: linear-gradient(
+      135deg,
+      var(--primary-text-color, #ffffff) 0%,
+      var(--secondary-text-color, rgba(255, 255, 255, 0.8)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.78rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    font-variant-numeric: tabular-nums;
+  }
+
+  .header-meta-stat .num {
+    color: var(--primary-text-color, #fff);
+    font-weight: 500;
+    margin-right: 3px;
+  }
+
+  .header-meta-stat.alert {
+    color: #ffb74d;
+  }
+
+  .header-meta-stat.alert .num {
+    color: #ffb74d;
   }
 
   /* New component slots */
@@ -45107,7 +45233,11 @@ const headerStyles = i$6 `
   /* --- Mobile & Responsive --- */
   @media (max-width: 600px) {
     .gs-title {
-      font-size: 2rem;
+      font-size: 1.4rem;
+    }
+
+    .select-sizer {
+      font-size: 1.4rem;
     }
     .header-title-area {
       max-width: 70%;
@@ -46312,6 +46442,30 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
     _handleToggleMobileLink() {
         this._mobileLink = !this._mobileLink;
     }
+    _renderMetaRow() {
+        const plants = this.device?.plants || [];
+        const plantCount = plants.length;
+        if (plantCount === 0 && !this.dominant)
+            return E;
+        const alertCount = this.problemPlants.length;
+        return x `
+      <div class="header-meta-row">
+        ${plantCount > 0 ? x `
+          <span class="header-meta-stat">
+            <span class="num">${plantCount}</span>plant${plantCount !== 1 ? 's' : ''}
+          </span>
+        ` : E}
+        ${this.dominant?.daysLabel ? x `
+          <span class="header-meta-stat">${this.dominant.daysLabel}</span>
+        ` : E}
+        ${alertCount > 0 ? x `
+          <span class="header-meta-stat alert">
+            <span class="num">${alertCount}</span>need${alertCount !== 1 ? '' : 's'} attention
+          </span>
+        ` : E}
+      </div>
+    `;
+    }
     _openNutrients() {
         this.dispatchEvent(new CustomEvent('open-nutrients', {
             bubbles: true,
@@ -46325,20 +46479,23 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
       <div class="gs-stats-container">
         <!-- TOP HEADER GRID -->
         <div class="gs-header-top">
-          <!-- Row 1 Left: Title/Select -->
+          <!-- Row 1 Left: Title/Select + Meta -->
           <div class="header-title-area">
-            ${!this.config?.default_growspace
-            ? x ` <div class="select-wrapper">
-                  <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
-                  <select
-                    class="growspace-select-header"
-                    .value=${this.deviceId}
-                    @change=${this._handleDeviceChange}
-                  >
-                    ${this.devices.map((d) => x `<option value="${d.deviceId}">${d.name}</option>`)}
-                  </select>
-                </div>`
+            <div class="header-title-row">
+              ${!this.config?.default_growspace
+            ? x `<div class="select-wrapper">
+                    <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                    <select
+                      class="growspace-select-header"
+                      .value=${this.deviceId}
+                      @change=${this._handleDeviceChange}
+                    >
+                      ${this.devices.map((d) => x `<option value="${d.deviceId}">${d.name}</option>`)}
+                    </select>
+                  </div>`
             : x `<h1 class="gs-title">${this.device.name}</h1>`}
+            </div>
+            ${this._renderMetaRow()}
           </div>
 
           <!-- Row 1 Right: Actions & Device Chips -->
