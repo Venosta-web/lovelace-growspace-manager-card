@@ -19,6 +19,11 @@ import {
   mdiCannabis,
   mdiArrowRight,
   mdiContentCopy,
+  mdiWater,
+  mdiFlask,
+  mdiDumbbell,
+  mdiCamera,
+  mdiNoteOutline,
 } from '@mdi/js';
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -150,6 +155,51 @@ export class PlantOverviewContainer extends LitElement {
         width: 20px;
         height: 20px;
         fill: currentColor;
+      }
+
+      .quickbar {
+        display: flex;
+        gap: 6px;
+        padding: 10px 24px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
+        background: rgba(0, 0, 0, 0.15);
+        overflow-x: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .quickbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .quickbar-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color);
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .quickbar-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .quickbar-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+        flex-shrink: 0;
       }
 
       .delete-overlay {
@@ -339,6 +389,9 @@ export class PlantOverviewContainer extends LitElement {
           <!-- HEADER -->
           ${this._renderHeader(vm)}
 
+          <!-- QUICKBAR -->
+          ${this._renderQuickbar()}
+
           <!-- TABS -->
           ${this._renderTabs()}
 
@@ -391,6 +444,53 @@ export class PlantOverviewContainer extends LitElement {
             <path d="${mdiClose}"></path>
           </svg>
         </button>
+      </div>
+    `;
+  }
+
+  private _renderQuickbar(): TemplateResult | typeof nothing {
+    const stage = (this.plant?.state || '').toLowerCase();
+    const liveStages = ['seedling', 'clone', 'veg', 'vegetative', 'mother', 'flower', 'flowering'];
+    if (!liveStages.includes(stage)) return nothing;
+
+    const canWater = true;
+    const canFeed = true;
+    const canTrain = ['veg', 'vegetative', 'mother', 'flower', 'flowering'].includes(stage);
+    const canPhoto = true;
+    const canNote = true;
+
+    return html`
+      <div class="quickbar">
+        ${canWater ? html`
+          <button class="quickbar-btn" @click=${this._openWatering} title="Log watering">
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            Water
+          </button>
+        ` : nothing}
+        ${canFeed ? html`
+          <button class="quickbar-btn" @click=${this._openNutrients} title="Log feeding">
+            <svg viewBox="0 0 24 24"><path d="${mdiFlask}"></path></svg>
+            Feed
+          </button>
+        ` : nothing}
+        ${canTrain ? html`
+          <button class="quickbar-btn" @click=${this._openTraining} title="Log training">
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            Train
+          </button>
+        ` : nothing}
+        ${canPhoto ? html`
+          <button class="quickbar-btn" @click=${this._openSnapshots} title="Take or view snapshots">
+            <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+            Photo
+          </button>
+        ` : nothing}
+        ${canNote ? html`
+          <button class="quickbar-btn" @click=${this._openLogbook} title="Add a note">
+            <svg viewBox="0 0 24 24"><path d="${mdiNoteOutline}"></path></svg>
+            Note
+          </button>
+        ` : nothing}
       </div>
     `;
   }
@@ -895,6 +995,26 @@ export class PlantOverviewContainer extends LitElement {
         sourcePlant: this.plant,
         defaultGrowspaceId: this.plant.attributes?.growspace_id || '',
       },
+    });
+  }
+
+  private _openNutrients(): void {
+    this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+  }
+
+  private _openSnapshots(): void {
+    const growspaceId = this.plant.attributes?.growspace_id || '';
+    this.store.ui.setActiveDialog({
+      type: 'SNAPSHOTS',
+      payload: { growspaceId },
+    });
+  }
+
+  private _openLogbook(): void {
+    const growspaceId = this.plant.attributes?.growspace_id || '';
+    this.store.ui.setActiveDialog({
+      type: 'LOGBOOK',
+      payload: { growspaceId },
     });
   }
 

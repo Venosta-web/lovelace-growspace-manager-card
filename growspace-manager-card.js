@@ -135,6 +135,7 @@ var mdiFileChart = "M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6C4.89,22
 var mdiFileUpload = "M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13.5,16V19H10.5V16H8L12,12L16,16H13.5M13,9V3.5L18.5,9H13Z";
 var mdiFitToPageOutline = "M20,2H4C2.89,2 2,2.89 2,4V20C2,21.11 2.89,22 4,22H20C21.11,22 22,21.11 22,20V4C22,2.89 21.11,2 20,2M20,20H4V4H20M13,8V10H11V8H9L12,5L15,8M16,15V13H14V11H16V9L19,12M10,13H8V15L5,12L8,9V11H10M15,16L12,19L9,16H11V14H13V16";
 var mdiFlash = "M7,2V13H10V22L17,10H13L17,2H7Z";
+var mdiFlask = "M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L16.53,14.47L14,17L8.93,11.93L5.18,18.43C5.07,18.59 5,18.79 5,19M13,10A1,1 0 0,0 12,11A1,1 0 0,0 13,12A1,1 0 0,0 14,11A1,1 0 0,0 13,10Z";
 var mdiFlaskOutline = "M5,19A1,1 0 0,0 6,20H18A1,1 0 0,0 19,19C19,18.79 18.93,18.59 18.82,18.43L13,8.35V4H11V8.35L5.18,18.43C5.07,18.59 5,18.79 5,19M6,22A3,3 0 0,1 3,19C3,18.4 3.18,17.84 3.5,17.37L9,7.81V6A1,1 0 0,1 8,5V4A2,2 0 0,1 10,2H14A2,2 0 0,1 16,4V5A1,1 0 0,1 15,6V7.81L20.5,17.37C20.82,17.84 21,18.4 21,19A3,3 0 0,1 18,22H6M13,16L14.34,14.66L16.27,18H7.73L10.39,13.39L13,16M12.5,12A0.5,0.5 0 0,1 13,12.5A0.5,0.5 0 0,1 12.5,13A0.5,0.5 0 0,1 12,12.5A0.5,0.5 0 0,1 12.5,12Z";
 var mdiFlower = "M3,13A9,9 0 0,0 12,22C12,17 7.97,13 3,13M12,5.5A2.5,2.5 0 0,1 14.5,8A2.5,2.5 0 0,1 12,10.5A2.5,2.5 0 0,1 9.5,8A2.5,2.5 0 0,1 12,5.5M5.6,10.25A2.5,2.5 0 0,0 8.1,12.75C8.63,12.75 9.12,12.58 9.5,12.31C9.5,12.37 9.5,12.43 9.5,12.5A2.5,2.5 0 0,0 12,15A2.5,2.5 0 0,0 14.5,12.5C14.5,12.43 14.5,12.37 14.5,12.31C14.88,12.58 15.37,12.75 15.9,12.75C17.28,12.75 18.4,11.63 18.4,10.25C18.4,9.25 17.81,8.4 16.97,8C17.81,7.6 18.4,6.74 18.4,5.75C18.4,4.37 17.28,3.25 15.9,3.25C15.37,3.25 14.88,3.41 14.5,3.69C14.5,3.63 14.5,3.56 14.5,3.5A2.5,2.5 0 0,0 12,1A2.5,2.5 0 0,0 9.5,3.5C9.5,3.56 9.5,3.63 9.5,3.69C9.12,3.41 8.63,3.25 8.1,3.25A2.5,2.5 0 0,0 5.6,5.75C5.6,6.74 6.19,7.6 7.03,8C6.19,8.4 5.6,9.25 5.6,10.25M12,22A9,9 0 0,0 21,13C16,13 12,17 12,22Z";
 var mdiFormatListBulleted = "M7,5H21V7H7V5M7,13V11H21V13H7M4,4.5A1.5,1.5 0 0,1 5.5,6A1.5,1.5 0 0,1 4,7.5A1.5,1.5 0 0,1 2.5,6A1.5,1.5 0 0,1 4,4.5M4,10.5A1.5,1.5 0 0,1 5.5,12A1.5,1.5 0 0,1 4,13.5A1.5,1.5 0 0,1 2.5,12A1.5,1.5 0 0,1 4,10.5M7,19V17H21V19H7M4,16.5A1.5,1.5 0 0,1 5.5,18A1.5,1.5 0 0,1 4,19.5A1.5,1.5 0 0,1 2.5,18A1.5,1.5 0 0,1 4,16.5Z";
@@ -151,6 +152,7 @@ var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
 var mdiMinus = "M19,13H5V11H19V13Z";
+var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
@@ -33749,6 +33751,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
           <!-- HEADER -->
           ${this._renderHeader(vm)}
 
+          <!-- QUICKBAR -->
+          ${this._renderQuickbar()}
+
           <!-- TABS -->
           ${this._renderTabs()}
 
@@ -33800,6 +33805,47 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             <path d="${mdiClose}"></path>
           </svg>
         </button>
+      </div>
+    `;
+    }
+    _renderQuickbar() {
+        const stage = (this.plant?.state || '').toLowerCase();
+        const liveStages = ['seedling', 'clone', 'veg', 'vegetative', 'mother', 'flower', 'flowering'];
+        if (!liveStages.includes(stage))
+            return E;
+        const canTrain = ['veg', 'vegetative', 'mother', 'flower', 'flowering'].includes(stage);
+        return x `
+      <div class="quickbar">
+        ${x `
+          <button class="quickbar-btn" @click=${this._openWatering} title="Log watering">
+            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+            Water
+          </button>
+        ` }
+        ${x `
+          <button class="quickbar-btn" @click=${this._openNutrients} title="Log feeding">
+            <svg viewBox="0 0 24 24"><path d="${mdiFlask}"></path></svg>
+            Feed
+          </button>
+        ` }
+        ${canTrain ? x `
+          <button class="quickbar-btn" @click=${this._openTraining} title="Log training">
+            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+            Train
+          </button>
+        ` : E}
+        ${x `
+          <button class="quickbar-btn" @click=${this._openSnapshots} title="Take or view snapshots">
+            <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+            Photo
+          </button>
+        ` }
+        ${x `
+          <button class="quickbar-btn" @click=${this._openLogbook} title="Add a note">
+            <svg viewBox="0 0 24 24"><path d="${mdiNoteOutline}"></path></svg>
+            Note
+          </button>
+        ` }
       </div>
     `;
     }
@@ -34261,6 +34307,23 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
                 sourcePlant: this.plant,
                 defaultGrowspaceId: this.plant.attributes?.growspace_id || '',
             },
+        });
+    }
+    _openNutrients() {
+        this.store.ui.setActiveDialog({ type: 'NUTRIENTS', payload: {} });
+    }
+    _openSnapshots() {
+        const growspaceId = this.plant.attributes?.growspace_id || '';
+        this.store.ui.setActiveDialog({
+            type: 'SNAPSHOTS',
+            payload: { growspaceId },
+        });
+    }
+    _openLogbook() {
+        const growspaceId = this.plant.attributes?.growspace_id || '';
+        this.store.ui.setActiveDialog({
+            type: 'LOGBOOK',
+            payload: { growspaceId },
         });
     }
     _openStrainEditor() {
@@ -34734,6 +34797,51 @@ PlantOverviewContainer.styles = [
         width: 20px;
         height: 20px;
         fill: currentColor;
+      }
+
+      .quickbar {
+        display: flex;
+        gap: 6px;
+        padding: 10px 24px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
+        background: rgba(0, 0, 0, 0.15);
+        overflow-x: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .quickbar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .quickbar-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color);
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .quickbar-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .quickbar-btn svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+        flex-shrink: 0;
       }
 
       .delete-overlay {
