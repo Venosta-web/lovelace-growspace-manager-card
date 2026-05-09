@@ -197,6 +197,37 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         height: 24px;
         background: var(--divider-color, rgba(255, 255, 255, 0.1));
       }
+
+      .hero-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+
+      .hero-status-badge.status-ok {
+        background: rgba(76, 175, 80, 0.15);
+        color: #69f0ae;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .hero-status-badge.status-warning {
+        background: rgba(255, 167, 38, 0.15);
+        color: #ffb74d;
+        border: 1px solid rgba(255, 167, 38, 0.3);
+      }
+
+      .hero-status-badge.status-error {
+        background: rgba(244, 67, 54, 0.15);
+        color: #ff8a80;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
     `,
   ];
 
@@ -366,6 +397,9 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         <div class="hero-header">
           <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
+          ${chip.status
+            ? html`<span class="hero-status-badge status-${chip.status}">${chip.status}</span>`
+            : ''}
         </div>
 
         <div class="hero-value-group">

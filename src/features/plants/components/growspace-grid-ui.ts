@@ -100,12 +100,12 @@ export class GrowspaceGridUI extends LitElement {
         justify-content: center;
         height: 100%;
         aspect-ratio: 1;
-        border: var(--glass-border);
+        border: 1.5px dashed rgba(76, 175, 80, 0.3);
         border-radius: var(--border-radius-lg, 16px);
-        color: var(--secondary-text-color);
+        color: rgba(76, 175, 80, 0.65);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: var(--glass-bg);
+        background: rgba(76, 175, 80, 0.04);
       }
 
       /* Skeleton Loading */
@@ -130,9 +130,9 @@ export class GrowspaceGridUI extends LitElement {
       }
 
       .plant-card-empty:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.08);
+        border-color: #4caf50;
+        color: #4caf50;
+        background: rgba(76, 175, 80, 0.08);
         transform: translateY(-2px);
       }
 

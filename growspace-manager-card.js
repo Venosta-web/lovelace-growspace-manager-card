@@ -45722,6 +45722,9 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
         <div class="hero-header">
           <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
+          ${chip.status
+            ? x `<span class="hero-status-badge status-${chip.status}">${chip.status}</span>`
+            : ''}
         </div>
 
         <div class="hero-value-group">
@@ -45895,6 +45898,37 @@ GrowspaceHeaderHeroUI.styles = [
         width: 1px;
         height: 24px;
         background: var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .hero-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+
+      .hero-status-badge.status-ok {
+        background: rgba(76, 175, 80, 0.15);
+        color: #69f0ae;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .hero-status-badge.status-warning {
+        background: rgba(255, 167, 38, 0.15);
+        color: #ffb74d;
+        border: 1px solid rgba(255, 167, 38, 0.3);
+      }
+
+      .hero-status-badge.status-error {
+        background: rgba(244, 67, 54, 0.15);
+        color: #ff8a80;
+        border: 1px solid rgba(244, 67, 54, 0.3);
       }
     `,
 ];
@@ -47222,12 +47256,12 @@ GrowspaceGridUI.styles = [
         justify-content: center;
         height: 100%;
         aspect-ratio: 1;
-        border: var(--glass-border);
+        border: 1.5px dashed rgba(76, 175, 80, 0.3);
         border-radius: var(--border-radius-lg, 16px);
-        color: var(--secondary-text-color);
+        color: rgba(76, 175, 80, 0.65);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: var(--glass-bg);
+        background: rgba(76, 175, 80, 0.04);
       }
 
       /* Skeleton Loading */
@@ -47252,9 +47286,9 @@ GrowspaceGridUI.styles = [
       }
 
       .plant-card-empty:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.08);
+        border-color: #4caf50;
+        color: #4caf50;
+        background: rgba(76, 175, 80, 0.08);
         transform: translateY(-2px);
       }
 
@@ -47893,6 +47927,19 @@ const plantCardStyles = i$6 `
     user-select: none;
   }
 
+  /* Stage color bar — 3px accent at top of tile */
+  .plant-card-rich::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--stage-color, transparent);
+    z-index: 6;
+    border-radius: 16px 16px 0 0;
+  }
+
   .plant-card-rich:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
@@ -48005,6 +48052,47 @@ const plantCardStyles = i$6 `
     text-transform: capitalize;
   }
 
+  /* Age pill — top-left corner showing days in stage */
+  .age-pill {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+    line-height: 1.4;
+  }
+
+  /* Alert dot — pulsing red indicator for plants with problems */
+  .alert-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f44336;
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3);
+    flex-shrink: 0;
+    animation: pulse-alert 2s infinite;
+    align-self: center;
+  }
+
+  @keyframes pulse-alert {
+    0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(244, 67, 54, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+  }
+
   .status-icons {
     position: absolute;
     top: 12px;
@@ -48021,6 +48109,12 @@ const plantCardStyles = i$6 `
        The parent overflow: hidden still clips at the card edge, but the 12px
        inset means extensions stay within the card in all common layouts. */
     overflow: visible;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .plant-card-rich:hover .status-icons {
+    opacity: 1;
   }
 
   .status-icon {
@@ -48241,11 +48335,20 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         @keydown=${this._handleKeyDown}
       >
         ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderAgePill()}
         ${this._renderCheckbox()}
         ${this._renderStatusIcons()}
         ${this._renderContent(strainName, pheno, stages)}
       </div>
     `;
+    }
+    _renderAgePill() {
+        if (this.isEditMode)
+            return E;
+        const daysInStage = this.plant?.attributes?.days_in_stage;
+        if (daysInStage === undefined || daysInStage === null)
+            return E;
+        return x `<div class="age-pill">D${daysInStage}</div>`;
     }
     _renderBackground(imageUrl, srcset, strainName, imageCropMeta) {
         if (!imageUrl) {
@@ -48405,6 +48508,7 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         return x `
       <div class="plant-card-content">
         <div class="pc-info">
+          ${this.statusIndicators.hasProblem ? x `<span class="alert-dot"></span>` : E}
           <div class="pc-strain-name" title="${strainName}">${strainName}</div>
           ${pheno ? x `<div class="pc-pheno">${pheno}</div>` : E}
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -106269,7 +106373,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         if (this.timelineIndex >= 0) {
             const history = this.historyData[entityId];
             const point = history && history[this.timelineIndex];
-            return point ? parseFloat(point.s) : 0;
+            const v = point ? parseFloat(point.s) : 0;
+            return isNaN(v) ? 0 : v;
         }
         if (!this.hass || !entityId)
             return 0;

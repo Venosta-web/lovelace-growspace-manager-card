@@ -30,6 +30,19 @@ export const plantCardStyles = css`
     user-select: none;
   }
 
+  /* Stage color bar — 3px accent at top of tile */
+  .plant-card-rich::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--stage-color, transparent);
+    z-index: 6;
+    border-radius: 16px 16px 0 0;
+  }
+
   .plant-card-rich:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
@@ -142,6 +155,47 @@ export const plantCardStyles = css`
     text-transform: capitalize;
   }
 
+  /* Age pill — top-left corner showing days in stage */
+  .age-pill {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 6;
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+    line-height: 1.4;
+  }
+
+  /* Alert dot — pulsing red indicator for plants with problems */
+  .alert-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f44336;
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3);
+    flex-shrink: 0;
+    animation: pulse-alert 2s infinite;
+    align-self: center;
+  }
+
+  @keyframes pulse-alert {
+    0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(244, 67, 54, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+  }
+
   .status-icons {
     position: absolute;
     top: 12px;
@@ -158,6 +212,12 @@ export const plantCardStyles = css`
        The parent overflow: hidden still clips at the card edge, but the 12px
        inset means extensions stay within the card in all common layouts. */
     overflow: visible;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .plant-card-rich:hover .status-icons {
+    opacity: 1;
   }
 
   .status-icon {

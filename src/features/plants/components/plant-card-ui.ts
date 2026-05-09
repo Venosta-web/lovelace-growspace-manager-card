@@ -88,11 +88,19 @@ export class PlantCardUI extends LitElement {
         @keydown=${this._handleKeyDown}
       >
         ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderAgePill()}
         ${this._renderCheckbox()}
         ${this._renderStatusIcons()}
         ${this._renderContent(strainName, pheno, stages)}
       </div>
     `;
+  }
+
+  private _renderAgePill(): TemplateResult | typeof nothing {
+    if (this.isEditMode) return nothing;
+    const daysInStage = this.plant?.attributes?.days_in_stage;
+    if (daysInStage === undefined || daysInStage === null) return nothing;
+    return html`<div class="age-pill">D${daysInStage}</div>`;
   }
 
   private _renderBackground(
@@ -277,6 +285,7 @@ export class PlantCardUI extends LitElement {
     return html`
       <div class="plant-card-content">
         <div class="pc-info">
+          ${this.statusIndicators.hasProblem ? html`<span class="alert-dot"></span>` : nothing}
           <div class="pc-strain-name" title="${strainName}">${strainName}</div>
           ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
           <div style="display: flex; align-items: center; gap: 8px;">
