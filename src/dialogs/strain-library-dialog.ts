@@ -47,6 +47,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: Array }) strains: StrainEntry[] = [];
   @property({ type: Object }) editingStrain?: StrainEntry;
+  @property({ attribute: false }) activePlantCounts: Record<string, number> = {};
   @property({ type: Boolean }) focusLineage = false;
   @property({ type: String }) source?: string;
   @property({ type: Object }) returnPayload?: unknown;
@@ -1568,6 +1569,11 @@ export class StrainLibraryDialog extends LitElement {
     else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny;
     else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
 
+    const activePlants = this.activePlantCounts[strain.strain] ?? 0;
+    const analytics = strain.strain_analytics || strain.analytics;
+    const totalHarvests = analytics?.total_harvests ?? 0;
+    const avgFlowerDays = analytics?.avg_flower_days;
+
     return html`
       <div class="strain-card" @click=${() => this._startEdit(strain)}>
         <div class="sc-thumb">
@@ -1584,6 +1590,15 @@ export class StrainLibraryDialog extends LitElement {
               >
                 <path d="${mdiLeaf}"></path>
               </svg>`}
+          ${activePlants > 0 ? html`
+            <div style="
+              position: absolute; top: 8px; right: 8px;
+              background: rgba(76,175,80,0.85); color: #fff;
+              border-radius: 999px; padding: 2px 8px;
+              font-size: 0.65rem; font-weight: 600;
+              backdrop-filter: blur(4px);
+            ">${activePlants} active</div>
+          ` : nothing}
           <div class="sc-actions">
             <button
               class="sc-action-btn"
@@ -1610,11 +1625,9 @@ export class StrainLibraryDialog extends LitElement {
           </div>
           <div class="sc-meta">
             ${strain.flowering_days_min
-        ? html`<span
-                  >Flowering: ${strain.flowering_days_min}-${strain.flowering_days_max || '?'}
-                  Days</span
-                >`
+        ? html`<span>Flower: ${strain.flowering_days_min}–${strain.flowering_days_max || '?'} days</span>`
         : nothing}
+            ${avgFlowerDays ? html`<span>Avg: ${Math.round(avgFlowerDays)}d</span>` : nothing}
             ${strain.breeder
         ? html`
                   <div style="display: flex; align-items: center; gap: 6px;">
@@ -1624,10 +1637,11 @@ export class StrainLibraryDialog extends LitElement {
                           style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
                         />`
             : nothing}
-                    <span>Breeder: ${strain.breeder}</span>
+                    <span>${strain.breeder}</span>
                   </div>
                 `
         : nothing}
+            ${totalHarvests > 0 ? html`<span style="color: var(--secondary-text-color);">${totalHarvests} harvest${totalHarvests !== 1 ? 's' : ''}</span>` : nothing}
           </div>
         </div>
       </div>

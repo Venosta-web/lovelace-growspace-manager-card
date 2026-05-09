@@ -251,6 +251,7 @@ export class GrowspaceDialogHost extends LitElement {
         .clonePlants=${clonePlants}
         .seedlingPlants=${seedlingPlants}
         .targetGrowspaceId=${targetGrowspaceId}
+        .siblingPlants=${selectedDeviceData?.plants || []}
         @close=${() => this._closeDialogIfActive('ADD_PLANT')}
         @add-plant-submit=${(e: CustomEvent) => store.confirmAddPlant(e.detail)}
         @transplant-plant-submit=${(e: CustomEvent) => this._handleTransplant(e.detail)}
@@ -450,6 +451,21 @@ export class GrowspaceDialogHost extends LitElement {
     `;
   }
 
+  private _computeActivePlantCounts(devices: GrowspaceDevice[]): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const device of devices) {
+      for (const plant of device.plants || []) {
+        const strain = plant.attributes?.strain;
+        const stage = (plant.state || plant.attributes?.stage || '').toLowerCase();
+        const activeStages = ['seedling', 'clone', 'veg', 'vegetative', 'mother', 'flower', 'flowering'];
+        if (strain && activeStages.includes(stage)) {
+          counts[strain] = (counts[strain] || 0) + 1;
+        }
+      }
+    }
+    return counts;
+  }
+
   private _renderStrainLibraryDialog(
     active: ActiveDialogState,
     strainLibrary: StrainEntry[],
@@ -457,6 +473,9 @@ export class GrowspaceDialogHost extends LitElement {
   ): TemplateResult {
     if (active.type !== 'STRAIN_LIBRARY') return html``;
     const payload = active.payload as Record<string, unknown>;
+    const activePlantCounts = this._computeActivePlantCounts(
+      this._dialogHostController.value.devices ?? []
+    );
 
     // Lazily load genetics data on first open
     if (!this._geneticsLoaded) {
@@ -471,6 +490,7 @@ export class GrowspaceDialogHost extends LitElement {
         .store=${this.store}
         .strains=${strainLibrary}
         .editingStrain=${payload?.editingStrain}
+        .activePlantCounts=${activePlantCounts}
         .focusLineage=${!!payload?.focusLineage}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}

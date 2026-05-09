@@ -1476,7 +1476,7 @@ describe('StrainLibraryDialog', () => {
 
         const card = element.shadowRoot?.querySelector('.strain-card');
         const text = card?.textContent?.replace(/\s+/g, ' ').trim();
-        expect(text).toContain('Flowering: 60-? Days');
+        expect(text).toContain('Flower: 60–? days');
         expect(text).not.toContain('Breeder:');
     });
 
