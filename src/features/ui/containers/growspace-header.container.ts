@@ -225,6 +225,16 @@ export class GrowspaceHeaderContainer extends LitElement {
     }
   }
 
+  private get _lightOn(): boolean | undefined {
+    return this.device?.biologicalMetrics?.isDay;
+  }
+
+  private get _problemPlants(): string[] {
+    return (this.device?.plants || [])
+      .filter((p) => !!p.attributes?.problem)
+      .map((p) => p.attributes?.strain || p.attributes?.friendly_name || 'Unknown');
+  }
+
   render() {
     if (!this.device || !this.hass) return nothing;
 
@@ -248,6 +258,8 @@ export class GrowspaceHeaderContainer extends LitElement {
         .viewMode=${this._actionsController?.value?.viewMode || 'standard'}
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
+        .lightOn=${this._lightOn}
+        .problemPlants=${this._problemPlants}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
         @chip-drag-start=${this._handleChipDragStart}

@@ -20,6 +20,8 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ attribute: false }) dominant: DominantStageInfo | undefined;
   @property({ attribute: false }) inventory: NutrientInventory | null = null;
   @property({ attribute: false }) devices: GrowspaceDevice[] = [];
+  @property({ type: Boolean }) lightOn: boolean | undefined;
+  @property({ attribute: false }) problemPlants: string[] = [];
   @property() deviceId = '';
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | null = null;
@@ -141,10 +143,12 @@ export class GrowspaceHeaderUI extends LitElement {
             @action-triggered=${(e: CustomEvent) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('action-triggered', { detail: e.detail, bubbles: true, composed: true })); }}
           ></growspace-header-actions-ui>
 
-          <!-- Row 2 Left: Stages -->
+          <!-- Row 2 Left: Stages + Status -->
           <div class="header-stage-area-wrapper">
             <growspace-header-stages-ui
               .dominant=${this.dominant}
+              .lightOn=${this.lightOn}
+              .problemPlants=${this.problemPlants}
             ></growspace-header-stages-ui>
           </div>
 

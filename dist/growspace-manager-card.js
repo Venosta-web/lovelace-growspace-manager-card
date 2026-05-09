@@ -46066,24 +46066,45 @@ GrowspaceHeaderHeroUI = __decorate([
 ], GrowspaceHeaderHeroUI);
 
 let GrowspaceHeaderStagesUI = class GrowspaceHeaderStagesUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.problemPlants = [];
+    }
     render() {
-        if (!this.dominant)
-            return x ``;
         return x `
       <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
         <div class="stages-wrapper">
-          <div class="gs-stage-pill">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-              <path d="${this.dominant.icon}"></path>
-            </svg>
-            ${this.dominant.daysLabel}
-          </div>
-          <div class="gs-stage-pill">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-              <path d="${this.dominant.icon}"></path>
-            </svg>
-            ${this.dominant.weeksLabel}
-          </div>
+          ${this.lightOn !== undefined
+            ? x `
+                <div class="gs-stage-pill ${this.lightOn ? 'light-on' : 'light-off'}">
+                  <span class="light-dot"></span>
+                  ${this.lightOn ? 'Lights ON' : 'Lights OFF'}
+                </div>
+              `
+            : E}
+
+          ${this.dominant
+            ? x `
+                <div class="gs-stage-pill">
+                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
+                    <path d="${this.dominant.icon}"></path>
+                  </svg>
+                  ${this.dominant.daysLabel}
+                </div>
+                <div class="gs-stage-pill">
+                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
+                    <path d="${this.dominant.icon}"></path>
+                  </svg>
+                  ${this.dominant.weeksLabel}
+                </div>
+              `
+            : E}
+
+          ${this.problemPlants.slice(0, 2).map((name) => x `
+              <div class="gs-stage-pill alert">
+                ⚠ ${name}: needs attention
+              </div>
+            `)}
         </div>
       </scroll-container>
     `;
@@ -46111,16 +46132,37 @@ GrowspaceHeaderStagesUI.styles = i$6 `
       width: fit-content;
       backdrop-filter: blur(8px);
       white-space: nowrap;
-      margin-right: 8px; /* Spacing between pills */
-    }
-
-    /* Ensure pills don't shrink */
-    .gs-stage-pill {
+      margin-right: 8px;
       flex-shrink: 0;
     }
 
+    .gs-stage-pill.light-on {
+      background: rgba(255, 235, 59, 0.08);
+      border-color: rgba(255, 235, 59, 0.25);
+      color: #fff176;
+    }
+
+    .gs-stage-pill.light-off {
+      background: rgba(100, 100, 100, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+    }
+
+    .gs-stage-pill.alert {
+      background: rgba(244, 67, 54, 0.08);
+      border-color: rgba(244, 67, 54, 0.3);
+      color: #ff8a80;
+    }
+
+    .light-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+    }
+
     .stages-wrapper {
-      /* Needed for flex layout inside scroll container */
       display: flex;
       align-items: center;
       height: 100%;
@@ -46129,6 +46171,12 @@ GrowspaceHeaderStagesUI.styles = i$6 `
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeaderStagesUI.prototype, "dominant", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderStagesUI.prototype, "lightOn", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderStagesUI.prototype, "problemPlants", void 0);
 GrowspaceHeaderStagesUI = __decorate([
     t$2('growspace-header-stages-ui')
 ], GrowspaceHeaderStagesUI);
@@ -46245,6 +46293,7 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         this.deviceChips = [];
         this.inventory = null;
         this.devices = [];
+        this.problemPlants = [];
         this.deviceId = '';
         this.config = null;
         this.compact = false;
@@ -46342,10 +46391,12 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
             @action-triggered=${(e) => { e.stopPropagation(); this.dispatchEvent(new CustomEvent('action-triggered', { detail: e.detail, bubbles: true, composed: true })); }}
           ></growspace-header-actions-ui>
 
-          <!-- Row 2 Left: Stages -->
+          <!-- Row 2 Left: Stages + Status -->
           <div class="header-stage-area-wrapper">
             <growspace-header-stages-ui
               .dominant=${this.dominant}
+              .lightOn=${this.lightOn}
+              .problemPlants=${this.problemPlants}
             ></growspace-header-stages-ui>
           </div>
 
@@ -46402,6 +46453,12 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeaderUI.prototype, "devices", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceHeaderUI.prototype, "lightOn", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderUI.prototype, "problemPlants", void 0);
 __decorate([
     n$5()
 ], GrowspaceHeaderUI.prototype, "deviceId", void 0);
@@ -46612,6 +46669,14 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
                 console.warn(`[GrowspaceHeaderContainer] Unknown action: ${action}`);
         }
     }
+    get _lightOn() {
+        return this.device?.biologicalMetrics?.isDay;
+    }
+    get _problemPlants() {
+        return (this.device?.plants || [])
+            .filter((p) => !!p.attributes?.problem)
+            .map((p) => p.attributes?.strain || p.attributes?.friendly_name || 'Unknown');
+    }
     render() {
         if (!this.device || !this.hass)
             return E;
@@ -46634,6 +46699,8 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         .viewMode=${this._actionsController?.value?.viewMode || 'standard'}
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
+        .lightOn=${this._lightOn}
+        .problemPlants=${this._problemPlants}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
         @chip-drag-start=${this._handleChipDragStart}
