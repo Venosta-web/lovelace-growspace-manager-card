@@ -2526,10 +2526,17 @@ export class StrainLibraryDialog extends LitElement {
 
   private renderBreederDialog(): TemplateResult {
     const breeders = this._getUniqueBreeders();
+    const close = () => { this._breederDialogOpen = false; this._breederEditorState = null; };
 
     return html`
-      <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; max-height: 90vh;">
+      <ha-dialog
+        open
+        @closed=${close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 600px; max-width: 98vw; height: auto; max-height: 90vh;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -2548,7 +2555,7 @@ export class StrainLibraryDialog extends LitElement {
             </div>
             <button
               class="md3-button text close"
-              @click=${() => { this._breederDialogOpen = false; this._breederEditorState = null; }}
+              @click=${close}
               style="min-width:auto; padding:8px; margin-left: auto;"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -2571,7 +2578,7 @@ export class StrainLibraryDialog extends LitElement {
             </div>
           ` : nothing}
         </div>
-      </div>
+      </ha-dialog>
     `;
   }
 
@@ -3394,8 +3401,14 @@ export class StrainLibraryDialog extends LitElement {
     const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
 
     return html`
-      <div class="crop-overlay" style="z-index:1001;">
-        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
+      <ha-dialog
+        open
+        @closed=${this._cancelDeleteBreeder}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
@@ -3410,7 +3423,7 @@ export class StrainLibraryDialog extends LitElement {
             </button>
           </div>
         </div>
-      </div>
+      </ha-dialog>
     `;
   }
 
