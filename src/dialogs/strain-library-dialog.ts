@@ -117,6 +117,7 @@ export class StrainLibraryDialog extends LitElement {
   @property({ attribute: false }) onSowSeeds?: (data: { growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string }) => Promise<void>;
 
   @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
+  @state() private _libraryFilter: 'library' | 'active' | 'all' = 'library';
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
   @state() private _editingBatchId: string | null = null;
   @state() private _editingEventId: string | null = null;
@@ -1105,6 +1106,26 @@ export class StrainLibraryDialog extends LitElement {
         font-size: 0.85rem;
         margin: 4px 0 0;
       }
+      .library-filter-chips {
+        display: flex;
+        gap: 6px;
+        padding: 4px 0 8px;
+      }
+      .filter-chip {
+        padding: 4px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        background: transparent;
+        color: var(--primary-text-color);
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .filter-chip.active {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--primary-color);
+      }
     `,
   ];
 
@@ -1352,7 +1373,7 @@ export class StrainLibraryDialog extends LitElement {
   private renderBrowseView(): TemplateResult {
     const query = (this._searchQuery || '').toLowerCase();
     const terms = query.split(/\s+/).filter((t) => t.length > 0);
-    const filteredStrains = this.strains
+    const filteredStrains = this._applyLibraryFilter(this.strains)
       .filter((s) => {
         if (terms.length === 0) return true;
         const searchText = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
@@ -1420,6 +1441,7 @@ export class StrainLibraryDialog extends LitElement {
       </div>
 
       <div class="sd-content">
+        ${this._renderFilterChips()}
         <div class="search-bar-container">
           <div class="search-input-wrapper">
             <md3-text-input
@@ -2773,6 +2795,41 @@ export class StrainLibraryDialog extends LitElement {
     return this._renderSeedList();
   }
 
+  private _applyLibraryFilter(strains: StrainEntry[]): StrainEntry[] {
+    if (this._libraryFilter === 'active') {
+      return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
+    }
+    if (this._libraryFilter === 'library') {
+      return strains.filter((s) => !s.is_stub);
+    }
+    return strains;
+  }
+
+  private _renderFilterChips(): TemplateResult {
+    const opts: Array<{ key: 'library' | 'active' | 'all'; label: string }> = [
+      { key: 'library', label: 'Library' },
+      { key: 'active', label: 'Active' },
+      { key: 'all', label: 'All' },
+    ];
+    return html`
+      <div class="library-filter-chips">
+        ${opts.map(
+          (o) => html`
+            <button
+              class="filter-chip ${this._libraryFilter === o.key ? 'active' : ''}"
+              @click=${() => {
+                this._libraryFilter = o.key;
+                this._currentPage = 1;
+              }}
+            >
+              ${o.label}
+            </button>
+          `
+        )}
+      </div>
+    `;
+  }
+
   private _buildTreeNodes(): TreeNode[] {
     const nodes: TreeNode[] = [];
     const strainNameToKey = new Map<string, string>();
@@ -2798,7 +2855,7 @@ export class StrainLibraryDialog extends LitElement {
     };
 
     // 1. Add strains
-    this.strains.forEach((strain) => {
+    this._applyLibraryFilter(this.strains).forEach((strain) => {
       let mother: string | null = null;
       let father: string | null = null;
 
@@ -2850,6 +2907,9 @@ export class StrainLibraryDialog extends LitElement {
     const nodes = this._buildTreeNodes();
     return html`
       <div class="tab-content-tree">
+        <div style="padding: 8px 16px 0;">
+          ${this._renderFilterChips()}
+        </div>
         <genetics-tree-view
           .nodes=${nodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
