@@ -2837,12 +2837,13 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
-  private _buildTreeNodes(): TreeNode[] {
+  private _buildTreeNodes(primaryStrains: StrainEntry[] = this.strains): TreeNode[] {
     const nodes: TreeNode[] = [];
     const nodeIds = new Set<string>();
     const strainNameToKey = new Map<string, string>();
 
-    // Case-insensitive mapping for better matching
+    // Build name→key lookup from ALL strains so parent references always resolve,
+    // even when the primary set is filtered to a subset.
     this.strains.forEach((s) => {
       const strainLc = s.strain.toLowerCase();
       strainNameToKey.set(strainLc, s.key);
@@ -2863,8 +2864,9 @@ export class StrainLibraryDialog extends LitElement {
     // Collect parent IDs referenced but with no library node, for stub creation
     const referencedParents = new Map<string, string>(); // id -> display name
 
-    // 1. Add strains — use all strains so parent nodes are never missing from edges
-    this.strains.forEach((strain) => {
+    // 1. Add filtered primary strains. Referenced ancestors from the full library
+    //    are added in steps below so lineage edges always resolve.
+    primaryStrains.forEach((strain) => {
       let mother: string | null = null;
       let father: string | null = null;
 
@@ -2920,9 +2922,45 @@ export class StrainLibraryDialog extends LitElement {
       nodeIds.add(batch.batch_id);
     });
 
-    // 3. Add stub nodes for parents referenced by name but not in the library
-    for (const [id, displayName] of referencedParents) {
-      if (!nodeIds.has(id)) {
+    // 3. Add ancestor nodes for all referenced parents not yet in the node set.
+    //    First pull from the full library (they may be stubs or filtered-out strains);
+    //    fall back to a bare stub if genuinely unknown.
+    const allStrainsByKey = new Map(this.strains.map((s) => [s.key, s]));
+    const allStrainsByName = new Map(this.strains.map((s) => [s.strain.toLowerCase(), s]));
+
+    const addAncestorById = (id: string, displayName: string) => {
+      if (nodeIds.has(id)) return;
+      nodeIds.add(id);
+
+      // Find the full library entry (may be a stub or a filtered-out real strain)
+      const entry = allStrainsByKey.get(id) ?? allStrainsByName.get(id.toLowerCase());
+      if (entry) {
+        let mother: string | null = null;
+        let father: string | null = null;
+        const sp = Array.isArray(entry.parents) ? entry.parents as Array<{ name: string }> : null;
+        if (sp && sp.length > 0) {
+          mother = resolve(sp[0]?.name);
+          father = resolve(sp[1]?.name) ?? null;
+        } else if (entry.lineage) {
+          const parts = entry.lineage.trim().split(/\s*[xX×*]\s*/);
+          if (parts.length >= 2) {
+            mother = resolve(parts[0]);
+            father = resolve(parts[1]);
+          }
+        }
+        if (mother) referencedParents.set(mother, sp?.[0]?.name ?? mother);
+        if (father) referencedParents.set(father, sp?.[1]?.name ?? father);
+        nodes.push({
+          id: entry.key,
+          name: entry.strain,
+          strain: entry.strain,
+          breeder: entry.breeder || '',
+          pheno: entry.phenotype || '',
+          gen: 'P1',
+          type: 'strain',
+          parents: { mother, father },
+        });
+      } else {
         nodes.push({
           id,
           name: displayName,
@@ -2934,13 +2972,30 @@ export class StrainLibraryDialog extends LitElement {
           parents: { mother: null, father: null },
         });
       }
+    };
+
+    // Iteratively resolve all referenced parents (ancestors may themselves have parents)
+    const pendingParents = new Map(referencedParents);
+    while (pendingParents.size > 0) {
+      const [[id, displayName]] = pendingParents;
+      pendingParents.delete(id);
+      const sizeBefore = referencedParents.size;
+      addAncestorById(id, displayName);
+      // Pick up any new parents added by addAncestorById
+      for (const [newId, newName] of referencedParents) {
+        if (!nodeIds.has(newId) && !pendingParents.has(newId)) {
+          pendingParents.set(newId, newName);
+        }
+      }
+      void sizeBefore;
     }
 
     return nodes;
   }
 
   private _renderTreeViewTab(): TemplateResult {
-    const nodes = this._buildTreeNodes();
+    const filteredStrains = this._applyLibraryFilter(this.strains);
+    const nodes = this._buildTreeNodes(filteredStrains);
     return html`
       <div class="tab-content-tree">
         <div style="padding: 8px 16px 0;">
