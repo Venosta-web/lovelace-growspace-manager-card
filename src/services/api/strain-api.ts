@@ -27,6 +27,7 @@ interface RawStrainData {
     sex?: string;
     sativa_percentage?: number;
     indica_percentage?: number;
+    is_stub?: boolean;
   };
   phenotypes?: Record<string, RawPhenotypeData>;
 }
@@ -95,6 +96,7 @@ export class StrainAPI extends BaseAPI {
             sex: meta.sex,
             sativa_percentage: meta.sativa_percentage,
             indica_percentage: meta.indica_percentage,
+            is_stub: meta.is_stub,
             description: typedPhenoData.description,
             image: typedPhenoData.image_path,
             image_crop_meta: typedPhenoData.image_crop_meta,
@@ -176,6 +178,7 @@ export class StrainAPI extends BaseAPI {
             sex: meta.sex,
             sativa_percentage: meta.sativa_percentage,
             indica_percentage: meta.indica_percentage,
+            is_stub: meta.is_stub,
             description: typedPhenoData.description,
             image: typedPhenoData.image_path,
             image_crop_meta: typedPhenoData.image_crop_meta,

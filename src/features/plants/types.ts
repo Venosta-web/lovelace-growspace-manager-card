@@ -208,6 +208,7 @@ export interface StrainEntry {
   thc?: number;
   awards?: string[];
   parents?: any;
+  is_stub?: boolean;
 }
 
 // --- Display Models ---

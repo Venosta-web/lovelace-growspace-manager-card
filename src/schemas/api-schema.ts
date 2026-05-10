@@ -215,6 +215,7 @@ export const StrainDataSchema = z
         sex: z.string().nullable().optional().transform(v => v ?? undefined),
         sativa_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
         indica_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
+        is_stub: z.boolean().optional(),
       })
       .passthrough()
       .optional()
