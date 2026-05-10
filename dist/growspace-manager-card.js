@@ -5023,6 +5023,7 @@ const StrainDataSchema = objectType({
         sex: stringType().nullable().optional().transform(v => v ?? undefined),
         sativa_percentage: numberType().nullable().optional().transform(v => v ?? undefined),
         indica_percentage: numberType().nullable().optional().transform(v => v ?? undefined),
+        is_stub: booleanType().optional(),
     })
         .passthrough()
         .optional()
@@ -5783,6 +5784,7 @@ class StrainAPI extends BaseAPI {
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
+                        is_stub: meta.is_stub,
                         description: typedPhenoData.description,
                         image: typedPhenoData.image_path,
                         image_crop_meta: typedPhenoData.image_crop_meta,
@@ -5853,6 +5855,7 @@ class StrainAPI extends BaseAPI {
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
+                        is_stub: meta.is_stub,
                         description: typedPhenoData.description,
                         image: typedPhenoData.image_path,
                         image_crop_meta: typedPhenoData.image_crop_meta,
@@ -27491,6 +27494,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this.plants = [];
         this.initialTab = 'strains';
         this._activeMainTab = 'strains';
+        this._libraryFilter = 'library';
         this._seedSubView = 'list';
         this._editingBatchId = null;
         this._editingEventId = null;
@@ -27782,7 +27786,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     renderBrowseView() {
         const query = (this._searchQuery || '').toLowerCase();
         const terms = query.split(/\s+/).filter((t) => t.length > 0);
-        const filteredStrains = this.strains
+        const filteredStrains = this._applyLibraryFilter(this.strains)
             .filter((s) => {
             if (terms.length === 0)
                 return true;
@@ -27848,6 +27852,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </div>
 
       <div class="sd-content">
+        ${this._renderFilterChips()}
         <div class="search-bar-container">
           <div class="search-input-wrapper">
             <md3-text-input
@@ -29152,6 +29157,37 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             return this._renderHarvestForm();
         return this._renderSeedList();
     }
+    _applyLibraryFilter(strains) {
+        if (this._libraryFilter === 'active') {
+            return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
+        }
+        if (this._libraryFilter === 'library') {
+            return strains.filter((s) => !s.is_stub);
+        }
+        return strains;
+    }
+    _renderFilterChips() {
+        const opts = [
+            { key: 'library', label: 'Library' },
+            { key: 'active', label: 'Active' },
+            { key: 'all', label: 'All' },
+        ];
+        return x `
+      <div class="library-filter-chips">
+        ${opts.map((o) => x `
+            <button
+              class="filter-chip ${this._libraryFilter === o.key ? 'active' : ''}"
+              @click=${() => {
+            this._libraryFilter = o.key;
+            this._currentPage = 1;
+        }}
+            >
+              ${o.label}
+            </button>
+          `)}
+      </div>
+    `;
+    }
     _buildTreeNodes() {
         const nodes = [];
         const strainNameToKey = new Map();
@@ -29175,7 +29211,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             return strainNameToKey.get(lower) || clean;
         };
         // 1. Add strains
-        this.strains.forEach((strain) => {
+        this._applyLibraryFilter(this.strains).forEach((strain) => {
             let mother = null;
             let father = null;
             // Try to parse legacy lineage string (e.g. "Mother x Father" or "Mother × Father")
@@ -29221,6 +29257,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         const nodes = this._buildTreeNodes();
         return x `
       <div class="tab-content-tree">
+        <div style="padding: 8px 16px 0;">
+          ${this._renderFilterChips()}
+        </div>
         <genetics-tree-view
           .nodes=${nodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
@@ -30645,6 +30684,26 @@ StrainLibraryDialog.styles = [
         font-size: 0.85rem;
         margin: 4px 0 0;
       }
+      .library-filter-chips {
+        display: flex;
+        gap: 6px;
+        padding: 4px 0 8px;
+      }
+      .filter-chip {
+        padding: 4px 14px;
+        border-radius: 16px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        background: transparent;
+        color: var(--primary-text-color);
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .filter-chip.active {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+        border-color: var(--primary-color);
+      }
     `,
 ];
 __decorate([
@@ -30764,6 +30823,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_activeMainTab", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_libraryFilter", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_seedSubView", void 0);
