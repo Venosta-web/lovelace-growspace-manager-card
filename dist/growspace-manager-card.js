@@ -28808,20 +28808,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     `;
     }
     renderImportDialog() {
+        const close = () => { this._importDialogOpen = false; };
         return x `
-      <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 100%; max-width: 98vw; height: auto;">
+      <ha-dialog
+        open
+        @closed=${close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
             </div>
             <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Import Strains</h2>
+              <h2 class="dialog-title">Import Strains</h2>
+            </div>
             <button
-              class="md3-button text"
-              @click=${() => (this._importDialogOpen = false)}
-              style="min-width:auto; padding:8px;"
+              class="md3-button text close"
+              @click=${close}
+              style="min-width:auto; padding:8px; margin-left: auto;"
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
@@ -28876,7 +28883,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-              <button class="md3-button tonal" @click=${() => (this._importDialogOpen = false)}>
+              <button class="md3-button tonal" @click=${close}>
                 Cancel
               </button>
               <button class="md3-button primary" @click=${() => this._handleImportFile()}>
@@ -28888,7 +28895,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             </div>
           </div>
         </div>
-      </div>
+      </ha-dialog>
     `;
     }
     renderDeleteConfirmation() {
