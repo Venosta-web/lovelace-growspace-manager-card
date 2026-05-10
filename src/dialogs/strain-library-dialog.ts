@@ -2839,6 +2839,7 @@ export class StrainLibraryDialog extends LitElement {
 
   private _buildTreeNodes(): TreeNode[] {
     const nodes: TreeNode[] = [];
+    const nodeIds = new Set<string>();
     const strainNameToKey = new Map<string, string>();
 
     // Case-insensitive mapping for better matching
@@ -2846,7 +2847,6 @@ export class StrainLibraryDialog extends LitElement {
       const strainLc = s.strain.toLowerCase();
       strainNameToKey.set(strainLc, s.key);
       if (s.phenotype) {
-        // Match "Strain Pheno" and "StrainPheno"
         strainNameToKey.set(`${strainLc} ${s.phenotype.toLowerCase()}`, s.key);
         strainNameToKey.set(`${strainLc}${s.phenotype.toLowerCase()}`.replace(/\s+/g, ''), s.key);
       }
@@ -2855,28 +2855,38 @@ export class StrainLibraryDialog extends LitElement {
     // Helper to resolve a strain name to its key, or return the name if not found
     const resolve = (name: string | undefined | null): string | null => {
       if (!name) return null;
-      // Strip common wrapper characters like quotes and brackets, then trim
       const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
       const lower = clean.toLowerCase();
       return strainNameToKey.get(lower) || clean;
     };
 
-    // 1. Add strains
-    this._applyLibraryFilter(this.strains).forEach((strain) => {
+    // Collect parent IDs referenced but with no library node, for stub creation
+    const referencedParents = new Map<string, string>(); // id -> display name
+
+    // 1. Add strains — use all strains so parent nodes are never missing from edges
+    this.strains.forEach((strain) => {
       let mother: string | null = null;
       let father: string | null = null;
 
-      // Try to parse legacy lineage string (e.g. "Mother x Father" or "Mother × Father")
-      const lineage = strain.lineage?.trim();
-      if (lineage) {
-        // Handle various splitters: x, X, ×, * with optional spaces
-        const parts = lineage.split(/\s*[xX×*]\s*/);
-
-        if (parts.length >= 2) {
-          mother = resolve(parts[0]);
-          father = resolve(parts[1]);
+      // Prefer structured parents (lineage_tree) over text parsing
+      const structuredParents = Array.isArray(strain.parents) ? strain.parents as Array<{ name: string }> : null;
+      if (structuredParents && structuredParents.length > 0) {
+        mother = resolve(structuredParents[0]?.name);
+        father = resolve(structuredParents[1]?.name) ?? null;
+      } else {
+        // Fall back to parsing legacy lineage text
+        const lineage = strain.lineage?.trim();
+        if (lineage) {
+          const parts = lineage.split(/\s*[xX×*]\s*/);
+          if (parts.length >= 2) {
+            mother = resolve(parts[0]);
+            father = resolve(parts[1]);
+          }
         }
       }
+
+      if (mother) referencedParents.set(mother, structuredParents?.[0]?.name ?? mother);
+      if (father) referencedParents.set(father, structuredParents?.[1]?.name ?? father);
 
       nodes.push({
         id: strain.key,
@@ -2888,10 +2898,15 @@ export class StrainLibraryDialog extends LitElement {
         type: 'strain',
         parents: { mother, father },
       });
+      nodeIds.add(strain.key);
     });
 
     // 2. Add seed batches
     this.seedBatches.forEach((batch) => {
+      const mother = resolve(batch.parent_1_strain);
+      const father = resolve(batch.parent_2_strain);
+      if (mother) referencedParents.set(mother, batch.parent_1_strain ?? mother);
+      if (father) referencedParents.set(father, batch.parent_2_strain ?? father);
       nodes.push({
         id: batch.batch_id,
         name: `${batch.strain_name} (${batch.batch_id})`,
@@ -2900,12 +2915,26 @@ export class StrainLibraryDialog extends LitElement {
         pheno: '',
         gen: batch.generation || 'F1',
         type: 'batch',
-        parents: {
-          mother: resolve(batch.parent_1_strain),
-          father: resolve(batch.parent_2_strain),
-        },
+        parents: { mother, father },
       });
+      nodeIds.add(batch.batch_id);
     });
+
+    // 3. Add stub nodes for parents referenced by name but not in the library
+    for (const [id, displayName] of referencedParents) {
+      if (!nodeIds.has(id)) {
+        nodes.push({
+          id,
+          name: displayName,
+          strain: displayName,
+          breeder: '',
+          pheno: '',
+          gen: 'P1',
+          type: 'strain',
+          parents: { mother: null, father: null },
+        });
+      }
+    }
 
     return nodes;
   }

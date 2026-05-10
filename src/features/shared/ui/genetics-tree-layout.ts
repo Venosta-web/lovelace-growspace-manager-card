@@ -109,6 +109,29 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
 
   for (const p of plants) rankOf(p.id);
 
+  // Top-down pass: ensure each parent is ranked no more than one level below its
+  // most-derived child. Without this, parents with no (or shallow) ancestry of
+  // their own get rank 0 and land at the very bottom of the canvas even when they
+  // are direct parents of a high-ranked node (e.g. Mimosa with no stored parents
+  // appearing next to ancient leaf-ancestors instead of next to Animal Mints).
+  let anyChanged = true;
+  while (anyChanged) {
+    anyChanged = false;
+    for (const p of plants) {
+      const childRank = rankCache[p.id];
+      const { mother, father } = p.parents;
+      for (const parentId of [mother, father]) {
+        if (parentId && byId[parentId]) {
+          const needed = childRank - 1;
+          if (rankCache[parentId] < needed) {
+            rankCache[parentId] = needed;
+            anyChanged = true;
+          }
+        }
+      }
+    }
+  }
+
   // Group by rank
   const byRank: Record<number, TreeNode[]> = {};
   for (const p of plants) {
@@ -145,13 +168,15 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     })
   );
 
-  // Assign positions
+  const maxRank = Math.max(...ranks);
+
+  // Assign positions — highest rank (most derived) at top (y=0), ancestors at bottom
   const nodes: Record<string, LayoutNode> = {};
   for (const r of ranks) {
     const row = byRank[r];
     const rowWidth = row.length * NODE_W + (row.length - 1) * COL_GAP;
     const startX = (maxRowWidth - rowWidth) / 2;
-    const y = r * (NODE_H + ROW_GAP);
+    const y = (maxRank - r) * (NODE_H + ROW_GAP);
 
     row.forEach((p, i) => {
       nodes[p.id] = {
@@ -237,11 +262,13 @@ export function layoutRadial(plants: TreeNode[], focalId: string): LayoutResult 
     }
   }
 
-  // Group by rank
-  const byRank: Record<number, string[]> = {};
+  // Group by absolute rank (ring distance from focal)
+  const byAbsRank: Record<number, string[]> = {};
   for (const [id, r] of Object.entries(relRank)) {
-    if (!byRank[r]) byRank[r] = [];
-    byRank[r].push(id);
+    if (r === 0) continue;
+    const absR = Math.abs(r);
+    if (!byAbsRank[absR]) byAbsRank[absR] = [];
+    byAbsRank[absR].push(id);
   }
 
   // Place focal at origin
@@ -259,35 +286,21 @@ export function layoutRadial(plants: TreeNode[], focalId: string): LayoutResult 
     rank: 0,
   };
 
-  const DEG = Math.PI / 180;
-
-  for (const [rankStr, ids] of Object.entries(byRank)) {
-    const rank = Number(rankStr);
-    if (rank === 0) continue;
-
-    const radius = Math.abs(rank) * 200;
-    const isAncestor = rank < 0;
-
-    // Ancestor arc: -160deg to -20deg (upper half, i.e. negative y)
-    // Descendant arc: 20deg to 160deg (lower half)
-    const startDeg = isAncestor ? -160 : 20;
-    const endDeg = isAncestor ? -20 : 160;
+  for (const [absRankStr, ids] of Object.entries(byAbsRank)) {
+    const absRank = Number(absRankStr);
+    const radius = absRank * 280;
     const count = ids.length;
 
     ids.forEach((id, i) => {
-      const t = count === 1 ? 0.5 : i / (count - 1);
-      const angleDeg = startDeg + t * (endDeg - startDeg);
-      const angleRad = angleDeg * DEG;
-
-      const nx = cx + radius * Math.cos(angleRad) - NODE_W / 2;
-      const ny = cy + radius * Math.sin(angleRad) - NODE_H / 2;
+      // Distribute evenly in a full 360° circle, starting from top (-90°)
+      const angle = (2 * Math.PI * i) / count - Math.PI / 2;
 
       nodes[id] = {
-        x: nx,
-        y: ny,
+        x: cx + radius * Math.cos(angle) - NODE_W / 2,
+        y: cy + radius * Math.sin(angle) - NODE_H / 2,
         w: NODE_W,
         h: NODE_H,
-        rank,
+        rank: relRank[id],
       };
     });
   }
@@ -384,12 +397,13 @@ export function motherLineOf(plants: TreeNode[], focalId: string): Set<string> {
 // ---------------------------------------------------------------------------
 
 export function edgePath(from: LayoutNode, to: LayoutNode): string {
+  // "from" is parent (lower on screen, larger y), "to" is child (higher on screen, smaller y)
   const x1 = from.x + from.w / 2;
-  const y1 = from.y + from.h;
+  const y1 = from.y;
   const x2 = to.x + to.w / 2;
-  const y2 = to.y;
-  const dy = (y2 - y1) / 2;
-  return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
+  const y2 = to.y + to.h;
+  const dy = (y1 - y2) / 2;
+  return `M ${x1} ${y1} C ${x1} ${y1 - dy}, ${x2} ${y2 + dy}, ${x2} ${y2}`;
 }
 
 export function edgePathRadial(from: LayoutNode, to: LayoutNode): string {

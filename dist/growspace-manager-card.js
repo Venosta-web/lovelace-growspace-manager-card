@@ -5781,6 +5781,7 @@ class StrainAPI extends BaseAPI {
                         breeder_logo: meta.breeder_logo,
                         type: meta.type,
                         lineage: meta.lineage,
+                        parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
@@ -5834,10 +5835,7 @@ class StrainAPI extends BaseAPI {
             Object.entries(rawStrains).forEach(([strainName, data]) => {
                 if (strainName === 'response')
                     return;
-                let meta = data.meta;
-                if (!meta) {
-                    meta = {};
-                }
+                const meta = data.meta ?? {};
                 let phenotypes = data.phenotypes;
                 if (!phenotypes) {
                     phenotypes = {};
@@ -5852,6 +5850,7 @@ class StrainAPI extends BaseAPI {
                         breeder_logo: meta.breeder_logo,
                         type: meta.type,
                         lineage: meta.lineage,
+                        parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
                         sex: meta.sex,
                         sativa_percentage: meta.sativa_percentage,
                         indica_percentage: meta.indica_percentage,
@@ -25624,6 +25623,28 @@ function layoutTopDown(plants) {
     }
     for (const p of plants)
         rankOf(p.id);
+    // Top-down pass: ensure each parent is ranked no more than one level below its
+    // most-derived child. Without this, parents with no (or shallow) ancestry of
+    // their own get rank 0 and land at the very bottom of the canvas even when they
+    // are direct parents of a high-ranked node (e.g. Mimosa with no stored parents
+    // appearing next to ancient leaf-ancestors instead of next to Animal Mints).
+    let anyChanged = true;
+    while (anyChanged) {
+        anyChanged = false;
+        for (const p of plants) {
+            const childRank = rankCache[p.id];
+            const { mother, father } = p.parents;
+            for (const parentId of [mother, father]) {
+                if (parentId && byId[parentId]) {
+                    const needed = childRank - 1;
+                    if (rankCache[parentId] < needed) {
+                        rankCache[parentId] = needed;
+                        anyChanged = true;
+                    }
+                }
+            }
+        }
+    }
     // Group by rank
     const byRank = {};
     for (const p of plants) {
@@ -25656,13 +25677,14 @@ function layoutTopDown(plants) {
         const count = byRank[r].length;
         return count * NODE_W + (count - 1) * COL_GAP;
     }));
-    // Assign positions
+    const maxRank = Math.max(...ranks);
+    // Assign positions — highest rank (most derived) at top (y=0), ancestors at bottom
     const nodes = {};
     for (const r of ranks) {
         const row = byRank[r];
         const rowWidth = row.length * NODE_W + (row.length - 1) * COL_GAP;
         const startX = (maxRowWidth - rowWidth) / 2;
-        const y = r * (NODE_H + ROW_GAP);
+        const y = (maxRank - r) * (NODE_H + ROW_GAP);
         row.forEach((p, i) => {
             nodes[p.id] = {
                 x: startX + i * (NODE_W + COL_GAP),
@@ -25736,12 +25758,15 @@ function layoutRadial(plants, focalId) {
             }
         }
     }
-    // Group by rank
-    const byRank = {};
+    // Group by absolute rank (ring distance from focal)
+    const byAbsRank = {};
     for (const [id, r] of Object.entries(relRank)) {
-        if (!byRank[r])
-            byRank[r] = [];
-        byRank[r].push(id);
+        if (r === 0)
+            continue;
+        const absR = Math.abs(r);
+        if (!byAbsRank[absR])
+            byAbsRank[absR] = [];
+        byAbsRank[absR].push(id);
     }
     // Place focal at origin
     const cx = 0;
@@ -25755,30 +25780,19 @@ function layoutRadial(plants, focalId) {
         h: NODE_H,
         rank: 0,
     };
-    const DEG = Math.PI / 180;
-    for (const [rankStr, ids] of Object.entries(byRank)) {
-        const rank = Number(rankStr);
-        if (rank === 0)
-            continue;
-        const radius = Math.abs(rank) * 200;
-        const isAncestor = rank < 0;
-        // Ancestor arc: -160deg to -20deg (upper half, i.e. negative y)
-        // Descendant arc: 20deg to 160deg (lower half)
-        const startDeg = isAncestor ? -160 : 20;
-        const endDeg = isAncestor ? -20 : 160;
+    for (const [absRankStr, ids] of Object.entries(byAbsRank)) {
+        const absRank = Number(absRankStr);
+        const radius = absRank * 280;
         const count = ids.length;
         ids.forEach((id, i) => {
-            const t = count === 1 ? 0.5 : i / (count - 1);
-            const angleDeg = startDeg + t * (endDeg - startDeg);
-            const angleRad = angleDeg * DEG;
-            const nx = cx + radius * Math.cos(angleRad) - NODE_W / 2;
-            const ny = cy + radius * Math.sin(angleRad) - NODE_H / 2;
+            // Distribute evenly in a full 360° circle, starting from top (-90°)
+            const angle = (2 * Math.PI * i) / count - Math.PI / 2;
             nodes[id] = {
-                x: nx,
-                y: ny,
+                x: cx + radius * Math.cos(angle) - NODE_W / 2,
+                y: cy + radius * Math.sin(angle) - NODE_H / 2,
                 w: NODE_W,
                 h: NODE_H,
-                rank,
+                rank: relRank[id],
             };
         });
     }
@@ -25864,12 +25878,13 @@ function motherLineOf(plants, focalId) {
 // Edge path generators
 // ---------------------------------------------------------------------------
 function edgePath(from, to) {
+    // "from" is parent (lower on screen, larger y), "to" is child (higher on screen, smaller y)
     const x1 = from.x + from.w / 2;
-    const y1 = from.y + from.h;
+    const y1 = from.y;
     const x2 = to.x + to.w / 2;
-    const y2 = to.y;
-    const dy = (y2 - y1) / 2;
-    return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
+    const y2 = to.y + to.h;
+    const dy = (y1 - y2) / 2;
+    return `M ${x1} ${y1} C ${x1} ${y1 - dy}, ${x2} ${y2 + dy}, ${x2} ${y2}`;
 }
 function edgePathRadial(from, to) {
     const x1 = from.x + from.w / 2;
@@ -29197,13 +29212,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     _buildTreeNodes() {
         const nodes = [];
+        const nodeIds = new Set();
         const strainNameToKey = new Map();
         // Case-insensitive mapping for better matching
         this.strains.forEach((s) => {
             const strainLc = s.strain.toLowerCase();
             strainNameToKey.set(strainLc, s.key);
             if (s.phenotype) {
-                // Match "Strain Pheno" and "StrainPheno"
                 strainNameToKey.set(`${strainLc} ${s.phenotype.toLowerCase()}`, s.key);
                 strainNameToKey.set(`${strainLc}${s.phenotype.toLowerCase()}`.replace(/\s+/g, ''), s.key);
             }
@@ -29212,25 +29227,37 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         const resolve = (name) => {
             if (!name)
                 return null;
-            // Strip common wrapper characters like quotes and brackets, then trim
             const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
             const lower = clean.toLowerCase();
             return strainNameToKey.get(lower) || clean;
         };
-        // 1. Add strains
-        this._applyLibraryFilter(this.strains).forEach((strain) => {
+        // Collect parent IDs referenced but with no library node, for stub creation
+        const referencedParents = new Map(); // id -> display name
+        // 1. Add strains — use all strains so parent nodes are never missing from edges
+        this.strains.forEach((strain) => {
             let mother = null;
             let father = null;
-            // Try to parse legacy lineage string (e.g. "Mother x Father" or "Mother × Father")
-            const lineage = strain.lineage?.trim();
-            if (lineage) {
-                // Handle various splitters: x, X, ×, * with optional spaces
-                const parts = lineage.split(/\s*[xX×*]\s*/);
-                if (parts.length >= 2) {
-                    mother = resolve(parts[0]);
-                    father = resolve(parts[1]);
+            // Prefer structured parents (lineage_tree) over text parsing
+            const structuredParents = Array.isArray(strain.parents) ? strain.parents : null;
+            if (structuredParents && structuredParents.length > 0) {
+                mother = resolve(structuredParents[0]?.name);
+                father = resolve(structuredParents[1]?.name) ?? null;
+            }
+            else {
+                // Fall back to parsing legacy lineage text
+                const lineage = strain.lineage?.trim();
+                if (lineage) {
+                    const parts = lineage.split(/\s*[xX×*]\s*/);
+                    if (parts.length >= 2) {
+                        mother = resolve(parts[0]);
+                        father = resolve(parts[1]);
+                    }
                 }
             }
+            if (mother)
+                referencedParents.set(mother, structuredParents?.[0]?.name ?? mother);
+            if (father)
+                referencedParents.set(father, structuredParents?.[1]?.name ?? father);
             nodes.push({
                 id: strain.key,
                 name: strain.strain,
@@ -29241,9 +29268,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 type: 'strain',
                 parents: { mother, father },
             });
+            nodeIds.add(strain.key);
         });
         // 2. Add seed batches
         this.seedBatches.forEach((batch) => {
+            const mother = resolve(batch.parent_1_strain);
+            const father = resolve(batch.parent_2_strain);
+            if (mother)
+                referencedParents.set(mother, batch.parent_1_strain ?? mother);
+            if (father)
+                referencedParents.set(father, batch.parent_2_strain ?? father);
             nodes.push({
                 id: batch.batch_id,
                 name: `${batch.strain_name} (${batch.batch_id})`,
@@ -29252,12 +29286,25 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 pheno: '',
                 gen: batch.generation || 'F1',
                 type: 'batch',
-                parents: {
-                    mother: resolve(batch.parent_1_strain),
-                    father: resolve(batch.parent_2_strain),
-                },
+                parents: { mother, father },
             });
+            nodeIds.add(batch.batch_id);
         });
+        // 3. Add stub nodes for parents referenced by name but not in the library
+        for (const [id, displayName] of referencedParents) {
+            if (!nodeIds.has(id)) {
+                nodes.push({
+                    id,
+                    name: displayName,
+                    strain: displayName,
+                    breeder: '',
+                    pheno: '',
+                    gen: 'P1',
+                    type: 'strain',
+                    parents: { mother: null, father: null },
+                });
+            }
+        }
         return nodes;
     }
     _renderTreeViewTab() {

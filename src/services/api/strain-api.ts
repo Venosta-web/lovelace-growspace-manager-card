@@ -24,6 +24,7 @@ interface RawStrainData {
     breeder_logo?: string;
     type?: string;
     lineage?: string;
+    lineage_tree?: Array<{ name: string; source: string; phenotype?: string }>;
     sex?: string;
     sativa_percentage?: number;
     indica_percentage?: number;
@@ -93,6 +94,7 @@ export class StrainAPI extends BaseAPI {
             breeder_logo: meta.breeder_logo,
             type: meta.type,
             lineage: meta.lineage,
+            parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
             sex: meta.sex,
             sativa_percentage: meta.sativa_percentage,
             indica_percentage: meta.indica_percentage,
@@ -155,10 +157,7 @@ export class StrainAPI extends BaseAPI {
 
       Object.entries(rawStrains).forEach(([strainName, data]) => {
         if (strainName === 'response') return;
-        let meta = data.meta;
-        if (!meta) {
-          meta = {};
-        }
+        const meta: NonNullable<RawStrainData['meta']> = data.meta ?? {};
 
         let phenotypes = data.phenotypes;
         if (!phenotypes) {
@@ -175,6 +174,7 @@ export class StrainAPI extends BaseAPI {
             breeder_logo: meta.breeder_logo,
             type: meta.type,
             lineage: meta.lineage,
+            parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
             sex: meta.sex,
             sativa_percentage: meta.sativa_percentage,
             indica_percentage: meta.indica_percentage,
