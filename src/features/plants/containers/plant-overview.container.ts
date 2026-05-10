@@ -69,8 +69,6 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _showDeleteConfirmation = false;
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
-  // Stage-aware footer state
-  @state() private _moveTargetGrowspaceId = '';
 
   // Harvest/scoring tab state
   @state() private _harvestMetricsEdit: Record<string, unknown> = {};
@@ -126,6 +124,12 @@ export class PlantOverviewContainer extends LitElement {
         gap: 0;
         padding: 0 24px;
         border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      .tabs-container::-webkit-scrollbar {
+        display: none;
       }
 
       .tab-btn {
@@ -440,12 +444,12 @@ export class PlantOverviewContainer extends LitElement {
           <div class="dialog-subtitle">${vm.displaySubtitle}</div>
         </div>
         <button
-          class="md3-button text"
+          class="md3-button text header-action-btn"
           @click=${this._openStrainEditor}
           style="min-width: auto; padding: 8px;"
           title="Edit Strain Library Entry"
         >
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+          <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiDna}"></path>
           </svg>
         </button>
@@ -590,10 +594,13 @@ export class PlantOverviewContainer extends LitElement {
         .plant=${vm.plant}
         .editedAttributes=${vm.editedAttributes}
         .plantStats=${vm.plantStats}
+        .growspaceOptions=${vm.growspaceOptions}
         .isEditing=${vm.isEditing}
         .showAllDates=${this._showAllDates}
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
+        @open-strain-editor=${this._openStrainEditor}
+        @move-plant=${this._handleMovePlantEvent}
       ></plant-dashboard-tab>
     `;
   }
@@ -783,17 +790,14 @@ export class PlantOverviewContainer extends LitElement {
 
   private _renderFooter(vm: PlantOverviewViewModel): TemplateResult {
     const stage = (this.plant?.state || '').toLowerCase();
-    const growspaceOptions = vm.growspaceOptions;
-    const growspaceEntries = Object.entries(growspaceOptions).filter(
-      ([id]) => id !== this.plant?.attributes?.growspace_id
-    );
 
     return html`
       <div
         class="dialog-actions"
         style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;"
       >
-        <div class="standard-actions" style="display:flex; gap:12px;">
+        <!-- LEFT: Danger Zone -->
+        <div class="danger-zone">
           <button class="md3-button danger" @click=${() => this._handleDelete(vm.plantId)}>
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -805,8 +809,9 @@ export class PlantOverviewContainer extends LitElement {
           </button>
         </div>
 
+        <!-- CENTER: Dynamic Actions -->
         ${this._activeTab === 'dashboard' ? html`
-          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; justify-content:center; flex:1;">
             <!-- Mother/Veg/Flower: Take Clone with count -->
             ${['mother', 'veg', 'flower'].includes(stage || '') ? html`
               <div style="display:flex; align-items:center; gap:8px;">
@@ -853,33 +858,10 @@ export class PlantOverviewContainer extends LitElement {
                 Finish Drying
               </button>
             ` : nothing}
-
-            <!-- Move to Growspace (all active plants) -->
-            ${growspaceEntries.length > 0 ? html`
-              <div style="display:flex; align-items:center; gap:8px;">
-                <md3-select
-                  label="Move to Growspace"
-                  .value=${this._moveTargetGrowspaceId}
-                  .options=${growspaceEntries.map(([id, name]) => ({ label: name, value: id }))}
-                  style="width: 200px;"
-                  @change=${(e: CustomEvent) => (this._moveTargetGrowspaceId = e.detail)}
-                ></md3-select>
-                <button
-                  class="md3-button primary"
-                  @click=${this._handleMovePlant}
-                  style="margin-top: 24px;"
-                  ?disabled=${!this._moveTargetGrowspaceId}
-                >
-                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                    <path d="${mdiArrowRight}"></path>
-                  </svg>
-                  Move
-                </button>
-              </div>
-            ` : nothing}
           </div>
-        ` : nothing}
+        ` : html`<div style="flex:1;"></div>`}
 
+        <!-- RIGHT: Primary Actions -->
         <div class="primary-actions" style="display:flex; gap:12px;">
           <button class="md3-button outlined" @click=${this._handleClose}>Cancel</button>
           <button
@@ -1003,9 +985,10 @@ export class PlantOverviewContainer extends LitElement {
     this.store.actions.plant.finishDrying(this.plant);
   }
 
-  private _handleMovePlant(): void {
-    if (!this._moveTargetGrowspaceId) return;
-    this.store.actions.plant.move(this.plant, this._moveTargetGrowspaceId);
+  private _handleMovePlantEvent(e: CustomEvent): void {
+    const { targetId } = e.detail;
+    if (!targetId) return;
+    this.store.actions.plant.move(this.plant, targetId);
     this._handleClose();
   }
 

@@ -545,6 +545,11 @@ export class DataService {
     parents: Array<{ name: string; source: 'library' | 'manual' }>
   ) => this._geneticsAPI.updateStrainLineageTree(strain_name, parents);
 
+  importStrainLineageTree = (
+    strain_name: string,
+    tree: Record<string, unknown>
+  ) => this._geneticsAPI.importStrainLineageTree(strain_name, tree);
+
   // ========================================
   // Subarea API Delegations
   // ========================================

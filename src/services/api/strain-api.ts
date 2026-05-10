@@ -221,11 +221,14 @@ export class StrainAPI extends BaseAPI {
 
       if (data.image) {
         if (data.image.startsWith('data:')) {
-          // It's a base64 string (new upload)
           payload.image_base64 = data.image;
-          delete payload.image; // Backend expects image_base64
+          delete payload.image;
+        } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
+          // External URL (e.g. from Seedfinder) — store as image_path
+          payload.image_path = data.image;
+          delete payload.image;
         } else {
-          // It's a path (existing image)
+          // Existing local path — omit to preserve stored value
           delete payload.image;
         }
       }
@@ -379,8 +382,13 @@ export class StrainAPI extends BaseAPI {
         if (data.image.startsWith('data:')) {
           payload.image_base64 = data.image;
           delete payload.image;
+        } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
+          // External URL (e.g. from Seedfinder) — store as image_path
+          payload.image_path = data.image;
+          delete payload.image;
         } else {
-          delete payload.image; // Assume unchanged file path
+          // Existing local path — omit to preserve stored value
+          delete payload.image;
         }
       }
 

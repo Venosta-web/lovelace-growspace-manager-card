@@ -18,6 +18,8 @@ const SEX_COLORS: Record<string, string> = {
 export class LineageTree extends LitElement {
   @property({ attribute: false }) node: LineageNode | null = null;
   @property({ type: Boolean }) loading = false;
+  /** When true, ancestor nodes emit a 'node-click' event when clicked. */
+  @property({ type: Boolean }) clickable = false;
 
   static override styles = css`
     :host {
@@ -138,16 +140,35 @@ export class LineageTree extends LitElement {
       height: 12px;
       background: var(--divider-color, #ccc);
     }
+    :host([clickable]) .node-card.ancestor {
+      cursor: pointer;
+    }
+    :host([clickable]) .node-card.ancestor:hover {
+      border-color: var(--primary-color);
+      background: var(--primary-color-light, rgba(var(--rgb-primary-color, 3,169,244),0.08));
+    }
   `;
+
+  private _emitNodeClick(name: string) {
+    this.dispatchEvent(new CustomEvent('node-click', {
+      detail: { name },
+      bubbles: true,
+      composed: true,
+    }));
+  }
 
   private _renderNode(node: LineageNode, depth = 0): TemplateResult {
     const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
     const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
     const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
+    const isAncestor = depth > 0;
 
     return html`
       <div class="tree-level">
-        <div class="node-card ${node.type}">
+        <div
+          class="node-card ${node.type} ${isAncestor ? 'ancestor' : ''}"
+          @click=${() => { if (this.clickable && isAncestor) this._emitNodeClick(node.name); }}
+        >
           <div class="node-label">${node.name}</div>
           ${phenotype ? html`<div class="node-phenotype">${phenotype}</div>` : nothing}
           <div class="node-meta">

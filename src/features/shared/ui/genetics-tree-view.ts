@@ -127,7 +127,8 @@ export class GeneticsTreeView extends LitElement {
       changed.has('nodes') ||
       changed.has('_layout') ||
       changed.has('focalId') ||
-      changed.has('_collapsed')
+      changed.has('_collapsed') ||
+      changed.has('_focusMode')
     ) {
       this._recompute();
       this._fitToScreen();
@@ -156,21 +157,29 @@ export class GeneticsTreeView extends LitElement {
   }
 
   private _visibleNodes(): TreeNode[] {
-    if (this._collapsed.size === 0) return this.nodes;
+    let nodes = this.nodes;
 
-    const hidden = new Set<string>();
-    const queue = [...this._collapsed];
-    while (queue.length > 0) {
-      const id = queue.shift()!;
-      for (const childId of this._childrenOf[id] ?? []) {
-        if (!hidden.has(childId)) {
-          hidden.add(childId);
-          queue.push(childId);
+    if (this._collapsed.size > 0) {
+      const hidden = new Set<string>();
+      const queue = [...this._collapsed];
+      while (queue.length > 0) {
+        const id = queue.shift()!;
+        for (const childId of this._childrenOf[id] ?? []) {
+          if (!hidden.has(childId)) {
+            hidden.add(childId);
+            queue.push(childId);
+          }
         }
       }
+      nodes = nodes.filter((n) => !hidden.has(n.id));
     }
 
-    return this.nodes.filter((n) => !hidden.has(n.id));
+    if (this._focusMode && this.focalId) {
+      const keep = new Set([this.focalId, ...this._ancestorSet, ...this._descendantSet]);
+      nodes = nodes.filter((n) => keep.has(n.id));
+    }
+
+    return nodes;
   }
 
   private _fitToScreen(): void {
@@ -188,7 +197,7 @@ export class GeneticsTreeView extends LitElement {
     const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
     this._scale = scale;
 
-    const focalNode = this.focalId ? nodes[this.focalId] : null;
+    const focalNode = !this._focusMode && this.focalId ? nodes[this.focalId] : null;
     if (focalNode) {
       this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
       this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;

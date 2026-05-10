@@ -87,7 +87,6 @@ var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiAlertCircle = "M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiArrowDown = "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
-var mdiArrowRight = "M4,11V13H16L10.5,18.5L11.92,19.92L19.84,12L11.92,4.08L10.5,5.5L16,11H4Z";
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
@@ -5881,12 +5880,16 @@ class StrainAPI extends BaseAPI {
             });
             if (data.image) {
                 if (data.image.startsWith('data:')) {
-                    // It's a base64 string (new upload)
                     payload.image_base64 = data.image;
-                    delete payload.image; // Backend expects image_base64
+                    delete payload.image;
+                }
+                else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
+                    // External URL (e.g. from Seedfinder) — store as image_path
+                    payload.image_path = data.image;
+                    delete payload.image;
                 }
                 else {
-                    // It's a path (existing image)
+                    // Existing local path — omit to preserve stored value
                     delete payload.image;
                 }
             }
@@ -6008,8 +6011,14 @@ class StrainAPI extends BaseAPI {
                     payload.image_base64 = data.image;
                     delete payload.image;
                 }
+                else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
+                    // External URL (e.g. from Seedfinder) — store as image_path
+                    payload.image_path = data.image;
+                    delete payload.image;
+                }
                 else {
-                    delete payload.image; // Assume unchanged file path
+                    // Existing local path — omit to preserve stored value
+                    delete payload.image;
                 }
             }
             await this.callService(DOMAIN$1, SERVICES.UPDATE_STRAIN_META, payload);
@@ -7002,6 +7011,9 @@ class GeneticsAPI extends BaseAPI {
         const result = await this.sendWebSocket(`${DOMAIN}/update_strain_lineage_tree`, { strain_name, parents });
         return result ?? { lineage: '' };
     }
+    async importStrainLineageTree(strain_name, tree) {
+        await this.sendWebSocket(`${DOMAIN}/import_strain_lineage_tree`, { strain_name, tree });
+    }
     async scorePlant(data) {
         const payload = Object.fromEntries(Object.entries(data).filter(([, v]) => v != null));
         await this.callService(DOMAIN, 'score_plant', payload);
@@ -7213,6 +7225,7 @@ let DataService$1 = class DataService {
         this.getLineageTree = (plant_id) => this._geneticsAPI.getLineageTree(plant_id);
         this.getStrainLineageTree = (strain_name) => this._geneticsAPI.getStrainLineageTree(strain_name);
         this.updateStrainLineageTree = (strain_name, parents) => this._geneticsAPI.updateStrainLineageTree(strain_name, parents);
+        this.importStrainLineageTree = (strain_name, tree) => this._geneticsAPI.importStrainLineageTree(strain_name, tree);
         // ========================================
         // Subarea API Delegations
         // ========================================
@@ -25167,14 +25180,28 @@ let LineageTree = class LineageTree extends i$3 {
         super(...arguments);
         this.node = null;
         this.loading = false;
+        /** When true, ancestor nodes emit a 'node-click' event when clicked. */
+        this.clickable = false;
+    }
+    _emitNodeClick(name) {
+        this.dispatchEvent(new CustomEvent('node-click', {
+            detail: { name },
+            bubbles: true,
+            composed: true,
+        }));
     }
     _renderNode(node, depth = 0) {
         const sexSymbol = node.sex && node.sex !== 'unknown' ? SEX_SYMBOLS[node.sex] : null;
         const sexColor = node.sex ? SEX_COLORS[node.sex] : null;
         const phenotype = node.phenotype && node.phenotype !== 'default' ? node.phenotype : null;
+        const isAncestor = depth > 0;
         return x `
       <div class="tree-level">
-        <div class="node-card ${node.type}">
+        <div
+          class="node-card ${node.type} ${isAncestor ? 'ancestor' : ''}"
+          @click=${() => { if (this.clickable && isAncestor)
+            this._emitNodeClick(node.name); }}
+        >
           <div class="node-label">${node.name}</div>
           ${phenotype ? x `<div class="node-phenotype">${phenotype}</div>` : E}
           <div class="node-meta">
@@ -25335,6 +25362,13 @@ LineageTree.styles = i$6 `
       height: 12px;
       background: var(--divider-color, #ccc);
     }
+    :host([clickable]) .node-card.ancestor {
+      cursor: pointer;
+    }
+    :host([clickable]) .node-card.ancestor:hover {
+      border-color: var(--primary-color);
+      background: var(--primary-color-light, rgba(var(--rgb-primary-color, 3,169,244),0.08));
+    }
   `;
 __decorate([
     n$5({ attribute: false })
@@ -25342,6 +25376,9 @@ __decorate([
 __decorate([
     n$5({ type: Boolean })
 ], LineageTree.prototype, "loading", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], LineageTree.prototype, "clickable", void 0);
 LineageTree = __decorate([
     t$2('lineage-tree')
 ], LineageTree);
@@ -25936,7 +25973,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         if (changed.has('nodes') ||
             changed.has('_layout') ||
             changed.has('focalId') ||
-            changed.has('_collapsed')) {
+            changed.has('_collapsed') ||
+            changed.has('_focusMode')) {
             this._recompute();
             this._fitToScreen();
         }
@@ -25961,20 +25999,26 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         }
     }
     _visibleNodes() {
-        if (this._collapsed.size === 0)
-            return this.nodes;
-        const hidden = new Set();
-        const queue = [...this._collapsed];
-        while (queue.length > 0) {
-            const id = queue.shift();
-            for (const childId of this._childrenOf[id] ?? []) {
-                if (!hidden.has(childId)) {
-                    hidden.add(childId);
-                    queue.push(childId);
+        let nodes = this.nodes;
+        if (this._collapsed.size > 0) {
+            const hidden = new Set();
+            const queue = [...this._collapsed];
+            while (queue.length > 0) {
+                const id = queue.shift();
+                for (const childId of this._childrenOf[id] ?? []) {
+                    if (!hidden.has(childId)) {
+                        hidden.add(childId);
+                        queue.push(childId);
+                    }
                 }
             }
+            nodes = nodes.filter((n) => !hidden.has(n.id));
         }
-        return this.nodes.filter((n) => !hidden.has(n.id));
+        if (this._focusMode && this.focalId) {
+            const keep = new Set([this.focalId, ...this._ancestorSet, ...this._descendantSet]);
+            nodes = nodes.filter((n) => keep.has(n.id));
+        }
+        return nodes;
     }
     _fitToScreen() {
         if (!this._computed || this._viewW <= 0 || this._viewH <= 0)
@@ -25988,7 +26032,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         const scaleY = (this._viewH - pad * 2) / treeH;
         const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
         this._scale = scale;
-        const focalNode = this.focalId ? nodes[this.focalId] : null;
+        const focalNode = !this._focusMode && this.focalId ? nodes[this.focalId] : null;
         if (focalNode) {
             this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
             this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
@@ -27428,6 +27472,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._view = 'browse';
         this._searchQuery = '';
         this._editorState = {};
+        this._editorHistory = [];
         this._isCropping = false;
         this._isImageSelectorOpen = false;
         this._lineageEditMode = false;
@@ -27507,8 +27552,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         // Auto-open editor if editingStrain is provided
         if (changedProps.has('editingStrain') && this.editingStrain) {
             this._startEdit(this.editingStrain);
-            if (this.focusLineage && this.editingStrain.strain) {
-                this._lineageEditMode = true;
+            if (this.editingStrain.strain) {
+                if (this.focusLineage)
+                    this._lineageEditMode = true;
                 void this._loadStrainLineageTree(this.editingStrain.strain);
             }
         }
@@ -27519,6 +27565,10 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
     }
     _startEdit(strain) {
+        this._editorHistory = [];
+        this._openEditorFor(strain);
+    }
+    _openEditorFor(strain) {
         if (strain) {
             this._editorState = { ...strain };
         }
@@ -27543,6 +27593,20 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._lineageEditMode = false;
         this._lineageTree = null;
     }
+    _navigateToAncestor(match) {
+        this._editorHistory = [...this._editorHistory, { ...this._editorState }];
+        this._openEditorFor(match);
+    }
+    _goBack() {
+        if (this._editorHistory.length > 0) {
+            const prev = this._editorHistory[this._editorHistory.length - 1];
+            this._editorHistory = this._editorHistory.slice(0, -1);
+            this._openEditorFor(prev);
+        }
+        else {
+            this._view = 'browse';
+        }
+    }
     _handleSave() {
         if (!this._editorState.strain)
             return;
@@ -27562,6 +27626,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         }
         else {
             this._view = 'browse';
+            this._editorHistory = [];
         }
     }
     _handleDelete(key) {
@@ -28060,7 +28125,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           <button
             class="md3-button tonal"
             style="padding: 0 12px; height: 32px;"
-            @click=${() => (this._view = 'browse')}
+            @click=${() => this._goBack()}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
@@ -28068,7 +28133,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             >
               <path d="${mdiArrowLeft}"></path>
             </svg>
-            Back
+            ${this._editorHistory.length > 0 ? this._editorHistory[this._editorHistory.length - 1].strain ?? 'Back' : 'Back'}
           </button>
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
         </div>
@@ -28490,7 +28555,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                   ></lineage-tree-editor>`
             : x `
                     ${this._lineageTree?.parents?.length
-                ? x `<lineage-tree .node=${this._lineageTree}></lineage-tree>`
+                ? x `<lineage-tree
+                          .node=${this._lineageTree}
+                          .clickable=${true}
+                          @node-click=${(e) => {
+                    const match = (this.strains ?? []).find((st) => st.strain === e.detail.name);
+                    if (match)
+                        this._navigateToAncestor(match);
+                }}
+                        ></lineage-tree>`
                 : x `<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
                   `}
             </div>
@@ -28552,7 +28625,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               Print Label
             </button>
           ` : E}
-          <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._handleSave()}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiCheck}"></path>
@@ -30612,6 +30685,9 @@ __decorate([
 ], StrainLibraryDialog.prototype, "_editorState", void 0);
 __decorate([
     r$3()
+], StrainLibraryDialog.prototype, "_editorHistory", void 0);
+__decorate([
+    r$3()
 ], StrainLibraryDialog.prototype, "_isCropping", void 0);
 __decorate([
     r$3()
@@ -32467,6 +32543,7 @@ function createStablePlantOverviewViewModel($plant, $editedAttributes, $uiState,
 let PlantIdentityCard = class PlantIdentityCard extends i$3 {
     constructor() {
         super(...arguments);
+        this.growspaceOptions = {};
         this.isEditing = false;
     }
     render() {
@@ -32495,19 +32572,35 @@ let PlantIdentityCard = class PlantIdentityCard extends i$3 {
         @change=${(e) => this._emitAttributeChange('phenotype', e.detail)}
       ></md3-text-input>
 
-      <div class="input-row" style="display: flex; gap: 16px;">
-        <md3-number-input
-          style="flex: 1;"
-          label="Row"
-          .value=${this.editedAttributes.row ?? ''}
-          @change=${(e) => this._emitAttributeChange('row', e.detail)}
-        ></md3-number-input>
-        <md3-number-input
-          style="flex: 1;"
-          label="Column"
-          .value=${this.editedAttributes.col ?? ''}
-          @change=${(e) => this._emitAttributeChange('col', e.detail)}
-        ></md3-number-input>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));">
+        <div class="location-header">
+          <h4>Location</h4>
+        </div>
+
+        <div style="display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px;">
+          <md3-select
+            label="Move to Growspace"
+            .value=${this.plant.attributes?.growspace_id || ''}
+            .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+            style="flex: 1;"
+            @change=${this._handleMovePlant}
+          ></md3-select>
+        </div>
+
+        <div class="input-row" style="display: flex; gap: 16px;">
+          <md3-number-input
+            style="flex: 1;"
+            label="Row"
+            .value=${this.editedAttributes.row ?? ''}
+            @change=${(e) => this._emitAttributeChange('row', e.detail)}
+          ></md3-number-input>
+          <md3-number-input
+            style="flex: 1;"
+            label="Column"
+            .value=${this.editedAttributes.col ?? ''}
+            @change=${(e) => this._emitAttributeChange('col', e.detail)}
+          ></md3-number-input>
+        </div>
       </div>
     `;
     }
@@ -32528,6 +32621,10 @@ let PlantIdentityCard = class PlantIdentityCard extends i$3 {
           <span class="stat-label">Phenotype</span>
         </div>
         <div class="stat-item">
+          <span class="stat-value">${this.growspaceOptions[this.plant.attributes?.growspace_id || ''] || 'Unknown'}</span>
+          <span class="stat-label">Growspace</span>
+        </div>
+        <div class="stat-item">
           <span class="stat-value">${this.plant.attributes?.row ?? '-'}</span>
           <span class="stat-label">Row</span>
         </div>
@@ -32546,7 +32643,20 @@ let PlantIdentityCard = class PlantIdentityCard extends i$3 {
         }));
     }
     _handleOpenStrainEditor() {
+        const strain = this.isEditing ? this.editedAttributes.strain : this.plant.attributes?.strain;
+        const phenotype = this.isEditing ? this.editedAttributes.phenotype : this.plant.attributes?.phenotype;
         this.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: { strain: strain || '', phenotype: phenotype || '' },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleMovePlant(e) {
+        const targetId = e.detail;
+        if (targetId === this.plant.attributes?.growspace_id)
+            return;
+        this.dispatchEvent(new CustomEvent('move-plant', {
+            detail: { targetId },
             bubbles: true,
             composed: true,
         }));
@@ -32676,6 +32786,22 @@ PlantIdentityCard.styles = [
         height: 20px;
         fill: currentColor;
       }
+
+      .location-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .location-header h4 {
+        margin: 0;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0.6;
+      }
     `,
 ];
 __decorate([
@@ -32684,6 +32810,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], PlantIdentityCard.prototype, "editedAttributes", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantIdentityCard.prototype, "growspaceOptions", void 0);
 __decorate([
     n$5({ type: Boolean })
 ], PlantIdentityCard.prototype, "isEditing", void 0);
@@ -32995,6 +33124,7 @@ PlantLifecycleDatesCard = __decorate([
 let PlantDashboardTab = class PlantDashboardTab extends i$3 {
     constructor() {
         super(...arguments);
+        this.growspaceOptions = {};
         this.isEditing = false;
         this.showAllDates = false;
     }
@@ -33005,8 +33135,10 @@ let PlantDashboardTab = class PlantDashboardTab extends i$3 {
           .plant=${this.plant}
           .editedAttributes=${this.editedAttributes}
           .isEditing=${this.isEditing}
+          .growspaceOptions=${this.growspaceOptions}
           @attribute-change=${this._handleAttributeChange}
           @open-strain-editor=${this._handleOpenStrainEditor}
+          @move-plant=${this._handleMovePlant}
         ></plant-identity-card>
 
         <plant-stats-card .stats=${this.plantStats}></plant-stats-card>
@@ -33030,6 +33162,14 @@ let PlantDashboardTab = class PlantDashboardTab extends i$3 {
     _handleOpenStrainEditor(e) {
         // Bubble up to container
         this.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: e.detail,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _handleMovePlant(e) {
+        // Bubble up to container
+        this.dispatchEvent(new CustomEvent('move-plant', {
             detail: e.detail,
             bubbles: true,
             composed: true,
@@ -33059,6 +33199,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], PlantDashboardTab.prototype, "plantStats", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantDashboardTab.prototype, "growspaceOptions", void 0);
 __decorate([
     n$5({ type: Boolean })
 ], PlantDashboardTab.prototype, "isEditing", void 0);
@@ -34167,8 +34310,6 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._showAllDates = false;
         this._showDeleteConfirmation = false;
         this._logbookEvents = [];
-        // Stage-aware footer state
-        this._moveTargetGrowspaceId = '';
         // Harvest/scoring tab state
         this._harvestMetricsEdit = {};
         this._scoresEdit = {};
@@ -34494,11 +34635,13 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         .plant=${vm.plant}
         .editedAttributes=${vm.editedAttributes}
         .plantStats=${vm.plantStats}
+        .growspaceOptions=${vm.growspaceOptions}
         .isEditing=${vm.isEditing}
         .showAllDates=${this._showAllDates}
         @attribute-change=${this._handleAttributeChange}
         @toggle-dates=${this._handleToggleDates}
         @open-strain-editor=${this._openStrainEditor}
+        @move-plant=${this._handleMovePlantEvent}
       ></plant-dashboard-tab>
     `;
     }
@@ -34672,14 +34815,13 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     _renderFooter(vm) {
         const stage = (this.plant?.state || '').toLowerCase();
-        const growspaceOptions = vm.growspaceOptions;
-        const growspaceEntries = Object.entries(growspaceOptions).filter(([id]) => id !== this.plant?.attributes?.growspace_id);
         return x `
       <div
         class="dialog-actions"
         style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1)); flex-wrap: wrap;"
       >
-        <div class="standard-actions" style="display:flex; gap:12px;">
+        <!-- LEFT: Danger Zone -->
+        <div class="danger-zone">
           <button class="md3-button danger" @click=${() => this._handleDelete(vm.plantId)}>
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -34691,8 +34833,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
           </button>
         </div>
 
+        <!-- CENTER: Dynamic Actions -->
         ${this._activeTab === 'dashboard' ? x `
-          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; justify-content:center; flex:1;">
             <!-- Mother/Veg/Flower: Take Clone with count -->
             ${['mother', 'veg', 'flower'].includes(stage || '') ? x `
               <div style="display:flex; align-items:center; gap:8px;">
@@ -34739,33 +34882,10 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
                 Finish Drying
               </button>
             ` : E}
-
-            <!-- Move to Growspace (all active plants) -->
-            ${growspaceEntries.length > 0 ? x `
-              <div style="display:flex; align-items:center; gap:8px;">
-                <md3-select
-                  label="Move to Growspace"
-                  .value=${this._moveTargetGrowspaceId}
-                  .options=${growspaceEntries.map(([id, name]) => ({ label: name, value: id }))}
-                  style="width: 200px;"
-                  @change=${(e) => (this._moveTargetGrowspaceId = e.detail)}
-                ></md3-select>
-                <button
-                  class="md3-button primary"
-                  @click=${this._handleMovePlant}
-                  style="margin-top: 24px;"
-                  ?disabled=${!this._moveTargetGrowspaceId}
-                >
-                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                    <path d="${mdiArrowRight}"></path>
-                  </svg>
-                  Move
-                </button>
-              </div>
-            ` : E}
           </div>
-        ` : E}
+        ` : x `<div style="flex:1;"></div>`}
 
+        <!-- RIGHT: Primary Actions -->
         <div class="primary-actions" style="display:flex; gap:12px;">
           <button class="md3-button outlined" @click=${this._handleClose}>Cancel</button>
           <button
@@ -34873,10 +34993,11 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     _handleFinishDrying() {
         this.store.actions.plant.finishDrying(this.plant);
     }
-    _handleMovePlant() {
-        if (!this._moveTargetGrowspaceId)
+    _handleMovePlantEvent(e) {
+        const { targetId } = e.detail;
+        if (!targetId)
             return;
-        this.store.actions.plant.move(this.plant, this._moveTargetGrowspaceId);
+        this.store.actions.plant.move(this.plant, targetId);
         this._handleClose();
     }
     _handleTakeClone(numClones) {
@@ -35564,9 +35685,6 @@ __decorate([
 __decorate([
     r$3()
 ], PlantOverviewContainer.prototype, "_logbookEvents", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_moveTargetGrowspaceId", void 0);
 __decorate([
     r$3()
 ], PlantOverviewContainer.prototype, "_harvestMetricsEdit", void 0);
@@ -110165,6 +110283,10 @@ async function addStrain(ctx, strainData) {
     try {
         const payload = _createStrainPayload(strainData);
         await ctx.dataService.addStrain(payload);
+        const tree = strainData.parents;
+        if (tree?.parents?.length) {
+            await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
+        }
         ctx.showToast('Strain added successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
@@ -110184,6 +110306,10 @@ async function updateStrain(ctx, strainData) {
     try {
         const payload = _createStrainPayload(strainData);
         await ctx.dataService.updateStrainMeta(payload);
+        const tree = strainData.parents;
+        if (tree?.parents?.length) {
+            await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
+        }
         ctx.showToast('Strain updated successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
@@ -110463,7 +110589,7 @@ function openBatchTrainingDialog(ctx, growspaceId) {
 }
 function openAddPlantDialog(ctx, row, col) {
     if (row !== undefined && col !== undefined) {
-        fetchStrainLibrary(ctx);
+        fetchStrainLibrary(ctx, true);
         ctx.ui.setActiveDialog({
             type: 'ADD_PLANT',
             payload: { row, col },
@@ -110505,7 +110631,7 @@ function openAddPlantDialog(ctx, row, col) {
                 break;
         }
     }
-    fetchStrainLibrary(ctx);
+    fetchStrainLibrary(ctx, true);
     ctx.ui.setActiveDialog({
         type: 'ADD_PLANT',
         payload: { row: targetRow, col: targetCol },

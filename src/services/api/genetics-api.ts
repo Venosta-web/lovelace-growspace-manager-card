@@ -125,6 +125,16 @@ export class GeneticsAPI extends BaseAPI {
     return result ?? { lineage: '' };
   }
 
+  async importStrainLineageTree(
+    strain_name: string,
+    tree: Record<string, unknown>
+  ): Promise<void> {
+    await this.sendWebSocket(
+      `${DOMAIN}/import_strain_lineage_tree`,
+      { strain_name, tree }
+    );
+  }
+
   async scorePlant(data: {
     plant_id: string;
     vigor?: number | null;

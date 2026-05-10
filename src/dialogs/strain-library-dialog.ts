@@ -55,6 +55,7 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _view: 'browse' | 'editor' = 'browse';
   @state() private _searchQuery = '';
   @state() private _editorState: Partial<StrainEntry> = {};
+  @state() private _editorHistory: Partial<StrainEntry>[] = [];
   @state() private _isCropping = false;
   @state() private _isImageSelectorOpen = false;
   @state() private _lineageEditMode = false;
@@ -182,8 +183,8 @@ export class StrainLibraryDialog extends LitElement {
     // Auto-open editor if editingStrain is provided
     if (changedProps.has('editingStrain') && this.editingStrain) {
       this._startEdit(this.editingStrain);
-      if (this.focusLineage && this.editingStrain.strain) {
-        this._lineageEditMode = true;
+      if (this.editingStrain.strain) {
+        if (this.focusLineage) this._lineageEditMode = true;
         void this._loadStrainLineageTree(this.editingStrain.strain);
       }
     }
@@ -1108,6 +1109,11 @@ export class StrainLibraryDialog extends LitElement {
   ];
 
   private _startEdit(strain?: StrainEntry) {
+    this._editorHistory = [];
+    this._openEditorFor(strain);
+  }
+
+  private _openEditorFor(strain?: StrainEntry | Partial<StrainEntry>) {
     if (strain) {
       this._editorState = { ...strain };
     } else {
@@ -1132,6 +1138,21 @@ export class StrainLibraryDialog extends LitElement {
     this._lineageTree = null;
   }
 
+  private _navigateToAncestor(match: StrainEntry) {
+    this._editorHistory = [...this._editorHistory, { ...this._editorState }];
+    this._openEditorFor(match);
+  }
+
+  private _goBack() {
+    if (this._editorHistory.length > 0) {
+      const prev = this._editorHistory[this._editorHistory.length - 1];
+      this._editorHistory = this._editorHistory.slice(0, -1);
+      this._openEditorFor(prev);
+    } else {
+      this._view = 'browse';
+    }
+  }
+
   private _handleSave() {
     if (!this._editorState.strain) return;
 
@@ -1153,6 +1174,7 @@ export class StrainLibraryDialog extends LitElement {
       );
     } else {
       this._view = 'browse';
+      this._editorHistory = [];
     }
   }
 
@@ -1680,7 +1702,7 @@ export class StrainLibraryDialog extends LitElement {
           <button
             class="md3-button tonal"
             style="padding: 0 12px; height: 32px;"
-            @click=${() => (this._view = 'browse')}
+            @click=${() => this._goBack()}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
@@ -1688,7 +1710,7 @@ export class StrainLibraryDialog extends LitElement {
             >
               <path d="${mdiArrowLeft}"></path>
             </svg>
-            Back
+            ${this._editorHistory.length > 0 ? (this._editorHistory[this._editorHistory.length - 1] as StrainEntry).strain ?? 'Back' : 'Back'}
           </button>
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
         </div>
@@ -2117,7 +2139,14 @@ export class StrainLibraryDialog extends LitElement {
                   ></lineage-tree-editor>`
                 : html`
                     ${this._lineageTree?.parents?.length
-                      ? html`<lineage-tree .node=${this._lineageTree}></lineage-tree>`
+                      ? html`<lineage-tree
+                          .node=${this._lineageTree}
+                          .clickable=${true}
+                          @node-click=${(e: CustomEvent<{ name: string }>) => {
+                            const match = (this.strains ?? []).find((st: StrainEntry) => st.strain === e.detail.name);
+                            if (match) this._navigateToAncestor(match);
+                          }}
+                        ></lineage-tree>`
                       : html`<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
                   `}
             </div>
@@ -2181,7 +2210,7 @@ export class StrainLibraryDialog extends LitElement {
               Print Label
             </button>
           ` : nothing}
-          <button class="md3-button tonal" @click=${() => (this._view = 'browse')}>Cancel</button>
+          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
           <button class="md3-button primary" @click=${() => this._handleSave()}>
             <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
               <path d="${mdiCheck}"></path>

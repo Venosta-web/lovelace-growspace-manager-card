@@ -44,6 +44,12 @@ export async function addStrain(
   try {
     const payload = _createStrainPayload(strainData);
     await ctx.dataService.addStrain(payload);
+
+    const tree = (strainData as any).parents;
+    if (tree?.parents?.length) {
+      await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
+    }
+
     ctx.showToast('Strain added successfully!', 'success');
     await fetchStrainLibrary(ctx, true);
     return true;
@@ -66,6 +72,12 @@ export async function updateStrain(
   try {
     const payload = _createStrainPayload(strainData);
     await ctx.dataService.updateStrainMeta(payload);
+
+    const tree = (strainData as any).parents;
+    if (tree?.parents?.length) {
+      await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
+    }
+
     ctx.showToast('Strain updated successfully!', 'success');
     await fetchStrainLibrary(ctx, true);
     return true;

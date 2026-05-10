@@ -190,16 +190,9 @@ describe('PlantOverviewContainer – private method logic', () => {
     expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(plant);
   });
 
-  // ── _handleMovePlant ──────────────────────────────────────────────────────
-  it('_handleMovePlant does nothing when no target selected', () => {
-    (el as any)._moveTargetGrowspaceId = '';
-    (el as any)._handleMovePlant();
-    expect(store.actions.plant.move).not.toHaveBeenCalled();
-  });
-
-  it('_handleMovePlant moves plant and closes dialog when target selected', () => {
-    (el as any)._moveTargetGrowspaceId = 'gs-2';
-    (el as any)._handleMovePlant();
+  // ── _handleMovePlantEvent ─────────────────────────────────────────────
+  it('_handleMovePlantEvent moves plant and closes dialog when target selected', () => {
+    (el as any)._handleMovePlantEvent(new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } }));
     expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
     expect(store.ui.closeDialog).toHaveBeenCalled();
   });
@@ -444,17 +437,6 @@ describe('PlantOverviewContainer – rendering branches', () => {
     expect(store.actions.plant.finishDrying).toHaveBeenCalled();
   });
 
-  // ── Footer: growspace options visible (lines 596-617) ────────────────────
-  it('footer renders Move to Growspace section when other growspaces available (lines 596-617)', async () => {
-    const plant = makeMockPlant({ growspace_id: 'gs-1' });
-    store = makeMockStore();
-    store.grid.$growspaceOptions.set({ 'gs-1': 'Main Room', 'gs-2': 'Veg Room' });
-    el = createElement(store, plant);
-    document.body.appendChild(el);
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.innerHTML).toContain('Move to Growspace');
-  });
 
   // ── Harvest tab renders (lines 858-1058) ─────────────────────────────────
   it('renders harvest tab content when _activeTab is harvest', async () => {
@@ -587,22 +569,17 @@ describe('PlantOverviewContainer – rendering branches', () => {
     );
   });
 
-  // ── Move plant button click (lines 607-610) ───────────────────────────────
-  it('Move button click moves plant when target growspace is selected', async () => {
+  // ── Move plant event from dashboard (lines 607-610) ───────────────────────────────
+  it('move-plant event from dashboard-tab moves plant', async () => {
     const plant = makeMockPlant({ growspace_id: 'gs-1' });
-    store = makeMockStore();
-    store.grid.$growspaceOptions.set({ 'gs-1': 'Main Room', 'gs-2': 'Veg Room' });
-    el = createElement(store, plant);
-    document.body.appendChild(el);
-    await el.updateComplete;
+    await attachElement(plant);
 
-    // Simulate selecting a growspace via event
-    (el as any)._moveTargetGrowspaceId = 'gs-2';
-    await el.updateComplete;
-
-    const buttons = [...el.shadowRoot!.querySelectorAll('button')];
-    const moveBtn = buttons.find((b) => b.textContent?.includes('Move'));
-    moveBtn?.click();
+    const dashboard = el.shadowRoot!.querySelector('plant-dashboard-tab');
+    dashboard?.dispatchEvent(new CustomEvent('move-plant', {
+      detail: { targetId: 'gs-2' },
+      bubbles: true,
+      composed: true
+    }));
 
     expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
   });
@@ -651,18 +628,4 @@ describe('PlantOverviewContainer – rendering branches', () => {
     expect((el as any)._harvestMetricsEdit).toMatchObject({ wet_weight: 200, dry_weight: 55 });
   });
 
-  // ── growspace filter line 526 ─────────────────────────────────────────────
-  it('footer excludes current growspace from move options (line 526)', async () => {
-    const plant = makeMockPlant({ growspace_id: 'gs-1' });
-    store = makeMockStore();
-    store.grid.$growspaceOptions.set({ 'gs-1': 'Main Room', 'gs-2': 'Veg Room' });
-    el = createElement(store, plant);
-    document.body.appendChild(el);
-    await el.updateComplete;
-
-    // gs-1 is the current growspace so only gs-2 should appear as Move option
-    // The md3-select mock element won't render options but we verify logic via
-    // checking that the component rendered without error
-    expect(el.shadowRoot!.innerHTML).toContain('Move to Growspace');
-  });
 });

@@ -19,6 +19,7 @@ export class PlantDashboardTab extends LitElement {
   @property({ attribute: false }) plant!: PlantEntity;
   @property({ attribute: false }) editedAttributes!: PlantOverviewEditedAttributes;
   @property({ attribute: false }) plantStats!: PlantStat[];
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
   @property({ type: Boolean }) isEditing = false;
   @property({ type: Boolean }) showAllDates = false;
 
@@ -44,7 +45,10 @@ export class PlantDashboardTab extends LitElement {
           .plant=${this.plant}
           .editedAttributes=${this.editedAttributes}
           .isEditing=${this.isEditing}
+          .growspaceOptions=${this.growspaceOptions}
           @attribute-change=${this._handleAttributeChange}
+          @open-strain-editor=${this._handleOpenStrainEditor}
+          @move-plant=${this._handleMovePlant}
         ></plant-identity-card>
 
         <plant-stats-card .stats=${this.plantStats}></plant-stats-card>
@@ -62,6 +66,28 @@ export class PlantDashboardTab extends LitElement {
     // Bubble up to container
     this.dispatchEvent(
       new CustomEvent('attribute-change', {
+        detail: e.detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleOpenStrainEditor(e: CustomEvent): void {
+    // Bubble up to container
+    this.dispatchEvent(
+      new CustomEvent('open-strain-editor', {
+        detail: e.detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleMovePlant(e: CustomEvent): void {
+    // Bubble up to container
+    this.dispatchEvent(
+      new CustomEvent('move-plant', {
         detail: e.detail,
         bubbles: true,
         composed: true,

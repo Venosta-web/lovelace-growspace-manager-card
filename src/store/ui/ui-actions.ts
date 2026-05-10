@@ -203,7 +203,7 @@ export function openBatchTrainingDialog(ctx: ActionContext, growspaceId?: string
 
 export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: number) {
   if (row !== undefined && col !== undefined) {
-    libraryActions.fetchStrainLibrary(ctx);
+    libraryActions.fetchStrainLibrary(ctx, true);
     ctx.ui.setActiveDialog({
       type: 'ADD_PLANT',
       payload: { row, col },
@@ -252,7 +252,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     }
   }
 
-  libraryActions.fetchStrainLibrary(ctx);
+  libraryActions.fetchStrainLibrary(ctx, true);
   ctx.ui.setActiveDialog({
     type: 'ADD_PLANT',
     payload: { row: targetRow, col: targetCol },
