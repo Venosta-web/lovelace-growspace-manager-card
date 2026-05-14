@@ -1862,15 +1862,17 @@ export class IrrigationDialog extends LitElement {
     const tanksWithHistory = tanks.filter(t => t.volumeLiters != null && t.waterHistory?.events?.length);
     const allTankEvents: TankWaterEvent[] = tanksWithHistory.flatMap(t => t.waterHistory!.events);
     const now = new Date();
-    const dayStart = new Date(now);
-    dayStart.setUTCHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const tankLitersToday = allTankEvents
-      .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= dayStart)
-      .reduce((s, e) => s + e.liters, 0);
-    const tankLiters7d = allTankEvents
-      .filter(e => e.event_type === 'consumption' && new Date(e.timestamp) >= sevenDaysAgo)
-      .reduce((s, e) => s + e.liters, 0);
+    // Use daily_7d from backend (computed from all 500 events) for accurate KPIs.
+    // Falling back to raw events (last 20 only) would cause today's total to drop
+    // when a refill event pushes old consumption events out of the window.
+    const allDaily7d = tanksWithHistory.flatMap(t => t.waterHistory!.daily_7d ?? []);
+    const todayKey = now.toISOString().slice(0, 10);
+    const tankLitersToday = allDaily7d
+      .filter(d => d.date === todayKey)
+      .reduce((s, d) => s + d.consumed, 0);
+    const tankLiters7d = allDaily7d.reduce((s, d) => s + d.consumed, 0);
+    const daysWithData = new Set(allDaily7d.filter(d => d.consumed > 0).map(d => d.date)).size;
+    const tankAvgPerDay = daysWithData > 0 ? tankLiters7d / daysWithData : 0;
     // Build 24h consumption buckets (96 × 15 min) for bar chart
     const bucket15Min = 15 * 60 * 1000;
     const bucketCount24h = 96;
@@ -2011,7 +2013,7 @@ export class IrrigationDialog extends LitElement {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
             ${kpiCard('Consumed today', tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—', tankLitersToday > 0 ? 'L' : '', '#4fc3f7')}
             ${kpiCard('Last 7 days', tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—', tankLiters7d > 0 ? 'L' : '', '#81c784')}
-            ${kpiCard('Avg per day', tankLiters7d > 0 ? (tankLiters7d / 7).toFixed(1) : '—', tankLiters7d > 0 ? 'L/day' : '', '#ce93d8')}
+            ${kpiCard('Avg per day', tankAvgPerDay > 0 ? tankAvgPerDay.toFixed(1) : '—', tankAvgPerDay > 0 ? 'L/day' : '', '#ce93d8')}
           </div>
 
           <!-- 24h bar chart -->

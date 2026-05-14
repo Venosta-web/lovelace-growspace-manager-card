@@ -68,9 +68,17 @@ export interface TankWaterEvent {
   liters: number;
 }
 
+export interface TankDailyEntry {
+  date: string;
+  consumed: number;
+  refilled: number;
+}
+
 export interface TankWaterHistory {
   snapshots: Array<{ timestamp: string; level_pct: number }>;
   events: TankWaterEvent[];
+  daily_7d?: TankDailyEntry[];
+  recent_refills?: TankWaterEvent[];
 }
 
 export interface SerializedIrrigationTank {
