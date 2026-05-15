@@ -122,18 +122,21 @@ export class GrowspaceHeaderActionsUI extends LitElement {
   ) {
     return html`
       <div style="position:relative;display:inline-flex;align-items:center;">
-        <div
+        <button
           class="icon-button ${active ? 'active' : ''}"
           @click=${() => this._triggerAction(action)}
           title="${label}"
+          aria-label="${label}"
+          aria-pressed="${active}"
+          type="button"
         >
           <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-        </div>
+        </button>
         <gs-help-tooltip
           .content=${help}
           placement="bottom"
           .label=${label}
-          style="position:absolute;top:-4px;right:-4px;"
+          style="position:absolute;top:-10px;right:-10px;z-index:1;"
         ></gs-help-tooltip>
       </div>
     `;
@@ -170,11 +173,17 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
-      anchor-name: --menu-trigger;
       flex-shrink: 0;
+      padding: 0;
+      font: inherit;
+      outline: none;
     }
     .icon-button:hover {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+    }
+    .icon-button:focus-visible {
+      outline: 2px solid var(--primary-color, #2196f3);
+      outline-offset: 2px;
     }
     .icon-button svg {
       width: 22px;
@@ -314,16 +323,19 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
       ${this.isMobile
         ? html`
-            <div
+            <button
               class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
               @click=${() =>
             this.dispatchEvent(
               new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
             )}
               title="Toggle Link Mode"
+              aria-label="Toggle Link Mode"
+              aria-pressed="${this.mobileLink}"
+              type="button"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-            </div>
+            </button>
           `
         : ''}
 
@@ -345,7 +357,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       )}
 
       <div class="menu-container">
-        <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
+        <button class="icon-button" id="menu-trigger" style="anchor-name: --menu-trigger" popovertarget="header-menu" title="Open Menu">
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
         </button>
         ${this._renderMenu()}

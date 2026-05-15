@@ -135,17 +135,4 @@ export class GeneticsAPI extends BaseAPI {
     );
   }
 
-  async scorePlant(data: {
-    plant_id: string;
-    vigor?: number | null;
-    structure?: number | null;
-    aroma?: number | null;
-    resin?: number | null;
-    pest_resistance?: number | null;
-  }): Promise<void> {
-    const payload = Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v != null)
-    );
-    await this.callService(DOMAIN, 'score_plant', payload);
-  }
 }

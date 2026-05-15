@@ -6359,7 +6359,6 @@ class HistoryAPI extends BaseAPI {
  */
 class PlantAPI extends BaseAPI {
     async addPlant(params) {
-        console.log('[PlantAPI:addPlant] Sending payload:', params);
         try {
             if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
                 params.mother_start = new Date().toISOString().split('T')[0];
@@ -6368,7 +6367,6 @@ class PlantAPI extends BaseAPI {
                 params.clone_start = new Date().toISOString().split('T')[0];
             }
             await this.callService(DOMAIN$1, SERVICES.ADD_PLANT, params);
-            console.log('[PlantAPI:addPlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:addPlant] Error:', err);
@@ -6377,10 +6375,8 @@ class PlantAPI extends BaseAPI {
         }
     }
     async addPlants(params) {
-        console.log('[PlantAPI:addPlants] Sending payload:', params);
         try {
             await this.callService(DOMAIN$1, SERVICES.ADD_PLANTS, params);
-            console.log('[PlantAPI:addPlants] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:addPlants] Error:', err);
@@ -6389,10 +6385,8 @@ class PlantAPI extends BaseAPI {
         }
     }
     async updatePlant(params) {
-        console.log('[PlantAPI:updatePlant] Sending payload:', params);
         try {
             await this.callService(DOMAIN$1, SERVICES.UPDATE_PLANT, params);
-            console.log('[PlantAPI:updatePlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:updatePlant] Error:', err);
@@ -6400,10 +6394,8 @@ class PlantAPI extends BaseAPI {
         }
     }
     async removePlant(plantId) {
-        console.log('[PlantAPI:removePlant] Removing plant_id:', plantId);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-            console.log('[PlantAPI:removePlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:removePlant] Error:', err);
@@ -6411,7 +6403,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async harvestPlant(plantId, target = 'dry', metrics) {
-        console.log('[PlantAPI:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
         try {
             const payload = {
                 plant_id: plantId,
@@ -6433,7 +6424,6 @@ class PlantAPI extends BaseAPI {
                     payload.terpene_profile = metrics.terpene_profile;
             }
             await this.callService(DOMAIN$1, SERVICES.HARVEST_PLANT, payload);
-            console.log('[PlantAPI:harvestPlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:harvestPlant] Error:', err);
@@ -6441,14 +6431,12 @@ class PlantAPI extends BaseAPI {
         }
     }
     async takeClone(params) {
-        console.log('[PlantAPI:takeClone] Cloning plant:', params);
         try {
             // Ensure target_growspace_id is set if not provided
             const payload = { ...params };
             if (!payload.target_growspace_id)
                 delete payload.target_growspace_id;
             await this.callService(DOMAIN$1, SERVICES.TAKE_CLONE, payload);
-            console.log('[PlantAPI:takeClone] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:takeClone] Error:', err);
@@ -6456,7 +6444,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async moveClone(plantId, targetGrowspaceId, transitionDate) {
-        console.log('[PlantAPI:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
         try {
             const payload = {
                 plant_id: plantId,
@@ -6466,7 +6453,6 @@ class PlantAPI extends BaseAPI {
                 payload.transition_date = transitionDate;
             }
             await this.callService(DOMAIN$1, SERVICES.MOVE_CLONE, payload);
-            console.log('[PlantAPI:moveClone] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:moveClone] Error:', err);
@@ -6474,13 +6460,11 @@ class PlantAPI extends BaseAPI {
         }
     }
     async swapPlants(plant1Id, plant2Id) {
-        console.log(`[PlantAPI:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
         try {
             await this.callService(DOMAIN$1, SERVICES.SWITCH_PLANTS, {
                 plant1_id: plant1Id,
                 plant2_id: plant2Id,
             });
-            console.log('[PlantAPI:swapPlants] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:swapPlants] Error:', err);
@@ -6488,7 +6472,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async waterPlant(plantId, amount, nutrients, presetId) {
-        console.log('[PlantAPI:waterPlant] Watering plant:', plantId, 'amount:', amount, 'preset:', presetId);
         try {
             const payload = {
                 plant_id: plantId,
@@ -6501,7 +6484,6 @@ class PlantAPI extends BaseAPI {
                 payload.preset_id = presetId;
             }
             await this.callService(DOMAIN$1, SERVICES.WATER_PLANT, payload);
-            console.log('[PlantAPI:waterPlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:waterPlant] Error:', err);
@@ -6509,7 +6491,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async printLabel(params) {
-        console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
         try {
             return await this.callService(DOMAIN$1, SERVICES.PRINT_LABEL, params);
         }
@@ -6519,7 +6500,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async scorePlant(params) {
-        console.log('[PlantAPI:scorePlant] Scoring plant:', params.plant_id);
         const payload = { plant_id: params.plant_id };
         // Explicitly include null values to allow clearing fields on the backend
         if (params.vigor !== undefined)
@@ -6534,7 +6514,6 @@ class PlantAPI extends BaseAPI {
             payload.pest_resistance = params.pest_resistance;
         try {
             await this.callService(DOMAIN$1, SERVICES.SCORE_PLANT, payload);
-            console.log('[PlantAPI:scorePlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:scorePlant] Error:', err);
@@ -6542,7 +6521,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async updateHarvestMetrics(params) {
-        console.log('[PlantAPI:updateHarvestMetrics] Updating metrics:', params.plant_id);
         const payload = { plant_id: params.plant_id };
         // Explicitly include null values to allow clearing fields on the backend
         if (params.wet_weight !== undefined)
@@ -6559,7 +6537,6 @@ class PlantAPI extends BaseAPI {
             payload.terpene_profile = params.terpene_profile;
         try {
             await this.callService(DOMAIN$1, SERVICES.UPDATE_HARVEST_METRICS, payload);
-            console.log('[PlantAPI:updateHarvestMetrics] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:updateHarvestMetrics] Error:', err);
@@ -6567,7 +6544,6 @@ class PlantAPI extends BaseAPI {
         }
     }
     async movePlant(plantId, targetGrowspaceId, transitionDate) {
-        console.log('[PlantAPI:movePlant] Moving plant:', plantId, 'to', targetGrowspaceId);
         const payload = {
             plant_id: plantId,
             target_growspace_id: targetGrowspaceId,
@@ -6577,7 +6553,6 @@ class PlantAPI extends BaseAPI {
         }
         try {
             await this.callService(DOMAIN$1, SERVICES.MOVE_PLANT, payload);
-            console.log('[PlantAPI:movePlant] Service Called');
         }
         catch (err) {
             console.error('[PlantAPI:movePlant] Error:', err);
