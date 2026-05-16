@@ -281,7 +281,7 @@ describe('setIrrigationSettings', () => {
     await setIrrigationSettings(ctx, {
       growspaceId: 'gs1',
       irrigationPumpEntity: 'switch.new_pump',
-      drainPumpEntity: null,
+      drainPumpEntity: '',
       irrigationDuration: 90,
       drainDuration: 45,
     });
@@ -299,7 +299,7 @@ describe('setIrrigationSettings', () => {
     await setIrrigationSettings(ctx, {
       growspaceId: 'gs1',
       irrigationPumpEntity: 'switch.new_pump',
-      drainPumpEntity: null,
+      drainPumpEntity: '',
       irrigationDuration: 90,
       drainDuration: 45,
     });
@@ -313,7 +313,7 @@ describe('setIrrigationSettings', () => {
     await setIrrigationSettings(ctx, {
       growspaceId: 'gs1',
       irrigationPumpEntity: 'switch.new_pump',
-      drainPumpEntity: null,
+      drainPumpEntity: '',
       irrigationDuration: 90,
       drainDuration: 45,
     });
@@ -328,7 +328,7 @@ describe('setIrrigationSettings', () => {
       setIrrigationSettings(ctx, {
         growspaceId: 'gs1',
         irrigationPumpEntity: 'switch.new_pump',
-        drainPumpEntity: null,
+        drainPumpEntity: '',
         irrigationDuration: 90,
         drainDuration: 45,
       })

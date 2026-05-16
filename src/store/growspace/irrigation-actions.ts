@@ -5,8 +5,8 @@ type IrrigationTimeParams = { growspaceId: string; time: string; duration?: numb
 type RemoveTimeParams = { growspaceId: string; time: string };
 type IrrigationSettingsParams = {
   growspaceId: string;
-  irrigationPumpEntity: string | null;
-  drainPumpEntity: string | null;
+  irrigationPumpEntity: string;
+  drainPumpEntity: string;
   irrigationDuration: number;
   drainDuration: number;
 };

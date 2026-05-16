@@ -19201,6 +19201,108 @@ HarvestScoringDialog = __decorate([
     t$2('harvest-scoring-dialog')
 ], HarvestScoringDialog);
 
+function getIrrigationConfig(ctx, growspaceId) {
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === growspaceId);
+    return device ? { ...device.irrigationConfig } : { irrigationTimes: [], drainTimes: [] };
+}
+async function addIrrigationTime(ctx, params) {
+    const { growspaceId, time, duration } = params;
+    const prev = getIrrigationConfig(ctx, growspaceId);
+    const newTime = { time, duration: duration ?? 60 };
+    const next = [...prev.irrigationTimes, newTime].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+    const actionId = await ctx.optimisticManager.applyOptimisticUpdate('update', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }));
+    try {
+        await ctx.dataService.addIrrigationTime({ growspaceId, time, duration });
+        ctx.optimisticManager.confirmUpdate(actionId, {
+            description: 'Added irrigation time',
+            redo: () => addIrrigationTime(ctx, params),
+        });
+    }
+    catch (e) {
+        ctx.optimisticManager.rollbackUpdate(actionId);
+        ctx.showToast('Failed to add irrigation time', 'error');
+        throw e;
+    }
+}
+async function removeIrrigationTime(ctx, params) {
+    const { growspaceId, time } = params;
+    const prev = getIrrigationConfig(ctx, growspaceId);
+    const next = prev.irrigationTimes.filter((t) => t.time !== time);
+    const actionId = await ctx.optimisticManager.applyOptimisticUpdate('delete', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }));
+    try {
+        await ctx.dataService.removeIrrigationTime({ growspaceId, time });
+        ctx.optimisticManager.confirmUpdate(actionId, {
+            description: 'Removed irrigation time',
+            redo: () => removeIrrigationTime(ctx, params),
+        });
+    }
+    catch (e) {
+        ctx.optimisticManager.rollbackUpdate(actionId);
+        ctx.showToast('Failed to remove irrigation time', 'error');
+        throw e;
+    }
+}
+async function addDrainTime(ctx, params) {
+    const { growspaceId, time, duration } = params;
+    const prev = getIrrigationConfig(ctx, growspaceId);
+    const newTime = { time, duration: duration ?? 60 };
+    const next = [...prev.drainTimes, newTime].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+    const actionId = await ctx.optimisticManager.applyOptimisticUpdate('update', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes }));
+    try {
+        await ctx.dataService.addDrainTime({ growspaceId, time, duration });
+        ctx.optimisticManager.confirmUpdate(actionId, {
+            description: 'Added drain time',
+            redo: () => addDrainTime(ctx, params),
+        });
+    }
+    catch (e) {
+        ctx.optimisticManager.rollbackUpdate(actionId);
+        ctx.showToast('Failed to add drain time', 'error');
+        throw e;
+    }
+}
+async function removeDrainTime(ctx, params) {
+    const { growspaceId, time } = params;
+    const prev = getIrrigationConfig(ctx, growspaceId);
+    const next = prev.drainTimes.filter((t) => t.time !== time);
+    const actionId = await ctx.optimisticManager.applyOptimisticUpdate('delete', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes }));
+    try {
+        await ctx.dataService.removeDrainTime({ growspaceId, time });
+        ctx.optimisticManager.confirmUpdate(actionId, {
+            description: 'Removed drain time',
+            redo: () => removeDrainTime(ctx, params),
+        });
+    }
+    catch (e) {
+        ctx.optimisticManager.rollbackUpdate(actionId);
+        ctx.showToast('Failed to remove drain time', 'error');
+        throw e;
+    }
+}
+async function setIrrigationSettings(ctx, params) {
+    const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration } = params;
+    const prev = getIrrigationConfig(ctx, growspaceId);
+    const patch = { irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration };
+    const actionId = await ctx.optimisticManager.applyOptimisticUpdate('update', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, patch), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, {
+        irrigationPumpEntity: prev.irrigationPumpEntity,
+        drainPumpEntity: prev.drainPumpEntity,
+        irrigationDuration: prev.irrigationDuration,
+        drainDuration: prev.drainDuration,
+    }));
+    try {
+        await ctx.dataService.setIrrigationSettings(params);
+        ctx.optimisticManager.confirmUpdate(actionId, {
+            description: 'Saved irrigation settings',
+            redo: () => setIrrigationSettings(ctx, params),
+        });
+    }
+    catch (e) {
+        ctx.optimisticManager.rollbackUpdate(actionId);
+        ctx.showToast('Failed to save irrigation settings', 'error');
+        throw e;
+    }
+}
+
 var IrrigationDialog_1;
 let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
     constructor() {
@@ -19211,8 +19313,6 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         this._drainPumpEntity = '';
         this._irrigationDuration = 60;
         this._drainDuration = 60;
-        this._irrigationTimes = [];
-        this._drainTimes = [];
         this._activeTab = 'schedules';
         this._strategy = {};
         // Drain EC state
@@ -19325,8 +19425,6 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         this._drainPumpEntity = config.drainPumpEntity || '';
         this._irrigationDuration = config.irrigationDuration || 60;
         this._drainDuration = config.drainDuration || 60;
-        this._irrigationTimes = this.device.irrigationConfig?.irrigationTimes || [];
-        this._drainTimes = this.device.irrigationConfig?.drainTimes || [];
         // Initialize Strategy
         const strat = this.device.irrigationStrategy;
         this._strategy = {
@@ -19347,121 +19445,48 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
         }
     }
-    // ... (Keep existing _parseScheduleString, _saveSettings, _addIrrigationTime, etc. - ensure logical flow)
-    _parseScheduleString(scheduleString) {
-        if (Array.isArray(scheduleString))
-            return scheduleString;
-        if (!scheduleString)
-            return [];
-        return scheduleString.split(',').map((t) => {
-            const parts = t.trim().split('|');
-            return {
-                time: parts[0].trim(),
-                duration: parts[1] ? parseInt(parts[1].trim()) : undefined,
-            };
+    async _saveSettings() {
+        if (!this.device?.deviceId || !this.store)
+            return;
+        await setIrrigationSettings(this.store.context, {
+            growspaceId: this.device.deviceId,
+            irrigationPumpEntity: this._irrigationPumpEntity,
+            drainPumpEntity: this._drainPumpEntity,
+            irrigationDuration: this._irrigationDuration,
+            drainDuration: this._drainDuration,
         });
     }
-    async _saveSettings() {
-        if (!this.device?.deviceId || !this._dataService)
-            return;
-        try {
-            await this._dataService.setIrrigationSettings({
-                growspaceId: this.device.deviceId,
-                irrigationPumpEntity: this._irrigationPumpEntity,
-                drainPumpEntity: this._drainPumpEntity,
-                irrigationDuration: this._irrigationDuration,
-                drainDuration: this._drainDuration,
-            });
-        }
-        catch (e) {
-            console.error('Failed to save settings:', e);
-        }
-    }
     async _addIrrigationTime(time, duration) {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId || !this.store)
             return;
-        try {
-            // Ensure time is in HH:MM:SS format (append :00 if only HH:MM)
-            const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-            await this._dataService.addIrrigationTime({
-                growspaceId: this.device.deviceId,
-                time: formattedTime,
-                duration: duration || this._irrigationDuration,
-            });
-            // Optimistic update
-            const newTime = { time: formattedTime, duration: duration || this._irrigationDuration };
-            this._irrigationTimes = [...this._irrigationTimes, newTime].sort((a, b) => {
-                const timeA = a.time || a.start_time || '';
-                const timeB = b.time || b.start_time || '';
-                return timeA.localeCompare(timeB);
-            });
-            this._addingIrrigationTime = undefined;
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to add irrigation time:', e);
-            throw e;
-        }
+        const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
+        this._addingIrrigationTime = undefined;
+        await addIrrigationTime(this.store.context, {
+            growspaceId: this.device.deviceId,
+            time: formattedTime,
+            duration: duration || this._irrigationDuration,
+        });
     }
     async _removeIrrigationTime(time) {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId || !this.store)
             return;
-        try {
-            await this._dataService.removeIrrigationTime({
-                growspaceId: this.device.deviceId,
-                time,
-            });
-            // Optimistic update
-            this._irrigationTimes = this._irrigationTimes.filter((t) => t.time !== time);
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to remove irrigation time:', e);
-            throw e;
-        }
+        await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time });
     }
     async _addDrainTime(time, duration) {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId || !this.store)
             return;
-        try {
-            // Ensure time is in HH:MM:SS format (append :00 if only HH:MM)
-            const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-            await this._dataService.addDrainTime({
-                growspaceId: this.device.deviceId,
-                time: formattedTime,
-                duration: duration || this._drainDuration,
-            });
-            // Optimistic update
-            const newTime = { time: formattedTime, duration: duration || this._drainDuration };
-            this._drainTimes = [...this._drainTimes, newTime].sort((a, b) => {
-                const timeA = a.time || a.start_time || '';
-                const timeB = b.time || b.start_time || '';
-                return timeA.localeCompare(timeB);
-            });
-            this._addingDrainTime = undefined;
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to add drain time:', e);
-            throw e;
-        }
+        const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
+        this._addingDrainTime = undefined;
+        await addDrainTime(this.store.context, {
+            growspaceId: this.device.deviceId,
+            time: formattedTime,
+            duration: duration || this._drainDuration,
+        });
     }
     async _removeDrainTime(time) {
-        if (!this.device?.deviceId || !this._dataService)
+        if (!this.device?.deviceId || !this.store)
             return;
-        try {
-            await this._dataService.removeDrainTime({
-                growspaceId: this.device.deviceId,
-                time,
-            });
-            // Optimistic update
-            this._drainTimes = this._drainTimes.filter((t) => t.time !== time);
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to remove drain time:', e);
-            throw e;
-        }
+        await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
     }
     _notifyDataChanged() {
         this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
@@ -19505,65 +19530,20 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         };
     }
     async _saveEditedIrrigationTime() {
-        if (!this._editingIrrigationTime || !this.device?.deviceId || !this._dataService) {
+        if (!this._editingIrrigationTime || !this.device?.deviceId || !this.store)
             return;
-        }
-        const { originalTime, originalDuration, time, duration } = this._editingIrrigationTime;
-        const formattedNewTime = time.includes(':') && time.split(':').length === 2
-            ? `${time}:00`
-            : time;
-        // Check for duplicate time (only if time changed)
+        const { originalTime, time, duration } = this._editingIrrigationTime;
+        const formattedNewTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
         if (originalTime !== formattedNewTime) {
-            const isDuplicate = this._irrigationTimes.some(t => t.time === formattedNewTime);
-            if (isDuplicate) {
-                this._showErrorToast(`Irrigation time ${time} already exists`);
+            const currentTimes = this.device.irrigationConfig?.irrigationTimes || [];
+            if (currentTimes.some((t) => t.time === formattedNewTime)) {
+                this.store.context.showToast(`Irrigation time ${time} already exists`, 'error');
                 return;
             }
         }
-        try {
-            // Step 1: Remove old time
-            await this._dataService.removeIrrigationTime({
-                growspaceId: this.device.deviceId,
-                time: originalTime,
-            });
-            try {
-                // Step 2: Add new time
-                await this._dataService.addIrrigationTime({
-                    growspaceId: this.device.deviceId,
-                    time: formattedNewTime,
-                    duration: duration,
-                });
-                // Success - update UI
-                this._irrigationTimes = this._irrigationTimes
-                    .filter(t => t.time !== originalTime)
-                    .concat([{ time: formattedNewTime, duration }])
-                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-                this._editingIrrigationTime = undefined;
-                this._notifyDataChanged();
-            }
-            catch (addError) {
-                // Rollback: Re-add the original time
-                console.error('Failed to add new time, rolling back:', addError);
-                try {
-                    await this._dataService.addIrrigationTime({
-                        growspaceId: this.device.deviceId,
-                        time: originalTime,
-                        duration: originalDuration,
-                    });
-                    this._showErrorToast('Failed to save changes. Original time restored.');
-                    this._editingIrrigationTime = undefined;
-                }
-                catch (rollbackError) {
-                    console.error('Rollback failed:', rollbackError);
-                    this._showErrorToast('Failed to save changes. Please refresh and try again.');
-                    this._editingIrrigationTime = undefined;
-                }
-            }
-        }
-        catch (removeError) {
-            console.error('Failed to remove old time:', removeError);
-            this._showErrorToast('Failed to save changes. Please try again.');
-        }
+        this._editingIrrigationTime = undefined;
+        await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        await addIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: formattedNewTime, duration });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -19588,163 +19568,38 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         }, 5000); // 5 second timeout
     }
     async _saveEditedDrainTime() {
-        if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+        if (!this._editingDrainTime || !this.device?.deviceId || !this.store)
             return;
-        }
-        const { originalTime, originalDuration, time, duration } = this._editingDrainTime;
-        const formattedNewTime = time.includes(':') && time.split(':').length === 2
-            ? `${time}:00`
-            : time;
-        // Check for duplicate time (only if time changed)
+        const { originalTime, time, duration } = this._editingDrainTime;
+        const formattedNewTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
         if (originalTime !== formattedNewTime) {
-            const isDuplicate = this._drainTimes.some(t => t.time === formattedNewTime);
-            if (isDuplicate) {
-                this._showErrorToast(`Drain time ${time} already exists`);
+            const currentTimes = this.device.irrigationConfig?.drainTimes || [];
+            if (currentTimes.some((t) => t.time === formattedNewTime)) {
+                this.store.context.showToast(`Drain time ${time} already exists`, 'error');
                 return;
             }
         }
-        try {
-            // Step 1: Remove old time
-            await this._dataService.removeDrainTime({
-                growspaceId: this.device.deviceId,
-                time: originalTime,
-            });
-            try {
-                // Step 2: Add new time
-                await this._dataService.addDrainTime({
-                    growspaceId: this.device.deviceId,
-                    time: formattedNewTime,
-                    duration: duration,
-                });
-                // Success - update UI
-                this._drainTimes = this._drainTimes
-                    .filter(t => t.time !== originalTime)
-                    .concat([{ time: formattedNewTime, duration }])
-                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-                this._editingDrainTime = undefined;
-                this._notifyDataChanged();
-            }
-            catch (addError) {
-                // Rollback: Re-add the original time
-                console.error('Failed to add new drain time, rolling back:', addError);
-                try {
-                    await this._dataService.addDrainTime({
-                        growspaceId: this.device.deviceId,
-                        time: originalTime,
-                        duration: originalDuration,
-                    });
-                    this._showErrorToast('Failed to save changes. Original time restored.');
-                    this._editingDrainTime = undefined;
-                }
-                catch (rollbackError) {
-                    console.error('Rollback failed:', rollbackError);
-                    this._showErrorToast('Failed to save changes. Please refresh and try again.');
-                    this._editingDrainTime = undefined;
-                }
-            }
-        }
-        catch (removeError) {
-            console.error('Failed to remove old drain time:', removeError);
-            this._showErrorToast('Failed to save changes. Please try again.');
-        }
+        this._editingDrainTime = undefined;
+        await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        await addDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: formattedNewTime, duration });
     }
     async _deleteIrrigationTimeFromEdit() {
-        if (!this._editingIrrigationTime || !this.device?.deviceId || !this._dataService) {
+        if (!this._editingIrrigationTime || !this.device?.deviceId || !this.store)
             return;
-        }
-        const { originalTime, originalDuration } = this._editingIrrigationTime;
-        try {
-            // Delete from backend immediately
-            await this._dataService.removeIrrigationTime({
-                growspaceId: this.device.deviceId,
-                time: originalTime,
-            });
-            // Optimistic UI update
-            this._irrigationTimes = this._irrigationTimes.filter(t => t.time !== originalTime);
-            // Close edit dialog
-            this._editingIrrigationTime = undefined;
-            // Show toast with undo (10 second timeout)
-            this._showUndoToast('irrigation', originalTime, originalDuration);
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to delete irrigation time:', e);
-            this._showErrorToast('Failed to delete. Please try again.');
-        }
+        const { originalTime } = this._editingIrrigationTime;
+        this._editingIrrigationTime = undefined;
+        await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
     }
     async _deleteDrainTimeFromEdit() {
-        if (!this._editingDrainTime || !this.device?.deviceId || !this._dataService) {
+        if (!this._editingDrainTime || !this.device?.deviceId || !this.store)
             return;
-        }
-        const { originalTime, originalDuration } = this._editingDrainTime;
-        try {
-            // Delete from backend immediately
-            await this._dataService.removeDrainTime({
-                growspaceId: this.device.deviceId,
-                time: originalTime,
-            });
-            // Optimistic UI update
-            this._drainTimes = this._drainTimes.filter(t => t.time !== originalTime);
-            // Close edit dialog
-            this._editingDrainTime = undefined;
-            // Show toast with undo (10 second timeout)
-            this._showUndoToast('drain', originalTime, originalDuration);
-            this._notifyDataChanged();
-        }
-        catch (e) {
-            console.error('Failed to delete drain time:', e);
-            this._showErrorToast('Failed to delete. Please try again.');
-        }
-    }
-    _showUndoToast(type, time, duration) {
-        // Clear any existing undo timeout
-        if (this._pendingUndo?.timeoutId) {
-            clearTimeout(this._pendingUndo.timeoutId);
-        }
-        const timeoutId = window.setTimeout(() => {
-            this._pendingUndo = undefined;
-        }, 10000); // 10 second timeout
-        this._pendingUndo = {
-            type,
-            time,
-            duration,
-            timeoutId,
-        };
-    }
-    async _undoDelete() {
-        if (!this._pendingUndo || !this.device?.deviceId || !this._dataService) {
-            return;
-        }
-        const { type, time, duration, timeoutId } = this._pendingUndo;
-        clearTimeout(timeoutId);
-        // Close any open edit dialogs to prevent conflicts
-        this._editingIrrigationTime = undefined;
+        const { originalTime } = this._editingDrainTime;
         this._editingDrainTime = undefined;
-        try {
-            // Re-add the deleted time
-            if (type === 'irrigation') {
-                await this._addIrrigationTime(time, duration);
-            }
-            else {
-                await this._addDrainTime(time, duration);
-            }
-            this._pendingUndo = undefined;
-        }
-        catch (e) {
-            console.error('Failed to undo deletion:', e);
-            this._showErrorToast('Failed to undo deletion. Please try again.');
-        }
+        await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
     }
     _close() {
-        // Clear any pending undo operations
-        if (this._pendingUndo?.timeoutId) {
-            clearTimeout(this._pendingUndo.timeoutId);
-            this._pendingUndo = undefined;
-        }
-        // Clear edit states
         this._editingIrrigationTime = undefined;
         this._editingDrainTime = undefined;
-        // Clear error toast
         this._errorToast = undefined;
         this.dispatchEvent(new CustomEvent('close'));
     }
@@ -19924,19 +19779,6 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             : ''}
           </div>
 
-          ${this._pendingUndo
-            ? x `
-                <div class="toast-notification">
-                  <span class="toast-message">
-                    Deleted ${this._pendingUndo.type} time ${this._pendingUndo.time.substring(0, 5)}
-                  </span>
-                  <button class="toast-undo-button" @click=${this._undoDelete}>
-                    UNDO
-                  </button>
-                </div>
-              `
-            : ''}
-
           ${this._errorToast
             ? x `
                 <div class="toast-notification error">
@@ -19949,9 +19791,11 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
     `;
     }
     _renderSchedulesTab(color) {
+        const irrigationTimes = this.device?.irrigationConfig?.irrigationTimes || [];
+        const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
         return x `
-      ${this._renderScheduleSection('Irrigation Schedule', this._irrigationTimes, this._irrigationDuration, 'irrigation', color)}
-      ${this._renderScheduleSection('Drain Schedule', this._drainTimes, this._drainDuration, 'drain', '#FF9800')}
+      ${this._renderScheduleSection('Irrigation Schedule', irrigationTimes, this._irrigationDuration, 'irrigation', color)}
+      ${this._renderScheduleSection('Drain Schedule', drainTimes, this._drainDuration, 'drain', '#FF9800')}
     `;
     }
     _getEntities(domains) {
@@ -21483,6 +21327,9 @@ __decorate([
     c$2({ context: hassContext, subscribe: true })
 ], IrrigationDialog.prototype, "hass", void 0);
 __decorate([
+    c$2({ context: storeContext, subscribe: true })
+], IrrigationDialog.prototype, "store", void 0);
+__decorate([
     n$5({ type: Object })
 ], IrrigationDialog.prototype, "returnPayload", void 0);
 __decorate([
@@ -21508,12 +21355,6 @@ __decorate([
 ], IrrigationDialog.prototype, "_drainDuration", void 0);
 __decorate([
     r$3()
-], IrrigationDialog.prototype, "_irrigationTimes", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainTimes", void 0);
-__decorate([
-    r$3()
 ], IrrigationDialog.prototype, "_addingIrrigationTime", void 0);
 __decorate([
     r$3()
@@ -21524,9 +21365,6 @@ __decorate([
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_editingDrainTime", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_pendingUndo", void 0);
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_errorToast", void 0);
@@ -28530,7 +28368,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         super.disconnectedCallback();
         this._resizeObs?.disconnect();
     }
-    updated(changed) {
+    willUpdate(changed) {
         if (changed.has('nodes')) {
             this._childrenOf = {};
             for (const n of this.nodes) {
@@ -28553,7 +28391,9 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             changed.has('_layout') ||
             changed.has('focalId') ||
             changed.has('_collapsed') ||
-            changed.has('_focusMode')) {
+            changed.has('_focusMode') ||
+            changed.has('_viewW') ||
+            changed.has('_viewH')) {
             this._recompute();
             this._fitToScreen();
         }
@@ -110094,6 +109934,16 @@ class GrowspaceDataStore {
             this.$optimisticDeletedPlantIds.set(current);
         }
     }
+    patchDeviceIrrigationConfig(growspaceId, patch) {
+        const devices = this.$devices.get();
+        const idx = devices.findIndex((d) => d.deviceId === growspaceId);
+        if (idx === -1)
+            return;
+        const updated = devices.map((d, i) => i === idx
+            ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } }
+            : d);
+        this.$devices.set(updated);
+    }
     setWsDataCache(cache) {
         const current = this.$wsDataCache.get();
         if (current === cache)
@@ -111742,7 +111592,7 @@ async function saveHarvestMetrics(ctx, plantId, metrics) {
     try {
         await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
         ctx.showToast('Harvest metrics saved', 'success');
-        await ctx.refreshData();
+        await ctx.refreshData(true);
     }
     catch (error) {
         ctx.showToast(`Failed to save harvest metrics: ${error}`, 'error');
@@ -111760,7 +111610,7 @@ async function scorePhenotype(ctx, plantId, scores) {
     try {
         await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
         ctx.showToast('Scores saved', 'success');
-        await ctx.refreshData();
+        await ctx.refreshData(true);
     }
     catch (error) {
         ctx.showToast(`Failed to save scores: ${error}`, 'error');
@@ -113487,7 +113337,7 @@ class GrowspaceStore {
             hass: this.hass,
             showToast: (msg, type, action) => this.showToast(msg, type, action),
             closeDialog: () => this.ui.closeDialog(),
-            refreshData: () => this.refreshData(),
+            refreshData: (force) => this.refreshData(force),
         };
     }
     constructor() {
