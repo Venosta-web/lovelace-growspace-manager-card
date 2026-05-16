@@ -107,7 +107,7 @@ export class GeneticsTreeView extends LitElement {
     this._resizeObs?.disconnect();
   }
 
-  override updated(changed: Map<string, unknown>): void {
+  override willUpdate(changed: Map<string, unknown>): void {
     if (changed.has('nodes')) {
       this._childrenOf = {};
       for (const n of this.nodes) {
@@ -128,7 +128,9 @@ export class GeneticsTreeView extends LitElement {
       changed.has('_layout') ||
       changed.has('focalId') ||
       changed.has('_collapsed') ||
-      changed.has('_focusMode')
+      changed.has('_focusMode') ||
+      changed.has('_viewW') ||
+      changed.has('_viewH')
     ) {
       this._recompute();
       this._fitToScreen();
