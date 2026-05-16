@@ -53,7 +53,7 @@ describe('GrowspaceLogbookCardEditor', () => {
   });
 
   test('loads growspaces from sensor via controller', () => {
-    element.updated(new Map([['hass', null]]));
+    (element as any).updated(new Map([['hass', null]]));
     const controller = (element as any)._gsController;
     expect(controller.options.length).toBe(2);
     expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Test Tent' });
@@ -98,7 +98,7 @@ describe('GrowspaceLogbookCardEditor', () => {
       states: {},
       connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) },
     } as any;
-    element.updated(new Map([['hass', null]]));
+    (element as any).updated(new Map([['hass', null]]));
     expect((element as any)._gsController.options).toEqual([]);
   });
 
@@ -112,14 +112,44 @@ describe('GrowspaceLogbookCardEditor', () => {
 
   test('updated() calls controller.update when hass key is present', () => {
     const spy = vi.spyOn((element as any)._gsController, 'update');
-    element.updated(new Map([['hass', null]]));
+    (element as any).updated(new Map([['hass', null]]));
     expect(spy).toHaveBeenCalledWith(element.hass);
   });
 
   test('updated() does not call controller.update when hass is falsy', () => {
     const spy = vi.spyOn((element as any)._gsController, 'update');
     element.hass = undefined as any;
-    element.updated(new Map([['hass', null]]));
+    (element as any).updated(new Map([['hass', null]]));
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('_computeSchema returns options from controller', () => {
+    (element as any).updated(new Map([['hass', null]]));
+    const schema = (element as any)._computeSchema();
+    const growspaceField = schema.find((f: any) => f.name === 'default_growspace');
+    expect(growspaceField.selector.select.options).toContainEqual({ label: 'Test Tent', value: 'gs1' });
+    expect(growspaceField.selector.select.options).toContainEqual({ label: 'Another Tent', value: 'gs2' });
+  });
+
+  test('render returns empty template if hass is missing', () => {
+    element.hass = undefined as any;
+    element.setConfig({ type: 'custom:growspace-logbook-card' });
+    const result = (element as any).render();
+    expect(result.values).toEqual([]);
+  });
+
+  test('render returns empty template if config is missing', () => {
+    element.hass = { states: {} } as any;
+    (element as any)._config = undefined;
+    const result = (element as any).render();
+    expect(result.values).toEqual([]);
+  });
+
+  test('render returns full template if hass and config are present', () => {
+    element.hass = { states: {} } as any;
+    element.setConfig({ type: 'custom:growspace-logbook-card' });
+    const result = (element as any).render();
+    expect(result).toBeTruthy();
+    expect(result.strings[0]).toContain('ha-form');
   });
 });

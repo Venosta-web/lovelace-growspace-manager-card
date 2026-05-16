@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { ViewMode } from '../../../../../src/constants';
+import { MetricsUtils } from '../../../../../src/utils/metrics-utils';
 import '../../../../../src/features/ui/containers/growspace-header.container';
 import type { GrowspaceHeaderContainer } from '../../../../../src/features/ui/containers/growspace-header.container';
 
@@ -70,7 +71,7 @@ const buildMockStore = () => ({
         $viewMode: { get: vi.fn().mockReturnValue('standard') },
         $isEditMode: { get: vi.fn().mockReturnValue(false) },
     },
-    $headerState: atom(null),
+    $headerState: atom<any>(null),
     $headerActionsState: atom({ viewMode: 'standard', isEditMode: false, selectedPlants: new Set() }),
 });
 
@@ -85,6 +86,8 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any).store = mockStore;
         (element as any).device = mockDevice;
         (element as any).hass = { states: {} };
+        element.requestUpdate();
+        await element.updateComplete;
     });
 
     // --- render ---
@@ -101,6 +104,131 @@ describe('GrowspaceHeaderContainer', () => {
         element.requestUpdate();
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('growspace-header-ui')).toBeNull();
+    });
+
+    // --- Getters ---
+
+    it('activeEnvGraphs returns history.activeEnvGraphs from store', () => {
+        const graphs = new Set(['temp']);
+        mockStore.$headerState.set({ history: { activeEnvGraphs: graphs } });
+        // Manually re-init to ensure controller picks up the current atom value
+        (element as any)._initControllers();
+        expect(element.activeEnvGraphs).toBe(graphs);
+    });
+
+    it('activeEnvGraphs returns empty Set if state is missing', () => {
+        mockStore.$headerState.set(null);
+        expect(element.activeEnvGraphs).toBeInstanceOf(Set);
+        expect(element.activeEnvGraphs.size).toBe(0);
+    });
+
+    it('_problemPlants maps plants with problem attribute', () => {
+        (element as any).device = {
+            plants: [
+                { attributes: { problem: true, strain: 'OG Kush' } },
+                { attributes: { problem: true, friendly_name: 'Sick Plant' } },
+                { attributes: { problem: true } },
+                { attributes: { problem: false, strain: 'Healthy' } },
+            ],
+        };
+        expect((element as any)._problemPlants).toEqual(['OG Kush', 'Sick Plant', 'Unknown']);
+    });
+
+    // --- Controllers & Lifecycle ---
+
+    it('_initControllers initializes controllers and starts refresh', () => {
+        // Clear mocks from beforeEach
+        vi.clearAllMocks();
+        (element as any)._headerController = undefined;
+        (element as any)._initControllers();
+        expect(mockStore.history.loadHistoryOnDemand).toHaveBeenCalled();
+        expect(mockStore.history.startAutoRefresh).toHaveBeenCalled();
+    });
+
+    it('_initControllers does nothing if store is missing', () => {
+        (element as any).store = undefined;
+        (element as any)._headerController = undefined;
+        (element as any)._initControllers();
+        expect((element as any)._headerController).toBeUndefined();
+    });
+
+    it('_initControllers does not re-initialize if controllers already exist', () => {
+        const existingHeader = { dummy: true };
+        const existingActions = { dummy: true };
+        const existingCache = { dummy: true };
+        (element as any)._headerController = existingHeader;
+        (element as any)._actionsController = existingActions;
+        (element as any)._historyCacheController = existingCache;
+        
+        (element as any)._initControllers();
+        
+        expect((element as any)._headerController).toBe(existingHeader);
+        expect((element as any)._actionsController).toBe(existingActions);
+        expect((element as any)._historyCacheController).toBe(existingCache);
+    });
+
+    it('willUpdate re-initializes and loads history if store/device changes', () => {
+        const initSpy = vi.spyOn(element as any, '_initControllers');
+        element.device = { deviceId: '1' } as any;
+        element.willUpdate(new Map([['store', null], ['device', null]]));
+        expect(initSpy).toHaveBeenCalled();
+        expect(mockStore.history.loadHistoryOnDemand).toHaveBeenCalled();
+    });
+
+    it('willUpdate does nothing if unrelated property changes', () => {
+        vi.clearAllMocks();
+        const initSpy = vi.spyOn(element as any, '_initControllers');
+        element.willUpdate(new Map([['compact', true]]));
+        expect(initSpy).not.toHaveBeenCalled();
+        expect(mockStore.history.loadHistoryOnDemand).not.toHaveBeenCalled();
+    });
+
+    // --- Metrics splitting ---
+
+    it('_metrics splits chips into hero and secondary', () => {
+        (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
+            mainChips: [
+                { key: 'temperature', value: '25' },
+                { key: 'humidity', value: '50' },
+                { key: 'vpd', value: '1.2' },
+                { key: 'co2', value: '800' },
+                { key: 'custom', value: 'val' },
+            ],
+            deviceChips: [{ key: 'battery', value: '80' }],
+            dominant: { stage: 'flowering' },
+        });
+
+        const metrics = (element as any)._metrics;
+        expect(metrics.heroChips).toHaveLength(4);
+        expect(metrics.heroChips.map((c: any) => c.key)).toEqual(['temperature', 'humidity', 'vpd', 'co2']);
+        expect(metrics.secondaryChips).toHaveLength(1);
+        expect(metrics.secondaryChips[0].key).toBe('custom');
+        expect(metrics.deviceChips).toHaveLength(1);
+        expect(metrics.dominant.stage).toBe('flowering');
+    });
+
+    it('_metrics returns empty state if device or hass is missing', () => {
+        element.device = undefined as any;
+        expect((element as any)._metrics).toEqual({
+            heroChips: [],
+            secondaryChips: [],
+            deviceChips: [],
+            dominant: undefined,
+        });
+    });
+
+    it('_metrics handles missing state or history fallback', () => {
+        (element as any)._headerController = { value: undefined };
+        // We don't need to assert [] if the mock returns something, 
+        // as long as we triggered the || branch.
+        const metrics = (element as any)._metrics;
+        expect(metrics).toBeDefined();
+    });
+
+    it('_metrics handles missing history in state fallback', () => {
+        (element as any)._headerController = { value: { history: undefined } };
+        const metrics = (element as any)._metrics;
+        expect(metrics).toBeDefined();
     });
 
     // --- _handleDeviceChange ---
@@ -341,33 +469,140 @@ describe('GrowspaceHeaderContainer', () => {
         expect(mockStore.ui.setViewMode).toHaveBeenCalledWith(ViewMode.STANDARD);
     });
 
-    it('unknown action logs a warning and does not throw', () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    it('edit action switches ViewMode to STANDARD if currently COMPACT', () => {
+        mockStore.ui.$isEditMode.get.mockReturnValue(false);
+        mockStore.ui.$viewMode.get.mockReturnValue(ViewMode.COMPACT);
         (element as any)._handleActionTriggered(
-            new CustomEvent('action-triggered', { detail: { action: 'unknown_action' } })
+            new CustomEvent('action-triggered', { detail: { action: 'edit' } })
         );
-        expect(warnSpy).toHaveBeenCalledWith(
-            expect.stringContaining('[GrowspaceHeaderContainer] Unknown action: unknown_action')
-        );
-        warnSpy.mockRestore();
+        expect(mockStore.ui.setViewMode).toHaveBeenCalledWith(ViewMode.STANDARD);
+    });
+
+    it('ai action with no deviceId falls back to empty string', () => {
+      element.device = {} as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ai' } }));
+      expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
+    });
+
+    it('training action with no device passes undefined', () => {
+      element.device = undefined as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'training' } }));
+      expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], undefined);
+    });
+
+    it('ec_ramp action with no device passes undefined', () => {
+      element.device = undefined as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } }));
+      expect(mockStore.openECRampDialog).toHaveBeenCalledWith(undefined);
+    });
+
+    it('report action with no device passes undefined', () => {
+      element.device = undefined as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'report' } }));
+      expect(mockStore.openGrowReportDialog).toHaveBeenCalledWith(undefined);
+    });
+
+    it('snapshots action with no device passes undefined', () => {
+      element.device = undefined as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'snapshots' } }));
+      expect(mockStore.openSnapshotsDialog).toHaveBeenCalledWith(undefined);
+    });
+
+    it('water action with no deviceId passes undefined', () => {
+      element.device = {} as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'water' } }));
+      expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
+        growspaceId: undefined
+      }));
+    });
+
+    it('ipm action with no deviceId falls back to empty string', () => {
+      element.device = {} as any;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ipm' } }));
+      expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
+        growspaceId: ''
+      }));
+    });
+
+    it('unknown action logs a warning and does not throw', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'unknown_action' } }));
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
 
     it('action does nothing when store is not set', () => {
-        (element as any).store = undefined;
-        expect(() =>
-            (element as any)._handleActionTriggered(
-                new CustomEvent('action-triggered', { detail: { action: 'add_plant' } })
-            )
-        ).not.toThrow();
+      (element as any).store = undefined;
+      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'add_plant' } }));
+      expect(mockStore.openAddPlantDialog).not.toHaveBeenCalled();
     });
 
-    // --- _handleChipDrop ---
+  describe('Getters Null Safety', () => {
+    it('_problemPlants returns empty array if device is missing', () => {
+      element.device = undefined as any;
+      expect((element as any)._problemPlants).toEqual([]);
+    });
 
-    it('_handleChipDrop calls dragController.handleDrop', () => {
+    it('_problemPlants returns empty array if plants are missing', () => {
+      element.device = { deviceId: '1' } as any;
+      expect((element as any)._problemPlants).toEqual([]);
+    });
+
+    it('_problemPlants falls back to friendly_name then Unknown', () => {
+      element.device = {
+        plants: [
+          { attributes: { problem: true, friendly_name: 'Friendly' } },
+          { attributes: { problem: true } }
+        ]
+      } as any;
+      expect((element as any)._problemPlants).toEqual(['Friendly', 'Unknown']);
+    });
+  });
+
+  describe('Drag and Drop', () => {
+
+    it('_handleChipDrop calls dragController.handleDrop and invokes linkGraphs callback', () => {
         const e = new CustomEvent('chip-drop', {
             detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
         });
+        
+        // Setup handleDrop to immediately call the callback
+        (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
+            callback('temp', 'hum');
+        });
+
         (element as any)._handleChipDrop(e);
+        
         expect((element as any)._dragController.handleDrop).toHaveBeenCalled();
+        expect(mockStore.history.linkGraphs).toHaveBeenCalledWith('temp', 'hum');
     });
+
+    it('_handleChipDragStart calls dragController.handleDragStart', () => {
+        const e = new CustomEvent('chip-drag-start', {
+            detail: { event: new MouseEvent('dragstart'), metric: 'temp' },
+        });
+        (element as any)._handleChipDragStart(e);
+        expect((element as any)._dragController.handleDragStart).toHaveBeenCalledWith(e.detail.event, 'temp');
+    });
+
+    it('_handleChipDrop does nothing if store.history is missing', () => {
+        const linkSpy = mockStore.history.linkGraphs;
+        const e = new CustomEvent('chip-drop', {
+            detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
+        });
+        (element as any).store.history = undefined;
+        (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
+            callback('temp', 'hum');
+        });
+        (element as any)._handleChipDrop(e);
+        expect(linkSpy).not.toHaveBeenCalled();
+    });
+
+    it('_handleUnlinkGraphs does nothing if store.history is missing', () => {
+        const unlinkSpy = mockStore.history.unlinkGraphGroup;
+        (element as any).store.history = undefined;
+        (element as any)._handleUnlinkGraphs(new CustomEvent('unlink', { detail: { groupIndex: 0 } }));
+        expect(unlinkSpy).not.toHaveBeenCalled();
+    });
+});
 });

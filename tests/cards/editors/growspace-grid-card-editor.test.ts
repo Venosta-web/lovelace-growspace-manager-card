@@ -204,4 +204,27 @@ describe('GrowspaceGridCardEditor', () => {
         element.updated(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
+
+    test('_computeSchema returns options from controller', () => {
+        element.updated(new Map([['hass', null]]));
+        const schema = (element as any)._computeSchema();
+        const growspaceField = schema.find((f: any) => f.name === 'default_growspace');
+        expect(growspaceField.selector.select.options).toContainEqual({ label: 'Select a growspace...', value: '' });
+        expect(growspaceField.selector.select.options).toContainEqual({ label: 'Test Tent', value: 'gs1' });
+        expect(growspaceField.selector.select.options).toContainEqual({ label: 'Veg Room', value: 'gs2' });
+    });
+
+    test('render returns empty template if config is missing', () => {
+        (element as any)._config = undefined;
+        const result = element.render();
+        expect(result.values).toEqual([]);
+    });
+
+    test('render returns full template if config is present', () => {
+        element.setConfig({ type: 'custom:growspace-grid-card' });
+        const result = element.render();
+        expect(result).toBeTruthy();
+        // result is a TemplateResult, check strings for ha-form
+        expect(result.strings[0]).toContain('ha-form');
+    });
 });

@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LogbookDialog } from '../../../src/dialogs/logbook-dialog';
 import '../../../src/dialogs/logbook-dialog';
+import { getTimelineService } from '../../../src/services/timeline-service';
 
 // Mock dependencies
 vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
@@ -9,6 +10,10 @@ vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
         hass: any;
         growspaceId: any;
     }
+}));
+
+vi.mock('../../../src/services/timeline-service', () => ({
+    getTimelineService: vi.fn(),
 }));
 
 // Mock ha-dialog if not already defined
@@ -21,10 +26,25 @@ if (!customElements.get('ha-dialog')) {
     customElements.define('ha-dialog', HaDialogMock);
 }
 
+// Mock quick-note-input if not already defined
+if (!customElements.get('quick-note-input')) {
+    class QuickNoteInputMock extends HTMLElement {
+        setSaving = vi.fn();
+        clear = vi.fn();
+    }
+    customElements.define('quick-note-input', QuickNoteInputMock);
+}
+
 describe('LogbookDialog', () => {
     let element: LogbookDialog;
+    const mockTimelineService = {
+        addGrowspaceNote: vi.fn(),
+    };
 
     beforeEach(async () => {
+        vi.clearAllMocks();
+        vi.mocked(getTimelineService).mockReturnValue(mockTimelineService as any);
+        
         element = new LogbookDialog();
         document.body.appendChild(element);
         await element.updateComplete;
@@ -48,7 +68,6 @@ describe('LogbookDialog', () => {
 
         const dialog = element.shadowRoot?.querySelector('ha-dialog');
         expect(dialog).toBeTruthy();
-        // Check if property binding works (requires casting or checking attribute)
         expect(dialog?.hasAttribute('open')).toBe(true);
 
         const logbook = element.shadowRoot?.querySelector('growspace-logbook');
@@ -93,6 +112,7 @@ describe('LogbookDialog', () => {
 
         expect(closeSpy).toHaveBeenCalled();
     });
+
     describe('Tab Switching', () => {
         beforeEach(async () => {
             element.open = true;
@@ -124,7 +144,6 @@ describe('LogbookDialog', () => {
         });
 
         it('should switch back to list view', async () => {
-            // First switch to timeline
             (element as any)._activeTab = 'timeline';
             await element.updateComplete;
 
@@ -139,4 +158,97 @@ describe('LogbookDialog', () => {
             expect(listTab?.classList.contains('active')).toBe(true);
         });
     });
+
+    describe('Note Submission', () => {
+        beforeEach(async () => {
+            vi.useFakeTimers();
+            element.open = true;
+            element.growspaceId = 'test-growspace';
+            await element.updateComplete;
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it('should handle successful note submission', async () => {
+            const noteInput = element.shadowRoot?.querySelector('quick-note-input') as any;
+            expect(noteInput).toBeTruthy();
+
+            const setSavingSpy = vi.spyOn(noteInput, 'setSaving');
+            const clearSpy = vi.spyOn(noteInput, 'clear');
+
+            const refreshSpy = vi.fn();
+            element.addEventListener('growspace-refresh', refreshSpy);
+
+            const submitEvent = new CustomEvent('submit', {
+                detail: {
+                    text: 'Test note',
+                    images: ['image1.jpg']
+                }
+            });
+
+            mockTimelineService.addGrowspaceNote.mockResolvedValue(undefined);
+
+            noteInput.dispatchEvent(submitEvent);
+
+            expect(setSavingSpy).toHaveBeenCalledWith(true);
+            expect(mockTimelineService.addGrowspaceNote).toHaveBeenCalledWith('test-growspace', {
+                notes: 'Test note',
+                images: ['image1.jpg']
+            });
+
+            // Wait for the async operations
+            await vi.runAllTimersAsync();
+
+            expect(clearSpy).toHaveBeenCalled();
+            expect(refreshSpy).toHaveBeenCalled();
+        });
+
+        it('should handle error during note submission', async () => {
+            const noteInput = element.shadowRoot?.querySelector('quick-note-input') as any;
+            expect(noteInput).toBeTruthy();
+
+            const setSavingSpy = vi.spyOn(noteInput, 'setSaving');
+
+            const submitEvent = new CustomEvent('submit', {
+                detail: {
+                    text: 'Test note',
+                    images: []
+                }
+            });
+
+            const error = new Error('Service error');
+            mockTimelineService.addGrowspaceNote.mockRejectedValue(error);
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            noteInput.dispatchEvent(submitEvent);
+
+            // Wait for the async operations
+            await vi.runAllTimersAsync();
+
+            expect(consoleSpy).toHaveBeenCalledWith('Error adding growspace note:', error);
+            expect(setSavingSpy).toHaveBeenCalledWith(false);
+            
+            consoleSpy.mockRestore();
+        });
+
+
+        it('should return early if quick-note-input is not found', async () => {
+            // This is a bit contrived since it's hard to make it not found if it's in the template,
+            // but we can mock shadowRoot.querySelector to return null once.
+            const querySpy = vi.spyOn(element.shadowRoot!, 'querySelector').mockReturnValue(null);
+            
+            const submitEvent = new CustomEvent('submit', {
+                detail: { text: 'test' }
+            });
+            
+            await (element as any)._handleNoteSubmit(submitEvent);
+            
+            expect(mockTimelineService.addGrowspaceNote).not.toHaveBeenCalled();
+            
+            querySpy.mockRestore();
+        });
+    });
 });
+
