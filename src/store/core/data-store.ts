@@ -131,6 +131,21 @@ export class GrowspaceDataStore {
     }
   }
 
+  public patchDeviceIrrigationConfig(
+    growspaceId: string,
+    patch: Partial<import('../../services/types').IrrigationConfig>
+  ) {
+    const devices = this.$devices.get();
+    const idx = devices.findIndex((d) => d.deviceId === growspaceId);
+    if (idx === -1) return;
+    const updated = devices.map((d, i) =>
+      i === idx
+        ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } }
+        : d
+    );
+    this.$devices.set(updated);
+  }
+
   public setWsDataCache(cache: Record<string, GrowspaceAPIResponse>) {
     const current = this.$wsDataCache.get();
     if (current === cache) return;

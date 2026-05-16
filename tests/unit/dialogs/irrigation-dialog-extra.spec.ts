@@ -90,10 +90,41 @@ describe('IrrigationDialog - Extra Coverage', () => {
         stats: {} as any
     };
 
+    function makeMockStore(device: GrowspaceDevice) {
+        const deviceCopy = JSON.parse(JSON.stringify(device));
+        const $devicesValue = [deviceCopy];
+        return {
+            context: {
+                dataService: mocks,
+                data: {
+                    $devices: { get: () => $devicesValue },
+                    patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
+                        const d = $devicesValue.find((x: any) => x.deviceId === gsId);
+                        if (d) Object.assign(d.irrigationConfig, patch);
+                    }),
+                },
+                optimisticManager: {
+                    applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
+                        await applyFn(_payload);
+                        return 'mock-id';
+                    }),
+                    confirmUpdate: vi.fn(),
+                    rollbackUpdate: vi.fn(),
+                },
+                undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
+                showToast: vi.fn(),
+                closeDialog: vi.fn(),
+                refreshData: vi.fn().mockResolvedValue(undefined),
+                ui: {}, history: {}, grid: {}, hass: {}, syncService: {},
+            },
+        };
+    }
+
     beforeEach(async () => {
         vi.clearAllMocks();
         element = new IrrigationDialog();
         element.device = JSON.parse(JSON.stringify(mockDevice));
+        (element as any).store = makeMockStore(mockDevice);
         element.hass = { states: { 'switch.pump1': { state: 'on' } } } as any;
         (element as any)._drainPumpEntity = 'switch.pump1';
         element.open = true;
@@ -517,63 +548,22 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Undo Deletion functionality', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[0] as HTMLElement).click(); // Schedules tab
-            await element.updateComplete;
+        it('should confirm an undoable action when deleting an irrigation time', async () => {
+            await (element as any)._removeIrrigationTime('08:00');
+
+            expect((element as any).store.context.optimisticManager.confirmUpdate).toHaveBeenCalledWith(
+                'mock-id',
+                expect.objectContaining({ description: expect.any(String) })
+            );
         });
 
-        it('should undo an irrigation time deletion', async () => {
-            (element as any)._showUndoToast('irrigation', '08:30', 60);
-            await element.updateComplete;
+        it('should confirm an undoable action when deleting a drain time', async () => {
+            await (element as any)._removeDrainTime('09:00');
 
-            await (element as any)._undoDelete();
-
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith({
-                growspaceId: 'gs1',
-                time: '08:30:00',
-                duration: 60
-            });
-            expect((element as any)._pendingUndo).toBeUndefined();
-        });
-
-        it('should undo a drain time deletion', async () => {
-            (element as any)._showUndoToast('drain', '08:30', 60);
-            await element.updateComplete;
-
-            await (element as any)._undoDelete();
-
-            expect(mocks.addDrainTime).toHaveBeenCalledWith({
-                growspaceId: 'gs1',
-                time: '08:30:00',
-                duration: 60
-            });
-            expect((element as any)._pendingUndo).toBeUndefined();
-        });
-
-        it('should handle undo deletion failure', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            mocks.addIrrigationTime.mockRejectedValue(new Error('Test error'));
-            (element as any)._showUndoToast('irrigation', '08:30', 60);
-            await element.updateComplete;
-
-            await (element as any)._undoDelete();
-
-            const toast = element.shadowRoot?.querySelector('.toast-notification.error');
-            // Element does not show error toast on save failure, only console logs
-            expect(consoleSpy).toHaveBeenCalled();
-            consoleSpy.mockRestore();
-        });
-
-        it('should clear pending undo timeout on close', async () => {
-            vi.useFakeTimers();
-            (element as any)._showUndoToast('drain', '08:30', 60);
-            expect((element as any)._pendingUndo?.timeoutId).toBeDefined();
-
-            (element as any)._close();
-
-            expect((element as any)._pendingUndo).toBeUndefined();
-            vi.useRealTimers();
+            expect((element as any).store.context.optimisticManager.confirmUpdate).toHaveBeenCalledWith(
+                'mock-id',
+                expect.objectContaining({ description: expect.any(String) })
+            );
         });
     });
 
@@ -588,62 +578,43 @@ describe('IrrigationDialog - Extra Coverage', () => {
             consoleSpy.mockRestore();
         });
 
-        it('should clear existing timeout when showing a new undo toast', () => {
-            vi.useFakeTimers();
-            const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-
-            (element as any)._showUndoToast('irrigation', '08:00', 30);
-            (element as any)._showUndoToast('drain', '09:00', 45);
-
-            expect(clearTimeoutSpy).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
-
-        it('should return early in _undoDelete if no pending undo', async () => {
-            (element as any)._pendingUndo = undefined;
-            const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-
-            await (element as any)._undoDelete();
-
-            expect(clearTimeoutSpy).not.toHaveBeenCalled();
-        });
-
         it('should handle duplicate time when saving edited irrigation time', async () => {
+            element.device = {
+                ...element.device!,
+                irrigationConfig: {
+                    ...element.device!.irrigationConfig,
+                    irrigationTimes: [{ time: '12:00:00', duration: 60 }],
+                },
+            } as any;
             (element as any)._editingIrrigationTime = {
                 originalTime: '08:00',
                 originalDuration: 30,
-                time: '12:00', // Already exists in mockDevice
-                duration: 30
+                time: '12:00',
+                duration: 30,
             };
-            (element as any)._irrigationTimes = [{ time: '12:00:00', duration: 60 }];
-
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
             await (element as any)._saveEditedIrrigationTime();
 
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('already exists'));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('already exists'), 'error'
+            );
+            expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
         });
 
-        it('should recover if adding fails during edit save', async () => {
+        it('should show error toast when adding fails during edit save', async () => {
             (element as any)._editingIrrigationTime = {
                 originalTime: '08:00',
                 originalDuration: 30,
                 time: '10:00',
-                duration: 60
+                duration: 60,
             };
-
-            // Step 1 remove succeeds, Step 2 add fails
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
             mocks.addIrrigationTime.mockRejectedValueOnce(new Error('Add Fail'));
-            // Step 3 rollback add
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-            await (element as any)._saveEditedIrrigationTime();
-
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('rolling back'), expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
     });
 
@@ -757,33 +728,26 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedDrainTime with duplicate time', async () => {
+            element.device = {
+                ...element.device!,
+                irrigationConfig: {
+                    ...element.device!.irrigationConfig,
+                    drainTimes: [{ time: '10:00:00', duration: 45 }],
+                },
+            } as any;
             (element as any)._editingDrainTime = {
                 originalTime: '09:00',
                 originalDuration: 45,
                 time: '10:00',
-                duration: 45
+                duration: 45,
             };
-            (element as any)._drainTimes = [{ time: '10:00:00', duration: 45 }];
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('already exists'));
-        });
 
-        it('should handle rollback failure in _saveEditedIrrigationTime', async () => {
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '11:00',
-                duration: 30
-            };
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockRejectedValueOnce(new Error('Rollback Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedIrrigationTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Rollback failed:', expect.any(Error));
-            consoleSpy.mockRestore();
+            await (element as any)._saveEditedDrainTime();
+
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('already exists'), 'error'
+            );
+            expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
 
         it('should handle remove failure in _saveEditedIrrigationTime', async () => {
@@ -791,47 +755,15 @@ describe('IrrigationDialog - Extra Coverage', () => {
                 originalTime: '08:00',
                 originalDuration: 30,
                 time: '11:00',
-                duration: 30
+                duration: 30,
             };
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedIrrigationTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove old time:', expect.any(Error));
-            consoleSpy.mockRestore();
-        });
 
-        it('should handle rollback success in _saveEditedDrainTime', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00',
-                duration: 45
-            };
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockResolvedValueOnce(true);
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('rolling back'), expect.any(Error));
-            consoleSpy.mockRestore();
-        });
+            await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-        it('should handle rollback failure in _saveEditedDrainTime', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00',
-                duration: 45
-            };
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockRejectedValueOnce(new Error('Rollback Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Rollback failed:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle remove failure in _saveEditedDrainTime', async () => {
@@ -839,54 +771,45 @@ describe('IrrigationDialog - Extra Coverage', () => {
                 originalTime: '09:00',
                 originalDuration: 45,
                 time: '11:00',
-                duration: 45
+                duration: 45,
             };
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove old drain time:', expect.any(Error));
-            consoleSpy.mockRestore();
+
+            await expect((element as any)._saveEditedDrainTime()).rejects.toThrow();
+
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should call _removeIrrigationTime successfully', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [{ time: '08:00', duration: 30 }];
             await (element as any)._removeIrrigationTime('08:00');
-            expect(mocks.removeIrrigationTime).toHaveBeenCalled();
-            expect((element as any)._irrigationTimes).toEqual([]);
+            expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(
+                expect.objectContaining({ growspaceId: 'gs1', time: '08:00' })
+            );
         });
 
-        it('should handle _removeIrrigationTime error and rethrow', async () => {
+        it('should handle _removeIrrigationTime error and show toast', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             await expect((element as any)._removeIrrigationTime('08:00')).rejects.toThrow('Remove Error');
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove irrigation time:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should call _removeDrainTime successfully', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [{ time: '09:00', duration: 45 }];
             await (element as any)._removeDrainTime('09:00');
-            expect(mocks.removeDrainTime).toHaveBeenCalled();
-            expect((element as any)._drainTimes).toEqual([]);
+            expect(mocks.removeDrainTime).toHaveBeenCalledWith(
+                expect.objectContaining({ growspaceId: 'gs1', time: '09:00' })
+            );
         });
 
-        it('should handle _removeDrainTime error and rethrow', async () => {
+        it('should handle _removeDrainTime error and show toast', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             await expect((element as any)._removeDrainTime('09:00')).rejects.toThrow('Remove Error');
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove drain time:', expect.any(Error));
-            consoleSpy.mockRestore();
-        });
-
-        it('should expire undo toast after timeout', async () => {
-            vi.useFakeTimers();
-            (element as any)._showUndoToast('irrigation', '08:00', 30);
-            expect((element as any)._pendingUndo).toBeDefined();
-            vi.advanceTimersByTime(10001);
-            expect((element as any)._pendingUndo).toBeUndefined();
-            vi.useRealTimers();
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should clear _errorToast after timeout in _showErrorToast', async () => {
@@ -1060,8 +983,6 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Branch Coverage - Time Format and Sort Callbacks', () => {
         it('should handle _addDrainTime when time already in HH:MM:SS format', async () => {
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [];
             await (element as any)._addDrainTime('09:00:00', 30);
             expect(mocks.addDrainTime).toHaveBeenCalledWith(
                 expect.objectContaining({ time: '09:00:00' })
@@ -1069,8 +990,6 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedIrrigationTime when time already in HH:MM:SS format', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
             (element as any)._editingIrrigationTime = {
                 originalTime: '08:00',
                 originalDuration: 30,
@@ -1084,8 +1003,6 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedDrainTime when time already in HH:MM:SS format', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime.mockResolvedValueOnce(true);
             (element as any)._editingDrainTime = {
                 originalTime: '09:00',
                 originalDuration: 45,
@@ -1098,13 +1015,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             );
         });
 
-        it('should cover sort callback || fallback with undefined time in _saveEditedIrrigationTime', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [
-                { time: undefined, duration: 30 },
-                { time: '10:00:00', duration: 30 },
-            ];
+        it('should call addIrrigationTime when editing irrigation time to new value', async () => {
             (element as any)._editingIrrigationTime = {
                 originalTime: '08:00',
                 originalDuration: 30,
@@ -1115,13 +1026,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect(mocks.addIrrigationTime).toHaveBeenCalled();
         });
 
-        it('should cover sort callback || fallback with undefined time in _saveEditedDrainTime', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [
-                { time: undefined, duration: 45 },
-                { time: '11:00:00', duration: 45 },
-            ];
+        it('should call addDrainTime when editing drain time to new value', async () => {
             (element as any)._editingDrainTime = {
                 originalTime: '09:00',
                 originalDuration: 45,
@@ -1132,26 +1037,18 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect(mocks.addDrainTime).toHaveBeenCalled();
         });
 
-        it('should cover start_time fallback in _addIrrigationTime sort', async () => {
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [
-                { start_time: '07:00:00', duration: 20 },
-                { time: undefined, start_time: undefined, duration: 25 },
-            ];
-            (element as any)._addingIrrigationTime = { time: '09:00', duration: 30 };
+        it('should handle _addIrrigationTime with various time formats', async () => {
             await (element as any)._addIrrigationTime('09:00', 30);
-            expect(mocks.addIrrigationTime).toHaveBeenCalled();
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(
+                expect.objectContaining({ time: '09:00:00' })
+            );
         });
 
-        it('should cover start_time fallback in _addDrainTime sort', async () => {
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [
-                { start_time: '07:00:00', duration: 20 },
-                { time: undefined, start_time: undefined, duration: 25 },
-            ];
-            (element as any)._addingDrainTime = { time: '10:00', duration: 30 };
+        it('should handle _addDrainTime with various time formats', async () => {
             await (element as any)._addDrainTime('10:00', 30);
-            expect(mocks.addDrainTime).toHaveBeenCalled();
+            expect(mocks.addDrainTime).toHaveBeenCalledWith(
+                expect.objectContaining({ time: '10:00:00' })
+            );
         });
     });
 

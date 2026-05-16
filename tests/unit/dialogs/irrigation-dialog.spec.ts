@@ -95,10 +95,41 @@ describe('IrrigationDialog', () => {
 
     let originalGetBoundingClientRect: any;
 
+    function makeMockStore(device: GrowspaceDevice) {
+        const deviceCopy = JSON.parse(JSON.stringify(device));
+        const $devicesValue = [deviceCopy];
+        return {
+            context: {
+                dataService: mocks,
+                data: {
+                    $devices: { get: () => $devicesValue },
+                    patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
+                        const d = $devicesValue.find((x: any) => x.deviceId === gsId);
+                        if (d) Object.assign(d.irrigationConfig, patch);
+                    }),
+                },
+                optimisticManager: {
+                    applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
+                        await applyFn(_payload);
+                        return 'mock-id';
+                    }),
+                    confirmUpdate: vi.fn(),
+                    rollbackUpdate: vi.fn(),
+                },
+                undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
+                showToast: vi.fn(),
+                closeDialog: vi.fn(),
+                refreshData: vi.fn().mockResolvedValue(undefined),
+                ui: {}, history: {}, grid: {}, hass: {}, syncService: {},
+            },
+        };
+    }
+
     beforeEach(() => {
         vi.clearAllMocks();
         element = new IrrigationDialog();
         element.device = JSON.parse(JSON.stringify(mockDevice)); // Deep copy
+        (element as any).store = makeMockStore(mockDevice);
         element.hass = {} as any;
 
         originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
@@ -167,6 +198,7 @@ describe('IrrigationDialog', () => {
                 .find(b => b.textContent?.includes('Add Schedule'));
             (confirmBtn as HTMLElement)?.click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
             expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
@@ -237,6 +269,7 @@ describe('IrrigationDialog', () => {
                 .find(b => b.textContent?.includes('Add Schedule'));
             (confirmBtn as HTMLElement)?.click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
             expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
                 growspaceId: 'gs1',
@@ -345,9 +378,6 @@ describe('IrrigationDialog', () => {
 
         it('should handle addIrrigationTime failure', async () => {
             mocks.addIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-
 
             const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
             const addIrrigationBtn = Array.from(addBtns || []).find(b => b.textContent?.includes('ADD TIME'));
@@ -357,20 +387,17 @@ describe('IrrigationDialog', () => {
             const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
             const confirmBtn = Array.from(overlay?.querySelectorAll('button.primary') || [])
                 .find(b => b.textContent?.includes('Add Schedule'));
-
-            // We need to set some values first or it might fail if inputs are empty? 
-            // The method defaults duration but time is required?
-            // `addingTime` is set in `_startAddingIrrigationTime` with default time strings.
-            // So we can just click confirm.
             (confirmBtn as HTMLElement)?.click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to add irrigation time:', expect.any(Error));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle removeIrrigationTime failure', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
             (markers?.[0] as HTMLElement).click();
@@ -380,13 +407,15 @@ describe('IrrigationDialog', () => {
             const deleteBtn = editOverlay?.querySelector('.delete-button');
             (deleteBtn as HTMLElement).click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to delete irrigation time:', expect.any(Error));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle addDrainTime failure', async () => {
             mocks.addDrainTime.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
             const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
@@ -398,13 +427,15 @@ describe('IrrigationDialog', () => {
                 .find(b => b.textContent?.includes('Add Schedule'));
             (confirmBtn as HTMLElement)?.click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to add drain time:', expect.any(Error));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle removeDrainTime failure', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1];
             const drainMarker = drainSection?.querySelector('.chart-marker');
@@ -415,8 +446,11 @@ describe('IrrigationDialog', () => {
             const deleteBtn = editOverlay?.querySelector('.delete-button');
             (deleteBtn as HTMLElement).click();
             await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to delete drain time:', expect.any(Error));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle saveStrategy failure', async () => {
@@ -437,40 +471,20 @@ describe('IrrigationDialog', () => {
 
         it('should handle saveSettings failure', async () => {
             mocks.setIrrigationSettings.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
-            // Directly call private method as it is not currently exposed in UI
-            await (element as any)._saveSettings();
+            await expect((element as any)._saveSettings()).rejects.toThrow('API Error');
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to save settings:', expect.any(Error));
+            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
     });
 
     describe('Edge Cases', () => {
-        it('should handle undefined parseScheduleString inputs', () => {
-            const result = (element as any)._parseScheduleString(undefined);
-            expect(result).toEqual([]);
-        });
-
-        it('should return array if input is already array', () => {
-            const arr = [{ time: '12:00', duration: 60 }];
-            const result = (element as any)._parseScheduleString(arr);
-            expect(result).toBe(arr);
-        });
-
-        it('should parse valid schedule strings', () => {
-            const result = (element as any)._parseScheduleString('12:00|60, 14:00|120');
-            expect(result).toEqual([
-                { time: '12:00', duration: 60 },
-                { time: '14:00', duration: 120 }
-            ]);
-        });
-
         it('should initialize state correctly without device', () => {
             element.device = undefined;
-            (element as any)._initializeState();
-            // Should just return safely
-            expect((element as any)._irrigationTimes).toEqual([]);
+            // Should just return safely without throwing
+            expect(() => (element as any)._initializeState()).not.toThrow();
         });
 
         it('should initialize state with empty config', () => {
@@ -677,26 +691,6 @@ describe('IrrigationDialog', () => {
             expect(mocks.addIrrigationTime).not.toHaveBeenCalled();
         });
 
-        it('should parse schedule string with duration', () => {
-            const result = (element as any)._parseScheduleString('08:00|120,12:00|90');
-            expect(result).toHaveLength(2);
-            expect(result[0].time).toBe('08:00');
-            expect(result[0].duration).toBe(120);
-            expect(result[1].time).toBe('12:00');
-            expect(result[1].duration).toBe(90);
-        });
-
-        it('should parse schedule string without duration', () => {
-            const result = (element as any)._parseScheduleString('08:00,12:00');
-            expect(result).toHaveLength(2);
-            expect(result[0].duration).toBeUndefined();
-        });
-
-        it('should return empty array for empty schedule string', () => {
-            const result = (element as any)._parseScheduleString('');
-            expect(result).toEqual([]);
-        });
-
         it('should not add drain time without device', async () => {
             (element as any).device = undefined;
             await (element as any)._addDrainTime('10:00');
@@ -766,13 +760,6 @@ describe('IrrigationDialog', () => {
 
             expect((element as any)._addingDrainTime.time).toBe('13:00');
             expect((element as any)._addingDrainTime.duration).toBe(15);
-        });
-
-        it('should parse schedule string with duration and spaces', () => {
-            const result = (element as any)._parseScheduleString(' 08:00 | 120 , 12:00 | 90 ');
-            expect(result).toHaveLength(2);
-            expect(result[0].time).toBe('08:00');
-            expect(result[0].duration).toBe(120);
         });
 
         it('should add irrigation time with default duration fallback', async () => {
@@ -1064,14 +1051,14 @@ describe('IrrigationDialog', () => {
 
             expect(pumpSelect).toBeTruthy();
 
-            // Simulating change
             pumpSelect!.value = 'switch.pump2';
             pumpSelect!.dispatchEvent(new Event('change'));
             await element.updateComplete;
 
-            // Verify state update by checking what happens on save
             const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
+            await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
             expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
                 irrigationPumpEntity: 'switch.pump2'
@@ -1090,6 +1077,8 @@ describe('IrrigationDialog', () => {
 
             const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
+            await element.updateComplete;
+            await new Promise((r) => setTimeout(r, 0));
 
             expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
                 drainPumpEntity: 'input_boolean.valve'
@@ -1304,15 +1293,15 @@ describe('IrrigationDialog', () => {
                     irrigationTimes: [{ start_time: '12:00' } as any]
                 }
             } as any;
-            // Connect to DOM to trigger willUpdate which creates _dataService
             document.body.appendChild(element);
             await element.updateComplete;
 
             await (element as any)._addIrrigationTime('11:00');
 
-            const times = (element as any)._irrigationTimes;
-            expect(times[0].time).toBe('11:00:00');
-            expect(times[1].start_time).toBe('12:00');
+            // Sorting is handled by the action; verify the action was called with correct time
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
+                time: '11:00:00',
+            }));
             document.body.removeChild(element);
         });
     });
